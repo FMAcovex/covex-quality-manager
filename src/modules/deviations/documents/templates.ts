@@ -26,7 +26,16 @@ async function loadTemplate(configured: string | undefined, fallback: string, ex
   return buffer;
 }
 
-export function loadAnnexIIITemplate() {
+function requireV06(versionCode: string, documentName: string) {
+  if (versionCode !== "06") {
+    throw new TemplateUnavailableError(
+      `No hay una plantilla controlada instalada para ${documentName} versión ${versionCode}.`,
+    );
+  }
+}
+
+export function loadAnnexIIITemplate(versionCode = "06") {
+  requireV06(versionCode, "Anexo III");
   return loadTemplate(
     process.env.DEVIATION_ANNEX_III_TEMPLATE,
     "templates/deviations/v06/Anexo III Informe Desviaciones 06.docx",
@@ -34,7 +43,8 @@ export function loadAnnexIIITemplate() {
   );
 }
 
-export function loadAnnexVTemplate() {
+export function loadAnnexVTemplate(versionCode = "06") {
+  requireV06(versionCode, "Anexo V");
   return loadTemplate(
     process.env.DEVIATION_ANNEX_V_TEMPLATE,
     "templates/deviations/v06/Anexo_V_Listado_de_Desviaciones_06.xlsx",
