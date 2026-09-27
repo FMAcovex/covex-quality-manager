@@ -440,7 +440,7 @@ function parseFollowupTasks(raw: string): ChangeFollowupTaskInput[] {
     if (!Array.isArray(value)) return [];
     return value
       .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
-      .map((item) => ({
+      .map<ChangeFollowupTaskInput>((item) => ({
         taskId: typeof item.taskId === "string" ? item.taskId : undefined,
         departmentId: typeof item.departmentId === "string" ? item.departmentId : "",
         description: typeof item.description === "string" ? item.description.trim() : "",
