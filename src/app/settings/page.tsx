@@ -1,40 +1,33 @@
 import Link from "next/link";
+import { getConfigurationOverview } from "@/modules/configuration/queries";
 
-const deviationFields = [
-  ["Código", "Identificación", "Sistema", "Sí", "Sí", "Sí"],
-  ["Departamento", "Identificación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Material / proceso afectado", "Identificación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Procedencia", "Identificación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Descripción", "Evento", "Anexo", "Sí", "No", "Sí"],
-  ["Clasificación", "Evaluación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Causa raíz", "Investigación", "Anexo", "Sí", "No", "Sí"],
-  ["Fecha apertura", "Identificación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Fecha cierre", "Cierre", "Anexo", "Sí", "Sí", "Sí"],
-  ["Estado", "Gestión", "Sistema", "Sí", "Sí", "Sí"],
-  ["Medidas adoptadas", "Acciones", "Derivado", "Sí", "Sí", "Sí"],
-  ["Código CAPA", "Relaciones", "Derivado", "Sí", "Sí", "Sí"],
-  ["Observaciones", "Seguimiento", "Operativo", "Sí", "No", "Sí"],
-];
+export const dynamic = "force-dynamic";
 
-const capaFields = [
-  ["Tipo CAPA", "Identificación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Código", "Identificación", "Sistema", "Sí", "Sí", "Sí"],
-  ["Departamento", "Identificación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Origen", "Identificación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Código de origen", "Identificación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Descripción CAPA", "Acción", "Anexo", "Sí", "No", "Sí"],
-  ["Fecha apertura", "Identificación", "Anexo", "Sí", "Sí", "Sí"],
-  ["Fecha prevista", "Acción", "Anexo", "Sí", "Sí", "Sí"],
-  ["Estado", "Gestión", "Sistema", "Sí", "Sí", "Sí"],
-  ["Cierre operativo", "Cierre", "Anexo", "Sí", "Sí", "Sí"],
-  ["Eficacia", "Eficacia", "Anexo", "Sí", "Sí", "Sí"],
-  ["Último seguimiento", "Seguimiento", "Derivado", "Sí", "No", "Sí"],
-  ["Próximo seguimiento", "Seguimiento", "Anexo/seguimiento", "Sí", "Sí", "Sí"],
-  ["Cierre efectivo", "Eficacia", "Anexo", "Sí", "Sí", "Sí"],
-  ["Observaciones", "Seguimiento", "Operativo", "Sí", "No", "Sí"],
-];
+function yes(value: boolean) {
+  return value ? "Sí" : "No";
+}
 
-function FieldTable({ rows }: { rows: string[][] }) {
+function originLabel(kind: string, officialAnnexField: boolean) {
+  if (kind === "STRUCTURAL") return "Estructural";
+  if (kind === "DERIVED") return "Derivado";
+  if (kind === "OPERATIONAL") return "Operativo";
+  return officialAnnexField ? "Anexo versionado" : "Versionado";
+}
+
+function FieldTable({
+  rows,
+}: {
+  rows: Array<{
+    id: string;
+    label: string;
+    sectionLabel: string;
+    kind: string;
+    listAvailable: boolean;
+    filterable: boolean;
+    simpleExport: boolean;
+    officialAnnexField: boolean;
+  }>;
+}) {
   return (
     <div className="table-scroll">
       <table className="records-table compact-table settings-table">
@@ -50,17 +43,27 @@ function FieldTable({ rows }: { rows: string[][] }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row[0]}>
-              {row.map((value, index) => <td key={index}>{value}</td>)}
+            <tr key={row.id}>
+              <td>{row.label}</td>
+              <td>{row.sectionLabel}</td>
+              <td>{originLabel(row.kind, row.officialAnnexField)}</td>
+              <td>{yes(row.listAvailable)}</td>
+              <td>{yes(row.filterable)}</td>
+              <td>{yes(row.simpleExport)}</td>
             </tr>
           ))}
+          {!rows.length ? (
+            <tr><td colSpan={6}>Sin configuración de campos cargada.</td></tr>
+          ) : null}
         </tbody>
       </table>
     </div>
   );
 }
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const config = await getConfigurationOverview();
+
   return (
     <section className="workspace">
       <div className="page-heading">
@@ -69,7 +72,7 @@ export default function SettingsPage() {
           <h1>Configuración</h1>
           <p>Versiones de formulario, columnas operativas y plantillas documentales.</p>
         </div>
-        <span className="badge warning">Prototipo · cambios bloqueados en V1</span>
+        <span className="badge warning">Consulta en V1</span>
       </div>
 
       <div className="analytics-note">
@@ -85,11 +88,13 @@ export default function SettingsPage() {
               <p className="eyebrow">Desviaciones</p>
               <h2>Formulario GC-00/023</h2>
             </div>
-            <span className="module-state ready">v06 activa</span>
+            <span className="module-state ready">
+              {config.deviation.form?.versionCode ?? "Sin versión"}
+            </span>
           </div>
           <p className="muted-note">
-            Una revisión futura se crea como borrador, se configura y se activa con fecha de vigencia.
-            Los expedientes anteriores conservan su versión.
+            Plantilla Anexo III: {config.deviation.template?.versionCode ?? "No configurada"}.
+            Los expedientes anteriores conservan la versión con la que fueron creados.
           </p>
           <div className="settings-actions">
             <button className="button" disabled>+ Nueva versión</button>
@@ -103,10 +108,13 @@ export default function SettingsPage() {
               <p className="eyebrow">CAPA</p>
               <h2>Formulario GC-00/030</h2>
             </div>
-            <span className="module-state ready">v05 activa</span>
+            <span className="module-state ready">
+              {config.capa.form?.versionCode ?? "Sin versión"}
+            </span>
           </div>
           <p className="muted-note">
-            La plantilla del Anexo III y la definición de campos se versionan conjuntamente.
+            Plantilla Anexo III: {config.capa.template?.versionCode ?? "No configurada"}.
+            La estructura del formulario se versiona junto con su plantilla aplicable.
           </p>
           <div className="settings-actions">
             <button className="button" disabled>+ Nueva versión</button>
@@ -123,7 +131,7 @@ export default function SettingsPage() {
           </div>
           <Link className="button" href="/deviations">Ver listado</Link>
         </div>
-        <FieldTable rows={deviationFields} />
+        <FieldTable rows={config.deviation.form?.fieldConfigs ?? []} />
         <p className="muted-note">
           La vista de seguimiento puede contener más columnas que el Anexo III impreso.
           No se añaden “Último seguimiento” ni “Próximo seguimiento” a Desviaciones.
@@ -138,7 +146,7 @@ export default function SettingsPage() {
           </div>
           <Link className="button" href="/capa">Ver listado</Link>
         </div>
-        <FieldTable rows={capaFields} />
+        <FieldTable rows={config.capa.form?.fieldConfigs ?? []} />
         <p className="muted-note">
           El listado operativo conserva columnas de seguimiento que no tienen por qué
           imprimirse todas en el Anexo III.
