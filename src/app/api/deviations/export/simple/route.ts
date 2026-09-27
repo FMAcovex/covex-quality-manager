@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const rows = await getDeviationExportRows(filters);
   const buffer = generateSimpleList(rows);
   const year = url.searchParams.get("year");
-  return new Response(body(buffer), {
+  return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="Listado_desviaciones${year ? `_${year}` : "_filtrado"}.xlsx"`,
