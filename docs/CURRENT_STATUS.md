@@ -3,56 +3,37 @@
 Fecha: 2026-09-27.
 
 ## Hitos completados
+- Hito 0 — Especificación y arquitectura.
+- Hito 1 — Núcleo técnico y base de datos.
+- Hito 2 — Desviaciones completas.
 
-### Hito 0 — Especificación y arquitectura
-Completado e integrado.
+## Hito 3 — Documentos y exportaciones
+Estado: **EN DESARROLLO** en `feature/hito-03-documents`.
 
-### Hito 1 — Núcleo técnico y base de datos
-Completado y validado por CI.
+Implementado en la rama:
+- motor OOXML sin dependencias externas de Office;
+- uso de las plantillas oficiales auditadas v06 con control SHA-256;
+- Anexo III DOCX individual desde el expediente;
+- filas repetibles para acciones inmediatas y CAPA;
+- preservación de las zonas de firma del Anexo III;
+- Anexo V XLSX anual con hoja detallada y TABLA OFICIAL;
+- capacidad controlada del Anexo V v06: 61 registros;
+- listado simple XLSX respetando filtros;
+- listado simple anual;
+- registro de generación del Anexo III;
+- instalación local de plantillas mediante `pnpm templates:install`;
+- controles de exportación en la interfaz.
 
-### Hito 2 — Desviaciones completas
-Estado: **COMPLETADO Y VALIDADO**.
-
-Implementado:
-- listado operativo conectado a PostgreSQL;
-- filtros horizontales y buscador;
-- contadores operativos;
-- alta de desviación por bloques;
-- edición de expedientes abiertos y cerrados;
-- acciones inmediatas 1:N;
-- separación de descripción, investigación, causa raíz, impacto, CAPA y cierre;
-- CAPA propuestas 1:N;
-- expediente a pantalla completa;
-- pestañas Resumen, Investigación, Acciones, Seguimientos, Documentos e Historial;
-- seguimientos cronológicos con próxima fecha y evidencia;
-- historial interno de modificaciones;
-- observaciones internas;
-- control de calidad/completitud del dato;
-- preservación del snapshot histórico de departamento;
-- campo de plazo `NOT_EVALUATED` hasta disponer de reglas vigentes configuradas;
-- PostgreSQL local mediante Docker Compose;
-- pruebas unitarias de validación de apertura/cierre/CAPA.
-
-Validación final:
-- PostgreSQL 16 real en CI;
-- `prisma db push`;
-- seed;
-- smoke test de persistencia de desviación, acción inmediata, CAPA propuesta, seguimiento y relación N:N;
-- Prisma validate/generate;
-- lint;
-- 10 tests;
-- build Next.js.
+Pendiente antes del cierre:
+- CI completo;
+- corrección de incidencias detectadas por CI;
+- prueba de generación sobre las plantillas reales;
+- render y revisión visual del DOCX/XLSX de prueba.
 
 ## Fuera de alcance todavía
-- generación Anexo III;
-- generación Anexo V;
-- listado simple descargable;
 - importación histórica 2025/2026;
 - KPI;
-- expediente CAPA completo;
+- módulo CAPA completo;
 - Entra;
 - SharePoint automático;
 - alertas.
-
-## Próximo paso
-Hito 3 — Documentos y exportaciones: Anexo III DOCX, Anexo V XLSX anual completo y listado simple.
