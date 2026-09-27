@@ -5,6 +5,7 @@ import { generateAnnexIII } from "@/modules/deviations/documents/annex-iii";
 import { TemplateUnavailableError } from "@/modules/deviations/documents/templates";
 import {
   deviationSnapshotToAnnexRecord,
+  recordVersionTemplateId,
   versionLabel,
 } from "@/lib/qms/versioning";
 
@@ -33,8 +34,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     return NextResponse.json({ error: "La versión solicitada no existe." }, { status: 404 });
   }
 
-  const annexRecord = storedVersion
-    ? deviationSnapshotToAnnexRecord(storedVersion.snapshot)
+  type AnnexRecord = Parameters<typeof generateAnnexIII>[0];
+  const annexRecord: AnnexRecord = storedVersion
+    ? (deviationSnapshotToAnnexRecord(storedVersion.snapshot) as AnnexRecord)
     : deviation;
 
   try {
@@ -44,9 +46,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         qmsRecordId: deviation.qmsRecordId,
         recordVersionId: storedVersion?.id ?? null,
         documentType: "DEVIATION_ANNEX_III",
-        templateVersionId:
-          (annexRecord as typeof deviation).anexoIIITemplateVersionId ??
-          deviation.anexoIIITemplateVersionId,
+        templateVersionId: storedVersion
+          ? recordVersionTemplateId("DEVIATION", storedVersion.snapshot)
+          : deviation.anexoIIITemplateVersionId,
         generatedByText: process.env.DEFAULT_ACTOR_NAME || deviation.createdByText,
         metadata: {
           source: "download",
