@@ -43,5 +43,6 @@ jobs:
           pnpm db:seed
           pnpm db:smoke
           pnpm import:smoke
+          pnpm indicators:smoke
       - name: Quality checks
         run: pnpm quality
