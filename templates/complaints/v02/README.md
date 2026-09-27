@@ -1,0 +1,1 @@
+# Reclamaciones v02\n\nInstalar una copia controlada de GC-00/027/02 mediante `pnpm templates:complaints:install -- <ruta.docx>`. El binario no se versiona en Git y se valida por SHA-256.\n
