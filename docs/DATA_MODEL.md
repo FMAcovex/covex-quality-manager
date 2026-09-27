@@ -278,3 +278,31 @@ No persistir salvo necesidad:
 Calcular desde datos base o materializar únicamente por rendimiento con una estrategia explícita.
 
 Los plazos regulados no deben codificarse hasta confirmar la fuente vigente; deben quedar configurables.
+
+
+## 14. Versiones funcionales de expediente
+
+### QmsRecordVersion
+Entidad transversal asociada a `QmsRecord`.
+
+Campos:
+- `id UUID PK`;
+- `qmsRecordId FK`;
+- `sequenceNumber` (00, 01, 02...);
+- `kind`: INITIAL, REOPENING, FOLLOWUP o HISTORICAL_STATE;
+- `snapshot JSONB` con el estado estructurado completo de la versión;
+- `reason`;
+- `sourceEntityId` para vincular, por ejemplo, la versión CAPA con el seguimiento que la originó;
+- `createdByText`;
+- `source`;
+- `frozenAt`.
+
+Unicidad: `qmsRecordId + sequenceNumber`.
+
+La versión vigente puede actualizar su snapshot mientras no exista un evento que deba crear nueva versión. Al crear la siguiente versión, la anterior se congela.
+
+### GeneratedDocument
+Puede referenciar opcionalmente `recordVersionId`. Esto permite volver a generar o identificar el documento correspondiente a una versión concreta del expediente.
+
+### Históricos previos al Hito 6.1
+No se infiere un estado histórico que no exista en la fuente. Para registros ya presentes se crea un `HISTORICAL_STATE` con la última secuencia conocida cuando sea posible. Los huecos anteriores permanecen sin snapshot en lugar de inventarse.
