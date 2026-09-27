@@ -151,7 +151,7 @@ export function TrendChart({
   const segments = points
     .map((point, index) => {
       if (!point) return null;
-      const next = points.slice(index + 1).find(Boolean);
+      const next = points[index + 1];
       if (!next) return null;
       return `${point.x},${point.y} ${next.x},${next.y}`;
     })
@@ -177,9 +177,12 @@ export function TrendChart({
             <text x={point.x} y="98" textAnchor="middle" className="trend-year">{point.year}</text>
           </g>
         ) : (
-          <text key={trend[index].year} x={8 + (index / Math.max(1, trend.length - 1)) * 84} y="98" textAnchor="middle" className="trend-year">
-            {trend[index].year}
-          </text>
+          <g key={trend[index].year}>
+            <text x={8 + (index / Math.max(1, trend.length - 1)) * 84} y="50" textAnchor="middle" className="trend-no-data">s/d</text>
+            <text x={8 + (index / Math.max(1, trend.length - 1)) * 84} y="98" textAnchor="middle" className="trend-year">
+              {trend[index].year}
+            </text>
+          </g>
         ))}
       </svg>
     </article>
