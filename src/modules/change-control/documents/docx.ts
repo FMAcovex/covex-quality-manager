@@ -133,14 +133,12 @@ export async function generateChangeAnnexIV(record:ChangeDocumentRecord,version=
   xml=setWordCellText(xml,0,6,1,record.classification==="MAJOR"?"☒ MAYOR   ☐ MENOR":record.classification==="MINOR"?"☐ MAYOR   ☒ MENOR":"☐ MAYOR   ☐ MENOR");
   xml=setWordCellText(xml,0,6,3,date(record.plannedImplementationAt));
   if(record.actions.length){
-    const rows:string[][]=[];
-    let currentDepartment:string|null=null;
-    for(const action of record.actions){
-      const dept=action.departmentText??"";
-      if(dept&&dept!==currentDepartment){rows.push([dept,"",""]);currentDepartment=dept;}
-      rows.push([action.description,action.responsible??"",date(action.plannedExecutionDate)]);
-    }
-    xml=replaceWordRowWithCopies(xml,1,1,rows);
+    const rows=record.actions.map((action)=>[
+      [action.departmentText,action.description].filter(Boolean).join("\n"),
+      action.responsible??"",
+      date(action.plannedExecutionDate),
+    ]);
+    xml=replaceWordRowWithCopies(xml,1,2,rows);
   }
   const implications=[
     [yn(record.committeeRequired),record.committeeJustification??""],
@@ -179,16 +177,14 @@ export async function generateChangeAnnexV(record:ChangeDocumentRecord,followupS
 
   const visibleActions=record.actions.filter((a)=>(a.introducedInSequence??0)<=followupSequence);
   if(visibleActions.length){
-    const rows:string[][]=[];let currentDepartment:string|null=null;
-    for(const action of visibleActions){
-      const dept=action.departmentText??"";
-      if(dept&&dept!==currentDepartment){rows.push([dept,"","",""]);currentDepartment=dept;}
-      rows.push([
-        `${action.completed?"☒":"☐"} ${action.description}\n${action.responsible??""}`,
-        date(action.plannedExecutionDate),date(action.actualExecutionDate),action.evidenceComment??"",
-      ]);
-    }
-    xml=replaceWordRowWithCopies(xml,1,1,rows);
+    const rows=visibleActions.map((action)=>[
+      [action.departmentText,`${action.completed?"☒":"☐"} ${action.description}`].filter(Boolean).join("\n"),
+      action.responsible??"",
+      date(action.plannedExecutionDate),
+      date(action.actualExecutionDate),
+      action.evidenceComment??"",
+    ]);
+    xml=replaceWordRowWithCopies(xml,1,2,rows);
   }
   xml=setWordCellText(xml,2,1,0,followup.executionStatus==="EXECUTED"?"☒ EJECUTADO":"☐ EJECUTADO");
   xml=setWordCellText(xml,2,1,1,followup.executionStatus==="NOT_EXECUTED"?"☒ NO EJECUTADO":"☐ NO EJECUTADO");
@@ -202,7 +198,10 @@ export async function generateChangeAnnexV(record:ChangeDocumentRecord,followupS
   xml=setWordCellText(xml,2,7,4,date(followup.nextFollowupDate));
   xml=setWordCellText(xml,2,8,1,followup.openReason??"");
   xml=setWordCellText(xml,2,9,1,followup.conclusion??"");
-  xml=setWordCellText(xml,2,10,1,followup.closedByText??"");
-  xml=setWordCellText(xml,2,11,1,followup.closureApprovedByText??"");
+  xml=setWordCellText(xml,2,10,1,followup.conclusion??"");
+  xml=setWordCellText(xml,2,11,0,[
+    `Cierre del Seguimiento: ${followup.closedByText??""}`,
+    `Aprobación y cierre del cambio: ${followup.closureApprovedByText??""}`,
+  ].join("\n"));
   updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
