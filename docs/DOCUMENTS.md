@@ -119,3 +119,38 @@ Reglas:
 - una nueva revisión del PNT/anexo no modifica el snapshot ni el documento histórico.
 
 Para datos anteriores al Hito 6.1 solo son descargables como versión histórica exacta aquellos estados para los que exista snapshot persistido; no se reconstruyen estados inexistentes.
+
+
+## 7. Controles de cambios · GC-00/003/03
+
+Documentos controlados:
+- Anexo III — Solicitud de cambios.
+- Anexo IV — Dictamen de cambios.
+- Anexo V — Informe de Seguimiento y Control de un Cambio.
+- Anexo VII — Listado de controles de cambios.
+
+### Plantillas DOCX
+Las plantillas III, IV y V se instalan fuera de Git y se verifican por SHA-256 antes de uso.
+
+SHA-256 auditados:
+- Anexo III: a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f
+- Anexo IV: 742b1de11e0e0dece4e9c65c97613c112325189e183b9cb02c56ca82cd06cc60
+- Anexo V: 3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4
+
+La descarga Solicitud + Dictamen entrega un ZIP con los dos DOCX para conservar cada anexo como documento independiente.
+El Anexo V se genera por seguimiento y, cuando existe snapshot funcional, se reconstruye desde el estado persistido de ese seguimiento.
+
+### Anexo VII
+Se genera como XLSX anual desde la base de datos con las columnas operativas del listado vigente:
+- departamento;
+- codificación;
+- descripción;
+- fechas de solicitud/aprobación/prevista/ejecución/cierre;
+- clasificación;
+- ejecución;
+- eficacia;
+- último y próximo seguimiento;
+- estado final;
+- observaciones.
+
+Existe además listado simple XLSX completo o respetando filtros activos.
