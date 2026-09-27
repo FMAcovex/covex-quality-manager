@@ -1,0 +1,18 @@
+export const capaColumns = [
+  { key: "control", label: "Control", index: 0 },
+  { key: "type", label: "Tipo", index: 1 },
+  { key: "code", label: "Código", index: 2, locked: true },
+  { key: "department", label: "Departamento", index: 3 },
+  { key: "origin", label: "Origen", index: 4 },
+  { key: "originCode", label: "Código origen", index: 5 },
+  { key: "description", label: "Descripción CAPA", index: 6 },
+  { key: "opening", label: "Apertura", index: 7 },
+  { key: "planned", label: "Fecha prevista", index: 8 },
+  { key: "status", label: "Estado", index: 9 },
+  { key: "operationalClose", label: "Cierre operativo", index: 10 },
+  { key: "effectiveness", label: "Eficacia", index: 11 },
+  { key: "latestFollowup", label: "Último seguimiento", index: 12 },
+  { key: "nextFollowup", label: "Próximo seguimiento", index: 13 },
+  { key: "effectiveClose", label: "Cierre efectivo", index: 14 },
+  { key: "observations", label: "Observaciones", index: 15 },
+] as const;
