@@ -7,41 +7,67 @@ Fecha: 2026-09-27.
 - Hito 1 — Núcleo técnico y base de datos.
 - Hito 2 — Desviaciones completas.
 - Hito 3 — Documentos y exportaciones.
+- Hito 4 — Importación histórica 2025–2026.
 
 ## Hito 4 — Importación histórica 2025–2026
-Estado: **EN DESARROLLO** en `feature/hito-04-historical-import`.
+Estado: **COMPLETADO Y VALIDADO**.
 
-### Fuente confirmada
-- `000 LISTADO GENERAL DESVIACIONES.xlsx` de la carpeta `05 DESVIACIONES`.
-- Hoja 2025: 53 expedientes.
-- Hoja 2026: 34 expedientes.
-- Total esperado en la fuente revisada: 87 expedientes.
-- Los esquemas 2025 y 2026 son diferentes y se mapean por separado.
-
-### Implementado en la rama
+### Implementado
 - lector XLSX OOXML reutilizando el motor ZIP propio;
-- mapeos explícitos 2025 y 2026;
+- mapeos explícitos y separados para 2025 y 2026;
 - catálogo histórico de departamentos recuperado del propio libro;
 - extracción conservadora de códigos AC/AP;
-- `dry-run` por defecto;
-- detección de duplicados en fuente y base de datos;
+- dry-run por defecto;
+- detección de duplicados dentro de la fuente y contra PostgreSQL;
 - clasificación de incidencias de calidad del dato;
-- importación real con confirmación explícita;
+- importación real solo con confirmación explícita;
 - trazabilidad mediante lote y fila de importación;
 - snapshot original de cada fila;
 - historial con origen `IMPORT`;
-- almacenamiento del SHA-256 del libro fuente;
+- SHA-256 del libro fuente;
 - informes JSON fuera de Git;
-- pruebas unitarias de lector y mapeo.
+- prueba de idempotencia dry-run -> apply -> dry-run;
+- corrección y test del caso OOXML de celdas vacías auto-cerradas.
 
-### Regla de calidad histórica
-El listado general no equivale al Anexo III. Los registros importados quedan como `REVIEW_REQUIRED` salvo bloqueo por datos esenciales, que pasa a `INCOMPLETE`. No se inventan campos ausentes.
+### Dry-run sobre la copia real revisada
+Fuente: `000 LISTADO GENERAL DESVIACIONES.xlsx`.
+SHA-256: `c11558835752558d1e3858a5eb11a1ce829c42410e19067aa109bbe76527af02`.
 
-### Pendiente antes del merge
-- ejecutar CI;
-- smoke test PostgreSQL de dry-run + apply + reejecución para comprobar idempotencia;
-- ejecutar dry-run contra la copia real del libro y revisar el informe;
-- actualizar este estado con los resultados reales.
+Resultado de lectura:
+- 87 expedientes;
+- 53 de 2025;
+- 34 de 2026;
+- 0 códigos duplicados dentro de las hojas 2025/2026;
+- 2 registros 2026 sin recurrencia informada;
+- 2 registros 2026 sin afectación a producto terminado informada;
+- 2 registros 2026 sin medidas adoptadas informadas;
+- 2 expedientes GC-12 cuyo nombre de departamento no figura en el catálogo embebido del libro;
+- el listado 2026 no contiene un campo equivalente al control de cierre en plazo de 2025 ni estado de documento firmado.
+
+Todos los históricos se marcan como `REVIEW_REQUIRED` porque el listado general no equivale al Anexo III completo. Los campos ausentes permanecen ausentes; no se infieren.
+
+### Seguridad de la importación
+La ejecución sin `--apply` no escribe expedientes.
+La importación real requiere además `--confirm APPLY_2025_2026`.
+Una segunda lectura después de aplicar el mismo fichero detecta los registros existentes como duplicados y no los vuelve a crear.
+
+### Validación final
+- PostgreSQL 16 real;
+- `prisma db push`, seed y smoke test base;
+- smoke test de importación histórica e idempotencia;
+- Prisma validate/generate;
+- lint;
+- tests;
+- build Next.js de producción;
+- dry-run independiente contra la copia real del libro.
+
+## Fuera de alcance todavía
+- enriquecimiento histórico leyendo cada Anexo III individual;
+- KPI;
+- expediente CAPA completo;
+- Entra;
+- SharePoint automático;
+- alertas.
 
 ## Próximo paso
-Completar y validar Hito 4 antes de iniciar indicadores.
+Hito 5 — Indicadores: KPI desde PostgreSQL, comparativa anual, tendencias de 5 años y filtros alineados con el dashboard GMP.
