@@ -49,6 +49,24 @@ async function main() {
       isActive: true,
     },
   });
+
+  await prisma.templateVersion.upsert({
+    where: {
+      module_documentType_versionCode: {
+        module: QmsRecordType.DEVIATION,
+        documentType: DocumentType.DEVIATION_ANNEX_V,
+        versionCode: "06",
+      },
+    },
+    update: { isActive: true },
+    create: {
+      module: QmsRecordType.DEVIATION,
+      documentType: DocumentType.DEVIATION_ANNEX_V,
+      versionCode: "06",
+      effectiveFrom: new Date("2026-01-01"),
+      isActive: true,
+    },
+  });
 }
 
 main().finally(async () => {
