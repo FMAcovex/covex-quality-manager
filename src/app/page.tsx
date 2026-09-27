@@ -22,11 +22,11 @@ const modules = [
   {
     name: "Controles de cambios",
     eyebrow: "GC-00/003",
-    description: "Pendiente de revisar contigo los anexos antes de definir el módulo.",
-    href: "#",
-    status: "Pendiente de diseño",
-    tone: "pending",
-    sections: ["No iniciado"],
+    description: "Solicitud, Dictamen, plan aprobado, seguimientos, ejecución, eficacia y cierre.",
+    href: "/changes",
+    status: "Operativo",
+    tone: "ready",
+    sections: ["Solicitud", "Dictamen", "Seguimientos", "Relaciones", "Documentos", "Indicadores"],
   },
   {
     name: "Reclamaciones",
@@ -94,12 +94,12 @@ export default function HomePage() {
       <section className="review-note">
         <div>
           <p className="eyebrow">Punto de control</p>
-          <h2>Desviaciones + CAPA</h2>
+          <h2>Desviaciones + CAPA + Controles de Cambios</h2>
         </div>
         <p>
-          Estos dos módulos ya comparten la misma lógica visual y de navegación.
-          Controles de cambios queda expresamente fuera de esta revisión hasta
-          cerrar contigo los puntos de sus anexos.
+          Los tres módulos operativos comparten la misma lógica de expediente,
+          relaciones, seguimiento, versionado e indicadores. Controles de Cambios
+          añade la separación formal entre Solicitud, Dictamen y Seguimientos.
         </p>
       </section>
     </section>
