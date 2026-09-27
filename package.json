@@ -29,7 +29,8 @@
     "versions:backfill": "tsx scripts/backfill-record-versions.ts",
     "templates:changes:install": "tsx scripts/install-change-templates.ts",
     "import:changes": "tsx scripts/import-historical-changes.ts",
-    "changes:smoke": "tsx scripts/smoke-change-control.ts"
+    "changes:smoke": "tsx scripts/smoke-change-control.ts",
+    "changes:import:smoke": "tsx scripts/smoke-change-import.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
