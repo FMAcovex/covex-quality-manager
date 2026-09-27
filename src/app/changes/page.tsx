@@ -69,7 +69,7 @@ export default async function ChangeControlPage({
           <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
           <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification ?? ""}><option value="">Todas</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option></select></label>
           <label className="filter-placeholder"><span>Ejecución</span><select name="execution" defaultValue={filters.execution ?? ""}><option value="">Todas</option><option value="NOT_EXECUTED">No ejecutado</option><option value="EXECUTED">Ejecutado</option></select></label>
-          <label className="filter-placeholder"><span>Eficacia</span><select name="effectiveness" defaultValue={filters.effectiveness ?? ""}><option value="">Todas</option><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Aceptable</option><option value="NOT_ACCEPTABLE">No aceptable</option></select></label>
+          <label className="filter-placeholder"><span>Eficacia</span><select name="effectiveness" defaultValue={filters.effectiveness ?? ""}><option value="">Todas</option><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Aceptable</option><option value="NOT_ACCEPTABLE">No aceptable</option><option value="NOT_APPLICABLE">No aplica</option></select></label>
           <label className="filter-placeholder"><span>Estado final</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="OPEN">Abierto</option><option value="CLOSED">Cerrado</option></select></label>
           <div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/changes">Limpiar</Link></div>
         </div>
@@ -126,7 +126,7 @@ export default async function ChangeControlPage({
                     <td data-column-key="plannedDate">{formatDate(planned)}</td>
                     <td data-column-key="execution"><span className={`badge ${row.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>{executionStatusLabel(row.executionStatus)}</span></td>
                     <td data-column-key="executionDate">{formatDate(row.executionDate)}</td>
-                    <td data-column-key="effectiveness"><span className={`badge ${row.effectivenessStatus === "ACCEPTABLE" ? "closed" : row.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : "warning"}`}>{effectivenessStatusLabel(row.effectivenessStatus)}</span></td>
+                    <td data-column-key="effectiveness"><span className={`badge ${row.effectivenessStatus === "ACCEPTABLE" ? "closed" : row.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : row.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>{effectivenessStatusLabel(row.effectivenessStatus)}</span></td>
                     <td data-column-key="latestFollowup">{latest ? `${String(latest.sequenceNumber).padStart(2,"0")} · ${formatDate(latest.followupDate)}` : "—"}</td>
                     <td data-column-key="nextFollowup">{formatDate(latest?.nextFollowupDate)}</td>
                     <td data-column-key="finalStatus"><span className={`status-badge ${row.finalStatus.toLowerCase()}`}>{finalStatusLabel(row.finalStatus)}</span></td>
