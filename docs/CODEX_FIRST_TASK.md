@@ -45,8 +45,12 @@ Antes de modificar archivos:
 
 ### Reglas de modelo
 - UUID internos.
-- businessCode separado.
+- businessCode separado de la PK.
+- unicidad de código por `recordType + businessCode`.
 - relaciones N:N mediante QmsRecord.
+- almacenar relaciones direccionales una sola vez y derivar la vista inversa.
+- normalizar relaciones simétricas para evitar duplicados invertidos.
+- Deviation referencia `Department` por FK y conserva snapshots de código/nombre.
 - timestamps.
 - constraints/índices razonables.
 - no usar businessCode como PK.
