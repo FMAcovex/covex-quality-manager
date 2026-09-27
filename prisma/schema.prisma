@@ -443,6 +443,7 @@ model GeneratedDocument {
 
 model HistoricalImportBatch {
   id              String                @id @default(uuid())
+  recordType      QmsRecordType         @default(DEVIATION)
   sourceFileName  String
   sourceSha256    String
   years           Int[]
@@ -457,6 +458,7 @@ model HistoricalImportBatch {
   report          Json?
   rows            HistoricalImportRow[]
 
+  @@index([recordType])
   @@index([sourceSha256])
   @@index([createdAt])
 }

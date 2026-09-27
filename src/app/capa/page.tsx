@@ -41,12 +41,25 @@ export default async function CapaPage({
         </div>
         <div className="heading-actions">
           <Link href="/capa/new" className="button primary">+ Nueva CAPA</Link>
+          <details className="export-menu">
+            <summary className="button">Exportar ▾</summary>
+            <div className="export-popover">
+              <strong>Exportaciones CAPA</strong>
+              <form action="/api/capa/export/annex-iv" method="get" className="export-year-form">
+                <label><span>Anexo IV oficial</span><select name="year" defaultValue={filters.year ?? String(new Date().getFullYear())}>
+                  {Array.from(new Set([Number(filters.year ?? new Date().getFullYear()),...years])).filter(Number.isInteger).sort((a,b)=>b-a).map((year)=><option key={year} value={year}>{year}</option>)}
+                </select></label>
+                <button className="button small" type="submit">Descargar</button>
+              </form>
+              <a className="export-link" href="/api/capa/export/simple">Listado simple completo</a>
+            </div>
+          </details>
         </div>
       </div>
 
       <div className="tabs">
         <Link className="tab active" href="/capa">Expedientes</Link>
-        <span className="tab muted">Indicadores · en este hito</span>
+        <Link className="tab muted" href="/capa/indicators">Indicadores</Link>
       </div>
 
       <form method="get" className="toolbar-form">
