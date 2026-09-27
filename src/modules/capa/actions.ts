@@ -223,7 +223,7 @@ export async function updateCapaAction(
   _previous: CapaFormState,
   formData: FormData,
 ): Promise<CapaFormState> {
-  const parsed = parseCapaForm(formData);
+  const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: true });
   if (parsed.errors.length) {
     return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors };
   }
@@ -238,18 +238,38 @@ export async function updateCapaAction(
   });
   if (!existing) return { error: "La CAPA ya no existe." };
 
-  if (parsed.values.status === "CLOSED") {
-    const hasEvidence = existing.followups.some(
-      (item) => Boolean(item.evidenceReference?.trim()),
-    );
-    if (!hasEvidence) {
-      return {
-        error: "No se puede cerrar operativamente la CAPA sin una evidencia de ejecución referenciada en al menos un seguimiento.",
-      };
+  const v = parsed.values;
+
+  if (existing.rootCause && !v.rootCause) {
+    return { error: "No se puede eliminar una causa raíz ya documentada." };
+  }
+
+  if (existing.status !== "CLOSED" && v.status === "CLOSED") {
+    const transitionErrors: string[] = [];
+    if (!v.operationalClosedAt) transitionErrors.push("La transición a Cerrada requiere fecha de cierre operativo.");
+    if (!v.conclusion) transitionErrors.push("La transición a Cerrada requiere conclusión de cierre.");
+    const hasEvidence = existing.followups.some((item) => Boolean(item.evidenceReference?.trim()));
+    if (!hasEvidence) transitionErrors.push("La transición a Cerrada requiere una evidencia de ejecución referenciada en un seguimiento.");
+    if (transitionErrors.length) {
+      return { error: "No se puede cerrar operativamente la CAPA.", fieldErrors: transitionErrors };
     }
   }
 
-  const v = parsed.values;
+  if (existing.status !== "CANCELLED" && v.status === "CANCELLED" && !v.cancellationReason) {
+    return { error: "La transición a Cancelada requiere motivo de cancelación." };
+  }
+
+  const isNewEffectiveClosure =
+    !existing.effectiveClosedAt && Boolean(v.effectiveClosedAt);
+  if (isNewEffectiveClosure) {
+    const transitionErrors: string[] = [];
+    if (v.status !== "CLOSED") transitionErrors.push("El cierre efectivo requiere estado Cerrada.");
+    if (v.effectivenessStatus !== "CONFORMING") transitionErrors.push("El cierre efectivo requiere eficacia Conforme.");
+    if (!v.effectivenessAssessment) transitionErrors.push("El cierre efectivo requiere valoración documentada de la eficacia.");
+    if (transitionErrors.length) {
+      return { error: "No se puede registrar el cierre efectivo.", fieldErrors: transitionErrors };
+    }
+  }
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
   if (!department) return { error: "El departamento seleccionado no existe." };
 
