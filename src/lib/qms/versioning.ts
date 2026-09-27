@@ -1,5 +1,3 @@
-import "server-only";
-
 import { HistorySource, Prisma, RecordVersionKind } from "@prisma/client";
 
 type Tx = Prisma.TransactionClient;
