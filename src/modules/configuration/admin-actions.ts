@@ -36,8 +36,8 @@ export async function createCatalogAction(fd:FormData){
   const key=text(fd,"key").toUpperCase().replace(/[^A-Z0-9_]/g,"_"),label=text(fd,"label");
   if(!key||!label)throw new Error("Clave y nombre son obligatorios.");
   const rawModule=text(fd,"module");
-  const module=Object.values(QmsRecordType).includes(rawModule as QmsRecordType)?rawModule as QmsRecordType:null;
-  const created=await prisma.lookupCatalog.create({data:{key,label,module,description:text(fd,"description")||null,isActive:true}});
+  const moduleValue=Object.values(QmsRecordType).includes(rawModule as QmsRecordType)?rawModule as QmsRecordType:null;
+  const created=await prisma.lookupCatalog.create({data:{key,label,module:moduleValue,description:text(fd,"description")||null,isActive:true}});
   await logChange("LookupCatalog",key,"CREATE",null,created,fd);
   revalidatePath("/settings");
 }
