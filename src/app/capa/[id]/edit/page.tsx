@@ -32,7 +32,12 @@ export default async function EditCapaPage({ params }: { params: Promise<{ id: s
     effectiveClosedAt: capa.effectiveClosedAt?.toISOString().slice(0,10),
     conclusion: capa.conclusion ?? undefined,
     internalObservations: capa.internalObservations ?? undefined,
-    signedDocumentAvailable: capa.signedDocumentAvailable === true ? "true" as const : capa.signedDocumentAvailable === false ? "false" as const : "",
+    signedDocumentAvailable:
+      capa.signedDocumentAvailable === true
+        ? ("true" as const)
+        : capa.signedDocumentAvailable === false
+          ? ("false" as const)
+          : ("" as const),
     dataQualityStatus: capa.dataQualityStatus,
     plannedActions: capa.plannedActions.map((item) => ({
       description: item.description,
