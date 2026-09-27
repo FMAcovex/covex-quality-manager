@@ -5,6 +5,7 @@ import { generateCapaAnnexIII } from "@/modules/capa/documents/annex-iii";
 import { CapaTemplateUnavailableError } from "@/modules/capa/documents/templates";
 import {
   capaSnapshotToAnnexRecord,
+  recordVersionTemplateId,
   versionLabel,
 } from "@/lib/qms/versioning";
 
@@ -33,8 +34,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     return NextResponse.json({ error: "La versión solicitada no existe." }, { status: 404 });
   }
 
-  const annexRecord = storedVersion
-    ? capaSnapshotToAnnexRecord(storedVersion.snapshot)
+  type AnnexRecord = Parameters<typeof generateCapaAnnexIII>[0];
+  const annexRecord: AnnexRecord = storedVersion
+    ? (capaSnapshotToAnnexRecord(storedVersion.snapshot) as AnnexRecord)
     : capa;
 
   try {
@@ -44,9 +46,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         qmsRecordId: capa.qmsRecordId,
         recordVersionId: storedVersion?.id ?? null,
         documentType: "CAPA_ANNEX_III",
-        templateVersionId:
-          (annexRecord as typeof capa).annexIIITemplateVersionId ??
-          capa.annexIIITemplateVersionId,
+        templateVersionId: storedVersion
+          ? recordVersionTemplateId("CAPA", storedVersion.snapshot)
+          : capa.annexIIITemplateVersionId,
         generatedByText: process.env.DEFAULT_ACTOR_NAME || capa.createdByText,
         metadata: {
           source: "download",
