@@ -49,6 +49,7 @@ export default async function CapaDetailPage({ params }: { params: Promise<{ id:
           <p>{capa.departmentCodeSnapshot} · apertura {formatDate(capa.openedAt)} · eficacia {effectivenessLabel(capa.effectivenessStatus)}</p>
         </div>
         <div className="record-actions">
+          <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
           <Link className="button primary" href={`/capa/${id}/edit`}>Editar</Link>
         </div>
       </div>
@@ -165,7 +166,21 @@ export default async function CapaDetailPage({ params }: { params: Promise<{ id:
 
       <section className="detail-section" id="documentos">
         <h2>Documentos</h2>
-        <div className="empty-panel">La generación del Anexo III CAPA se incorpora en el siguiente bloque del Hito 6.</div>
+        <div className="document-actions">
+          <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Descargar Anexo III actual</a>
+          <span className="muted-note">Cada generación queda registrada en el expediente.</span>
+        </div>
+        {capa.qmsRecord.generatedDocuments.length ? (
+          <div className="history-list">
+            {capa.qmsRecord.generatedDocuments.map((item) => (
+              <div className="history-row" key={item.id}>
+                <strong>{formatDate(item.generatedAt)}</strong>
+                <span>{item.documentType}</span>
+                <small>{item.generatedByText ?? "—"}</small>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section className="detail-section" id="historial">
