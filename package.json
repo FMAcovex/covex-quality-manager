@@ -31,6 +31,7 @@
     "versions:smoke": "tsx scripts/smoke-versioning.ts",
     "changes:smoke": "tsx scripts/smoke-change-control.ts",
     "hito8:smoke": "tsx scripts/smoke-complaints-returns.ts",
+    "hito9:smoke": "tsx scripts/smoke-administration.ts",
     "versions:backfill": "tsx scripts/backfill-record-versions.ts"
   },
   "dependencies": {
