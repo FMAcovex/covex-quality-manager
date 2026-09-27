@@ -103,7 +103,7 @@ export async function generateAnnexV(year: number, rows: ExportRow[], versionCod
     .replace(/name="2026"/, `name="${year}"`)
     .replaceAll("'2026'!", `'${year}'!`)
     .replace(
-      /<definedName name="_xlnm.Print_Area" localSheetId="0">[\\s\\S]*?<\\/definedName>/,
+      /<definedName name="_xlnm.Print_Area" localSheetId="0">[\s\S]*?<\/definedName>/,
       `<definedName name="_xlnm.Print_Area" localSheetId="0">'${year}'!$B$1:$M$65</definedName>`,
     );
   detail = setXlsxCell(detail, "B2", `LISTADO GENERAL DE DESVIACIONES\n"${year}"`);
