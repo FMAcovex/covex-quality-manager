@@ -23,8 +23,9 @@ function ensureAnnexVDetailRows(sheetXml: string) {
         .map(([column, style]) => `<c r="${column}${row}" s="${style}"></c>`)
         .join("");
       const pCell = new RegExp(`<c[^>]*\\br="P${row}"`);
-      const updatedInner = pCell.test(inner) ? inner.replace(pCell, `${missing}export const ANNEX_V_CAPACITY = 61;
-`) : `${inner}${missing}`;
+      const updatedInner = pCell.test(inner)
+        ? inner.replace(pCell, `${missing}$&`)
+        : `${inner}${missing}`;
       return `<row${attrs}>${updatedInner}</row>`;
     });
   }
