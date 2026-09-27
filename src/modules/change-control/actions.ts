@@ -178,8 +178,6 @@ export async function updateChangeControlAction(
   _previous:ChangeControlFormState,
   formData:FormData,
 ):Promise<ChangeControlFormState> {
-  const parsed=parseChangeControlForm(formData,{historical:true});
-  if(parsed.errors.length) return {error:"No se puede guardar el control de cambio.",fieldErrors:parsed.errors};
   const existing=await prisma.changeControl.findUnique({
     where:{id},
     include:{
@@ -192,6 +190,8 @@ export async function updateChangeControlAction(
     },
   });
   if(!existing) return {error:"El control de cambio ya no existe."};
+  const parsed=parseChangeControlForm(formData,{historical:existing.dataQualityStatus!=="COMPLETE"});
+  if(parsed.errors.length) return {error:"No se puede guardar el control de cambio.",fieldErrors:parsed.errors};
   const v=parsed.values;
   const department=await prisma.department.findUnique({where:{id:v.departmentId!}});
   if(!department) return {error:"El departamento seleccionado no existe."};
