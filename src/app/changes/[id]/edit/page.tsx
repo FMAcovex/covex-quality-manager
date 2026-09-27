@@ -2,16 +2,18 @@ import { notFound } from "next/navigation";
 import { updateChangeControlAction } from "@/modules/change-control/actions";
 import { ChangeControlForm } from "@/modules/change-control/components/change-control-form";
 import { getChangeControlDetail,getChangeControlLookups } from "@/modules/change-control/queries";
+import type { ChangeControlFormDefaults } from "@/modules/change-control/types";
 
 export const dynamic="force-dynamic";
 const b=(v:boolean|null):""|"true"|"false"=>v===true?"true":v===false?"false":"";
 const d=(v:Date|null)=>v?.toISOString().slice(0,10);
+const t=(v:"YES"|"NO"|"NA"|null):""|"YES"|"NO"|"NA"=>v??"";
 
 export default async function EditChangeControlPage({params}:{params:Promise<{id:string}>}) {
   const {id}=await params;
   const [change,lookups]=await Promise.all([getChangeControlDetail(id),getChangeControlLookups()]);
   if(!change) notFound();
-  const defaults={
+  const defaults:ChangeControlFormDefaults={
     businessCode:change.qmsRecord.businessCode??undefined,
     departmentId:change.departmentId??undefined,
     requestedAt:d(change.requestedAt),
@@ -35,16 +37,16 @@ export default async function EditChangeControlPage({params}:{params:Promise<{id
     clientNotificationDetail:change.clientNotificationDetail??undefined,
     authorityNotificationRequired:b(change.authorityNotificationRequired),
     authorityNotificationDetail:change.authorityNotificationDetail??undefined,
-    pqrRequirement:change.pqrRequirement??"",
+    pqrRequirement:t(change.pqrRequirement),
     pqrProducts:change.pqrProducts??undefined,
     pqrPeriod:change.pqrPeriod??undefined,
-    stabilityRequirement:change.stabilityRequirement??"",
+    stabilityRequirement:t(change.stabilityRequirement),
     stabilityAccelerated:change.stabilityAccelerated??false,
     stabilityOngoing:change.stabilityOngoing??false,
     stabilityDetail:change.stabilityDetail??undefined,
-    additionalAnalysis:change.additionalAnalysis??"",
+    additionalAnalysis:t(change.additionalAnalysis),
     additionalAnalysisDetail:change.additionalAnalysisDetail??undefined,
-    additionalValidation:change.additionalValidation??"",
+    additionalValidation:t(change.additionalValidation),
     additionalValidationDetail:change.additionalValidationDetail??undefined,
     otherImplication:b(change.otherImplication),
     otherImplicationDetail:change.otherImplicationDetail??undefined,
