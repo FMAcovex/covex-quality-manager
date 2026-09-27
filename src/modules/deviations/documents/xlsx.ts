@@ -1,9 +1,36 @@
 import { readZip, getZipEntryText, updateZipEntry, writeZip, type ZipEntry } from "@/lib/ooxml/zip";
 import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
 import { loadAnnexVTemplate } from "@/modules/deviations/documents/templates";
+import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { deadlineLabel, measuresLabel } from "@/modules/deviations/domain";
 
 export const ANNEX_V_CAPACITY = 61;
+
+const DETAIL_STYLES: Record<string, number> = {
+  B: 20, C: 21, D: 22, E: 22, F: 15, G: 21,
+  H: 18, I: 25, J: 25, K: 27, L: 28, M: 26,
+};
+
+function ensureAnnexVDetailRows(sheetXml: string) {
+  for (let row = 9; row <= 65; row += 1) {
+    const rowRegex = new RegExp(`<row([^>]*\\br="${row}"[^>]*)>([\\s\\S]*?)<\\/row>`);
+    sheetXml = sheetXml.replace(rowRegex, (_match, rawAttrs: string, inner: string) => {
+      let attrs = rawAttrs;
+      if (!/\\bht=/.test(attrs)) attrs += ' ht="45"';
+      if (!/\\bcustomHeight=/.test(attrs)) attrs += ' customHeight="1"';
+      const missing = Object.entries(DETAIL_STYLES)
+        .filter(([column]) => !new RegExp(`<c[^>]*\\br="${column}${row}"(?:\\s|")`).test(inner))
+        .map(([column, style]) => `<c r="${column}${row}" s="${style}"></c>`)
+        .join("");
+      const pCell = new RegExp(`<c[^>]*\\br="P${row}"`);
+      const updatedInner = pCell.test(inner) ? inner.replace(pCell, `${missing}export const ANNEX_V_CAPACITY = 61;
+`) : `${inner}${missing}`;
+      return `<row${attrs}>${updatedInner}</row>`;
+    });
+  }
+  return sheetXml;
+}
+
 
 type ExportRow = {
   qmsRecord: { businessCode: string | null; year: number | null };
@@ -67,11 +94,17 @@ export async function generateAnnexV(year: number, rows: ExportRow[]) {
   }
 
   let entries = readZip(await loadAnnexVTemplate());
-  let detail = getZipEntryText(entries, "xl/worksheets/sheet1.xml");
+  let detail = ensureAnnexVDetailRows(getZipEntryText(entries, "xl/worksheets/sheet1.xml"));
   let official = getZipEntryText(entries, "xl/worksheets/sheet3.xml");
   let workbook = getZipEntryText(entries, "xl/workbook.xml");
 
-  workbook = workbook.replace(/name="2026"/, `name="${year}"`);
+  workbook = workbook
+    .replace(/name="2026"/, `name="${year}"`)
+    .replaceAll("'2026'!", `'${year}'!`)
+    .replace(
+      /<definedName name="_xlnm.Print_Area" localSheetId="0">[\\s\\S]*?<\\/definedName>/,
+      `<definedName name="_xlnm.Print_Area" localSheetId="0">'${year}'!$B$1:$M$65</definedName>`,
+    );
   detail = setXlsxCell(detail, "B2", `LISTADO GENERAL DE DESVIACIONES\n"${year}"`);
   official = setXlsxCell(official, "B2", `Listado general de Desviaciones\n${year}`);
 
@@ -121,7 +154,26 @@ export async function generateAnnexV(year: number, rows: ExportRow[]) {
   updateZipEntry(entries, "xl/worksheets/sheet1.xml", detail);
   updateZipEntry(entries, "xl/worksheets/sheet3.xml", official);
   updateZipEntry(entries, "xl/workbook.xml", workbook);
+
+  const tableEntry = entries.find((entry) => entry.name === "xl/tables/table1.xml");
+  if (tableEntry) {
+    const tableXml = tableEntry.data
+      .toString("utf8")
+      .replaceAll('ref="B4:M8"', 'ref="B4:M65"');
+    updateZipEntry(entries, "xl/tables/table1.xml", tableXml);
+  }
+
+  const appEntry = entries.find((entry) => entry.name === "docProps/app.xml");
+  if (appEntry) {
+    updateZipEntry(
+      entries,
+      "docProps/app.xml",
+      appEntry.data.toString("utf8").replaceAll("2026", String(year)),
+    );
+  }
+
   entries = removeCalcChain(entries);
+  sanitizeOfficeMetadata(entries);
   return writeZip(entries);
 }
 
