@@ -17,7 +17,7 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
   const version=change.qmsRecord.versions.find((v)=>v.sourceEntityId===followup.id);
   const record=version?changeControlSnapshotToRecord(version.snapshot):change;
   try{
-    const buffer=await generateChangeAnnexV(record as Parameters<typeof generateChangeAnnexV>[0],sequence);
+    const buffer=await generateChangeAnnexV(record as unknown as Parameters<typeof generateChangeAnnexV>[0],sequence);
     await prisma.generatedDocument.create({data:{
       qmsRecordId:change.qmsRecordId,recordVersionId:version?.id??null,documentType:"CHANGE_ANNEX_V",
       templateVersionId:change.followupTemplateVersionId,generatedByText:process.env.DEFAULT_ACTOR_NAME||followup.responsibleText,
