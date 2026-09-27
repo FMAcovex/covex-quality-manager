@@ -297,14 +297,23 @@ export async function updateDeviationAction(
 
   try {
     await prisma.$transaction(async (tx) => {
-      await ensureInitialVersion(
-        tx,
-        existing.qmsRecordId,
-        snapshotJson(serializeDeviationVersion(existing)),
-        parsed.actor,
-        "SYSTEM",
-        "Baseline del expediente antes de activar el versionado funcional",
-      );
+      const storedVersion = await tx.qmsRecordVersion.findFirst({
+        where: { qmsRecordId: existing.qmsRecordId },
+        orderBy: { sequenceNumber: "desc" },
+      });
+      if (!storedVersion) {
+        await tx.qmsRecordVersion.create({
+          data: {
+            qmsRecordId: existing.qmsRecordId,
+            sequenceNumber: 0,
+            kind: "HISTORICAL_STATE",
+            snapshot: snapshotJson(serializeDeviationVersion(existing)),
+            reason: "Baseline histórico al activar Hito 6.1; no reconstruye revisiones anteriores no almacenadas",
+            createdByText: parsed.actor,
+            source: "SYSTEM",
+          },
+        });
+      }
       await refreshCurrentVersion(
         tx,
         existing.qmsRecordId,
