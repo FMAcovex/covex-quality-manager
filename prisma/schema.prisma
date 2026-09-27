@@ -89,6 +89,13 @@ enum HistorySource {
   SYSTEM
 }
 
+enum RecordVersionKind {
+  INITIAL
+  REOPENING
+  FOLLOWUP
+  HISTORICAL_STATE
+}
+
 enum DocumentType {
   DEVIATION_ANNEX_III
   DEVIATION_ANNEX_V
@@ -143,6 +150,7 @@ model QmsRecord {
   sourceRelations    QmsRelation[]       @relation("RelationSource")
   targetRelations    QmsRelation[]       @relation("RelationTarget")
   history            ChangeHistory[]
+  versions           QmsRecordVersion[]
   generatedDocuments GeneratedDocument[]
   linkedCapaPlans    DeviationCapaPlan[] @relation("LinkedCapaRecord")
   historicalImports  HistoricalImportRow[]
@@ -480,19 +488,43 @@ model ChangeHistory {
   @@index([source])
 }
 
+model QmsRecordVersion {
+  id                 String            @id @default(uuid())
+  qmsRecordId        String
+  qmsRecord          QmsRecord         @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  sequenceNumber     Int
+  kind               RecordVersionKind
+  snapshot           Json
+  reason             String?
+  sourceEntityId     String?
+  createdByText      String?
+  source             HistorySource     @default(UI)
+  frozenAt           DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  generatedDocuments GeneratedDocument[]
+
+  @@unique([qmsRecordId, sequenceNumber])
+  @@index([qmsRecordId, frozenAt])
+  @@index([kind])
+}
+
 model GeneratedDocument {
-  id                String           @id @default(uuid())
+  id                String            @id @default(uuid())
   qmsRecordId       String
-  qmsRecord         QmsRecord        @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  qmsRecord         QmsRecord         @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  recordVersionId   String?
+  recordVersion     QmsRecordVersion? @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
   documentType      DocumentType
   templateVersionId String?
-  templateVersion   TemplateVersion? @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
-  generatedAt       DateTime         @default(now())
+  templateVersion   TemplateVersion?  @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  generatedAt       DateTime          @default(now())
   generatedByText   String?
   checksum          String?
   metadata          Json?
 
   @@index([qmsRecordId, generatedAt])
+  @@index([recordVersionId])
   @@index([templateVersionId])
   @@index([documentType, generatedAt])
 }
