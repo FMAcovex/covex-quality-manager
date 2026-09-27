@@ -267,3 +267,26 @@ export function fillWordRowBalanced(
     rowXml,
   );
 }
+
+
+export function appendWordCellTextBalanced(
+  documentXml: string,
+  tableIndex: number,
+  rowIndex: number,
+  cellIndex: number,
+  text: string,
+  color?: string,
+) {
+  return transformWordTableBalanced(documentXml, tableIndex, (tableXml) => {
+    const rows = directTableRows(tableXml);
+    const row = rows[rowIndex];
+    if (!row) throw new Error(`Direct Word row not found: table ${tableIndex}, row ${rowIndex}`);
+    const cells = directRowCells(row.xml);
+    const cell = cells[cellIndex];
+    if (!cell) throw new Error(`Direct Word cell not found: ${cellIndex}`);
+    const addition = paragraphXmlWithColor(text, color);
+    const updatedCell = cell.xml.replace("</w:tc>", `${addition}</w:tc>`);
+    const updatedRow = row.xml.slice(0, cell.start) + updatedCell + row.xml.slice(cell.end);
+    return tableXml.slice(0, row.start) + updatedRow + tableXml.slice(row.end);
+  });
+}
