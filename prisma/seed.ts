@@ -1,4 +1,4 @@
-import { DocumentType, PrismaClient, QmsRecordType } from "@prisma/client";
+import { AlertRuleKind, AlertSeverity, DocumentType, ParameterValueType, PrismaClient, QmsRecordType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -431,8 +431,8 @@ async function main() {
     const [scope,key,label,valueType,jsonValue,description]=parameter;
     await prisma.appParameter.upsert({
       where: { scope_key: { scope, key } },
-      update: { label, valueType: valueType as any, value: JSON.parse(jsonValue), description, isActive: true },
-      create: { scope, key, label, valueType: valueType as any, value: JSON.parse(jsonValue), description, isActive: true },
+      update: { label, valueType: valueType as ParameterValueType, value: JSON.parse(jsonValue), description, isActive: true },
+      create: { scope, key, label, valueType: valueType as ParameterValueType, value: JSON.parse(jsonValue), description, isActive: true },
     });
   }
 
@@ -447,8 +447,8 @@ async function main() {
     const [key,module,kind,label,leadDays,severity]=rule;
     await prisma.alertRule.upsert({
       where: { key },
-      update: { module, kind: kind as any, label, leadDays, severity: severity as any, isActive: true },
-      create: { key, module, kind: kind as any, label, leadDays, severity: severity as any, isActive: true },
+      update: { module, kind: kind as AlertRuleKind, label, leadDays, severity: severity as AlertSeverity, isActive: true },
+      create: { key, module, kind: kind as AlertRuleKind, label, leadDays, severity: severity as AlertSeverity, isActive: true },
     });
   }
 }
