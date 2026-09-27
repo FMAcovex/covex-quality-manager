@@ -76,10 +76,11 @@ export function readXlsxSheet(buffer: Buffer, sheetName: string): XlsxRow[] {
     const cells: Record<string, XlsxCellValue> = {};
     const rowXml = match[2];
 
-    for (const cell of rowXml.matchAll(/<c\b([^>]*\br="([A-Z]+\d+)"[^>]*)>([\s\S]*?)<\/c>|<c\b([^>]*\br="([A-Z]+\d+)"[^>]*)\s*\/>/g)) {
-      const attrs = cell[1] ?? cell[4] ?? "";
-      const ref = cell[2] ?? cell[5] ?? "";
-      cells[cellColumn(ref)] = cell[3] ? parseCell(cell[3], attrs, strings) : null;
+    for (const cell of rowXml.matchAll(/<c\b([^>]*\br="([A-Z]+\d+)"[^>]*)\s*\/>|<c\b([^>]*\br="([A-Z]+\d+)"[^>]*)>([\s\S]*?)<\/c>/g)) {
+      const selfClosing = Boolean(cell[1]);
+      const attrs = selfClosing ? cell[1] : cell[3] ?? "";
+      const ref = selfClosing ? cell[2] : cell[4] ?? "";
+      cells[cellColumn(ref)] = selfClosing ? null : parseCell(cell[5] ?? "", attrs, strings);
     }
     rows.push({ rowNumber, cells });
   }
