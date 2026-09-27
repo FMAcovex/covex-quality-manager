@@ -107,27 +107,27 @@ export default async function DeviationsPage({
         <div className="table-scroll">
           <table id="deviation-list-table">
             <thead><tr>
-              <th>Control</th><th>Código</th><th>Departamento</th><th>Material / Proceso</th><th>Procedencia</th><th>Descripción</th><th>Clasificación</th><th>Causa raíz</th><th>Apertura</th><th>Cierre</th><th>Estado</th><th>En plazo</th><th>Medidas adoptadas</th><th>Descripción CAPA</th><th>Documento</th><th>Observaciones</th>
+<th data-column-key="control">Control</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="observations">Observaciones</th>
             </tr></thead>
             <tbody>
               {rows.length ? rows.map((row) => (
                 <tr key={row.id}>
-                  <td>{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td>
-                  <td><Link className="summary-link" href={`/deviations/${row.id}`}>{row.qmsRecord.businessCode ?? "Sin código"}</Link></td>
-                  <td>{row.departmentCodeSnapshot ?? row.department?.code ?? "—"}</td>
-                  <td className="table-cell-medium">{row.materialProcessAffected ?? "—"}</td>
-                  <td>{row.provenance ?? "—"}</td>
-                  <td className="table-cell-wrap">{row.whatHappened ?? "—"}</td>
-                  <td>{row.classification ? <span className={`badge ${row.classification.toLowerCase()}`}>{row.classification === "CRITICAL" ? "Crítica" : row.classification === "MAJOR" ? "Mayor" : "Menor"}</span> : "—"}</td>
-                  <td className="table-cell-wrap">{row.rootCause ?? "—"}</td>
-                  <td>{formatDate(row.issueDate)}</td>
-                  <td>{formatDate(row.closedAt)}</td>
-                  <td><span className={`badge ${row.status === "OPEN" ? "open" : "closed"}`}>{row.status === "OPEN" ? "Abierta" : "Cerrada"}</span></td>
-                  <td>{deadlineLabel(row.deadlineStatus)}</td>
-                  <td>{measuresLabel(row)}</td>
-                  <td className="table-cell-wrap">{row.capaPlans.length ? row.capaPlans.map((plan)=>plan.description).join(" · ") : "—"}</td>
-                  <td>{row.signedDocumentAvailable === true ? "Disponible" : row.signedDocumentAvailable === false ? "No disponible" : "No informado"}</td>
-                  <td className="table-cell-wrap">{row.internalObservations ?? "—"}</td>
+                  <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td>
+                  <td data-column-key="code"><Link className="summary-link" href={`/deviations/${row.id}`}>{row.qmsRecord.businessCode ?? "Sin código"}</Link></td>
+                  <td data-column-key="department">{row.departmentCodeSnapshot ?? row.department?.code ?? "—"}</td>
+                  <td data-column-key="material" className="table-cell-medium">{row.materialProcessAffected ?? "—"}</td>
+                  <td data-column-key="provenance">{row.provenance ?? "—"}</td>
+                  <td data-column-key="description" className="table-cell-wrap">{row.whatHappened ?? "—"}</td>
+                  <td data-column-key="classification">{row.classification ? <span className={`badge ${row.classification.toLowerCase()}`}>{row.classification === "CRITICAL" ? "Crítica" : row.classification === "MAJOR" ? "Mayor" : "Menor"}</span> : "—"}</td>
+                  <td data-column-key="rootCause" className="table-cell-wrap">{row.rootCause ?? "—"}</td>
+                  <td data-column-key="opening">{formatDate(row.issueDate)}</td>
+                  <td data-column-key="closing">{formatDate(row.closedAt)}</td>
+                  <td data-column-key="status"><span className={`badge ${row.status === "OPEN" ? "open" : "closed"}`}>{row.status === "OPEN" ? "Abierta" : "Cerrada"}</span></td>
+                  <td data-column-key="deadline">{deadlineLabel(row.deadlineStatus)}</td>
+                  <td data-column-key="measures">{measuresLabel(row)}</td>
+                  <td data-column-key="capa" className="table-cell-wrap">{row.capaPlans.length ? row.capaPlans.map((plan)=>plan.description).join(" · ") : "—"}</td>
+                  <td data-column-key="document">{row.signedDocumentAvailable === true ? "Disponible" : row.signedDocumentAvailable === false ? "No disponible" : "No informado"}</td>
+                  <td data-column-key="observations" className="table-cell-wrap">{row.internalObservations ?? "—"}</td>
                 </tr>
               )) : <tr><td colSpan={16} className="empty-state"><strong>No hay desviaciones con estos filtros.</strong><span>Puedes crear una nueva desviación o limpiar los filtros.</span></td></tr>}
             </tbody>
