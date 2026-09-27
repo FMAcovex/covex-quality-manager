@@ -17,7 +17,7 @@ export type HistoricalCapaRow={
   operationalClosedAt:Date|null;
   effectiveClosedAt:Date|null;
   status:"OPEN"|"CLOSED"|"CANCELLED";
-  effectivenessStatus:"CONFORMING"|"NONCONFORMING"|"PENDING";
+  effectivenessStatus:"CONFORMING"|"NONCONFORMING"|"PENDING"|"NA";
   observations:string|null;
   signedDocumentAvailable:boolean|null;
   followupSummary:string|null;
@@ -52,6 +52,7 @@ function efficacy(v:XlsxCellValue){
   const s=(str(v)??"").toLowerCase();
   if(s.includes("no conforme"))return "NONCONFORMING" as const;
   if(s.includes("conforme"))return "CONFORMING" as const;
+  if(s==="n/a"||s==="na"||s==="n.a."||s==="n.a")return "NA" as const;
   return "PENDING" as const;
 }
 function bool(v:XlsxCellValue){
@@ -135,6 +136,12 @@ export function mapHistoricalCapaRows(
 
   const counts=new Map<string,number>();
   output.forEach((r)=>{if(r.businessCode)counts.set(r.businessCode,(counts.get(r.businessCode)??0)+1);});
-  output.forEach((r)=>{if(r.businessCode&&(counts.get(r.businessCode)??0)>1)r.issues.push("DUPLICATE_CODE_IN_SOURCE");});
+  output.forEach((r)=>{
+    if(r.businessCode&&(counts.get(r.businessCode)??0)>1)r.issues.push("DUPLICATE_CODE_IN_SOURCE");
+    if(r.businessCode){
+      const codeType=r.businessCode.toUpperCase().startsWith("AP/")?"PREVENTIVE":"CORRECTIVE";
+      if(codeType!==r.actionType)r.issues.push("TYPE_CODE_MISMATCH");
+    }
+  });
   return output;
 }

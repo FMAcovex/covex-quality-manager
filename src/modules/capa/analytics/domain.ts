@@ -5,7 +5,7 @@ export type CapaAnalyticsRow = {
   effectiveClosedAt: Date | null;
   status: "OPEN" | "CLOSED" | "CANCELLED";
   actionType: "CORRECTIVE" | "PREVENTIVE";
-  effectivenessStatus: "CONFORMING" | "NONCONFORMING" | "PENDING";
+  effectivenessStatus: "CONFORMING" | "NONCONFORMING" | "PENDING" | "NA";
   departmentCode: string | null;
   originType: string | null;
   plannedDates: Date[];

@@ -39,9 +39,9 @@ export async function getCapaList(filters: CapaListFilters) {
   if (["OPEN", "CLOSED", "CANCELLED"].includes(filters.status ?? "")) {
     and.push({ status: filters.status as "OPEN" | "CLOSED" | "CANCELLED" });
   }
-  if (["CONFORMING", "NONCONFORMING", "PENDING"].includes(filters.effectiveness ?? "")) {
+  if (["CONFORMING", "NONCONFORMING", "PENDING", "NA"].includes(filters.effectiveness ?? "")) {
     and.push({
-      effectivenessStatus: filters.effectiveness as "CONFORMING" | "NONCONFORMING" | "PENDING",
+      effectivenessStatus: filters.effectiveness as "CONFORMING" | "NONCONFORMING" | "PENDING" | "NA",
     });
   }
   if (filters.origin) and.push({ originType: filters.origin });

@@ -11,6 +11,7 @@ export function capaStatusLabel(value: string) {
 export function effectivenessLabel(value: string) {
   if (value === "CONFORMING") return "Conforme";
   if (value === "NONCONFORMING") return "No conforme";
+  if (value === "NA") return "N/A";
   return "Pendiente";
 }
 
