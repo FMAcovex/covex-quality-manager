@@ -62,14 +62,8 @@ export async function createDeviationAction(
         data: {
           qmsRecordId: qmsRecord.id,
           departmentId: department.id,
-          departmentCodeSnapshot:
-            existing.departmentId === department.id
-              ? existing.departmentCodeSnapshot ?? department.code
-              : department.code,
-          departmentNameSnapshot:
-            existing.departmentId === department.id
-              ? existing.departmentNameSnapshot ?? department.name
-              : department.name,
+          departmentCodeSnapshot: department.code,
+          departmentNameSnapshot: department.name,
           issueDate: toDate(v.issueDate),
           eventDateTime: toDate(v.eventDateTime),
           detectedBy: v.detectedBy,
@@ -276,8 +270,14 @@ export async function updateDeviationAction(
         where: { id },
         data: {
           departmentId: department.id,
-          departmentCodeSnapshot: department.code,
-          departmentNameSnapshot: department.name,
+          departmentCodeSnapshot:
+            existing.departmentId === department.id
+              ? existing.departmentCodeSnapshot ?? department.code
+              : department.code,
+          departmentNameSnapshot:
+            existing.departmentId === department.id
+              ? existing.departmentNameSnapshot ?? department.name
+              : department.name,
           issueDate: toDate(v.issueDate),
           eventDateTime: toDate(v.eventDateTime),
           detectedBy: v.detectedBy,
