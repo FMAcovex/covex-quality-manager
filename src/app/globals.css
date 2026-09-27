@@ -320,3 +320,6 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
   .trend-section-heading { align-items: flex-start; flex-direction: column; }
   .trend-section-heading > p { text-align: left; }
 }
+
+.analytics-no-data td { color: var(--muted); background: #fafbfd; font-style: italic; }
+.trend-no-data { fill: #9aa8b8; font-size: 5px; font-weight: 700; }
