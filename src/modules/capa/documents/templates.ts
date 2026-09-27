@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { DocumentType,QmsRecordType } from "@prisma/client";
+import { loadStoredTemplateAsset } from "@/modules/configuration/template-assets";
 
 export class CapaTemplateUnavailableError extends Error {}
 
@@ -38,7 +40,9 @@ function requireV05(versionCode: string, documentName: string) {
   }
 }
 
-export function loadCapaAnnexIIITemplate(versionCode = "05") {
+export async function loadCapaAnnexIIITemplate(versionCode = "05") {
+  const stored=await loadStoredTemplateAsset(QmsRecordType.CAPA,DocumentType.CAPA_ANNEX_III,versionCode);
+  if(stored)return stored;
   requireV05(versionCode, "Anexo III CAPA");
   return loadTemplate(
     process.env.CAPA_ANNEX_III_TEMPLATE,
@@ -47,7 +51,9 @@ export function loadCapaAnnexIIITemplate(versionCode = "05") {
   );
 }
 
-export function loadCapaAnnexIVTemplate(versionCode = "05") {
+export async function loadCapaAnnexIVTemplate(versionCode = "05") {
+  const stored=await loadStoredTemplateAsset(QmsRecordType.CAPA,DocumentType.CAPA_ANNEX_IV,versionCode);
+  if(stored)return stored;
   requireV05(versionCode, "Anexo IV CAPA");
   return loadTemplate(
     process.env.CAPA_ANNEX_IV_TEMPLATE,
