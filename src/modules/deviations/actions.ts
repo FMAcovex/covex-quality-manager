@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma, QmsRecordType } from "@prisma/client";
+import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -94,7 +94,7 @@ export async function createDeviationAction(
           howHappened: v.howHappened,
           investigation: v.investigation,
           investigationConclusive: v.investigationConclusive,
-          investigationMethods: v.investigationMethods,
+          investigationMethods: v.investigationMethods as InvestigationMethod[],
           rootCause: v.rootCause,
           recurrentRootCause: v.recurrentRootCause,
           recurrenceDetails: v.recurrenceDetails,
@@ -300,7 +300,7 @@ export async function updateDeviationAction(
           howHappened: v.howHappened,
           investigation: v.investigation,
           investigationConclusive: v.investigationConclusive,
-          investigationMethods: v.investigationMethods,
+          investigationMethods: v.investigationMethods as InvestigationMethod[],
           rootCause: v.rootCause,
           recurrentRootCause: v.recurrentRootCause,
           recurrenceDetails: v.recurrenceDetails,
