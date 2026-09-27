@@ -3,7 +3,7 @@ import { updateComplaintAction } from "@/modules/complaints/actions";
 import { ComplaintForm } from "@/modules/complaints/components/complaint-form";
 import { getComplaintDetail,getComplaintLookups } from "@/modules/complaints/queries";
 export const dynamic="force-dynamic";
-const b=(v:boolean|null)=>v===true?"true":v===false?"false":"";
+const b=(v:boolean|null):""|"true"|"false"=>v===true?"true":v===false?"false":"";
 export default async function EditComplaintPage({params}:{params:Promise<{id:string}>}){
  const {id}=await params;const [r,l]=await Promise.all([getComplaintDetail(id),getComplaintLookups()]);if(!r)notFound();
  const defaults={
