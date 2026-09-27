@@ -6,7 +6,7 @@ export class ChangeControlTemplateUnavailableError extends Error {}
 
 const HASHES={
   annexIII:"a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f",
-  annexIV:"5e8535a8f5bb632c7bb643592e390b1cf39d428435523173f6931f99148cb46d",
+  annexIV:"742b1de11e0e0dece4e9c65c97613c112325189e183b9cb02c56ca82cd06cc60",
   annexV:"3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4",
 } as const;
 
