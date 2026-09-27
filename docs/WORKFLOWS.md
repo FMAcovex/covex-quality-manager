@@ -135,3 +135,42 @@ La importación debe ser idempotente o disponer de clave de importación para ev
 3. Generar el anexo a partir del snapshot persistido de esa versión, no del estado actual.
 4. Usar la versión de plantilla asociada al snapshot cuando esté disponible.
 5. Registrar `GeneratedDocument.recordVersionId`.
+
+
+## W-15 — Solicitud y Dictamen de un Control de Cambio
+
+1. Crear un único expediente de Control de Cambio.
+2. Completar Solicitud (Anexo III): identificación, alcance, solicitante, descripción, justificación, documentos y aceptación/denegación.
+3. Completar Dictamen (Anexo IV): evaluación, clasificación, implicaciones, resultado y plan de ejecución.
+4. El plan admite cualquier número de departamentos y acciones.
+5. Al aprobar el Dictamen, las acciones de origen DICTAMEN quedan bloqueadas como baseline.
+6. Las necesidades posteriores no modifican silenciosamente el baseline; se añaden como tareas nuevas desde un seguimiento.
+
+## W-16 — Seguimiento de Control de Cambio
+
+1. El primer seguimiento formal es 00.
+2. Cada seguimiento incorpora todas las tareas existentes en ese momento.
+3. Para cada tarea se registra estado, fecha real y evidencia/comentario.
+4. Una tarea detectada durante seguimiento se crea con `origin=FOLLOWUP` e `introducedInFollowup=xx`.
+5. Esa tarea persiste en seguimientos posteriores.
+6. En el Anexo V se representa en azul, de acuerdo con la plantilla controlada.
+7. Cada seguimiento crea una versión funcional V00, V01, V02... del expediente.
+
+## W-17 — Ejecución, eficacia y cierre de Control de Cambio
+
+1. Mientras existan acciones pendientes, el cambio permanece No ejecutado.
+2. Cuando todas las acciones aplicables finalizan, puede pasar a Ejecutado y se registra la fecha de ejecución/cierre operativo.
+3. La eficacia puede permanecer Pendiente después de la ejecución.
+4. Con eficacia Aceptable se permite el cierre efectivo.
+5. También puede cerrarse sin ejecución cuando se documenta expresamente el motivo; en ese caso la eficacia se registra como No aplica.
+6. Si permanece abierto, el seguimiento exige motivo y próxima fecha.
+
+## W-18 — Documentos de Control de Cambio
+
+- Anexo III: Solicitud.
+- Anexo IV: Dictamen y plan aprobado.
+- Anexo V: documento por seguimiento/versión.
+- Anexo VII: listado oficial anual.
+- Listado simple: vista operativa ampliada, opcionalmente filtrada.
+
+Los Anexos V históricos se generan desde el snapshot exacto de la versión seleccionada.

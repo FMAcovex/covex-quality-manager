@@ -22,10 +22,12 @@
     "import:smoke": "tsx scripts/smoke-import.ts",
     "indicators:smoke": "tsx scripts/smoke-indicators.ts",
     "templates:capa:install": "tsx scripts/install-capa-templates.ts",
+    "templates:changes:install": "tsx scripts/install-change-control-templates.ts",
     "import:capa": "tsx scripts/import-historical-capa.ts",
     "capa:import:smoke": "tsx scripts/smoke-capa-import.ts",
     "capa:smoke": "tsx scripts/smoke-capa.ts",
     "versions:smoke": "tsx scripts/smoke-versioning.ts",
+    "changes:smoke": "tsx scripts/smoke-change-control.ts",
     "versions:backfill": "tsx scripts/backfill-record-versions.ts"
   },
   "dependencies": {

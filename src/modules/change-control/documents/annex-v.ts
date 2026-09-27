@@ -1,0 +1,167 @@
+import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
+import {
+  fillWordRowBalanced,
+  replaceWordRowsRangeBalanced,
+  setWordCellTextBalanced,
+} from "@/lib/ooxml/xml";
+import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
+import { loadChangeAnnexVTemplate } from "@/modules/change-control/documents/templates";
+import type {
+  ChangeDocumentFollowup,
+  ChangeDocumentRecord,
+  ChangeDocumentTask,
+} from "@/modules/change-control/documents/types";
+
+function date(value: Date | null | undefined) {
+  return value ? new Intl.DateTimeFormat("es-ES").format(value) : "";
+}
+function text(value: string | null | undefined) {
+  return value ?? "";
+}
+function mark(checked: boolean, label: string) {
+  return `${checked ? "☒" : "☐"} ${label}`;
+}
+function groupTasks(
+  record: ChangeDocumentRecord,
+  followup: ChangeDocumentFollowup,
+) {
+  const stateByTask = new Map(followup.taskStates.map((state) => [state.taskId, state]));
+  const groups: Array<{ key: string; label: string; tasks: ChangeDocumentTask[] }> = [];
+  for (const task of record.tasks) {
+    const state = stateByTask.get(task.id);
+    if (!state) continue;
+    const key = task.departmentId || task.departmentCodeSnapshot || "SIN_DEP";
+    let group = groups.find((item) => item.key === key);
+    if (!group) {
+      group = {
+        key,
+        label: [task.departmentCodeSnapshot, task.departmentNameSnapshot].filter(Boolean).join(" - ") || "Departamento",
+        tasks: [],
+      };
+      groups.push(group);
+    }
+    group.tasks.push(task);
+  }
+  return { groups, stateByTask };
+}
+
+export async function generateChangeAnnexV(
+  record: ChangeDocumentRecord,
+  followupSequence: number,
+) {
+  const followup = record.followups.find((item) => item.sequenceNumber === followupSequence);
+  if (!followup) throw new Error(`No existe el seguimiento ${String(followupSequence).padStart(2, "0")}.`);
+
+  const versionCode = record.annexVTemplateVersion?.versionCode ?? "03";
+  const entries = readZip(await loadChangeAnnexVTemplate(versionCode));
+  let xml = getZipEntryText(entries, "word/document.xml");
+
+  xml = setWordCellTextBalanced(xml, 0, 1, 1, text(record.qmsRecord.businessCode));
+  xml = setWordCellTextBalanced(xml, 0, 1, 3, date(followup.followupDate));
+  xml = setWordCellTextBalanced(
+    xml,
+    0,
+    2,
+    0,
+    `N.º de seguimiento: ${String(followup.sequenceNumber).padStart(2, "0")}`,
+  );
+  xml = setWordCellTextBalanced(
+    xml,
+    0,
+    2,
+    2,
+    record.followups
+      .filter((item) => item.sequenceNumber <= followup.sequenceNumber)
+      .sort((a, b) => a.sequenceNumber - b.sequenceNumber)
+      .map((item) => `${String(item.sequenceNumber).padStart(2, "0")} (${date(item.followupDate)})`)
+      .join("\n"),
+  );
+  xml = setWordCellTextBalanced(xml, 0, 3, 0, `Responsable de Seguimiento: ${followup.responsible}`);
+
+  const { groups, stateByTask } = groupTasks(record, followup);
+  xml = replaceWordRowsRangeBalanced(xml, 1, 1, 12, ({ first, second }) =>
+    groups.flatMap((group) => [
+      fillWordRowBalanced(first, [{ text: group.label }]),
+      ...group.tasks.map((task) => {
+        const state = stateByTask.get(task.id)!;
+        const isNew = task.origin === "FOLLOWUP";
+        const color = isNew ? "0070C0" : undefined;
+        const status =
+          state.status === "COMPLETED"
+            ? "☒"
+            : state.status === "NOT_APPLICABLE"
+              ? "☒ N/A"
+              : "☐";
+        return fillWordRowBalanced(second, [
+          { text: `${status} ${task.description}`, color },
+          { text: text(task.responsible), color },
+          { text: date(task.plannedDate), color },
+          { text: date(state.actualDate), color },
+          { text: text(state.evidenceComment), color },
+        ]);
+      }),
+    ]),
+  );
+
+  xml = setWordCellTextBalanced(
+    xml,
+    2,
+    1,
+    0,
+    mark(followup.executionStatus === "EXECUTED", "EJECUTADO"),
+  );
+  xml = setWordCellTextBalanced(
+    xml,
+    2,
+    1,
+    1,
+    mark(followup.executionStatus === "NOT_EXECUTED", "NO EJECUTADO"),
+  );
+  xml = setWordCellTextBalanced(xml, 2, 2, 1, date(followup.executionDate));
+  xml = setWordCellTextBalanced(
+    xml,
+    2,
+    4,
+    0,
+    mark(followup.effectivenessStatus === "ACCEPTABLE", "ACEPTABLE"),
+  );
+  xml = setWordCellTextBalanced(
+    xml,
+    2,
+    4,
+    1,
+    mark(followup.effectivenessStatus === "NOT_ACCEPTABLE", "NO ACEPTABLE"),
+  );
+  xml = setWordCellTextBalanced(
+    xml,
+    2,
+    4,
+    2,
+    [
+      mark(followup.effectivenessStatus === "PENDING", "PENDIENTE"),
+      mark(followup.effectivenessStatus === "NOT_APPLICABLE", "NO APLICA"),
+    ].join("\n"),
+  );
+  xml = setWordCellTextBalanced(xml, 2, 5, 1, text(followup.effectivenessObservations));
+  xml = setWordCellTextBalanced(xml, 2, 7, 1, mark(followup.closeChange, "SI"));
+  xml = setWordCellTextBalanced(xml, 2, 7, 2, mark(!followup.closeChange, "NO"));
+  xml = setWordCellTextBalanced(xml, 2, 7, 4, date(followup.nextFollowupDate));
+  xml = setWordCellTextBalanced(xml, 2, 9, 1, text(followup.remainOpenReason));
+  xml = setWordCellTextBalanced(xml, 2, 10, 1, text(followup.conclusion));
+  xml = setWordCellTextBalanced(
+    xml,
+    2,
+    11,
+    0,
+    [
+      "Cierre del Seguimiento:",
+      "Firma: ________________________",
+      `Fecha: ${date(followup.followupDate)}`,
+      followup.approvalByText ? `Aprobación: ${followup.approvalByText}` : "",
+    ].filter(Boolean).join("    "),
+  );
+
+  updateZipEntry(entries, "word/document.xml", xml);
+  sanitizeOfficeMetadata(entries);
+  return writeZip(entries);
+}

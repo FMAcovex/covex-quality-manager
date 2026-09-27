@@ -121,6 +121,28 @@ export default async function SettingsPage() {
             <button className="button" disabled>Gestionar plantilla</button>
           </div>
         </article>
+
+        <article className="card settings-card">
+          <div className="section-title-row">
+            <div>
+              <p className="eyebrow">Controles de Cambios</p>
+              <h2>Formulario GC-00/003</h2>
+            </div>
+            <span className="module-state ready">
+              {config.changeControl.form?.versionCode ?? "Sin versión"}
+            </span>
+          </div>
+          <p className="muted-note">
+            Plantillas: Anexo III {config.changeControl.annexIII?.versionCode ?? "—"} ·
+            Anexo IV {config.changeControl.annexIV?.versionCode ?? "—"} ·
+            Anexo V {config.changeControl.annexV?.versionCode ?? "—"} ·
+            Anexo VII {config.changeControl.annexVII?.versionCode ?? "—"}.
+          </p>
+          <div className="settings-actions">
+            <button className="button" disabled>+ Nueva versión</button>
+            <button className="button" disabled>Gestionar plantillas</button>
+          </div>
+        </article>
       </div>
 
       <section className="card">
@@ -150,6 +172,20 @@ export default async function SettingsPage() {
         <p className="muted-note">
           El listado operativo conserva columnas de seguimiento que no tienen por qué
           imprimirse todas en el Anexo III.
+        </p>
+      </section>
+
+      <section className="card">
+        <div className="section-title-row">
+          <div>
+            <p className="eyebrow">Controles de Cambios</p>
+            <h2>Campos y columnas de seguimiento</h2>
+          </div>
+          <Link className="button" href="/changes">Ver listado</Link>
+        </div>
+        <FieldTable rows={config.changeControl.form?.fieldConfigs ?? []} />
+        <p className="muted-note">
+          Solicitud, Dictamen y Seguimientos comparten expediente, pero el listado operativo contiene más columnas que el Anexo VII oficial.
         </p>
       </section>
 

@@ -119,3 +119,49 @@ Reglas:
 - una nueva revisión del PNT/anexo no modifica el snapshot ni el documento histórico.
 
 Para datos anteriores al Hito 6.1 solo son descargables como versión histórica exacta aquellos estados para los que exista snapshot persistido; no se reconstruyen estados inexistentes.
+
+
+## 7. Controles de Cambios · GC-00/003/03
+
+### Anexo III — Solicitud
+DOCX generado desde plantilla controlada. Conserva:
+- codificación y fecha;
+- alcance;
+- departamento;
+- solicitante;
+- descripción y justificación;
+- documentos aportados;
+- aceptación/denegación.
+
+### Anexo IV — Dictamen
+DOCX generado desde plantilla controlada. El plan de ejecución se expande dinámicamente por departamento y acción sin fijar columnas organizativas.
+
+Las acciones de seguimiento no reescriben el plan aprobado del Dictamen.
+
+### Anexo V — Seguimiento
+DOCX por versión 00/01/02...
+- historial de seguimientos;
+- acciones y responsables;
+- fecha prevista/real;
+- evidencia;
+- ejecución;
+- eficacia;
+- próxima revisión o cierre.
+
+Las tareas cuyo origen sea FOLLOWUP se renderizan en azul y quedan identificadas estructuralmente mediante `introducedInFollowup`.
+
+### Anexo VII — Listado anual
+Se genera un XLSX anual con las columnas oficiales:
+- codificación;
+- tipo/clasificación;
+- descripción;
+- fecha solicitud;
+- fecha aprobación;
+- fecha prevista ejecución;
+- fecha ejecución;
+- fecha cierre.
+
+El libro fuente utilizado para validar el formato contiene hojas históricas y dashboard. El generador extrae únicamente la hoja oficial imprimible y los recursos visuales necesarios; no distribuye las demás hojas.
+
+### Listado simple
+Exportación independiente con las columnas operativas ampliadas de seguimiento, incluyendo ejecución, eficacia, último/próximo seguimiento y estado final.

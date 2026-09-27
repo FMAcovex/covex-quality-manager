@@ -1,0 +1,74 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getChangeControlDetail } from "@/modules/change-control/queries";
+import { generateChangeAnnexIV } from "@/modules/change-control/documents/annex-iv";
+import { ChangeControlTemplateUnavailableError } from "@/modules/change-control/documents/templates";
+import {
+  changeControlSnapshotTemplateId,
+  changeControlSnapshotToRecord,
+  versionLabel,
+} from "@/lib/qms/versioning";
+
+export const runtime = "nodejs";
+
+function safe(value: string) {
+  return value.replace(/[^a-zA-Z0-9._-]+/g, "_");
+}
+
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+  const record = await getChangeControlDetail(id);
+  if (!record) return NextResponse.json({ error: "Control de Cambio no encontrado." }, { status: 404 });
+
+  const requestedVersion = new URL(request.url).searchParams.get("version");
+  const sequenceNumber =
+    requestedVersion !== null && /^\d+$/.test(requestedVersion)
+      ? Number(requestedVersion)
+      : null;
+  const storedVersion =
+    sequenceNumber === null
+      ? null
+      : record.qmsRecord.versions.find((item) => item.sequenceNumber === sequenceNumber) ?? null;
+
+  if (sequenceNumber !== null && !storedVersion) {
+    return NextResponse.json({ error: "La versión solicitada no existe." }, { status: 404 });
+  }
+
+  type AnnexRecord = Parameters<typeof generateChangeAnnexIV>[0];
+  const annexRecord: AnnexRecord = storedVersion
+    ? (changeControlSnapshotToRecord(storedVersion.snapshot) as unknown as AnnexRecord)
+    : record;
+
+  try {
+    const buffer = await generateChangeAnnexIV(annexRecord);
+    await prisma.generatedDocument.create({
+      data: {
+        qmsRecordId: record.qmsRecordId,
+        recordVersionId: storedVersion?.id ?? null,
+        documentType: "CHANGE_ANNEX_IV",
+        templateVersionId: storedVersion
+          ? changeControlSnapshotTemplateId(storedVersion.snapshot, "IV")
+          : record.annexIVTemplateVersionId,
+        generatedByText: process.env.DEFAULT_ACTOR_NAME || record.requesterName,
+        metadata: {
+          source: "download",
+          recordVersion: storedVersion?.sequenceNumber ?? null,
+        },
+      },
+    });
+    const suffix = storedVersion ? `_${versionLabel(storedVersion.sequenceNumber)}` : "";
+    const filename = `Anexo_IV_CC_${safe(record.qmsRecord.businessCode || id)}${suffix}.docx`;
+    return new Response(new Uint8Array(buffer), {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (error) {
+    if (error instanceof ChangeControlTemplateUnavailableError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
+    throw error;
+  }
+}

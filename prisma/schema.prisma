@@ -83,6 +83,61 @@ enum CapaEffectivenessStatus {
   NA
 }
 
+enum ChangeControlScope {
+  INSTALLATIONS
+  EQUIPMENT
+  PROCESS
+  MATERIAL
+  SUPPLIER
+  DOCUMENTATION
+  OTHER
+}
+
+enum ChangeControlClassification {
+  MAJOR
+  MINOR
+}
+
+enum ChangeRequestDecision {
+  PENDING
+  ACCEPTED
+  DENIED
+}
+
+enum ChangeDictamenResult {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ChangeExecutionStatus {
+  NOT_EXECUTED
+  EXECUTED
+}
+
+enum ChangeEffectivenessStatus {
+  PENDING
+  ACCEPTABLE
+  NOT_ACCEPTABLE
+  NOT_APPLICABLE
+}
+
+enum ChangeFinalStatus {
+  OPEN
+  CLOSED
+}
+
+enum ChangeTaskOrigin {
+  DICTAMEN
+  FOLLOWUP
+}
+
+enum ChangeTaskStatus {
+  PENDING
+  COMPLETED
+  NOT_APPLICABLE
+}
+
 enum HistorySource {
   UI
   IMPORT
@@ -103,6 +158,11 @@ enum DocumentType {
   CAPA_ANNEX_III
   CAPA_ANNEX_IV
   CAPA_SIMPLE_LIST
+  CHANGE_ANNEX_III
+  CHANGE_ANNEX_IV
+  CHANGE_ANNEX_V
+  CHANGE_ANNEX_VII
+  CHANGE_SIMPLE_LIST
 }
 
 enum HistoricalImportRowResult {
@@ -147,6 +207,7 @@ model QmsRecord {
   updatedAt          DateTime            @updatedAt
   deviation          Deviation?
   capa               Capa?
+  changeControl       ChangeControl?
   sourceRelations    QmsRelation[]       @relation("RelationSource")
   targetRelations    QmsRelation[]       @relation("RelationTarget")
   history            ChangeHistory[]
@@ -186,6 +247,8 @@ model Department {
   validTo    DateTime?   @db.Date
   deviations Deviation[]
   capas      Capa[]
+  changeControls ChangeControl[]
+  changeTasks ChangeControlTask[]
 }
 
 model FormVersion {
@@ -201,6 +264,7 @@ model FormVersion {
   updatedAt     DateTime          @updatedAt
   deviations    Deviation[]
   capas         Capa[]
+  changeControls ChangeControl[]
   fieldConfigs  FormFieldConfig[]
 
   @@unique([module, versionCode])
@@ -248,6 +312,9 @@ model TemplateVersion {
   createdAt           DateTime            @default(now())
   deviationsAnnexIII  Deviation[]         @relation("DeviationAnnexIIITemplate")
   capasAnnexIII       Capa[]              @relation("CapaAnnexIIITemplate")
+  changeRequests      ChangeControl[]      @relation("ChangeAnnexIIITemplate")
+  changeDictamens     ChangeControl[]      @relation("ChangeAnnexIVTemplate")
+  changeFollowups     ChangeControl[]      @relation("ChangeAnnexVTemplate")
   generatedDocuments  GeneratedDocument[]
 
   @@unique([module, documentType, versionCode])
@@ -470,6 +537,152 @@ model CapaFollowup {
   @@unique([capaId, sequenceNumber])
   @@index([capaId, followupDate])
   @@index([nextFollowupDate])
+}
+
+model ChangeControl {
+  id                         String                    @id @default(uuid())
+  qmsRecordId                String                    @unique
+  qmsRecord                  QmsRecord                 @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId               String?
+  department                 Department?               @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot     String?
+  departmentNameSnapshot     String?
+  requestDate                DateTime?                 @db.Date
+  requesterName              String?
+  requesterPosition          String?
+  scope                      ChangeControlScope[]      @default([])
+  otherScope                 String?
+  description                String?
+  justification              String?
+  providedDocuments          String?
+  requestDecision            ChangeRequestDecision     @default(PENDING)
+  requestDecisionResponsible String?
+  requestDecisionRole        String?
+  requestDecisionDate        DateTime?                 @db.Date
+  evaluation                 String?
+  classification             ChangeControlClassification?
+  plannedImplementationDate  DateTime?                 @db.Date
+  committeeRequired          Boolean?
+  committeeDetails           String?
+  clientNotificationRequired Boolean?
+  clientNotificationDetails  String?
+  authorityRequired          Boolean?
+  authorityDetails           String?
+  pqrRequired                TriState?
+  pqrProducts                String?
+  pqrPeriod                  String?
+  stabilityRequired          TriState?
+  stabilityAccelerated       Boolean                   @default(false)
+  stabilityOngoing           Boolean                   @default(false)
+  additionalAnalysisRequired TriState?
+  additionalAnalysisDetails  String?
+  additionalValidationRequired TriState?
+  additionalValidationDetails String?
+  otherImplicationRequired   Boolean?
+  otherImplicationDetails    String?
+  dictamenResult             ChangeDictamenResult      @default(PENDING)
+  dictamenDate               DateTime?                 @db.Date
+  followupResponsible        String?
+  dictamenObservations       String?
+  approvalNames              String?
+  executionStatus            ChangeExecutionStatus     @default(NOT_EXECUTED)
+  executionDate              DateTime?                 @db.Date
+  operationalClosedAt        DateTime?                 @db.Date
+  effectivenessStatus        ChangeEffectivenessStatus @default(PENDING)
+  effectiveClosedAt          DateTime?                 @db.Date
+  finalStatus                ChangeFinalStatus         @default(OPEN)
+  closureConclusion          String?
+  internalObservations       String?
+  signedDocumentAvailable    Boolean?
+  dataQualityStatus          DataQualityStatus         @default(REVIEW_REQUIRED)
+  includeInKpi               Boolean                   @default(true)
+  kpiExclusionReason         String?
+  formVersionId              String?
+  formVersion                FormVersion?              @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  annexIIITemplateVersionId  String?
+  annexIIITemplateVersion    TemplateVersion?          @relation("ChangeAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
+  annexIVTemplateVersionId   String?
+  annexIVTemplateVersion     TemplateVersion?          @relation("ChangeAnnexIVTemplate", fields: [annexIVTemplateVersionId], references: [id], onDelete: Restrict)
+  annexVTemplateVersionId    String?
+  annexVTemplateVersion      TemplateVersion?          @relation("ChangeAnnexVTemplate", fields: [annexVTemplateVersionId], references: [id], onDelete: Restrict)
+  extraData                  Json?
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
+  tasks                      ChangeControlTask[]
+  followups                  ChangeControlFollowup[]
+
+  @@index([departmentId])
+  @@index([requestDate])
+  @@index([classification])
+  @@index([dictamenResult])
+  @@index([executionStatus])
+  @@index([effectivenessStatus])
+  @@index([finalStatus])
+  @@index([plannedImplementationDate])
+  @@index([includeInKpi])
+}
+
+model ChangeControlTask {
+  id                    String             @id @default(uuid())
+  changeControlId       String
+  changeControl         ChangeControl      @relation(fields: [changeControlId], references: [id], onDelete: Cascade)
+  departmentId          String?
+  department            Department?        @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot String?
+  departmentNameSnapshot String?
+  description           String
+  responsible           String?
+  plannedDate           DateTime?          @db.Date
+  origin                ChangeTaskOrigin
+  introducedInFollowup  Int?
+  sortOrder             Int                @default(0)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  states                ChangeControlTaskState[]
+
+  @@index([changeControlId, origin, sortOrder])
+  @@index([departmentId])
+  @@index([plannedDate])
+}
+
+model ChangeControlFollowup {
+  id                    String                    @id @default(uuid())
+  changeControlId       String
+  changeControl         ChangeControl             @relation(fields: [changeControlId], references: [id], onDelete: Cascade)
+  sequenceNumber        Int
+  followupDate          DateTime                  @db.Date
+  responsible           String
+  observations          String?
+  executionStatus       ChangeExecutionStatus
+  executionDate         DateTime?                 @db.Date
+  effectivenessStatus   ChangeEffectivenessStatus
+  effectivenessObservations String?
+  closeChange           Boolean                   @default(false)
+  nextFollowupDate      DateTime?                 @db.Date
+  remainOpenReason      String?
+  conclusion            String?
+  approvalByText        String?
+  createdAt             DateTime                  @default(now())
+  taskStates            ChangeControlTaskState[]
+
+  @@unique([changeControlId, sequenceNumber])
+  @@index([changeControlId, followupDate])
+  @@index([nextFollowupDate])
+}
+
+model ChangeControlTaskState {
+  id              String                @id @default(uuid())
+  followupId      String
+  followup        ChangeControlFollowup @relation(fields: [followupId], references: [id], onDelete: Cascade)
+  taskId          String
+  task            ChangeControlTask     @relation(fields: [taskId], references: [id], onDelete: Restrict)
+  status          ChangeTaskStatus
+  actualDate      DateTime?             @db.Date
+  evidenceComment String?
+  createdAt       DateTime              @default(now())
+
+  @@unique([followupId, taskId])
+  @@index([taskId])
 }
 
 model ChangeHistory {

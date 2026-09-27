@@ -142,3 +142,16 @@ Criterio de salida:
 - una edición ordinaria no crea una versión funcional;
 - una reapertura de Desviación y un nuevo seguimiento CAPA sí la crean;
 - snapshots previos permanecen inmutables.
+
+
+### Criterio de salida Hito 7
+- módulo de Controles de Cambios operativo;
+- Solicitud + Dictamen + Seguimientos en un único expediente;
+- tareas dinámicas por departamento;
+- baseline aprobado protegido;
+- seguimientos 00+ y nuevas tareas estructuradas;
+- ejecución/eficacia/cierre separados;
+- Anexos III/IV/V y VII generables;
+- listado simple e indicadores;
+- relaciones e historial;
+- smoke test y CI completos.
