@@ -3,37 +3,56 @@
 Fecha: 2026-09-27.
 
 ## Hitos completados
-- Hito 0 — Especificación y arquitectura base.
-- Hito 1 — Núcleo técnico y base de datos, validado por CI.
 
-## Hito 2 — Desviaciones completas
-Estado: **EN DESARROLLO** en `feature/hito-02-deviations`.
+### Hito 0 — Especificación y arquitectura
+Completado e integrado.
 
-### Alcance implementado en la rama
+### Hito 1 — Núcleo técnico y base de datos
+Completado y validado por CI.
+
+### Hito 2 — Desviaciones completas
+Estado: **COMPLETADO Y VALIDADO**.
+
+Implementado:
 - listado operativo conectado a PostgreSQL;
 - filtros horizontales y buscador;
 - contadores operativos;
 - alta de desviación por bloques;
 - edición de expedientes abiertos y cerrados;
 - acciones inmediatas 1:N;
-- investigación, causa raíz e impacto separados;
+- separación de descripción, investigación, causa raíz, impacto, CAPA y cierre;
 - CAPA propuestas 1:N;
 - expediente a pantalla completa;
 - pestañas Resumen, Investigación, Acciones, Seguimientos, Documentos e Historial;
-- seguimientos cronológicos;
-- historial interno de cambios;
+- seguimientos cronológicos con próxima fecha y evidencia;
+- historial interno de modificaciones;
 - observaciones internas;
-- control del dato;
-- campo de plazo seguro `NOT_EVALUATED` hasta configurar reglas vigentes;
-- PostgreSQL local opcional mediante Docker Compose.
+- control de calidad/completitud del dato;
+- preservación del snapshot histórico de departamento;
+- campo de plazo `NOT_EVALUATED` hasta disponer de reglas vigentes configuradas;
+- PostgreSQL local mediante Docker Compose;
+- pruebas unitarias de validación de apertura/cierre/CAPA.
 
-### Fuera del Hito 2
-- generación Anexo III/V;
-- exportación listado simple;
+Validación final:
+- PostgreSQL 16 real en CI;
+- `prisma db push`;
+- seed;
+- smoke test de persistencia de desviación, acción inmediata, CAPA propuesta, seguimiento y relación N:N;
+- Prisma validate/generate;
+- lint;
+- 10 tests;
+- build Next.js.
+
+## Fuera de alcance todavía
+- generación Anexo III;
+- generación Anexo V;
+- listado simple descargable;
 - importación histórica 2025/2026;
 - KPI;
 - expediente CAPA completo;
-- Entra/SharePoint/alertas.
+- Entra;
+- SharePoint automático;
+- alertas.
 
-## Validación pendiente
-Abrir PR, ejecutar CI y corregir incidencias antes de fusionar.
+## Próximo paso
+Hito 3 — Documentos y exportaciones: Anexo III DOCX, Anexo V XLSX anual completo y listado simple.
