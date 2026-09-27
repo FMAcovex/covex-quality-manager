@@ -37,8 +37,11 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
 }
 
 async function replaceCapaPlans(tx:Prisma.TransactionClient,complaintId:string,plans:ReturnType<typeof parseComplaintForm>["values"]["capaPlans"]){
+ const linked=await tx.complaintCapaPlan.findMany({where:{complaintId,linkedCapaRecordId:{not:null}},select:{id:true}});
+ const preserved=new Set(linked.map(item=>item.id));
  await tx.complaintCapaPlan.deleteMany({where:{complaintId,linkedCapaRecordId:null}});
  for(const p of plans){
+  if(p.id&&preserved.has(p.id))continue;
   await tx.complaintCapaPlan.create({data:{complaintId,actionType:p.actionType,description:p.description,plannedExecutionDate:d(p.plannedExecutionDate),responsible:p.responsible||null,businessCapaCode:p.businessCapaCode||null}});
  }
 }
