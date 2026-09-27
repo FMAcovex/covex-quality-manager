@@ -45,6 +45,13 @@ enum DataQualityStatus {
   REVIEW_REQUIRED
 }
 
+enum DeadlineStatus {
+  NOT_EVALUATED
+  IN_TIME
+  OUT_OF_TIME
+  NA
+}
+
 enum InvestigationMethod {
   BRAINSTORMING
   FIVE_WHYS
@@ -166,6 +173,10 @@ model Deviation {
   issueDate                  DateTime?                @db.Date
   eventDateTime              DateTime?
   detectedBy                 String?
+  createdByText               String?
+  materialProcessAffected     String?
+  provenance                  String?
+  deadlineStatus              DeadlineStatus           @default(NOT_EVALUATED)
   formVersionId              String?
   formVersion                FormVersion?             @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
   anexoIIITemplateVersionId  String?
@@ -224,6 +235,8 @@ model Deviation {
   @@index([departmentId])
   @@index([status])
   @@index([classification])
+  @@index([provenance])
+  @@index([deadlineStatus])
   @@index([issueDate])
   @@index([closedAt])
 }

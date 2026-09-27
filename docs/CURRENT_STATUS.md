@@ -2,43 +2,57 @@
 
 Fecha: 2026-09-27.
 
-## Hito 0
-Completado e integrado en `main`.
+## Hitos completados
 
-## Hito 1 — Núcleo técnico y base de datos
-Estado: **COMPLETADO Y VALIDADO POR CI**.
+### Hito 0 — Especificación y arquitectura
+Completado e integrado.
 
-### Implementado
-- scaffold Next.js + TypeScript + React;
-- pnpm y configuración de calidad;
-- Prisma + PostgreSQL;
-- modelos QmsRecord/QmsRelation;
-- catálogo Department con snapshot histórico en Deviation;
-- FormVersion/TemplateVersion;
-- ChangeHistory y GeneratedDocument;
-- Deviation + acciones inmediatas + seguimientos + plan CAPA;
-- relaciones N:N con normalización en utilidad de dominio;
-- shell visual inicial;
-- ruta `/deviations` sin funcionalidad falsa;
-- endpoint `/api/health`;
-- seeds estructurales/ficticios;
-- pruebas unitarias de identidad y relaciones;
-- GitHub Actions para validate/generate/lint/test/build.
+### Hito 1 — Núcleo técnico y base de datos
+Completado y validado por CI.
 
-### Validación
-CI del Hito 1: **verde**.
-Se han validado instalación de dependencias, Prisma, lint, tests y build antes del squash merge.
+### Hito 2 — Desviaciones completas
+Estado: **COMPLETADO Y VALIDADO**.
+
+Implementado:
+- listado operativo conectado a PostgreSQL;
+- filtros horizontales y buscador;
+- contadores operativos;
+- alta de desviación por bloques;
+- edición de expedientes abiertos y cerrados;
+- acciones inmediatas 1:N;
+- separación de descripción, investigación, causa raíz, impacto, CAPA y cierre;
+- CAPA propuestas 1:N;
+- expediente a pantalla completa;
+- pestañas Resumen, Investigación, Acciones, Seguimientos, Documentos e Historial;
+- seguimientos cronológicos con próxima fecha y evidencia;
+- historial interno de modificaciones;
+- observaciones internas;
+- control de calidad/completitud del dato;
+- preservación del snapshot histórico de departamento;
+- campo de plazo `NOT_EVALUATED` hasta disponer de reglas vigentes configuradas;
+- PostgreSQL local mediante Docker Compose;
+- pruebas unitarias de validación de apertura/cierre/CAPA.
+
+Validación final:
+- PostgreSQL 16 real en CI;
+- `prisma db push`;
+- seed;
+- smoke test de persistencia de desviación, acción inmediata, CAPA propuesta, seguimiento y relación N:N;
+- Prisma validate/generate;
+- lint;
+- 10 tests;
+- build Next.js.
 
 ## Fuera de alcance todavía
-- formulario completo de Desviaciones;
-- CRUD real desde la UI;
-- importación 2025/2026;
-- Anexo III/V;
+- generación Anexo III;
+- generación Anexo V;
+- listado simple descargable;
+- importación histórica 2025/2026;
 - KPI;
-- CAPA UI;
+- expediente CAPA completo;
 - Entra;
-- SharePoint;
+- SharePoint automático;
 - alertas.
 
 ## Próximo paso
-Hito 2 — Desviaciones completas: listado, filtros, buscador, alta, edición, expediente, acciones inmediatas, investigación, impacto, CAPA propuestas, seguimientos e historial.
+Hito 3 — Documentos y exportaciones: Anexo III DOCX, Anexo V XLSX anual completo y listado simple.
