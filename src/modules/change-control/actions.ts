@@ -497,7 +497,7 @@ export async function addChangeControlFollowupAction(id: string, formData: FormD
 
   if (!followupDate || !responsible) throw new Error("Fecha y responsable de seguimiento son obligatorios.");
   if (!["NOT_EXECUTED", "EXECUTED"].includes(executionStatus)) throw new Error("Estado de ejecución no válido.");
-  if (!["PENDING", "ACCEPTABLE", "NOT_ACCEPTABLE"].includes(effectivenessStatus)) {
+  if (!["PENDING", "ACCEPTABLE", "NOT_ACCEPTABLE", "NOT_APPLICABLE"].includes(effectivenessStatus)) {
     throw new Error("Estado de eficacia no válido.");
   }
   if (!tasks.length) throw new Error("El seguimiento debe incluir el estado de las acciones.");
@@ -515,9 +515,14 @@ export async function addChangeControlFollowupAction(id: string, formData: FormD
     if (pending) throw new Error("No se puede marcar Ejecutado mientras existan acciones pendientes.");
   }
   if (closeChange) {
-    if (executionStatus !== "EXECUTED") throw new Error("El cierre efectivo requiere el cambio Ejecutado.");
-    if (effectivenessStatus !== "ACCEPTABLE") throw new Error("El cierre efectivo requiere eficacia Aceptable.");
-    if (!conclusion) throw new Error("El cierre efectivo requiere motivo/conclusión.");
+    if (executionStatus === "EXECUTED") {
+      if (effectivenessStatus !== "ACCEPTABLE") {
+        throw new Error("El cierre efectivo de un cambio ejecutado requiere eficacia Aceptable.");
+      }
+    } else if (effectivenessStatus !== "NOT_APPLICABLE") {
+      throw new Error("Un cierre sin ejecución debe registrar la eficacia como No aplica.");
+    }
+    if (!conclusion) throw new Error("El cierre requiere motivo/conclusión documentado.");
     if (!approvalByText) throw new Error("Debe identificarse la aprobación del cierre.");
   } else if (!nextFollowupDate || !remainOpenReason) {
     throw new Error("Si el cambio permanece abierto, debe indicarse motivo y próxima fecha de seguimiento.");
@@ -554,7 +559,7 @@ export async function addChangeControlFollowupAction(id: string, formData: FormD
         observations: observations || null,
         executionStatus: executionStatus as "NOT_EXECUTED" | "EXECUTED",
         executionDate: toDate(executionDate),
-        effectivenessStatus: effectivenessStatus as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE",
+        effectivenessStatus: effectivenessStatus as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE",
         effectivenessObservations: effectivenessObservations || null,
         closeChange,
         nextFollowupDate: toDate(nextFollowupDate),
@@ -587,8 +592,8 @@ export async function addChangeControlFollowupAction(id: string, formData: FormD
         operationalClosedAt:
           executionStatus === "EXECUTED"
             ? change.operationalClosedAt ?? new Date(followupDate)
-            : null,
-        effectivenessStatus: effectivenessStatus as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE",
+            : change.operationalClosedAt,
+        effectivenessStatus: effectivenessStatus as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE",
         finalStatus: closeChange ? "CLOSED" : "OPEN",
         effectiveClosedAt: closeChange ? new Date(followupDate) : null,
         closureConclusion: closeChange ? conclusion : change.closureConclusion,
