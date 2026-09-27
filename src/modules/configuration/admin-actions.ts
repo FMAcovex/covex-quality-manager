@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { AlertRuleKind,AlertSeverity,DocumentType,FormVersionStatus,ParameterValueType,Prisma,QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { isAllowedDocumentType } from "@/modules/configuration/admin-domain";
 
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"?v.trim():"";}
 function bool(fd:FormData,name:string){return text(fd,name)==="true";}
@@ -15,6 +16,8 @@ function json(value:unknown){return JSON.parse(JSON.stringify(value??null));}
 
 async function logChange(entityType:string,entityKey:string,action:string,oldValue:unknown,newValue:unknown,fd:FormData){
   await prisma.configurationChange.create({data:{entityType,entityKey,action,oldValue:oldValue===undefined?undefined:json(oldValue),newValue:newValue===undefined?undefined:json(newValue),changedByText:actor(fd),reason:reason(fd)}});
+  revalidatePath("/settings/history");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function createDepartmentAction(fd:FormData){
@@ -22,14 +25,14 @@ export async function createDepartmentAction(fd:FormData){
   if(!code||!name)throw new Error("Código y nombre son obligatorios.");
   const created=await prisma.department.create({data:{code,name,isActive:true,validFrom:dateOrNull(text(fd,"validFrom"))}});
   await logChange("Department",code,"CREATE",null,created,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function updateDepartmentAction(id:string,fd:FormData){
   const current=await prisma.department.findUniqueOrThrow({where:{id}});
   const updated=await prisma.department.update({where:{id},data:{name:text(fd,"name")||current.name,isActive:bool(fd,"isActive"),validFrom:dateOrNull(text(fd,"validFrom")),validTo:dateOrNull(text(fd,"validTo"))}});
   await logChange("Department",current.code,"UPDATE",current,updated,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function createCatalogAction(fd:FormData){
@@ -39,14 +42,14 @@ export async function createCatalogAction(fd:FormData){
   const moduleValue=Object.values(QmsRecordType).includes(rawModule as QmsRecordType)?rawModule as QmsRecordType:null;
   const created=await prisma.lookupCatalog.create({data:{key,label,module:moduleValue,description:text(fd,"description")||null,isActive:true}});
   await logChange("LookupCatalog",key,"CREATE",null,created,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function updateCatalogAction(id:string,fd:FormData){
   const current=await prisma.lookupCatalog.findUniqueOrThrow({where:{id}});
   const updated=await prisma.lookupCatalog.update({where:{id},data:{label:text(fd,"label")||current.label,description:text(fd,"description")||null,isActive:bool(fd,"isActive")}});
   await logChange("LookupCatalog",current.key,"UPDATE",current,updated,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function createCatalogItemAction(catalogId:string,fd:FormData){
@@ -55,14 +58,14 @@ export async function createCatalogItemAction(catalogId:string,fd:FormData){
   if(!key||!label)throw new Error("Clave y etiqueta son obligatorias.");
   const created=await prisma.lookupCatalogItem.create({data:{catalogId,key,label,sortOrder:Number(text(fd,"sortOrder")||"0"),isActive:true,validFrom:dateOrNull(text(fd,"validFrom")),notes:text(fd,"notes")||null}});
   await logChange("LookupCatalogItem",`${catalog.key}:${key}`,"CREATE",null,created,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function updateCatalogItemAction(id:string,fd:FormData){
   const current=await prisma.lookupCatalogItem.findUniqueOrThrow({where:{id},include:{catalog:true}});
   const updated=await prisma.lookupCatalogItem.update({where:{id},data:{label:text(fd,"label")||current.label,sortOrder:Number(text(fd,"sortOrder")||String(current.sortOrder)),isActive:bool(fd,"isActive"),validFrom:dateOrNull(text(fd,"validFrom")),validTo:dateOrNull(text(fd,"validTo")),notes:text(fd,"notes")||null}});
   await logChange("LookupCatalogItem",`${current.catalog.key}:${current.key}`,"UPDATE",current,updated,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function cloneFormVersionAction(formId:string,fd:FormData){
@@ -75,7 +78,7 @@ export async function cloneFormVersionAction(formId:string,fd:FormData){
     return form;
   });
   await logChange("FormVersion",`${source.module}:${versionCode}`,"CLONE",source,created,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function activateFormVersionAction(id:string,fd:FormData){
@@ -90,13 +93,15 @@ export async function activateFormVersionAction(id:string,fd:FormData){
   });
   const updated=await prisma.formVersion.findUniqueOrThrow({where:{id}});
   await logChange("FormVersion",`${target.module}:${target.versionCode}`,"ACTIVATE",target,updated,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function registerTemplateVersionAction(fd:FormData){
   const moduleRaw=text(fd,"module"),docRaw=text(fd,"documentType");
   if(!Object.values(QmsRecordType).includes(moduleRaw as QmsRecordType))throw new Error("Módulo no válido.");
   if(!Object.values(DocumentType).includes(docRaw as DocumentType))throw new Error("Tipo documental no válido.");
+  const moduleValue=moduleRaw as QmsRecordType,documentTypeValue=docRaw as DocumentType;
+  if(!isAllowedDocumentType(moduleValue,documentTypeValue))throw new Error("El tipo documental no pertenece al módulo seleccionado.");
   const versionCode=text(fd,"versionCode"),effectiveFrom=text(fd,"effectiveFrom");
   if(!versionCode||!effectiveFrom)throw new Error("Versión y vigencia son obligatorias.");
   const fileValue=fd.get("file");
@@ -109,10 +114,12 @@ export async function registerTemplateVersionAction(fd:FormData){
     fileName=fileValue.name;mimeType=fileValue.type||null;fileData=bytes;fileSize=fileValue.size;
     checksum=createHash("sha256").update(bytes).digest("hex");
   }
-  if(!fileData&&!text(fd,"filePath"))throw new Error("Adjunta el archivo controlado o informa una ruta gestionada técnicamente.");
-  const created=await prisma.templateVersion.create({data:{module:moduleRaw as QmsRecordType,documentType:docRaw as DocumentType,versionCode,effectiveFrom:new Date(effectiveFrom),filePath:text(fd,"filePath")||null,fileName,mimeType,fileData,fileSize,checksum,isActive:false}});
+  const filePath=text(fd,"filePath")||null;
+  if(!fileData&&!filePath)throw new Error("Adjunta el archivo controlado o informa una ruta gestionada técnicamente.");
+  if(filePath&&(!checksum||!/^[a-fA-F0-9]{64}$/.test(checksum)))throw new Error("Una plantilla gestionada por ruta requiere SHA-256 válido.");
+  const created=await prisma.templateVersion.create({data:{module:moduleValue,documentType:documentTypeValue,versionCode,effectiveFrom:new Date(effectiveFrom),filePath,fileName,mimeType,fileData,fileSize,checksum,isActive:false}});
   await logChange("TemplateVersion",`${moduleRaw}:${docRaw}:${versionCode}`,"REGISTER",null,{...created,fileData:fileData?"[binary]":null},fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function activateTemplateVersionAction(id:string,fd:FormData){
@@ -127,7 +134,7 @@ export async function activateTemplateVersionAction(id:string,fd:FormData){
   const updated=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
   const summary=(v:typeof target)=>({id:v.id,module:v.module,documentType:v.documentType,versionCode:v.versionCode,effectiveFrom:v.effectiveFrom,effectiveTo:v.effectiveTo,isActive:v.isActive,fileName:v.fileName,fileSize:v.fileSize,checksum:v.checksum});
   await logChange("TemplateVersion",`${target.module}:${target.documentType}:${target.versionCode}`,"ACTIVATE",summary(target),summary(updated),fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 function parseParameter(type:ParameterValueType,raw:string){
@@ -142,7 +149,7 @@ export async function updateParameterAction(id:string,fd:FormData){
   const value=parseParameter(current.valueType,text(fd,"value"));
   const updated=await prisma.appParameter.update({where:{id},data:{value:json(value),isActive:bool(fd,"isActive")}});
   await logChange("AppParameter",`${current.scope}:${current.key}`,"UPDATE",current,updated,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 export async function updateAlertRuleAction(id:string,fd:FormData){
@@ -154,7 +161,7 @@ export async function updateAlertRuleAction(id:string,fd:FormData){
   const kind=Object.values(AlertRuleKind).includes(kindRaw as AlertRuleKind)?kindRaw as AlertRuleKind:current.kind;
   const updated=await prisma.alertRule.update({where:{id},data:{leadDays,severity,kind,isActive:bool(fd,"isActive")}});
   await logChange("AlertRule",current.key,"UPDATE",current,updated,fd);
-  revalidatePath("/settings");
+  revalidatePath("/settings/catalogs");
 }
 
 
