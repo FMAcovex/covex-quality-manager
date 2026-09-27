@@ -1,10 +1,10 @@
+import Link from "next/link";
 import { DocumentType,QmsRecordType } from "@prisma/client";
 import { SettingsNav } from "@/components/settings-nav";
 import { activateFormVersionAction,activateTemplateVersionAction,cloneFormVersionAction,registerTemplateVersionAction } from "@/modules/configuration/admin-actions";
 import { getAdministrationOverview,moduleLabel } from "@/modules/configuration/admin-queries";
 
 export const dynamic="force-dynamic";
-const iso=(v:Date|null)=>v?v.toISOString().slice(0,10):"";
 const docLabel=(v:DocumentType)=>v.replaceAll("_"," ");
 
 export default async function VersionsPage(){
