@@ -346,6 +346,7 @@ export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
     followups: objectArray(d.followups)
       .map((item) => ({
         ...item,
+        sequenceNumber: Number(item.sequenceNumber ?? 0),
         followupDate: dateValue(item.followupDate),
         nextFollowupDate: dateValue(item.nextFollowupDate),
       }))
