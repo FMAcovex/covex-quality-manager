@@ -31,6 +31,12 @@ export default async function CapaPage({
   };
   const { rows, departments, years, origins, counters } = await getCapaList(filters);
 
+  const exportParams = new URLSearchParams();
+  Object.entries(filters).forEach(([key,value]) => {
+    if(value && key !== "q" && key !== "followup") exportParams.set(key,value);
+  });
+
+
   return (
     <section className="workspace">
       <div className="page-heading">
@@ -51,6 +57,7 @@ export default async function CapaPage({
                 </select></label>
                 <button className="button small" type="submit">Descargar</button>
               </form>
+              <a className="export-link" href={`/api/capa/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a>
               <a className="export-link" href="/api/capa/export/simple">Listado simple completo</a>
             </div>
           </details>

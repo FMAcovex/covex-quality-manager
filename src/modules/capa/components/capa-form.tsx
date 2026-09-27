@@ -236,6 +236,7 @@ export function CapaForm({
               <option value="PENDING">Pendiente</option>
               <option value="CONFORMING">Conforme</option>
               <option value="NONCONFORMING">No conforme</option>
+              <option value="NA" disabled={mode === "create" || defaults.effectivenessStatus !== "NA"}>N/A (solo histórico)</option>
             </select>
           </label>
           <Field label="Fecha cierre efectivo / verificación final" name="effectiveClosedAt" type="date" defaultValue={defaults.effectiveClosedAt} />

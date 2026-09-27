@@ -19,7 +19,15 @@ type CapaExportRow = {
   openedAt: Date | null;
   operationalClosedAt: Date | null;
   effectiveClosedAt: Date | null;
-  plannedActions: Array<{ description: string }>;
+  status: string;
+  effectivenessStatus: string;
+  internalObservations: string | null;
+  plannedActions: Array<{ description: string; plannedExecutionDate?: Date | null }>;
+  followups?: Array<{
+    sequenceNumber: number;
+    followupDate: Date;
+    nextFollowupDate: Date | null;
+  }>;
 };
 
 function date(value: Date | null) {
@@ -124,20 +132,37 @@ export async function generateCapaAnnexIV(
 
 export function generateCapaSimpleList(rows: CapaExportRow[]) {
   const headers = [
-    "TIPO CAPA","CÓDIGO","DEPARTAMENTO","ORIGEN","CÓDIGO ORIGEN","DESCRIPCIÓN",
-    "FECHA APERTURA","CIERRE OPERATIVO","CIERRE EFECTIVO",
+    "TIPO CAPA","CÓDIGO DEPARTAMENTO","CÓDIFICACIÓN","ORIGEN","CODIFICACIÓN DE ORIGEN",
+    "DESCRIPCIÓN CAPA","FECHA APERTURA","FECHA PREVISTA EJECUCIÓN","ESTADO",
+    "FECHA CIERRE OPERATIVO","VERIFICACIÓN EFICACIA","ÚLTIMO SEGUIMIENTO",
+    "PRÓXIMO SEGUIMIENTO","FECHA CIERRE EFECTIVO","OBSERVACIONES",
   ];
-  const data = rows.map((row) => [
-    row.actionType === "PREVENTIVE" ? "Preventiva" : "Correctiva",
-    row.qmsRecord.businessCode ?? "",
-    row.departmentNameSnapshot ?? row.departmentCodeSnapshot ?? "",
-    row.originType ?? "",
-    row.originCode ?? "",
-    row.plannedActions.map((item) => item.description).join(" · "),
-    date(row.openedAt),
-    date(row.operationalClosedAt),
-    date(row.effectiveClosedAt),
-  ]);
+  const data = rows.map((row) => {
+    const latest=row.followups?.[0];
+    const plannedDates=row.plannedActions
+      .map((item)=>item.plannedExecutionDate)
+      .filter((value): value is Date=>Boolean(value));
+    const latestPlanned=plannedDates.length?new Date(Math.max(...plannedDates.map((d)=>d.getTime()))):null;
+    const state=row.status==="CLOSED"?"Cerrada":row.status==="CANCELLED"?"Cancelada":"Abierta";
+    const efficacy=row.effectivenessStatus==="CONFORMING"?"Conforme":row.effectivenessStatus==="NONCONFORMING"?"No conforme":row.effectivenessStatus==="NA"?"N/A":"Pendiente";
+    return [
+      row.actionType === "PREVENTIVE" ? "Preventiva" : "Correctiva",
+      row.departmentCodeSnapshot ?? "",
+      row.qmsRecord.businessCode ?? "",
+      row.originType ?? "",
+      row.originCode ?? "",
+      row.plannedActions.map((item) => item.description).join(" · "),
+      date(row.openedAt),
+      date(latestPlanned),
+      state,
+      date(row.operationalClosedAt),
+      efficacy,
+      latest ? `${String(latest.sequenceNumber).padStart(2,"0")} · ${date(latest.followupDate)}` : "00 · inicial",
+      date(latest?.nextFollowupDate ?? null),
+      date(row.effectiveClosedAt),
+      row.internalObservations ?? "",
+    ];
+  });
   const inlineCell = (ref: string, value: string, style = 0) =>
     `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
   const rowsXml = [headers, ...data].map((values,rowIndex) => {
@@ -150,7 +175,7 @@ export function generateCapaSimpleList(rows: CapaExportRow[]) {
   }).join("");
 
   const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="2" width="22" customWidth="1"/><col min="3" max="5" width="28" customWidth="1"/><col min="6" max="6" width="55" customWidth="1"/><col min="7" max="9" width="18" customWidth="1"/></cols><sheetData>${rowsXml}</sheetData><autoFilter ref="A1:I${Math.max(1,data.length+1)}"/></worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="5" width="22" customWidth="1"/><col min="6" max="6" width="55" customWidth="1"/><col min="7" max="15" width="20" customWidth="1"/></cols><sheetData>${rowsXml}</sheetData><autoFilter ref="A1:O${Math.max(1,data.length+1)}"/></worksheet>`;
 
   const entries: ZipEntry[]=[
     {name:"[Content_Types].xml",data:Buffer.from(`<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`)},

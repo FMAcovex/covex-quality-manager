@@ -25,7 +25,7 @@ export type CapaFormDefaults = {
   status?: "OPEN" | "CLOSED" | "CANCELLED";
   cancellationReason?: string;
   operationalClosedAt?: string;
-  effectivenessStatus?: "CONFORMING" | "NONCONFORMING" | "PENDING";
+  effectivenessStatus?: "CONFORMING" | "NONCONFORMING" | "PENDING" | "NA";
   effectivenessCriteria?: string;
   effectivenessAssessment?: string;
   effectivenessEvidence?: string;

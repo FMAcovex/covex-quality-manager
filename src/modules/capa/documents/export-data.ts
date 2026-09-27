@@ -35,6 +35,7 @@ export async function getCapaExportRows(filters: CapaExportFilters) {
     include: {
       qmsRecord: true,
       plannedActions: { orderBy: [{ sortOrder:"asc" },{ createdAt:"asc" }] },
+      followups: { orderBy: [{ followupDate:"desc" },{ sequenceNumber:"desc" }] },
     },
     orderBy: [{ openedAt:"asc" },{ createdAt:"asc" }],
   });

@@ -94,11 +94,7 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
   }[group]!;
   xml = setWordSdtCheckbox(xml, 0, checkbox[0], checkbox[1], true);
   const originText = [record.originType, record.originCode].filter(Boolean).join(" · ");
-  if (group === "OTHER") {
-    xml = setWordCellText(xml, 0, 8, 1, `OTROS (Describir):\n${originText}`);
-  } else {
-    xml = setWordCellText(xml, 0, 5, 0, `ORIGEN\n${originText}`);
-  }
+  xml = setWordCellText(xml, 0, 5, 0, `ORIGEN\n${originText}`);
 
   xml = setWordCellText(xml, 0, 10, 0, record.applicableTo ?? "");
   xml = setWordCellText(xml, 0, 12, 0, record.defectDescription ?? "");

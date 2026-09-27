@@ -3,7 +3,7 @@ import type { CapaPlannedActionInput } from "@/modules/capa/types";
 
 const actionType = z.enum(["CORRECTIVE", "PREVENTIVE"]);
 const status = z.enum(["OPEN", "CLOSED", "CANCELLED"]);
-const effectiveness = z.enum(["CONFORMING", "NONCONFORMING", "PENDING"]);
+const effectiveness = z.enum(["CONFORMING", "NONCONFORMING", "PENDING", "NA"]);
 const dataQuality = z.enum(["COMPLETE", "INCOMPLETE", "REVIEW_REQUIRED"]);
 
 const plannedActionSchema = z.object({
