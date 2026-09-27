@@ -300,6 +300,10 @@ function dateValue(value: unknown) {
   return typeof value === "string" && value ? new Date(value) : null;
 }
 
+function stringValue(value: unknown) {
+  return typeof value === "string" && value ? value : null;
+}
+
 export function deviationSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
   const root = objectValue(snapshot);
   const d = objectValue(root.deviation);
@@ -363,8 +367,8 @@ export function recordVersionSummary(
   if (recordType === "DEVIATION") {
     const d = objectValue(root.deviation);
     return {
-      status: d.status ?? null,
-      closedAt: d.closedAt ?? null,
+      status: stringValue(d.status),
+      closedAt: stringValue(d.closedAt),
       effectivenessStatus: null,
       effectiveClosedAt: null,
       nextFollowupDate: null,
@@ -374,11 +378,11 @@ export function recordVersionSummary(
   const followups = objectArray(d.followups);
   const latest = followups.at(-1) ?? null;
   return {
-    status: d.status ?? null,
-    closedAt: d.operationalClosedAt ?? null,
-    effectivenessStatus: d.effectivenessStatus ?? null,
-    effectiveClosedAt: d.effectiveClosedAt ?? null,
-    nextFollowupDate: latest?.nextFollowupDate ?? null,
+    status: stringValue(d.status),
+    closedAt: stringValue(d.operationalClosedAt),
+    effectivenessStatus: stringValue(d.effectivenessStatus),
+    effectiveClosedAt: stringValue(d.effectiveClosedAt),
+    nextFollowupDate: stringValue(latest?.nextFollowupDate),
   };
 }
 
