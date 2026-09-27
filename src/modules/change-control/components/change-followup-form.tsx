@@ -82,6 +82,7 @@ export function ChangeFollowupForm({
             <option value="PENDING">Pendiente</option>
             <option value="ACCEPTABLE">Aceptable</option>
             <option value="NOT_ACCEPTABLE">No aceptable</option>
+            <option value="NOT_APPLICABLE">No aplica · cierre sin ejecución</option>
           </select>
         </label>
         <label className="field span-2">
