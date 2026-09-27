@@ -3,6 +3,11 @@ import { prisma } from "@/lib/db";
 import { getCapaDetail } from "@/modules/capa/queries";
 import { generateCapaAnnexIII } from "@/modules/capa/documents/annex-iii";
 import { CapaTemplateUnavailableError } from "@/modules/capa/documents/templates";
+import {
+  capaSnapshotToAnnexRecord,
+  recordVersionTemplateId,
+  versionLabel,
+} from "@/lib/qms/versioning";
 
 export const runtime = "nodejs";
 
@@ -10,26 +15,54 @@ function safe(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "_");
 }
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const capa = await getCapaDetail(id);
   if (!capa) return NextResponse.json({ error: "CAPA no encontrada." }, { status: 404 });
+
+  const requestedVersion = new URL(request.url).searchParams.get("version");
+  const sequenceNumber =
+    requestedVersion !== null && /^\\d+$/.test(requestedVersion)
+      ? Number(requestedVersion)
+      : null;
+  const storedVersion =
+    sequenceNumber === null
+      ? capa.qmsRecord.versions.at(-1) ?? null
+      : capa.qmsRecord.versions.find((item) => item.sequenceNumber === sequenceNumber) ?? null;
+
+  if (sequenceNumber !== null && !storedVersion) {
+    return NextResponse.json({ error: "La versión solicitada no existe." }, { status: 404 });
+  }
+
+  type AnnexRecord = Parameters<typeof generateCapaAnnexIII>[0];
+  const annexRecord: AnnexRecord = storedVersion
+    ? (capaSnapshotToAnnexRecord(storedVersion.snapshot) as unknown as AnnexRecord)
+    : capa;
+
   try {
-    const buffer = await generateCapaAnnexIII(capa);
+    const buffer = await generateCapaAnnexIII(annexRecord);
     await prisma.generatedDocument.create({
       data: {
         qmsRecordId: capa.qmsRecordId,
+        recordVersionId: storedVersion?.id ?? null,
         documentType: "CAPA_ANNEX_III",
-        templateVersionId: capa.annexIIITemplateVersionId,
+        templateVersionId: storedVersion
+          ? recordVersionTemplateId("CAPA", storedVersion.snapshot)
+          : capa.annexIIITemplateVersionId,
         generatedByText: process.env.DEFAULT_ACTOR_NAME || capa.createdByText,
         metadata: {
           source: "download",
-          templateVersion: capa.annexIIITemplateVersion?.versionCode ?? "05",
-          followupVersion: capa.followups[0]?.sequenceNumber ?? 0,
+          templateVersion:
+            annexRecord.annexIIITemplateVersion?.versionCode ??
+            capa.annexIIITemplateVersion?.versionCode ??
+            "05",
+          followupVersion: storedVersion?.sequenceNumber ?? null,
+          recordVersion: storedVersion?.sequenceNumber ?? null,
         },
       },
     });
-    const filename=`Anexo_III_CAPA_${safe(capa.qmsRecord.businessCode || id)}.docx`;
+    const suffix = storedVersion ? `_${versionLabel(storedVersion.sequenceNumber)}` : "";
+    const filename=`Anexo_III_CAPA_${safe(capa.qmsRecord.businessCode || id)}${suffix}.docx`;
     return new Response(new Uint8Array(buffer),{
       headers:{
         "Content-Type":"application/vnd.openxmlformats-officedocument.wordprocessingml.document",

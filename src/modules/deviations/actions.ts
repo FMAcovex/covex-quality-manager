@@ -10,6 +10,13 @@ import {
   getApplicableFormVersion,
   getApplicableTemplateVersion,
 } from "@/modules/configuration/runtime";
+import {
+  ensureInitialVersion,
+  refreshCurrentVersion,
+  serializeDeviationVersion,
+  snapshotJson,
+  startNextVersion,
+} from "@/lib/qms/versioning";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -144,6 +151,29 @@ export async function createDeviationAction(
         },
       });
 
+      const versionRecord = await tx.deviation.findUniqueOrThrow({
+        where: { id: created.id },
+        include: {
+          qmsRecord: true,
+          immediateActions: { orderBy: { sortOrder: "asc" } },
+          followups: { orderBy: [{ followupDate: "asc" }, { createdAt: "asc" }] },
+          capaPlans: {
+            orderBy: { createdAt: "asc" },
+            include: { linkedCapaRecord: true },
+          },
+          formVersion: true,
+          anexoIIITemplateVersion: true,
+        },
+      });
+      await ensureInitialVersion(
+        tx,
+        qmsRecord.id,
+        snapshotJson(serializeDeviationVersion(versionRecord)),
+        parsed.actor,
+        "UI",
+        "Emisión inicial de la desviación",
+      );
+
       return created;
     });
 
@@ -172,12 +202,22 @@ export async function updateDeviationAction(
     include: {
       qmsRecord: true,
       immediateActions: { orderBy: { sortOrder: "asc" } },
-      capaPlans: { orderBy: { createdAt: "asc" } },
+      capaPlans: {
+        orderBy: { createdAt: "asc" },
+        include: { linkedCapaRecord: true },
+      },
+      followups: { orderBy: [{ followupDate: "asc" }, { createdAt: "asc" }] },
+      formVersion: true,
+      anexoIIITemplateVersion: true,
     },
   });
   if (!existing) return { error: "La desviación ya no existe." };
 
   const v = parsed.values;
+  const reopening = existing.status === "CLOSED" && v.status === "OPEN";
+  if (reopening) {
+    v.closedAt = null;
+  }
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
   if (!department) return { error: "El departamento seleccionado no existe." };
 
@@ -257,6 +297,31 @@ export async function updateDeviationAction(
 
   try {
     await prisma.$transaction(async (tx) => {
+      const storedVersion = await tx.qmsRecordVersion.findFirst({
+        where: { qmsRecordId: existing.qmsRecordId },
+        orderBy: { sequenceNumber: "desc" },
+      });
+      if (!storedVersion) {
+        await tx.qmsRecordVersion.create({
+          data: {
+            qmsRecordId: existing.qmsRecordId,
+            sequenceNumber: 0,
+            kind: "HISTORICAL_STATE",
+            snapshot: snapshotJson(serializeDeviationVersion(existing)),
+            reason: "Baseline histórico al activar Hito 6.1; no reconstruye revisiones anteriores no almacenadas",
+            createdByText: parsed.actor,
+            source: "SYSTEM",
+          },
+        });
+      }
+      await refreshCurrentVersion(
+        tx,
+        existing.qmsRecordId,
+        snapshotJson(serializeDeviationVersion(existing)),
+        parsed.actor,
+        reopening ? "Estado anterior a la reapertura" : undefined,
+      );
+
       await tx.qmsRecord.update({
         where: { id: existing.qmsRecordId },
         data: {
@@ -372,6 +437,50 @@ export async function updateDeviationAction(
           })),
         });
       }
+
+      const updatedForVersion = await tx.deviation.findUniqueOrThrow({
+        where: { id },
+        include: {
+          qmsRecord: true,
+          immediateActions: { orderBy: { sortOrder: "asc" } },
+          followups: { orderBy: [{ followupDate: "asc" }, { createdAt: "asc" }] },
+          capaPlans: {
+            orderBy: { createdAt: "asc" },
+            include: { linkedCapaRecord: true },
+          },
+          formVersion: true,
+          anexoIIITemplateVersion: true,
+        },
+      });
+      const versionSnapshot = snapshotJson(serializeDeviationVersion(updatedForVersion));
+      if (reopening) {
+        await startNextVersion(
+          tx,
+          existing.qmsRecordId,
+          "REOPENING",
+          versionSnapshot,
+          parsed.actor,
+          formData.get("changeReason")?.toString().trim() || "Reapertura de la desviación",
+        );
+        await tx.changeHistory.create({
+          data: {
+            qmsRecordId: existing.qmsRecordId,
+            changedByText: parsed.actor,
+            fieldPath: "__version__",
+            newValue: jsonValue({ kind: "REOPENING" }),
+            reason: formData.get("changeReason")?.toString().trim() || "Reapertura de la desviación",
+            source: "UI",
+          },
+        });
+      } else {
+        await refreshCurrentVersion(
+          tx,
+          existing.qmsRecordId,
+          versionSnapshot,
+          parsed.actor,
+          formData.get("changeReason")?.toString().trim() || null,
+        );
+      }
     });
 
     revalidatePath("/deviations");
@@ -434,6 +543,28 @@ export async function addDeviationFollowupAction(formData: FormData) {
         source: "UI",
       },
     });
+
+    const updatedForVersion = await tx.deviation.findUniqueOrThrow({
+      where: { id: deviationId },
+      include: {
+        qmsRecord: true,
+        immediateActions: { orderBy: { sortOrder: "asc" } },
+        followups: { orderBy: [{ followupDate: "asc" }, { createdAt: "asc" }] },
+        capaPlans: {
+          orderBy: { createdAt: "asc" },
+          include: { linkedCapaRecord: true },
+        },
+        formVersion: true,
+        anexoIIITemplateVersion: true,
+      },
+    });
+    await refreshCurrentVersion(
+      tx,
+      deviation.qmsRecordId,
+      snapshotJson(serializeDeviationVersion(updatedForVersion)),
+      completedByText,
+      "Actualización del estado vigente con nuevo seguimiento",
+    );
   });
 
   revalidatePath(`/deviations/${deviationId}`);

@@ -105,3 +105,17 @@ Futuro opcional:
 - sincronizar documento firmado.
 
 La integración futura no debe ser requisito para el núcleo de generación.
+
+
+## 6. Documentos por versión funcional
+
+Los anexos individuales pueden generarse desde la versión vigente o desde un snapshot histórico de `QmsRecordVersion`.
+
+Reglas:
+- el documento histórico se reconstruye desde los datos de esa versión, no desde los valores actuales del expediente;
+- el nombre de descarga identifica V00, V01, V02…;
+- `GeneratedDocument` conserva la referencia a `recordVersionId`;
+- la versión de plantilla documental sigue siendo independiente de la versión funcional del expediente;
+- una nueva revisión del PNT/anexo no modifica el snapshot ni el documento histórico.
+
+Para datos anteriores al Hito 6.1 solo son descargables como versión histórica exacta aquellos estados para los que exista snapshot persistido; no se reconstruyen estados inexistentes.

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { addDeviationFollowupAction } from "@/modules/deviations/actions";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
+import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ const tabs = [
   ["investigation", "Investigación"],
   ["actions", "Acciones"],
   ["followups", "Seguimientos"],
+  ["versions", "Versiones"],
   ["documents", "Documentos"],
   ["history", "Historial"],
 ] as const;
@@ -40,6 +42,7 @@ export default async function DeviationDetailPage({
   if (!deviation) notFound();
 
   const code = deviation.qmsRecord.businessCode ?? "Sin codificación";
+  const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
   const related = [
     ...deviation.qmsRecord.sourceRelations.map((relation) => ({
       type: relation.relationType,
@@ -61,6 +64,7 @@ export default async function DeviationDetailPage({
             <span className={`badge ${deviation.status === "OPEN" ? "open" : "closed"}`}>{deviation.status === "OPEN" ? "Abierta" : "Cerrada"}</span>
             {deviation.classification ? <span className={`badge ${deviation.classification.toLowerCase()}`}>{classificationLabel(deviation.classification)}</span> : null}
             <span className="badge neutral">{deviation.departmentCodeSnapshot ?? deviation.department?.code ?? "Sin departamento"}</span>
+            {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
           </div>
           <p className="muted-note">Apertura {formatDate(deviation.issueDate)} · Cumplimentado por {text(deviation.createdByText)}</p>
         </div>
@@ -185,6 +189,60 @@ export default async function DeviationDetailPage({
             </form>
           </div>
         </>
+      ) : null}
+
+      {activeTab === "versions" ? (
+        <div className="card">
+          <div className="section-title-row">
+            <div>
+              <h2>Versiones del expediente</h2>
+              <p className="muted-note">
+                Una edición normal actualiza la versión vigente. Solo una reapertura crea una nueva versión funcional.
+              </p>
+            </div>
+            {currentVersion ? <span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span> : null}
+          </div>
+          {deviation.qmsRecord.versions.length ? (
+            <div className="timeline">
+              {deviation.qmsRecord.versions.map((item) => {
+                const summary = recordVersionSummary("DEVIATION", item.snapshot);
+                const kind =
+                  item.kind === "REOPENING"
+                    ? "Reapertura"
+                    : item.kind === "HISTORICAL_STATE"
+                      ? "Baseline histórico"
+                      : "Versión inicial";
+                return (
+                  <article className="timeline-item" key={item.id}>
+                    <header>
+                      <strong>{versionLabel(item.sequenceNumber)} · {kind}</strong>
+                      <span className={`badge ${summary.status === "OPEN" ? "open" : "closed"}`}>
+                        {summary.status === "OPEN" ? "Abierta" : "Cerrada"}
+                      </span>
+                      {item.frozenAt ? <span className="badge neutral">Histórica</span> : <span className="badge neutral">Vigente</span>}
+                    </header>
+                    <p>
+                      Fecha de cierre de esta versión: {formatDate(summary.closedAt)}
+                      {item.reason ? ` · ${item.reason}` : ""}
+                    </p>
+                    <small className="muted-note">
+                      Registrada {formatDate(item.createdAt)} · {item.createdByText ?? "Sistema"}
+                    </small>
+                    <div className="document-actions">
+                      <a className="button small" href={`/api/deviations/${id}/annex-iii?version=${item.sequenceNumber}`}>
+                        Descargar Anexo III {versionLabel(item.sequenceNumber)}
+                      </a>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-panel">
+              Este expediente todavía no tiene snapshot de versión. Se creará al editarlo o versionarlo con Hito 6.1.
+            </div>
+          )}
+        </div>
       ) : null}
 
       {activeTab === "documents" ? (

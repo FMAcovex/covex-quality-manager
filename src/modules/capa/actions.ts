@@ -10,6 +10,13 @@ import {
   getApplicableFormVersion,
   getApplicableTemplateVersion,
 } from "@/modules/configuration/runtime";
+import {
+  ensureInitialVersion,
+  refreshCurrentVersion,
+  serializeCapaVersion,
+  snapshotJson,
+  startNextVersion,
+} from "@/lib/qms/versioning";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -168,6 +175,25 @@ export async function createCapaAction(
         },
       });
 
+      const versionRecord = await tx.capa.findUniqueOrThrow({
+        where: { id: created.id },
+        include: {
+          qmsRecord: true,
+          plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
+          formVersion: true,
+          annexIIITemplateVersion: true,
+        },
+      });
+      await ensureInitialVersion(
+        tx,
+        qmsRecord.id,
+        snapshotJson(serializeCapaVersion(versionRecord)),
+        parsed.actor,
+        "UI",
+        "Informe inicial CAPA",
+      );
+
       await relatePrimaryOrigin(tx, qmsRecord.id, v.originCode, parsed.actor);
 
       if (v.fromDeviationPlanId) {
@@ -232,7 +258,9 @@ export async function updateCapaAction(
     include: {
       qmsRecord: true,
       plannedActions: { orderBy: { sortOrder: "asc" } },
-      followups: true,
+      followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
+      formVersion: true,
+      annexIIITemplateVersion: true,
     },
   });
   if (!existing) return { error: "La CAPA ya no existe." };
@@ -312,6 +340,28 @@ export async function updateCapaAction(
 
   try {
     await prisma.$transaction(async (tx) => {
+      const storedVersion = await tx.qmsRecordVersion.findFirst({
+        where: { qmsRecordId: existing.qmsRecordId },
+        orderBy: { sequenceNumber: "desc" },
+      });
+      if (!storedVersion) {
+        const historicalSequence = Math.max(
+          0,
+          ...existing.followups.map((item) => item.sequenceNumber),
+        );
+        await tx.qmsRecordVersion.create({
+          data: {
+            qmsRecordId: existing.qmsRecordId,
+            sequenceNumber: historicalSequence,
+            kind: "HISTORICAL_STATE",
+            snapshot: snapshotJson(serializeCapaVersion(existing)),
+            reason: "Baseline histórico al activar Hito 6.1; no reconstruye versiones anteriores no almacenadas",
+            createdByText: parsed.actor,
+            source: "SYSTEM",
+          },
+        });
+      }
+
       await tx.qmsRecord.update({
         where: { id: existing.qmsRecordId },
         data: {
@@ -379,6 +429,24 @@ export async function updateCapaAction(
         });
       }
       await relatePrimaryOrigin(tx, existing.qmsRecordId, v.originCode, parsed.actor);
+
+      const updatedForVersion = await tx.capa.findUniqueOrThrow({
+        where: { id },
+        include: {
+          qmsRecord: true,
+          plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
+          formVersion: true,
+          annexIIITemplateVersion: true,
+        },
+      });
+      await refreshCurrentVersion(
+        tx,
+        existing.qmsRecordId,
+        snapshotJson(serializeCapaVersion(updatedForVersion)),
+        parsed.actor,
+        v.changeReason || null,
+      );
     });
 
     revalidatePath("/capa");
@@ -395,7 +463,13 @@ export async function updateCapaAction(
 export async function addCapaFollowupAction(id: string, formData: FormData) {
   const capa = await prisma.capa.findUnique({
     where: { id },
-    include: { followups: { select: { sequenceNumber: true } } },
+    include: {
+      qmsRecord: true,
+      plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
+      formVersion: true,
+      annexIIITemplateVersion: true,
+    },
   });
   if (!capa) throw new Error("CAPA no encontrada.");
 
@@ -420,7 +494,29 @@ export async function addCapaFollowupAction(id: string, formData: FormData) {
     Math.max(0, ...capa.followups.map((item) => item.sequenceNumber)) + 1;
 
   await prisma.$transaction(async (tx) => {
-    await tx.capaFollowup.create({
+    const existingVersion = await tx.qmsRecordVersion.findFirst({
+      where: { qmsRecordId: capa.qmsRecordId },
+      orderBy: { sequenceNumber: "desc" },
+    });
+    if (!existingVersion) {
+      const historicalSequence = Math.max(0, ...capa.followups.map((item) => item.sequenceNumber));
+      await tx.qmsRecordVersion.create({
+        data: {
+          qmsRecordId: capa.qmsRecordId,
+          sequenceNumber: historicalSequence,
+          kind: historicalSequence === 0 ? "INITIAL" : "HISTORICAL_STATE",
+          snapshot: snapshotJson(serializeCapaVersion(capa)),
+          reason:
+            historicalSequence === 0
+              ? "Informe inicial CAPA"
+              : "Baseline histórico al activar Hito 6.1; no reconstruye versiones anteriores no almacenadas",
+          createdByText: actor,
+          source: historicalSequence === 0 ? "UI" : "SYSTEM",
+        },
+      });
+    }
+
+    const followup = await tx.capaFollowup.create({
       data: {
         capaId: id,
         sequenceNumber,
@@ -450,6 +546,28 @@ export async function addCapaFollowupAction(id: string, formData: FormData) {
         source: "UI",
       },
     });
+
+    const updatedForVersion = await tx.capa.findUniqueOrThrow({
+      where: { id },
+      include: {
+        qmsRecord: true,
+        plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+        followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
+        formVersion: true,
+        annexIIITemplateVersion: true,
+      },
+    });
+    await startNextVersion(
+      tx,
+      capa.qmsRecordId,
+      "FOLLOWUP",
+      snapshotJson(serializeCapaVersion(updatedForVersion)),
+      actor,
+      reason || `Seguimiento CAPA ${String(sequenceNumber).padStart(2, "0")}`,
+      followup.id,
+      "UI",
+      sequenceNumber,
+    );
   });
 
   revalidatePath("/capa");

@@ -105,3 +105,33 @@ La importación debe ser idempotente o disponer de clave de importación para ev
 2. Se marca como vigente para nuevos expedientes a partir de fecha definida.
 3. Históricos mantienen sus versiones.
 4. No migrar silenciosamente documentos históricos a la nueva versión.
+
+
+## W-12 — Reabrir una desviación
+
+1. Partir de una desviación Cerrada.
+2. Antes de modificarla, actualizar y congelar el snapshot de la versión vigente.
+3. Cambiar el estado a Abierta.
+4. La fecha de cierre deja de ser vigente en la nueva versión y se conserva únicamente en la versión histórica cerrada.
+5. Crear V01/V02… con tipo REOPENING.
+6. Registrar el motivo en historial operativo.
+7. Las ediciones posteriores actualizan esa versión hasta una nueva reapertura.
+
+## W-13 — Versionar seguimientos CAPA
+
+1. V00 representa el informe inicial.
+2. Al registrar un seguimiento se crea el registro `CapaFollowup`.
+3. Se congela la versión CAPA anterior.
+4. Se crea la versión con el mismo número del seguimiento: V01, V02, V03…
+5. El snapshot conserva estado, acciones, próxima fecha, ejecución, eficacia y cierres existentes en ese momento.
+6. Si después del seguimiento se completa el cierre operativo o la eficacia mediante edición, se actualiza el snapshot de esa misma versión.
+7. El siguiente seguimiento congela la versión anterior y crea la siguiente.
+8. Puede existir una versión con estado Cerrada y eficacia Pendiente antes de la versión que registra el cierre efectivo.
+
+## W-14 — Descargar una versión histórica
+
+1. Abrir la pestaña Versiones del expediente.
+2. Seleccionar la versión.
+3. Generar el anexo a partir del snapshot persistido de esa versión, no del estado actual.
+4. Usar la versión de plantilla asociada al snapshot cuando esté disponible.
+5. Registrar `GeneratedDocument.recordVersionId`.

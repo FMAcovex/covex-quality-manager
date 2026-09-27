@@ -135,6 +135,7 @@ export async function getCapaDetail(id: string) {
             include: { sourceRecord: true },
           },
           history: { orderBy: { changedAt: "desc" }, take: 100 },
+          versions: { orderBy: { sequenceNumber: "asc" } },
           generatedDocuments: { orderBy: { generatedAt: "desc" } },
         },
       },

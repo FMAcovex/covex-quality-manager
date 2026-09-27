@@ -126,3 +126,26 @@ Los módulos Desviaciones y CAPA ya comparten la plataforma común y están prep
 
 ## Próximo paso
 Hito 7 — Controles de cambios.
+
+
+## Hito 6.1 — Versionado transversal
+Estado: **IMPLEMENTADO Y VALIDADO EN CI**.
+
+Implementación:
+- nueva entidad común `QmsRecordVersion`;
+- separación entre historial de cambios y versión funcional;
+- Desviaciones V00 + V01/V02… por reapertura;
+- preservación de fechas de cierre históricas;
+- CAPA V00 + una versión por seguimiento;
+- próxima fecha, estado, ejecución, eficacia y cierres incluidos en snapshot;
+- pestaña Versiones en Desviaciones y CAPA;
+- descarga de Anexo III para cualquier snapshot persistido;
+- `GeneratedDocument` vinculado a la versión origen;
+- backfill idempotente para expedientes existentes sin inventar versiones históricas inexistentes;
+- smoke test PostgreSQL específico incluido en CI.
+
+### Regla para históricos 2025–2026
+Los expedientes existentes se convierten en un baseline `HISTORICAL_STATE`. Si una CAPA ya dispone de una secuencia de seguimiento conocida, el baseline adopta esa secuencia. No se crean artificialmente V00/V01 intermedias cuando el sistema anterior no conservaba el snapshot necesario para reconstruirlas.
+
+## Próximo paso tras integrar Hito 6.1
+Hito 7 — Controles de cambios, reutilizando `QmsRecordVersion` para los seguimientos 00/01/02….
