@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 const modules = [
   { label: "Desviaciones", href: "/deviations", enabled: true },
-  { label: "CAPA", href: "#", enabled: false },
+  { label: "CAPA", href: "/capa", enabled: true },
   { label: "Controles de cambios", href: "#", enabled: false },
   { label: "Reclamaciones", href: "#", enabled: false },
   { label: "Devoluciones", href: "#", enabled: false },
@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <nav className="module-nav" aria-label="Módulos QMS">
           {modules.map((module) =>
             module.enabled ? (
-              <Link key={module.label} href={module.href} className="module-link active">
+              <Link key={module.label} href={module.href} className="module-link">
                 {module.label}
               </Link>
             ) : (

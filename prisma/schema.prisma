@@ -70,6 +70,18 @@ enum CapaProposalStatus {
   CANCELLED
 }
 
+enum CapaStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum CapaEffectivenessStatus {
+  CONFORMING
+  NONCONFORMING
+  PENDING
+}
+
 enum HistorySource {
   UI
   IMPORT
@@ -80,6 +92,9 @@ enum DocumentType {
   DEVIATION_ANNEX_III
   DEVIATION_ANNEX_V
   SIMPLE_LIST
+  CAPA_ANNEX_III
+  CAPA_ANNEX_IV
+  CAPA_SIMPLE_LIST
 }
 
 enum HistoricalImportRowResult {
@@ -98,6 +113,7 @@ model QmsRecord {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   deviation          Deviation?
+  capa               Capa?
   sourceRelations    QmsRelation[]       @relation("RelationSource")
   targetRelations    QmsRelation[]       @relation("RelationTarget")
   history            ChangeHistory[]
@@ -135,6 +151,7 @@ model Department {
   validFrom  DateTime?   @db.Date
   validTo    DateTime?   @db.Date
   deviations Deviation[]
+  capas      Capa[]
 }
 
 model FormVersion {
@@ -147,6 +164,7 @@ model FormVersion {
   notes         String?
   createdAt     DateTime      @default(now())
   deviations    Deviation[]
+  capas         Capa[]
 
   @@unique([module, versionCode])
   @@index([module, isActive, effectiveFrom])
@@ -164,6 +182,7 @@ model TemplateVersion {
   isActive            Boolean             @default(true)
   createdAt           DateTime            @default(now())
   deviationsAnnexIII  Deviation[]         @relation("DeviationAnnexIIITemplate")
+  capasAnnexIII       Capa[]              @relation("CapaAnnexIIITemplate")
   generatedDocuments  GeneratedDocument[]
 
   @@unique([module, documentType, versionCode])
@@ -299,6 +318,93 @@ model DeviationCapaPlan {
   @@index([deviationId])
   @@index([linkedCapaRecordId])
   @@index([plannedExecutionDate])
+}
+
+
+model Capa {
+  id                        String                  @id @default(uuid())
+  qmsRecordId               String                  @unique
+  qmsRecord                 QmsRecord               @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  actionType                CapaActionType
+  departmentId              String?
+  department                Department?             @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot    String?
+  departmentNameSnapshot    String?
+  openedAt                  DateTime?               @db.Date
+  createdByText             String?
+  originType                String?
+  originCode                String?
+  applicableTo              String?
+  defectDescription         String?
+  rootCause                 String?
+  impactAssessment          String?
+  operationalClosedAt       DateTime?               @db.Date
+  status                    CapaStatus              @default(OPEN)
+  cancellationReason        String?
+  effectivenessStatus       CapaEffectivenessStatus @default(PENDING)
+  effectivenessCriteria     String?
+  effectivenessAssessment   String?
+  effectivenessEvidence     String?
+  effectiveClosedAt         DateTime?               @db.Date
+  conclusion                String?
+  internalObservations      String?
+  signedDocumentAvailable   Boolean?
+  dataQualityStatus         DataQualityStatus       @default(REVIEW_REQUIRED)
+  includeInKpi              Boolean                 @default(true)
+  kpiExclusionReason        String?
+  formVersionId             String?
+  formVersion               FormVersion?            @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  annexIIITemplateVersionId String?
+  annexIIITemplateVersion   TemplateVersion?        @relation("CapaAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
+  extraData                 Json?
+  createdAt                 DateTime                @default(now())
+  updatedAt                 DateTime                @updatedAt
+  plannedActions            CapaPlannedAction[]
+  followups                 CapaFollowup[]
+
+  @@index([departmentId])
+  @@index([actionType])
+  @@index([status])
+  @@index([effectivenessStatus])
+  @@index([openedAt])
+  @@index([operationalClosedAt])
+  @@index([effectiveClosedAt])
+  @@index([includeInKpi])
+}
+
+model CapaPlannedAction {
+  id                   String   @id @default(uuid())
+  capaId               String
+  capa                 Capa     @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  description          String
+  responsible          String?
+  plannedExecutionDate DateTime? @db.Date
+  impact               String?
+  sortOrder            Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([capaId, sortOrder])
+  @@index([plannedExecutionDate])
+}
+
+model CapaFollowup {
+  id                String   @id @default(uuid())
+  capaId            String
+  capa              Capa     @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  sequenceNumber    Int
+  followupDate      DateTime @db.Date
+  completedByText   String
+  reason            String?
+  description       String
+  observations      String?
+  evidenceReference String?
+  nextFollowupDate  DateTime? @db.Date
+  createdAt         DateTime @default(now())
+
+  @@unique([capaId, sequenceNumber])
+  @@index([capaId, followupDate])
+  @@index([nextFollowupDate])
 }
 
 model ChangeHistory {
