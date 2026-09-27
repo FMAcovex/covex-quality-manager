@@ -122,10 +122,7 @@ Para CAPA con varias acciones, el plazo global de ejecución se compara contra l
 - build Next.js.
 
 ## Punto de control
-Los módulos Desviaciones y CAPA ya comparten la plataforma común y están preparados para una revisión de UX/calidad antes de ampliar a Controles de cambios.
-
-## Próximo paso
-Hito 7 — Controles de cambios.
+Desviaciones, CAPA y Controles de Cambios comparten ya la plataforma común de expedientes, relaciones, documentos, versionado e indicadores.
 
 
 ## Hito 6.1 — Versionado transversal
@@ -147,12 +144,12 @@ Implementación:
 ### Regla para históricos 2025–2026
 Los expedientes existentes se convierten en un baseline `HISTORICAL_STATE`. Si una CAPA ya dispone de una secuencia de seguimiento conocida, el baseline adopta esa secuencia. No se crean artificialmente V00/V01 intermedias cuando el sistema anterior no conservaba el snapshot necesario para reconstruirlas.
 
-## Próximo paso tras integrar Hito 6.1
-Hito 7 — Controles de cambios, reutilizando `QmsRecordVersion` para los seguimientos 00/01/02….
+## Continuidad tras Hito 6.1
+El mecanismo `QmsRecordVersion` se reutiliza en Controles de Cambios para los seguimientos 00/01/02….
 
 
 ## Hito 7 — Controles de Cambios
-Estado: **IMPLEMENTADO EN RAMA Y EN VALIDACIÓN CI**.
+Estado: **COMPLETADO Y VALIDADO EN CI**.
 
 Fuente funcional:
 - GC-00/003/03, revisión 03 de 06/04/2026.
@@ -191,7 +188,15 @@ Plantillas auditadas:
 - Anexo V SHA-256: 3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4
 - Anexo VII fuente SHA-256: bdef034e5de4f314d77696230e07f2796c2d139f4868c055d68688082622ce16
 
-Pendiente para cerrar el hito:
-- CI final verde;
-- actualizar este estado a COMPLETADO Y VALIDADO;
-- integrar la PR en main.
+Validación:
+- PostgreSQL 16 real;
+- esquema y seed;
+- smoke QMS existente;
+- smoke específico del ciclo de vida de Controles de Cambios;
+- versionado de seguimientos;
+- Prisma validate/generate;
+- lint;
+- tests;
+- build Next.js de producción.
+
+El hito queda listo para integración en `main`.
