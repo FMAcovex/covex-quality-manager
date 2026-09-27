@@ -149,3 +149,49 @@ Los expedientes existentes se convierten en un baseline `HISTORICAL_STATE`. Si u
 
 ## Próximo paso tras integrar Hito 6.1
 Hito 7 — Controles de cambios, reutilizando `QmsRecordVersion` para los seguimientos 00/01/02….
+
+
+## Hito 7 — Controles de Cambios
+Estado: **IMPLEMENTADO EN RAMA Y EN VALIDACIÓN CI**.
+
+Fuente funcional:
+- GC-00/003/03, revisión 03 de 06/04/2026.
+- Anexo III: Solicitud de cambios.
+- Anexo IV: Dictamen de cambios.
+- Anexo V: Informe de Seguimiento y Control de un Cambio.
+- Anexo VII: Listado de Controles de Cambio.
+
+Implementación:
+- módulo activado en navegación;
+- listado principal con filtros horizontales, buscador y columnas operativas ampliadas;
+- expediente a pantalla completa;
+- Solicitud y Dictamen en el mismo expediente;
+- plan de ejecución dinámico por departamento;
+- bloqueo del baseline del Dictamen tras aprobación;
+- seguimientos 00/01/02…;
+- snapshot del estado de cada tarea por seguimiento;
+- nuevas tareas de seguimiento con origen estructurado y etiqueta NUEVA Sxx;
+- persistencia de esas tareas en seguimientos posteriores;
+- ejecución, eficacia y cierre efectivo separados;
+- cierre sin ejecución soportado con motivo documentado y eficacia No aplica;
+- relaciones QMS e historial;
+- versionado funcional reutilizando QmsRecordVersion;
+- generación Anexo III, IV y V;
+- descarga de Anexo V de cualquier versión histórica persistida;
+- Anexo VII anual oficial;
+- listado simple filtrado;
+- pestaña de indicadores;
+- configuración de formulario/plantillas v03;
+- instalador de plantillas con validación SHA-256;
+- smoke test PostgreSQL específico incluido en CI.
+
+Plantillas auditadas:
+- Anexo III SHA-256: a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f
+- Anexo IV SHA-256: 742b1de11e0e0dece4e9c65c97613c112325189e183b9cb02c56ca82cd06cc60
+- Anexo V SHA-256: 3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4
+- Anexo VII fuente SHA-256: bdef034e5de4f314d77696230e07f2796c2d139f4868c055d68688082622ce16
+
+Pendiente para cerrar el hito:
+- CI final verde;
+- actualizar este estado a COMPLETADO Y VALIDADO;
+- integrar la PR en main.
