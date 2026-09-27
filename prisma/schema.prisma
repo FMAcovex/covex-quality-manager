@@ -119,6 +119,7 @@ enum ChangeEffectivenessStatus {
   PENDING
   ACCEPTABLE
   NOT_ACCEPTABLE
+  NOT_APPLICABLE
 }
 
 enum ChangeFinalStatus {
