@@ -33,6 +33,7 @@ export function executionStatusLabel(value: string) {
 export function effectivenessStatusLabel(value: string) {
   if (value === "ACCEPTABLE") return "Aceptable";
   if (value === "NOT_ACCEPTABLE") return "No aceptable";
+  if (value === "NOT_APPLICABLE") return "No aplica";
   return "Pendiente";
 }
 
