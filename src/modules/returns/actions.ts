@@ -1,5 +1,5 @@
 "use server";
-import { Prisma,QmsRecordType } from "@prisma/client";
+import { Prisma,QmsRecordType,QmsRelationType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -13,7 +13,8 @@ const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJson
 async function getSnapshot(tx:Prisma.TransactionClient,id:string){
  return tx.returnRecord.findUniqueOrThrow({where:{id},include:{qmsRecord:true,products:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},followups:{orderBy:[{followupDate:"asc"},{createdAt:"asc"}]},formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true,annexVITemplateVersion:true}});
 }
-function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{id:string;code:string;name:string},existing?:any){
+type ExistingReturnSnapshot={departmentId:string|null;departmentCodeSnapshot:string|null;departmentNameSnapshot:string|null};
+function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{id:string;code:string;name:string},existing?:ExistingReturnSnapshot){
  return {
   departmentId:department.id,departmentCodeSnapshot:existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code,
   departmentNameSnapshot:existing?.departmentId===department.id?(existing.departmentNameSnapshot??department.name):department.name,
@@ -87,8 +88,9 @@ export async function addReturnFollowupAction(id:string,fd:FormData){
 }
 export async function addReturnRelationAction(id:string,fd:FormData){
  const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)throw new Error("Devolución no encontrada.");
- const code=String(fd.get("businessCode")??"").trim(),type=String(fd.get("relationType")??"RELATED_TO"),actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo");
+ const code=String(fd.get("businessCode")??"").trim(),rawType=String(fd.get("relationType")??"RELATED_TO"),actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo");
+ const allowed=new Set(Object.values(QmsRelationType));if(!allowed.has(rawType as QmsRelationType))throw new Error("Tipo de relación no válido.");const type=rawType as QmsRelationType;
  const target=await prisma.qmsRecord.findFirst({where:{businessCode:code,id:{not:rec.qmsRecordId}}});if(!target)throw new Error("No existe un expediente con esa codificación.");
- await prisma.qmsRelation.upsert({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type as any}},update:{isActive:true,createdByText:actor},create:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type as any,createdByText:actor}});
+ await prisma.qmsRelation.upsert({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type}},update:{isActive:true,createdByText:actor},create:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type,createdByText:actor}});
  revalidatePath(`/returns/${id}`);
 }
