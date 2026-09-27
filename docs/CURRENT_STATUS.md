@@ -9,7 +9,7 @@ Fecha: 2026-09-27.
 - Hito 3 — Documentos y exportaciones.
 
 ## Hito 3 — Documentos y exportaciones
-Estado: **COMPLETADO FUNCIONALMENTE; VALIDACIÓN FINAL EN CI**.
+Estado: **COMPLETADO Y VALIDADO**.
 
 Implementado:
 - generación de Anexo III DOCX individual desde el expediente;
@@ -40,6 +40,15 @@ Los binarios controlados se instalan localmente y no se versionan en GitHub. El 
 
 ### Nota histórica
 La revisión documental aplicable a los expedientes de 2025 debe verificarse durante el Hito 4 antes de considerar una exportación histórica como Anexo V oficial. No se asignará silenciosamente una versión actual a históricos sin verificarla.
+
+### Validación final
+- PostgreSQL 16 real;
+- `prisma db push`, seed y smoke test;
+- Prisma validate/generate;
+- lint;
+- 9 ficheros de test / 15 tests superados;
+- build Next.js de producción superado;
+- revisión visual independiente del Anexo III y Anexo V generados con datos ficticios.
 
 ## Fuera de alcance todavía
 - importación histórica 2025/2026;
