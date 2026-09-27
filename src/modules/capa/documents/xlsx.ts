@@ -5,7 +5,7 @@ import {
   writeZip,
   type ZipEntry,
 } from "@/lib/ooxml/zip";
-import { escapeXml } from "@/lib/ooxml/xml";
+import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadCapaAnnexIVTemplate } from "@/modules/capa/documents/templates";
 
@@ -105,10 +105,7 @@ export function expandCapaAnnexIVSheet(
   const newSheetData = `<sheetData>${[...headers, ...dataRows, ...shiftedLegend].join("")}</sheetData>`;
   let result = sheetXml.replace(/<sheetData>[\s\S]*?<\/sheetData>/, newSheetData);
   result = result.replace(/<dimension ref="[^"]+"/, `<dimension ref="A1:N${legendStart + 2}"`);
-  result = result.replace(
-    /LISTADO DE SEGUIMIENTOS DE CAPAS[\s\S]*?&quot;AÑO&quot;/,
-    `LISTADO DE SEGUIMIENTOS DE CAPAS \n&quot;${year}&quot;`,
-  );
+  result = setXlsxCell(result, "A2", `LISTADO DE SEGUIMIENTOS DE CAPAS\n"${year}"`);
   return result;
 }
 
