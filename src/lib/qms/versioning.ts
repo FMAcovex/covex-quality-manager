@@ -257,3 +257,92 @@ export async function startNextVersion(
     },
   });
 }
+
+
+function objectValue(value: Prisma.JsonValue): Record<string, any> {
+  if (!value || Array.isArray(value) || typeof value !== "object") {
+    throw new Error("Snapshot de versión no válido.");
+  }
+  return value as Record<string, any>;
+}
+
+function dateValue(value: unknown) {
+  return typeof value === "string" && value ? new Date(value) : null;
+}
+
+export function deviationSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
+  const root = objectValue(snapshot);
+  const d = objectValue(root.deviation as Prisma.JsonValue);
+  return {
+    ...d,
+    qmsRecord: { businessCode: root.businessCode ?? null },
+    issueDate: dateValue(d.issueDate),
+    eventDateTime: dateValue(d.eventDateTime),
+    closedAt: dateValue(d.closedAt),
+    immediateActions: (d.immediateActions ?? []).map((item: any) => ({
+      ...item,
+      executedAt: dateValue(item.executedAt),
+    })),
+    capaPlans: (d.capaPlans ?? []).map((item: any) => ({
+      ...item,
+      plannedExecutionDate: dateValue(item.plannedExecutionDate),
+      linkedCapaRecord: item.linkedCapaBusinessCode
+        ? { businessCode: item.linkedCapaBusinessCode }
+        : null,
+    })),
+    anexoIIITemplateVersion: d.anexoIIITemplateVersionCode
+      ? { versionCode: d.anexoIIITemplateVersionCode }
+      : null,
+  };
+}
+
+export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
+  const root = objectValue(snapshot);
+  const d = objectValue(root.capa as Prisma.JsonValue);
+  return {
+    ...d,
+    qmsRecord: { businessCode: root.businessCode ?? null },
+    openedAt: dateValue(d.openedAt),
+    operationalClosedAt: dateValue(d.operationalClosedAt),
+    effectiveClosedAt: dateValue(d.effectiveClosedAt),
+    plannedActions: (d.plannedActions ?? []).map((item: any) => ({
+      ...item,
+      plannedExecutionDate: dateValue(item.plannedExecutionDate),
+    })),
+    followups: (d.followups ?? []).map((item: any) => ({
+      ...item,
+      followupDate: dateValue(item.followupDate),
+      nextFollowupDate: dateValue(item.nextFollowupDate),
+    })),
+    annexIIITemplateVersion: d.anexoIIITemplateVersionCode
+      ? { versionCode: d.anexoIIITemplateVersionCode }
+      : null,
+  };
+}
+
+export function recordVersionSummary(
+  recordType: "DEVIATION" | "CAPA",
+  snapshot: Prisma.JsonValue,
+) {
+  const root = objectValue(snapshot);
+  if (recordType === "DEVIATION") {
+    const d = objectValue(root.deviation as Prisma.JsonValue);
+    return {
+      status: d.status ?? null,
+      closedAt: d.closedAt ?? null,
+      effectivenessStatus: null,
+      effectiveClosedAt: null,
+      nextFollowupDate: null,
+    };
+  }
+  const d = objectValue(root.capa as Prisma.JsonValue);
+  const followups = Array.isArray(d.followups) ? d.followups : [];
+  const latest = followups.length ? followups[followups.length - 1] : null;
+  return {
+    status: d.status ?? null,
+    closedAt: d.operationalClosedAt ?? null,
+    effectivenessStatus: d.effectivenessStatus ?? null,
+    effectiveClosedAt: d.effectiveClosedAt ?? null,
+    nextFollowupDate: latest?.nextFollowupDate ?? null,
+  };
+}
