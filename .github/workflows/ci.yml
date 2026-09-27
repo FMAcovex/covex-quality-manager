@@ -49,5 +49,6 @@ jobs:
           pnpm versions:smoke
           pnpm changes:smoke
           pnpm hito8:smoke
+          pnpm hito9:smoke
       - name: Quality checks
         run: pnpm quality
