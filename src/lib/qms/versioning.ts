@@ -381,3 +381,19 @@ export function recordVersionSummary(
     nextFollowupDate: latest?.nextFollowupDate ?? null,
   };
 }
+
+
+export function recordVersionTemplateId(
+  recordType: "DEVIATION" | "CAPA",
+  snapshot: Prisma.JsonValue,
+) {
+  const root = objectValue(snapshot);
+  const section = objectValue(
+    recordType === "DEVIATION" ? root.deviation : root.capa,
+  );
+  const value =
+    recordType === "DEVIATION"
+      ? section.anexoIIITemplateVersionId
+      : section.anexoIIITemplateVersionId;
+  return typeof value === "string" ? value : null;
+}
