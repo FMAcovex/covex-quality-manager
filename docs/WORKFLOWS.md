@@ -135,3 +135,36 @@ La importación debe ser idempotente o disponer de clave de importación para ev
 3. Generar el anexo a partir del snapshot persistido de esa versión, no del estado actual.
 4. Usar la versión de plantilla asociada al snapshot cuando esté disponible.
 5. Registrar `GeneratedDocument.recordVersionId`.
+
+
+## W-15 — Crear y dictaminar un control de cambio
+
+1. Crear QmsRecord + ChangeControl.
+2. Cumplimentar Anexo III lógico: alcance, departamento, solicitante, descripción, justificación y documentos.
+3. Registrar aceptación/denegación de la solicitud.
+4. Cumplimentar el dictamen: evaluación, Mayor/Menor, fecha prevista, requisitos asociados y plan de ejecución.
+5. Registrar resultado del dictamen y responsable de seguimiento.
+6. Persistir V00 como estado inicial de solicitud/dictamen.
+7. Las ediciones ordinarias actualizan V00 o la versión vigente sin crear una versión funcional nueva.
+
+## W-16 — Seguimiento de un control de cambio
+
+1. El primer seguimiento oficial es 00.
+2. Registrar fecha y responsable.
+3. Actualizar acciones/evidencias, ejecución y eficacia.
+4. Si permanece abierto, exigir motivo y próxima fecha.
+5. Si se cierra ejecutado, exigir eficacia Aceptable y conclusión.
+6. Si se cierra sin ejecución, registrar expresamente cierre sin implantación y conclusión.
+7. Crear ChangeControlFollowup.
+8. Congelar la versión funcional anterior.
+9. Crear V01 para seguimiento 00, V02 para seguimiento 01, etc.
+10. Generar el Anexo V desde el snapshot de ese seguimiento.
+
+## W-17 — Exportaciones e histórico de cambios
+
+1. Anexo VII: exportación anual desde PostgreSQL.
+2. Listado simple: exportación completa o con filtros.
+3. Importación 2025–2026: dry-run obligatorio por defecto.
+4. Detectar códigos duplicados y campos críticos ausentes.
+5. No inventar información que no exista en el listado.
+6. Crear baseline HISTORICAL_STATE y continuar versionado exacto desde el último seguimiento conocido.

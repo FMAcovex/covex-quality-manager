@@ -83,6 +83,51 @@ enum CapaEffectivenessStatus {
   NA
 }
 
+enum ChangeScope {
+  FACILITIES
+  EQUIPMENT
+  PROCESS
+  MATERIAL
+  SUPPLIER
+  DOCUMENTATION
+  OTHER
+}
+
+enum ChangeClassification {
+  MAJOR
+  MINOR
+}
+
+enum ChangeRequestStatus {
+  PENDING
+  ACCEPTED
+  DENIED
+}
+
+enum ChangeDecisionResult {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ChangeExecutionStatus {
+  NOT_EXECUTED
+  EXECUTED
+}
+
+enum ChangeEffectivenessStatus {
+  PENDING
+  ACCEPTABLE
+  NOT_ACCEPTABLE
+}
+
+enum ChangeControlStatus {
+  OPEN
+  CLOSED
+  REJECTED
+  CANCELLED
+}
+
 enum HistorySource {
   UI
   IMPORT
@@ -103,6 +148,10 @@ enum DocumentType {
   CAPA_ANNEX_III
   CAPA_ANNEX_IV
   CAPA_SIMPLE_LIST
+  CHANGE_ANNEX_III_IV
+  CHANGE_ANNEX_V
+  CHANGE_ANNEX_VII
+  CHANGE_SIMPLE_LIST
 }
 
 enum HistoricalImportRowResult {
@@ -147,6 +196,7 @@ model QmsRecord {
   updatedAt          DateTime            @updatedAt
   deviation          Deviation?
   capa               Capa?
+  changeControl      ChangeControl?
   sourceRelations    QmsRelation[]       @relation("RelationSource")
   targetRelations    QmsRelation[]       @relation("RelationTarget")
   history            ChangeHistory[]
@@ -184,8 +234,9 @@ model Department {
   isActive   Boolean     @default(true)
   validFrom  DateTime?   @db.Date
   validTo    DateTime?   @db.Date
-  deviations Deviation[]
-  capas      Capa[]
+  deviations    Deviation[]
+  capas         Capa[]
+  changeControls ChangeControl[]
 }
 
 model FormVersion {
@@ -201,6 +252,7 @@ model FormVersion {
   updatedAt     DateTime          @updatedAt
   deviations    Deviation[]
   capas         Capa[]
+  changeControls ChangeControl[]
   fieldConfigs  FormFieldConfig[]
 
   @@unique([module, versionCode])
@@ -246,9 +298,11 @@ model TemplateVersion {
   effectiveTo         DateTime?           @db.Date
   isActive            Boolean             @default(true)
   createdAt           DateTime            @default(now())
-  deviationsAnnexIII  Deviation[]         @relation("DeviationAnnexIIITemplate")
-  capasAnnexIII       Capa[]              @relation("CapaAnnexIIITemplate")
-  generatedDocuments  GeneratedDocument[]
+  deviationsAnnexIII           Deviation[]     @relation("DeviationAnnexIIITemplate")
+  capasAnnexIII                Capa[]          @relation("CapaAnnexIIITemplate")
+  changeRequestDecisionRecords ChangeControl[] @relation("ChangeRequestDecisionTemplate")
+  changeFollowupRecords        ChangeControl[] @relation("ChangeFollowupTemplate")
+  generatedDocuments           GeneratedDocument[]
 
   @@unique([module, documentType, versionCode])
   @@index([module, documentType, isActive, effectiveFrom])
@@ -469,6 +523,139 @@ model CapaFollowup {
 
   @@unique([capaId, sequenceNumber])
   @@index([capaId, followupDate])
+  @@index([nextFollowupDate])
+}
+
+model ChangeControl {
+  id                               String                    @id @default(uuid())
+  qmsRecordId                      String                    @unique
+  qmsRecord                        QmsRecord                 @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId                     String?
+  department                       Department?               @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot           String?
+  departmentNameSnapshot           String?
+  requestedAt                      DateTime?                 @db.Date
+  requesterName                    String?
+  requesterPosition                String?
+  scopes                           ChangeScope[]             @default([])
+  scopeOther                       String?
+  description                      String?
+  justification                    String?
+  supportingDocuments              String?
+  requestStatus                    ChangeRequestStatus       @default(PENDING)
+  requestResponsible               String?
+  acceptedByText                   String?
+  requestDecisionAt                DateTime?                 @db.Date
+  evaluation                       String?
+  classification                   ChangeClassification?
+  plannedImplementationAt          DateTime?                 @db.Date
+  committeeRequired                Boolean?
+  committeeJustification           String?
+  clientNotificationRequired       Boolean?
+  clientNotificationDetail         String?
+  authorityNotificationRequired    Boolean?
+  authorityNotificationDetail      String?
+  pqrRequirement                   TriState?
+  pqrProducts                      String?
+  pqrPeriod                        String?
+  stabilityRequirement             TriState?
+  stabilityAccelerated             Boolean?
+  stabilityOngoing                 Boolean?
+  stabilityDetail                  String?
+  additionalAnalysis               TriState?
+  additionalAnalysisDetail         String?
+  additionalValidation             TriState?
+  additionalValidationDetail       String?
+  otherImplication                 Boolean?
+  otherImplicationDetail           String?
+  decisionResult                   ChangeDecisionResult      @default(PENDING)
+  decisionAt                       DateTime?                 @db.Date
+  followupResponsible              String?
+  decisionObservations             String?
+  approvedByText                   String?
+  executionStatus                  ChangeExecutionStatus     @default(NOT_EXECUTED)
+  executedAt                       DateTime?                 @db.Date
+  operationalClosedAt              DateTime?                 @db.Date
+  effectivenessStatus              ChangeEffectivenessStatus @default(PENDING)
+  effectivenessObservations        String?
+  effectiveClosedAt                DateTime?                 @db.Date
+  status                           ChangeControlStatus       @default(OPEN)
+  closeWithoutExecution            Boolean                  @default(false)
+  closureConclusion                String?
+  internalObservations             String?
+  signedDocumentAvailable          Boolean?
+  dataQualityStatus                DataQualityStatus         @default(REVIEW_REQUIRED)
+  includeInKpi                     Boolean                   @default(true)
+  kpiExclusionReason               String?
+  formVersionId                    String?
+  formVersion                      FormVersion?              @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  requestDecisionTemplateVersionId String?
+  requestDecisionTemplateVersion   TemplateVersion?          @relation("ChangeRequestDecisionTemplate", fields: [requestDecisionTemplateVersionId], references: [id], onDelete: Restrict)
+  followupTemplateVersionId        String?
+  followupTemplateVersion          TemplateVersion?          @relation("ChangeFollowupTemplate", fields: [followupTemplateVersionId], references: [id], onDelete: Restrict)
+  extraData                        Json?
+  createdAt                        DateTime                  @default(now())
+  updatedAt                        DateTime                  @updatedAt
+  actions                          ChangeControlAction[]
+  followups                        ChangeControlFollowup[]
+
+  @@index([departmentId])
+  @@index([requestedAt])
+  @@index([classification])
+  @@index([requestStatus])
+  @@index([decisionResult])
+  @@index([executionStatus])
+  @@index([effectivenessStatus])
+  @@index([status])
+  @@index([plannedImplementationAt])
+  @@index([executedAt])
+  @@index([effectiveClosedAt])
+  @@index([includeInKpi])
+}
+
+model ChangeControlAction {
+  id                     String        @id @default(uuid())
+  changeControlId        String
+  changeControl          ChangeControl @relation(fields: [changeControlId], references: [id], onDelete: Cascade)
+  departmentText         String?
+  description            String
+  responsible            String?
+  plannedExecutionDate   DateTime?     @db.Date
+  actualExecutionDate    DateTime?     @db.Date
+  completed              Boolean       @default(false)
+  evidenceComment        String?
+  introducedInSequence   Int?
+  sortOrder              Int           @default(0)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@index([changeControlId, sortOrder])
+  @@index([plannedExecutionDate])
+  @@index([actualExecutionDate])
+}
+
+model ChangeControlFollowup {
+  id                         String                    @id @default(uuid())
+  changeControlId            String
+  changeControl              ChangeControl             @relation(fields: [changeControlId], references: [id], onDelete: Cascade)
+  sequenceNumber             Int
+  followupDate               DateTime                  @db.Date
+  responsibleText            String
+  observations               String?
+  executionStatus            ChangeExecutionStatus
+  executionDate              DateTime?                 @db.Date
+  effectivenessStatus        ChangeEffectivenessStatus
+  effectivenessObservations  String?
+  closesChange               Boolean                   @default(false)
+  nextFollowupDate           DateTime?                 @db.Date
+  openReason                 String?
+  conclusion                 String?
+  closedByText               String?
+  closureApprovedByText      String?
+  createdAt                  DateTime                  @default(now())
+
+  @@unique([changeControlId, sequenceNumber])
+  @@index([changeControlId, followupDate])
   @@index([nextFollowupDate])
 }
 

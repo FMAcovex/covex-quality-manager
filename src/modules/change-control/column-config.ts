@@ -1,0 +1,18 @@
+export const changeControlColumns = [
+  { key:"control",label:"Control",index:0 },
+  { key:"code",label:"Codificación",index:1,locked:true },
+  { key:"department",label:"Departamento",index:2 },
+  { key:"description",label:"Descripción",index:3 },
+  { key:"requestDate",label:"Fecha solicitud",index:4 },
+  { key:"approvalDate",label:"Fecha aprobación",index:5 },
+  { key:"classification",label:"Clasificación",index:6 },
+  { key:"planned",label:"Fecha prevista",index:7 },
+  { key:"execution",label:"Estado ejecución",index:8 },
+  { key:"executionDate",label:"Fecha ejecución",index:9 },
+  { key:"effectiveness",label:"Eficacia",index:10 },
+  { key:"lastFollowup",label:"Último seguimiento",index:11 },
+  { key:"nextFollowup",label:"Próximo seguimiento",index:12 },
+  { key:"status",label:"Estado final",index:13 },
+  { key:"closeDate",label:"Fecha cierre",index:14 },
+  { key:"observations",label:"Observaciones",index:15 },
+] as const;

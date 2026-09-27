@@ -306,3 +306,63 @@ Puede referenciar opcionalmente `recordVersionId`. Esto permite volver a generar
 
 ### Históricos previos al Hito 6.1
 No se infiere un estado histórico que no exista en la fuente. Para registros ya presentes se crea un `HISTORICAL_STATE` con la última secuencia conocida cuando sea posible. Los huecos anteriores permanecen sin snapshot en lugar de inventarse.
+
+
+## 15. Control de cambios
+
+### ChangeControl
+Entidad 1:1 con QmsRecord.
+
+Agrupa:
+- identificación y departamento solicitante;
+- fecha y solicitante;
+- alcance del cambio;
+- descripción y justificación;
+- aceptación de la solicitud;
+- evaluación/dictamen;
+- clasificación Mayor/Menor;
+- fecha prevista de implantación;
+- requisitos derivados: comité, cliente, autoridad sanitaria, PQR, estabilidad, análisis y validación;
+- decisión de aprobación/rechazo;
+- responsable de seguimiento;
+- estado de ejecución y fecha real;
+- eficacia;
+- cierre operativo y cierre efectivo;
+- observaciones, documento firmado y control de calidad del dato.
+
+### ChangeControlAction
+Plan 1:N:
+- departamento;
+- acción;
+- responsable;
+- fecha prevista;
+- fecha real;
+- completada;
+- evidencia/comentario;
+- seguimiento en el que se introdujo;
+- orden.
+
+### ChangeControlFollowup
+Seguimientos 1:N:
+- sequenceNumber, comenzando en 00;
+- fecha;
+- responsable;
+- observaciones;
+- estado/fecha de ejecución;
+- eficacia y observaciones;
+- indicador de cierre;
+- próxima fecha;
+- motivo de permanencia abierto;
+- conclusión;
+- cierre del seguimiento y aprobación final.
+
+Unicidad: changeControlId + sequenceNumber.
+
+### Versionado
+QmsRecordVersion V00 representa solicitud/dictamen inicial.
+Cada seguimiento oficial crea la siguiente versión funcional:
+- seguimiento 00 -> V01;
+- seguimiento 01 -> V02;
+- seguimiento 02 -> V03.
+
+Los snapshots contienen el estado completo del expediente en ese momento.

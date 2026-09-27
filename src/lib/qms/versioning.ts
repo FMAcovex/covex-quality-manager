@@ -23,6 +23,17 @@ type CapaVersionSource = Prisma.CapaGetPayload<{
   };
 }>;
 
+type ChangeControlVersionSource = Prisma.ChangeControlGetPayload<{
+  include: {
+    qmsRecord: true;
+    actions: true;
+    followups: true;
+    formVersion: true;
+    requestDecisionTemplateVersion: true;
+    followupTemplateVersion: true;
+  };
+}>;
+
 function iso(value: Date | null | undefined) {
   return value ? value.toISOString() : null;
 }
@@ -183,6 +194,108 @@ export function serializeCapaVersion(record: CapaVersionSource) {
         observations: item.observations ?? null,
         evidenceReference: item.evidenceReference ?? null,
         nextFollowupDate: iso(item.nextFollowupDate),
+      })),
+    },
+  };
+}
+
+export function serializeChangeControlVersion(record: ChangeControlVersionSource) {
+  return {
+    recordType: "CHANGE_CONTROL",
+    businessCode: record.qmsRecord.businessCode ?? null,
+    year: record.qmsRecord.year ?? null,
+    changeControl: {
+      departmentId: record.departmentId ?? null,
+      departmentCodeSnapshot: record.departmentCodeSnapshot ?? null,
+      departmentNameSnapshot: record.departmentNameSnapshot ?? null,
+      requestedAt: iso(record.requestedAt),
+      requesterName: record.requesterName ?? null,
+      requesterPosition: record.requesterPosition ?? null,
+      scopes: record.scopes ?? [],
+      scopeOther: record.scopeOther ?? null,
+      description: record.description ?? null,
+      justification: record.justification ?? null,
+      supportingDocuments: record.supportingDocuments ?? null,
+      requestStatus: record.requestStatus,
+      requestResponsible: record.requestResponsible ?? null,
+      acceptedByText: record.acceptedByText ?? null,
+      requestDecisionAt: iso(record.requestDecisionAt),
+      evaluation: record.evaluation ?? null,
+      classification: record.classification ?? null,
+      plannedImplementationAt: iso(record.plannedImplementationAt),
+      committeeRequired: record.committeeRequired ?? null,
+      committeeJustification: record.committeeJustification ?? null,
+      clientNotificationRequired: record.clientNotificationRequired ?? null,
+      clientNotificationDetail: record.clientNotificationDetail ?? null,
+      authorityNotificationRequired: record.authorityNotificationRequired ?? null,
+      authorityNotificationDetail: record.authorityNotificationDetail ?? null,
+      pqrRequirement: record.pqrRequirement ?? null,
+      pqrProducts: record.pqrProducts ?? null,
+      pqrPeriod: record.pqrPeriod ?? null,
+      stabilityRequirement: record.stabilityRequirement ?? null,
+      stabilityAccelerated: record.stabilityAccelerated ?? null,
+      stabilityOngoing: record.stabilityOngoing ?? null,
+      stabilityDetail: record.stabilityDetail ?? null,
+      additionalAnalysis: record.additionalAnalysis ?? null,
+      additionalAnalysisDetail: record.additionalAnalysisDetail ?? null,
+      additionalValidation: record.additionalValidation ?? null,
+      additionalValidationDetail: record.additionalValidationDetail ?? null,
+      otherImplication: record.otherImplication ?? null,
+      otherImplicationDetail: record.otherImplicationDetail ?? null,
+      decisionResult: record.decisionResult,
+      decisionAt: iso(record.decisionAt),
+      followupResponsible: record.followupResponsible ?? null,
+      decisionObservations: record.decisionObservations ?? null,
+      approvedByText: record.approvedByText ?? null,
+      executionStatus: record.executionStatus,
+      executedAt: iso(record.executedAt),
+      operationalClosedAt: iso(record.operationalClosedAt),
+      effectivenessStatus: record.effectivenessStatus,
+      effectivenessObservations: record.effectivenessObservations ?? null,
+      effectiveClosedAt: iso(record.effectiveClosedAt),
+      status: record.status,
+      closeWithoutExecution: record.closeWithoutExecution,
+      closureConclusion: record.closureConclusion ?? null,
+      internalObservations: record.internalObservations ?? null,
+      signedDocumentAvailable: record.signedDocumentAvailable ?? null,
+      dataQualityStatus: record.dataQualityStatus,
+      includeInKpi: record.includeInKpi,
+      kpiExclusionReason: record.kpiExclusionReason ?? null,
+      formVersionId: record.formVersionId ?? null,
+      formVersionCode: record.formVersion?.versionCode ?? null,
+      requestDecisionTemplateVersionId: record.requestDecisionTemplateVersionId ?? null,
+      requestDecisionTemplateVersionCode:
+        record.requestDecisionTemplateVersion?.versionCode ?? null,
+      followupTemplateVersionId: record.followupTemplateVersionId ?? null,
+      followupTemplateVersionCode: record.followupTemplateVersion?.versionCode ?? null,
+      actions: record.actions.map((item) => ({
+        id: item.id,
+        departmentText: item.departmentText ?? null,
+        description: item.description,
+        responsible: item.responsible ?? null,
+        plannedExecutionDate: iso(item.plannedExecutionDate),
+        actualExecutionDate: iso(item.actualExecutionDate),
+        completed: item.completed,
+        evidenceComment: item.evidenceComment ?? null,
+        introducedInSequence: item.introducedInSequence ?? null,
+        sortOrder: item.sortOrder,
+      })),
+      followups: record.followups.map((item) => ({
+        id: item.id,
+        sequenceNumber: item.sequenceNumber,
+        followupDate: iso(item.followupDate),
+        responsibleText: item.responsibleText,
+        observations: item.observations ?? null,
+        executionStatus: item.executionStatus,
+        executionDate: iso(item.executionDate),
+        effectivenessStatus: item.effectivenessStatus,
+        effectivenessObservations: item.effectivenessObservations ?? null,
+        closesChange: item.closesChange,
+        nextFollowupDate: iso(item.nextFollowupDate),
+        openReason: item.openReason ?? null,
+        conclusion: item.conclusion ?? null,
+        closedByText: item.closedByText ?? null,
+        closureApprovedByText: item.closureApprovedByText ?? null,
       })),
     },
   };
@@ -360,8 +473,46 @@ export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
   };
 }
 
+export function changeControlSnapshotToRecord(snapshot: Prisma.JsonValue) {
+  const root=objectValue(snapshot);
+  const d=objectValue(root.changeControl);
+  return {
+    ...d,
+    qmsRecord:{businessCode:stringValue(root.businessCode)},
+    requestedAt:dateValue(d.requestedAt),
+    requestDecisionAt:dateValue(d.requestDecisionAt),
+    plannedImplementationAt:dateValue(d.plannedImplementationAt),
+    decisionAt:dateValue(d.decisionAt),
+    executedAt:dateValue(d.executedAt),
+    operationalClosedAt:dateValue(d.operationalClosedAt),
+    effectiveClosedAt:dateValue(d.effectiveClosedAt),
+    scopes:Array.isArray(d.scopes)?d.scopes.filter((v):v is string=>typeof v==="string"):[],
+    actions:objectArray(d.actions).map((item)=>({
+      ...item,
+      plannedExecutionDate:dateValue(item.plannedExecutionDate),
+      actualExecutionDate:dateValue(item.actualExecutionDate),
+      completed:Boolean(item.completed),
+      introducedInSequence:
+        typeof item.introducedInSequence==="number"?item.introducedInSequence:null,
+      sortOrder:Number(item.sortOrder??0),
+    })),
+    followups:objectArray(d.followups).map((item)=>({
+      ...item,
+      sequenceNumber:Number(item.sequenceNumber??0),
+      followupDate:dateValue(item.followupDate),
+      executionDate:dateValue(item.executionDate),
+      nextFollowupDate:dateValue(item.nextFollowupDate),
+      closesChange:Boolean(item.closesChange),
+    })),
+    requestDecisionTemplateVersion:d.requestDecisionTemplateVersionCode
+      ?{versionCode:String(d.requestDecisionTemplateVersionCode)}:null,
+    followupTemplateVersion:d.followupTemplateVersionCode
+      ?{versionCode:String(d.followupTemplateVersionCode)}:null,
+  };
+}
+
 export function recordVersionSummary(
-  recordType: "DEVIATION" | "CAPA",
+  recordType: "DEVIATION" | "CAPA" | "CHANGE_CONTROL",
   snapshot: Prisma.JsonValue,
 ) {
   const root = objectValue(snapshot);
@@ -375,7 +526,19 @@ export function recordVersionSummary(
       nextFollowupDate: null,
     };
   }
-  const d = objectValue(root.capa);
+  if (recordType === "CAPA") {
+    const d = objectValue(root.capa);
+    const followups = objectArray(d.followups);
+    const latest = followups.at(-1) ?? null;
+    return {
+      status: stringValue(d.status),
+      closedAt: stringValue(d.operationalClosedAt),
+      effectivenessStatus: stringValue(d.effectivenessStatus),
+      effectiveClosedAt: stringValue(d.effectiveClosedAt),
+      nextFollowupDate: stringValue(latest?.nextFollowupDate),
+    };
+  }
+  const d = objectValue(root.changeControl);
   const followups = objectArray(d.followups);
   const latest = followups.at(-1) ?? null;
   return {
@@ -389,16 +552,22 @@ export function recordVersionSummary(
 
 
 export function recordVersionTemplateId(
-  recordType: "DEVIATION" | "CAPA",
+  recordType: "DEVIATION" | "CAPA" | "CHANGE_CONTROL",
   snapshot: Prisma.JsonValue,
 ) {
   const root = objectValue(snapshot);
   const section = objectValue(
-    recordType === "DEVIATION" ? root.deviation : root.capa,
+    recordType === "DEVIATION"
+      ? root.deviation
+      : recordType === "CAPA"
+        ? root.capa
+        : root.changeControl,
   );
   const value =
     recordType === "DEVIATION"
       ? section.anexoIIITemplateVersionId
-      : section.anexoIIITemplateVersionId;
+      : recordType === "CAPA"
+        ? section.anexoIIITemplateVersionId
+        : section.followupTemplateVersionId;
   return typeof value === "string" ? value : null;
 }
