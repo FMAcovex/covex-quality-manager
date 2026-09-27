@@ -43,7 +43,7 @@ function filterWhere(filters: DeviationAnalyticsFilters): Prisma.DeviationWhereI
 }
 
 export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters) {
-  const [records, departments, provenances, years] = await Promise.all([
+  const [records, departments, provenances, years, importBatches] = await Promise.all([
     prisma.deviation.findMany({
       where: filterWhere(filters),
       select: {
@@ -54,6 +54,7 @@ export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters) 
         recurrentRootCause: true,
         affectsFinishedProduct: true,
         provenance: true,
+        extraData: true,
         departmentCodeSnapshot: true,
         departmentNameSnapshot: true,
         capaRequired: true,
@@ -74,6 +75,10 @@ export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters) 
       distinct: ["year"],
       orderBy: { year: "desc" },
     }),
+    prisma.historicalImportBatch.findMany({
+      where: { appliedAt: { not: null } },
+      select: { years: true },
+    }),
   ]);
 
   const rows: AnalyticsRow[] = records.map((record) => ({
@@ -84,7 +89,16 @@ export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters) 
     classification: record.classification,
     recurrentRootCause: record.recurrentRootCause,
     affectsFinishedProduct: record.affectsFinishedProduct,
-    provenance: record.provenance,
+    provenance:
+      (() => {
+        const extra = record.extraData as {
+          historicalImport?: { normalizedOrigin?: unknown };
+        } | null;
+        const normalized = extra?.historicalImport?.normalizedOrigin;
+        return typeof normalized === "string" && normalized.trim()
+          ? normalized.trim()
+          : record.provenance;
+      })(),
     departmentCode: record.departmentCodeSnapshot,
     departmentName: record.departmentNameSnapshot,
     capaRequired: record.capaRequired,
@@ -98,9 +112,13 @@ export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters) 
     ? Number(filters.year)
     : undefined;
   const selectedYear = requestedYear ?? availableYears[0] ?? new Date().getFullYear();
-  const current = buildYearMetrics(rows, selectedYear);
-  const previous = buildYearMetrics(rows, selectedYear - 1);
-  const trend = buildFiveYearTrend(rows, selectedYear);
+  const coveredYears = new Set<number>([
+    ...availableYears,
+    ...importBatches.flatMap((batch) => batch.years),
+  ]);
+  const current = buildYearMetrics(rows, selectedYear, coveredYears.has(selectedYear));
+  const previous = buildYearMetrics(rows, selectedYear - 1, coveredYears.has(selectedYear - 1));
+  const trend = buildFiveYearTrend(rows, selectedYear, coveredYears);
 
   return {
     selectedYear,
