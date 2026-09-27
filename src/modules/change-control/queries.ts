@@ -36,8 +36,8 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
   if (filters.execution === "EXECUTED" || filters.execution === "NOT_EXECUTED") {
     and.push({ executionStatus: filters.execution });
   }
-  if (["PENDING", "ACCEPTABLE", "NOT_ACCEPTABLE"].includes(filters.effectiveness ?? "")) {
-    and.push({ effectivenessStatus: filters.effectiveness as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" });
+  if (["PENDING", "ACCEPTABLE", "NOT_ACCEPTABLE", "NOT_APPLICABLE"].includes(filters.effectiveness ?? "")) {
+    and.push({ effectivenessStatus: filters.effectiveness as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE" });
   }
   if (filters.status === "OPEN" || filters.status === "CLOSED") {
     and.push({ finalStatus: filters.status });
