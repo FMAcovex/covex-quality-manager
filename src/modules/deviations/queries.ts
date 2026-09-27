@@ -87,10 +87,14 @@ export async function getDeviationList(filters: DeviationListFilters) {
       prisma.deviation.count(),
       prisma.deviation.count({ where: { status: "OPEN" } }),
       prisma.deviation.count({ where: { status: "OPEN", deadlineStatus: "OUT_OF_TIME" } }),
-      prisma.deviation.count({
-        where: {
-          status: "OPEN",
-          followups: { some: { nextFollowupDate: { lte: new Date() } } },
+      prisma.deviation.findMany({
+        where: { status: "OPEN" },
+        select: {
+          followups: {
+            orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }],
+            take: 1,
+            select: { nextFollowupDate: true },
+          },
         },
       }),
     ]);
@@ -102,7 +106,15 @@ export async function getDeviationList(filters: DeviationListFilters) {
     provenances: provenanceRows
       .map((row) => row.provenance)
       .filter((value): value is string => Boolean(value)),
-    counters: { total, open, overdue, followupDue },
+    counters: {
+      total,
+      open,
+      overdue,
+      followupDue: followupDue.filter((row) => {
+        const nextDate = row.followups[0]?.nextFollowupDate;
+        return Boolean(nextDate && nextDate <= new Date());
+      }).length,
+    },
   };
 }
 
