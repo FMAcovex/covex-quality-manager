@@ -2,6 +2,27 @@ import { HistorySource, Prisma, RecordVersionKind } from "@prisma/client";
 
 type Tx = Prisma.TransactionClient;
 
+type DeviationVersionSource = Prisma.DeviationGetPayload<{
+  include: {
+    qmsRecord: true;
+    immediateActions: true;
+    followups: true;
+    capaPlans: { include: { linkedCapaRecord: true } };
+    formVersion: true;
+    anexoIIITemplateVersion: true;
+  };
+}>;
+
+type CapaVersionSource = Prisma.CapaGetPayload<{
+  include: {
+    qmsRecord: true;
+    plannedActions: true;
+    followups: true;
+    formVersion: true;
+    annexIIITemplateVersion: true;
+  };
+}>;
+
 function iso(value: Date | null | undefined) {
   return value ? value.toISOString() : null;
 }
@@ -14,11 +35,11 @@ export function snapshotJson(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
 
-export function serializeDeviationVersion(record: any) {
+export function serializeDeviationVersion(record: DeviationVersionSource) {
   return {
     recordType: "DEVIATION",
-    businessCode: record.qmsRecord?.businessCode ?? null,
-    year: record.qmsRecord?.year ?? null,
+    businessCode: record.qmsRecord.businessCode ?? null,
+    year: record.qmsRecord.year ?? null,
     deviation: {
       departmentId: record.departmentId ?? null,
       departmentCodeSnapshot: record.departmentCodeSnapshot ?? null,
@@ -78,15 +99,15 @@ export function serializeDeviationVersion(record: any) {
       internalObservations: record.internalObservations ?? null,
       signedDocumentAvailable: record.signedDocumentAvailable ?? null,
       dataQualityStatus: record.dataQualityStatus ?? null,
-      includeInKpi: record.includeInKpi ?? true,
+      includeInKpi: record.includeInKpi,
       kpiExclusionReason: record.kpiExclusionReason ?? null,
-      immediateActions: (record.immediateActions ?? []).map((item: any) => ({
+      immediateActions: record.immediateActions.map((item) => ({
         description: item.description,
         executedBy: item.executedBy ?? null,
         executedAt: iso(item.executedAt),
-        sortOrder: item.sortOrder ?? 0,
+        sortOrder: item.sortOrder,
       })),
-      capaPlans: (record.capaPlans ?? []).map((item: any) => ({
+      capaPlans: record.capaPlans.map((item) => ({
         actionType: item.actionType,
         description: item.description,
         plannedExecutionDate: iso(item.plannedExecutionDate),
@@ -94,9 +115,9 @@ export function serializeDeviationVersion(record: any) {
         businessCapaCode: item.businessCapaCode ?? null,
         linkedCapaRecordId: item.linkedCapaRecordId ?? null,
         linkedCapaBusinessCode: item.linkedCapaRecord?.businessCode ?? null,
-        proposalStatus: item.proposalStatus ?? null,
+        proposalStatus: item.proposalStatus,
       })),
-      followups: (record.followups ?? []).map((item: any) => ({
+      followups: record.followups.map((item) => ({
         id: item.id,
         followupDate: iso(item.followupDate),
         completedByText: item.completedByText,
@@ -109,11 +130,11 @@ export function serializeDeviationVersion(record: any) {
   };
 }
 
-export function serializeCapaVersion(record: any) {
+export function serializeCapaVersion(record: CapaVersionSource) {
   return {
     recordType: "CAPA",
-    businessCode: record.qmsRecord?.businessCode ?? null,
-    year: record.qmsRecord?.year ?? null,
+    businessCode: record.qmsRecord.businessCode ?? null,
+    year: record.qmsRecord.year ?? null,
     capa: {
       actionType: record.actionType,
       departmentId: record.departmentId ?? null,
@@ -139,20 +160,20 @@ export function serializeCapaVersion(record: any) {
       internalObservations: record.internalObservations ?? null,
       signedDocumentAvailable: record.signedDocumentAvailable ?? null,
       dataQualityStatus: record.dataQualityStatus,
-      includeInKpi: record.includeInKpi ?? true,
+      includeInKpi: record.includeInKpi,
       kpiExclusionReason: record.kpiExclusionReason ?? null,
       formVersionId: record.formVersionId ?? null,
       formVersionCode: record.formVersion?.versionCode ?? null,
       anexoIIITemplateVersionId: record.annexIIITemplateVersionId ?? null,
       anexoIIITemplateVersionCode: record.annexIIITemplateVersion?.versionCode ?? null,
-      plannedActions: (record.plannedActions ?? []).map((item: any) => ({
+      plannedActions: record.plannedActions.map((item) => ({
         description: item.description,
         responsible: item.responsible ?? null,
         plannedExecutionDate: iso(item.plannedExecutionDate),
         impact: item.impact ?? null,
-        sortOrder: item.sortOrder ?? 0,
+        sortOrder: item.sortOrder,
       })),
-      followups: (record.followups ?? []).map((item: any) => ({
+      followups: record.followups.map((item) => ({
         id: item.id,
         sequenceNumber: item.sequenceNumber,
         followupDate: iso(item.followupDate),
@@ -202,7 +223,14 @@ export async function refreshCurrentVersion(
     orderBy: { sequenceNumber: "desc" },
   });
   if (!latest) {
-    return ensureInitialVersion(tx, qmsRecordId, snapshot, actor, "SYSTEM", "Baseline creado al activar Hito 6.1");
+    return ensureInitialVersion(
+      tx,
+      qmsRecordId,
+      snapshot,
+      actor,
+      "SYSTEM",
+      "Baseline creado al activar Hito 6.1",
+    );
   }
   if (latest.frozenAt) {
     return latest;
@@ -256,12 +284,16 @@ export async function startNextVersion(
   });
 }
 
-
-function objectValue(value: Prisma.JsonValue): Record<string, any> {
+function objectValue(value: unknown): Record<string, unknown> {
   if (!value || Array.isArray(value) || typeof value !== "object") {
     throw new Error("Snapshot de versión no válido.");
   }
-  return value as Record<string, any>;
+  return value as Record<string, unknown>;
+}
+
+function objectArray(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => objectValue(item));
 }
 
 function dateValue(value: unknown) {
@@ -270,18 +302,18 @@ function dateValue(value: unknown) {
 
 export function deviationSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
   const root = objectValue(snapshot);
-  const d = objectValue(root.deviation as Prisma.JsonValue);
+  const d = objectValue(root.deviation);
   return {
     ...d,
     qmsRecord: { businessCode: root.businessCode ?? null },
     issueDate: dateValue(d.issueDate),
     eventDateTime: dateValue(d.eventDateTime),
     closedAt: dateValue(d.closedAt),
-    immediateActions: (d.immediateActions ?? []).map((item: any) => ({
+    immediateActions: objectArray(d.immediateActions).map((item) => ({
       ...item,
       executedAt: dateValue(item.executedAt),
     })),
-    capaPlans: (d.capaPlans ?? []).map((item: any) => ({
+    capaPlans: objectArray(d.capaPlans).map((item) => ({
       ...item,
       plannedExecutionDate: dateValue(item.plannedExecutionDate),
       linkedCapaRecord: item.linkedCapaBusinessCode
@@ -296,24 +328,27 @@ export function deviationSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
 
 export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
   const root = objectValue(snapshot);
-  const d = objectValue(root.capa as Prisma.JsonValue);
+  const d = objectValue(root.capa);
   return {
     ...d,
     qmsRecord: { businessCode: root.businessCode ?? null },
     openedAt: dateValue(d.openedAt),
     operationalClosedAt: dateValue(d.operationalClosedAt),
     effectiveClosedAt: dateValue(d.effectiveClosedAt),
-    plannedActions: (d.plannedActions ?? []).map((item: any) => ({
+    plannedActions: objectArray(d.plannedActions).map((item) => ({
       ...item,
       plannedExecutionDate: dateValue(item.plannedExecutionDate),
     })),
-    followups: (d.followups ?? [])
-      .map((item: any) => ({
+    followups: objectArray(d.followups)
+      .map((item) => ({
         ...item,
         followupDate: dateValue(item.followupDate),
         nextFollowupDate: dateValue(item.nextFollowupDate),
       }))
-      .sort((a: any, b: any) => b.sequenceNumber - a.sequenceNumber),
+      .sort(
+        (a, b) =>
+          Number(b.sequenceNumber ?? 0) - Number(a.sequenceNumber ?? 0),
+      ),
     annexIIITemplateVersion: d.anexoIIITemplateVersionCode
       ? { versionCode: d.anexoIIITemplateVersionCode }
       : null,
@@ -326,7 +361,7 @@ export function recordVersionSummary(
 ) {
   const root = objectValue(snapshot);
   if (recordType === "DEVIATION") {
-    const d = objectValue(root.deviation as Prisma.JsonValue);
+    const d = objectValue(root.deviation);
     return {
       status: d.status ?? null,
       closedAt: d.closedAt ?? null,
@@ -335,9 +370,9 @@ export function recordVersionSummary(
       nextFollowupDate: null,
     };
   }
-  const d = objectValue(root.capa as Prisma.JsonValue);
-  const followups = Array.isArray(d.followups) ? d.followups : [];
-  const latest = followups.length ? followups[followups.length - 1] : null;
+  const d = objectValue(root.capa);
+  const followups = objectArray(d.followups);
+  const latest = followups.at(-1) ?? null;
   return {
     status: d.status ?? null,
     closedAt: d.operationalClosedAt ?? null,
