@@ -57,10 +57,20 @@ export async function createReturnAction(_s:ReturnFormState,fd:FormData):Promise
    const rec=await tx.returnRecord.create({data:{qmsRecordId:qr.id,...recordData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vdecl?.id,annexVITemplateVersionId:vi?.id}});
    await replaceProducts(tx,rec.id,v.products);
    await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,customerEntity:v.customerEntity}),reason:"Alta de devolución",source:"UI"}});
+   if(v.fromComplaintId){
+    const complaint=await tx.complaint.findUnique({where:{id:v.fromComplaintId}});
+    if(complaint){
+     await tx.qmsRelation.upsert({
+      where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:complaint.qmsRecordId,targetRecordId:qr.id,relationType:"GENERATES"}},
+      update:{isActive:true,createdByText:parsed.actor,notes:"Devolución creada desde la reclamación."},
+      create:{sourceRecordId:complaint.qmsRecordId,targetRecordId:qr.id,relationType:"GENERATES",createdByText:parsed.actor,notes:"Devolución creada desde la reclamación."}
+     });
+    }
+   }
    const snap=await getSnapshot(tx,rec.id);await ensureInitialVersion(tx,qr.id,snapshotJson(serializeReturnVersion(snap)),parsed.actor);
    return rec;
   });
-  revalidatePath("/returns");redirect(`/returns/${created.id}`);
+  revalidatePath("/returns");revalidatePath("/complaints");redirect(`/returns/${created.id}`);
  }catch(e){if(e instanceof Error&&e.message.includes("Unique constraint"))return{error:"Ya existe una devolución con esa codificación."};throw e;}
 }
 export async function updateReturnAction(id:string,_s:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
