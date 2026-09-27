@@ -6,7 +6,6 @@ import {
   setTriStateCell,
   setWordCellText,
   setWordSdtCheckbox,
-  transformWordCell,
 } from "@/lib/ooxml/xml";
 import { loadAnnexIIITemplate } from "@/modules/deviations/documents/templates";
 
@@ -147,18 +146,6 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordCellText(xml, 1, 10, 0, value(record.howHappened));
 
   if (!record.immediateActions.length) xml = markFirstCheckbox(xml, 2, 1, 0, true);
-  else {
-    xml = replaceWordRowWithCopies(
-      xml,
-      2,
-      3,
-      record.immediateActions.map((action) => [
-        action.description,
-        value(action.executedBy),
-        date(action.executedAt),
-      ]),
-    );
-  }
 
   xml = setWordCellText(xml, 2, 6, 0, value(record.investigation));
   xml = setTriStateCell(xml, 2, 7, 1, record.investigationConclusive);
@@ -170,6 +157,18 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordCellText(xml, 2, 14, 0, value(record.rootCause));
   xml = setTriStateCell(xml, 2, 15, 1, record.recurrentRootCause);
   xml = setWordCellText(xml, 2, 16, 0, value(record.recurrenceDetails));
+  if (record.immediateActions.length) {
+    xml = replaceWordRowWithCopies(
+      xml,
+      2,
+      3,
+      record.immediateActions.map((action) => [
+        action.description,
+        value(action.executedBy),
+        date(action.executedAt),
+      ]),
+    );
+  }
 
   xml = markClassification(xml, record.classification);
   xml = setImpactCell(xml, 5, 0, "Impacto sobre el status de validación", record.validationImpact);
@@ -203,14 +202,9 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
 
   xml = setWordCellText(xml, 4, 1, 0, value(record.conclusion));
   const disposition = (record.disposition ?? "").toLocaleUpperCase("es-ES");
-  xml = transformWordCell(xml, 4, 3, 0, (cell) => {
-    let updated = cell;
-    const labels = ["APROBADO", "RECHAZADO", "Destruir", "Devolver", "OTRO"];
-    for (const label of labels) {
-      const selected = disposition.includes(label.toLocaleUpperCase("es-ES"));
-      if (selected) updated = updated.replace(`☐ ${label}`, `☒ ${label}`);
-    }
-    return updated;
+  const dispositionOptions = ["APROBADO", "RECHAZADO", "DESTRUIR", "DEVOLVER", "OTRO"];
+  dispositionOptions.forEach((option, index) => {
+    xml = setWordSdtCheckbox(xml, 4, 3, index, disposition.includes(option));
   });
   if (record.dispositionQuantity) xml = appendWordCellText(xml, 4, 3, 0, `Cantidad registrada: ${record.dispositionQuantity}`);
   if (record.dispositionComments) xml = appendWordCellText(xml, 4, 3, 0, record.dispositionComments);
