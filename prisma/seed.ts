@@ -67,6 +67,58 @@ async function main() {
       isActive: true,
     },
   });
+  await prisma.formVersion.upsert({
+    where: {
+      module_versionCode: {
+        module: QmsRecordType.CAPA,
+        versionCode: "CAPA-05",
+      },
+    },
+    update: { isActive: true },
+    create: {
+      module: QmsRecordType.CAPA,
+      versionCode: "CAPA-05",
+      effectiveFrom: new Date("2026-02-02"),
+      isActive: true,
+      notes: "GC-00/030/05.",
+    },
+  });
+
+  await prisma.templateVersion.upsert({
+    where: {
+      module_documentType_versionCode: {
+        module: QmsRecordType.CAPA,
+        documentType: DocumentType.CAPA_ANNEX_III,
+        versionCode: "05",
+      },
+    },
+    update: { isActive: true },
+    create: {
+      module: QmsRecordType.CAPA,
+      documentType: DocumentType.CAPA_ANNEX_III,
+      versionCode: "05",
+      effectiveFrom: new Date("2026-02-02"),
+      isActive: true,
+    },
+  });
+
+  await prisma.templateVersion.upsert({
+    where: {
+      module_documentType_versionCode: {
+        module: QmsRecordType.CAPA,
+        documentType: DocumentType.CAPA_ANNEX_IV,
+        versionCode: "05",
+      },
+    },
+    update: { isActive: true },
+    create: {
+      module: QmsRecordType.CAPA,
+      documentType: DocumentType.CAPA_ANNEX_IV,
+      versionCode: "05",
+      effectiveFrom: new Date("2026-02-02"),
+      isActive: true,
+    },
+  });
 }
 
 main().finally(async () => {

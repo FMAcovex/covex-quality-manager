@@ -105,6 +105,11 @@ export default async function DeviationDetailPage({
                     <header><strong>{plan.actionType === "CORRECTIVE" ? "Correctiva" : "Preventiva"}</strong><span className="badge neutral">{plan.proposalStatus}</span></header>
                     <p>{plan.description}</p>
                     <small className="muted-note">Responsable: {text(plan.responsible)} · Prevista: {formatDate(plan.plannedExecutionDate)}{plan.businessCapaCode ? ` · ${plan.businessCapaCode}` : ""}</small>
+                    {plan.linkedCapaRecord ? (
+                      <Link className="button small" href={`/capa/${plan.linkedCapaRecord.id}`}>Abrir CAPA</Link>
+                    ) : (
+                      <Link className="button small" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
+                    )}
                   </div>
                 ))}
               </div>

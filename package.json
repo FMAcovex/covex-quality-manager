@@ -20,7 +20,11 @@
     "templates:install": "tsx scripts/install-document-templates.ts",
     "import:deviations": "tsx scripts/import-historical-deviations.ts",
     "import:smoke": "tsx scripts/smoke-import.ts",
-    "indicators:smoke": "tsx scripts/smoke-indicators.ts"
+    "indicators:smoke": "tsx scripts/smoke-indicators.ts",
+    "templates:capa:install": "tsx scripts/install-capa-templates.ts",
+    "import:capa": "tsx scripts/import-historical-capa.ts",
+    "capa:import:smoke": "tsx scripts/smoke-capa-import.ts",
+    "capa:smoke": "tsx scripts/smoke-capa.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
