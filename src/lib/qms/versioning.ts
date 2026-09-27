@@ -307,11 +307,13 @@ export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
       ...item,
       plannedExecutionDate: dateValue(item.plannedExecutionDate),
     })),
-    followups: (d.followups ?? []).map((item: any) => ({
-      ...item,
-      followupDate: dateValue(item.followupDate),
-      nextFollowupDate: dateValue(item.nextFollowupDate),
-    })),
+    followups: (d.followups ?? [])
+      .map((item: any) => ({
+        ...item,
+        followupDate: dateValue(item.followupDate),
+        nextFollowupDate: dateValue(item.nextFollowupDate),
+      }))
+      .sort((a: any, b: any) => b.sequenceNumber - a.sequenceNumber),
     annexIIITemplateVersion: d.anexoIIITemplateVersionCode
       ? { versionCode: d.anexoIIITemplateVersionCode }
       : null,
