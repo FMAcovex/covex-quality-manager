@@ -306,3 +306,47 @@ Puede referenciar opcionalmente `recordVersionId`. Esto permite volver a generar
 
 ### Históricos previos al Hito 6.1
 No se infiere un estado histórico que no exista en la fuente. Para registros ya presentes se crea un `HISTORICAL_STATE` con la última secuencia conocida cuando sea posible. Los huecos anteriores permanecen sin snapshot en lugar de inventarse.
+
+
+## 15. Controles de Cambios
+
+### ChangeControl
+Un expediente por Control de Cambio, enlazado 1:1 con `QmsRecord`.
+
+Agrupa:
+- Solicitud (Anexo III);
+- Dictamen (Anexo IV);
+- estado de ejecución;
+- comprobación de eficacia;
+- cierre efectivo;
+- referencias a versiones de formulario y plantillas III/IV/V.
+
+### ChangeControlTask
+Acciones del plan:
+- departamento dinámico;
+- descripción;
+- responsable;
+- fecha prevista;
+- `origin = DICTAMEN | FOLLOWUP`;
+- `introducedInFollowup` para identificar tareas nuevas detectadas durante un seguimiento.
+
+Las tareas del Dictamen constituyen la línea base aprobada y no se sustituyen después de su aprobación.
+
+### ChangeControlFollowup
+Seguimientos formales 00, 01, 02...:
+- fecha;
+- responsable;
+- ejecución y fecha;
+- eficacia;
+- próxima fecha;
+- motivo para permanecer abierto;
+- conclusión/cierre;
+- aprobación.
+
+### ChangeControlTaskState
+Snapshot del estado de cada tarea en cada seguimiento:
+- pendiente/completada/no aplica;
+- fecha real;
+- evidencia/comentario.
+
+Cada seguimiento genera además una `QmsRecordVersion` con el mismo número.
