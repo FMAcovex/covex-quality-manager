@@ -103,7 +103,7 @@ export default async function ChangeControlDetailPage({
             <span className={`badge ${record.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>
               {executionStatusLabel(record.executionStatus)}
             </span>
-            <span className={`badge ${record.effectivenessStatus === "ACCEPTABLE" ? "closed" : record.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : "warning"}`}>
+            <span className={`badge ${record.effectivenessStatus === "ACCEPTABLE" ? "closed" : record.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : record.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>
               Eficacia {effectivenessStatusLabel(record.effectivenessStatus)}
             </span>
             <span className={`badge ${record.finalStatus === "CLOSED" ? "closed" : "open"}`}>
@@ -216,7 +216,7 @@ export default async function ChangeControlDetailPage({
                       <header>
                         <strong>Seguimiento {String(item.sequenceNumber).padStart(2,"0")} · {formatDate(item.followupDate)}</strong>
                         <span className={`badge ${item.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>{executionStatusLabel(item.executionStatus)}</span>
-                        <span className={`badge ${item.effectivenessStatus === "ACCEPTABLE" ? "closed" : item.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : "warning"}`}>{effectivenessStatusLabel(item.effectivenessStatus)}</span>
+                        <span className={`badge ${item.effectivenessStatus === "ACCEPTABLE" ? "closed" : item.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : item.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>{effectivenessStatusLabel(item.effectivenessStatus)}</span>
                       </header>
                       <p>Responsable: {item.responsible} · Próximo: {formatDate(item.nextFollowupDate)}</p>
                       {item.remainOpenReason ? <p><strong>Motivo abierto:</strong> {item.remainOpenReason}</p> : null}
