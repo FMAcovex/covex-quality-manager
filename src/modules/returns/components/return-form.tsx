@@ -33,7 +33,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId}:{mode:
   </div></section>
 
   <section className="form-section"><h2>2. Producto(s) devuelto(s)</h2><p className="section-help">Añadir tantas líneas como sea necesario.</p>
-   <div className="table-scroll"><table className="records-table followup-task-table"><thead><tr><th>Tipo</th><th>Producto / código</th><th>Formato</th><th>Lote</th><th>Cad./reanálisis</th><th>Cantidad</th><th>Unidad</th><th>Observaciones recepción</th><th></th></tr></thead><tbody>
+   <div className="table-scroll"><table className="records-table followup-task-table"><thead><tr><th>Tipo</th><th>Producto / código</th><th>Formato</th><th>Lote</th><th>Cad./reanálisis</th><th>Cantidad</th><th>Unidad</th><th>Peso neto</th><th>Peso bruto</th><th>Recibido por</th><th>Verificado por</th><th>Observaciones recepción</th><th></th></tr></thead><tbody>
    {products.map((p,i)=><tr key={p.id??i}>
     <td><select value={p.productType} onChange={e=>patch(i,{productType:e.target.value as ReturnProductInput["productType"]})}><option value="API">API</option><option value="INTERMEDIATE">Intermedio</option><option value="MEDICINE">Medicamento</option><option value="SUPPLEMENT">Complemento</option><option value="IMPORTED_PRODUCT">Importado</option><option value="MEDICAL_DEVICE">Producto sanitario</option><option value="COSMETIC">Cosmético</option><option value="OTHER">Otro</option></select></td>
     <td><input value={p.productNameCode} onChange={e=>patch(i,{productNameCode:e.target.value})}/></td>
@@ -42,6 +42,10 @@ export function ReturnForm({mode,action,departments,defaults={},returnId}:{mode:
     <td><input value={p.expiryReanalysis} onChange={e=>patch(i,{expiryReanalysis:e.target.value})}/></td>
     <td><input value={p.quantity} onChange={e=>patch(i,{quantity:e.target.value})}/></td>
     <td><input value={p.unit} onChange={e=>patch(i,{unit:e.target.value})}/></td>
+    <td><input value={p.netWeight} onChange={e=>patch(i,{netWeight:e.target.value})}/></td>
+    <td><input value={p.grossWeight} onChange={e=>patch(i,{grossWeight:e.target.value})}/></td>
+    <td><input value={p.receivedBy} onChange={e=>patch(i,{receivedBy:e.target.value})}/></td>
+    <td><input value={p.verifiedBy} onChange={e=>patch(i,{verifiedBy:e.target.value})}/></td>
     <td><textarea value={p.receptionObservations} onChange={e=>patch(i,{receptionObservations:e.target.value})}/></td>
     <td><button type="button" className="button danger small" onClick={()=>setProducts(x=>x.filter((_,n)=>n!==i))}>Quitar</button></td>
    </tr>)}</tbody></table></div>
