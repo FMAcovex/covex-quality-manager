@@ -8,6 +8,7 @@ import {
   setWordSdtCheckbox,
 } from "@/lib/ooxml/xml";
 import { loadAnnexIIITemplate } from "@/modules/deviations/documents/templates";
+import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 
 type AnnexIIIRecord = {
   qmsRecord: { businessCode: string | null };
@@ -211,5 +212,6 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setTriStateCell(xml, 4, 4, 1, record.clientNotification);
 
   updateZipEntry(entries, "word/document.xml", xml);
+  sanitizeOfficeMetadata(entries);
   return writeZip(entries);
 }
