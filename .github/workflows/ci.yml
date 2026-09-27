@@ -48,5 +48,6 @@ jobs:
           pnpm capa:smoke
           pnpm versions:smoke
           pnpm changes:smoke
+          pnpm changes:import:smoke
       - name: Quality checks
         run: pnpm quality
