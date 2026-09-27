@@ -288,6 +288,25 @@ enum ConfigValueType {
   REFERENCE
 }
 
+enum ParameterValueType {
+  TEXT
+  INTEGER
+  BOOLEAN
+  JSON
+}
+
+enum AlertRuleKind {
+  FOLLOWUP_DUE
+  EFFECTIVENESS_PENDING
+  PLANNED_EXECUTION_DUE
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
 model QmsRecord {
   id                 String              @id @default(uuid())
   recordType         QmsRecordType
@@ -1090,6 +1109,70 @@ model GeneratedDocument {
   @@index([documentType, generatedAt])
 }
 
+
+model LookupCatalog {
+  id          String              @id @default(uuid())
+  key         String              @unique
+  label       String
+  description String?
+  module      QmsRecordType?
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  items       LookupCatalogItem[]
+
+  @@index([module, isActive])
+}
+
+model LookupCatalogItem {
+  id          String        @id @default(uuid())
+  catalogId   String
+  catalog     LookupCatalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  key         String
+  label       String
+  sortOrder   Int           @default(0)
+  isActive    Boolean       @default(true)
+  validFrom   DateTime?     @db.Date
+  validTo     DateTime?     @db.Date
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([catalogId, key])
+  @@index([catalogId, isActive, sortOrder])
+}
+
+model AppParameter {
+  id          String             @id @default(uuid())
+  scope       String             @default("GLOBAL")
+  key         String
+  label       String
+  valueType   ParameterValueType
+  value       Json
+  description String?
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([scope, key])
+  @@index([scope, isActive])
+}
+
+model AlertRule {
+  id          String        @id @default(uuid())
+  key         String        @unique
+  module      QmsRecordType
+  kind        AlertRuleKind
+  label       String
+  description String?
+  leadDays    Int           @default(7)
+  severity    AlertSeverity @default(WARNING)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([module, kind, isActive])
+}
 
 model HistoricalImportBatch {
   id              String                @id @default(uuid())
