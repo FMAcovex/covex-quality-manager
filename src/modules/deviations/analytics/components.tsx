@@ -118,6 +118,7 @@ export function MonthlyComparison({
 }
 
 function pointValue(metric: "total" | "closure" | "recurrence" | "median", item: YearMetrics) {
+  if (!item.dataAvailable) return null;
   if (metric === "total") return item.total;
   if (metric === "closure") return item.closure.rate;
   if (metric === "recurrence") return item.recurrence.rate;
@@ -199,17 +200,23 @@ export function AnnualSummaryTable({ trend }: { trend: YearMetrics[] }) {
           </thead>
           <tbody>
             {trend.map((item) => (
-              <tr key={item.year}>
+              <tr key={item.year} className={!item.dataAvailable ? "analytics-no-data" : undefined}>
                 <td><strong>{item.year}</strong></td>
-                <td>{item.total}</td>
-                <td>{formatPercent(item.closure.rate)}</td>
-                <td>{item.closure.medianDays === null ? "—" : `${formatNumber(item.closure.medianDays)} d`}</td>
-                <td>{formatPercent(item.recurrence.rate)}</td>
-                <td>{formatPercent(item.affectsProduct.rate)}</td>
-                <td>{item.critical}</td>
-                <td>{item.major}</td>
-                <td>{formatPercent(item.withCapaRate)}</td>
-                <td>{formatPercent(item.data.completeness)}</td>
+                {item.dataAvailable ? (
+                  <>
+                    <td>{item.total}</td>
+                    <td>{formatPercent(item.closure.rate)}</td>
+                    <td>{item.closure.medianDays === null ? "—" : `${formatNumber(item.closure.medianDays)} d`}</td>
+                    <td>{formatPercent(item.recurrence.rate)}</td>
+                    <td>{formatPercent(item.affectsProduct.rate)}</td>
+                    <td>{item.critical}</td>
+                    <td>{item.major}</td>
+                    <td>{formatPercent(item.withCapaRate)}</td>
+                    <td>{formatPercent(item.data.completeness)}</td>
+                  </>
+                ) : (
+                  <td colSpan={9}>Sin datos cargados en PostgreSQL</td>
+                )}
               </tr>
             ))}
           </tbody>
