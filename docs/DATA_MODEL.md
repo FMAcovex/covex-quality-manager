@@ -350,3 +350,49 @@ Snapshot del estado de cada tarea en cada seguimiento:
 - evidencia/comentario.
 
 Cada seguimiento genera además una `QmsRecordVersion` con el mismo número.
+
+
+## 16. Reclamaciones
+
+### Complaint
+Entidad 1:1 con QmsRecord.
+Campos tipados para:
+- reclamación a proveedor o de cliente;
+- identificación del afectado/producto/lote;
+- investigación, impacto y causa raíz;
+- clasificación Crítica/Mayor/Menor/Sin impacto GMP;
+- líneas de resolución e implicaciones;
+- comunicación externa;
+- respuesta;
+- verificación de eficacia;
+- cierre.
+
+### ComplaintCapaPlan
+Propuestas CAPA 1:N equivalentes al patrón de Desviaciones. Una propuesta puede convertirse en expediente CAPA real y queda vinculada mediante FK/QmsRelation.
+
+### ComplaintFollowup
+Seguimientos operativos 1:N, con fecha, responsable, comentario, próxima fecha y evidencia.
+
+## 17. Devoluciones
+
+### ReturnRecord
+Entidad 1:1 con QmsRecord para la devolución completa.
+
+### ReturnProduct
+Productos 1:N:
+- tipo;
+- producto/código;
+- formato;
+- lote;
+- caducidad/reanálisis;
+- cantidad/unidad;
+- pesos;
+- recepción/verificación.
+
+### Evaluación
+Los criterios SI/NO/N.A. del Anexo III se almacenan como TriState tipado, incluyendo reintegración a stock y condiciones específicas de termolábiles.
+
+### ReturnFollowup
+Seguimientos operativos 1:N.
+
+Reclamaciones y Devoluciones son expedientes independientes. Su relación se implementa mediante QmsRelation; una devolución no es un subtipo de reclamación.
