@@ -396,3 +396,51 @@ Los criterios SI/NO/N.A. del Anexo III se almacenan como TriState tipado, incluy
 Seguimientos operativos 1:N.
 
 Reclamaciones y Devoluciones son expedientes independientes. Su relación se implementa mediante QmsRelation; una devolución no es un subtipo de reclamación.
+
+
+## 18. Administración funcional
+
+### LookupCatalog / LookupCatalogItem
+Catálogos auxiliares administrables con:
+- clave estable;
+- etiqueta;
+- módulo opcional;
+- vigencia;
+- estado activo/inactivo;
+- orden;
+- notas.
+
+No sustituyen enums GMP estructurales.
+
+### AppParameter
+Parámetros no estructurales por ámbito y clave, con tipo TEXT/INTEGER/BOOLEAN/JSON.
+
+### AlertRule
+Reglas de preaviso por módulo:
+- FOLLOWUP_DUE;
+- EFFECTIVENESS_PENDING;
+- PLANNED_EXECUTION_DUE.
+
+Cada regla dispone de días de preaviso, severidad y estado.
+
+### ConfigurationChange
+Historial operativo de cambios administrativos:
+- entidad;
+- clave;
+- acción;
+- valor anterior/nuevo;
+- usuario;
+- motivo;
+- fecha.
+
+No se presenta como audit trail GMP validado.
+
+### TemplateVersion · almacenamiento
+Además de metadatos, una plantilla puede conservar:
+- fileName;
+- mimeType;
+- fileData;
+- fileSize;
+- checksum SHA-256.
+
+Los binarios no se cargan en consultas de administración salvo cuando el generador solicita expresamente una versión documental.
