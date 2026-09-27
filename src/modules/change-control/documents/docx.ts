@@ -187,7 +187,7 @@ export async function generateChangeAnnexV(record:ChangeDocumentRecord,followupS
       date(action.actualExecutionDate),
       action.evidenceComment??"",
     ]);
-    xml=replaceWordRowWithCopies(xml,1,2,rows);
+    xml=replaceWordRowRangeWithCopies(xml,1,2,1,12,rows);
   }
   xml=setWordCellText(xml,2,1,0,followup.executionStatus==="EXECUTED"?"☒ EJECUTADO":"☐ EJECUTADO");
   xml=setWordCellText(xml,2,1,1,followup.executionStatus==="NOT_EXECUTED"?"☒ NO EJECUTADO":"☐ NO EJECUTADO");
