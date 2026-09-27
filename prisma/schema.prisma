@@ -105,6 +105,31 @@ enum HistoricalImportRowResult {
   REVIEW_REQUIRED
 }
 
+enum FormVersionStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum ConfigFieldKind {
+  STRUCTURAL
+  VERSIONED
+  OPERATIONAL
+  DERIVED
+}
+
+enum ConfigValueType {
+  TEXT
+  LONG_TEXT
+  DATE
+  DATETIME
+  BOOLEAN
+  SELECT
+  MULTISELECT
+  NUMBER
+  REFERENCE
+}
+
 model QmsRecord {
   id                 String              @id @default(uuid())
   recordType         QmsRecordType
@@ -156,19 +181,50 @@ model Department {
 }
 
 model FormVersion {
-  id            String        @id @default(uuid())
+  id            String            @id @default(uuid())
   module        QmsRecordType
   versionCode   String
-  effectiveFrom DateTime      @db.Date
-  effectiveTo   DateTime?     @db.Date
-  isActive      Boolean       @default(true)
+  effectiveFrom DateTime          @db.Date
+  effectiveTo   DateTime?         @db.Date
+  isActive      Boolean           @default(true)
+  status        FormVersionStatus @default(ACTIVE)
   notes         String?
-  createdAt     DateTime      @default(now())
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   deviations    Deviation[]
   capas         Capa[]
+  fieldConfigs  FormFieldConfig[]
 
   @@unique([module, versionCode])
   @@index([module, isActive, effectiveFrom])
+  @@index([module, status])
+}
+
+model FormFieldConfig {
+  id                   String           @id @default(uuid())
+  formVersionId        String
+  formVersion          FormVersion      @relation(fields: [formVersionId], references: [id], onDelete: Cascade)
+  fieldKey             String
+  label                String
+  sectionKey           String
+  sectionLabel         String
+  sortOrder            Int
+  kind                 ConfigFieldKind
+  valueType            ConfigValueType
+  required             Boolean          @default(false)
+  listAvailable        Boolean          @default(false)
+  listVisibleByDefault Boolean          @default(false)
+  filterable           Boolean          @default(false)
+  simpleExport         Boolean          @default(false)
+  officialAnnexField   Boolean          @default(false)
+  editableDefinition   Boolean          @default(false)
+  options              Json?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@unique([formVersionId, fieldKey])
+  @@index([formVersionId, sectionKey, sortOrder])
+  @@index([formVersionId, listAvailable, listVisibleByDefault])
 }
 
 model TemplateVersion {

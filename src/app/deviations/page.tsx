@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { deadlineLabel, formatDate, measuresLabel } from "@/modules/deviations/domain";
 import { getDeviationList } from "@/modules/deviations/queries";
+import { ColumnSelector } from "@/components/column-selector";
+import { deviationColumns } from "@/modules/deviations/column-config";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +45,7 @@ export default async function DeviationsPage({
         </div>
         <div className="heading-actions">
           <Link href="/deviations/new" className="button primary">+ Nueva desviación</Link>
+          <ColumnSelector tableId="deviation-list-table" storageKey="qms.columns.deviations" columns={[...deviationColumns]} />
           <details className="export-menu">
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
@@ -102,7 +105,7 @@ export default async function DeviationsPage({
 
       <div className="table-card">
         <div className="table-scroll">
-          <table>
+          <table id="deviation-list-table">
             <thead><tr>
               <th>Control</th><th>Código</th><th>Departamento</th><th>Material / Proceso</th><th>Procedencia</th><th>Descripción</th><th>Clasificación</th><th>Causa raíz</th><th>Apertura</th><th>Cierre</th><th>Estado</th><th>En plazo</th><th>Medidas adoptadas</th><th>Descripción CAPA</th><th>Documento</th><th>Observaciones</th>
             </tr></thead>

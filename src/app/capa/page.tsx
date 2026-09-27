@@ -6,6 +6,8 @@ import {
   formatDate,
 } from "@/modules/capa/domain";
 import { getCapaList } from "@/modules/capa/queries";
+import { ColumnSelector } from "@/components/column-selector";
+import { capaColumns } from "@/modules/capa/column-config";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,7 @@ export default async function CapaPage({
         </div>
         <div className="heading-actions">
           <Link href="/capa/new" className="button primary">+ Nueva CAPA</Link>
+          <ColumnSelector tableId="capa-list-table" storageKey="qms.columns.capa" columns={[...capaColumns]} />
           <details className="export-menu">
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
@@ -95,7 +98,7 @@ export default async function CapaPage({
 
       <div className="table-card">
         <div className="table-scroll">
-          <table className="records-table capa-table">
+          <table id="capa-list-table" className="records-table capa-table">
             <thead>
               <tr>
                 <th>Control</th><th>Tipo</th><th>Código</th><th>Departamento</th><th>Origen</th><th>Código origen</th>
