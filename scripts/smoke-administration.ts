@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { PrismaClient,QmsRecordType,DocumentType } from "@prisma/client";
+import { Prisma,PrismaClient,QmsRecordType,DocumentType } from "@prisma/client";
 
 const prisma=new PrismaClient();
 
@@ -44,7 +44,7 @@ async function main(){
   const active=await prisma.formVersion.findFirstOrThrow({where:{module:QmsRecordType.DEVIATION,status:"ACTIVE",isActive:true},include:{fieldConfigs:true}});
   const clone=await prisma.formVersion.create({data:{module:QmsRecordType.DEVIATION,versionCode:formVersionCode,effectiveFrom:new Date("2099-12-30"),status:"DRAFT",isActive:false,notes:"Smoke Hito 9"}});
   formId=clone.id;
-  await prisma.formFieldConfig.createMany({data:active.fieldConfigs.map(x=>({formVersionId:clone.id,fieldKey:x.fieldKey,label:x.label,sectionKey:x.sectionKey,sectionLabel:x.sectionLabel,sortOrder:x.sortOrder,kind:x.kind,valueType:x.valueType,required:x.required,listAvailable:x.listAvailable,listVisibleByDefault:x.listVisibleByDefault,filterable:x.filterable,simpleExport:x.simpleExport,officialAnnexField:x.officialAnnexField,editableDefinition:x.editableDefinition,options:x.options??undefined}))});
+  await prisma.formFieldConfig.createMany({data:active.fieldConfigs.map(x=>({formVersionId:clone.id,fieldKey:x.fieldKey,label:x.label,sectionKey:x.sectionKey,sectionLabel:x.sectionLabel,sortOrder:x.sortOrder,kind:x.kind,valueType:x.valueType,required:x.required,listAvailable:x.listAvailable,listVisibleByDefault:x.listVisibleByDefault,filterable:x.filterable,simpleExport:x.simpleExport,officialAnnexField:x.officialAnnexField,editableDefinition:x.editableDefinition,options:x.options===null?undefined:x.options as Prisma.InputJsonValue}))});
   assert.equal(await prisma.formFieldConfig.count({where:{formVersionId:clone.id}}),active.fieldConfigs.length);
 
   const template=await prisma.templateVersion.create({data:{module:QmsRecordType.DEVIATION,documentType:DocumentType.DEVIATION_ANNEX_III,versionCode:templateVersionCode,effectiveFrom:new Date("2099-12-30"),isActive:false,fileName:"smoke.docx",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",fileData:bytes,fileSize:bytes.length,checksum}});
