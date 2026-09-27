@@ -9,8 +9,8 @@ const modules = [
   { label: "Desviaciones", href: "/deviations", enabled: true, match: "/deviations" },
   { label: "CAPA", href: "/capa", enabled: true, match: "/capa" },
   { label: "Controles de cambios", href: "/changes", enabled: true, match: "/changes" },
-  { label: "Reclamaciones", href: "#", enabled: false, match: "/complaints" },
-  { label: "Devoluciones", href: "#", enabled: false, match: "/returns" },
+  { label: "Reclamaciones", href: "/complaints", enabled: true, match: "/complaints" },
+  { label: "Devoluciones", href: "/returns", enabled: true, match: "/returns" },
   { label: "Configuración", href: "/settings", enabled: true, match: "/settings" },
 ];
 

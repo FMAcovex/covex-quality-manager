@@ -31,20 +31,20 @@ const modules = [
   {
     name: "Reclamaciones",
     eyebrow: "GC-00/027",
-    description: "Módulo previsto para una fase posterior.",
-    href: "#",
-    status: "Pendiente",
-    tone: "future",
-    sections: ["No iniciado"],
+    description: "Investigación, resolución, CAPA, eficacia y cierre de reclamaciones de clientes y proveedores.",
+    href: "/complaints",
+    status: "Operativo",
+    tone: "ready",
+    sections: ["Registro", "Investigación", "Acciones", "Seguimientos", "Relaciones", "Indicadores"],
   },
   {
     name: "Devoluciones",
     eyebrow: "GC-00/028",
-    description: "Módulo previsto para una fase posterior.",
-    href: "#",
-    status: "Pendiente",
-    tone: "future",
-    sections: ["No iniciado"],
+    description: "Recepción, evaluación técnica, decisión, destino final y trazabilidad de devoluciones.",
+    href: "/returns",
+    status: "Operativo",
+    tone: "ready",
+    sections: ["Datos generales", "Productos", "Comprobaciones", "Seguimientos", "Relaciones", "Indicadores"],
   },
 ];
 
@@ -94,12 +94,12 @@ export default function HomePage() {
       <section className="review-note">
         <div>
           <p className="eyebrow">Punto de control</p>
-          <h2>Desviaciones + CAPA + Controles de Cambios</h2>
+          <h2>Plataforma QMS común</h2>
         </div>
         <p>
-          Los tres módulos operativos comparten la misma lógica de expediente,
-          relaciones, seguimiento, versionado e indicadores. Controles de Cambios
-          añade la separación formal entre Solicitud, Dictamen y Seguimientos.
+          Desviaciones, CAPA, Controles de Cambios, Reclamaciones y Devoluciones comparten
+          expediente, relaciones, seguimiento, documentos e indicadores, manteniendo
+          las reglas y anexos específicos de cada PNT.
         </p>
       </section>
     </section>

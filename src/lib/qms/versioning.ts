@@ -23,6 +23,31 @@ type CapaVersionSource = Prisma.CapaGetPayload<{
   };
 }>;
 
+type ComplaintVersionSource = Prisma.ComplaintGetPayload<{
+  include: {
+    qmsRecord: true;
+    followups: true;
+    capaPlans: { include: { linkedCapaRecord: true } };
+    formVersion: true;
+    annexIIITemplateVersion: true;
+    annexIVTemplateVersion: true;
+    annexVTemplateVersion: true;
+  };
+}>;
+
+type ReturnVersionSource = Prisma.ReturnRecordGetPayload<{
+  include: {
+    qmsRecord: true;
+    products: true;
+    followups: true;
+    formVersion: true;
+    annexIIITemplateVersion: true;
+    annexIVTemplateVersion: true;
+    annexVTemplateVersion: true;
+    annexVITemplateVersion: true;
+  };
+}>;
+
 type ChangeControlVersionSource = Prisma.ChangeControlGetPayload<{
   include: {
     qmsRecord: true;
@@ -302,6 +327,81 @@ export function serializeChangeControlVersion(record: ChangeControlVersionSource
         })),
       })),
     },
+  };
+}
+
+export function serializeComplaintVersion(record: ComplaintVersionSource) {
+  return {
+    recordType: "COMPLAINT",
+    businessCode: record.qmsRecord.businessCode ?? null,
+    year: record.qmsRecord.year ?? null,
+    complaint: {
+      departmentId: record.departmentId ?? null,
+      departmentCodeSnapshot: record.departmentCodeSnapshot ?? null,
+      departmentNameSnapshot: record.departmentNameSnapshot ?? null,
+      openedAt: iso(record.openedAt), detectionDate: iso(record.detectionDate),
+      detectedBy: record.detectedBy ?? null, createdByText: record.createdByText ?? null,
+      complaintType: record.complaintType, partyName: record.partyName ?? null, contact: record.contact ?? null,
+      affectedScope: record.affectedScope ?? null, reference: record.reference ?? null, lotReference: record.lotReference ?? null,
+      quantity: record.quantity ?? null, expiryReanalysis: record.expiryReanalysis ?? null,
+      purchaseDeliveryReference: record.purchaseDeliveryReference ?? null, description: record.description ?? null,
+      recurrent: record.recurrent ?? null, recurrenceReference: record.recurrenceReference ?? null,
+      attachedDocumentation: record.attachedDocumentation ?? null, emittedBy: record.emittedBy ?? null,
+      qaValidatedBy: record.qaValidatedBy ?? null, investigation: record.investigation ?? null,
+      impactAssessment: record.impactAssessment ?? null, investigationResult: record.investigationResult ?? null,
+      rootCause: record.rootCause ?? null, classification: record.classification ?? null,
+      resolutionLines: record.resolutionLines ?? null, resolutionActions: record.resolutionActions,
+      immediateActionDetails: record.immediateActionDetails ?? null, otherResolutionDetails: record.otherResolutionDetails ?? null,
+      externalCommunication: record.externalCommunication ?? null, conclusion: record.conclusion ?? null,
+      effectivenessRequired: record.effectivenessRequired ?? null, initialEvaluationDate: iso(record.initialEvaluationDate),
+      initialConclusionDate: iso(record.initialConclusionDate), responseDate: iso(record.responseDate),
+      responseMedium: record.responseMedium ?? null, responseSummary: record.responseSummary ?? null,
+      effectivenessStatus: record.effectivenessStatus, effectivenessAssessment: record.effectivenessAssessment ?? null,
+      closeConclusion: record.closeConclusion ?? null, approvalNames: record.approvalNames ?? null,
+      closeApprovalNames: record.closeApprovalNames ?? null, closedAt: iso(record.closedAt), status: record.status,
+      internalObservations: record.internalObservations ?? null, signedDocumentAvailable: record.signedDocumentAvailable ?? null,
+      dataQualityStatus: record.dataQualityStatus, includeInKpi: record.includeInKpi, kpiExclusionReason: record.kpiExclusionReason ?? null,
+      formVersionId: record.formVersionId ?? null, formVersionCode: record.formVersion?.versionCode ?? null,
+      annexIIITemplateVersionId: record.annexIIITemplateVersionId ?? null, annexIIITemplateVersionCode: record.annexIIITemplateVersion?.versionCode ?? null,
+      annexIVTemplateVersionId: record.annexIVTemplateVersionId ?? null, annexIVTemplateVersionCode: record.annexIVTemplateVersion?.versionCode ?? null,
+      annexVTemplateVersionId: record.annexVTemplateVersionId ?? null, annexVTemplateVersionCode: record.annexVTemplateVersion?.versionCode ?? null,
+      capaPlans: record.capaPlans.map(x=>({actionType:x.actionType,description:x.description,plannedExecutionDate:iso(x.plannedExecutionDate),responsible:x.responsible??null,businessCapaCode:x.businessCapaCode??null,linkedCapaRecordId:x.linkedCapaRecordId??null,linkedCapaBusinessCode:x.linkedCapaRecord?.businessCode??null,proposalStatus:x.proposalStatus})),
+      followups: record.followups.map(x=>({id:x.id,followupDate:iso(x.followupDate),completedByText:x.completedByText,followupType:x.followupType??null,comment:x.comment,nextFollowupDate:iso(x.nextFollowupDate),evidenceReference:x.evidenceReference??null}))
+    }
+  };
+}
+
+export function serializeReturnVersion(record: ReturnVersionSource) {
+  return {
+    recordType: "RETURN",
+    businessCode: record.qmsRecord.businessCode ?? null,
+    year: record.qmsRecord.year ?? null,
+    returnRecord: {
+      departmentId: record.departmentId ?? null, departmentCodeSnapshot: record.departmentCodeSnapshot ?? null,
+      departmentNameSnapshot: record.departmentNameSnapshot ?? null, communicationDate: iso(record.communicationDate),
+      receivedAt: iso(record.receivedAt), createdByText: record.createdByText ?? null, returnType: record.returnType,
+      otherReturnType: record.otherReturnType ?? null, customerEntity: record.customerEntity ?? null, country: record.country ?? null,
+      address: record.address ?? null, relatedDocument: record.relatedDocument ?? null, conservationConditions: record.conservationConditions ?? null,
+      deliveryNote: record.deliveryNote ?? null, reasonObservations: record.reasonObservations ?? null, attachedDocumentation: record.attachedDocumentation ?? null,
+      withinAcceptedReturnPeriod: record.withinAcceptedReturnPeriod ?? null, roomTemperatureWithinTenDays: record.roomTemperatureWithinTenDays ?? null,
+      coldChainWithinFortyEightHours: record.coldChainWithinFortyEightHours ?? null, uniqueIdentifierActive: record.uniqueIdentifierActive ?? null,
+      tamperEvidenceIntact: record.tamperEvidenceIntact ?? null, packagingIntegrityOk: record.packagingIntegrityOk ?? null,
+      customerDeclarationAvailable: record.customerDeclarationAvailable ?? null, storageTransportConditionsOk: record.storageTransportConditionsOk ?? null,
+      noUseDamageContamination: record.noUseDamageContamination ?? null, noRecallAlertBlock: record.noRecallAlertBlock ?? null,
+      expiryAcceptable: record.expiryAcceptable ?? null, qcAssessmentCompleted: record.qcAssessmentCompleted ?? null,
+      storageTemperatureRecord: record.storageTemperatureRecord ?? null, returnTransportTempEvidence: record.returnTransportTempEvidence ?? null,
+      transportPackagingSuitable: record.transportPackagingSuitable ?? null, receiptTemperatureAcceptable: record.receiptTemperatureAcceptable ?? null,
+      temperatureExcursionEvaluated: record.temperatureExcursionEvaluated ?? null, coldChainReturnSystemValidated: record.coldChainReturnSystemValidated ?? null,
+      decision: record.decision, finalDestination: record.finalDestination ?? null, decisionObservations: record.decisionObservations ?? null,
+      qaApprovalName: record.qaApprovalName ?? null, technicalApprovalName: record.technicalApprovalName ?? null, decisionDate: iso(record.decisionDate),
+      destructionManagedBy: record.destructionManagedBy ?? null, destructionCertificate: record.destructionCertificate ?? null,
+      traceabilityUpdated: record.traceabilityUpdated ?? null, closedAt: iso(record.closedAt), status: record.status,
+      internalObservations: record.internalObservations ?? null, signedDocumentAvailable: record.signedDocumentAvailable ?? null,
+      dataQualityStatus: record.dataQualityStatus, includeInKpi: record.includeInKpi, kpiExclusionReason: record.kpiExclusionReason ?? null,
+      formVersionId: record.formVersionId ?? null, formVersionCode: record.formVersion?.versionCode ?? null,
+      products: record.products.map(x=>({departmentId:x.departmentId??null,productType:x.productType,otherProductType:x.otherProductType??null,productNameCode:x.productNameCode,format:x.format??null,lot:x.lot??null,expiryReanalysis:x.expiryReanalysis??null,quantity:x.quantity??null,unit:x.unit??null,netWeight:x.netWeight??null,grossWeight:x.grossWeight??null,receptionObservations:x.receptionObservations??null,receivedBy:x.receivedBy??null,verifiedBy:x.verifiedBy??null,sortOrder:x.sortOrder})),
+      followups: record.followups.map(x=>({id:x.id,followupDate:iso(x.followupDate),completedByText:x.completedByText,comment:x.comment,nextFollowupDate:iso(x.nextFollowupDate),evidenceReference:x.evidenceReference??null}))
+    }
   };
 }
 

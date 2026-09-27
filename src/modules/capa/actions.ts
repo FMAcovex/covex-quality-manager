@@ -229,11 +229,45 @@ export async function createCapaAction(
           });
         }
       }
+      if (v.fromComplaintPlanId) {
+        const plan = await tx.complaintCapaPlan.findUnique({
+          where: { id: v.fromComplaintPlanId },
+          include: { complaint: true },
+        });
+        if (plan) {
+          await tx.complaintCapaPlan.update({
+            where: { id: plan.id },
+            data: {
+              linkedCapaRecordId: qmsRecord.id,
+              businessCapaCode: v.businessCode,
+              proposalStatus: "REGISTERED",
+            },
+          });
+          await tx.qmsRelation.upsert({
+            where: {
+              sourceRecordId_targetRecordId_relationType: {
+                sourceRecordId: plan.complaint.qmsRecordId,
+                targetRecordId: qmsRecord.id,
+                relationType: "GENERATES",
+              },
+            },
+            update: { isActive: true, createdByText: parsed.actor },
+            create: {
+              sourceRecordId: plan.complaint.qmsRecordId,
+              targetRecordId: qmsRecord.id,
+              relationType: "GENERATES",
+              createdByText: parsed.actor,
+              notes: "CAPA creada desde la propuesta registrada en la reclamación.",
+            },
+          });
+        }
+      }
       return created;
     });
 
     revalidatePath("/capa");
     revalidatePath("/deviations");
+    revalidatePath("/complaints");
     redirect(`/capa/${capa.id}`);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint")) {

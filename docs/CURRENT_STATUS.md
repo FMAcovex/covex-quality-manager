@@ -200,3 +200,73 @@ Validación:
 - build Next.js de producción.
 
 El hito queda listo para integración en `main`.
+
+
+## Hito 8 — Reclamaciones y Devoluciones
+Estado: **COMPLETADO Y VALIDADO EN CI**.
+
+### Reclamaciones
+Fuente:
+- GC-00/027/02, vigencia 26/05/2026.
+- Anexo III: Informe de la Reclamación.
+- Anexo IV: Informe de Respuesta a Reclamación.
+- Anexo V: Listado de Reclamaciones.
+
+Implementación:
+- listado, filtros y búsqueda;
+- alta/edición;
+- expediente a pantalla completa;
+- reclamación de cliente / a proveedor;
+- investigación, impacto y causa raíz;
+- Crítica/Mayor/Menor/Sin impacto GMP;
+- resolución estructurada;
+- CAPA propuestas 1:N y creación de CAPA real;
+- comunicación y respuesta;
+- eficacia y cierre;
+- seguimientos;
+- relaciones QMS;
+- historial y snapshot V00;
+- Anexos III/IV/V;
+- listado simple;
+- indicadores y tendencia 5 años.
+
+### Devoluciones
+Fuente:
+- GC-00/028/03, vigencia 26/05/2026.
+- Anexo III: Formulario de Devolución.
+- Anexo IV: Hoja de Devolución de Producto.
+- Anexo V: Declaración del Cliente sobre Conservación.
+- Anexo VI: Listado de Devoluciones.
+
+Implementación:
+- listado, filtros y búsqueda;
+- alta/edición;
+- expediente a pantalla completa;
+- productos 1:N;
+- criterios SI/NO/N.A. para reintegración;
+- evaluación específica de termolábiles;
+- decisión GC/DT;
+- destino final, destrucción y trazabilidad;
+- seguimientos;
+- relaciones QMS;
+- historial y snapshot V00;
+- Anexos III/IV/V/VI;
+- listado simple;
+- indicadores y tendencia 5 años.
+
+Plantillas:
+- Reclamaciones SHA-256: f717ae907da9ed8b575f740fbf8b1536d4157174de5b7b4d240220910b570df4
+- Devoluciones SHA-256: 191c0e838f06d465bd820450b9130e1209c14fc9cb97559e8ec567819ba07f9a
+
+Validación:
+- PostgreSQL 16 real;
+- esquema y seed;
+- smoke QMS existente;
+- smoke específico Reclamaciones + Devoluciones;
+- relaciones Reclamación → Devolución y Reclamación → CAPA;
+- Prisma validate/generate;
+- lint;
+- tests;
+- build Next.js de producción.
+
+El hito queda listo para integración en `main`.

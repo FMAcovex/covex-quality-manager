@@ -143,6 +143,33 @@ export default async function SettingsPage() {
             <button className="button" disabled>Gestionar plantillas</button>
           </div>
         </article>
+
+        <article className="card settings-card">
+          <div className="section-title-row">
+            <div><p className="eyebrow">Reclamaciones</p><h2>Formulario GC-00/027</h2></div>
+            <span className="module-state ready">{config.complaint.form?.versionCode ?? "Sin versión"}</span>
+          </div>
+          <p className="muted-note">
+            Plantillas: Anexo III {config.complaint.annexIII?.versionCode ?? "—"} ·
+            Anexo IV {config.complaint.annexIV?.versionCode ?? "—"} ·
+            Anexo V {config.complaint.annexV?.versionCode ?? "—"}.
+          </p>
+          <div className="settings-actions"><button className="button" disabled>+ Nueva versión</button><button className="button" disabled>Gestionar plantillas</button></div>
+        </article>
+
+        <article className="card settings-card">
+          <div className="section-title-row">
+            <div><p className="eyebrow">Devoluciones</p><h2>Formulario GC-00/028</h2></div>
+            <span className="module-state ready">{config.returnRecord.form?.versionCode ?? "Sin versión"}</span>
+          </div>
+          <p className="muted-note">
+            Plantillas: Anexo III {config.returnRecord.annexIII?.versionCode ?? "—"} ·
+            Anexo IV {config.returnRecord.annexIV?.versionCode ?? "—"} ·
+            Anexo V {config.returnRecord.annexV?.versionCode ?? "—"} ·
+            Anexo VI {config.returnRecord.annexVI?.versionCode ?? "—"}.
+          </p>
+          <div className="settings-actions"><button className="button" disabled>+ Nueva versión</button><button className="button" disabled>Gestionar plantillas</button></div>
+        </article>
       </div>
 
       <section className="card">
@@ -187,6 +214,25 @@ export default async function SettingsPage() {
         <p className="muted-note">
           Solicitud, Dictamen y Seguimientos comparten expediente, pero el listado operativo contiene más columnas que el Anexo VII oficial.
         </p>
+      </section>
+
+
+      <section className="card">
+        <div className="section-title-row">
+          <div><p className="eyebrow">Reclamaciones</p><h2>Campos y columnas de seguimiento</h2></div>
+          <Link className="button" href="/complaints">Ver listado</Link>
+        </div>
+        <FieldTable rows={config.complaint.form?.fieldConfigs ?? []} />
+        <p className="muted-note">El expediente mantiene la estructura de investigación de Desviaciones y añade respuesta/eficacia de la reclamación.</p>
+      </section>
+
+      <section className="card">
+        <div className="section-title-row">
+          <div><p className="eyebrow">Devoluciones</p><h2>Campos y columnas de seguimiento</h2></div>
+          <Link className="button" href="/returns">Ver listado</Link>
+        </div>
+        <FieldTable rows={config.returnRecord.form?.fieldConfigs ?? []} />
+        <p className="muted-note">Los productos se gestionan como líneas 1:N y el Anexo VI anual conserva su estructura oficial.</p>
       </section>
 
       <section className="review-note">

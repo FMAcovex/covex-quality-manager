@@ -17,3 +17,6 @@ reports/imports/
 
 templates/change-control/v03/*.docx
 templates/change-control/v03/*.xlsx
+
+templates/complaints/v02/*.docx
+templates/returns/v03/*.docx

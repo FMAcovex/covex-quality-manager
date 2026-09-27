@@ -138,6 +138,88 @@ enum ChangeTaskStatus {
   NOT_APPLICABLE
 }
 
+enum ComplaintType {
+  PROVIDER
+  CUSTOMER
+}
+
+enum ComplaintClassification {
+  CRITICAL
+  MAJOR
+  MINOR
+  NO_GMP_IMPACT
+}
+
+enum ComplaintInvestigationResult {
+  PROCEDENT
+  NOT_PROCEDENT
+  INCONCLUSIVE
+  NOT_ATTRIBUTABLE_TO_COVEX
+}
+
+enum ComplaintStatus {
+  OPEN
+  CLOSED
+}
+
+enum ComplaintEffectivenessStatus {
+  PENDING
+  ACCEPTABLE
+  NOT_ACCEPTABLE
+  NOT_REQUIRED
+}
+
+enum ComplaintResolutionAction {
+  RETURN
+  CORRECTIVE_ACTION
+  PREVENTIVE_ACTION
+  IMMEDIATE_ACTION
+  RECALL
+  CREDIT
+  REPLACEMENT
+  REJECT
+  REPROCESS
+  DISPOSE
+  KEEP_AS_IS
+  SUPPLIER_INVESTIGATION
+  SUPPLIER_EVALUATION
+  OPEN_DEVIATION
+  OPEN_CAPA
+  OPEN_CHANGE
+  OTHER
+}
+
+enum ReturnType {
+  COMMERCIAL
+  COMPLAINT
+  RECALL
+  EXPIRY
+  TRANSPORT
+  OTHER
+}
+
+enum ReturnProductType {
+  API
+  INTERMEDIATE
+  MEDICINE
+  SUPPLEMENT
+  IMPORTED_PRODUCT
+  MEDICAL_DEVICE
+  COSMETIC
+  OTHER
+}
+
+enum ReturnDecision {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ReturnStatus {
+  OPEN
+  CLOSED
+}
+
 enum HistorySource {
   UI
   IMPORT
@@ -163,6 +245,15 @@ enum DocumentType {
   CHANGE_ANNEX_V
   CHANGE_ANNEX_VII
   CHANGE_SIMPLE_LIST
+  COMPLAINT_ANNEX_III
+  COMPLAINT_ANNEX_IV
+  COMPLAINT_ANNEX_V
+  COMPLAINT_SIMPLE_LIST
+  RETURN_ANNEX_III
+  RETURN_ANNEX_IV
+  RETURN_ANNEX_V
+  RETURN_ANNEX_VI
+  RETURN_SIMPLE_LIST
 }
 
 enum HistoricalImportRowResult {
@@ -208,12 +299,15 @@ model QmsRecord {
   deviation          Deviation?
   capa               Capa?
   changeControl       ChangeControl?
+  complaint           Complaint?
+  returnRecord        ReturnRecord?
   sourceRelations    QmsRelation[]       @relation("RelationSource")
   targetRelations    QmsRelation[]       @relation("RelationTarget")
   history            ChangeHistory[]
   versions           QmsRecordVersion[]
   generatedDocuments GeneratedDocument[]
   linkedCapaPlans    DeviationCapaPlan[] @relation("LinkedCapaRecord")
+  complaintLinkedCapaPlans ComplaintCapaPlan[] @relation("ComplaintLinkedCapaRecord")
   historicalImports  HistoricalImportRow[]
 
   @@unique([recordType, businessCode])
@@ -249,6 +343,9 @@ model Department {
   capas      Capa[]
   changeControls ChangeControl[]
   changeTasks ChangeControlTask[]
+  complaints Complaint[]
+  returnRecords ReturnRecord[]
+  returnProducts ReturnProduct[]
 }
 
 model FormVersion {
@@ -265,6 +362,8 @@ model FormVersion {
   deviations    Deviation[]
   capas         Capa[]
   changeControls ChangeControl[]
+  complaints Complaint[]
+  returnRecords ReturnRecord[]
   fieldConfigs  FormFieldConfig[]
 
   @@unique([module, versionCode])
@@ -315,6 +414,13 @@ model TemplateVersion {
   changeRequests      ChangeControl[]      @relation("ChangeAnnexIIITemplate")
   changeDictamens     ChangeControl[]      @relation("ChangeAnnexIVTemplate")
   changeFollowups     ChangeControl[]      @relation("ChangeAnnexVTemplate")
+  complaintsAnnexIII  Complaint[]          @relation("ComplaintAnnexIIITemplate")
+  complaintsAnnexIV   Complaint[]          @relation("ComplaintAnnexIVTemplate")
+  complaintsAnnexV    Complaint[]          @relation("ComplaintAnnexVTemplate")
+  returnsAnnexIII     ReturnRecord[]       @relation("ReturnAnnexIIITemplate")
+  returnsAnnexIV      ReturnRecord[]       @relation("ReturnAnnexIVTemplate")
+  returnsAnnexV       ReturnRecord[]       @relation("ReturnAnnexVTemplate")
+  returnsAnnexVI      ReturnRecord[]       @relation("ReturnAnnexVITemplate")
   generatedDocuments  GeneratedDocument[]
 
   @@unique([module, documentType, versionCode])
@@ -683,6 +789,248 @@ model ChangeControlTaskState {
 
   @@unique([followupId, taskId])
   @@index([taskId])
+}
+
+model Complaint {
+  id                         String                       @id @default(uuid())
+  qmsRecordId                String                       @unique
+  qmsRecord                  QmsRecord                    @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId               String?
+  department                 Department?                 @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot     String?
+  departmentNameSnapshot     String?
+  openedAt                   DateTime?                    @db.Date
+  detectionDate              DateTime?                    @db.Date
+  detectedBy                 String?
+  createdByText              String?
+  complaintType              ComplaintType
+  partyName                  String?
+  contact                    String?
+  affectedScope              String?
+  reference                  String?
+  lotReference               String?
+  quantity                   String?
+  expiryReanalysis           String?
+  purchaseDeliveryReference  String?
+  description                String?
+  recurrent                  Boolean?
+  recurrenceReference        String?
+  attachedDocumentation      String?
+  emittedBy                  String?
+  qaValidatedBy              String?
+  investigation              String?
+  impactAssessment           String?
+  investigationResult        ComplaintInvestigationResult?
+  rootCause                  String?
+  classification             ComplaintClassification?
+  resolutionLines            String?
+  resolutionActions          ComplaintResolutionAction[] @default([])
+  immediateActionDetails     String?
+  otherResolutionDetails     String?
+  externalCommunication      String?
+  conclusion                 String?
+  effectivenessRequired      Boolean?
+  initialEvaluationDate      DateTime?                    @db.Date
+  initialConclusionDate      DateTime?                    @db.Date
+  responseDate               DateTime?                    @db.Date
+  responseMedium             String?
+  responseSummary            String?
+  effectivenessStatus        ComplaintEffectivenessStatus @default(PENDING)
+  effectivenessAssessment    String?
+  closeConclusion            String?
+  approvalNames              String?
+  closeApprovalNames         String?
+  closedAt                   DateTime?                    @db.Date
+  status                     ComplaintStatus             @default(OPEN)
+  internalObservations       String?
+  signedDocumentAvailable    Boolean?
+  dataQualityStatus          DataQualityStatus           @default(REVIEW_REQUIRED)
+  includeInKpi               Boolean                     @default(true)
+  kpiExclusionReason         String?
+  formVersionId              String?
+  formVersion                FormVersion?                @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  annexIIITemplateVersionId  String?
+  annexIIITemplateVersion    TemplateVersion?            @relation("ComplaintAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
+  annexIVTemplateVersionId   String?
+  annexIVTemplateVersion     TemplateVersion?            @relation("ComplaintAnnexIVTemplate", fields: [annexIVTemplateVersionId], references: [id], onDelete: Restrict)
+  annexVTemplateVersionId    String?
+  annexVTemplateVersion      TemplateVersion?            @relation("ComplaintAnnexVTemplate", fields: [annexVTemplateVersionId], references: [id], onDelete: Restrict)
+  extraData                  Json?
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @updatedAt
+  followups                  ComplaintFollowup[]
+  capaPlans                  ComplaintCapaPlan[]
+
+  @@index([departmentId])
+  @@index([openedAt])
+  @@index([complaintType])
+  @@index([classification])
+  @@index([status])
+  @@index([effectivenessStatus])
+  @@index([partyName])
+  @@index([includeInKpi])
+  @@index([closedAt])
+}
+
+model ComplaintCapaPlan {
+  id                   String             @id @default(uuid())
+  complaintId          String
+  complaint            Complaint          @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  actionType           CapaActionType
+  description          String
+  plannedExecutionDate DateTime?          @db.Date
+  responsible          String?
+  businessCapaCode     String?
+  linkedCapaRecordId   String?
+  linkedCapaRecord     QmsRecord?         @relation("ComplaintLinkedCapaRecord", fields: [linkedCapaRecordId], references: [id], onDelete: SetNull)
+  proposalStatus       CapaProposalStatus @default(PROPOSED)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([complaintId])
+  @@index([linkedCapaRecordId])
+  @@index([plannedExecutionDate])
+}
+
+model ComplaintFollowup {
+  id                String    @id @default(uuid())
+  complaintId       String
+  complaint         Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  followupDate      DateTime  @db.Date
+  completedByText   String
+  followupType      String?
+  comment           String
+  nextFollowupDate  DateTime? @db.Date
+  evidenceReference String?
+  createdAt         DateTime  @default(now())
+
+  @@index([complaintId, followupDate])
+  @@index([nextFollowupDate])
+}
+
+model ReturnRecord {
+  id                              String         @id @default(uuid())
+  qmsRecordId                     String         @unique
+  qmsRecord                       QmsRecord      @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId                    String?
+  department                      Department?    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot          String?
+  departmentNameSnapshot          String?
+  communicationDate               DateTime?      @db.Date
+  receivedAt                      DateTime?      @db.Date
+  createdByText                   String?
+  returnType                      ReturnType
+  otherReturnType                 String?
+  customerEntity                  String?
+  country                         String?
+  address                         String?
+  relatedDocument                 String?
+  conservationConditions          String?
+  deliveryNote                    String?
+  reasonObservations              String?
+  attachedDocumentation           String?
+  withinAcceptedReturnPeriod      TriState?
+  roomTemperatureWithinTenDays    TriState?
+  coldChainWithinFortyEightHours  TriState?
+  uniqueIdentifierActive          TriState?
+  tamperEvidenceIntact            TriState?
+  packagingIntegrityOk            TriState?
+  customerDeclarationAvailable    TriState?
+  storageTransportConditionsOk    TriState?
+  noUseDamageContamination        TriState?
+  noRecallAlertBlock              TriState?
+  expiryAcceptable                TriState?
+  qcAssessmentCompleted           TriState?
+  storageTemperatureRecord        TriState?
+  returnTransportTempEvidence     TriState?
+  transportPackagingSuitable      TriState?
+  receiptTemperatureAcceptable    TriState?
+  temperatureExcursionEvaluated   TriState?
+  coldChainReturnSystemValidated  TriState?
+  decision                        ReturnDecision @default(PENDING)
+  finalDestination                String?
+  decisionObservations            String?
+  qaApprovalName                  String?
+  technicalApprovalName           String?
+  decisionDate                    DateTime?       @db.Date
+  destructionManagedBy            String?
+  destructionCertificate         String?
+  traceabilityUpdated             TriState?
+  closedAt                        DateTime?       @db.Date
+  status                          ReturnStatus    @default(OPEN)
+  internalObservations            String?
+  signedDocumentAvailable         Boolean?
+  dataQualityStatus               DataQualityStatus @default(REVIEW_REQUIRED)
+  includeInKpi                    Boolean        @default(true)
+  kpiExclusionReason              String?
+  formVersionId                   String?
+  formVersion                     FormVersion?   @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  annexIIITemplateVersionId       String?
+  annexIIITemplateVersion         TemplateVersion? @relation("ReturnAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
+  annexIVTemplateVersionId        String?
+  annexIVTemplateVersion          TemplateVersion? @relation("ReturnAnnexIVTemplate", fields: [annexIVTemplateVersionId], references: [id], onDelete: Restrict)
+  annexVTemplateVersionId         String?
+  annexVTemplateVersion           TemplateVersion? @relation("ReturnAnnexVTemplate", fields: [annexVTemplateVersionId], references: [id], onDelete: Restrict)
+  annexVITemplateVersionId        String?
+  annexVITemplateVersion          TemplateVersion? @relation("ReturnAnnexVITemplate", fields: [annexVITemplateVersionId], references: [id], onDelete: Restrict)
+  extraData                       Json?
+  createdAt                       DateTime       @default(now())
+  updatedAt                       DateTime       @updatedAt
+  products                        ReturnProduct[]
+  followups                       ReturnFollowup[]
+
+  @@index([departmentId])
+  @@index([communicationDate])
+  @@index([receivedAt])
+  @@index([returnType])
+  @@index([decision])
+  @@index([status])
+  @@index([customerEntity])
+  @@index([includeInKpi])
+  @@index([closedAt])
+}
+
+model ReturnProduct {
+  id                    String            @id @default(uuid())
+  returnRecordId        String
+  returnRecord          ReturnRecord      @relation(fields: [returnRecordId], references: [id], onDelete: Cascade)
+  departmentId          String?
+  department            Department?       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  productType           ReturnProductType
+  otherProductType      String?
+  productNameCode       String
+  format                String?
+  lot                   String?
+  expiryReanalysis      String?
+  quantity              String?
+  unit                  String?
+  netWeight             String?
+  grossWeight           String?
+  receptionObservations String?
+  receivedBy            String?
+  verifiedBy            String?
+  sortOrder             Int               @default(0)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([returnRecordId, sortOrder])
+  @@index([departmentId])
+  @@index([lot])
+}
+
+model ReturnFollowup {
+  id                String       @id @default(uuid())
+  returnRecordId    String
+  returnRecord      ReturnRecord @relation(fields: [returnRecordId], references: [id], onDelete: Cascade)
+  followupDate      DateTime     @db.Date
+  completedByText   String
+  comment           String
+  nextFollowupDate  DateTime?    @db.Date
+  evidenceReference String?
+  createdAt         DateTime     @default(now())
+
+  @@index([returnRecordId, followupDate])
+  @@index([nextFollowupDate])
 }
 
 model ChangeHistory {

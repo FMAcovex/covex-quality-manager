@@ -176,3 +176,18 @@ export async function getDeviationPlanPrefill(planId: string) {
     },
   });
 }
+
+
+export async function getComplaintPlanPrefill(planId: string) {
+  return prisma.complaintCapaPlan.findUnique({
+    where: { id: planId },
+    include: {
+      complaint: {
+        include: {
+          qmsRecord: true,
+          department: true,
+        },
+      },
+    },
+  });
+}

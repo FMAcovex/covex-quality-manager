@@ -68,6 +68,7 @@ export function CapaForm({
   defaults = {},
   capaId,
   fromDeviationPlanId,
+  fromComplaintPlanId,
 }: {
   mode: "create" | "edit";
   action: (state: CapaFormState, formData: FormData) => Promise<CapaFormState>;
@@ -75,6 +76,7 @@ export function CapaForm({
   defaults?: CapaFormDefaults;
   capaId?: string;
   fromDeviationPlanId?: string;
+  fromComplaintPlanId?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [actions, setActions] = useState<CapaPlannedActionInput[]>(
@@ -92,6 +94,9 @@ export function CapaForm({
       <input type="hidden" name="plannedActionsJson" value={JSON.stringify(actions)} />
       {fromDeviationPlanId ? (
         <input type="hidden" name="fromDeviationPlanId" value={fromDeviationPlanId} />
+      ) : null}
+      {fromComplaintPlanId ? (
+        <input type="hidden" name="fromComplaintPlanId" value={fromComplaintPlanId} />
       ) : null}
 
       {state.error ? (

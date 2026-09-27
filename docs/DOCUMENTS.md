@@ -165,3 +165,35 @@ El libro fuente utilizado para validar el formato contiene hojas históricas y d
 
 ### Listado simple
 Exportación independiente con las columnas operativas ampliadas de seguimiento, incluyendo ejecución, eficacia, último/próximo seguimiento y estado final.
+
+
+## 8. Reclamaciones · GC-00/027/02
+
+Fuente controlada: PNT completo GC-00/027/02.
+
+La aplicación extrae del propio PNT:
+- Anexo III · Informe de la Reclamación;
+- Anexo IV · Informe de Respuesta a Reclamación;
+- Anexo V · Listado de Reclamaciones.
+
+El Anexo III conserva Parte I y Parte II, incluyendo CAPA y eficacia. El Anexo V se amplía dinámicamente sin limitarse a las filas vacías originales.
+
+SHA-256 auditado del PNT fuente:
+`f717ae907da9ed8b575f740fbf8b1536d4157174de5b7b4d240220910b570df4`.
+
+## 9. Devoluciones · GC-00/028/03
+
+Fuente controlada: PNT completo GC-00/028/03.
+
+La aplicación extrae:
+- Anexo III · Formulario de Devolución;
+- Anexo IV · Hoja de Devolución de Producto;
+- Anexo V · Declaración del Cliente sobre Conservación;
+- Anexo VI · Listado de Devoluciones.
+
+Si una devolución contiene varios productos, el Anexo IV se genera por producto. El Anexo VI anual genera una línea por producto devuelto.
+
+SHA-256 auditado del PNT fuente:
+`191c0e838f06d465bd820450b9130e1209c14fc9cb97559e8ec567819ba07f9a`.
+
+Los binarios controlados no se versionan en Git. Se instalan localmente y el hash se verifica antes de cualquier generación.

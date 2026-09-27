@@ -7,6 +7,11 @@ async function main() {
     { code: "GC-00", name: "Garantía de Calidad" },
     { code: "PM-10", name: "Área de Producción de Medicamentos" },
     { code: "PA-20", name: "Área de Fabricación Química" },
+    { code: "DT-00", name: "Dirección Técnica" },
+    { code: "LG-10", name: "Almacén Complementos Alimenticios" },
+    { code: "LG-20", name: "Almacén APIs / Cosmética" },
+    { code: "LG-30", name: "Almacén Farma" },
+    { code: "LG-40", name: "Almacén / Logística" },
   ]) {
     await prisma.department.upsert({
       where: { code: department.code },
@@ -271,6 +276,90 @@ async function main() {
         effectiveFrom: new Date("2026-04-06"),
         isActive: true,
       },
+    });
+  }
+
+  const complaintForm = await prisma.formVersion.upsert({
+    where: { module_versionCode: { module: QmsRecordType.COMPLAINT, versionCode: "REC-02" } },
+    update: { isActive: true, status: "ACTIVE" },
+    create: {
+      module: QmsRecordType.COMPLAINT,
+      versionCode: "REC-02",
+      effectiveFrom: new Date("2026-05-26"),
+      isActive: true,
+      status: "ACTIVE",
+      notes: "GC-00/027/02.",
+    },
+  });
+
+  const complaintFieldConfigs = [
+    ["businessCode","N.º reclamación","identification","Registro",10,"STRUCTURAL","TEXT",true,true,true,true,true,true,false],
+    ["complaintType","Tipo","identification","Registro",20,"STRUCTURAL","SELECT",true,true,true,true,true,true,false],
+    ["openedAt","Fecha apertura","identification","Registro",30,"STRUCTURAL","DATE",true,true,true,true,true,true,false],
+    ["partyName","Cliente/Proveedor","identification","Registro",40,"VERSIONED","TEXT",true,true,true,true,true,true,true],
+    ["reference","Producto/material/servicio","identification","Registro",50,"VERSIONED","TEXT",false,true,true,true,true,true,true],
+    ["lotReference","Lote/Ref.","identification","Registro",60,"VERSIONED","TEXT",false,true,true,true,true,true,true],
+    ["description","Descripción","investigation","Investigación",70,"VERSIONED","LONG_TEXT",true,true,true,false,true,true,true],
+    ["rootCause","Causa raíz","investigation","Investigación",80,"VERSIONED","LONG_TEXT",false,true,true,false,true,true,true],
+    ["classification","Clasificación","assessment","Evaluación",90,"STRUCTURAL","SELECT",false,true,true,true,true,true,false],
+    ["status","Estado","management","Gestión",100,"STRUCTURAL","SELECT",true,true,true,true,true,false,false],
+    ["closedAt","Fecha cierre","closure","Cierre",110,"STRUCTURAL","DATE",false,true,true,true,true,true,false],
+    ["effectivenessStatus","Eficacia","closure","Cierre",120,"STRUCTURAL","SELECT",true,true,true,true,true,true,false],
+    ["internalObservations","Observaciones/CAPA","management","Gestión",130,"OPERATIONAL","LONG_TEXT",false,true,true,false,true,false,false],
+  ] as const;
+  for (const [fieldKey,label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition] of complaintFieldConfigs) {
+    await prisma.formFieldConfig.upsert({
+      where: { formVersionId_fieldKey: { formVersionId: complaintForm.id, fieldKey } },
+      update: { label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition },
+      create: { formVersionId: complaintForm.id,fieldKey,label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition },
+    });
+  }
+  for (const documentType of [DocumentType.COMPLAINT_ANNEX_III,DocumentType.COMPLAINT_ANNEX_IV,DocumentType.COMPLAINT_ANNEX_V]) {
+    await prisma.templateVersion.upsert({
+      where: { module_documentType_versionCode: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "02" } },
+      update: { isActive: true },
+      create: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "02", effectiveFrom: new Date("2026-05-26"), isActive: true },
+    });
+  }
+
+  const returnForm = await prisma.formVersion.upsert({
+    where: { module_versionCode: { module: QmsRecordType.RETURN, versionCode: "DEVOL-03" } },
+    update: { isActive: true, status: "ACTIVE" },
+    create: {
+      module: QmsRecordType.RETURN,
+      versionCode: "DEVOL-03",
+      effectiveFrom: new Date("2026-05-26"),
+      isActive: true,
+      status: "ACTIVE",
+      notes: "GC-00/028/03.",
+    },
+  });
+  const returnFieldConfigs = [
+    ["businessCode","N.º devolución","identification","Datos generales",10,"STRUCTURAL","TEXT",true,true,true,true,true,true,false],
+    ["communicationDate","Fecha devolución","identification","Datos generales",20,"STRUCTURAL","DATE",true,true,true,true,true,true,false],
+    ["returnType","Origen/Motivo","identification","Datos generales",30,"STRUCTURAL","SELECT",true,true,true,true,true,true,false],
+    ["customerEntity","Distribuidor/Cliente","identification","Datos generales",40,"VERSIONED","TEXT",true,true,true,true,true,true,true],
+    ["products","Producto(s)","products","Productos",50,"VERSIONED","LONG_TEXT",true,true,true,false,true,true,true],
+    ["country","País distribución","identification","Datos generales",60,"VERSIONED","TEXT",false,true,true,true,true,true,true],
+    ["decision","Decisión","decision","Decisión",70,"STRUCTURAL","SELECT",true,true,true,true,true,true,false],
+    ["finalDestination","Destino final","decision","Decisión",80,"VERSIONED","LONG_TEXT",false,true,true,false,true,true,true],
+    ["destructionCertificate","Certificado destrucción","decision","Decisión",90,"VERSIONED","TEXT",false,true,true,false,true,true,true],
+    ["status","Estado","management","Gestión",100,"STRUCTURAL","SELECT",true,true,true,true,true,false,false],
+    ["closedAt","Fecha cierre","closure","Cierre",110,"STRUCTURAL","DATE",false,true,true,true,true,true,false],
+    ["internalObservations","Seguimiento y control","management","Gestión",120,"OPERATIONAL","LONG_TEXT",false,true,true,false,true,false,false],
+  ] as const;
+  for (const [fieldKey,label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition] of returnFieldConfigs) {
+    await prisma.formFieldConfig.upsert({
+      where: { formVersionId_fieldKey: { formVersionId: returnForm.id, fieldKey } },
+      update: { label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition },
+      create: { formVersionId: returnForm.id,fieldKey,label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition },
+    });
+  }
+  for (const documentType of [DocumentType.RETURN_ANNEX_III,DocumentType.RETURN_ANNEX_IV,DocumentType.RETURN_ANNEX_V,DocumentType.RETURN_ANNEX_VI]) {
+    await prisma.templateVersion.upsert({
+      where: { module_documentType_versionCode: { module: QmsRecordType.RETURN, documentType, versionCode: "03" } },
+      update: { isActive: true },
+      create: { module: QmsRecordType.RETURN, documentType, versionCode: "03", effectiveFrom: new Date("2026-05-26"), isActive: true },
     });
   }
 }

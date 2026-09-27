@@ -160,3 +160,22 @@ Se admite cierre sin ejecución únicamente con motivo documentado y eficacia No
 El listado operativo y el Anexo VII no son la misma vista.
 
 El Anexo VII conserva exclusivamente las columnas del formato oficial. El listado simple puede incluir más columnas de gestión y respetar filtros activos.
+
+
+## D-032 — Reclamaciones y Devoluciones como expedientes independientes
+Reclamaciones y Devoluciones reutilizan el patrón visual y operativo de Desviaciones, pero mantienen entidades, PNT y anexos propios.
+
+Una devolución puede derivar de una reclamación y viceversa, pero la vinculación se modela mediante QmsRelation y no mediante anidación o texto libre.
+
+## D-033 — CAPA desde Reclamaciones
+Reclamaciones dispone de propuestas CAPA 1:N. Una propuesta puede crear un expediente CAPA real, actualizando la propuesta y generando una relación GENERATES.
+
+## D-034 — Productos de una Devolución
+Una devolución admite varios productos. Los productos se almacenan como entidad 1:N y no como columnas repetidas.
+
+El Anexo IV se genera individualmente por producto y el Anexo VI anual usa una fila por producto.
+
+## D-035 — Plantilla fuente de Hito 8
+Para Reclamaciones y Devoluciones se utiliza el PNT DOCX completo como fuente controlada. En tiempo de generación se extrae únicamente el anexo aplicable.
+
+Esta decisión evita mantener copias derivadas manuales de cada anexo y reduce el riesgo de divergencia de formato.
