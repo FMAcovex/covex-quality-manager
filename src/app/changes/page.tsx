@@ -15,7 +15,7 @@ export default async function ChangeControlPage({searchParams}:{searchParams:Pro
     q:p(q.q),year:p(q.year),department:p(q.department),classification:p(q.classification),
     status:p(q.status),execution:p(q.execution),effectiveness:p(q.effectiveness),followup:p(q.followup),
   };
-  const {rows,departments,years,counters}=await getChangeControlList(filters);
+  const {rows,departments,years}=await getChangeControlList(filters);
   const exportParams=new URLSearchParams();
   Object.entries(filters).forEach(([key,value])=>{if(value&&key!=="q"&&key!=="followup")exportParams.set(key,value);});
 
@@ -47,13 +47,6 @@ export default async function ChangeControlPage({searchParams}:{searchParams:Pro
       </div>
       <div className="search-row"><input name="q" defaultValue={filters.q??""} placeholder="Buscar código, descripción, justificación, acción u observaciones…"/><button className="button">Buscar</button></div>
     </form>
-    <div className="summary-strip">
-      <div><span>Total</span><strong>{counters.total}</strong></div>
-      <div><span>Abiertos</span><strong>{counters.open}</strong></div>
-      <div><span>Pendientes de ejecución</span><strong>{counters.pendingExecution}</strong></div>
-      <div><span>Ejecutados pendientes de cierre</span><strong>{counters.executedPendingClosure}</strong></div>
-      <div><span>Seguimiento vencido</span><strong>{counters.overdueFollowups}</strong></div>
-    </div>
     <div className="table-card"><div className="table-scroll"><table id="change-list-table" className="records-table change-table">
       <thead><tr><th data-column-key="control">Control</th><th data-column-key="code">Codificación</th><th data-column-key="department">Departamento</th><th data-column-key="description">Descripción</th><th data-column-key="requestDate">Fecha solicitud</th><th data-column-key="approvalDate">Fecha aprobación</th><th data-column-key="classification">Clasificación</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="execution">Estado ejecución</th><th data-column-key="executionDate">Fecha ejecución</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="lastFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="status">Estado final</th><th data-column-key="closeDate">Fecha cierre</th><th data-column-key="observations">Observaciones</th></tr></thead>
       <tbody>{rows.map((row)=>{
