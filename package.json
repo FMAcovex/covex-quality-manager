@@ -23,6 +23,8 @@
     "indicators:smoke": "tsx scripts/smoke-indicators.ts",
     "templates:capa:install": "tsx scripts/install-capa-templates.ts",
     "templates:changes:install": "tsx scripts/install-change-control-templates.ts",
+    "templates:complaints:install": "tsx scripts/install-complaint-template.ts",
+    "templates:returns:install": "tsx scripts/install-return-template.ts",
     "import:capa": "tsx scripts/import-historical-capa.ts",
     "capa:import:smoke": "tsx scripts/smoke-capa-import.ts",
     "capa:smoke": "tsx scripts/smoke-capa.ts",
