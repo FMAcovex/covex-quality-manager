@@ -98,7 +98,7 @@ export default async function CapaPage({
           <table className="records-table capa-table">
             <thead>
               <tr>
-                <th>Tipo</th><th>Código</th><th>Departamento</th><th>Origen</th><th>Código origen</th>
+                <th>Control</th><th>Tipo</th><th>Código</th><th>Departamento</th><th>Origen</th><th>Código origen</th>
                 <th>Descripción CAPA</th><th>Apertura</th><th>Fecha prevista</th><th>Estado</th>
                 <th>Cierre operativo</th><th>Eficacia</th><th>Último seguimiento</th><th>Próximo seguimiento</th>
                 <th>Cierre efectivo</th><th>Observaciones</th>
@@ -110,7 +110,8 @@ export default async function CapaPage({
                 const planned = row.plannedActions[0];
                 return (
                   <tr key={row.id}>
-                    <td><span className="badge">{capaTypeLabel(row.actionType)}</span></td>
+                    <td>{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td>
+                    <td><span className="badge neutral">{capaTypeLabel(row.actionType)}</span></td>
                     <td className="sticky-code"><Link href={`/capa/${row.id}`}><strong>{row.qmsRecord.businessCode ?? "Sin código"}</strong></Link></td>
                     <td>{row.departmentCodeSnapshot ?? "—"}</td>
                     <td>{row.originType ?? "—"}</td>
@@ -120,7 +121,7 @@ export default async function CapaPage({
                     <td>{formatDate(planned?.plannedExecutionDate)}</td>
                     <td><span className={`status-badge ${row.status.toLowerCase()}`}>{capaStatusLabel(row.status)}</span></td>
                     <td>{formatDate(row.operationalClosedAt)}</td>
-                    <td><span className="badge">{effectivenessLabel(row.effectivenessStatus)}</span></td>
+                    <td><span className={`badge ${row.effectivenessStatus === "CONFORMING" ? "closed" : row.effectivenessStatus === "NONCONFORMING" ? "major" : "warning"}`}>{effectivenessLabel(row.effectivenessStatus)}</span></td>
                     <td>{latest ? `${String(latest.sequenceNumber).padStart(2,"0")} · ${formatDate(latest.followupDate)}` : "00 · inicial"}</td>
                     <td>{formatDate(latest?.nextFollowupDate)}</td>
                     <td>{formatDate(row.effectiveClosedAt)}</td>
@@ -128,7 +129,7 @@ export default async function CapaPage({
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={15}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={16}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>
