@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateAnnexV } from "@/modules/deviations/documents/xlsx";
+import { prisma } from "@/lib/db";
 import { getDeviationExportRows } from "@/modules/deviations/documents/export-data";
 import { TemplateUnavailableError } from "@/modules/deviations/documents/templates";
 
@@ -16,8 +17,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Selecciona un año válido." }, { status: 400 });
   }
   const rows = await getDeviationExportRows({ year: String(year) });
+  const templateVersion = await prisma.templateVersion.findFirst({
+    where: {
+      module: "DEVIATION",
+      documentType: "DEVIATION_ANNEX_V",
+      isActive: true,
+      effectiveFrom: { lte: new Date(`${year}-12-31`) },
+      OR: [{ effectiveTo: null }, { effectiveTo: { gte: new Date(`${year}-01-01`) } }],
+    },
+    orderBy: { effectiveFrom: "desc" },
+  });
   try {
-    const buffer = await generateAnnexV(year, rows);
+    const buffer = await generateAnnexV(year, rows, templateVersion?.versionCode ?? "06");
     return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
