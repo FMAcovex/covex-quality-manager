@@ -1,0 +1,46 @@
+import "server-only";
+import { Prisma,QmsRecordType } from "@prisma/client";
+import { prisma } from "@/lib/db";
+
+export type ReturnListFilters={q?:string;year?:string;department?:string;type?:string;status?:string;decision?:string};
+
+export async function getReturnList(filters:ReturnListFilters){
+ const and:Prisma.ReturnRecordWhereInput[]=[];
+ if(filters.q)and.push({OR:[
+  {qmsRecord:{businessCode:{contains:filters.q,mode:"insensitive"}}},
+  {customerEntity:{contains:filters.q,mode:"insensitive"}},{country:{contains:filters.q,mode:"insensitive"}},
+  {reasonObservations:{contains:filters.q,mode:"insensitive"}},{finalDestination:{contains:filters.q,mode:"insensitive"}},
+  {products:{some:{OR:[{productNameCode:{contains:filters.q,mode:"insensitive"}},{lot:{contains:filters.q,mode:"insensitive"}}]}}}
+ ]});
+ if(filters.year&&/^\d{4}$/.test(filters.year))and.push({qmsRecord:{year:Number(filters.year)}});
+ if(filters.department)and.push({departmentId:filters.department});
+ if(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"].includes(filters.type??""))and.push({returnType:filters.type as any});
+ if(filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
+ if(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??""))and.push({decision:filters.decision as any});
+ const where:Prisma.ReturnRecordWhereInput=and.length?{AND:and}:{};
+ const [rows,departments,years,total,open,pending,followupDue]=await Promise.all([
+  prisma.returnRecord.findMany({where,include:{qmsRecord:true,department:true,products:{orderBy:{sortOrder:"asc"}},followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{communicationDate:"desc"},{createdAt:"desc"}],take:300}),
+  prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
+  prisma.qmsRecord.findMany({where:{recordType:QmsRecordType.RETURN,year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}}),
+  prisma.returnRecord.count(),prisma.returnRecord.count({where:{status:"OPEN"}}),prisma.returnRecord.count({where:{decision:"PENDING"}}),
+  prisma.returnRecord.findMany({where:{status:"OPEN"},select:{followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1,select:{nextFollowupDate:true}}}})
+ ]);
+ return {rows,departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{total,open,pending,followupDue:followupDue.filter(r=>r.followups[0]?.nextFollowupDate&&r.followups[0].nextFollowupDate<=new Date()).length}};
+}
+
+export async function getReturnDetail(id:string){
+ return prisma.returnRecord.findUnique({where:{id},include:{
+  qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}},history:{orderBy:{changedAt:"desc"},take:100},versions:{orderBy:{sequenceNumber:"asc"}},generatedDocuments:{orderBy:{generatedAt:"desc"}}}},
+  department:true,products:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}],include:{department:true}},
+  followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}]},
+  formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true,annexVITemplateVersion:true
+ }});
+}
+export async function getReturnLookups(){
+ const [departments,forms,templates]=await Promise.all([
+  prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
+  prisma.formVersion.findMany({where:{module:"RETURN",isActive:true},orderBy:{effectiveFrom:"desc"}}),
+  prisma.templateVersion.findMany({where:{module:"RETURN",isActive:true},orderBy:{effectiveFrom:"desc"}})
+ ]);
+ return {departments,forms,templates};
+}
