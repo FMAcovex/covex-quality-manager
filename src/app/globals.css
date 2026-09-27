@@ -523,3 +523,22 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 }
 .column-options label:hover { background:#f6f9fc; }
 .column-options small { color:var(--muted); font-size:10px; text-transform:uppercase; }
+
+
+/* Hito 7 — Controles de cambios */
+.change-filters { grid-template-columns: repeat(7,minmax(120px,1fr)) auto; }
+.change-table { min-width: 2200px; }
+.change-table .long-cell { min-width:280px; max-width:430px; white-space:normal; }
+.change-action { grid-template-columns: .8fr 2.2fr 1fr 1fr 1fr .8fr 1.5fr auto !important; align-items:flex-end; }
+.change-action textarea { min-height:72px; }
+.change-followup-form { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.summary-strip:has(> :nth-child(5)) { grid-template-columns: repeat(5,minmax(0,1fr)); }
+@media(max-width:1250px){
+  .change-filters { grid-template-columns:repeat(4,1fr); }
+  .change-action { grid-template-columns:repeat(2,1fr) !important; }
+  .summary-strip:has(> :nth-child(5)) { grid-template-columns:repeat(3,1fr); }
+}
+@media(max-width:760px){
+  .change-action,.change-followup-form { grid-template-columns:1fr !important; }
+  .summary-strip:has(> :nth-child(5)) { grid-template-columns:1fr 1fr; }
+}
