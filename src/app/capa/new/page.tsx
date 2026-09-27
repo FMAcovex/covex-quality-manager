@@ -22,18 +22,18 @@ export default async function NewCapaPage({
 
   const defaults = deviationPlan
     ? {
-        actionType: plan.actionType,
-        departmentId: plan.deviation.departmentId ?? undefined,
+        actionType: deviationPlan.actionType,
+        departmentId: deviationPlan.deviation.departmentId ?? undefined,
         openedAt: new Date().toISOString().slice(0, 10),
         originType: "Desviación",
-        originCode: plan.deviation.qmsRecord.businessCode ?? undefined,
-        applicableTo: plan.deviation.materialProcessAffected ?? undefined,
-        defectDescription: plan.deviation.whatHappened ?? undefined,
-        rootCause: plan.deviation.rootCause ?? undefined,
+        originCode: deviationPlan.deviation.qmsRecord.businessCode ?? undefined,
+        applicableTo: deviationPlan.deviation.materialProcessAffected ?? undefined,
+        defectDescription: deviationPlan.deviation.whatHappened ?? undefined,
+        rootCause: deviationPlan.deviation.rootCause ?? undefined,
         plannedActions: [{
-          description: plan.description,
-          responsible: plan.responsible ?? "",
-          plannedExecutionDate: plan.plannedExecutionDate?.toISOString().slice(0,10) ?? "",
+          description: deviationPlan.description,
+          responsible: deviationPlan.responsible ?? "",
+          plannedExecutionDate: deviationPlan.plannedExecutionDate?.toISOString().slice(0,10) ?? "",
           impact: "",
         }],
         createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
