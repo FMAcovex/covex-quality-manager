@@ -1174,6 +1174,21 @@ model AlertRule {
   @@index([module, kind, isActive])
 }
 
+model ConfigurationChange {
+  id            String   @id @default(uuid())
+  entityType    String
+  entityKey     String
+  action        String
+  oldValue      Json?
+  newValue      Json?
+  changedByText String?
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  @@index([entityType, entityKey, createdAt])
+  @@index([createdAt])
+}
+
 model HistoricalImportBatch {
   id              String                @id @default(uuid())
   recordType      QmsRecordType         @default(DEVIATION)
