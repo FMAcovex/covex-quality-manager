@@ -96,7 +96,10 @@ function scopeText(record:ChangeDocumentRecord){
     (record.scopeOther?`\nEspecificar: ${record.scopeOther}`:"");
 }
 function department(record:ChangeDocumentRecord){
-  return [record.departmentNameSnapshot,record.departmentCodeSnapshot].filter(Boolean).join(" (").replace(/ \(([^)]*)$/, " ($1)");
+  if(record.departmentNameSnapshot&&record.departmentCodeSnapshot){
+    return `${record.departmentNameSnapshot} (${record.departmentCodeSnapshot})`;
+  }
+  return record.departmentNameSnapshot??record.departmentCodeSnapshot??"";
 }
 
 export async function generateChangeAnnexIII(record:ChangeDocumentRecord,version="03") {
