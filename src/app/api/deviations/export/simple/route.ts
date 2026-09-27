@@ -3,10 +3,6 @@ import { getDeviationExportRows } from "@/modules/deviations/documents/export-da
 
 export const runtime = "nodejs";
 
-function body(buffer: Buffer) {
-  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const names = ["q","year","department","status","classification","provenance","measures","capa","deadline"] as const;
