@@ -155,3 +155,15 @@ Criterio de salida:
 - listado simple e indicadores;
 - relaciones e historial;
 - smoke test y CI completos.
+
+
+### Criterio de salida Hito 8
+- Reclamaciones y Devoluciones operativas;
+- patrón UX coherente con Desviaciones;
+- investigación/CAPA/eficacia en Reclamaciones;
+- productos 1:N y checklist técnico en Devoluciones;
+- relaciones QMS;
+- anexos oficiales y listados simples;
+- indicadores y tendencia de 5 años;
+- plantillas controladas por SHA-256;
+- smoke test PostgreSQL y CI completos.
