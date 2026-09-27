@@ -105,6 +105,7 @@ export function mapHistoricalCapaRows(
     };
     if(!mapped.openedAt)mapped.issues.push("MISSING_OR_INVALID_OPENING_DATE");
     if(!mapped.departmentCode)mapped.issues.push("MISSING_DEPARTMENT");
+    if(!mapped.description)mapped.issues.push("MISSING_DESCRIPTION");
     if(!enriched)mapped.issues.push("NOT_PRESENT_IN_BASE_KPI");
     output.push(mapped);
   }
@@ -127,6 +128,7 @@ export function mapHistoricalCapaRows(
     };
     if(!mapped.openedAt)mapped.issues.push("MISSING_OR_INVALID_OPENING_DATE");
     if(!mapped.departmentCode)mapped.issues.push("MISSING_DEPARTMENT");
+    if(!mapped.description)mapped.issues.push("MISSING_DESCRIPTION");
     if(!enriched)mapped.issues.push("NOT_PRESENT_IN_BASE_KPI");
     output.push(mapped);
   }
