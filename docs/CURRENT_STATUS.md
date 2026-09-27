@@ -129,7 +129,7 @@ Hito 7 — Controles de cambios.
 
 
 ## Hito 6.1 — Versionado transversal
-Estado: **IMPLEMENTADO EN RAMA DE HITO Y PENDIENTE DE INTEGRACIÓN TRAS CI**.
+Estado: **IMPLEMENTADO Y VALIDADO EN CI**.
 
 Implementación:
 - nueva entidad común `QmsRecordVersion`;
