@@ -17,7 +17,13 @@ export async function getAdministrationOverview(){
     prisma.department.findMany({orderBy:[{isActive:"desc"},{code:"asc"}]}),
     prisma.lookupCatalog.findMany({include:{items:{orderBy:[{isActive:"desc"},{sortOrder:"asc"},{label:"asc"}]}},orderBy:[{isActive:"desc"},{label:"asc"}]}),
     prisma.formVersion.findMany({include:{_count:{select:{fieldConfigs:true,deviations:true,capas:true,changeControls:true,complaints:true,returnRecords:true}}},orderBy:[{module:"asc"},{effectiveFrom:"desc"},{createdAt:"desc"}]}),
-    prisma.templateVersion.findMany({include:{_count:{select:{generatedDocuments:true,deviationsAnnexIII:true,capasAnnexIII:true,changeRequests:true,changeDictamens:true,changeFollowups:true,complaintsAnnexIII:true,complaintsAnnexIV:true,complaintsAnnexV:true,returnsAnnexIII:true,returnsAnnexIV:true,returnsAnnexV:true,returnsAnnexVI:true}}},orderBy:[{module:"asc"},{documentType:"asc"},{effectiveFrom:"desc"}]}),
+    prisma.templateVersion.findMany({
+      select:{
+        id:true,module:true,documentType:true,versionCode:true,filePath:true,fileName:true,mimeType:true,fileSize:true,checksum:true,effectiveFrom:true,effectiveTo:true,isActive:true,createdAt:true,updatedAt:true,
+        _count:{select:{generatedDocuments:true,deviationsAnnexIII:true,capasAnnexIII:true,changeRequests:true,changeDictamens:true,changeFollowups:true,complaintsAnnexIII:true,complaintsAnnexIV:true,complaintsAnnexV:true,returnsAnnexIII:true,returnsAnnexIV:true,returnsAnnexV:true,returnsAnnexVI:true}}
+      },
+      orderBy:[{module:"asc"},{documentType:"asc"},{effectiveFrom:"desc"}]
+    }),
     prisma.appParameter.findMany({orderBy:[{scope:"asc"},{key:"asc"}]}),
     prisma.alertRule.findMany({orderBy:[{module:"asc"},{kind:"asc"},{key:"asc"}]}),
     prisma.configurationChange.findMany({orderBy:{createdAt:"desc"},take:80}),
