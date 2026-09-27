@@ -109,7 +109,11 @@ export default async function ChangeControlDetailPage({params,searchParams}:{
           {item.openReason?<p><strong>Motivo abierto:</strong> {item.openReason}</p>:null}
           {item.conclusion?<p><strong>Conclusión:</strong> {item.conclusion}</p>:null}
           <small>Próximo seguimiento: {formatDate(item.nextFollowupDate)} · {item.closesChange?"Cierra el cambio":"Continúa abierto"}</small>
-          <div className="document-actions"><a className="button small" href={`/api/changes/${id}/annex-v?followup=${item.sequenceNumber}`}>Descargar Anexo V · {String(item.sequenceNumber).padStart(2,"0")}</a></div>
+          <div className="document-actions">
+            {change.qmsRecord.versions.some((version)=>version.sourceEntityId===item.id)
+              ? <a className="button small" href={`/api/changes/${id}/annex-v?followup=${item.sequenceNumber}`}>Descargar Anexo V · {String(item.sequenceNumber).padStart(2,"0")}</a>
+              : <span className="muted-note">Sin snapshot exacto: no se regenera el documento histórico.</span>}
+          </div>
         </div></article>)}</div>:<div className="empty-panel">Todavía no hay seguimientos. El primer informe será el seguimiento 00.</div>}
     </div>
     <div className="card" id="new-followup"><h2>Añadir seguimiento</h2><form action={addChangeControlFollowupAction.bind(null,id)} className="inline-form change-followup-form">
@@ -143,7 +147,9 @@ export default async function ChangeControlDetailPage({params,searchParams}:{
 
     {activeTab==="documents"?<div className="card"><h2>Documentos</h2><div className="document-actions">
       <a className="button" href={`/api/changes/${id}/annex-iii-iv`}>Anexo III + IV · Solicitud y Dictamen</a>
-      {change.followups.map((f)=><a key={f.id} className="button" href={`/api/changes/${id}/annex-v?followup=${f.sequenceNumber}`}>Anexo V · Seguimiento {String(f.sequenceNumber).padStart(2,"0")}</a>)}
+      {change.followups.map((f)=>change.qmsRecord.versions.some((version)=>version.sourceEntityId===f.id)
+        ? <a key={f.id} className="button" href={`/api/changes/${id}/annex-v?followup=${f.sequenceNumber}`}>Anexo V · Seguimiento {String(f.sequenceNumber).padStart(2,"0")}</a>
+        : <span key={f.id} className="muted-note">Seguimiento {String(f.sequenceNumber).padStart(2,"0")}: sin snapshot exacto</span>)}
     </div></div>:null}
 
     {activeTab==="history"?<div className="card"><h2>Historial de modificaciones</h2>{change.qmsRecord.history.length?<div className="timeline">{change.qmsRecord.history.map((item)=><article className="timeline-item" key={item.id}><div><header><strong>{item.fieldPath}</strong><span>{formatDate(item.changedAt)}</span></header><p>{item.reason??"Modificación registrada"}</p><small>{item.changedByText??"Sistema"} · {item.source}</small></div></article>)}</div>:<div className="empty-panel">Sin historial.</div>}</div>:null}
