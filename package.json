@@ -27,6 +27,7 @@
     "capa:import:smoke": "tsx scripts/smoke-capa-import.ts",
     "capa:smoke": "tsx scripts/smoke-capa.ts",
     "versions:smoke": "tsx scripts/smoke-versioning.ts",
+    "changes:smoke": "tsx scripts/smoke-change-control.ts",
     "versions:backfill": "tsx scripts/backfill-record-versions.ts"
   },
   "dependencies": {
