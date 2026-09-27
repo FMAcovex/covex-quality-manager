@@ -1,0 +1,311 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum QmsRecordType {
+  DEVIATION
+  CAPA
+  CHANGE_CONTROL
+  COMPLAINT
+  RETURN
+}
+
+enum QmsRelationType {
+  GENERATES
+  RELATED_TO
+  IMPLEMENTED_BY
+  ASSOCIATED_WITH
+}
+
+enum TriState {
+  YES
+  NO
+  NA
+}
+
+enum DeviationClassification {
+  CRITICAL
+  MAJOR
+  MINOR
+}
+
+enum DeviationStatus {
+  OPEN
+  CLOSED
+}
+
+enum DataQualityStatus {
+  COMPLETE
+  INCOMPLETE
+  REVIEW_REQUIRED
+}
+
+enum InvestigationMethod {
+  BRAINSTORMING
+  FIVE_WHYS
+  FTA
+  ISHIKAWA
+}
+
+enum CapaActionType {
+  CORRECTIVE
+  PREVENTIVE
+}
+
+enum CapaProposalStatus {
+  PROPOSED
+  REGISTERED
+  CANCELLED
+}
+
+enum HistorySource {
+  UI
+  IMPORT
+  SYSTEM
+}
+
+enum DocumentType {
+  DEVIATION_ANNEX_III
+  DEVIATION_ANNEX_V
+  SIMPLE_LIST
+}
+
+model QmsRecord {
+  id                 String              @id @default(uuid())
+  recordType         QmsRecordType
+  businessCode       String?
+  year               Int?
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deviation          Deviation?
+  sourceRelations    QmsRelation[]       @relation("RelationSource")
+  targetRelations    QmsRelation[]       @relation("RelationTarget")
+  history            ChangeHistory[]
+  generatedDocuments GeneratedDocument[]
+  linkedCapaPlans    DeviationCapaPlan[] @relation("LinkedCapaRecord")
+
+  @@unique([recordType, businessCode])
+  @@index([recordType, year])
+  @@index([businessCode])
+}
+
+model QmsRelation {
+  id             String          @id @default(uuid())
+  sourceRecordId String
+  sourceRecord   QmsRecord       @relation("RelationSource", fields: [sourceRecordId], references: [id], onDelete: Restrict)
+  targetRecordId String
+  targetRecord   QmsRecord       @relation("RelationTarget", fields: [targetRecordId], references: [id], onDelete: Restrict)
+  relationType   QmsRelationType
+  createdAt      DateTime        @default(now())
+  createdByText  String?
+  notes          String?
+  isActive       Boolean         @default(true)
+
+  @@unique([sourceRecordId, targetRecordId, relationType])
+  @@index([sourceRecordId, isActive])
+  @@index([targetRecordId, isActive])
+}
+
+model Department {
+  id         String      @id @default(uuid())
+  code       String      @unique
+  name       String
+  isActive   Boolean     @default(true)
+  validFrom  DateTime?   @db.Date
+  validTo    DateTime?   @db.Date
+  deviations Deviation[]
+}
+
+model FormVersion {
+  id            String        @id @default(uuid())
+  module        QmsRecordType
+  versionCode   String
+  effectiveFrom DateTime      @db.Date
+  effectiveTo   DateTime?     @db.Date
+  isActive      Boolean       @default(true)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  deviations    Deviation[]
+
+  @@unique([module, versionCode])
+  @@index([module, isActive, effectiveFrom])
+}
+
+model TemplateVersion {
+  id                  String              @id @default(uuid())
+  module              QmsRecordType
+  documentType        DocumentType
+  versionCode         String
+  filePath            String?
+  checksum            String?
+  effectiveFrom       DateTime            @db.Date
+  effectiveTo         DateTime?           @db.Date
+  isActive            Boolean             @default(true)
+  createdAt           DateTime            @default(now())
+  deviationsAnnexIII  Deviation[]         @relation("DeviationAnnexIIITemplate")
+  generatedDocuments  GeneratedDocument[]
+
+  @@unique([module, documentType, versionCode])
+  @@index([module, documentType, isActive, effectiveFrom])
+}
+
+model Deviation {
+  id                         String                   @id @default(uuid())
+  qmsRecordId                String                   @unique
+  qmsRecord                  QmsRecord                @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId               String?
+  department                 Department?              @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot     String?
+  departmentNameSnapshot     String?
+  issueDate                  DateTime?                @db.Date
+  eventDateTime              DateTime?
+  detectedBy                 String?
+  formVersionId              String?
+  formVersion                FormVersion?             @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  anexoIIITemplateVersionId  String?
+  anexoIIITemplateVersion    TemplateVersion?         @relation("DeviationAnnexIIITemplate", fields: [anexoIIITemplateVersionId], references: [id], onDelete: Restrict)
+  processEquipmentSystem     String?
+  finishedProductSystem      String?
+  productLot                 String?
+  lotSize                    String?
+  affectedQuantity           String?
+  client                     String?
+  rawOrPackagingMaterial     String?
+  materialLot                String?
+  materialLotSize            String?
+  materialAffectedQuantity   String?
+  supplier                   String?
+  supplierLot                String?
+  affectedEquipmentLine      String?
+  otherOrigin                String?
+  affectedDocumentation      String?
+  whatHappened               String?
+  whoInvolved                String?
+  whenHappened               String?
+  whereHappened              String?
+  howHappened                String?
+  investigation              String?
+  investigationConclusive    TriState?
+  investigationMethods       InvestigationMethod[]    @default([])
+  rootCause                  String?
+  recurrentRootCause         TriState?
+  recurrenceDetails          String?
+  classification             DeviationClassification?
+  validationImpact           TriState?
+  registrationImpact         TriState?
+  stabilityImpact            TriState?
+  otherProcessesImpact       TriState?
+  otherProcessesImpactDetails String?
+  affectsFinishedProduct     TriState?
+  capaRequired               Boolean?
+  conclusion                 String?
+  disposition                String?
+  dispositionQuantity        String?
+  dispositionComments        String?
+  clientNotification         TriState?
+  closedAt                   DateTime?                @db.Date
+  status                     DeviationStatus          @default(OPEN)
+  internalObservations       String?
+  signedDocumentAvailable    Boolean?
+  dataQualityStatus          DataQualityStatus        @default(REVIEW_REQUIRED)
+  extraData                  Json?
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+  immediateActions           DeviationImmediateAction[]
+  followups                  DeviationFollowup[]
+  capaPlans                  DeviationCapaPlan[]
+
+  @@index([departmentId])
+  @@index([status])
+  @@index([classification])
+  @@index([issueDate])
+  @@index([closedAt])
+}
+
+model DeviationImmediateAction {
+  id          String    @id @default(uuid())
+  deviationId String
+  deviation   Deviation @relation(fields: [deviationId], references: [id], onDelete: Cascade)
+  description String
+  executedBy  String?
+  executedAt  DateTime? @db.Date
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([deviationId, sortOrder])
+}
+
+model DeviationFollowup {
+  id                String    @id @default(uuid())
+  deviationId       String
+  deviation         Deviation @relation(fields: [deviationId], references: [id], onDelete: Cascade)
+  followupDate      DateTime  @db.Date
+  completedByText   String
+  followupType      String?
+  comment           String
+  nextFollowupDate  DateTime? @db.Date
+  evidenceReference String?
+  createdAt         DateTime  @default(now())
+
+  @@index([deviationId, followupDate])
+  @@index([nextFollowupDate])
+}
+
+model DeviationCapaPlan {
+  id                   String             @id @default(uuid())
+  deviationId          String
+  deviation            Deviation          @relation(fields: [deviationId], references: [id], onDelete: Cascade)
+  actionType           CapaActionType
+  description          String
+  plannedExecutionDate DateTime?          @db.Date
+  responsible          String?
+  businessCapaCode     String?
+  linkedCapaRecordId   String?
+  linkedCapaRecord     QmsRecord?         @relation("LinkedCapaRecord", fields: [linkedCapaRecordId], references: [id], onDelete: SetNull)
+  proposalStatus       CapaProposalStatus @default(PROPOSED)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([deviationId])
+  @@index([linkedCapaRecordId])
+  @@index([plannedExecutionDate])
+}
+
+model ChangeHistory {
+  id            String        @id @default(uuid())
+  qmsRecordId   String
+  qmsRecord     QmsRecord     @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  changedAt     DateTime      @default(now())
+  changedByText String?
+  fieldPath     String
+  oldValue      Json?
+  newValue      Json?
+  reason        String?
+  source        HistorySource @default(UI)
+
+  @@index([qmsRecordId, changedAt])
+  @@index([source])
+}
+
+model GeneratedDocument {
+  id                String           @id @default(uuid())
+  qmsRecordId       String
+  qmsRecord         QmsRecord        @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  documentType      DocumentType
+  templateVersionId String?
+  templateVersion   TemplateVersion? @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  generatedAt       DateTime         @default(now())
+  generatedByText   String?
+  checksum          String?
+  metadata          Json?
+
+  @@index([qmsRecordId, generatedAt])
+  @@index([templateVersionId])
+  @@index([documentType, generatedAt])
+}
