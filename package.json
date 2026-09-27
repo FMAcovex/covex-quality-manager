@@ -24,7 +24,8 @@
     "templates:capa:install": "tsx scripts/install-capa-templates.ts",
     "import:capa": "tsx scripts/import-historical-capa.ts",
     "capa:import:smoke": "tsx scripts/smoke-capa-import.ts",
-    "capa:smoke": "tsx scripts/smoke-capa.ts"
+    "capa:smoke": "tsx scripts/smoke-capa.ts",
+    "versions:smoke": "tsx scripts/smoke-versioning.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
