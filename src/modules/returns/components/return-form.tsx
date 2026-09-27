@@ -9,11 +9,11 @@ function Field({label,name,defaultValue,type="text",required=false,span=""}:{lab
 function TextArea({label,name,defaultValue}:{label:string;name:string;defaultValue?:string}){return <label className="field full"><span>{label}</span><textarea name={name} defaultValue={defaultValue??""}/></label>;}
 function Tri({label,name,defaultValue}:{label:string;name:string;defaultValue?:string}){return <label className="field"><span>{label}</span><select name={name} defaultValue={defaultValue??""}><option value="">No informado</option><option value="YES">Sí</option><option value="NO">No</option><option value="NA">N/A</option></select></label>;}
 
-export function ReturnForm({mode,action,departments,defaults={},returnId}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string}){
+export function ReturnForm({mode,action,departments,defaults={},returnId,fromComplaintId}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string;fromComplaintId?:string}){
  const [state,formAction,pending]=useActionState(action,initial);const [products,setProducts]=useState(defaults.products?.length?defaults.products:[{...emptyProduct}]);
  const patch=(i:number,p:Partial<ReturnProductInput>)=>setProducts(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  return <form action={formAction} className="form-stack">
-  <input type="hidden" name="productsJson" value={JSON.stringify(products)}/>
+  <input type="hidden" name="productsJson" value={JSON.stringify(products)}/>{fromComplaintId?<input type="hidden" name="fromComplaintId" value={fromComplaintId}/>:null}
   {state.error?<div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length?<ul>{state.fieldErrors.map(x=><li key={x}>{x}</li>)}</ul>:null}</div>:null}
   <section className="form-section"><h2>1. Datos generales de la devolución</h2><div className="form-grid">
    <Field label="N.º devolución" name="businessCode" defaultValue={defaults.businessCode} required/>
