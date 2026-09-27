@@ -42,5 +42,6 @@ jobs:
           pnpm db:push
           pnpm db:seed
           pnpm db:smoke
+          pnpm import:smoke
       - name: Quality checks
         run: pnpm quality
