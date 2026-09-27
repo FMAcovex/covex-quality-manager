@@ -40,7 +40,10 @@ function parseArray<T>(raw: string | null, schema: z.ZodType<T>): T[] {
   }
 }
 
-export function parseCapaForm(formData: FormData) {
+export function parseCapaForm(
+  formData: FormData,
+  options: { allowHistoricalIncomplete?: boolean } = {},
+) {
   const businessCode = text(formData, "businessCode");
   const departmentId = text(formData, "departmentId");
   const openedAt = text(formData, "openedAt");
@@ -69,10 +72,10 @@ export function parseCapaForm(formData: FormData) {
   if (!createdByText) errors.push("Debe indicarse quién cumplimenta el registro.");
   if (!originType) errors.push("Debe indicarse el origen de la CAPA.");
   if (!defectDescription) errors.push("La descripción breve del defecto es obligatoria.");
-  if (!rootCause) errors.push("La causa raíz es obligatoria.");
+  if (!rootCause && !options.allowHistoricalIncomplete) errors.push("La causa raíz es obligatoria.");
   if (!plannedActions.length) errors.push("Debe existir al menos una acción propuesta.");
 
-  if (recordStatus === "CLOSED") {
+  if (recordStatus === "CLOSED" && !options.allowHistoricalIncomplete) {
     if (!operationalClosedAt) {
       errors.push("Una CAPA cerrada debe tener fecha de cierre operativo.");
     }
@@ -81,11 +84,11 @@ export function parseCapaForm(formData: FormData) {
     }
   }
 
-  if (recordStatus === "CANCELLED" && !cancellationReason) {
+  if (recordStatus === "CANCELLED" && !cancellationReason && !options.allowHistoricalIncomplete) {
     errors.push("Una CAPA cancelada debe incluir el motivo de cancelación.");
   }
 
-  if (effectiveClosedAt) {
+  if (effectiveClosedAt && !options.allowHistoricalIncomplete) {
     if (recordStatus !== "CLOSED") {
       errors.push("El cierre efectivo solo puede registrarse cuando la CAPA está cerrada operativamente.");
     }
@@ -97,7 +100,7 @@ export function parseCapaForm(formData: FormData) {
     }
   }
 
-  if (effectivenessStatus === "NONCONFORMING" && effectiveClosedAt) {
+  if (effectivenessStatus === "NONCONFORMING" && effectiveClosedAt && !options.allowHistoricalIncomplete) {
     errors.push("Una eficacia No conforme no puede tener fecha de cierre efectivo.");
   }
 
