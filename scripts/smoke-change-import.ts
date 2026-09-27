@@ -24,7 +24,9 @@ async function main(){
   assert.equal(records.length,2);const y26=records.find((x)=>x.qmsRecord.businessCode?.includes("2026"));assert.deepEqual(y26?.followups.map((x)=>x.sequenceNumber).sort(),[0,1]);
   await prisma.historicalImportRow.deleteMany({where:{batch:{sourceFileName:"changes-smoke.xlsx"}}});
   await prisma.historicalImportBatch.deleteMany({where:{sourceFileName:"changes-smoke.xlsx"}});
-  const ids=records.map((x)=>x.qmsRecordId);await prisma.qmsRecordVersion.deleteMany({where:{qmsRecordId:{in:ids}}});
+  const ids=records.map((x)=>x.qmsRecordId);
+  await prisma.changeHistory.deleteMany({where:{qmsRecordId:{in:ids}}});
+  await prisma.qmsRecordVersion.deleteMany({where:{qmsRecordId:{in:ids}}});
   await prisma.changeControlFollowup.deleteMany({where:{changeControl:{qmsRecordId:{in:ids}}}});
   await prisma.changeControlAction.deleteMany({where:{changeControl:{qmsRecordId:{in:ids}}}});
   await prisma.changeControl.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.qmsRecord.deleteMany({where:{id:{in:ids}}});
