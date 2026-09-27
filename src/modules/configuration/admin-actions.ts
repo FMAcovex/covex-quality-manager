@@ -2,7 +2,7 @@
 
 import { createHash } from "node:crypto";
 
-import { AlertRuleKind,AlertSeverity,DocumentType,FormVersionStatus,ParameterValueType,QmsRecordType } from "@prisma/client";
+import { AlertRuleKind,AlertSeverity,DocumentType,FormVersionStatus,ParameterValueType,Prisma,QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 
@@ -71,7 +71,7 @@ export async function cloneFormVersionAction(formId:string,fd:FormData){
   if(!versionCode||!effectiveFrom)throw new Error("Versión y fecha de vigencia son obligatorias.");
   const created=await prisma.$transaction(async tx=>{
     const form=await tx.formVersion.create({data:{module:source.module,versionCode,effectiveFrom:new Date(effectiveFrom),status:FormVersionStatus.DRAFT,isActive:false,notes:text(fd,"notes")||`Clonada desde ${source.versionCode}`}});
-    if(source.fieldConfigs.length)await tx.formFieldConfig.createMany({data:source.fieldConfigs.map(x=>({formVersionId:form.id,fieldKey:x.fieldKey,label:x.label,sectionKey:x.sectionKey,sectionLabel:x.sectionLabel,sortOrder:x.sortOrder,kind:x.kind,valueType:x.valueType,required:x.required,listAvailable:x.listAvailable,listVisibleByDefault:x.listVisibleByDefault,filterable:x.filterable,simpleExport:x.simpleExport,officialAnnexField:x.officialAnnexField,editableDefinition:x.editableDefinition,options:x.options??undefined}))});
+    if(source.fieldConfigs.length)await tx.formFieldConfig.createMany({data:source.fieldConfigs.map(x=>({formVersionId:form.id,fieldKey:x.fieldKey,label:x.label,sectionKey:x.sectionKey,sectionLabel:x.sectionLabel,sortOrder:x.sortOrder,kind:x.kind,valueType:x.valueType,required:x.required,listAvailable:x.listAvailable,listVisibleByDefault:x.listVisibleByDefault,filterable:x.filterable,simpleExport:x.simpleExport,officialAnnexField:x.officialAnnexField,editableDefinition:x.editableDefinition,options:x.options===null?undefined:x.options as Prisma.InputJsonValue}))});
     return form;
   });
   await logChange("FormVersion",`${source.module}:${versionCode}`,"CLONE",source,created,fd);
@@ -125,7 +125,8 @@ export async function activateTemplateVersionAction(id:string,fd:FormData){
     await tx.templateVersion.update({where:{id},data:{isActive:true,effectiveTo:null}});
   });
   const updated=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
-  await logChange("TemplateVersion",`${target.module}:${target.documentType}:${target.versionCode}`,"ACTIVATE",target,updated,fd);
+  const summary=(v:typeof target)=>({id:v.id,module:v.module,documentType:v.documentType,versionCode:v.versionCode,effectiveFrom:v.effectiveFrom,effectiveTo:v.effectiveTo,isActive:v.isActive,fileName:v.fileName,fileSize:v.fileSize,checksum:v.checksum});
+  await logChange("TemplateVersion",`${target.module}:${target.documentType}:${target.versionCode}`,"ACTIVATE",summary(target),summary(updated),fd);
   revalidatePath("/settings");
 }
 
