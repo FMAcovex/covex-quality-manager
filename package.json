@@ -18,7 +18,8 @@
     "db:push": "prisma db push",
     "db:smoke": "tsx scripts/smoke-db.ts",
     "templates:install": "tsx scripts/install-document-templates.ts",
-    "import:deviations": "tsx scripts/import-historical-deviations.ts"
+    "import:deviations": "tsx scripts/import-historical-deviations.ts",
+    "import:smoke": "tsx scripts/smoke-import.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
