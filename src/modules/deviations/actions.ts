@@ -41,10 +41,6 @@ export async function createDeviationAction(
   }
 
   const v = parsed.values;
-  const reopening = existing.status === "CLOSED" && v.status === "OPEN";
-  if (reopening) {
-    v.closedAt = null;
-  }
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
   if (!department) return { error: "El departamento seleccionado no existe." };
 
@@ -218,6 +214,10 @@ export async function updateDeviationAction(
   if (!existing) return { error: "La desviación ya no existe." };
 
   const v = parsed.values;
+  const reopening = existing.status === "CLOSED" && v.status === "OPEN";
+  if (reopening) {
+    v.closedAt = null;
+  }
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
   if (!department) return { error: "El departamento seleccionado no existe." };
 
