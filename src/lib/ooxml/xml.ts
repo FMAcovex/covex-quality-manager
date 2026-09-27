@@ -138,3 +138,132 @@ export function setXlsxCell(sheetXml: string, ref: string, value: string | numbe
   if (!found) throw new Error(`XLSX template cell not found: ${ref}`);
   return updated;
 }
+
+
+type XmlBlock = { start: number; end: number; xml: string };
+
+function balancedBlocks(source: string, tag: "w:tbl" | "w:tr" | "w:tc"): XmlBlock[] {
+  const escaped = tag.replace(":", "\\:");
+  const token = new RegExp(`<${escaped}(?:\\s[^>]*)?>|<\\/${escaped}>`, "g");
+  const stack: number[] = [];
+  const blocks: XmlBlock[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = token.exec(source))) {
+    if (match[0].startsWith("</")) {
+      const start = stack.pop();
+      if (start === undefined) throw new Error(`Malformed OOXML: unexpected closing ${tag}`);
+      blocks.push({ start, end: token.lastIndex, xml: source.slice(start, token.lastIndex) });
+    } else {
+      stack.push(match.index);
+    }
+  }
+  if (stack.length) throw new Error(`Malformed OOXML: unclosed ${tag}`);
+  return blocks.sort((a, b) => a.start - b.start);
+}
+
+function transformBalanced(
+  source: string,
+  tag: "w:tbl" | "w:tr" | "w:tc",
+  index: number,
+  transform: (xml: string) => string,
+) {
+  const blocks = balancedBlocks(source, tag);
+  const block = blocks[index];
+  if (!block) throw new Error(`OOXML balanced block not found: ${tag}[${index}]`);
+  return source.slice(0, block.start) + transform(block.xml) + source.slice(block.end);
+}
+
+function directTableRows(tableXml: string): XmlBlock[] {
+  const tableBlocks = balancedBlocks(tableXml, "w:tbl");
+  const nestedTables = tableBlocks.filter((block) => block.start > 0);
+  return balancedBlocks(tableXml, "w:tr").filter(
+    (row) => !nestedTables.some((table) => row.start > table.start && row.end < table.end),
+  );
+}
+
+function directRowCells(rowXml: string): XmlBlock[] {
+  const nestedTables = balancedBlocks(rowXml, "w:tbl");
+  return balancedBlocks(rowXml, "w:tc").filter(
+    (cell) => !nestedTables.some((table) => cell.start > table.start && cell.end < table.end),
+  );
+}
+
+function paragraphXmlWithColor(text: string, color?: string) {
+  return text
+    .split(/\r?\n/)
+    .map((part) => {
+      const rPr = color ? `<w:rPr><w:color w:val="${escapeXml(color)}"/></w:rPr>` : "";
+      return `<w:p><w:r>${rPr}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`;
+    })
+    .join("");
+}
+
+function setCellTextBalanced(cellXml: string, text: string, color?: string) {
+  const tcPr = cellXml.match(/<w:tcPr[\s\S]*?<\/w:tcPr>/)?.[0] ?? "";
+  const open = cellXml.match(/^<w:tc(?:\s[^>]*)?>/)?.[0] ?? "<w:tc>";
+  return `${open}${tcPr}${paragraphXmlWithColor(text, color)}</w:tc>`;
+}
+
+function setDirectCell(rowXml: string, cellIndex: number, text: string, color?: string) {
+  const cells = directRowCells(rowXml);
+  const cell = cells[cellIndex];
+  if (!cell) throw new Error(`Direct Word cell not found: ${cellIndex}`);
+  return rowXml.slice(0, cell.start) +
+    setCellTextBalanced(cell.xml, text, color) +
+    rowXml.slice(cell.end);
+}
+
+export function transformWordTableBalanced(
+  documentXml: string,
+  tableIndex: number,
+  transform: (tableXml: string) => string,
+) {
+  return transformBalanced(documentXml, "w:tbl", tableIndex, transform);
+}
+
+export function setWordCellTextBalanced(
+  documentXml: string,
+  tableIndex: number,
+  rowIndex: number,
+  cellIndex: number,
+  text: string,
+  color?: string,
+) {
+  return transformWordTableBalanced(documentXml, tableIndex, (tableXml) => {
+    const rows = directTableRows(tableXml);
+    const row = rows[rowIndex];
+    if (!row) throw new Error(`Direct Word row not found: table ${tableIndex}, row ${rowIndex}`);
+    const updatedRow = setDirectCell(row.xml, cellIndex, text, color);
+    return tableXml.slice(0, row.start) + updatedRow + tableXml.slice(row.end);
+  });
+}
+
+export function replaceWordRowsRangeBalanced(
+  documentXml: string,
+  tableIndex: number,
+  startRow: number,
+  endRow: number,
+  buildRows: (templates: { first: string; second: string }) => string[],
+) {
+  return transformWordTableBalanced(documentXml, tableIndex, (tableXml) => {
+    const rows = directTableRows(tableXml);
+    const first = rows[startRow];
+    const second = rows[startRow + 1];
+    const last = rows[endRow];
+    if (!first || !second || !last) {
+      throw new Error(`Word row range not found: table ${tableIndex}, rows ${startRow}-${endRow}`);
+    }
+    const output = buildRows({ first: first.xml, second: second.xml }).join("");
+    return tableXml.slice(0, first.start) + output + tableXml.slice(last.end);
+  });
+}
+
+export function fillWordRowBalanced(
+  rowXml: string,
+  values: Array<{ text: string; color?: string }>,
+) {
+  return values.reduce(
+    (current, value, index) => setDirectCell(current, index, value.text, value.color),
+    rowXml,
+  );
+}
