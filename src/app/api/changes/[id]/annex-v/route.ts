@@ -15,7 +15,13 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
   const sequence=Number(value);const followup=change.followups.find((f)=>f.sequenceNumber===sequence);
   if(!followup)return NextResponse.json({error:"Seguimiento no encontrado."},{status:404});
   const version=change.qmsRecord.versions.find((v)=>v.sourceEntityId===followup.id);
-  const record=version?changeControlSnapshotToRecord(version.snapshot):change;
+  if(!version){
+    return NextResponse.json(
+      {error:"Este seguimiento histórico no dispone de un snapshot exacto y no debe reconstruirse artificialmente."},
+      {status:409},
+    );
+  }
+  const record=changeControlSnapshotToRecord(version.snapshot);
   try{
     const buffer=await generateChangeAnnexV(record as unknown as Parameters<typeof generateChangeAnnexV>[0],sequence);
     await prisma.generatedDocument.create({data:{
