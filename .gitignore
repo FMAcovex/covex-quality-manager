@@ -14,3 +14,6 @@ templates/deviations/v06/*.xlsx
 # Fuentes históricas GMP: nunca versionar archivos de importación ni informes con datos reales.
 data/imports/
 reports/imports/
+
+templates/change-control/v03/*.docx
+templates/change-control/v03/*.xlsx
