@@ -67,7 +67,7 @@ export default async function DeviationDetailPage({
         <div className="record-actions">
           <Link className="button primary" href={`/deviations/${id}/edit`}>Editar</Link>
           <Link className="button" href={`/deviations/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
-          <button className="button" type="button" disabled title="Disponible en Hito 3">Generar Anexo III</button>
+          <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>
         </div>
       </div>
 
@@ -190,7 +190,23 @@ export default async function DeviationDetailPage({
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{deviation.signedDocumentAvailable === true ? "Disponible" : deviation.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="empty-panel" style={{ marginTop: 16 }}>La generación y descarga del Anexo III se implementará en el Hito 3.</div>
+          <div className="document-actions">
+            <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
+            <span className="muted-note">Se genera desde la plantilla v06 asociada al expediente y se registra la generación.</span>
+          </div>
+          {deviation.qmsRecord.generatedDocuments.length ? (
+            <>
+              <h3>Generaciones registradas</h3>
+              <div className="timeline">
+                {deviation.qmsRecord.generatedDocuments.map((document) => (
+                  <div className="timeline-item" key={document.id}>
+                    <strong>{document.documentType}</strong>
+                    <small className="muted-note"> · {formatDate(document.generatedAt)} · {document.generatedByText ?? "Usuario no informado"}</small>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
         </div>
       ) : null}
 

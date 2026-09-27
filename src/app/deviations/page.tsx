@@ -27,6 +27,11 @@ export default async function DeviationsPage({
   };
 
   const { rows, departments, years, provenances, counters } = await getDeviationList(filters);
+  const exportParams = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) exportParams.set(key, value);
+  });
+  const currentYear = filters.year ?? String(new Date().getFullYear());
 
   return (
     <section className="workspace">
@@ -38,7 +43,30 @@ export default async function DeviationsPage({
         </div>
         <div className="heading-actions">
           <Link href="/deviations/new" className="button primary">+ Nueva desviación</Link>
-          <button type="button" className="button" disabled title="Disponible en el Hito 3">Exportar</button>
+          <details className="export-menu">
+            <summary className="button">Exportar ▾</summary>
+            <div className="export-popover">
+              <strong>Exportaciones</strong>
+              <form action="/api/deviations/export/annex-v" method="get" className="export-year-form">
+                <label>
+                  <span>Anexo V oficial</span>
+                  <select name="year" defaultValue={currentYear}>
+                    {Array.from(new Set([Number(currentYear), ...years]))
+                      .filter((year) => Number.isInteger(year))
+                      .sort((a, b) => b - a)
+                      .map((year) => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                </label>
+                <button className="button small" type="submit">Descargar</button>
+              </form>
+              <a className="export-link" href={`/api/deviations/export/simple?${exportParams.toString()}`}>
+                Listado simple · filtros actuales
+              </a>
+              <a className="export-link" href={`/api/deviations/export/simple?year=${encodeURIComponent(currentYear)}`}>
+                Listado simple · año {currentYear}
+              </a>
+            </div>
+          </details>
         </div>
       </div>
 
