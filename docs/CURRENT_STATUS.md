@@ -2,43 +2,38 @@
 
 Fecha: 2026-09-27.
 
-## Hito 0
-Completado e integrado en `main`.
+## Hitos completados
+- Hito 0 — Especificación y arquitectura base.
+- Hito 1 — Núcleo técnico y base de datos, validado por CI.
 
-## Hito 1 — Núcleo técnico y base de datos
-Estado: **COMPLETADO Y VALIDADO POR CI**.
+## Hito 2 — Desviaciones completas
+Estado: **EN DESARROLLO** en `feature/hito-02-deviations`.
 
-### Implementado
-- scaffold Next.js + TypeScript + React;
-- pnpm y configuración de calidad;
-- Prisma + PostgreSQL;
-- modelos QmsRecord/QmsRelation;
-- catálogo Department con snapshot histórico en Deviation;
-- FormVersion/TemplateVersion;
-- ChangeHistory y GeneratedDocument;
-- Deviation + acciones inmediatas + seguimientos + plan CAPA;
-- relaciones N:N con normalización en utilidad de dominio;
-- shell visual inicial;
-- ruta `/deviations` sin funcionalidad falsa;
-- endpoint `/api/health`;
-- seeds estructurales/ficticios;
-- pruebas unitarias de identidad y relaciones;
-- GitHub Actions para validate/generate/lint/test/build.
+### Alcance implementado en la rama
+- listado operativo conectado a PostgreSQL;
+- filtros horizontales y buscador;
+- contadores operativos;
+- alta de desviación por bloques;
+- edición de expedientes abiertos y cerrados;
+- acciones inmediatas 1:N;
+- investigación, causa raíz e impacto separados;
+- CAPA propuestas 1:N;
+- expediente a pantalla completa;
+- pestañas Resumen, Investigación, Acciones, Seguimientos, Documentos e Historial;
+- seguimientos cronológicos;
+- historial interno de cambios;
+- observaciones internas;
+- control del dato;
+- campo de plazo seguro `NOT_EVALUATED` hasta configurar reglas vigentes;
+- PostgreSQL local opcional mediante Docker Compose.
 
-### Validación
-CI del Hito 1: **verde**.
-Se han validado instalación de dependencias, Prisma, lint, tests y build antes del squash merge.
-
-## Fuera de alcance todavía
-- formulario completo de Desviaciones;
-- CRUD real desde la UI;
-- importación 2025/2026;
-- Anexo III/V;
+### Fuera del Hito 2
+- generación Anexo III/V;
+- exportación listado simple;
+- importación histórica 2025/2026;
 - KPI;
-- CAPA UI;
-- Entra;
-- SharePoint;
-- alertas.
+- expediente CAPA completo;
+- Entra/SharePoint/alertas.
 
-## Próximo paso
-Hito 2 — Desviaciones completas: listado, filtros, buscador, alta, edición, expediente, acciones inmediatas, investigación, impacto, CAPA propuestas, seguimientos e historial.
+## Validación pendiente
+Abrir PR, ejecutar CI y corregir incidencias antes de fusionar.
