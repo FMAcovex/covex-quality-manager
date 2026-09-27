@@ -29,6 +29,7 @@ export type DistributionItem = {
 
 export type YearMetrics = {
   year: number;
+  dataAvailable: boolean;
   total: number;
   openCurrent: number;
   critical: number;
@@ -130,7 +131,11 @@ function classificationLabel(value: AnalyticsRow["classification"]) {
   return "Sin clasificar";
 }
 
-export function buildYearMetrics(rows: AnalyticsRow[], year: number): YearMetrics {
+export function buildYearMetrics(
+  rows: AnalyticsRow[],
+  year: number,
+  dataAvailable = true,
+): YearMetrics {
   const opened = rows.filter((row) => row.openingYear === year);
   const closed = rows.filter((row) => yearOf(row.closedAt) === year && closingDays(row) !== null);
   const closingValues = closed
@@ -148,6 +153,7 @@ export function buildYearMetrics(rows: AnalyticsRow[], year: number): YearMetric
 
   return {
     year,
+    dataAvailable,
     total: opened.length,
     openCurrent: opened.filter((row) => row.status === "OPEN").length,
     critical: opened.filter((row) => row.classification === "CRITICAL").length,
@@ -174,8 +180,12 @@ export function buildYearMetrics(rows: AnalyticsRow[], year: number): YearMetric
   };
 }
 
-export function buildFiveYearTrend(rows: AnalyticsRow[], endYear: number) {
+export function buildFiveYearTrend(
+  rows: AnalyticsRow[],
+  endYear: number,
+  coveredYears?: Set<number>,
+) {
   return Array.from({ length: 5 }, (_, index) => endYear - 4 + index).map((year) =>
-    buildYearMetrics(rows, year),
+    buildYearMetrics(rows, year, coveredYears ? coveredYears.has(year) : true),
   );
 }
