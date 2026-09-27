@@ -209,6 +209,8 @@ export async function applyHistoricalImport(
           internalObservations: source.internalObservations,
           signedDocumentAvailable: source.signedDocumentAvailable,
           dataQualityStatus: qualityStatus(source),
+          includeInKpi: source.includeInKpi,
+          kpiExclusionReason: source.kpiExclusionReason,
           capaRequired: /CAPA/i.test(source.measuresRaw ?? "") ? true : null,
           extraData: {
             historicalImport: {
@@ -219,6 +221,8 @@ export async function applyHistoricalImport(
               measuresRaw: source.measuresRaw,
               capaRaw: source.capaRaw,
               normalizedOrigin: source.normalizedOrigin,
+              includeInKpi: source.includeInKpi,
+              kpiExclusionReason: source.kpiExclusionReason,
               issues: source.issues,
               raw: source.raw,
             },
