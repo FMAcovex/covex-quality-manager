@@ -235,6 +235,8 @@ async function main() {
 
     console.log("Change Control lifecycle PostgreSQL smoke test passed.");
   } finally {
+    await prisma.qmsRecordVersion.deleteMany({ where: { qmsRecordId: qmsRecord.id } });
+    await prisma.changeControl.deleteMany({ where: { qmsRecordId: qmsRecord.id } });
     await prisma.qmsRecord.delete({ where: { id: qmsRecord.id } });
   }
 }
