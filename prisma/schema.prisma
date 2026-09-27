@@ -233,6 +233,8 @@ model Deviation {
   internalObservations       String?
   signedDocumentAvailable    Boolean?
   dataQualityStatus          DataQualityStatus        @default(REVIEW_REQUIRED)
+  includeInKpi              Boolean                  @default(true)
+  kpiExclusionReason        String?
   extraData                  Json?
   createdAt                  DateTime                 @default(now())
   updatedAt                  DateTime                 @updatedAt
