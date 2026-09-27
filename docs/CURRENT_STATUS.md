@@ -203,7 +203,7 @@ El hito queda listo para integración en `main`.
 
 
 ## Hito 8 — Reclamaciones y Devoluciones
-Estado: **IMPLEMENTADO EN RAMA Y EN VALIDACIÓN CI**.
+Estado: **COMPLETADO Y VALIDADO EN CI**.
 
 ### Reclamaciones
 Fuente:
@@ -258,7 +258,15 @@ Plantillas:
 - Reclamaciones SHA-256: f717ae907da9ed8b575f740fbf8b1536d4157174de5b7b4d240220910b570df4
 - Devoluciones SHA-256: 191c0e838f06d465bd820450b9130e1209c14fc9cb97559e8ec567819ba07f9a
 
-Pendiente:
-- CI final verde;
-- cambiar estado a COMPLETADO Y VALIDADO;
-- integrar PR en main.
+Validación:
+- PostgreSQL 16 real;
+- esquema y seed;
+- smoke QMS existente;
+- smoke específico Reclamaciones + Devoluciones;
+- relaciones Reclamación → Devolución y Reclamación → CAPA;
+- Prisma validate/generate;
+- lint;
+- tests;
+- build Next.js de producción.
+
+El hito queda listo para integración en `main`.
