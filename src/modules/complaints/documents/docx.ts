@@ -1,6 +1,6 @@
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
 import {
-  extractWordBodyRange,fillWordRowBalanced,markFirstCheckbox,
+  extractWordBodyRange,fillWordRowBalanced,
   replaceWordRowWithCopies,replaceWordRowsRangeBalanced,setWordCellTextBalanced
 } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
