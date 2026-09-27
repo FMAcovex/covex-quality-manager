@@ -11,6 +11,7 @@ const modules = [
   { label: "Controles de cambios", href: "#", enabled: false, match: "/changes" },
   { label: "Reclamaciones", href: "#", enabled: false, match: "/complaints" },
   { label: "Devoluciones", href: "#", enabled: false, match: "/returns" },
+  { label: "Configuración", href: "/settings", enabled: true, match: "/settings" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
