@@ -1,3 +1,4 @@
+export type ComplaintCapaPlanInput={id?:string;actionType:"CORRECTIVE"|"PREVENTIVE";description:string;plannedExecutionDate:string;responsible:string;businessCapaCode?:string};
 export type ComplaintFormState = { error: string | null; fieldErrors?: string[] };
 
 export type ComplaintFormDefaults = {
@@ -49,6 +50,7 @@ export type ComplaintFormDefaults = {
   internalObservations?: string;
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";
+  capaPlans?: ComplaintCapaPlanInput[];
 };
 
 export type DepartmentOption = { id: string; code: string; name: string };
