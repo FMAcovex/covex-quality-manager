@@ -78,9 +78,11 @@ describe("deviation KPI domain", () => {
     expect(isKpiComplete(row({ provenance: null }))).toBe(false);
   });
 
-  it("builds a fixed five-year trend", () => {
-    const trend = buildFiveYearTrend([row()], 2026);
+  it("builds a fixed five-year trend and distinguishes years not loaded", () => {
+    const trend = buildFiveYearTrend([row()], 2026, new Set([2025, 2026]));
     expect(trend.map((item) => item.year)).toEqual([2022, 2023, 2024, 2025, 2026]);
+    expect(trend[0].dataAvailable).toBe(false);
+    expect(trend[3].dataAvailable).toBe(true);
     expect(trend.at(-1)?.total).toBe(1);
   });
 
