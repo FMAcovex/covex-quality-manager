@@ -78,6 +78,9 @@ export async function cloneFormVersionAction(formId:string,fd:FormData){
 
 export async function activateFormVersionAction(id:string,fd:FormData){
   const target=await prisma.formVersion.findUniqueOrThrow({where:{id}});
+  if(target.status!=="DRAFT")throw new Error("Solo puede activarse una versión en borrador.");
+  const currentActive=await prisma.formVersion.findFirst({where:{module:target.module,status:"ACTIVE",isActive:true,id:{not:id}},orderBy:{effectiveFrom:"desc"}});
+  if(currentActive&&target.effectiveFrom<=currentActive.effectiveFrom)throw new Error("La nueva versión debe tener una vigencia posterior a la versión activa.");
   await prisma.$transaction(async tx=>{
     const active=await tx.formVersion.findMany({where:{module:target.module,status:"ACTIVE",isActive:true,id:{not:id}}});
     for(const old of active)await tx.formVersion.update({where:{id:old.id},data:{status:"RETIRED",isActive:false,effectiveTo:new Date(target.effectiveFrom.getTime()-86400000)}});
@@ -101,6 +104,8 @@ export async function registerTemplateVersionAction(fd:FormData){
 
 export async function activateTemplateVersionAction(id:string,fd:FormData){
   const target=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
+  const currentActive=await prisma.templateVersion.findFirst({where:{module:target.module,documentType:target.documentType,isActive:true,id:{not:id}},orderBy:{effectiveFrom:"desc"}});
+  if(currentActive&&target.effectiveFrom<=currentActive.effectiveFrom)throw new Error("La nueva plantilla debe tener una vigencia posterior a la plantilla activa.");
   await prisma.$transaction(async tx=>{
     const active=await tx.templateVersion.findMany({where:{module:target.module,documentType:target.documentType,isActive:true,id:{not:id}}});
     for(const old of active)await tx.templateVersion.update({where:{id:old.id},data:{isActive:false,effectiveTo:new Date(target.effectiveFrom.getTime()-86400000)}});
@@ -136,4 +141,25 @@ export async function updateAlertRuleAction(id:string,fd:FormData){
   const updated=await prisma.alertRule.update({where:{id},data:{leadDays,severity,kind,isActive:bool(fd,"isActive")}});
   await logChange("AlertRule",current.key,"UPDATE",current,updated,fd);
   revalidatePath("/settings");
+}
+
+
+export async function updateFormFieldConfigAction(id:string,fd:FormData){
+  const current=await prisma.formFieldConfig.findUniqueOrThrow({where:{id},include:{formVersion:true}});
+  if(current.formVersion.status!=="DRAFT")throw new Error("Solo pueden editarse campos de una versión en borrador.");
+  const updated=await prisma.formFieldConfig.update({
+    where:{id},
+    data:{
+      label:text(fd,"label")||current.label,
+      sectionLabel:text(fd,"sectionLabel")||current.sectionLabel,
+      sortOrder:Number(text(fd,"sortOrder")||String(current.sortOrder)),
+      listAvailable:bool(fd,"listAvailable"),
+      listVisibleByDefault:bool(fd,"listVisibleByDefault"),
+      filterable:bool(fd,"filterable"),
+      simpleExport:bool(fd,"simpleExport"),
+    },
+  });
+  await logChange("FormFieldConfig",`${current.formVersion.module}:${current.formVersion.versionCode}:${current.fieldKey}`,"UPDATE",current,updated,fd);
+  revalidatePath("/settings/versions");
+  revalidatePath(`/settings/versions/${current.formVersionId}`);
 }
