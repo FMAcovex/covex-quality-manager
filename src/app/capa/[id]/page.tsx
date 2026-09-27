@@ -8,6 +8,7 @@ import {
   formatDate,
 } from "@/modules/capa/domain";
 import { getCapaDetail } from "@/modules/capa/queries";
+import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ const tabs = [
   ["followups", "Seguimientos"],
   ["effectiveness", "Eficacia"],
   ["relations", "Relaciones"],
+  ["versions", "Versiones"],
   ["documents", "Documentos"],
   ["history", "Historial"],
 ] as const;
@@ -40,6 +42,8 @@ export default async function CapaDetailPage({
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const capa = await getCapaDetail(id);
   if (!capa) notFound();
+
+  const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
 
   const relations = [
     ...capa.qmsRecord.targetRelations.map((item) => ({
@@ -66,6 +70,7 @@ export default async function CapaDetailPage({
               {capaStatusLabel(capa.status)}
             </span>
             <span className="badge neutral">{capa.departmentCodeSnapshot ?? "Sin departamento"}</span>
+            {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
             {capa.dataQualityStatus !== "COMPLETE" ? (
               <span className="badge warning">
                 {capa.dataQualityStatus === "INCOMPLETE" ? "Dato incompleto" : "Revisar dato"}
@@ -253,6 +258,67 @@ export default async function CapaDetailPage({
             <label className="field"><span>Registrado por</span><input name="createdByText" defaultValue={capa.createdByText ?? ""} /></label>
             <div className="full"><button className="button" type="submit">Añadir relación</button></div>
           </form>
+        </div>
+      ) : null}
+
+      {activeTab === "versions" ? (
+        <div className="card">
+          <div className="section-title-row">
+            <div>
+              <h2>Versiones y seguimientos</h2>
+              <p className="muted-note">
+                V00 corresponde al informe inicial. Cada seguimiento posterior genera V01, V02, V03… y conserva el estado completo de ese momento.
+              </p>
+            </div>
+            {currentVersion ? <span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span> : null}
+          </div>
+          {capa.qmsRecord.versions.length ? (
+            <div className="timeline">
+              {capa.qmsRecord.versions.map((item) => {
+                const summary = recordVersionSummary("CAPA", item.snapshot);
+                const kind =
+                  item.kind === "FOLLOWUP"
+                    ? `Seguimiento ${String(item.sequenceNumber).padStart(2, "0")}`
+                    : item.kind === "HISTORICAL_STATE"
+                      ? "Baseline histórico"
+                      : "Informe inicial";
+                return (
+                  <article className="timeline-item" key={item.id}>
+                    <div className="timeline-marker">{String(item.sequenceNumber).padStart(2, "0")}</div>
+                    <div>
+                      <header>
+                        <strong>{versionLabel(item.sequenceNumber)} · {kind}</strong>
+                        <span className={`badge ${summary.status === "OPEN" ? "open" : summary.status === "CLOSED" ? "closed" : "neutral"}`}>
+                          {capaStatusLabel(String(summary.status ?? "OPEN"))}
+                        </span>
+                        <span className="badge neutral">Eficacia {effectivenessLabel(String(summary.effectivenessStatus ?? "PENDING"))}</span>
+                        {item.frozenAt ? <span className="badge neutral">Histórica</span> : <span className="badge neutral">Vigente</span>}
+                      </header>
+                      <p>
+                        Cierre operativo: {formatDate(summary.closedAt)} · Próximo seguimiento: {formatDate(summary.nextFollowupDate)}
+                      </p>
+                      <p>
+                        Cierre efectivo: {formatDate(summary.effectiveClosedAt)}
+                        {item.reason ? ` · ${item.reason}` : ""}
+                      </p>
+                      <small className="muted-note">
+                        Registrada {formatDate(item.createdAt)} · {item.createdByText ?? "Sistema"}
+                      </small>
+                      <div className="document-actions">
+                        <a className="button small" href={`/api/capa/${id}/annex-iii?version=${item.sequenceNumber}`}>
+                          Descargar Anexo III {versionLabel(item.sequenceNumber)}
+                        </a>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-panel">
+              Este expediente todavía no tiene snapshot persistido. Los históricos anteriores al Hito 6.1 no se reconstruyen artificialmente.
+            </div>
+          )}
         </div>
       ) : null}
 
