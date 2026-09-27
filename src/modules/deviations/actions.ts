@@ -6,6 +6,10 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
+import {
+  getApplicableFormVersion,
+  getApplicableTemplateVersion,
+} from "@/modules/configuration/runtime";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -33,19 +37,14 @@ export async function createDeviationAction(
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
   if (!department) return { error: "El departamento seleccionado no existe." };
 
+  const referenceDate = toDate(v.issueDate) ?? new Date();
   const [formVersion, templateVersion] = await Promise.all([
-    prisma.formVersion.findFirst({
-      where: { module: QmsRecordType.DEVIATION, isActive: true },
-      orderBy: { effectiveFrom: "desc" },
-    }),
-    prisma.templateVersion.findFirst({
-      where: {
-        module: QmsRecordType.DEVIATION,
-        documentType: "DEVIATION_ANNEX_III",
-        isActive: true,
-      },
-      orderBy: { effectiveFrom: "desc" },
-    }),
+    getApplicableFormVersion(QmsRecordType.DEVIATION, referenceDate),
+    getApplicableTemplateVersion(
+      QmsRecordType.DEVIATION,
+      "DEVIATION_ANNEX_III",
+      referenceDate,
+    ),
   ]);
 
   try {

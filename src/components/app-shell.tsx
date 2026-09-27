@@ -1,19 +1,26 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 const modules = [
-  { label: "Desviaciones", href: "/deviations", enabled: true },
-  { label: "CAPA", href: "/capa", enabled: true },
-  { label: "Controles de cambios", href: "#", enabled: false },
-  { label: "Reclamaciones", href: "#", enabled: false },
-  { label: "Devoluciones", href: "#", enabled: false },
+  { label: "Inicio", href: "/", enabled: true, match: "/" },
+  { label: "Desviaciones", href: "/deviations", enabled: true, match: "/deviations" },
+  { label: "CAPA", href: "/capa", enabled: true, match: "/capa" },
+  { label: "Controles de cambios", href: "#", enabled: false, match: "/changes" },
+  { label: "Reclamaciones", href: "#", enabled: false, match: "/complaints" },
+  { label: "Devoluciones", href: "#", enabled: false, match: "/returns" },
+  { label: "Configuración", href: "/settings", enabled: true, match: "/settings" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+
   return (
     <div className="app-frame">
       <header className="topbar">
-        <Link className="brand" href="/deviations">
+        <Link className="brand" href="/">
           <span className="brand-mark">C</span>
           <span>
             <strong>COVEX</strong>
@@ -22,9 +29,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
 
         <nav className="module-nav" aria-label="Módulos QMS">
-          {modules.map((module) =>
-            module.enabled ? (
-              <Link key={module.label} href={module.href} className="module-link">
+          {modules.map((module) => {
+            const active =
+              module.match === "/"
+                ? pathname === "/"
+                : pathname.startsWith(module.match);
+
+            return module.enabled ? (
+              <Link
+                key={module.label}
+                href={module.href}
+                className={`module-link ${active ? "active" : ""}`}
+              >
                 {module.label}
               </Link>
             ) : (
@@ -32,19 +48,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={module.label}
                 className="module-link disabled"
                 aria-disabled="true"
-                title="Disponible en un hito posterior"
+                title="Pendiente de diseño"
               >
                 {module.label}
               </span>
-            ),
-          )}
+            );
+          })}
         </nav>
 
-        <div className="actor">
-          <span className="avatar">UD</span>
+        <div className="actor pilot-mode">
+          <span className="avatar">V1</span>
           <span>
-            <strong>Usuario demo</strong>
-            <small>Identidad provisional</small>
+            <strong>Modo piloto</strong>
+            <small>Identificación manual</small>
           </span>
         </div>
       </header>

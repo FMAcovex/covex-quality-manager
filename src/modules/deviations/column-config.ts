@@ -1,0 +1,18 @@
+export const deviationColumns = [
+  { key: "control", label: "Control", index: 0 },
+  { key: "code", label: "Código", index: 1, locked: true },
+  { key: "department", label: "Departamento", index: 2 },
+  { key: "material", label: "Material / Proceso", index: 3 },
+  { key: "provenance", label: "Procedencia", index: 4 },
+  { key: "description", label: "Descripción", index: 5 },
+  { key: "classification", label: "Clasificación", index: 6 },
+  { key: "rootCause", label: "Causa raíz", index: 7 },
+  { key: "opening", label: "Apertura", index: 8 },
+  { key: "closing", label: "Cierre", index: 9 },
+  { key: "status", label: "Estado", index: 10 },
+  { key: "deadline", label: "En plazo", index: 11 },
+  { key: "measures", label: "Medidas adoptadas", index: 12 },
+  { key: "capa", label: "Descripción CAPA", index: 13 },
+  { key: "document", label: "Documento", index: 14 },
+  { key: "observations", label: "Observaciones", index: 15 },
+] as const;

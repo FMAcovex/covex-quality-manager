@@ -15,22 +15,58 @@ async function main() {
     });
   }
 
-  await prisma.formVersion.upsert({
+  const deviationForm = await prisma.formVersion.upsert({
     where: {
       module_versionCode: {
         module: QmsRecordType.DEVIATION,
         versionCode: "DEV-06",
       },
     },
-    update: { isActive: true },
+    update: { isActive: true, status: "ACTIVE" },
     create: {
       module: QmsRecordType.DEVIATION,
       versionCode: "DEV-06",
       effectiveFrom: new Date("2026-01-01"),
       isActive: true,
+      status: "ACTIVE",
       notes: "Referencia de desarrollo; confirmar fecha controlada antes de producción.",
     },
   });
+
+  const deviationFieldConfigs = [
+    ["businessCode","Código","identification","Identificación",10,"STRUCTURAL","TEXT",true,true,true,true,true,true,false],
+    ["department","Departamento","identification","Identificación",20,"STRUCTURAL","REFERENCE",true,true,true,true,true,true,false],
+    ["materialProcessAffected","Material / proceso afectado","identification","Identificación",30,"VERSIONED","TEXT",true,true,true,true,true,true,true],
+    ["provenance","Procedencia","identification","Identificación",40,"VERSIONED","SELECT",true,true,true,true,true,true,true],
+    ["whatHappened","Descripción","event","Evento",50,"VERSIONED","LONG_TEXT",true,true,true,false,true,true,true],
+    ["classification","Clasificación","assessment","Evaluación",60,"STRUCTURAL","SELECT",true,true,true,true,true,true,false],
+    ["rootCause","Causa raíz","investigation","Investigación",70,"VERSIONED","LONG_TEXT",true,true,true,false,true,true,true],
+    ["issueDate","Fecha apertura","identification","Identificación",80,"STRUCTURAL","DATE",true,true,true,true,true,true,false],
+    ["closedAt","Fecha cierre","closure","Cierre",90,"STRUCTURAL","DATE",false,true,true,true,true,true,false],
+    ["status","Estado","management","Gestión",100,"DERIVED","SELECT",true,true,true,true,true,false,false],
+    ["measures","Medidas adoptadas","actions","Acciones",110,"DERIVED","SELECT",false,true,true,true,true,false,false],
+    ["capaCode","Código CAPA","relations","Relaciones",120,"DERIVED","REFERENCE",false,true,true,true,true,false,false],
+    ["internalObservations","Observaciones","management","Gestión",130,"OPERATIONAL","LONG_TEXT",false,true,true,false,true,false,false],
+  ] as const;
+
+  for (const [
+    fieldKey,label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,
+    listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition,
+  ] of deviationFieldConfigs) {
+    await prisma.formFieldConfig.upsert({
+      where: { formVersionId_fieldKey: { formVersionId: deviationForm.id, fieldKey } },
+      update: {
+        label, sectionKey, sectionLabel, sortOrder, kind, valueType, required,
+        listAvailable, listVisibleByDefault, filterable, simpleExport,
+        officialAnnexField, editableDefinition,
+      },
+      create: {
+        formVersionId: deviationForm.id, fieldKey, label, sectionKey, sectionLabel,
+        sortOrder, kind, valueType, required, listAvailable, listVisibleByDefault,
+        filterable, simpleExport, officialAnnexField, editableDefinition,
+      },
+    });
+  }
 
   await prisma.templateVersion.upsert({
     where: {
@@ -67,22 +103,60 @@ async function main() {
       isActive: true,
     },
   });
-  await prisma.formVersion.upsert({
+  const capaForm = await prisma.formVersion.upsert({
     where: {
       module_versionCode: {
         module: QmsRecordType.CAPA,
         versionCode: "CAPA-05",
       },
     },
-    update: { isActive: true },
+    update: { isActive: true, status: "ACTIVE" },
     create: {
       module: QmsRecordType.CAPA,
       versionCode: "CAPA-05",
       effectiveFrom: new Date("2026-02-02"),
       isActive: true,
+      status: "ACTIVE",
       notes: "GC-00/030/05.",
     },
   });
+
+  const capaFieldConfigs = [
+    ["actionType","Tipo CAPA","identification","Identificación",10,"STRUCTURAL","SELECT",true,true,true,true,true,true,false],
+    ["businessCode","Código","identification","Identificación",20,"STRUCTURAL","TEXT",true,true,true,true,true,true,false],
+    ["department","Departamento","identification","Identificación",30,"STRUCTURAL","REFERENCE",true,true,true,true,true,true,false],
+    ["originType","Origen","identification","Identificación",40,"VERSIONED","SELECT",true,true,true,true,true,true,true],
+    ["originCode","Código de origen","identification","Identificación",50,"VERSIONED","TEXT",false,true,true,true,true,true,true],
+    ["plannedActions","Descripción CAPA","actions","Acción propuesta",60,"VERSIONED","LONG_TEXT",true,true,true,false,true,true,true],
+    ["openedAt","Fecha apertura","identification","Identificación",70,"STRUCTURAL","DATE",true,true,true,true,true,true,false],
+    ["plannedExecutionDate","Fecha prevista","actions","Acción propuesta",80,"VERSIONED","DATE",false,true,true,true,true,true,true],
+    ["status","Estado","management","Gestión",90,"STRUCTURAL","SELECT",true,true,true,true,true,false,false],
+    ["operationalClosedAt","Cierre operativo","closure","Cierre",100,"STRUCTURAL","DATE",false,true,true,true,true,true,false],
+    ["effectivenessStatus","Eficacia","effectiveness","Eficacia",110,"STRUCTURAL","SELECT",true,true,true,true,true,true,false],
+    ["latestFollowup","Último seguimiento","followup","Seguimiento",120,"DERIVED","TEXT",false,true,true,false,true,false,false],
+    ["nextFollowupDate","Próximo seguimiento","followup","Seguimiento",130,"VERSIONED","DATE",false,true,true,true,true,true,true],
+    ["effectiveClosedAt","Cierre efectivo","effectiveness","Eficacia",140,"STRUCTURAL","DATE",false,true,true,true,true,true,false],
+    ["internalObservations","Observaciones","management","Gestión",150,"OPERATIONAL","LONG_TEXT",false,true,true,false,true,false,false],
+  ] as const;
+
+  for (const [
+    fieldKey,label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,
+    listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition,
+  ] of capaFieldConfigs) {
+    await prisma.formFieldConfig.upsert({
+      where: { formVersionId_fieldKey: { formVersionId: capaForm.id, fieldKey } },
+      update: {
+        label, sectionKey, sectionLabel, sortOrder, kind, valueType, required,
+        listAvailable, listVisibleByDefault, filterable, simpleExport,
+        officialAnnexField, editableDefinition,
+      },
+      create: {
+        formVersionId: capaForm.id, fieldKey, label, sectionKey, sectionLabel,
+        sortOrder, kind, valueType, required, listAvailable, listVisibleByDefault,
+        filterable, simpleExport, officialAnnexField, editableDefinition,
+      },
+    });
+  }
 
   await prisma.templateVersion.upsert({
     where: {

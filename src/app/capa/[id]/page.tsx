@@ -11,6 +11,16 @@ import { getCapaDetail } from "@/modules/capa/queries";
 
 export const dynamic = "force-dynamic";
 
+const tabs = [
+  ["summary", "Resumen"],
+  ["actions", "Acciones"],
+  ["followups", "Seguimientos"],
+  ["effectiveness", "Eficacia"],
+  ["relations", "Relaciones"],
+  ["documents", "Documentos"],
+  ["history", "Historial"],
+] as const;
+
 function relationLabel(type: string) {
   if (type === "GENERATES") return "Genera";
   if (type === "IMPLEMENTED_BY") return "Implantada por";
@@ -18,8 +28,16 @@ function relationLabel(type: string) {
   return "Relacionada";
 }
 
-export default async function CapaDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CapaDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const { tab: rawTab } = await searchParams;
+  const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const capa = await getCapaDetail(id);
   if (!capa) notFound();
 
@@ -40,163 +58,254 @@ export default async function CapaDetailPage({ params }: { params: Promise<{ id:
     <section className="workspace">
       <div className="record-header">
         <div>
-          <Link href="/capa" className="back-link">← Volver a CAPA</Link>
-          <div className="record-title-row">
+          <p className="eyebrow"><Link href="/capa">← CAPA</Link></p>
+          <div className="record-title-line">
             <h1>{capa.qmsRecord.businessCode ?? "CAPA sin código"}</h1>
-            <span className="badge">{capaTypeLabel(capa.actionType)}</span>
-            <span className={`status-badge ${capa.status.toLowerCase()}`}>{capaStatusLabel(capa.status)}</span>
+            <span className="badge neutral">{capaTypeLabel(capa.actionType)}</span>
+            <span className={`badge ${capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral"}`}>
+              {capaStatusLabel(capa.status)}
+            </span>
+            <span className="badge neutral">{capa.departmentCodeSnapshot ?? "Sin departamento"}</span>
+            {capa.dataQualityStatus !== "COMPLETE" ? (
+              <span className="badge warning">
+                {capa.dataQualityStatus === "INCOMPLETE" ? "Dato incompleto" : "Revisar dato"}
+              </span>
+            ) : null}
           </div>
-          <p>{capa.departmentCodeSnapshot} · apertura {formatDate(capa.openedAt)} · eficacia {effectivenessLabel(capa.effectivenessStatus)}</p>
+          <p className="muted-note">
+            Apertura {formatDate(capa.openedAt)} · Eficacia {effectivenessLabel(capa.effectivenessStatus)}
+          </p>
         </div>
         <div className="record-actions">
-          <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
           <Link className="button primary" href={`/capa/${id}/edit`}>Editar</Link>
+          <Link className="button" href={`/capa/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
+          <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
         </div>
       </div>
 
-      <div className="tabs record-tabs">
-        <a className="tab active" href="#resumen">Resumen</a>
-        <a className="tab" href="#acciones">Acciones</a>
-        <a className="tab" href="#seguimientos">Seguimientos</a>
-        <a className="tab" href="#eficacia">Eficacia</a>
-        <a className="tab" href="#relaciones">Relaciones</a>
-        <a className="tab" href="#documentos">Documentos</a>
-        <a className="tab" href="#historial">Historial</a>
-      </div>
+      <nav className="record-tabs">
+        {tabs.map(([key, label]) => (
+          <Link
+            key={key}
+            className={activeTab === key ? "active" : ""}
+            href={`/capa/${id}?tab=${key}`}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
 
-      <section className="detail-section" id="resumen">
-        <h2>Resumen</h2>
-        <div className="info-grid">
-          <div className="info-item"><span>Tipo</span><strong>{capaTypeLabel(capa.actionType)}</strong></div>
-          <div className="info-item"><span>Departamento</span><strong>{capa.departmentCodeSnapshot ?? "—"} · {capa.departmentNameSnapshot ?? ""}</strong></div>
-          <div className="info-item"><span>Origen</span><strong>{capa.originType ?? "—"}</strong></div>
-          <div className="info-item"><span>Código origen</span><strong>{capa.originCode ?? "—"}</strong></div>
-          <div className="info-item wide"><span>Aplica a</span><strong>{capa.applicableTo ?? "—"}</strong></div>
-          <div className="info-item wide"><span>Descripción breve del defecto</span><p>{capa.defectDescription ?? "—"}</p></div>
-          <div className="info-item wide"><span>Causa raíz</span><p>{capa.rootCause ?? "—"}</p></div>
-          <div className="info-item wide"><span>Impacto</span><p>{capa.impactAssessment ?? "—"}</p></div>
-          <div className="info-item"><span>Estado</span><strong>{capaStatusLabel(capa.status)}</strong></div>
-          <div className="info-item"><span>Cierre operativo</span><strong>{formatDate(capa.operationalClosedAt)}</strong></div>
-          <div className="info-item"><span>Cierre efectivo</span><strong>{formatDate(capa.effectiveClosedAt)}</strong></div>
-          <div className="info-item"><span>Control del dato</span><strong>{capa.dataQualityStatus}</strong></div>
-          <div className="info-item wide"><span>Observaciones internas</span><p>{capa.internalObservations ?? "—"}</p></div>
+      {activeTab === "summary" ? (
+        <>
+          <div className="card">
+            <h2>Resumen del expediente</h2>
+            <dl className="info-grid">
+              <div className="info-item"><dt>Tipo</dt><dd>{capaTypeLabel(capa.actionType)}</dd></div>
+              <div className="info-item"><dt>Departamento</dt><dd>{capa.departmentCodeSnapshot ?? "—"} · {capa.departmentNameSnapshot ?? ""}</dd></div>
+              <div className="info-item"><dt>Origen</dt><dd>{capa.originType ?? "—"}</dd></div>
+              <div className="info-item"><dt>Código origen</dt><dd>{capa.originCode ?? "—"}</dd></div>
+              <div className="info-item full"><dt>Aplica a</dt><dd>{capa.applicableTo ?? "—"}</dd></div>
+              <div className="info-item full"><dt>Descripción breve del defecto</dt><dd className="prose-value">{capa.defectDescription ?? "—"}</dd></div>
+              <div className="info-item wide"><dt>Causa raíz</dt><dd className="prose-value">{capa.rootCause ?? "—"}</dd></div>
+              <div className="info-item wide"><dt>Impacto</dt><dd className="prose-value">{capa.impactAssessment ?? "—"}</dd></div>
+              <div className="info-item"><dt>Estado</dt><dd>{capaStatusLabel(capa.status)}</dd></div>
+              <div className="info-item"><dt>Cierre operativo</dt><dd>{formatDate(capa.operationalClosedAt)}</dd></div>
+              <div className="info-item"><dt>Eficacia</dt><dd>{effectivenessLabel(capa.effectivenessStatus)}</dd></div>
+              <div className="info-item"><dt>Cierre efectivo</dt><dd>{formatDate(capa.effectiveClosedAt)}</dd></div>
+              <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value">{capa.internalObservations ?? "—"}</dd></div>
+            </dl>
+          </div>
+          <div className="card">
+            <h2>Trazabilidad con el origen</h2>
+            {relations.length ? (
+              <div className="relation-list">
+                {relations.map((item, index) => (
+                  <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
+                    <span>{item.direction} · {relationLabel(item.type)}</span>
+                    <strong>{item.record.businessCode ?? item.record.id}</strong>
+                    <small>{item.record.recordType}</small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-panel">No hay expedientes estructurados relacionados.</div>
+            )}
+          </div>
+        </>
+      ) : null}
+
+      {activeTab === "actions" ? (
+        <div className="card">
+          <h2>Acciones propuestas</h2>
+          <div className="table-scroll">
+            <table className="records-table compact-table">
+              <thead>
+                <tr><th>#</th><th>Descripción</th><th>Responsable</th><th>Fecha prevista</th><th>Impacto</th></tr>
+              </thead>
+              <tbody>
+                {capa.plannedActions.map((item, index) => (
+                  <tr key={item.id}>
+                    <td>{index + 1}</td>
+                    <td className="table-cell-wrap">{item.description}</td>
+                    <td>{item.responsible ?? "—"}</td>
+                    <td>{formatDate(item.plannedExecutionDate)}</td>
+                    <td className="table-cell-wrap">{item.impact ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </section>
+      ) : null}
 
-      <section className="detail-section" id="acciones">
-        <h2>Acciones propuestas</h2>
-        <div className="table-scroll">
-          <table className="records-table compact-table">
-            <thead><tr><th>#</th><th>Descripción</th><th>Responsable</th><th>Fecha prevista</th><th>Impacto</th></tr></thead>
-            <tbody>
-              {capa.plannedActions.map((item, index) => (
-                <tr key={item.id}><td>{index+1}</td><td>{item.description}</td><td>{item.responsible ?? "—"}</td><td>{formatDate(item.plannedExecutionDate)}</td><td>{item.impact ?? "—"}</td></tr>
-              ))}
-            </tbody>
-          </table>
+      {activeTab === "followups" ? (
+        <>
+          <div className="card">
+            <div className="section-title-row">
+              <h2>Histórico de seguimientos</h2>
+              <span className="badge neutral">Versión inicial 00</span>
+            </div>
+            {capa.followups.length ? (
+              <div className="timeline">
+                {capa.followups.map((item) => (
+                  <article className="timeline-item" key={item.id}>
+                    <div className="timeline-marker">{String(item.sequenceNumber).padStart(2, "0")}</div>
+                    <div>
+                      <header>
+                        <strong>{formatDate(item.followupDate)}</strong>
+                        <span>{item.completedByText}</span>
+                      </header>
+                      {item.reason ? <p><strong>Motivo:</strong> {item.reason}</p> : null}
+                      <p>{item.description}</p>
+                      {item.observations ? <p><strong>Observaciones:</strong> {item.observations}</p> : null}
+                      {item.evidenceReference ? <p><strong>Evidencia:</strong> {item.evidenceReference}</p> : null}
+                      <small className="muted-note">Próximo seguimiento: {formatDate(item.nextFollowupDate)}</small>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-panel">Todavía no hay seguimientos. El informe inicial corresponde a la versión 00.</div>
+            )}
+          </div>
+
+          <div className="card" id="new-followup">
+            <h2>Añadir seguimiento</h2>
+            <form action={addCapaFollowupAction.bind(null, id)} className="inline-form">
+              <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
+              <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={capa.createdByText ?? ""} required /></label>
+              <label className="field"><span>Motivo</span><input name="reason" /></label>
+              <label className="field full"><span>Actuación realizada / resultado *</span><textarea name="description" required /></label>
+              <label className="field"><span>Próxima fecha</span><input type="date" name="nextFollowupDate" /></label>
+              <label className="field"><span>Evidencia / referencia</span><input name="evidenceReference" /></label>
+              <label className="field full"><span>Observaciones</span><textarea name="observations" /></label>
+              <div className="field"><span>&nbsp;</span><button className="button primary" type="submit">Guardar seguimiento</button></div>
+            </form>
+          </div>
+        </>
+      ) : null}
+
+      {activeTab === "effectiveness" ? (
+        <div className="card">
+          <h2>Eficacia y cierre</h2>
+          <dl className="info-grid">
+            <div className="info-item"><dt>Estado eficacia</dt><dd>{effectivenessLabel(capa.effectivenessStatus)}</dd></div>
+            <div className="info-item"><dt>Fecha cierre operativo</dt><dd>{formatDate(capa.operationalClosedAt)}</dd></div>
+            <div className="info-item"><dt>Fecha verificación final</dt><dd>{formatDate(capa.effectiveClosedAt)}</dd></div>
+            <div className="info-item full"><dt>Criterio de eficacia</dt><dd className="prose-value">{capa.effectivenessCriteria ?? "—"}</dd></div>
+            <div className="info-item full"><dt>Valoración</dt><dd className="prose-value">{capa.effectivenessAssessment ?? "—"}</dd></div>
+            <div className="info-item full"><dt>Evidencia</dt><dd className="prose-value">{capa.effectivenessEvidence ?? "—"}</dd></div>
+            <div className="info-item full"><dt>Conclusión / cierre</dt><dd className="prose-value">{capa.conclusion ?? "—"}</dd></div>
+            {capa.status === "CANCELLED" ? (
+              <div className="info-item full"><dt>Motivo cancelación</dt><dd className="prose-value">{capa.cancellationReason ?? "—"}</dd></div>
+            ) : null}
+          </dl>
         </div>
-      </section>
+      ) : null}
 
-      <section className="detail-section" id="seguimientos">
-        <div className="section-title-row"><h2>Seguimientos</h2><span className="badge">Versión inicial 00</span></div>
-        {capa.followups.length ? (
-          <div className="timeline">
-            {capa.followups.map((item) => (
-              <article className="timeline-item" key={item.id}>
-                <div className="timeline-marker">{String(item.sequenceNumber).padStart(2,"0")}</div>
-                <div>
-                  <strong>{formatDate(item.followupDate)} · {item.completedByText}</strong>
-                  {item.reason ? <p><b>Motivo:</b> {item.reason}</p> : null}
-                  <p>{item.description}</p>
-                  {item.observations ? <p><b>Observaciones:</b> {item.observations}</p> : null}
-                  {item.evidenceReference ? <p><b>Evidencia:</b> {item.evidenceReference}</p> : null}
-                  <small>Próximo seguimiento: {formatDate(item.nextFollowupDate)}</small>
+      {activeTab === "relations" ? (
+        <div className="card">
+          <h2>Relaciones QMS</h2>
+          {relations.length ? (
+            <div className="relation-list">
+              {relations.map((item, index) => (
+                <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
+                  <span>{item.direction} · {relationLabel(item.type)}</span>
+                  <strong>{item.record.businessCode ?? item.record.id}</strong>
+                  <small>{item.record.recordType}</small>
                 </div>
-              </article>
-            ))}
-          </div>
-        ) : <div className="empty-panel">Todavía no hay seguimientos. El informe inicial corresponde a la versión 00.</div>}
-
-        <form action={addCapaFollowupAction.bind(null, id)} className="inline-form followup-form">
-          <label className="field"><span>Fecha</span><input type="date" name="followupDate" required /></label>
-          <label className="field"><span>Cumplimentado por</span><input name="completedByText" defaultValue={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"} required /></label>
-          <label className="field"><span>Motivo del seguimiento</span><input name="reason" /></label>
-          <label className="field full"><span>Actuación realizada / resultado</span><textarea name="description" required /></label>
-          <label className="field"><span>Próxima fecha</span><input type="date" name="nextFollowupDate" /></label>
-          <label className="field"><span>Evidencia / referencia</span><input name="evidenceReference" /></label>
-          <label className="field full"><span>Observaciones</span><textarea name="observations" /></label>
-          <div className="full"><button className="button primary" type="submit">+ Añadir seguimiento</button></div>
-        </form>
-      </section>
-
-      <section className="detail-section" id="eficacia">
-        <h2>Eficacia y cierre</h2>
-        <div className="info-grid">
-          <div className="info-item"><span>Estado eficacia</span><strong>{effectivenessLabel(capa.effectivenessStatus)}</strong></div>
-          <div className="info-item"><span>Fecha cierre operativo</span><strong>{formatDate(capa.operationalClosedAt)}</strong></div>
-          <div className="info-item"><span>Fecha verificación final</span><strong>{formatDate(capa.effectiveClosedAt)}</strong></div>
-          <div className="info-item wide"><span>Criterio de eficacia</span><p>{capa.effectivenessCriteria ?? "—"}</p></div>
-          <div className="info-item wide"><span>Valoración</span><p>{capa.effectivenessAssessment ?? "—"}</p></div>
-          <div className="info-item wide"><span>Evidencia</span><p>{capa.effectivenessEvidence ?? "—"}</p></div>
-          <div className="info-item wide"><span>Conclusión</span><p>{capa.conclusion ?? "—"}</p></div>
-          {capa.status === "CANCELLED" ? <div className="info-item wide"><span>Motivo cancelación</span><p>{capa.cancellationReason ?? "—"}</p></div> : null}
+              ))}
+            </div>
+          ) : (
+            <div className="empty-panel">No hay otros expedientes estructurados relacionados.</div>
+          )}
+          <form action={addCapaRelationAction.bind(null, id)} className="inline-form relation-form">
+            <label className="field"><span>Código expediente</span><input name="relatedCode" placeholder="D/GC-00/001/2026" required /></label>
+            <label className="field">
+              <span>Relación</span>
+              <select name="relationType">
+                <option value="RELATED_TO">Relacionada con</option>
+                <option value="GENERATES">Genera</option>
+                <option value="IMPLEMENTED_BY">Implementada por</option>
+                <option value="ASSOCIATED_WITH">Asociada con</option>
+              </select>
+            </label>
+            <label className="field"><span>Registrado por</span><input name="createdByText" defaultValue={capa.createdByText ?? ""} /></label>
+            <div className="full"><button className="button" type="submit">Añadir relación</button></div>
+          </form>
         </div>
-      </section>
+      ) : null}
 
-      <section className="detail-section" id="relaciones">
-        <h2>Relaciones QMS</h2>
-        {relations.length ? (
-          <div className="relation-list">
-            {relations.map((item, index) => (
-              <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
-                <span>{item.direction} · {relationLabel(item.type)}</span>
-                <strong>{item.record.businessCode ?? item.record.id}</strong>
-                <small>{item.record.recordType}</small>
-              </div>
-            ))}
+      {activeTab === "documents" ? (
+        <div className="card">
+          <h2>Documentos</h2>
+          <dl className="info-grid">
+            <div className="info-item"><dt>Versión formulario</dt><dd>{capa.formVersion?.versionCode ?? "No asignada"}</dd></div>
+            <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{capa.annexIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
+            <div className="info-item"><dt>Documento firmado</dt><dd>{capa.signedDocumentAvailable === true ? "Disponible" : capa.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
+          </dl>
+          <div className="document-actions">
+            <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
+            <span className="muted-note">Cada generación queda registrada en el expediente.</span>
           </div>
-        ) : <div className="empty-panel">No hay otros expedientes estructurados relacionados.</div>}
-        <form action={addCapaRelationAction.bind(null,id)} className="inline-form relation-form">
-          <label className="field"><span>Código expediente</span><input name="relatedCode" placeholder="D/GC-00/001/2026" required /></label>
-          <label className="field"><span>Relación</span><select name="relationType"><option value="RELATED_TO">Relacionada con</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implementada por</option><option value="ASSOCIATED_WITH">Asociada con</option></select></label>
-          <label className="field"><span>Registrado por</span><input name="createdByText" defaultValue={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"} /></label>
-          <div className="full"><button className="button" type="submit">Añadir relación</button></div>
-        </form>
-      </section>
-
-      <section className="detail-section" id="documentos">
-        <h2>Documentos</h2>
-        <div className="document-actions">
-          <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Descargar Anexo III actual</a>
-          <span className="muted-note">Cada generación queda registrada en el expediente.</span>
+          {capa.qmsRecord.generatedDocuments.length ? (
+            <>
+              <h3>Generaciones registradas</h3>
+              <div className="timeline">
+                {capa.qmsRecord.generatedDocuments.map((item) => (
+                  <div className="timeline-item" key={item.id}>
+                    <strong>{item.documentType}</strong>
+                    <small className="muted-note"> · {formatDate(item.generatedAt)} · {item.generatedByText ?? "Usuario no informado"}</small>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
         </div>
-        {capa.qmsRecord.generatedDocuments.length ? (
-          <div className="history-list">
-            {capa.qmsRecord.generatedDocuments.map((item) => (
-              <div className="history-row" key={item.id}>
-                <strong>{formatDate(item.generatedAt)}</strong>
-                <span>{item.documentType}</span>
-                <small>{item.generatedByText ?? "—"}</small>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </section>
+      ) : null}
 
-      <section className="detail-section" id="historial">
-        <h2>Historial interno de modificaciones</h2>
-        {capa.qmsRecord.history.length ? (
-          <div className="history-list">
-            {capa.qmsRecord.history.map((item) => (
-              <div className="history-row" key={item.id}>
-                <strong>{formatDate(item.changedAt)} · {item.changedByText ?? "—"}</strong>
-                <span>{item.fieldPath}</span>
-                <small>{item.reason ?? item.source}</small>
-              </div>
-            ))}
-          </div>
-        ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
-      </section>
+      {activeTab === "history" ? (
+        <div className="card">
+          <h2>Historial interno de modificaciones</h2>
+          <p className="muted-note">Historial operativo de V1. No constituye un audit trail GMP validado.</p>
+          {capa.qmsRecord.history.length ? (
+            <div className="timeline">
+              {capa.qmsRecord.history.map((item) => (
+                <div className="timeline-item" key={item.id}>
+                  <header>
+                    <strong>{formatDate(item.changedAt)}</strong>
+                    <span>{item.changedByText ?? "Sistema"}</span>
+                    <span className="badge neutral">{item.source}</span>
+                  </header>
+                  <p><strong>{item.fieldPath}</strong>{item.reason ? ` · Motivo: ${item.reason}` : ""}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-panel">Sin modificaciones registradas.</div>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

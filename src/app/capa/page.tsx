@@ -6,6 +6,8 @@ import {
   formatDate,
 } from "@/modules/capa/domain";
 import { getCapaList } from "@/modules/capa/queries";
+import { ColumnSelector } from "@/components/column-selector";
+import { capaColumns } from "@/modules/capa/column-config";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +49,7 @@ export default async function CapaPage({
         </div>
         <div className="heading-actions">
           <Link href="/capa/new" className="button primary">+ Nueva CAPA</Link>
+          <ColumnSelector tableId="capa-list-table" storageKey="qms.columns.capa" columns={[...capaColumns]} />
           <details className="export-menu">
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
@@ -95,40 +98,46 @@ export default async function CapaPage({
 
       <div className="table-card">
         <div className="table-scroll">
-          <table className="records-table capa-table">
+          <table id="capa-list-table" className="records-table capa-table">
             <thead>
               <tr>
-                <th>Tipo</th><th>Código</th><th>Departamento</th><th>Origen</th><th>Código origen</th>
-                <th>Descripción CAPA</th><th>Apertura</th><th>Fecha prevista</th><th>Estado</th>
-                <th>Cierre operativo</th><th>Eficacia</th><th>Último seguimiento</th><th>Próximo seguimiento</th>
-                <th>Cierre efectivo</th><th>Observaciones</th>
+<th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre operativo</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Cierre efectivo</th><th data-column-key="observations">Observaciones</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => {
                 const latest = row.followups[0];
-                const planned = row.plannedActions[0];
+                const plannedDates = row.plannedActions
+                  .map((item) => item.plannedExecutionDate)
+                  .filter((value): value is Date => Boolean(value));
+                const plannedDate = plannedDates.length
+                  ? new Date(Math.max(...plannedDates.map((value) => value.getTime())))
+                  : null;
+                const actionDescription = row.plannedActions.length
+                  ? row.plannedActions.map((item) => item.description).join(" · ")
+                  : "—";
                 return (
                   <tr key={row.id}>
-                    <td><span className="badge">{capaTypeLabel(row.actionType)}</span></td>
-                    <td className="sticky-code"><Link href={`/capa/${row.id}`}><strong>{row.qmsRecord.businessCode ?? "Sin código"}</strong></Link></td>
-                    <td>{row.departmentCodeSnapshot ?? "—"}</td>
-                    <td>{row.originType ?? "—"}</td>
-                    <td>{row.originCode ?? "—"}</td>
-                    <td className="long-cell">{planned?.description ?? "—"}</td>
-                    <td>{formatDate(row.openedAt)}</td>
-                    <td>{formatDate(planned?.plannedExecutionDate)}</td>
-                    <td><span className={`status-badge ${row.status.toLowerCase()}`}>{capaStatusLabel(row.status)}</span></td>
-                    <td>{formatDate(row.operationalClosedAt)}</td>
-                    <td><span className="badge">{effectivenessLabel(row.effectivenessStatus)}</span></td>
-                    <td>{latest ? `${String(latest.sequenceNumber).padStart(2,"0")} · ${formatDate(latest.followupDate)}` : "00 · inicial"}</td>
-                    <td>{formatDate(latest?.nextFollowupDate)}</td>
-                    <td>{formatDate(row.effectiveClosedAt)}</td>
-                    <td className="long-cell">{row.internalObservations ?? "—"}</td>
+                    <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td>
+                    <td data-column-key="type"><span className="badge neutral">{capaTypeLabel(row.actionType)}</span></td>
+                    <td data-column-key="code" className="sticky-code"><Link href={`/capa/${row.id}`}><strong>{row.qmsRecord.businessCode ?? "Sin código"}</strong></Link></td>
+                    <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
+                    <td data-column-key="origin">{row.originType ?? "—"}</td>
+                    <td data-column-key="originCode">{row.originCode ?? "—"}</td>
+                    <td data-column-key="description" className="long-cell">{actionDescription}</td>
+                    <td data-column-key="opening">{formatDate(row.openedAt)}</td>
+                    <td data-column-key="planned">{formatDate(plannedDate)}</td>
+                    <td data-column-key="status"><span className={`status-badge ${row.status.toLowerCase()}`}>{capaStatusLabel(row.status)}</span></td>
+                    <td data-column-key="operationalClose">{formatDate(row.operationalClosedAt)}</td>
+                    <td data-column-key="effectiveness"><span className={`badge ${row.effectivenessStatus === "CONFORMING" ? "closed" : row.effectivenessStatus === "NONCONFORMING" ? "major" : "warning"}`}>{effectivenessLabel(row.effectivenessStatus)}</span></td>
+                    <td data-column-key="latestFollowup">{latest ? `${String(latest.sequenceNumber).padStart(2,"0")} · ${formatDate(latest.followupDate)}` : "00 · inicial"}</td>
+                    <td data-column-key="nextFollowup">{formatDate(latest?.nextFollowupDate)}</td>
+                    <td data-column-key="effectiveClose">{formatDate(row.effectiveClosedAt)}</td>
+                    <td data-column-key="observations" className="long-cell">{row.internalObservations ?? "—"}</td>
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={15}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={16}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>
