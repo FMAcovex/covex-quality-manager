@@ -14,9 +14,9 @@ export async function getReturnList(filters:ReturnListFilters){
  ]});
  if(filters.year&&/^\d{4}$/.test(filters.year))and.push({qmsRecord:{year:Number(filters.year)}});
  if(filters.department)and.push({departmentId:filters.department});
- if(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"].includes(filters.type??""))and.push({returnType:filters.type as any});
+ if(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"].includes(filters.type??""))and.push({returnType:filters.type as "COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER"});
  if(filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
- if(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??""))and.push({decision:filters.decision as any});
+ if(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??""))and.push({decision:filters.decision as "PENDING"|"ACCEPTED"|"REJECTED"});
  const where:Prisma.ReturnRecordWhereInput=and.length?{AND:and}:{};
  const [rows,departments,years,total,open,pending,followupDue]=await Promise.all([
   prisma.returnRecord.findMany({where,include:{qmsRecord:true,department:true,products:{orderBy:{sortOrder:"asc"}},followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{communicationDate:"desc"},{createdAt:"desc"}],take:300}),
