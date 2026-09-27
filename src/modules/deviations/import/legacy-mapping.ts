@@ -30,6 +30,8 @@ export type HistoricalDeviationRow = {
   recurrentRootCause: "YES" | "NO" | "NA" | null;
   affectsFinishedProduct: "YES" | "NO" | "NA" | null;
   normalizedOrigin: string | null;
+  includeInKpi: boolean;
+  kpiExclusionReason: string | null;
   immediateActionRaw: string | null;
   capaPlans: HistoricalCapaPlan[];
   issues: string[];
@@ -150,6 +152,8 @@ function map2025(row: XlsxRow, departmentNames: Map<string, string>): Historical
     recurrentRootCause: triState(raw.S),
     affectsFinishedProduct: triState(raw.T),
     normalizedOrigin: string(raw.U),
+    includeInKpi: string(raw.R)?.toLocaleLowerCase("es-ES") !== "no",
+    kpiExclusionReason: null,
     immediateActionRaw: hasImmediate(measuresRaw) ? capaRaw ?? measuresRaw : null,
     capaPlans: extractCapaPlans(raw.O),
     issues: [],
@@ -187,6 +191,8 @@ function map2026(row: XlsxRow, departmentNames: Map<string, string>): Historical
     recurrentRootCause: triState(raw.Q),
     affectsFinishedProduct: triState(raw.R),
     normalizedOrigin: string(raw.S),
+    includeInKpi: string(raw.O)?.toLocaleLowerCase("es-ES") !== "no",
+    kpiExclusionReason: string(raw.P),
     immediateActionRaw: hasImmediate(measuresRaw) ? measuresRaw : null,
     capaPlans: extractCapaPlans(raw.M),
     issues: ["DEADLINE_NOT_AVAILABLE_IN_2026_SOURCE", "SIGNED_DOCUMENT_STATUS_NOT_AVAILABLE_IN_2026_SOURCE"],
