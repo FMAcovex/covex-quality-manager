@@ -4,7 +4,7 @@ import { ChangeControlForm } from "@/modules/change-control/components/change-co
 import { getChangeControlDetail,getChangeControlLookups } from "@/modules/change-control/queries";
 
 export const dynamic="force-dynamic";
-const b=(v:boolean|null)=>v===true?"true":v===false?"false":"";
+const b=(v:boolean|null):""|"true"|"false"=>v===true?"true":v===false?"false":"";
 const d=(v:Date|null)=>v?.toISOString().slice(0,10);
 
 export default async function EditChangeControlPage({params}:{params:Promise<{id:string}>}) {
