@@ -90,7 +90,9 @@ export async function generateAnnexV(year: number, rows: ExportRow[]) {
           row.rootCause ?? "",
           date(row.issueDate),
           date(row.closedAt),
-          measuresLabel(row),
+          row.immediateActions.length && row.capaPlans.length
+            ? "CAPA+Correctiva Inmediata"
+            : measuresLabel(row),
           capaCodes(row),
           row.internalObservations ?? "",
         ]
