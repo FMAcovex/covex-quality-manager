@@ -71,8 +71,8 @@ export default async function DeviationsPage({
       </div>
 
       <div className="tabs">
-        <span className="tab active">Expedientes</span>
-        <span className="tab muted">Indicadores · Hito 5</span>
+        <Link className="tab active" href="/deviations">Expedientes</Link>
+        <Link className="tab muted" href="/deviations/indicators">Indicadores</Link>
       </div>
 
       <form method="get" className="toolbar-form">

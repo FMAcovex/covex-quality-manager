@@ -19,6 +19,7 @@ describe("historical deviation mapping", () => {
     expect(row.classification).toBe("MAJOR");
     expect(row.deadlineStatus).toBe("IN_TIME");
     expect(row.capaPlans[0].businessCapaCode).toBe("AC/GC-00/001/2025");
+    expect(row.includeInKpi).toBe(true);
     expect(row.issues).toContain("HISTORICAL_LIST_ONLY");
   });
 
@@ -29,11 +30,13 @@ describe("historical deviation mapping", () => {
       cells: {
         B: "GC-00", C: "D/GC-00/001/2026", D: "Proceso", E: "Auditoría interna",
         F: "Descripción", G: "Menor", H: "Causa", I: 46000, J: 46001, K: "Cerrada",
-        L: "Ninguna",
+        L: "Ninguna", O: "No", P: "Registro excluido para prueba",
       },
     };
     const [row] = mapHistoricalRows([catalog], [source]);
     expect(row.deadlineStatus).toBe("NOT_EVALUATED");
+    expect(row.includeInKpi).toBe(false);
+    expect(row.kpiExclusionReason).toBe("Registro excluido para prueba");
     expect(row.recurrentRootCause).toBeNull();
     expect(row.issues).toContain("RECURRENCE_NOT_RECORDED");
     expect(row.issues).toContain("SIGNED_DOCUMENT_STATUS_NOT_AVAILABLE_IN_2026_SOURCE");

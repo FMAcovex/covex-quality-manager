@@ -1,11 +1,12 @@
 export type MeasureShape = {
   immediateActions: unknown[];
   capaPlans: unknown[];
+  capaRequired?: boolean | null;
 };
 
 export function measuresLabel(value: MeasureShape): string {
   const immediate = value.immediateActions.length > 0;
-  const capa = value.capaPlans.length > 0;
+  const capa = value.capaPlans.length > 0 || value.capaRequired === true;
 
   if (immediate && capa) return "Correctiva inmediata + CAPA";
   if (capa) return "CAPA";

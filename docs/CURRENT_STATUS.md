@@ -8,66 +8,67 @@ Fecha: 2026-09-27.
 - Hito 2 — Desviaciones completas.
 - Hito 3 — Documentos y exportaciones.
 - Hito 4 — Importación histórica 2025–2026.
+- Hito 5 — Indicadores de Desviaciones.
 
-## Hito 4 — Importación histórica 2025–2026
+## Hito 5 — Indicadores
 Estado: **COMPLETADO Y VALIDADO**.
 
 ### Implementado
-- lector XLSX OOXML reutilizando el motor ZIP propio;
-- mapeos explícitos y separados para 2025 y 2026;
-- catálogo histórico de departamentos recuperado del propio libro;
-- extracción conservadora de códigos AC/AP;
-- dry-run por defecto;
-- detección de duplicados dentro de la fuente y contra PostgreSQL;
-- clasificación de incidencias de calidad del dato;
-- importación real solo con confirmación explícita;
-- trazabilidad mediante lote y fila de importación;
-- snapshot original de cada fila;
-- historial con origen `IMPORT`;
-- SHA-256 del libro fuente;
-- informes JSON fuera de Git;
-- prueba de idempotencia dry-run -> apply -> dry-run;
-- corrección y test del caso OOXML de celdas vacías auto-cerradas.
+- pestaña Indicadores integrada dentro de Desviaciones;
+- fuente única PostgreSQL;
+- filtros por año, departamento, clasificación, procedencia/origen, CAPA y estado;
+- tarjetas KPI con comparación frente al año anterior;
+- total abierto en el año;
+- cierre en ≤30 días;
+- mediana de días de cierre;
+- recurrencia;
+- afectación a producto terminado;
+- críticas y mayores;
+- abiertas actualmente;
+- desviaciones con CAPA;
+- control de completitud KPI;
+- aperturas mensuales frente al año anterior;
+- distribuciones por área, clasificación y origen;
+- tendencias de 5 años;
+- tabla resumen anual de 5 años.
 
-### Dry-run sobre la copia real revisada
-Fuente: `000 LISTADO GENERAL DESVIACIONES.xlsx`.
-SHA-256: `c11558835752558d1e3858a5eb11a1ce829c42410e19067aa109bbe76527af02`.
+### Reglas de cómputo
+- volumen, área, clasificación, origen, recurrencia, afectación y CAPA: año de apertura;
+- cumplimiento de cierre y mediana: año de cierre;
+- recurrencia y afectación: solo Sí/No en el denominador; los no evaluados quedan visibles mediante cobertura;
+- CAPA: capaRequired=true o al menos una CAPA estructurada;
+- origen: para históricos se utiliza primero ORIGEN NORMALIZADO KPI conservado durante la migración y, si no existe, la procedencia/origen del expediente;
+- registros con includeInKpi=false quedan fuera de indicadores;
+- años no cargados en PostgreSQL se muestran como sin datos, nunca como cero desviaciones.
 
-Resultado de lectura:
-- 87 expedientes;
-- 53 de 2025;
-- 34 de 2026;
-- 0 códigos duplicados dentro de las hojas 2025/2026;
-- 2 registros 2026 sin recurrencia informada;
-- 2 registros 2026 sin afectación a producto terminado informada;
-- 2 registros 2026 sin medidas adoptadas informadas;
-- 2 expedientes GC-12 cuyo nombre de departamento no figura en el catálogo embebido del libro;
-- el listado 2026 no contiene un campo equivalente al control de cierre en plazo de 2025 ni estado de documento firmado.
+### Compatibilidad con históricos
+Se añadieron los campos:
+- includeInKpi;
+- kpiExclusionReason.
 
-Todos los históricos se marcan como `REVIEW_REQUIRED` porque el listado general no equivale al Anexo III completo. Los campos ausentes permanecen ausentes; no se infieren.
-
-### Seguridad de la importación
-La ejecución sin `--apply` no escribe expedientes.
-La importación real requiere además `--confirm APPLY_2025_2026`.
-Una segunda lectura después de aplicar el mismo fichero detecta los registros existentes como duplicados y no los vuelve a crear.
+El importador 2025/2026 conserva ahora INCLUIR EN KPI y el motivo de exclusión cuando existe. En la fuente revisada actual todos los expedientes 2025/2026 están incluidos, por lo que esto no altera los resultados actuales.
 
 ### Validación final
 - PostgreSQL 16 real;
-- `prisma db push`, seed y smoke test base;
-- smoke test de importación histórica e idempotencia;
+- esquema y seed;
+- smoke test base QMS;
+- smoke test de importación histórica;
+- smoke test específico de indicadores;
+- comprobación de año de apertura frente a año de cierre;
+- comprobación de denominadores Sí/No;
+- comprobación de CAPA histórica sin fila estructurada;
 - Prisma validate/generate;
 - lint;
 - tests;
-- build Next.js de producción;
-- dry-run independiente contra la copia real del libro.
+- build Next.js de producción.
 
 ## Fuera de alcance todavía
+- módulo CAPA completo;
+- indicadores CAPA;
 - enriquecimiento histórico leyendo cada Anexo III individual;
-- KPI;
-- expediente CAPA completo;
 - Entra;
 - SharePoint automático;
 - alertas.
 
 ## Próximo paso
-Hito 5 — Indicadores: KPI desde PostgreSQL, comparativa anual, tendencias de 5 años y filtros alineados con el dashboard GMP.
+Hito 6 — CAPA: módulo operativo completo, listados/filtros, expediente, seguimientos, eficacia, cierre, relaciones N:N e indicadores CAPA.
