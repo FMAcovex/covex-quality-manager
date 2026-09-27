@@ -31,6 +31,13 @@ describe("parseCapaForm",()=>{
     const f=base();f.set("status","CANCELLED");
     expect(parseCapaForm(f).errors).toContain("Una CAPA cancelada debe incluir el motivo de cancelación.");
   });
+  it("allows historical incomplete closed records to remain editable",()=>{
+    const f=base();f.set("status","CLOSED");f.set("rootCause","");
+    f.set("operationalClosedAt","2025-01-10");
+    const parsed=parseCapaForm(f,{allowHistoricalIncomplete:true});
+    expect(parsed.errors).not.toContain("La causa raíz es obligatoria.");
+    expect(parsed.errors).not.toContain("Una CAPA cerrada debe tener conclusión de cierre.");
+  });
   it("requires conforming efficacy and assessment for effective closure",()=>{
     const f=base();f.set("status","CLOSED");f.set("operationalClosedAt","2026-10-10");f.set("conclusion","Ejecutada");
     f.set("effectiveClosedAt","2026-11-10");f.set("effectivenessStatus","PENDING");
