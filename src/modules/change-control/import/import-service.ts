@@ -35,7 +35,6 @@ export async function applyHistoricalChangeImport(buffer:Buffer,sourceFileName:s
         closeWithoutExecution:row.status==="CLOSED"&&row.executionStatus==="NOT_EXECUTED",closureConclusion:row.status==="CLOSED"&&row.executionStatus==="NOT_EXECUTED"?row.observations:null,
         internalObservations:row.observations,signedDocumentAvailable:row.signed,dataQualityStatus:"REVIEW_REQUIRED",
         extraData:{historicalImport:{sourceFileName,sourceSha256:a.report.sourceSha256,sourceSheet:row.sourceSheet,sourceRow:row.sourceRow,issues:row.issues,raw:row.raw}},
-        actions:{create:[{description:row.description!,plannedExecutionDate:row.plannedAt,actualExecutionDate:row.executedAt,completed:row.executionStatus==="EXECUTED",sortOrder:0}]},
       }});
       for(const f of row.followups){if(!f.date)continue;await tx.changeControlFollowup.create({data:{changeControlId:change.id,sequenceNumber:f.sequence,followupDate:f.date,responsibleText:"Importación histórica",executionStatus:row.executionStatus,executionDate:row.executedAt,effectivenessStatus:row.effectiveness,nextFollowupDate:f.sequence===row.followups.at(-1)?.sequence?row.nextFollowupAt:null,observations:"Seguimiento recuperado del listado histórico."}});}
       const full=await tx.changeControl.findUniqueOrThrow({where:{id:change.id},include:{qmsRecord:true,actions:true,followups:true,formVersion:true,requestDecisionTemplateVersion:true,followupTemplateVersion:true}});
