@@ -124,3 +124,21 @@ Por hito:
 5. PR;
 6. revisión;
 7. squash merge.
+
+
+## Hito 6.1 — Versionado transversal de expedientes y seguimientos
+- snapshots funcionales de expediente;
+- V00 inicial;
+- reaperturas de Desviaciones V01+;
+- seguimientos CAPA V01+;
+- cierre operativo y eficacia conservados por versión;
+- descarga de anexos históricos por versión;
+- vínculo de documentos generados con la versión;
+- baseline explícito para históricos no reconstruibles;
+- base reutilizable para seguimientos de Controles de cambios.
+
+Criterio de salida:
+- Desviaciones y CAPA usan el mecanismo común sin alterar su codificación de negocio;
+- una edición ordinaria no crea una versión funcional;
+- una reapertura de Desviación y un nuevo seguimiento CAPA sí la crean;
+- snapshots previos permanecen inmutables.
