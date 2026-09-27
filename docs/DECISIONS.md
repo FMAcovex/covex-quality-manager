@@ -133,3 +133,30 @@ Reglas:
 - El cierre operativo y la eficacia de CAPA pueden pertenecer a versiones diferentes. Una CAPA puede estar Cerrada con eficacia Pendiente y alcanzar el cierre efectivo en un seguimiento posterior.
 - Un documento generado puede quedar vinculado a la versión funcional exacta desde la que se generó.
 - Si un expediente histórico anterior al Hito 6.1 no dispone de snapshots previos, no se reconstruyen versiones ficticias. Se crea un baseline histórico explícitamente identificado y el versionado exacto continúa desde ese punto.
+
+
+## D-028 — Estructura de Control de Cambios
+Cada Control de Cambio es un único expediente con navegación interna:
+Solicitud | Dictamen | Seguimientos | Documentos | Relaciones | Historial.
+
+Solicitud, Dictamen y Seguimientos son familias documentales distintas y no se modelan como expedientes independientes.
+
+## D-029 — Baseline del Dictamen
+Las tareas aprobadas en el Dictamen constituyen una línea base inmutable. Después de la aprobación no se sustituyen ni editan silenciosamente.
+
+Las tareas nuevas se añaden desde Seguimiento, se etiquetan con su seguimiento de introducción y persisten posteriormente.
+
+## D-030 — Seguimientos y cierre de Control de Cambios
+Los seguimientos se numeran 00, 01, 02... sin límite funcional.
+
+Se mantienen estados separados para:
+- ejecución/cierre operativo;
+- eficacia;
+- cierre efectivo.
+
+Se admite cierre sin ejecución únicamente con motivo documentado y eficacia No aplica.
+
+## D-031 — Exportaciones de Control de Cambios
+El listado operativo y el Anexo VII no son la misma vista.
+
+El Anexo VII conserva exclusivamente las columnas del formato oficial. El listado simple puede incluir más columnas de gestión y respetar filtros activos.
