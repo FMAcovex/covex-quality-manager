@@ -156,7 +156,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordSdtCheckbox(xml, 2, 12, 0, methods.has("ISHIKAWA"));
   xml = setWordCellText(xml, 2, 14, 0, value(record.rootCause));
   xml = setTriStateCell(xml, 2, 15, 1, record.recurrentRootCause);
-  xml = setWordCellText(xml, 2, 16, 0, value(record.recurrenceDetails));
+  xml = setWordCellText(xml, 2, 16, 1, value(record.recurrenceDetails));
   if (record.immediateActions.length) {
     xml = replaceWordRowWithCopies(
       xml,
