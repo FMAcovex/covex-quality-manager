@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 "use server";
 
 import { AlertRuleKind,AlertSeverity,DocumentType,FormVersionStatus,ParameterValueType,QmsRecordType } from "@prisma/client";
@@ -97,8 +98,19 @@ export async function registerTemplateVersionAction(fd:FormData){
   if(!Object.values(DocumentType).includes(docRaw as DocumentType))throw new Error("Tipo documental no válido.");
   const versionCode=text(fd,"versionCode"),effectiveFrom=text(fd,"effectiveFrom");
   if(!versionCode||!effectiveFrom)throw new Error("Versión y vigencia son obligatorias.");
-  const created=await prisma.templateVersion.create({data:{module:moduleRaw as QmsRecordType,documentType:docRaw as DocumentType,versionCode,effectiveFrom:new Date(effectiveFrom),filePath:text(fd,"filePath")||null,checksum:text(fd,"checksum")||null,isActive:false}});
-  await logChange("TemplateVersion",`${moduleRaw}:${docRaw}:${versionCode}`,"REGISTER",null,created,fd);
+  const fileValue=fd.get("file");
+  let fileName:string|null=null,mimeType:string|null=null,fileData:Uint8Array|null=null,fileSize:number|null=null,checksum:string|null=text(fd,"checksum")||null;
+  if(fileValue instanceof File&&fileValue.size>0){
+    if(fileValue.size>15*1024*1024)throw new Error("La plantilla supera el límite de 15 MB.");
+    const ext=fileValue.name.toLowerCase().split(".").pop();
+    if(ext!=="docx"&&ext!=="xlsx")throw new Error("Solo se admiten plantillas DOCX o XLSX.");
+    const bytes=new Uint8Array(await fileValue.arrayBuffer());
+    fileName=fileValue.name;mimeType=fileValue.type||null;fileData=bytes;fileSize=fileValue.size;
+    checksum=createHash("sha256").update(bytes).digest("hex");
+  }
+  if(!fileData&&!text(fd,"filePath"))throw new Error("Adjunta el archivo controlado o informa una ruta gestionada técnicamente.");
+  const created=await prisma.templateVersion.create({data:{module:moduleRaw as QmsRecordType,documentType:docRaw as DocumentType,versionCode,effectiveFrom:new Date(effectiveFrom),filePath:text(fd,"filePath")||null,fileName,mimeType,fileData,fileSize,checksum,isActive:false}});
+  await logChange("TemplateVersion",`${moduleRaw}:${docRaw}:${versionCode}`,"REGISTER",null,{...created,fileData:fileData?"[binary]":null},fd);
   revalidatePath("/settings");
 }
 
