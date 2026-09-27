@@ -1,3 +1,4 @@
+import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
 import {
   extractWordBodyRange,fillWordRowBalanced,
@@ -42,7 +43,7 @@ function classificationText(v:string|null){
 }
 
 export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
- const entries=readZip(await loadComplaintPntTemplate(r.annexIIITemplateVersion?.versionCode??"02"));
+ const entries=readZip(await loadComplaintPntTemplate(r.annexIIITemplateVersion?.versionCode??"02",DocumentType.COMPLAINT_ANNEX_III));
  let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo III", "Anexo IV:", "last");
  xml=setWordCellTextBalanced(xml,0,1,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,0,1,3,date(r.openedAt));
  xml=setWordCellTextBalanced(xml,1,1,1,date(r.detectionDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.detectedBy));
@@ -70,7 +71,7 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
 }
 
 export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
- const entries=readZip(await loadComplaintPntTemplate(r.annexIVTemplateVersion?.versionCode??"02"));
+ const entries=readZip(await loadComplaintPntTemplate(r.annexIVTemplateVersion?.versionCode??"02",DocumentType.COMPLAINT_ANNEX_IV));
  let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo IV:", "Anexo V:", "last");
  xml=setWordCellTextBalanced(xml,0,1,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,0,1,3,date(r.openedAt));xml=setWordCellTextBalanced(xml,0,2,1,text(r.partyName));xml=setWordCellTextBalanced(xml,0,3,1,text(r.contact));
  xml=setWordCellTextBalanced(xml,0,4,1,text(r.reference));xml=setWordCellTextBalanced(xml,0,4,3,text(r.lotReference));xml=setWordCellTextBalanced(xml,0,5,3,text(r.quantity));xml=setWordCellTextBalanced(xml,0,6,3,text(r.expiryReanalysis));
@@ -80,7 +81,7 @@ export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
 }
 
 export async function generateComplaintAnnexV(year:number,rows:ComplaintDocumentRecord[]){
- const entries=readZip(await loadComplaintPntTemplate("02"));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo V:",undefined,"last");
+ const entries=readZip(await loadComplaintPntTemplate("02",DocumentType.COMPLAINT_ANNEX_V));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo V:",undefined,"last");
  xml=setWordCellTextBalanced(xml,0,1,0,`LISTADO DE RECLAMACIONES\n${year}`);
  xml=replaceWordRowsRangeBalanced(xml,0,4,9,({first})=>rows.map(r=>fillWordRowBalanced(first,[
   {text:text(r.qmsRecord.businessCode)},{text:r.complaintType==="PROVIDER"?"A proveedor":"De cliente"},{text:date(r.openedAt)},{text:text(r.partyName)},
