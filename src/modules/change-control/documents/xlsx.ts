@@ -95,7 +95,12 @@ function fixedRow(rowNumber: number, cells: string, height = "15") {
   return `<x:row r="${rowNumber}" ht="${height}" hidden="0" customHeight="1">${cells}</x:row>`;
 }
 
-function minimalWorkbookEntries(source: ZipEntry[], sheetXml: string, year: number): ZipEntry[] {
+function minimalWorkbookEntries(
+  source: ZipEntry[],
+  sheetXml: string,
+  year: number,
+  maxRow: number,
+): ZipEntry[] {
   const required = (name: string) => {
     const entry = source.find((item) => item.name === name);
     if (!entry) throw new Error(`Anexo VII: recurso no encontrado: ${name}`);
@@ -133,7 +138,7 @@ function minimalWorkbookEntries(source: ZipEntry[], sheetXml: string, year: numb
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <bookViews><workbookView/></bookViews>
   <sheets><sheet name="ANEXO VII ${year} IMPRIMIR" sheetId="1" r:id="rId1"/></sheets>
-  <definedNames><definedName name="_xlnm.Print_Area" localSheetId="0">'ANEXO VII ${year} IMPRIMIR'!$B$1:$I$40</definedName></definedNames>
+  <definedNames><definedName name="_xlnm.Print_Area" localSheetId="0">'ANEXO VII ${year} IMPRIMIR'!$B$1:$I${maxRow}</definedName></definedNames>
 </workbook>`),
     },
     {
@@ -228,7 +233,7 @@ export async function generateChangeAnnexVII(
     .replace(/<x:tableParts[\s\S]*?<\/x:tableParts>/g, "")
     .replace(/<x:mergeCells>[\s\S]*?<\/x:mergeCells>/, '<x:mergeCells><x:mergeCell ref="B2:I2" /></x:mergeCells>');
 
-  return writeZip(minimalWorkbookEntries(source, sheet, year));
+  return writeZip(minimalWorkbookEntries(source, sheet, year, Math.max(40, legendStart + 2)));
 }
 
 export function generateChangeSimpleList(rows: ChangeControlExportRow[]) {
