@@ -240,11 +240,11 @@ export async function updateCapaAction(
 
   if (parsed.values.status === "CLOSED") {
     const hasEvidence = existing.followups.some(
-      (item) => Boolean(item.evidenceReference?.trim() || item.description.trim()),
+      (item) => Boolean(item.evidenceReference?.trim()),
     );
     if (!hasEvidence) {
       return {
-        error: "No se puede cerrar operativamente la CAPA sin seguimiento/evidencia de ejecución.",
+        error: "No se puede cerrar operativamente la CAPA sin una evidencia de ejecución referenciada en al menos un seguimiento.",
       };
     }
   }
