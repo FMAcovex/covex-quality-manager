@@ -20,14 +20,14 @@ function parseCapaPlans(raw:string|null){
  try{
   const a=JSON.parse(raw);
   if(!Array.isArray(a))return [];
-  return a.map((x:any)=>({
+  return a.filter((x):x is Record<string,unknown>=>Boolean(x&&typeof x==="object")).map((x)=>({
     id:typeof x.id==="string"?x.id:undefined,
     actionType:enumValue(capaActionSchema,typeof x.actionType==="string"?x.actionType:null)??"CORRECTIVE",
     description:typeof x.description==="string"?x.description.trim():"",
     plannedExecutionDate:typeof x.plannedExecutionDate==="string"?x.plannedExecutionDate:"",
     responsible:typeof x.responsible==="string"?x.responsible:"",
     businessCapaCode:typeof x.businessCapaCode==="string"?x.businessCapaCode:""
-  })).filter((x:any)=>x.description);
+  })).filter((x)=>x.description);
  }catch{return [];}
 }
 export function parseComplaintForm(fd:FormData){
