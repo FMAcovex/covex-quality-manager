@@ -62,8 +62,14 @@ export async function createDeviationAction(
         data: {
           qmsRecordId: qmsRecord.id,
           departmentId: department.id,
-          departmentCodeSnapshot: department.code,
-          departmentNameSnapshot: department.name,
+          departmentCodeSnapshot:
+            existing.departmentId === department.id
+              ? existing.departmentCodeSnapshot ?? department.code
+              : department.code,
+          departmentNameSnapshot:
+            existing.departmentId === department.id
+              ? existing.departmentNameSnapshot ?? department.name
+              : department.name,
           issueDate: toDate(v.issueDate),
           eventDateTime: toDate(v.eventDateTime),
           detectedBy: v.detectedBy,
@@ -185,8 +191,8 @@ export async function updateDeviationAction(
   const oldSnapshot = {
     businessCode: existing.qmsRecord.businessCode,
     departmentId: existing.departmentId,
-    issueDate: existing.issueDate,
-    eventDateTime: existing.eventDateTime,
+    issueDate: existing.issueDate?.toISOString().slice(0, 10) ?? null,
+    eventDateTime: existing.eventDateTime?.toISOString().slice(0, 16) ?? null,
     detectedBy: existing.detectedBy,
     createdByText: existing.createdByText,
     materialProcessAffected: existing.materialProcessAffected,
@@ -230,7 +236,7 @@ export async function updateDeviationAction(
     dispositionQuantity: existing.dispositionQuantity,
     dispositionComments: existing.dispositionComments,
     clientNotification: existing.clientNotification,
-    closedAt: existing.closedAt,
+    closedAt: existing.closedAt?.toISOString().slice(0, 10) ?? null,
     status: existing.status,
     internalObservations: existing.internalObservations,
     signedDocumentAvailable: existing.signedDocumentAvailable,
