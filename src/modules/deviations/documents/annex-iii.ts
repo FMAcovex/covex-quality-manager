@@ -5,6 +5,7 @@ import {
   replaceWordRowWithCopies,
   setTriStateCell,
   setWordCellText,
+  setWordSdtCheckbox,
   transformWordCell,
 } from "@/lib/ooxml/xml";
 import { loadAnnexIIITemplate } from "@/modules/deviations/documents/templates";
@@ -80,13 +81,13 @@ function value(text: string | null | undefined) {
 }
 
 function markOrigin(xml: string, row: number, hasValue: boolean) {
-  return markFirstCheckbox(xml, 0, row, 0, hasValue);
+  return setWordSdtCheckbox(xml, 0, row, 0, hasValue);
 }
 
 function markClassification(xml: string, classification: string | null) {
-  xml = markFirstCheckbox(xml, 3, 1, 0, classification === "CRITICAL");
-  xml = markFirstCheckbox(xml, 3, 2, 0, classification === "MAJOR");
-  xml = markFirstCheckbox(xml, 3, 3, 0, classification === "MINOR");
+  xml = setWordSdtCheckbox(xml, 3, 1, 0, classification === "CRITICAL");
+  xml = setWordSdtCheckbox(xml, 3, 2, 0, classification === "MAJOR");
+  xml = setWordSdtCheckbox(xml, 3, 3, 0, classification === "MINOR");
   return xml;
 }
 
@@ -119,24 +120,24 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordCellText(xml, 0, 4, 4, value(record.detectedBy));
 
   xml = markOrigin(xml, 7, Boolean(record.finishedProductSystem));
-  xml = setWordCellText(xml, 0, 7, 1, value(record.finishedProductSystem));
-  xml = setWordCellText(xml, 0, 7, 3, value(record.productLot));
+  xml = setWordCellText(xml, 0, 7, 2, value(record.finishedProductSystem));
+  xml = setWordCellText(xml, 0, 7, 4, value(record.productLot));
   xml = setWordCellText(xml, 0, 8, 4, value(record.lotSize));
   xml = setWordCellText(xml, 0, 9, 4, value(record.affectedQuantity));
   xml = markOrigin(xml, 10, Boolean(record.client));
-  xml = setWordCellText(xml, 0, 10, 1, value(record.client));
+  xml = setWordCellText(xml, 0, 10, 2, value(record.client));
   xml = markOrigin(xml, 11, Boolean(record.rawOrPackagingMaterial));
-  xml = setWordCellText(xml, 0, 11, 1, value(record.rawOrPackagingMaterial));
-  xml = setWordCellText(xml, 0, 11, 3, value(record.materialLot));
+  xml = setWordCellText(xml, 0, 11, 2, value(record.rawOrPackagingMaterial));
+  xml = setWordCellText(xml, 0, 11, 4, value(record.materialLot));
   xml = setWordCellText(xml, 0, 12, 4, value(record.materialLotSize));
   xml = setWordCellText(xml, 0, 13, 4, value(record.materialAffectedQuantity));
   xml = markOrigin(xml, 14, Boolean(record.supplier));
-  xml = setWordCellText(xml, 0, 14, 1, value(record.supplier));
-  xml = setWordCellText(xml, 0, 14, 3, value(record.supplierLot));
+  xml = setWordCellText(xml, 0, 14, 2, value(record.supplier));
+  xml = setWordCellText(xml, 0, 14, 4, value(record.supplierLot));
   xml = markOrigin(xml, 15, Boolean(record.affectedEquipmentLine));
-  xml = setWordCellText(xml, 0, 15, 1, value(record.affectedEquipmentLine));
+  xml = setWordCellText(xml, 0, 15, 2, value(record.affectedEquipmentLine));
   xml = markOrigin(xml, 16, Boolean(record.otherOrigin));
-  xml = setWordCellText(xml, 0, 16, 1, value(record.otherOrigin));
+  xml = setWordCellText(xml, 0, 16, 2, value(record.otherOrigin));
   xml = setWordCellText(xml, 0, 18, 0, value(record.affectedDocumentation));
 
   xml = setWordCellText(xml, 1, 2, 0, value(record.whatHappened));
@@ -162,10 +163,10 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordCellText(xml, 2, 6, 0, value(record.investigation));
   xml = setTriStateCell(xml, 2, 7, 1, record.investigationConclusive);
   const methods = new Set(record.investigationMethods);
-  xml = markFirstCheckbox(xml, 2, 9, 0, methods.has("BRAINSTORMING"));
-  xml = markFirstCheckbox(xml, 2, 10, 0, methods.has("FIVE_WHYS"));
-  xml = markFirstCheckbox(xml, 2, 11, 0, methods.has("FTA"));
-  xml = markFirstCheckbox(xml, 2, 12, 0, methods.has("ISHIKAWA"));
+  xml = setWordSdtCheckbox(xml, 2, 9, 0, methods.has("BRAINSTORMING"));
+  xml = setWordSdtCheckbox(xml, 2, 10, 0, methods.has("FIVE_WHYS"));
+  xml = setWordSdtCheckbox(xml, 2, 11, 0, methods.has("FTA"));
+  xml = setWordSdtCheckbox(xml, 2, 12, 0, methods.has("ISHIKAWA"));
   xml = setWordCellText(xml, 2, 14, 0, value(record.rootCause));
   xml = setTriStateCell(xml, 2, 15, 1, record.recurrentRootCause);
   xml = setWordCellText(xml, 2, 16, 0, value(record.recurrenceDetails));
