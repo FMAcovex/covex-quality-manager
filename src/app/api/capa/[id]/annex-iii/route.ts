@@ -36,7 +36,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   type AnnexRecord = Parameters<typeof generateCapaAnnexIII>[0];
   const annexRecord: AnnexRecord = storedVersion
-    ? (capaSnapshotToAnnexRecord(storedVersion.snapshot) as AnnexRecord)
+    ? (capaSnapshotToAnnexRecord(storedVersion.snapshot) as unknown as AnnexRecord)
     : capa;
 
   try {
