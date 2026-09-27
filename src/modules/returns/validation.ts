@@ -9,7 +9,7 @@ const qualitySchema=z.enum(["COMPLETE","INCOMPLETE","REVIEW_REQUIRED"]);
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"&&v.trim()?v.trim():null;}
 function bool(fd:FormData,name:string){const v=text(fd,name);return v==="true"?true:v==="false"?false:null;}
 function en<T extends z.ZodTypeAny>(s:T,v:string|null){if(!v)return null;const r=s.safeParse(v);return r.success?r.data:null;}
-function products(raw:string|null):ReturnProductInput[]{if(!raw)return[];try{const a=JSON.parse(raw);if(!Array.isArray(a))return[];return a.map((x:any)=>({
+function products(raw:string|null):ReturnProductInput[]{if(!raw)return[];try{const a=JSON.parse(raw);if(!Array.isArray(a))return[];return a.filter((x):x is Record<string,unknown>=>Boolean(x&&typeof x==="object")).map((x)=>({
 id:typeof x.id==="string"?x.id:undefined,departmentId:typeof x.departmentId==="string"?x.departmentId:"",
 productType:en(productTypeSchema,typeof x.productType==="string"?x.productType:null)??"OTHER",otherProductType:typeof x.otherProductType==="string"?x.otherProductType:"",
 productNameCode:typeof x.productNameCode==="string"?x.productNameCode.trim():"",format:typeof x.format==="string"?x.format:"",lot:typeof x.lot==="string"?x.lot:"",
