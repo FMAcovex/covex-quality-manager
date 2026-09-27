@@ -290,3 +290,115 @@ export function appendWordCellTextBalanced(
     return tableXml.slice(0, row.start) + updatedRow + tableXml.slice(row.end);
   });
 }
+
+
+type BodyChild = { start: number; end: number; xml: string; text: string };
+
+function decodeBasicXml(value: string) {
+  return value
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&apos;", "'");
+}
+
+function visibleWordText(xml: string) {
+  return decodeBasicXml(
+    [...xml.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)]
+      .map((match) => match[1])
+      .join(" "),
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function directBodyChildren(documentXml: string): BodyChild[] {
+  const bodyOpen = documentXml.match(/<w:body(?:\s[^>]*)?>/);
+  if (!bodyOpen || bodyOpen.index === undefined) throw new Error("Word body not found.");
+  const bodyStart = bodyOpen.index + bodyOpen[0].length;
+  const bodyEnd = documentXml.indexOf("</w:body>", bodyStart);
+  if (bodyEnd < 0) throw new Error("Word body closing tag not found.");
+  const inner = documentXml.slice(bodyStart, bodyEnd);
+  const tagRe = /<\/?[A-Za-z0-9:_-]+(?:\s[^<>]*?)?\/?>/g;
+  const children: BodyChild[] = [];
+  let depth = 0;
+  let childStart = -1;
+  let match: RegExpExecArray | null;
+  while ((match = tagRe.exec(inner))) {
+    const token = match[0];
+    const closing = token.startsWith("</");
+    const selfClosing = token.endsWith("/>");
+    if (!closing && depth === 0) childStart = match.index;
+    if (closing) {
+      depth -= 1;
+      if (depth === 0 && childStart >= 0) {
+        const end = tagRe.lastIndex;
+        const xml = inner.slice(childStart, end);
+        children.push({ start: bodyStart + childStart, end: bodyStart + end, xml, text: visibleWordText(xml) });
+        childStart = -1;
+      }
+    } else if (!selfClosing) {
+      depth += 1;
+    } else if (depth === 0) {
+      const end = tagRe.lastIndex;
+      const xml = inner.slice(match.index, end);
+      children.push({ start: bodyStart + match.index, end: bodyStart + end, xml, text: visibleWordText(xml) });
+    }
+  }
+  return children;
+}
+
+export function extractWordBodyRange(
+  documentXml: string,
+  startMarker: string,
+  endMarker?: string,
+  startOccurrence: "first" | "last" = "last",
+) {
+  const children = directBodyChildren(documentXml);
+  const matchingStarts = children
+    .map((child, index) => ({ child, index }))
+    .filter(({ child }) => child.text.includes(startMarker));
+  const selected =
+    startOccurrence === "last" ? matchingStarts.at(-1) : matchingStarts[0];
+  if (!selected) throw new Error(`Word annex start marker not found: ${startMarker}`);
+  let endIndex = children.length;
+  if (endMarker) {
+    const found = children.findIndex(
+      (child, index) => index > selected.index && child.text.includes(endMarker),
+    );
+    if (found >= 0) endIndex = found;
+  }
+  const bodyOpen = documentXml.match(/<w:body(?:\s[^>]*)?>/);
+  if (!bodyOpen || bodyOpen.index === undefined) throw new Error("Word body not found.");
+  const bodyEnd = documentXml.indexOf("</w:body>", bodyOpen.index);
+  const sectPr = [...children]
+    .reverse()
+    .find((child) => /^<w:sectPr\b/.test(child.xml))?.xml ?? "";
+  const selectedXml = children
+    .slice(selected.index, endIndex)
+    .filter((child) => !/^<w:sectPr\b/.test(child.xml))
+    .map((child) => child.xml)
+    .join("");
+  const openEnd = bodyOpen.index + bodyOpen[0].length;
+  return (
+    documentXml.slice(0, openEnd) +
+    selectedXml +
+    sectPr +
+    documentXml.slice(bodyEnd)
+  );
+}
+
+export function setWordParagraphText(
+  documentXml: string,
+  paragraphIndex: number,
+  text: string,
+) {
+  return transformNth(documentXml, /<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, paragraphIndex, (paragraph) => {
+    const pPr = paragraph.match(/<w:pPr[\s\S]*?<\/w:pPr>/)?.[0] ?? "";
+    const open = paragraph.match(/^<w:p(?:\s[^>]*)?>/)?.[0] ?? "<w:p>";
+    return `${open}${pPr}${paragraphXml(text)}</w:p>`
+      .replace("<w:p><w:r>", "<w:r>")
+      .replace("</w:r></w:p></w:p>", "</w:r></w:p>");
+  });
+}
