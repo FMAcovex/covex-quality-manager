@@ -62,7 +62,6 @@ export default async function ChangeControlDetailPage({
   ]);
   if (!record) notFound();
 
-  const latestFollowup = record.followups[0] ?? null;
   const currentVersion = record.qmsRecord.versions.at(-1) ?? null;
   const relations = [
     ...record.qmsRecord.targetRelations.map((item) => ({
