@@ -228,6 +228,7 @@ export async function startNextVersion(
   reason: string | null | undefined,
   sourceEntityId?: string | null,
   source: HistorySource = "UI",
+  sequenceNumberOverride?: number,
 ) {
   const latest = await tx.qmsRecordVersion.findFirst({
     where: { qmsRecordId },
@@ -239,7 +240,10 @@ export async function startNextVersion(
       data: { frozenAt: new Date() },
     });
   }
-  const sequenceNumber = (latest?.sequenceNumber ?? -1) + 1;
+  const sequenceNumber = sequenceNumberOverride ?? ((latest?.sequenceNumber ?? -1) + 1);
+  if (latest && sequenceNumber <= latest.sequenceNumber) {
+    throw new Error("La nueva versión debe ser posterior a la versión actual.");
+  }
   return tx.qmsRecordVersion.create({
     data: {
       qmsRecordId,
