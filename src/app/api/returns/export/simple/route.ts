@@ -1,0 +1,4 @@
+import { getReturnExportRows } from "@/modules/returns/documents/export-data";
+import { generateReturnSimpleList } from "@/modules/returns/documents/xlsx";
+export const runtime="nodejs";
+export async function GET(request:Request){const u=new URL(request.url);const f={q:u.searchParams.get("q")??undefined,year:u.searchParams.get("year")??undefined,department:u.searchParams.get("department")??undefined,type:u.searchParams.get("type")??undefined,status:u.searchParams.get("status")??undefined,decision:u.searchParams.get("decision")??undefined};const buffer=generateReturnSimpleList(await getReturnExportRows(f));return new Response(new Uint8Array(buffer),{headers:{"Content-Type":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","Content-Disposition":'attachment; filename="Listado_Devoluciones.xlsx"',"Cache-Control":"no-store"}});}
