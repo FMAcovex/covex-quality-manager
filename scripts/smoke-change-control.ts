@@ -235,6 +235,23 @@ async function main() {
 
     console.log("Change Control lifecycle PostgreSQL smoke test passed.");
   } finally {
+    const changeRows = await prisma.changeControl.findMany({
+      where: { qmsRecordId: qmsRecord.id },
+      select: { id: true },
+    });
+    const changeIds = changeRows.map((item) => item.id);
+    if (changeIds.length) {
+      const followups = await prisma.changeControlFollowup.findMany({
+        where: { changeControlId: { in: changeIds } },
+        select: { id: true },
+      });
+      const followupIds = followups.map((item) => item.id);
+      if (followupIds.length) {
+        await prisma.changeControlTaskState.deleteMany({
+          where: { followupId: { in: followupIds } },
+        });
+      }
+    }
     await prisma.qmsRecordVersion.deleteMany({ where: { qmsRecordId: qmsRecord.id } });
     await prisma.changeControl.deleteMany({ where: { qmsRecordId: qmsRecord.id } });
     await prisma.qmsRecord.delete({ where: { id: qmsRecord.id } });
