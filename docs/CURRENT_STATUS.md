@@ -6,9 +6,9 @@ Fecha: 2026-09-27.
 Completado e integrado en `main`.
 
 ## Hito 1 — Núcleo técnico y base de datos
-Estado: **EN DESARROLLO** en `feature/hito-01-core`.
+Estado: **COMPLETADO Y VALIDADO POR CI**.
 
-### Implementado en la rama
+### Implementado
 - scaffold Next.js + TypeScript + React;
 - pnpm y configuración de calidad;
 - Prisma + PostgreSQL;
@@ -21,12 +21,13 @@ Estado: **EN DESARROLLO** en `feature/hito-01-core`.
 - shell visual inicial;
 - ruta `/deviations` sin funcionalidad falsa;
 - endpoint `/api/health`;
-- seeds ficticios/estructurales;
-- pruebas unitarias del núcleo de relaciones;
+- seeds estructurales/ficticios;
+- pruebas unitarias de identidad y relaciones;
 - GitHub Actions para validate/generate/lint/test/build.
 
 ### Validación
-El workflow base de CI ya está integrado en `main`. La validación definitiva del Hito 1 debe pasar por CI del PR. El entorno de esta sesión no dispone de acceso al registro npm, por lo que no se considera validado hasta obtener CI verde.
+CI del Hito 1: **verde**.
+Se han validado instalación de dependencias, Prisma, lint, tests y build antes del squash merge.
 
 ## Fuera de alcance todavía
 - formulario completo de Desviaciones;
@@ -40,4 +41,4 @@ El workflow base de CI ya está integrado en `main`. La validación definitiva d
 - alertas.
 
 ## Próximo paso
-Abrir PR del Hito 1, corregir cualquier incidencia detectada por CI y fusionar únicamente con comprobaciones verdes.
+Hito 2 — Desviaciones completas: listado, filtros, buscador, alta, edición, expediente, acciones inmediatas, investigación, impacto, CAPA propuestas, seguimientos e historial.
