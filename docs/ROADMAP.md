@@ -142,3 +142,27 @@ Criterio de salida:
 - una edición ordinaria no crea una versión funcional;
 - una reapertura de Desviación y un nuevo seguimiento CAPA sí la crean;
 - snapshots previos permanecen inmutables.
+
+
+### Hito 7 — Controles de cambios
+Estado de implementación:
+- solicitud y dictamen GC-00/003/03;
+- plan de ejecución 1:N;
+- seguimiento documental 00/01/02…;
+- versionado funcional V00 inicial + V01/V02… por seguimiento;
+- ejecución, eficacia y cierre separados;
+- cierre justificado sin ejecución;
+- Anexos III, IV y V;
+- Anexo VII y listado simple;
+- indicadores y tendencia 5 años;
+- importación histórica 2025–2026 con dry-run e idempotencia;
+- plantillas controladas por checksum;
+- pruebas PostgreSQL e integración CI.
+
+Criterio de salida:
+- flujo completo ejecutable desde UI;
+- seguimientos históricos no se sobrescriben;
+- documentos regenerables desde el estado persistido;
+- listado anual y operativo descargables;
+- indicadores calculados desde PostgreSQL;
+- importador no inventa información histórica.
