@@ -33,6 +33,10 @@ export default async function DeviationIndicatorsPage({
   };
   const data = await getDeviationAnalytics(filters);
   const { current, previous, trend, selectedYear } = data;
+  const compare = (currentValue: number | null, previousValue: number | null, suffix = "") =>
+    previous.dataAvailable
+      ? deltaLabel(currentValue, previousValue, suffix)
+      : "Año anterior sin datos cargados";
 
   return (
     <section className="workspace analytics-workspace">
@@ -83,46 +87,46 @@ export default async function DeviationIndicatorsPage({
       </div>
 
       <div className="kpi-grid primary-kpis">
-        <KpiCard title="Total abierto en el año" value={String(current.total)} comparison={deltaLabel(current.total, previous.total)} />
+        <KpiCard title="Total abierto en el año" value={String(current.total)} comparison={compare(current.total, previous.total)} />
         <KpiCard
           title="Cierre en ≤30 días"
           value={formatPercent(current.closure.rate)}
           detail={`${current.closure.within30} de ${current.closure.total} cierres evaluables`}
-          comparison={deltaLabel(current.closure.rate, previous.closure.rate, " pp")}
+          comparison={compare(current.closure.rate, previous.closure.rate, " pp")}
           caution={current.closure.total === 0}
         />
         <KpiCard
           title="Mediana de cierre"
           value={current.closure.medianDays === null ? "—" : `${formatNumber(current.closure.medianDays)} días`}
           detail={`${current.closure.total} cierres evaluables`}
-          comparison={deltaLabel(current.closure.medianDays, previous.closure.medianDays, " d")}
+          comparison={compare(current.closure.medianDays, previous.closure.medianDays, " d")}
         />
         <KpiCard
           title="Recurrencia"
           value={formatPercent(current.recurrence.rate)}
           detail={`${current.recurrence.numerator} de ${current.recurrence.denominator} evaluadas · cobertura ${formatPercent(current.recurrence.coverage)}`}
-          comparison={deltaLabel(current.recurrence.rate, previous.recurrence.rate, " pp")}
+          comparison={compare(current.recurrence.rate, previous.recurrence.rate, " pp")}
           caution={current.recurrence.missing > 0}
         />
         <KpiCard
           title="Afecta a producto terminado"
           value={formatPercent(current.affectsProduct.rate)}
           detail={`${current.affectsProduct.numerator} de ${current.affectsProduct.denominator} evaluadas · cobertura ${formatPercent(current.affectsProduct.coverage)}`}
-          comparison={deltaLabel(current.affectsProduct.rate, previous.affectsProduct.rate, " pp")}
+          comparison={compare(current.affectsProduct.rate, previous.affectsProduct.rate, " pp")}
           caution={current.affectsProduct.missing > 0}
         />
       </div>
 
       <div className="kpi-grid secondary-kpis">
-        <KpiCard title="Críticas" value={String(current.critical)} comparison={deltaLabel(current.critical, previous.critical)} />
-        <KpiCard title="Mayores" value={String(current.major)} comparison={deltaLabel(current.major, previous.major)} />
-        <KpiCard title="Abiertas actualmente" value={String(current.openCurrent)} detail={`Cohorte abierta en ${selectedYear}`} comparison={deltaLabel(current.openCurrent, previous.openCurrent)} />
-        <KpiCard title="Con CAPA" value={String(current.withCapa)} detail={formatPercent(current.withCapaRate)} comparison={deltaLabel(current.withCapaRate, previous.withCapaRate, " pp")} />
+        <KpiCard title="Críticas" value={String(current.critical)} comparison={compare(current.critical, previous.critical)} />
+        <KpiCard title="Mayores" value={String(current.major)} comparison={compare(current.major, previous.major)} />
+        <KpiCard title="Abiertas actualmente" value={String(current.openCurrent)} detail={`Cohorte abierta en ${selectedYear}`} comparison={compare(current.openCurrent, previous.openCurrent)} />
+        <KpiCard title="Con CAPA" value={String(current.withCapa)} detail={formatPercent(current.withCapaRate)} comparison={compare(current.withCapaRate, previous.withCapaRate, " pp")} />
         <KpiCard
           title="Datos a revisar"
           value={String(current.data.review)}
           detail={`Completitud KPI: ${formatPercent(current.data.completeness)}`}
-          comparison={deltaLabel(current.data.completeness, previous.data.completeness, " pp")}
+          comparison={compare(current.data.completeness, previous.data.completeness, " pp")}
           caution={current.data.review > 0}
         />
       </div>
