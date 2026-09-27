@@ -133,3 +133,23 @@ Reglas:
 - El cierre operativo y la eficacia de CAPA pueden pertenecer a versiones diferentes. Una CAPA puede estar Cerrada con eficacia Pendiente y alcanzar el cierre efectivo en un seguimiento posterior.
 - Un documento generado puede quedar vinculado a la versión funcional exacta desde la que se generó.
 - Si un expediente histórico anterior al Hito 6.1 no dispone de snapshots previos, no se reconstruyen versiones ficticias. Se crea un baseline histórico explícitamente identificado y el versionado exacto continúa desde ese punto.
+
+
+## D-028 — Controles de cambios: seguimiento, ejecución y cierre
+El módulo de Controles de cambios reutiliza la plataforma común QMS y mantiene separados:
+- solicitud;
+- dictamen/aprobación;
+- plan de ejecución;
+- ejecución;
+- comprobación de eficacia;
+- cierre efectivo.
+
+Reglas cerradas:
+- la solicitud y el dictamen inicial quedan preservados en la versión funcional V00;
+- la numeración documental de seguimientos del PNT comienza en 00;
+- para evitar colisión con la V00 inicial, el seguimiento documental 00 crea la versión funcional V01, el seguimiento 01 crea V02, etc.;
+- una edición ordinaria no crea una versión nueva: actualiza la versión funcional vigente y se registra en ChangeHistory;
+- un cambio ejecutado solo puede cerrarse con eficacia Aceptable;
+- puede cerrarse sin ejecución si se documenta expresamente el cierre sin implantación y su conclusión;
+- si el cambio sigue abierto, el seguimiento debe indicar motivo y próxima fecha;
+- los históricos importados no reconstruyen artificialmente estados intermedios que el listado no conserva.
