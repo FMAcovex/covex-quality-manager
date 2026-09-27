@@ -147,7 +147,7 @@ export function ChangeFollowupForm({
               actualDate: "",
               evidenceComment: "",
               isNew: true,
-            },
+            } satisfies ChangeFollowupTaskInput,
           ])
         }
       >
