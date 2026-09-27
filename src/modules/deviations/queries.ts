@@ -43,17 +43,44 @@ export async function getDeviationList(filters: DeviationListFilters) {
   if (["NOT_EVALUATED", "IN_TIME", "OUT_OF_TIME", "NA"].includes(filters.deadline ?? "")) {
     and.push({ deadlineStatus: filters.deadline as "NOT_EVALUATED" | "IN_TIME" | "OUT_OF_TIME" | "NA" });
   }
-  if (filters.capa === "yes") and.push({ capaPlans: { some: {} } });
-  if (filters.capa === "no") and.push({ capaPlans: { none: {} } });
+  if (filters.capa === "yes") {
+    and.push({ OR: [{ capaRequired: true }, { capaPlans: { some: {} } }] });
+  }
+  if (filters.capa === "no") {
+    and.push({
+      AND: [
+        { OR: [{ capaRequired: false }, { capaRequired: null }] },
+        { capaPlans: { none: {} } },
+      ],
+    });
+  }
 
   if (filters.measures === "none") {
-    and.push({ immediateActions: { none: {} }, capaPlans: { none: {} } });
+    and.push({
+      immediateActions: { none: {} },
+      AND: [
+        { OR: [{ capaRequired: false }, { capaRequired: null }] },
+        { capaPlans: { none: {} } },
+      ],
+    });
   } else if (filters.measures === "immediate") {
-    and.push({ immediateActions: { some: {} }, capaPlans: { none: {} } });
+    and.push({
+      immediateActions: { some: {} },
+      AND: [
+        { OR: [{ capaRequired: false }, { capaRequired: null }] },
+        { capaPlans: { none: {} } },
+      ],
+    });
   } else if (filters.measures === "capa") {
-    and.push({ immediateActions: { none: {} }, capaPlans: { some: {} } });
+    and.push({
+      immediateActions: { none: {} },
+      OR: [{ capaRequired: true }, { capaPlans: { some: {} } }],
+    });
   } else if (filters.measures === "both") {
-    and.push({ immediateActions: { some: {} }, capaPlans: { some: {} } });
+    and.push({
+      immediateActions: { some: {} },
+      OR: [{ capaRequired: true }, { capaPlans: { some: {} } }],
+    });
   }
 
   const where: Prisma.DeviationWhereInput = and.length ? { AND: and } : {};
