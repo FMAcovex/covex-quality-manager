@@ -523,3 +523,34 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 }
 .column-options label:hover { background:#f6f9fc; }
 .column-options small { color:var(--muted); font-size:10px; text-transform:uppercase; }
+
+
+/* Hito 7 — Controles de Cambios */
+.change-filters { grid-template-columns: repeat(6, minmax(120px, 1fr)) auto; }
+.change-table { min-width: 2250px; }
+.change-table .long-cell { min-width: 300px; max-width: 440px; white-space: normal; }
+.change-task-row { grid-template-columns: 1fr 2.5fr 1.2fr 1fr auto; align-items: end; }
+.followup-task-table { min-width: 1700px; margin-bottom: 10px; }
+.followup-task-table select,
+.followup-task-table input,
+.followup-task-table textarea {
+  width: 100%;
+  min-width: 120px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 8px;
+  background: #fff;
+}
+.followup-task-table textarea { min-height: 62px; resize: vertical; }
+.followup-new-task td { background: #f4f8ff; }
+.followup-new-task td:first-child { border-left: 3px solid #3578c6; }
+.badge.new-task { background: #e9f2ff; color: #1c5da6; border-color: #bcd4f3; }
+.followup-close-grid { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.followup-state-table { margin-top: 12px; }
+@media (max-width: 1200px) {
+  .change-filters { grid-template-columns: repeat(3, 1fr); }
+  .change-task-row { grid-template-columns: 1fr 2fr 1fr; }
+}
+@media (max-width: 760px) {
+  .change-filters, .change-task-row { grid-template-columns: 1fr; }
+}
