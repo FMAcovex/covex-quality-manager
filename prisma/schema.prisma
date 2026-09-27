@@ -307,6 +307,7 @@ model QmsRecord {
   versions           QmsRecordVersion[]
   generatedDocuments GeneratedDocument[]
   linkedCapaPlans    DeviationCapaPlan[] @relation("LinkedCapaRecord")
+  complaintLinkedCapaPlans ComplaintCapaPlan[] @relation("ComplaintLinkedCapaRecord")
   historicalImports  HistoricalImportRow[]
 
   @@unique([recordType, businessCode])
@@ -858,6 +859,7 @@ model Complaint {
   createdAt                  DateTime                     @default(now())
   updatedAt                  DateTime                     @updatedAt
   followups                  ComplaintFollowup[]
+  capaPlans                  ComplaintCapaPlan[]
 
   @@index([departmentId])
   @@index([openedAt])
@@ -868,6 +870,26 @@ model Complaint {
   @@index([partyName])
   @@index([includeInKpi])
   @@index([closedAt])
+}
+
+model ComplaintCapaPlan {
+  id                   String             @id @default(uuid())
+  complaintId          String
+  complaint            Complaint          @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  actionType           CapaActionType
+  description          String
+  plannedExecutionDate DateTime?          @db.Date
+  responsible          String?
+  businessCapaCode     String?
+  linkedCapaRecordId   String?
+  linkedCapaRecord     QmsRecord?         @relation("ComplaintLinkedCapaRecord", fields: [linkedCapaRecordId], references: [id], onDelete: SetNull)
+  proposalStatus       CapaProposalStatus @default(PROPOSED)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([complaintId])
+  @@index([linkedCapaRecordId])
+  @@index([plannedExecutionDate])
 }
 
 model ComplaintFollowup {
