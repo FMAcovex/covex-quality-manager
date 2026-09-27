@@ -6,34 +6,48 @@ Fecha: 2026-09-27.
 - Hito 0 — Especificación y arquitectura.
 - Hito 1 — Núcleo técnico y base de datos.
 - Hito 2 — Desviaciones completas.
+- Hito 3 — Documentos y exportaciones.
 
 ## Hito 3 — Documentos y exportaciones
-Estado: **EN DESARROLLO** en `feature/hito-03-documents`.
+Estado: **COMPLETADO FUNCIONALMENTE; VALIDACIÓN FINAL EN CI**.
 
-Implementado en la rama:
-- motor OOXML sin dependencias externas de Office;
-- uso de las plantillas oficiales auditadas v06 con control SHA-256;
-- Anexo III DOCX individual desde el expediente;
-- filas repetibles para acciones inmediatas y CAPA;
-- preservación de las zonas de firma del Anexo III;
-- Anexo V XLSX anual con hoja detallada y TABLA OFICIAL;
-- capacidad controlada del Anexo V v06: 61 registros;
-- listado simple XLSX respetando filtros;
+Implementado:
+- generación de Anexo III DOCX individual desde el expediente;
+- mapeo a la estructura A–M del Anexo III v06;
+- casillas Word/control de contenido, acciones inmediatas y CAPA repetibles;
+- zonas de firma preservadas;
+- generación de Anexo V XLSX anual desde la plantilla v06;
+- hoja detallada y TABLA OFICIAL cumplimentadas desde los mismos registros;
+- tabla anual extendida hasta la capacidad controlada de la plantilla (61 registros);
+- error explícito si se supera esa capacidad, sin truncar registros;
+- listado simple XLSX con las columnas operativas y filtros activos;
 - listado simple anual;
-- registro de generación del Anexo III;
+- menú Exportar en la pantalla de Desviaciones;
+- registro de generaciones de Anexo III;
+- plantillas versionadas lógicamente y verificadas por SHA-256;
+- error explícito si el expediente solicita una revisión de plantilla no instalada;
+- saneado de autores, rutas SharePoint y metadatos heredados en los documentos generados;
+- motor OOXML propio basado en ZIP/XML, sin requerir Microsoft Office en servidor;
 - instalación local de plantillas mediante `pnpm templates:install`;
-- controles de exportación en la interfaz.
+- pruebas unitarias del motor ZIP/XML, listado simple, controles Word, metadatos y extensión de filas del Anexo V;
+- revisión visual independiente con datos ficticios sobre las plantillas oficiales v06.
 
-Pendiente antes del cierre:
-- CI completo;
-- corrección de incidencias detectadas por CI;
-- prueba de generación sobre las plantillas reales;
-- render y revisión visual del DOCX/XLSX de prueba.
+### Plantillas auditadas
+- Anexo III Informe Desviaciones 06.docx.
+- Anexo V Listado de Desviaciones 06.xlsx.
+
+Los binarios controlados se instalan localmente y no se versionan en GitHub. El instalador solo acepta las copias auditadas mediante SHA-256.
+
+### Nota histórica
+La revisión documental aplicable a los expedientes de 2025 debe verificarse durante el Hito 4 antes de considerar una exportación histórica como Anexo V oficial. No se asignará silenciosamente una versión actual a históricos sin verificarla.
 
 ## Fuera de alcance todavía
 - importación histórica 2025/2026;
 - KPI;
-- módulo CAPA completo;
+- expediente CAPA completo;
 - Entra;
 - SharePoint automático;
 - alertas.
+
+## Próximo paso
+Hito 4 — Importación histórica 2025–2026: dry-run, validación, duplicados, calidad del dato y trazabilidad de importación.
