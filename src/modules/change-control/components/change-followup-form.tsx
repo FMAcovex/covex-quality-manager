@@ -35,7 +35,7 @@ export function ChangeFollowupForm({
 }) {
   const initial = useMemo<ChangeFollowupTaskInput[]>(
     () =>
-      tasks.map((item) => ({
+      tasks.map<ChangeFollowupTaskInput>((item) => ({
         taskId: item.id,
         departmentId: item.departmentId ?? "",
         description: item.description,
