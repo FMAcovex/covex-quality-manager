@@ -11,7 +11,6 @@ export type HistoricalChangeRow={
 };
 function str(v:XlsxCellValue){if(v===null||v===undefined)return null;const s=String(v).trim();return s||null;}
 function date(v:XlsxCellValue){
-  if(v instanceof Date)return v;
   if(typeof v==="number"){const d=new Date(Math.round((v-25569)*86400*1000));return Number.isNaN(d.valueOf())?null:d;}
   const s=str(v);if(!s)return null;
   const m=s.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);if(!m)return null;
