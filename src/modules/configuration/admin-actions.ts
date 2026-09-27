@@ -17,7 +17,7 @@ function json(value:unknown){return JSON.parse(JSON.stringify(value??null));}
 async function logChange(entityType:string,entityKey:string,action:string,oldValue:unknown,newValue:unknown,fd:FormData){
   await prisma.configurationChange.create({data:{entityType,entityKey,action,oldValue:oldValue===undefined?undefined:json(oldValue),newValue:newValue===undefined?undefined:json(newValue),changedByText:actor(fd),reason:reason(fd)}});
   revalidatePath("/settings/history");
-  revalidatePath("/settings/catalogs");
+  revalidatePath("/settings");
 }
 
 export async function createDepartmentAction(fd:FormData){
@@ -78,7 +78,7 @@ export async function cloneFormVersionAction(formId:string,fd:FormData){
     return form;
   });
   await logChange("FormVersion",`${source.module}:${versionCode}`,"CLONE",source,created,fd);
-  revalidatePath("/settings/catalogs");
+  revalidatePath("/settings/versions");
 }
 
 export async function activateFormVersionAction(id:string,fd:FormData){
@@ -93,7 +93,7 @@ export async function activateFormVersionAction(id:string,fd:FormData){
   });
   const updated=await prisma.formVersion.findUniqueOrThrow({where:{id}});
   await logChange("FormVersion",`${target.module}:${target.versionCode}`,"ACTIVATE",target,updated,fd);
-  revalidatePath("/settings/catalogs");
+  revalidatePath("/settings/versions");
 }
 
 export async function registerTemplateVersionAction(fd:FormData){
@@ -119,7 +119,7 @@ export async function registerTemplateVersionAction(fd:FormData){
   if(filePath&&(!checksum||!/^[a-fA-F0-9]{64}$/.test(checksum)))throw new Error("Una plantilla gestionada por ruta requiere SHA-256 válido.");
   const created=await prisma.templateVersion.create({data:{module:moduleValue,documentType:documentTypeValue,versionCode,effectiveFrom:new Date(effectiveFrom),filePath,fileName,mimeType,fileData,fileSize,checksum,isActive:false}});
   await logChange("TemplateVersion",`${moduleRaw}:${docRaw}:${versionCode}`,"REGISTER",null,{...created,fileData:fileData?"[binary]":null},fd);
-  revalidatePath("/settings/catalogs");
+  revalidatePath("/settings/versions");
 }
 
 export async function activateTemplateVersionAction(id:string,fd:FormData){
@@ -134,7 +134,7 @@ export async function activateTemplateVersionAction(id:string,fd:FormData){
   const updated=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
   const summary=(v:typeof target)=>({id:v.id,module:v.module,documentType:v.documentType,versionCode:v.versionCode,effectiveFrom:v.effectiveFrom,effectiveTo:v.effectiveTo,isActive:v.isActive,fileName:v.fileName,fileSize:v.fileSize,checksum:v.checksum});
   await logChange("TemplateVersion",`${target.module}:${target.documentType}:${target.versionCode}`,"ACTIVATE",summary(target),summary(updated),fd);
-  revalidatePath("/settings/catalogs");
+  revalidatePath("/settings/versions");
 }
 
 function parseParameter(type:ParameterValueType,raw:string){
@@ -149,7 +149,7 @@ export async function updateParameterAction(id:string,fd:FormData){
   const value=parseParameter(current.valueType,text(fd,"value"));
   const updated=await prisma.appParameter.update({where:{id},data:{value:json(value),isActive:bool(fd,"isActive")}});
   await logChange("AppParameter",`${current.scope}:${current.key}`,"UPDATE",current,updated,fd);
-  revalidatePath("/settings/catalogs");
+  revalidatePath("/settings/parameters");
 }
 
 export async function updateAlertRuleAction(id:string,fd:FormData){
@@ -161,7 +161,7 @@ export async function updateAlertRuleAction(id:string,fd:FormData){
   const kind=Object.values(AlertRuleKind).includes(kindRaw as AlertRuleKind)?kindRaw as AlertRuleKind:current.kind;
   const updated=await prisma.alertRule.update({where:{id},data:{leadDays,severity,kind,isActive:bool(fd,"isActive")}});
   await logChange("AlertRule",current.key,"UPDATE",current,updated,fd);
-  revalidatePath("/settings/catalogs");
+  revalidatePath("/settings/alerts");
 }
 
 
