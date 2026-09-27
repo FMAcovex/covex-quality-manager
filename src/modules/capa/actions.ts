@@ -340,14 +340,27 @@ export async function updateCapaAction(
 
   try {
     await prisma.$transaction(async (tx) => {
-      await ensureInitialVersion(
-        tx,
-        existing.qmsRecordId,
-        snapshotJson(serializeCapaVersion(existing)),
-        parsed.actor,
-        "SYSTEM",
-        "Baseline CAPA antes de activar el versionado funcional",
-      );
+      const storedVersion = await tx.qmsRecordVersion.findFirst({
+        where: { qmsRecordId: existing.qmsRecordId },
+        orderBy: { sequenceNumber: "desc" },
+      });
+      if (!storedVersion) {
+        const historicalSequence = Math.max(
+          0,
+          ...existing.followups.map((item) => item.sequenceNumber),
+        );
+        await tx.qmsRecordVersion.create({
+          data: {
+            qmsRecordId: existing.qmsRecordId,
+            sequenceNumber: historicalSequence,
+            kind: "HISTORICAL_STATE",
+            snapshot: snapshotJson(serializeCapaVersion(existing)),
+            reason: "Baseline histórico al activar Hito 6.1; no reconstruye versiones anteriores no almacenadas",
+            createdByText: parsed.actor,
+            source: "SYSTEM",
+          },
+        });
+      }
 
       await tx.qmsRecord.update({
         where: { id: existing.qmsRecordId },
