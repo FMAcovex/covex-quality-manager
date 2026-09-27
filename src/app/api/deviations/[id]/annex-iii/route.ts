@@ -6,9 +6,6 @@ import { TemplateUnavailableError } from "@/modules/deviations/documents/templat
 
 export const runtime = "nodejs";
 
-function body(buffer: Buffer) {
-  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-}
 function safe(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "_");
 }
