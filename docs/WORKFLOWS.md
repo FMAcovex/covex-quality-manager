@@ -174,3 +174,45 @@ La importación debe ser idempotente o disponer de clave de importación para ev
 - Listado simple: vista operativa ampliada, opcionalmente filtrada.
 
 Los Anexos V históricos se generan desde el snapshot exacto de la versión seleccionada.
+
+
+## W-19 — Reclamación
+
+1. Abrir expediente R/X/NNN/AAAA.
+2. Registrar cliente/proveedor y elemento afectado.
+3. Investigar hechos, impacto y causa raíz.
+4. Clasificar Crítica/Mayor/Menor/Sin impacto GMP.
+5. Definir resolución y CAPA cuando proceda.
+6. Registrar comunicación/respuesta.
+7. Evaluar eficacia si aplica.
+8. Cerrar con conclusión y fecha.
+9. Mantener relaciones con devolución, desviación, CAPA, cambio o retirada.
+
+Las CAPA propuestas pueden convertirse directamente en un expediente CAPA real conservando relación QMS.
+
+## W-20 — Devolución
+
+1. Abrir DEV/LG-xx/YYY/AAAA.
+2. Registrar cliente/entidad, motivo y documentación.
+3. Añadir uno o varios productos.
+4. Evaluar criterios de reintegración SI/NO/N.A.
+5. Completar evaluación adicional para termolábiles cuando aplique.
+6. GC/DT decide Aceptada/Rechazada y destino final.
+7. Registrar destrucción/trazabilidad cuando corresponda.
+8. Cerrar el expediente.
+9. Relacionar con reclamación/desviación/CAPA/retirada cuando exista expediente origen o derivado.
+
+## W-21 — Documentos de Reclamaciones y Devoluciones
+
+Reclamaciones:
+- Anexo III: informe interno Parte I + Parte II;
+- Anexo IV: respuesta externa;
+- Anexo V: listado anual.
+
+Devoluciones:
+- Anexo III: formulario de devolución;
+- Anexo IV: hoja de devolución, una por producto;
+- Anexo V: declaración de conservación del cliente;
+- Anexo VI: listado anual.
+
+Los anexos se extraen del PNT controlado instalado y se rellenan sin rediseñar su estructura.
