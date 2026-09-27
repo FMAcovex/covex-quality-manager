@@ -7,51 +7,62 @@ Fecha: 2026-09-27.
 - Hito 1 — Núcleo técnico y base de datos.
 - Hito 2 — Desviaciones completas.
 - Hito 3 — Documentos y exportaciones.
+- Hito 4 — Importación histórica 2025–2026.
 
-## Hito 3 — Documentos y exportaciones
+## Hito 4 — Importación histórica 2025–2026
 Estado: **COMPLETADO Y VALIDADO**.
 
-Implementado:
-- generación de Anexo III DOCX individual desde el expediente;
-- mapeo a la estructura A–M del Anexo III v06;
-- casillas Word/control de contenido, acciones inmediatas y CAPA repetibles;
-- zonas de firma preservadas;
-- generación de Anexo V XLSX anual desde la plantilla v06;
-- hoja detallada y TABLA OFICIAL cumplimentadas desde los mismos registros;
-- tabla anual extendida hasta la capacidad controlada de la plantilla (61 registros);
-- error explícito si se supera esa capacidad, sin truncar registros;
-- listado simple XLSX con las columnas operativas y filtros activos;
-- listado simple anual;
-- menú Exportar en la pantalla de Desviaciones;
-- registro de generaciones de Anexo III;
-- plantillas versionadas lógicamente y verificadas por SHA-256;
-- error explícito si el expediente solicita una revisión de plantilla no instalada;
-- saneado de autores, rutas SharePoint y metadatos heredados en los documentos generados;
-- motor OOXML propio basado en ZIP/XML, sin requerir Microsoft Office en servidor;
-- instalación local de plantillas mediante `pnpm templates:install`;
-- pruebas unitarias del motor ZIP/XML, listado simple, controles Word, metadatos y extensión de filas del Anexo V;
-- revisión visual independiente con datos ficticios sobre las plantillas oficiales v06.
+### Implementado
+- lector XLSX OOXML reutilizando el motor ZIP propio;
+- mapeos explícitos y separados para 2025 y 2026;
+- catálogo histórico de departamentos recuperado del propio libro;
+- extracción conservadora de códigos AC/AP;
+- dry-run por defecto;
+- detección de duplicados dentro de la fuente y contra PostgreSQL;
+- clasificación de incidencias de calidad del dato;
+- importación real solo con confirmación explícita;
+- trazabilidad mediante lote y fila de importación;
+- snapshot original de cada fila;
+- historial con origen `IMPORT`;
+- SHA-256 del libro fuente;
+- informes JSON fuera de Git;
+- prueba de idempotencia dry-run -> apply -> dry-run;
+- corrección y test del caso OOXML de celdas vacías auto-cerradas.
 
-### Plantillas auditadas
-- Anexo III Informe Desviaciones 06.docx.
-- Anexo V Listado de Desviaciones 06.xlsx.
+### Dry-run sobre la copia real revisada
+Fuente: `000 LISTADO GENERAL DESVIACIONES.xlsx`.
+SHA-256: `c11558835752558d1e3858a5eb11a1ce829c42410e19067aa109bbe76527af02`.
 
-Los binarios controlados se instalan localmente y no se versionan en GitHub. El instalador solo acepta las copias auditadas mediante SHA-256.
+Resultado de lectura:
+- 87 expedientes;
+- 53 de 2025;
+- 34 de 2026;
+- 0 códigos duplicados dentro de las hojas 2025/2026;
+- 2 registros 2026 sin recurrencia informada;
+- 2 registros 2026 sin afectación a producto terminado informada;
+- 2 registros 2026 sin medidas adoptadas informadas;
+- 2 expedientes GC-12 cuyo nombre de departamento no figura en el catálogo embebido del libro;
+- el listado 2026 no contiene un campo equivalente al control de cierre en plazo de 2025 ni estado de documento firmado.
 
-### Nota histórica
-La revisión documental aplicable a los expedientes de 2025 debe verificarse durante el Hito 4 antes de considerar una exportación histórica como Anexo V oficial. No se asignará silenciosamente una versión actual a históricos sin verificarla.
+Todos los históricos se marcan como `REVIEW_REQUIRED` porque el listado general no equivale al Anexo III completo. Los campos ausentes permanecen ausentes; no se infieren.
+
+### Seguridad de la importación
+La ejecución sin `--apply` no escribe expedientes.
+La importación real requiere además `--confirm APPLY_2025_2026`.
+Una segunda lectura después de aplicar el mismo fichero detecta los registros existentes como duplicados y no los vuelve a crear.
 
 ### Validación final
 - PostgreSQL 16 real;
-- `prisma db push`, seed y smoke test;
+- `prisma db push`, seed y smoke test base;
+- smoke test de importación histórica e idempotencia;
 - Prisma validate/generate;
 - lint;
-- 9 ficheros de test / 15 tests superados;
-- build Next.js de producción superado;
-- revisión visual independiente del Anexo III y Anexo V generados con datos ficticios.
+- tests;
+- build Next.js de producción;
+- dry-run independiente contra la copia real del libro.
 
 ## Fuera de alcance todavía
-- importación histórica 2025/2026;
+- enriquecimiento histórico leyendo cada Anexo III individual;
 - KPI;
 - expediente CAPA completo;
 - Entra;
@@ -59,4 +70,4 @@ La revisión documental aplicable a los expedientes de 2025 debe verificarse dur
 - alertas.
 
 ## Próximo paso
-Hito 4 — Importación histórica 2025–2026: dry-run, validación, duplicados, calidad del dato y trazabilidad de importación.
+Hito 5 — Indicadores: KPI desde PostgreSQL, comparativa anual, tendencias de 5 años y filtros alineados con el dashboard GMP.
