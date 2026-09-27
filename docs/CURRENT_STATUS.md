@@ -8,38 +8,67 @@ Fecha: 2026-09-27.
 - Hito 2 — Desviaciones completas.
 - Hito 3 — Documentos y exportaciones.
 - Hito 4 — Importación histórica 2025–2026.
+- Hito 5 — Indicadores de Desviaciones.
 
 ## Hito 5 — Indicadores
-Estado: **EN DESARROLLO** en `feature/hito-05-indicators`.
+Estado: **COMPLETADO Y VALIDADO**.
 
-### Definiciones alineadas con el dashboard KPI vigente
-- volumen, área, clasificación, origen, recurrencia, afectación a producto y CAPA: año de apertura;
-- cierre ≤30 días: año de cierre y desviaciones con apertura/cierre válidos;
-- mediana de cierre: misma población que el cumplimiento de cierre;
-- recurrencia: Sí / (Sí + No), sin convertir no evaluados en No;
-- afectación a producto terminado: Sí / (Sí + No);
-- abiertas actualmente: fotografía actual de la cohorte del año de apertura;
-- completitud KPI: apertura, clasificación, recurrencia Sí/No, afectación Sí/No y procedencia/origen informados.
-
-### Implementado en la rama
-- pestaña Indicadores integrada en Desviaciones;
+### Implementado
+- pestaña Indicadores integrada dentro de Desviaciones;
+- fuente única PostgreSQL;
 - filtros por año, departamento, clasificación, procedencia/origen, CAPA y estado;
 - tarjetas KPI con comparación frente al año anterior;
-- cobertura explícita en recurrencia y afectación;
-- total, cierre ≤30 días, mediana, recurrencia, afectación PT;
-- críticas, mayores, abiertas actualmente, con CAPA y datos a revisar;
+- total abierto en el año;
+- cierre en ≤30 días;
+- mediana de días de cierre;
+- recurrencia;
+- afectación a producto terminado;
+- críticas y mayores;
+- abiertas actualmente;
+- desviaciones con CAPA;
+- control de completitud KPI;
 - aperturas mensuales frente al año anterior;
 - distribuciones por área, clasificación y origen;
 - tendencias de 5 años;
-- resumen anual de 5 años;
-- cálculos desde PostgreSQL sin Excel KPI paralelo;
-- tests unitarios de las reglas de cómputo;
-- coherencia de CAPA entre listado e indicadores.
+- tabla resumen anual de 5 años.
 
-### Pendiente antes del merge
-- smoke test PostgreSQL de indicadores;
-- CI completo;
-- revisión de interfaz y merge.
+### Reglas de cómputo
+- volumen, área, clasificación, origen, recurrencia, afectación y CAPA: año de apertura;
+- cumplimiento de cierre y mediana: año de cierre;
+- recurrencia y afectación: solo Sí/No en el denominador; los no evaluados quedan visibles mediante cobertura;
+- CAPA: capaRequired=true o al menos una CAPA estructurada;
+- origen: para históricos se utiliza primero ORIGEN NORMALIZADO KPI conservado durante la migración y, si no existe, la procedencia/origen del expediente;
+- registros con includeInKpi=false quedan fuera de indicadores;
+- años no cargados en PostgreSQL se muestran como sin datos, nunca como cero desviaciones.
+
+### Compatibilidad con históricos
+Se añadieron los campos:
+- includeInKpi;
+- kpiExclusionReason.
+
+El importador 2025/2026 conserva ahora INCLUIR EN KPI y el motivo de exclusión cuando existe. En la fuente revisada actual todos los expedientes 2025/2026 están incluidos, por lo que esto no altera los resultados actuales.
+
+### Validación final
+- PostgreSQL 16 real;
+- esquema y seed;
+- smoke test base QMS;
+- smoke test de importación histórica;
+- smoke test específico de indicadores;
+- comprobación de año de apertura frente a año de cierre;
+- comprobación de denominadores Sí/No;
+- comprobación de CAPA histórica sin fila estructurada;
+- Prisma validate/generate;
+- lint;
+- tests;
+- build Next.js de producción.
+
+## Fuera de alcance todavía
+- módulo CAPA completo;
+- indicadores CAPA;
+- enriquecimiento histórico leyendo cada Anexo III individual;
+- Entra;
+- SharePoint automático;
+- alertas.
 
 ## Próximo paso
-Finalizar y validar Hito 5 antes de iniciar el módulo CAPA.
+Hito 6 — CAPA: módulo operativo completo, listados/filtros, expediente, seguimientos, eficacia, cierre, relaciones N:N e indicadores CAPA.
