@@ -423,6 +423,10 @@ model TemplateVersion {
   documentType        DocumentType
   versionCode         String
   filePath            String?
+  fileName            String?
+  mimeType            String?
+  fileData            Bytes?
+  fileSize            Int?
   checksum            String?
   effectiveFrom       DateTime            @db.Date
   effectiveTo         DateTime?           @db.Date
