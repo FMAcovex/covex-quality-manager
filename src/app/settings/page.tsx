@@ -1,250 +1,41 @@
 import Link from "next/link";
-import { getConfigurationOverview } from "@/modules/configuration/queries";
+import { SettingsNav } from "@/components/settings-nav";
+import { getAdministrationOverview,getAlertPreview,moduleLabel } from "@/modules/configuration/admin-queries";
 
-export const dynamic = "force-dynamic";
+export const dynamic="force-dynamic";
 
-function yes(value: boolean) {
-  return value ? "Sí" : "No";
-}
-
-function originLabel(kind: string, officialAnnexField: boolean) {
-  if (kind === "STRUCTURAL") return "Estructural";
-  if (kind === "DERIVED") return "Derivado";
-  if (kind === "OPERATIONAL") return "Operativo";
-  return officialAnnexField ? "Anexo versionado" : "Versionado";
-}
-
-function FieldTable({
-  rows,
-}: {
-  rows: Array<{
-    id: string;
-    label: string;
-    sectionLabel: string;
-    kind: string;
-    listAvailable: boolean;
-    filterable: boolean;
-    simpleExport: boolean;
-    officialAnnexField: boolean;
-  }>;
-}) {
-  return (
-    <div className="table-scroll">
-      <table className="records-table compact-table settings-table">
-        <thead>
-          <tr>
-            <th>Campo</th>
-            <th>Sección</th>
-            <th>Origen</th>
-            <th>Listado</th>
-            <th>Filtrable</th>
-            <th>Listado simple</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.label}</td>
-              <td>{row.sectionLabel}</td>
-              <td>{originLabel(row.kind, row.officialAnnexField)}</td>
-              <td>{yes(row.listAvailable)}</td>
-              <td>{yes(row.filterable)}</td>
-              <td>{yes(row.simpleExport)}</td>
-            </tr>
-          ))}
-          {!rows.length ? (
-            <tr><td colSpan={6}>Sin configuración de campos cargada.</td></tr>
-          ) : null}
-        </tbody>
-      </table>
+export default async function SettingsPage(){
+  const [data,preview]=await Promise.all([getAdministrationOverview(),getAlertPreview()]);
+  const activeForms=data.forms.filter(x=>x.status==="ACTIVE"&&x.isActive);
+  const activeTemplates=data.templates.filter(x=>x.isActive);
+  const activeDepartments=data.departments.filter(x=>x.isActive);
+  const activeRules=data.alertRules.filter(x=>x.isActive);
+  const overdue=preview.items.filter(x=>x.state==="OVERDUE").length;
+  return <section className="workspace">
+    <div className="page-heading">
+      <div><p className="eyebrow">Hito 9 · Administración funcional</p><h1>Administración y evolución</h1><p>Catálogos, versiones, plantillas, parámetros y preparación de vencimientos.</p></div>
+      <span className="badge warning">Modo piloto · sin roles todavía</span>
     </div>
-  );
-}
-
-export default async function SettingsPage() {
-  const config = await getConfigurationOverview();
-
-  return (
-    <section className="workspace">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">Administración funcional</p>
-          <h1>Configuración</h1>
-          <p>Versiones de formulario, columnas operativas y plantillas documentales.</p>
-        </div>
-        <span className="badge warning">Consulta en V1</span>
-      </div>
-
-      <div className="analytics-note">
-        <strong>Regla:</strong> ningún usuario añade campos a un expediente individual.
-        Los campos pertenecen a una versión de formulario y son comunes a todos los
-        expedientes creados con esa versión.
-      </div>
-
-      <div className="settings-grid">
-        <article className="card settings-card">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Desviaciones</p>
-              <h2>Formulario GC-00/023</h2>
-            </div>
-            <span className="module-state ready">
-              {config.deviation.form?.versionCode ?? "Sin versión"}
-            </span>
-          </div>
-          <p className="muted-note">
-            Plantilla Anexo III: {config.deviation.template?.versionCode ?? "No configurada"}.
-            Los expedientes anteriores conservan la versión con la que fueron creados.
-          </p>
-          <div className="settings-actions">
-            <button className="button" disabled>+ Nueva versión</button>
-            <button className="button" disabled>Gestionar plantilla</button>
-          </div>
-        </article>
-
-        <article className="card settings-card">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">CAPA</p>
-              <h2>Formulario GC-00/030</h2>
-            </div>
-            <span className="module-state ready">
-              {config.capa.form?.versionCode ?? "Sin versión"}
-            </span>
-          </div>
-          <p className="muted-note">
-            Plantilla Anexo III: {config.capa.template?.versionCode ?? "No configurada"}.
-            La estructura del formulario se versiona junto con su plantilla aplicable.
-          </p>
-          <div className="settings-actions">
-            <button className="button" disabled>+ Nueva versión</button>
-            <button className="button" disabled>Gestionar plantilla</button>
-          </div>
-        </article>
-
-        <article className="card settings-card">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Controles de Cambios</p>
-              <h2>Formulario GC-00/003</h2>
-            </div>
-            <span className="module-state ready">
-              {config.changeControl.form?.versionCode ?? "Sin versión"}
-            </span>
-          </div>
-          <p className="muted-note">
-            Plantillas: Anexo III {config.changeControl.annexIII?.versionCode ?? "—"} ·
-            Anexo IV {config.changeControl.annexIV?.versionCode ?? "—"} ·
-            Anexo V {config.changeControl.annexV?.versionCode ?? "—"} ·
-            Anexo VII {config.changeControl.annexVII?.versionCode ?? "—"}.
-          </p>
-          <div className="settings-actions">
-            <button className="button" disabled>+ Nueva versión</button>
-            <button className="button" disabled>Gestionar plantillas</button>
-          </div>
-        </article>
-
-        <article className="card settings-card">
-          <div className="section-title-row">
-            <div><p className="eyebrow">Reclamaciones</p><h2>Formulario GC-00/027</h2></div>
-            <span className="module-state ready">{config.complaint.form?.versionCode ?? "Sin versión"}</span>
-          </div>
-          <p className="muted-note">
-            Plantillas: Anexo III {config.complaint.annexIII?.versionCode ?? "—"} ·
-            Anexo IV {config.complaint.annexIV?.versionCode ?? "—"} ·
-            Anexo V {config.complaint.annexV?.versionCode ?? "—"}.
-          </p>
-          <div className="settings-actions"><button className="button" disabled>+ Nueva versión</button><button className="button" disabled>Gestionar plantillas</button></div>
-        </article>
-
-        <article className="card settings-card">
-          <div className="section-title-row">
-            <div><p className="eyebrow">Devoluciones</p><h2>Formulario GC-00/028</h2></div>
-            <span className="module-state ready">{config.returnRecord.form?.versionCode ?? "Sin versión"}</span>
-          </div>
-          <p className="muted-note">
-            Plantillas: Anexo III {config.returnRecord.annexIII?.versionCode ?? "—"} ·
-            Anexo IV {config.returnRecord.annexIV?.versionCode ?? "—"} ·
-            Anexo V {config.returnRecord.annexV?.versionCode ?? "—"} ·
-            Anexo VI {config.returnRecord.annexVI?.versionCode ?? "—"}.
-          </p>
-          <div className="settings-actions"><button className="button" disabled>+ Nueva versión</button><button className="button" disabled>Gestionar plantillas</button></div>
-        </article>
-      </div>
-
-      <section className="card">
-        <div className="section-title-row">
-          <div>
-            <p className="eyebrow">Desviaciones</p>
-            <h2>Campos y columnas de seguimiento</h2>
-          </div>
-          <Link className="button" href="/deviations">Ver listado</Link>
-        </div>
-        <FieldTable rows={config.deviation.form?.fieldConfigs ?? []} />
-        <p className="muted-note">
-          La vista de seguimiento puede contener más columnas que el Anexo III impreso.
-          No se añaden “Último seguimiento” ni “Próximo seguimiento” a Desviaciones.
-        </p>
-      </section>
-
-      <section className="card">
-        <div className="section-title-row">
-          <div>
-            <p className="eyebrow">CAPA</p>
-            <h2>Campos y columnas de seguimiento</h2>
-          </div>
-          <Link className="button" href="/capa">Ver listado</Link>
-        </div>
-        <FieldTable rows={config.capa.form?.fieldConfigs ?? []} />
-        <p className="muted-note">
-          El listado operativo conserva columnas de seguimiento que no tienen por qué
-          imprimirse todas en el Anexo III.
-        </p>
-      </section>
-
-      <section className="card">
-        <div className="section-title-row">
-          <div>
-            <p className="eyebrow">Controles de Cambios</p>
-            <h2>Campos y columnas de seguimiento</h2>
-          </div>
-          <Link className="button" href="/changes">Ver listado</Link>
-        </div>
-        <FieldTable rows={config.changeControl.form?.fieldConfigs ?? []} />
-        <p className="muted-note">
-          Solicitud, Dictamen y Seguimientos comparten expediente, pero el listado operativo contiene más columnas que el Anexo VII oficial.
-        </p>
-      </section>
-
-
-      <section className="card">
-        <div className="section-title-row">
-          <div><p className="eyebrow">Reclamaciones</p><h2>Campos y columnas de seguimiento</h2></div>
-          <Link className="button" href="/complaints">Ver listado</Link>
-        </div>
-        <FieldTable rows={config.complaint.form?.fieldConfigs ?? []} />
-        <p className="muted-note">El expediente mantiene la estructura de investigación de Desviaciones y añade respuesta/eficacia de la reclamación.</p>
-      </section>
-
-      <section className="card">
-        <div className="section-title-row">
-          <div><p className="eyebrow">Devoluciones</p><h2>Campos y columnas de seguimiento</h2></div>
-          <Link className="button" href="/returns">Ver listado</Link>
-        </div>
-        <FieldTable rows={config.returnRecord.form?.fieldConfigs ?? []} />
-        <p className="muted-note">Los productos se gestionan como líneas 1:N y el Anexo VI anual conserva su estructura oficial.</p>
-      </section>
-
-      <section className="review-note">
-        <div>
-          <p className="eyebrow">Cambios de estructura</p>
-          <h2>Cómo se aplicarán</h2>
-        </div>
-        <p>
-          Cambiar una vista no modifica el formulario. Cambiar el formulario exige una nueva
-          versión. Cambiar una regla de negocio o un KPI requiere una actualización técnica probada.
-        </p>
-      </section>
+    <SettingsNav active="/settings"/>
+    <div className="analytics-note"><strong>Principio:</strong> la configuración nunca reescribe el histórico de expedientes. Las nuevas versiones se aplican por vigencia y los elementos usados se conservan aunque después se retiren.</div>
+    <div className="summary-strip admin-summary">
+      <div><strong>{activeDepartments.length}</strong><span>Departamentos activos</span></div>
+      <div><strong>{activeForms.length}</strong><span>Formularios activos</span></div>
+      <div><strong>{activeTemplates.length}</strong><span>Plantillas activas</span></div>
+      <div><strong>{activeRules.length}</strong><span>Reglas de vencimiento</span></div>
+      <div><strong>{overdue}</strong><span>Elementos vencidos ahora</span></div>
+    </div>
+    <div className="settings-grid admin-hub-grid">
+      <Link className="card settings-card admin-link-card" href="/settings/catalogs"><p className="eyebrow">Catálogos</p><h2>Departamentos y valores auxiliares</h2><p>Alta, vigencia y desactivación sin borrado físico.</p><strong>Abrir →</strong></Link>
+      <Link className="card settings-card admin-link-card" href="/settings/versions"><p className="eyebrow">Versionado</p><h2>Formularios y plantillas</h2><p>Clonar versiones, preparar borradores y activar por fecha de vigencia.</p><strong>Abrir →</strong></Link>
+      <Link className="card settings-card admin-link-card" href="/settings/parameters"><p className="eyebrow">Parámetros</p><h2>Comportamiento configurable</h2><p>Parámetros no estructurales sin duplicar lógica en los módulos.</p><strong>Abrir →</strong></Link>
+      <Link className="card settings-card admin-link-card" href="/settings/alerts"><p className="eyebrow">Vencimientos</p><h2>Motor preparado para alertas</h2><p>Bandeja central de próximos/vencidos; el envío automático sigue desactivado.</p><strong>Abrir →</strong></Link>
+    </div>
+    <section className="card">
+      <div className="section-title-row"><div><p className="eyebrow">Versiones activas</p><h2>Configuración aplicada a nuevos expedientes</h2></div></div>
+      <div className="table-scroll"><table className="records-table compact-table"><thead><tr><th>Módulo</th><th>Versión</th><th>Vigente desde</th><th>Campos</th></tr></thead><tbody>
+        {activeForms.map(f=><tr key={f.id}><td>{moduleLabel(f.module)}</td><td><strong>{f.versionCode}</strong></td><td>{f.effectiveFrom.toLocaleDateString("es-ES")}</td><td>{f._count.fieldConfigs}</td></tr>)}
+      </tbody></table></div>
     </section>
-  );
+  </section>;
 }
