@@ -6,7 +6,7 @@ import { mapHistoricalCapaRows,type HistoricalCapaRow } from "@/modules/capa/imp
 
 function hash(buffer:Buffer){return createHash("sha256").update(buffer).digest("hex");}
 function blocking(row:HistoricalCapaRow){
-  return row.issues.filter((x)=>["MISSING_OR_INVALID_OPENING_DATE","MISSING_DEPARTMENT","DUPLICATE_CODE_IN_SOURCE"].includes(x));
+  return row.issues.filter((x)=>["MISSING_OR_INVALID_OPENING_DATE","MISSING_DEPARTMENT","MISSING_DESCRIPTION","DUPLICATE_CODE_IN_SOURCE"].includes(x));
 }
 function snapshot(row:HistoricalCapaRow):Prisma.InputJsonObject {
   return {sheet:row.sourceSheet,row:row.sourceRow,raw:row.raw as Prisma.InputJsonObject,issues:row.issues};
@@ -77,7 +77,7 @@ export async function applyHistoricalCapaImport(buffer:Buffer,sourceFileName:str
         effectiveClosedAt:row.effectiveClosedAt,internalObservations:row.observations,
         signedDocumentAvailable:row.signedDocumentAvailable,dataQualityStatus:"REVIEW_REQUIRED",
         extraData:{historicalImport:{sourceFileName,sourceSha256:a.report.sourceSha256,sourceSheet:row.sourceSheet,sourceRow:row.sourceRow,originOriginal:row.originType,normalizedOrigin:row.normalizedOrigin,followupSummary:row.followupSummary,issues:row.issues,raw:row.raw}},
-        plannedActions:{create:[{description:row.description??"Acción histórica sin descripción",plannedExecutionDate:row.plannedAt,sortOrder:0}]},
+        plannedActions:{create:[{description:row.description!,plannedExecutionDate:row.plannedAt,sortOrder:0}]},
       }});
       if(row.followupSummary&&row.followupDate&&row.followupSequence!==null){
         await tx.capaFollowup.create({data:{
