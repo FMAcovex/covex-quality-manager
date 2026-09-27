@@ -473,6 +473,44 @@ export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
   };
 }
 
+export function changeControlSnapshotToRecord(snapshot: Prisma.JsonValue) {
+  const root=objectValue(snapshot);
+  const d=objectValue(root.changeControl);
+  return {
+    ...d,
+    qmsRecord:{businessCode:stringValue(root.businessCode)},
+    requestedAt:dateValue(d.requestedAt),
+    requestDecisionAt:dateValue(d.requestDecisionAt),
+    plannedImplementationAt:dateValue(d.plannedImplementationAt),
+    decisionAt:dateValue(d.decisionAt),
+    executedAt:dateValue(d.executedAt),
+    operationalClosedAt:dateValue(d.operationalClosedAt),
+    effectiveClosedAt:dateValue(d.effectiveClosedAt),
+    scopes:Array.isArray(d.scopes)?d.scopes.filter((v):v is string=>typeof v==="string"):[],
+    actions:objectArray(d.actions).map((item)=>({
+      ...item,
+      plannedExecutionDate:dateValue(item.plannedExecutionDate),
+      actualExecutionDate:dateValue(item.actualExecutionDate),
+      completed:Boolean(item.completed),
+      introducedInSequence:
+        typeof item.introducedInSequence==="number"?item.introducedInSequence:null,
+      sortOrder:Number(item.sortOrder??0),
+    })),
+    followups:objectArray(d.followups).map((item)=>({
+      ...item,
+      sequenceNumber:Number(item.sequenceNumber??0),
+      followupDate:dateValue(item.followupDate),
+      executionDate:dateValue(item.executionDate),
+      nextFollowupDate:dateValue(item.nextFollowupDate),
+      closesChange:Boolean(item.closesChange),
+    })),
+    requestDecisionTemplateVersion:d.requestDecisionTemplateVersionCode
+      ?{versionCode:String(d.requestDecisionTemplateVersionCode)}:null,
+    followupTemplateVersion:d.followupTemplateVersionCode
+      ?{versionCode:String(d.followupTemplateVersionCode)}:null,
+  };
+}
+
 export function recordVersionSummary(
   recordType: "DEVIATION" | "CAPA" | "CHANGE_CONTROL",
   snapshot: Prisma.JsonValue,
