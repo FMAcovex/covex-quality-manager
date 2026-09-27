@@ -45,11 +45,26 @@ function workbook(name:string,headers:string[],data:string[][]) {
 }
 
 export function generateChangeAnnexVII(year:number,rows:ExportRow[]) {
-  const headers=["CÓDIGO DEPARTAMENTO","CÓDIFICACIÓN","DESCRIPCIÓN","FECHA SOLICITUD","FECHA DE APROBACIÓN","CLASIFICACIÓN (Mayor/Menor)","FECHA PREVISTA EJECUCIÓN","ESTADO DE EJECUCIÓN","FECHA DE EJECUCIÓN","EFICACIA","FECHA DE ÚLTIMO SEGUIMIENTO","FECHA PRÓXIMO SEGUIMIENTO","ESTADO FINAL","FECHA CIERRE","OBSERVACIONES"];
-  const data=rows.map((r)=>{
-    const latest=r.followups[0];
-    return [r.departmentCodeSnapshot??"",r.qmsRecord.businessCode??"",r.description??"",date(r.requestedAt),date(r.decisionAt??r.requestDecisionAt),classification(r.classification),date(r.plannedImplementationAt),execution(r.executionStatus),date(r.executedAt),efficacy(r.effectivenessStatus),latest?`${String(latest.sequenceNumber).padStart(2,"0")} ${date(latest.followupDate)}`:"",date(latest?.nextFollowupDate),state(r.status),date(r.effectiveClosedAt),r.internalObservations??r.closureConclusion??""];
-  });
+  const headers=[
+    "CÓDIFICACIÓN",
+    "TIPO",
+    "DESCRIPCIÓN",
+    "FECHA SOLICITUD",
+    "FECHA DE APROBACIÓN",
+    "FECHA PREVISTA EJECUCIÓN",
+    "FECHA DE EJECUCIÓN",
+    "FECHA CIERRE",
+  ];
+  const data=rows.map((r)=>[
+    r.qmsRecord.businessCode??"",
+    classification(r.classification),
+    r.description??"",
+    date(r.requestedAt),
+    date(r.decisionAt??r.requestDecisionAt),
+    date(r.plannedImplementationAt),
+    date(r.executedAt),
+    date(r.effectiveClosedAt),
+  ]);
   return workbook(`ANEXO VII ${year}`,headers,data);
 }
 
