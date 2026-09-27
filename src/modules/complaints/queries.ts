@@ -20,9 +20,9 @@ export async function getComplaintList(filters:ComplaintListFilters){
  if(filters.type==="PROVIDER"||filters.type==="CUSTOMER")and.push({complaintType:filters.type});
  if(filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
  if(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"].includes(filters.classification??""))
-   and.push({classification:filters.classification as any});
+   and.push({classification:filters.classification as "CRITICAL"|"MAJOR"|"MINOR"|"NO_GMP_IMPACT"});
  if(["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"].includes(filters.effectiveness??""))
-   and.push({effectivenessStatus:filters.effectiveness as any});
+   and.push({effectivenessStatus:filters.effectiveness as "PENDING"|"ACCEPTABLE"|"NOT_ACCEPTABLE"|"NOT_REQUIRED"});
  const where:Prisma.ComplaintWhereInput=and.length?{AND:and}:{};
  const [rows,departments,years,total,open,pendingEfficacy,followupDue]=await Promise.all([
   prisma.complaint.findMany({where,include:{qmsRecord:true,department:true,capaPlans:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{openedAt:"desc"},{createdAt:"desc"}],take:300}),
