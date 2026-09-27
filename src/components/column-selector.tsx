@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 export type ColumnPreference = {
   key: string;
   label: string;
-  index: number;
   locked?: boolean;
   defaultVisible?: boolean;
 };
@@ -50,10 +49,11 @@ export function ColumnSelector({
 
     for (const column of columns) {
       const show = column.locked || visible[column.key] !== false;
-      table.querySelectorAll("tr").forEach((row) => {
-        const cell = row.children.item(column.index) as HTMLElement | null;
-        if (cell) cell.hidden = !show;
-      });
+      table
+        .querySelectorAll<HTMLElement>(`[data-column-key="${column.key}"]`)
+        .forEach((cell) => {
+          cell.hidden = !show;
+        });
     }
 
     try {
