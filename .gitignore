@@ -10,3 +10,7 @@ dist
 # Plantillas GMP controladas: se instalan localmente y no se versionan como binarios.
 templates/deviations/v06/*.docx
 templates/deviations/v06/*.xlsx
+
+# Fuentes históricas GMP: nunca versionar archivos de importación ni informes con datos reales.
+data/imports/
+reports/imports/

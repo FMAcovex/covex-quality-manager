@@ -8,55 +8,40 @@ Fecha: 2026-09-27.
 - Hito 2 — Desviaciones completas.
 - Hito 3 — Documentos y exportaciones.
 
-## Hito 3 — Documentos y exportaciones
-Estado: **COMPLETADO Y VALIDADO**.
+## Hito 4 — Importación histórica 2025–2026
+Estado: **EN DESARROLLO** en `feature/hito-04-historical-import`.
 
-Implementado:
-- generación de Anexo III DOCX individual desde el expediente;
-- mapeo a la estructura A–M del Anexo III v06;
-- casillas Word/control de contenido, acciones inmediatas y CAPA repetibles;
-- zonas de firma preservadas;
-- generación de Anexo V XLSX anual desde la plantilla v06;
-- hoja detallada y TABLA OFICIAL cumplimentadas desde los mismos registros;
-- tabla anual extendida hasta la capacidad controlada de la plantilla (61 registros);
-- error explícito si se supera esa capacidad, sin truncar registros;
-- listado simple XLSX con las columnas operativas y filtros activos;
-- listado simple anual;
-- menú Exportar en la pantalla de Desviaciones;
-- registro de generaciones de Anexo III;
-- plantillas versionadas lógicamente y verificadas por SHA-256;
-- error explícito si el expediente solicita una revisión de plantilla no instalada;
-- saneado de autores, rutas SharePoint y metadatos heredados en los documentos generados;
-- motor OOXML propio basado en ZIP/XML, sin requerir Microsoft Office en servidor;
-- instalación local de plantillas mediante `pnpm templates:install`;
-- pruebas unitarias del motor ZIP/XML, listado simple, controles Word, metadatos y extensión de filas del Anexo V;
-- revisión visual independiente con datos ficticios sobre las plantillas oficiales v06.
+### Fuente confirmada
+- `000 LISTADO GENERAL DESVIACIONES.xlsx` de la carpeta `05 DESVIACIONES`.
+- Hoja 2025: 53 expedientes.
+- Hoja 2026: 34 expedientes.
+- Total esperado en la fuente revisada: 87 expedientes.
+- Los esquemas 2025 y 2026 son diferentes y se mapean por separado.
 
-### Plantillas auditadas
-- Anexo III Informe Desviaciones 06.docx.
-- Anexo V Listado de Desviaciones 06.xlsx.
+### Implementado en la rama
+- lector XLSX OOXML reutilizando el motor ZIP propio;
+- mapeos explícitos 2025 y 2026;
+- catálogo histórico de departamentos recuperado del propio libro;
+- extracción conservadora de códigos AC/AP;
+- `dry-run` por defecto;
+- detección de duplicados en fuente y base de datos;
+- clasificación de incidencias de calidad del dato;
+- importación real con confirmación explícita;
+- trazabilidad mediante lote y fila de importación;
+- snapshot original de cada fila;
+- historial con origen `IMPORT`;
+- almacenamiento del SHA-256 del libro fuente;
+- informes JSON fuera de Git;
+- pruebas unitarias de lector y mapeo.
 
-Los binarios controlados se instalan localmente y no se versionan en GitHub. El instalador solo acepta las copias auditadas mediante SHA-256.
+### Regla de calidad histórica
+El listado general no equivale al Anexo III. Los registros importados quedan como `REVIEW_REQUIRED` salvo bloqueo por datos esenciales, que pasa a `INCOMPLETE`. No se inventan campos ausentes.
 
-### Nota histórica
-La revisión documental aplicable a los expedientes de 2025 debe verificarse durante el Hito 4 antes de considerar una exportación histórica como Anexo V oficial. No se asignará silenciosamente una versión actual a históricos sin verificarla.
-
-### Validación final
-- PostgreSQL 16 real;
-- `prisma db push`, seed y smoke test;
-- Prisma validate/generate;
-- lint;
-- 9 ficheros de test / 15 tests superados;
-- build Next.js de producción superado;
-- revisión visual independiente del Anexo III y Anexo V generados con datos ficticios.
-
-## Fuera de alcance todavía
-- importación histórica 2025/2026;
-- KPI;
-- expediente CAPA completo;
-- Entra;
-- SharePoint automático;
-- alertas.
+### Pendiente antes del merge
+- ejecutar CI;
+- smoke test PostgreSQL de dry-run + apply + reejecución para comprobar idempotencia;
+- ejecutar dry-run contra la copia real del libro y revisar el informe;
+- actualizar este estado con los resultados reales.
 
 ## Próximo paso
-Hito 4 — Importación histórica 2025–2026: dry-run, validación, duplicados, calidad del dato y trazabilidad de importación.
+Completar y validar Hito 4 antes de iniciar indicadores.

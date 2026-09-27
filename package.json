@@ -17,7 +17,8 @@
     "quality": "pnpm db:validate && pnpm db:generate && pnpm lint && pnpm test && pnpm build",
     "db:push": "prisma db push",
     "db:smoke": "tsx scripts/smoke-db.ts",
-    "templates:install": "tsx scripts/install-document-templates.ts"
+    "templates:install": "tsx scripts/install-document-templates.ts",
+    "import:deviations": "tsx scripts/import-historical-deviations.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

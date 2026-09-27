@@ -82,6 +82,13 @@ enum DocumentType {
   SIMPLE_LIST
 }
 
+enum HistoricalImportRowResult {
+  IMPORTED
+  SKIPPED_DUPLICATE
+  REJECTED
+  REVIEW_REQUIRED
+}
+
 model QmsRecord {
   id                 String              @id @default(uuid())
   recordType         QmsRecordType
@@ -96,6 +103,7 @@ model QmsRecord {
   history            ChangeHistory[]
   generatedDocuments GeneratedDocument[]
   linkedCapaPlans    DeviationCapaPlan[] @relation("LinkedCapaRecord")
+  historicalImports  HistoricalImportRow[]
 
   @@unique([recordType, businessCode])
   @@index([recordType, year])
@@ -321,4 +329,45 @@ model GeneratedDocument {
   @@index([qmsRecordId, generatedAt])
   @@index([templateVersionId])
   @@index([documentType, generatedAt])
+}
+
+
+model HistoricalImportBatch {
+  id              String                @id @default(uuid())
+  sourceFileName  String
+  sourceSha256    String
+  years           Int[]
+  importedByText  String?
+  createdAt       DateTime              @default(now())
+  appliedAt       DateTime?
+  totalRows       Int                   @default(0)
+  importedRows    Int                   @default(0)
+  duplicateRows   Int                   @default(0)
+  rejectedRows    Int                   @default(0)
+  reviewRows      Int                   @default(0)
+  report          Json?
+  rows            HistoricalImportRow[]
+
+  @@index([sourceSha256])
+  @@index([createdAt])
+}
+
+model HistoricalImportRow {
+  id            String                    @id @default(uuid())
+  batchId       String
+  batch         HistoricalImportBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  qmsRecordId   String?
+  qmsRecord     QmsRecord?                @relation(fields: [qmsRecordId], references: [id], onDelete: SetNull)
+  sourceSheet   String
+  sourceRow     Int
+  businessCode  String?
+  result        HistoricalImportRowResult
+  issues        Json?
+  sourceSnapshot Json?
+  createdAt     DateTime                  @default(now())
+
+  @@unique([batchId, sourceSheet, sourceRow])
+  @@index([businessCode])
+  @@index([qmsRecordId])
+  @@index([result])
 }
