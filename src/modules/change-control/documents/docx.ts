@@ -1,5 +1,5 @@
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { replaceWordRowWithCopies,setWordCellText } from "@/lib/ooxml/xml";
+import { replaceWordRowRangeWithCopies,setWordCellText } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadChangeAnnexIII,loadChangeAnnexIV,loadChangeAnnexV } from "@/modules/change-control/documents/templates";
 
@@ -141,7 +141,7 @@ export async function generateChangeAnnexIV(record:ChangeDocumentRecord,version=
       action.responsible??"",
       date(action.plannedExecutionDate),
     ]);
-    xml=replaceWordRowWithCopies(xml,1,2,rows);
+    xml=replaceWordRowRangeWithCopies(xml,1,2,1,12,rows);
   }
   const implications=[
     [yn(record.committeeRequired),record.committeeJustification??""],
