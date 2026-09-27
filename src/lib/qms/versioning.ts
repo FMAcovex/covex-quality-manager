@@ -517,6 +517,68 @@ export function recordVersionSummary(
 }
 
 
+
+export function changeControlSnapshotToRecord(snapshot: Prisma.JsonValue) {
+  const root = objectValue(snapshot);
+  const d = objectValue(root.changeControl);
+  return {
+    ...d,
+    qmsRecord: { businessCode: stringValue(root.businessCode) },
+    requestDate: dateValue(d.requestDate),
+    requestDecisionDate: dateValue(d.requestDecisionDate),
+    plannedImplementationDate: dateValue(d.plannedImplementationDate),
+    dictamenDate: dateValue(d.dictamenDate),
+    executionDate: dateValue(d.executionDate),
+    operationalClosedAt: dateValue(d.operationalClosedAt),
+    effectiveClosedAt: dateValue(d.effectiveClosedAt),
+    tasks: objectArray(d.tasks).map((item) => ({
+      ...item,
+      id: stringValue(item.id) ?? "",
+      plannedDate: dateValue(item.plannedDate),
+      introducedInFollowup:
+        typeof item.introducedInFollowup === "number" ? item.introducedInFollowup : null,
+    })),
+    followups: objectArray(d.followups).map((item) => ({
+      ...item,
+      id: stringValue(item.id) ?? "",
+      sequenceNumber: Number(item.sequenceNumber ?? 0),
+      followupDate: dateValue(item.followupDate),
+      executionDate: dateValue(item.executionDate),
+      nextFollowupDate: dateValue(item.nextFollowupDate),
+      taskStates: objectArray(item.taskStates).map((state) => ({
+        ...state,
+        taskId: stringValue(state.taskId) ?? "",
+        actualDate: dateValue(state.actualDate),
+      })),
+    })),
+    formVersion: d.formVersionCode ? { versionCode: stringValue(d.formVersionCode) ?? "" } : null,
+    annexIIITemplateVersion: d.annexIIITemplateVersionCode
+      ? { versionCode: stringValue(d.annexIIITemplateVersionCode) ?? "" }
+      : null,
+    annexIVTemplateVersion: d.annexIVTemplateVersionCode
+      ? { versionCode: stringValue(d.annexIVTemplateVersionCode) ?? "" }
+      : null,
+    annexVTemplateVersion: d.annexVTemplateVersionCode
+      ? { versionCode: stringValue(d.annexVTemplateVersionCode) ?? "" }
+      : null,
+  };
+}
+
+export function changeControlSnapshotTemplateId(
+  snapshot: Prisma.JsonValue,
+  annex: "III" | "IV" | "V",
+) {
+  const root = objectValue(snapshot);
+  const d = objectValue(root.changeControl);
+  const key =
+    annex === "III"
+      ? "annexIIITemplateVersionId"
+      : annex === "IV"
+        ? "annexIVTemplateVersionId"
+        : "annexVTemplateVersionId";
+  return stringValue(d[key]);
+}
+
 export function recordVersionTemplateId(
   recordType: "DEVIATION" | "CAPA",
   snapshot: Prisma.JsonValue,
