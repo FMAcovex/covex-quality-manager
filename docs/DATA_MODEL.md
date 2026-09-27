@@ -13,11 +13,13 @@ Representa la identidad común de cualquier expediente.
 Campos conceptuales:
 - `id UUID PK`;
 - `recordType` (DEVIATION, CAPA, CHANGE_CONTROL, COMPLAINT, RETURN);
-- `businessCode` nullable/unique según reglas de módulo;
+- `businessCode` nullable;
 - `year`;
 - `createdAt`;
 - `updatedAt`;
 - `isActive`.
+
+La codificación visible no es la clave primaria. Cuando `businessCode` exista, la unicidad se controla por la combinación `recordType + businessCode`, no como texto global aislado. Esto evita colisiones entre módulos y permite mantener reglas de codificación independientes.
 
 Cada entidad específica tendrá un `qmsRecordId` único y FK a QmsRecord.
 
@@ -37,31 +39,49 @@ Campos:
 - `notes` opcional;
 - `isActive`.
 
-Ejemplos de relationType:
+Tipos conceptuales iniciales:
 - GENERATES;
-- ORIGINATES_FROM;
 - RELATED_TO;
 - IMPLEMENTED_BY;
 - ASSOCIATED_WITH.
 
-No duplicar la misma relación exacta accidentalmente. Definir restricción/validación para source + target + relationType activos.
+Las relaciones direccionales se almacenan una sola vez en una dirección canónica. La interfaz deriva la etiqueta inversa cuando proceda. Ejemplo: si `Desviación GENERATES CAPA`, desde la CAPA se muestra `ORIGINATES_FROM Desviación` sin crear una segunda fila.
 
-La interfaz puede mostrar la relación en ambos sentidos aunque se almacene una sola fila.
+Para relaciones simétricas como RELATED_TO, normalizar el orden de los UUID antes de guardar para impedir duplicados invertidos.
 
-## 3. Deviation
+No duplicar la misma relación exacta accidentalmente. Definir unicidad para `sourceRecordId + targetRecordId + relationType`; si una relación fue desactivada, reactivar la existente en lugar de insertar un duplicado.
+
+## 3. Department
+
+Catálogo controlado de departamentos/áreas.
+
+Campos conceptuales:
+- `id UUID PK`;
+- `code`;
+- `name`;
+- `isActive`;
+- `validFrom` opcional;
+- `validTo` opcional.
+
+No dispersar códigos/nombres organizativos como listas hardcodeadas por la aplicación.
+
+## 4. Deviation
 
 Relación 1:1 con QmsRecord.
 
 ### Identificación
 - id UUID PK;
 - qmsRecordId UUID unique;
-- departmentCode;
-- departmentName;
+- departmentId FK -> Department;
+- departmentCodeSnapshot;
+- departmentNameSnapshot;
 - issueDate;
 - eventDateTime;
 - detectedBy;
 - formVersionId;
-- templateVersionId.
+- anexoIIITemplateVersionId.
+
+El `departmentId` permite filtrar y mantener catálogo; los snapshots conservan cómo constaba el departamento en el momento del expediente aunque el catálogo cambie en el futuro.
 
 ### Origen
 Campos tipados para:
@@ -125,7 +145,7 @@ Campos tipados para:
 
 Los campos oficiales definitivos se ajustarán contra la plantilla vigente antes de implementar la migración de producción.
 
-## 4. DeviationImmediateAction
+## 5. DeviationImmediateAction
 
 1:N desde Deviation:
 - id;
@@ -135,7 +155,7 @@ Los campos oficiales definitivos se ajustarán contra la plantilla vigente antes
 - executedAt;
 - sortOrder.
 
-## 5. DeviationFollowup
+## 6. DeviationFollowup
 
 1:N:
 - id;
@@ -148,7 +168,7 @@ Los campos oficiales definitivos se ajustarán contra la plantilla vigente antes
 - evidenceReference;
 - createdAt.
 
-## 6. DeviationCapaPlan
+## 7. DeviationCapaPlan
 
 1:N:
 - id;
@@ -163,7 +183,7 @@ Los campos oficiales definitivos se ajustarán contra la plantilla vigente antes
 
 No sustituye al expediente CAPA real.
 
-## 7. Capa
+## 8. Capa
 
 Se crea en Hito 6, pero su identidad QmsRecord se reserva desde el modelo inicial.
 
@@ -182,7 +202,7 @@ Conceptualmente:
 
 Seguimientos y eficacia se modelan como entidades propias cuando se implemente el módulo.
 
-## 8. Historial
+## 9. Historial
 
 ### ChangeHistory
 
@@ -198,7 +218,7 @@ Seguimientos y eficacia se modelan como entidades propias cuando se implemente e
 
 V1: historial interno. No afirmar cumplimiento de audit trail.
 
-## 9. Documentos generados
+## 10. Documentos generados
 
 ### GeneratedDocument
 
@@ -213,7 +233,7 @@ V1: historial interno. No afirmar cumplimiento de audit trail.
 
 No es obligatorio almacenar permanentemente el binario en V1.
 
-## 10. Versiones
+## 11. Versiones
 
 ### FormVersion
 - id;
@@ -235,7 +255,7 @@ No es obligatorio almacenar permanentemente el binario en V1.
 - isActive;
 - checksum opcional.
 
-## 11. Catálogos
+## 12. Catálogos
 
 Catálogos iniciales:
 - Department;
@@ -246,7 +266,7 @@ Catálogos iniciales:
 
 No codificar listas organizativas dispersas en componentes.
 
-## 12. Cálculos derivados
+## 13. Cálculos derivados
 
 No persistir salvo necesidad:
 - días de cierre;
