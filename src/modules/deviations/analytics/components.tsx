@@ -91,7 +91,7 @@ export function MonthlyComparison({
         </div>
         <div className="chart-legend">
           <span><i className="legend-current" />{current.year}</span>
-          <span><i className="legend-previous" />{previous.year}</span>
+          <span><i className="legend-previous" />{previous.year}{previous.dataAvailable ? "" : " · sin datos"}</span>
         </div>
       </div>
       <div className="month-chart">
@@ -103,11 +103,13 @@ export function MonthlyComparison({
                 style={{ height: `${(current.monthlyOpenings[index] / max) * 100}%` }}
                 title={`${month} ${current.year}: ${current.monthlyOpenings[index]}`}
               />
-              <span
-                className="month-bar previous"
-                style={{ height: `${(previous.monthlyOpenings[index] / max) * 100}%` }}
-                title={`${month} ${previous.year}: ${previous.monthlyOpenings[index]}`}
-              />
+              {previous.dataAvailable ? (
+                <span
+                  className="month-bar previous"
+                  style={{ height: `${(previous.monthlyOpenings[index] / max) * 100}%` }}
+                  title={`${month} ${previous.year}: ${previous.monthlyOpenings[index]}`}
+                />
+              ) : null}
             </div>
             <span>{month}</span>
           </div>
