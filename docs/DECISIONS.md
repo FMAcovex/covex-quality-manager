@@ -179,3 +179,51 @@ El Anexo IV se genera individualmente por producto y el Anexo VI anual usa una f
 Para Reclamaciones y Devoluciones se utiliza el PNT DOCX completo como fuente controlada. En tiempo de generación se extrae únicamente el anexo aplicable.
 
 Esta decisión evita mantener copias derivadas manuales de cada anexo y reduce el riesgo de divergencia de formato.
+
+
+## D-036 — Administración no destructiva
+La administración funcional no elimina físicamente departamentos, catálogos, valores, versiones, plantillas ni reglas que puedan formar parte del histórico. Los elementos dejan de aplicarse mediante estado inactivo/retirado y, cuando corresponda, fecha de fin de vigencia.
+
+Los códigos utilizados no se reutilizan con otro significado.
+
+## D-037 — Versiones de formulario
+Una versión activa no se modifica desde Administración. Para evolucionar un formulario:
+1. se clona la versión vigente;
+2. la copia nace como DRAFT;
+3. pueden ajustarse metadatos de presentación/listado;
+4. los cambios estructurales GMP tipados requieren actualización técnica, migración y pruebas;
+5. al activar el borrador, la versión activa anterior queda RETIRED y finaliza su vigencia el día previo.
+
+La activación nunca reescribe expedientes existentes.
+
+## D-038 — Plantillas controladas en PostgreSQL
+Las nuevas plantillas compatibles pueden cargarse desde Administración como DOCX/XLSX. La aplicación:
+- almacena el binario en PostgreSQL;
+- registra nombre, MIME, tamaño y SHA-256;
+- permite mantenerla inactiva hasta revisión;
+- recupera el archivo por módulo, tipo documental y versión al generar documentos.
+
+Las plantillas históricas instaladas por filesystem continúan funcionando como fallback.
+
+Si una nueva revisión modifica la estructura de tablas/campos del anexo, la carga del archivo no basta: el generador debe adaptarse y validarse antes de activar la plantilla.
+
+## D-039 — Parámetros configurables
+Los parámetros administrables se limitan a comportamiento no estructural. No se convierten en texto configurable:
+- estados GMP;
+- clasificaciones reguladas;
+- reglas de cierre;
+- lógica de eficacia;
+- campos GMP tipados;
+- relaciones estructurales.
+
+## D-040 — Preparación de alertas
+Hito 9 incorpora reglas configurables de vencimiento y una bandeja transversal de próximos/vencidos. No existe todavía envío automático de correos, Teams o notificaciones.
+
+El envío requiere:
+- canal corporativo;
+- identidad/roles;
+- permisos;
+- definición de destinatarios;
+- validación correspondiente.
+
+Hasta entonces `ENABLE_ALERT_DELIVERY=false`.
