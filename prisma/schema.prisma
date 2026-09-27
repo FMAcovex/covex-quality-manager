@@ -245,6 +245,7 @@ model Deviation {
   @@index([classification])
   @@index([provenance])
   @@index([deadlineStatus])
+  @@index([includeInKpi])
   @@index([issueDate])
   @@index([closedAt])
 }
