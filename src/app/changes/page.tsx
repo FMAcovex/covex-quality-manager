@@ -32,6 +32,12 @@ export default async function ChangeControlPage({
     status: param(query.status),
   };
   const { rows, departments, years, counters } = await getChangeControlList(filters);
+  const exportYear = filters.year && /^\d{4}$/.test(filters.year)
+    ? filters.year
+    : String(new Date().getFullYear());
+  const simpleParams = new URLSearchParams(
+    Object.entries(filters).filter(([, value]) => Boolean(value)) as Array<[string, string]>,
+  );
 
   return (
     <section className="workspace">
@@ -52,7 +58,15 @@ export default async function ChangeControlPage({
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones de Controles de Cambios</strong>
-              <span className="muted-note">Anexo VII y listado simple quedarán disponibles con las plantillas oficiales instaladas.</span>
+              <a href={`/api/changes/export/annex-vii?year=${exportYear}`}>
+                Anexo VII oficial · {exportYear}
+              </a>
+              <a href={`/api/changes/export/simple?${simpleParams.toString()}`}>
+                Listado simple · filtros actuales
+              </a>
+              <span className="muted-note">
+                El Anexo VII conserva solo las columnas oficiales. El listado simple incluye el seguimiento operativo ampliado.
+              </span>
             </div>
           </details>
         </div>
