@@ -56,6 +56,34 @@ export function setWordCellText(documentXml: string, table: number, row: number,
   return transformWordCell(documentXml, table, row, cell, (xml) => setCellText(xml, text));
 }
 
+
+export function setWordSdtCheckbox(
+  documentXml: string,
+  tableIndex: number,
+  rowIndex: number,
+  checkboxIndex: number,
+  checked: boolean,
+) {
+  return transformNth(documentXml, /<w:tbl(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:tbl>/g, tableIndex, (table) =>
+    transformNth(table, /<w:tr(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:tr>/g, rowIndex, (row) => {
+      let seen = 0;
+      let found = false;
+      const updated = row.replace(/<w:sdt(?:\\s[^>]*)?>[\\s\\S]*?<\\/w:sdt>/g, (sdt) => {
+        if (!sdt.includes("<w14:checkbox")) return sdt;
+        if (seen++ !== checkboxIndex) return sdt;
+        found = true;
+        const val = checked ? "1" : "0";
+        const glyph = checked ? "☒" : "☐";
+        return sdt
+          .replace(/(<w14:checked\\b[^>]*w14:val=")[^"]*("[^>]*\\/>)/, `$1${val}$2`)
+          .replace(/[☐☒]/, glyph);
+      });
+      if (!found) throw new Error(`Word checkbox not found at table ${tableIndex}, row ${rowIndex}, index ${checkboxIndex}`);
+      return updated;
+    }),
+  );
+}
+
 export function markFirstCheckbox(documentXml: string, table: number, row: number, cell: number, checked: boolean) {
   return transformWordCell(documentXml, table, row, cell, (xml) => {
     if (!checked) return xml;
