@@ -221,6 +221,11 @@ export default async function ChangeControlDetailPage({
                       <p>Responsable: {item.responsible} · Próximo: {formatDate(item.nextFollowupDate)}</p>
                       {item.remainOpenReason ? <p><strong>Motivo abierto:</strong> {item.remainOpenReason}</p> : null}
                       {item.conclusion ? <p><strong>Conclusión:</strong> {item.conclusion}</p> : null}
+                      <div className="document-actions">
+                        <a className="button small" href={`/api/changes/${id}/annex-v?version=${item.sequenceNumber}`}>
+                          Descargar Anexo V · {String(item.sequenceNumber).padStart(2,"0")}
+                        </a>
+                      </div>
                       <div className="table-scroll followup-state-table">
                         <table className="records-table compact-table">
                           <thead><tr><th>Origen</th><th>Departamento</th><th>Acción</th><th>Estado</th><th>Fecha real</th><th>Evidencia</th></tr></thead>
@@ -289,11 +294,38 @@ export default async function ChangeControlDetailPage({
           <h2>Documentos del expediente</h2>
           <p className="muted-note">Solicitud (Anexo III), Dictamen (Anexo IV), Seguimientos (Anexo V) y listado maestro anual (Anexo VII) son familias documentales independientes.</p>
           <div className="document-actions">
-            <span className="badge neutral">Anexo III · Solicitud</span>
-            <span className="badge neutral">Anexo IV · Dictamen</span>
-            <span className="badge neutral">Anexo V · Seguimiento por versión</span>
-            <span className="badge neutral">Anexo VII · listado anual</span>
+            <a className="button" href={`/api/changes/${id}/annex-iii`}>Descargar Anexo III · Solicitud</a>
+            <a className="button" href={`/api/changes/${id}/annex-iv`}>Descargar Anexo IV · Dictamen</a>
+            {currentVersion ? (
+              <a className="button" href={`/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}`}>
+                Descargar Anexo V · {versionLabel(currentVersion.sequenceNumber)}
+              </a>
+            ) : (
+              <span className="badge neutral">Anexo V disponible tras Seguimiento 00</span>
+            )}
           </div>
+          {record.qmsRecord.versions.length ? (
+            <div className="timeline">
+              {record.qmsRecord.versions.map((version) => (
+                <div className="timeline-item" key={version.id}>
+                  <div>
+                    <strong>{versionLabel(version.sequenceNumber)} · Seguimiento {String(version.sequenceNumber).padStart(2,"0")}</strong>
+                    <div className="document-actions">
+                      <a className="button small" href={`/api/changes/${id}/annex-v?version=${version.sequenceNumber}`}>
+                        Descargar Anexo V histórico
+                      </a>
+                      <a className="button small" href={`/api/changes/${id}/annex-iii?version=${version.sequenceNumber}`}>
+                        Solicitud en esta versión
+                      </a>
+                      <a className="button small" href={`/api/changes/${id}/annex-iv?version=${version.sequenceNumber}`}>
+                        Dictamen en esta versión
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {record.qmsRecord.generatedDocuments.length ? (
             <div className="timeline">
               {record.qmsRecord.generatedDocuments.map((item) => (
