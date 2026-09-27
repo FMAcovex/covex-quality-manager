@@ -196,8 +196,7 @@ export async function generateChangeAnnexV(record:ChangeDocumentRecord,followupS
   xml=setWordCellText(xml,2,7,0,followup.closesChange?"☒ SI":"☐ SI");
   xml=setWordCellText(xml,2,7,1,followup.closesChange?"☐ NO":"☒ NO");
   xml=setWordCellText(xml,2,7,4,date(followup.nextFollowupDate));
-  xml=setWordCellText(xml,2,8,1,followup.openReason??"");
-  xml=setWordCellText(xml,2,9,1,followup.conclusion??"");
+  xml=setWordCellText(xml,2,9,1,followup.openReason??"");
   xml=setWordCellText(xml,2,10,1,followup.conclusion??"");
   xml=setWordCellText(xml,2,11,0,[
     `Cierre del Seguimiento: ${followup.closedByText??""}`,
