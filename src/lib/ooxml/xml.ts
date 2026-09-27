@@ -119,6 +119,36 @@ export function replaceWordRowWithCopies(
   );
 }
 
+export function replaceWordRowRangeWithCopies(
+  documentXml: string,
+  tableIndex: number,
+  templateRowIndex: number,
+  startRowIndex: number,
+  endRowIndex: number,
+  rows: string[][],
+) {
+  return transformNth(documentXml, /<w:tbl(?:\s[^>]*)?>[\s\S]*?<\/w:tbl>/g, tableIndex, (table) => {
+    const matches = [...table.matchAll(/<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>/g)];
+    const templateRow = matches[templateRowIndex]?.[0];
+    if (!templateRow) throw new Error(`Word row template not found at table ${tableIndex}, row ${templateRowIndex}`);
+    const replacement = rows
+      .map((values) =>
+        values.reduce(
+          (rowXml, value, cell) => setCellTextInRow(rowXml, cell, value),
+          templateRow,
+        ),
+      )
+      .join("");
+    let seen = 0;
+    return table.replace(/<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>/g, (rowXml) => {
+      const index = seen++;
+      if (index === startRowIndex) return replacement;
+      if (index > startRowIndex && index <= endRowIndex) return "";
+      return rowXml;
+    });
+  });
+}
+
 export function appendWordCellText(documentXml: string, table: number, row: number, cell: number, text: string) {
   return transformWordCell(documentXml, table, row, cell, (xml) =>
     xml.replace("</w:tc>", `${paragraphXml(text)}</w:tc>`),
