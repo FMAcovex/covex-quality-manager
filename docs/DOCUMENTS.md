@@ -141,16 +141,14 @@ La descarga Solicitud + Dictamen entrega un ZIP con los dos DOCX para conservar 
 El Anexo V se genera por seguimiento y, cuando existe snapshot funcional, se reconstruye desde el estado persistido de ese seguimiento.
 
 ### Anexo VII
-Se genera como XLSX anual desde la base de datos con las columnas operativas del listado vigente:
-- departamento;
+Se genera como XLSX anual desde la base de datos respetando los campos del Anexo VII de GC-00/003/03:
 - codificación;
+- tipo/clasificación;
 - descripción;
-- fechas de solicitud/aprobación/prevista/ejecución/cierre;
-- clasificación;
-- ejecución;
-- eficacia;
-- último y próximo seguimiento;
-- estado final;
-- observaciones.
+- fecha de solicitud;
+- fecha de aprobación;
+- fecha prevista de ejecución;
+- fecha de ejecución;
+- fecha de cierre.
 
-Existe además listado simple XLSX completo o respetando filtros activos.
+El seguimiento operativo ampliado (departamento, estado de ejecución, eficacia, último/próximo seguimiento, estado final y observaciones) queda en el listado simple XLSX completo o respetando filtros activos, sin alterar el contenido del Anexo VII oficial.
