@@ -11,7 +11,7 @@ const DETAIL_STYLES: Record<string, number> = {
   H: 18, I: 25, J: 25, K: 27, L: 28, M: 26,
 };
 
-function ensureAnnexVDetailRows(sheetXml: string) {
+export function ensureAnnexVDetailRows(sheetXml: string) {
   for (let row = 9; row <= 65; row += 1) {
     const rowRegex = new RegExp(`<row([^>]*\\br="${row}"[^>]*)>([\\s\\S]*?)<\\/row>`);
     sheetXml = sheetXml.replace(rowRegex, (_match, rawAttrs: string, inner: string) => {
@@ -87,14 +87,14 @@ function removeCalcChain(entries: ZipEntry[]) {
   return filtered;
 }
 
-export async function generateAnnexV(year: number, rows: ExportRow[]) {
+export async function generateAnnexV(year: number, rows: ExportRow[], versionCode = "06") {
   if (rows.length > ANNEX_V_CAPACITY) {
     throw new Error(
       `El Anexo V v06 admite ${ANNEX_V_CAPACITY} registros. Hay ${rows.length}; se requiere una plantilla controlada con mayor capacidad.`,
     );
   }
 
-  let entries = readZip(await loadAnnexVTemplate());
+  let entries = readZip(await loadAnnexVTemplate(versionCode));
   let detail = ensureAnnexVDetailRows(getZipEntryText(entries, "xl/worksheets/sheet1.xml"));
   let official = getZipEntryText(entries, "xl/worksheets/sheet3.xml");
   let workbook = getZipEntryText(entries, "xl/workbook.xml");
