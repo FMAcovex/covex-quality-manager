@@ -81,6 +81,8 @@ Se implementarán mediante una entidad común `QmsRecord` y `QmsRelation`, con c
 - reclamación -> varias desviaciones/CAPA/devoluciones;
 - expediente -> varios tipos de expedientes relacionados.
 
+Cada relación se almacena una sola vez en dirección canónica; la vista inversa se deriva en la interfaz. Las relaciones simétricas se normalizan para evitar duplicados invertidos.
+
 ## D-019 — CAPA
 Las CAPA se vinculan formalmente a su/s expediente/s de origen. Una CAPA no es solo texto dentro de la desviación.
 
@@ -108,3 +110,9 @@ Flujo:
 - PR;
 - comprobaciones;
 - squash merge.
+
+## D-025 — Codificación visible
+`businessCode` nunca es PK. Su unicidad se controla por `recordType + businessCode`, permitiendo reglas de codificación independientes por módulo.
+
+## D-026 — Departamento e histórico organizativo
+Los expedientes referencian un catálogo `Department` mediante FK, pero conservan snapshot de código/nombre al crearse o importarse para que cambios organizativos futuros no reescriban el histórico.
