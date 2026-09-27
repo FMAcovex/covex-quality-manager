@@ -6,10 +6,6 @@ import { TemplateUnavailableError } from "@/modules/deviations/documents/templat
 
 export const runtime = "nodejs";
 
-function body(buffer: Buffer) {
-  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const year = Number(url.searchParams.get("year"));
