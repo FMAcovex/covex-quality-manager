@@ -6,6 +6,10 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
+import {
+  getApplicableFormVersion,
+  getApplicableTemplateVersion,
+} from "@/modules/configuration/runtime";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -97,15 +101,10 @@ export async function createCapaAction(
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
   if (!department) return { error: "El departamento seleccionado no existe." };
 
+  const referenceDate = toDate(v.openedAt) ?? new Date();
   const [formVersion, templateVersion] = await Promise.all([
-    prisma.formVersion.findFirst({
-      where: { module: "CAPA", isActive: true },
-      orderBy: { effectiveFrom: "desc" },
-    }),
-    prisma.templateVersion.findFirst({
-      where: { module: "CAPA", documentType: "CAPA_ANNEX_III", isActive: true },
-      orderBy: { effectiveFrom: "desc" },
-    }),
+    getApplicableFormVersion(QmsRecordType.CAPA, referenceDate),
+    getApplicableTemplateVersion(QmsRecordType.CAPA, "CAPA_ANNEX_III", referenceDate),
   ]);
 
   try {
