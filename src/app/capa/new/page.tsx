@@ -20,7 +20,6 @@ export default async function NewCapaPage({
     fromComplaintPlanId ? getComplaintPlanPrefill(fromComplaintPlanId) : Promise.resolve(null),
   ]);
 
-  const plan = deviationPlan ?? complaintPlan;
   const defaults = deviationPlan
     ? {
         actionType: plan.actionType,
