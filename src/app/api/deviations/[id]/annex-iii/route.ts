@@ -30,7 +30,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       },
     });
     const filename = `Anexo_III_${safe(deviation.qmsRecord.businessCode || id)}.docx`;
-    return new Response(body(buffer), {
+    return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "Content-Disposition": `attachment; filename="${filename}"`,
