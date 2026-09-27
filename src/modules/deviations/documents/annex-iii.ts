@@ -101,7 +101,8 @@ function setImpactCell(xml: string, row: number, cell: number, label: string, st
 }
 
 export async function generateAnnexIII(record: AnnexIIIRecord) {
-  const entries = readZip(await loadAnnexIIITemplate());
+  const templateVersion = record.anexoIIITemplateVersion?.versionCode ?? "06";
+  const entries = readZip(await loadAnnexIIITemplate(templateVersion));
   let xml = getZipEntryText(entries, "word/document.xml");
 
   xml = setWordCellText(xml, 0, 1, 1, value(record.qmsRecord.businessCode));
