@@ -26,7 +26,7 @@ Estado: **EN DESARROLLO** en `feature/hito-01-core`.
 - GitHub Actions para validate/generate/lint/test/build.
 
 ### Validación
-La validación definitiva del Hito 1 debe pasar por CI del PR. El entorno de esta sesión no dispone de acceso al registro npm, por lo que no se considera validado hasta obtener CI verde.
+El workflow base de CI ya está integrado en `main`. La validación definitiva del Hito 1 debe pasar por CI del PR. El entorno de esta sesión no dispone de acceso al registro npm, por lo que no se considera validado hasta obtener CI verde.
 
 ## Fuera de alcance todavía
 - formulario completo de Desviaciones;
