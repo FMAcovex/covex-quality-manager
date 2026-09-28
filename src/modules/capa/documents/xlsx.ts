@@ -56,7 +56,7 @@ function shiftRow(rowXml: string, from: number, to: number) {
 
 function trimRowToOfficialColumns(rowXml: string) {
   return rowXml
-    .replace(/<c\\b[^>]*\\br="[G-N]\\d+"[^>]*(?:\\/>|>[\\s\\S]*?<\\/c>)/g, "")
+    .replace(/<c\b[^>]*\br="[G-N]\d+"[^>]*(?:\/>|>[\s\S]*?<\/c>)/g, "")
     .replace(/spans="1:14"/g, 'spans="1:6"');
 }
 
@@ -70,17 +70,17 @@ function capaRowHeight(values: string[]) {
 
 function setCapaPrintLayout(sheetXml: string) {
   let result = sheetXml;
-  if (!/<sheetPr\\b/.test(result)) {
+  if (!/<sheetPr\b/.test(result)) {
     result = result.replace(
-      /(<dimension\\b)/,
+      /(<dimension\b)/,
       '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>$1',
     );
   }
   const pageSetup = '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>';
-  if (/<pageSetup\\b[^>]*\\/>/.test(result)) {
-    result = result.replace(/<pageSetup\\b[^>]*\\/>/, pageSetup);
+  if (/<pageSetup\b[^>]*\/>/.test(result)) {
+    result = result.replace(/<pageSetup\b[^>]*\/>/, pageSetup);
   } else {
-    result = result.replace(/<pageMargins\\b[^>]*\\/>/, (m) => `${m}${pageSetup}`);
+    result = result.replace(/<pageMargins\b[^>]*\/>/, (m) => `${m}${pageSetup}`);
   }
   return result;
 }
