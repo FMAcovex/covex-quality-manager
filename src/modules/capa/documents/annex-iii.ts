@@ -81,7 +81,13 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
     latest ? String(latest.sequenceNumber).padStart(2, "0") : "00",
   );
   xml = setWordCellText(xml, 0, 3, 3, latest ? date(latest.followupDate) : date(record.openedAt));
-  xml = setWordCellText(xml, 0, 4, 1, latest?.reason ?? "Emisión inicial");
+  xml = setWordCellText(
+    xml,
+    0,
+    4,
+    1,
+    latest?.reason ?? (latest?.sequenceNumber === 0 ? "Emisión inicial" : ""),
+  );
 
   const group = originGroup(record.originType);
   const checkbox = {

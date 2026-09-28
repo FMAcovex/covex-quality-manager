@@ -54,6 +54,37 @@ function shiftRow(rowXml: string, from: number, to: number) {
     .replace(new RegExp(`r="([A-Z]+)${from}"`, "g"), `r="$1${to}"`);
 }
 
+function trimRowToOfficialColumns(rowXml: string) {
+  return rowXml
+    .replace(/<c\b[^>]*\br="[G-N]\d+"[^>]*(?:\/>|>[\s\S]*?<\/c>)/g, "")
+    .replace(/spans="1:14"/g, 'spans="1:6"');
+}
+
+function capaRowHeight(values: string[]) {
+  const longest = Math.max(...values.map((value) => value.length), 0);
+  if (longest > 240) return 78;
+  if (longest > 160) return 63;
+  if (longest > 80) return 48;
+  return 33;
+}
+
+function setCapaPrintLayout(sheetXml: string) {
+  let result = sheetXml;
+  if (!/<sheetPr\b/.test(result)) {
+    result = result.replace(
+      /(<dimension\b)/,
+      '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>$1',
+    );
+  }
+  const pageSetup = '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>';
+  if (/<pageSetup\b[^>]*\/>/.test(result)) {
+    result = result.replace(/<pageSetup\b[^>]*\/>/, pageSetup);
+  } else {
+    result = result.replace(/<pageMargins\b[^>]*\/>/, (m) => `${m}${pageSetup}`);
+  }
+  return result;
+}
+
 function setCellStyle(sheetXml:string,ref:string,style:number){
   const re=new RegExp(`(<c\\b[^>]*\\br="${ref}"[^>]*)(>)`);
   return sheetXml.replace(re,(_m,attrs:string,end:string)=>{
@@ -91,7 +122,9 @@ export function expandCapaAnnexIVSheet(
   if (!dataTemplate) throw new Error("Anexo IV CAPA: fila de datos modelo no encontrada.");
 
   const styles = rowStyles(dataTemplate);
-  const headers = sourceRows.filter((item) => item.number <= 4).map((item) => item.xml);
+  const headers = sourceRows
+    .filter((item) => item.number <= 4)
+    .map((item) => trimRowToOfficialColumns(item.xml));
   const legend = sourceRows.filter((item) => item.number >= 13 && item.number <= 15);
 
   const dataRows = rows.map((record, index) => {
@@ -116,19 +149,22 @@ export function expandCapaAnnexIVSheet(
     const cells = ["A","B","C","D","E","F"]
       .map((column, col) => xmlCell(column, row, styles.get(column) ?? "", values[col]))
       .join("");
-    return `<row r="${row}">${cells}</row>`;
+    return `<row r="${row}" spans="1:6" ht="${capaRowHeight(values)}" customHeight="1">${cells}</row>`;
   });
 
   const legendStart = 5 + Math.max(rows.length, 1);
   const shiftedLegend = legend.map((item, index) =>
-    shiftRow(item.xml, item.number, legendStart + index),
+    shiftRow(trimRowToOfficialColumns(item.xml), item.number, legendStart + index),
   );
 
   const newSheetData = `<sheetData>${[...headers, ...dataRows, ...shiftedLegend].join("")}</sheetData>`;
   let result = sheetXml.replace(/<sheetData>[\s\S]*?<\/sheetData>/, newSheetData);
-  result = result.replace(/<dimension ref="[^"]+"/, `<dimension ref="A1:N${legendStart + 2}"`);
+  result = result
+    .replace(/<dimension ref="[^"]+"/, `<dimension ref="A1:F${legendStart + 2}"`)
+    .replace('<mergeCell ref="M1:N1"/>', "")
+    .replace(/<mergeCells count="3">/, '<mergeCells count="2">');
   result = setXlsxCell(result, "A2", `LISTADO DE SEGUIMIENTOS DE CAPAS\n"${year}"`);
-  return result;
+  return setCapaPrintLayout(result);
 }
 
 export async function generateCapaAnnexIV(

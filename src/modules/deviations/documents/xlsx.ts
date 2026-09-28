@@ -60,13 +60,28 @@ export function annexVOfficialFillId(status: string) {
   return status === "CLOSED" ? 4 : 3;
 }
 
-function setCellStyle(sheetXml:string,ref:string,style:number){
-  const re=new RegExp(`(<c\\b[^>]*\\br="${ref}"[^>]*)(>)`);
-  return sheetXml.replace(re,(_m,attrs:string,end:string)=>{
-    const next=/\bs="[^"]*"/.test(attrs)?attrs.replace(/\bs="[^"]*"/,`s="${style}"`):`${attrs} s="${style}"`;
-    return `${next}${end}`;
-  });
+function rowStyles(templateRow: string) {
+  const styles = new Map<string, string>();
+  for (const match of templateRow.matchAll(/<c\b([^>]*\br="([A-Z]+)\d+"[^>]*)/g)) {
+    styles.set(match[2], match[1].match(/\bs="([^"]+)"/)?.[1] ?? "");
+  }
+  return styles;
 }
+
+function dataRowHeight(values: string[]) {
+  const longest = Math.max(...values.map((value) => value.length), 0);
+  if (longest > 240) return 78;
+  if (longest > 160) return 63;
+  if (longest > 80) return 48;
+  return 33;
+}
+
+function xlsxCell(column: string, row: number, style: string, value: string) {
+  const styleAttr = style ? ` s="${style}"` : "";
+  if (!value) return `<c r="${column}${row}"${styleAttr}></c>`;
+  return `<c r="${column}${row}"${styleAttr} t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
+}
+
 function addFilledStyles(stylesXml:string,baseStyles:number[],fillIds:number[]){
   const match=stylesXml.match(new RegExp("<cellXfs\\b([^>]*)>([\\s\\S]*?)</cellXfs>"));
   if(!match)throw new Error("Anexo V: cellXfs no encontrado.");
@@ -92,6 +107,28 @@ function addFilledStyles(stylesXml:string,baseStyles:number[],fillIds:number[]){
   return {xml:stylesXml.replace(match[0],replacement),ids};
 }
 
+function setPrintLayout(sheetXml: string) {
+  let result = sheetXml;
+  if (!/<sheetPr\b/.test(result)) {
+    result = result.replace(
+      /(<dimension\b)/,
+      '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>$1',
+    );
+  } else if (!/<pageSetUpPr\b/.test(result)) {
+    result = result.replace(/<sheetPr([^>]*)>/, '<sheetPr$1><pageSetUpPr fitToPage="1"/>');
+  }
+  result = result.replace(
+    /<pageSetup\b([^>]*)\/>/,
+    (_match, attrs: string) => {
+      const clean = attrs
+        .replace(/\s+fitToWidth="[^"]*"/g, "")
+        .replace(/\s+fitToHeight="[^"]*"/g, "");
+      return `<pageSetup${clean} fitToWidth="1" fitToHeight="0"/>`;
+    },
+  );
+  return result;
+}
+
 export async function generateAnnexV(year: number, rows: ExportRow[], versionCode = "06") {
   if (rows.length > ANNEX_V_CAPACITY) {
     throw new Error(`El Anexo V v06 admite ${ANNEX_V_CAPACITY} registros. Hay ${rows.length}; se requiere ampliar la plantilla controlada.`);
@@ -99,25 +136,53 @@ export async function generateAnnexV(year: number, rows: ExportRow[], versionCod
 
   const entries = readZip(await loadAnnexVTemplate(versionCode));
   let sheet = getZipEntryText(entries, "xl/worksheets/sheet1.xml");
-  let styles = getZipEntryText(entries, "xl/styles.xml");
-  const styled=addFilledStyles(styles,[7,8],[3,4]);
-  styles=styled.xml;
+  let stylesXml = getZipEntryText(entries, "xl/styles.xml");
+  let workbook = getZipEntryText(entries, "xl/workbook.xml");
 
-  sheet=setXlsxCell(sheet,"B2",`Listado general de Desviaciones\n"${year}"`);
-  for(let index=0;index<ANNEX_V_CAPACITY;index+=1){
-    const excelRow=6+index;
-    const record=rows[index]??null;
-    const values=record?annexVOfficialRowValues(record):Array(6).fill("");
-    ["A","B","C","D","E","F"].forEach((column,i)=>{sheet=setXlsxCell(sheet,`${column}${excelRow}`,values[i] as string);});
-    if(record){
-      const fillId=annexVOfficialFillId(record.status);
-      ["A","B","C","D","E"].forEach(column=>{sheet=setCellStyle(sheet,`${column}${excelRow}`,styled.ids.get(`${fillId}:7`)!);});
-      sheet=setCellStyle(sheet,`F${excelRow}`,styled.ids.get(`${fillId}:8`)!);
-    }
-  }
+  const sheetData = sheet.match(/<sheetData>([\s\S]*?)<\/sheetData>/);
+  if (!sheetData) throw new Error("Anexo V: sheetData no encontrado.");
+  const sourceRows = [...sheetData[1].matchAll(/<row\b[^>]*\br="(\d+)"[^>]*>[\s\S]*?<\/row>/g)]
+    .map((match) => ({ number: Number(match[1]), xml: match[0] }));
+  const templateRow = sourceRows.find((item) => item.number === 6)?.xml;
+  if (!templateRow) throw new Error("Anexo V: fila de datos modelo no encontrada.");
+
+  const styles = rowStyles(templateRow);
+  const styled = addFilledStyles(stylesXml,[7,8],[3,4]);
+  stylesXml = styled.xml;
+  const headerRows = sourceRows.filter((item) => item.number <= 5).map((item) => item.xml);
+  const legendRows = sourceRows.filter((item) => item.number >= 69 && item.number <= 71).map((item) => item.xml);
+
+  const dataRows = Array.from({ length: ANNEX_V_CAPACITY }, (_, index) => {
+    const excelRow = 6 + index;
+    const record = rows[index] ?? null;
+    const values = record ? annexVOfficialRowValues(record).map(String) : Array(6).fill("");
+    const fillId = record ? annexVOfficialFillId(record.status) : null;
+    const cells = ["A","B","C","D","E","F"].map((column, col) => {
+      const baseStyle = Number(styles.get(column) ?? (column === "F" ? "8" : "7"));
+      const style = fillId ? String(styled.ids.get(`${fillId}:${baseStyle}`) ?? baseStyle) : String(baseStyle);
+      return xlsxCell(column, excelRow, style, values[col] ?? "");
+    }).join("");
+    const height = record ? ` ht="${dataRowHeight(values)}" customHeight="1"` : "";
+    return `<row r="${excelRow}" spans="1:6"${height}>${cells}</row>`;
+  });
+
+  sheet = sheet.replace(
+    /<sheetData>[\s\S]*?<\/sheetData>/,
+    `<sheetData>${[...headerRows,...dataRows,...legendRows].join("")}</sheetData>`,
+  );
+  sheet = sheet
+    .replace(/<dimension ref="[^"]+"/, '<dimension ref="A1:F71"')
+    .replace('<mergeCell ref="B2:F2"/>','<mergeCell ref="B2:F2"/>');
+  sheet = setXlsxCell(sheet,"B2",`Listado general de Desviaciones\n"${year}"`);
+  sheet = setPrintLayout(sheet);
+
+  workbook = workbook
+    .replace(/'TABLA OFICIAL'!\$A\$5:\$F\$67/g, "'TABLA OFICIAL'!$A$5:$F$68")
+    .replace(/'TABLA OFICIAL'!\$A\$1:\$F\$67/g, "'TABLA OFICIAL'!$A$1:$F$71");
 
   updateZipEntry(entries,"xl/worksheets/sheet1.xml",sheet);
-  updateZipEntry(entries,"xl/styles.xml",styles);
+  updateZipEntry(entries,"xl/styles.xml",stylesXml);
+  updateZipEntry(entries,"xl/workbook.xml",workbook);
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);
 }

@@ -133,6 +133,20 @@ async function main() {
       internalObservations: "DATOS FICTICIOS PARA DEMOSTRACIÓN.",
     },
   });
+  await prisma.deviationCapaPlan.deleteMany({ where: { deviationId: deviation.id } });
+  await prisma.deviationCapaPlan.create({
+    data: {
+      deviationId: deviation.id,
+      actionType: CapaActionType.CORRECTIVE,
+      description: "Actualizar y revisar el paquete documental ficticio de entrenamiento.",
+      plannedExecutionDate: new Date("2026-10-10"),
+      responsible: "Usuario demo",
+      businessCapaCode: "DEMO-CAPA-001-2026",
+      linkedCapaRecordId: capaQms.id,
+      proposalStatus: "REGISTERED",
+    },
+  });
+
   await prisma.capaPlannedAction.deleteMany({ where: { capaId: capa.id } });
   await prisma.capaPlannedAction.create({
     data: {
