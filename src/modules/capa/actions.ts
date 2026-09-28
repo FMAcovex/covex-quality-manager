@@ -313,7 +313,7 @@ export async function updateCapaAction(
 ): Promise<CapaFormState> {
   const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: true });
   if (parsed.errors.length) {
-    return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors };
+    return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues };
   }
 
   const existing = await prisma.capa.findUnique({
