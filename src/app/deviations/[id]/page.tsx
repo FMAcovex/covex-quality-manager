@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addDeviationFollowupAction } from "@/modules/deviations/actions";
+import { addDeviationFollowupAction, addDeviationRelationAction } from "@/modules/deviations/actions";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
+import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ const tabs = [
   ["investigation", "Investigación"],
   ["actions", "Acciones"],
   ["followups", "Seguimientos"],
+  ["relations", "Relaciones"],
   ["versions", "Versiones"],
   ["documents", "Documentos"],
   ["history", "Historial"],
@@ -189,6 +191,31 @@ export default async function DeviationDetailPage({
             </form>
           </div>
         </>
+      ) : null}
+
+      {activeTab === "relations" ? (
+        <div className="card">
+          <h2>Expedientes relacionados</h2>
+          {related.length ? (
+            <div className="relation-list">
+              {related.map((item, index) => (
+                <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
+                  <span>{item.type}</span>
+                  <Link href={qmsRecordHref(item.record.recordType, item.record.id)}>
+                    <strong>{item.record.businessCode ?? qmsRecordTypeLabel(item.record.recordType)}</strong>
+                  </Link>
+                  <small>{qmsRecordTypeLabel(item.record.recordType)}</small>
+                </div>
+              ))}
+            </div>
+          ) : <div className="empty-panel">No hay expedientes relacionados.</div>}
+          <form action={addDeviationRelationAction.bind(null, id)} className="inline-form relation-form">
+            <label className="field"><span>Codificación</span><input name="businessCode" placeholder="AC/GC-00/001/2026" required /></label>
+            <label className="field"><span>Relación</span><select name="relationType"><option value="RELATED_TO">Relacionada con</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implementada por</option><option value="ASSOCIATED_WITH">Asociada con</option></select></label>
+            <label className="field"><span>Registrado por</span><input name="actor" defaultValue={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} /></label>
+            <div className="full"><button className="button primary">Añadir relación</button></div>
+          </form>
+        </div>
       ) : null}
 
       {activeTab === "versions" ? (
