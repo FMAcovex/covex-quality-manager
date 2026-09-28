@@ -66,7 +66,7 @@ export async function getAlertPreview(referenceDate=new Date()){
       const due=r.followups[0]?.nextFollowupDate;
       if(!due)continue;
       const limit=addDays(today,capaFollow.leadDays);
-      if(day(due)<=limit)items.push({key:`CAPA-F-${r.id}`,ruleKey:capaFollow.key,module:"CAPA",businessCode:r.qmsRecord.businessCode??"Sin código",label:"Seguimiento CAPA",dueDate:day(due),state:dueState(day(due),today),href:`/capa/${r.id}?tab=followups`,detail:r.followups[0]?.comment??"Seguimiento programado"});
+      if(day(due)<=limit)items.push({key:`CAPA-F-${r.id}`,ruleKey:capaFollow.key,module:"CAPA",businessCode:r.qmsRecord.businessCode??"Sin código",label:"Seguimiento CAPA",dueDate:day(due),state:dueState(day(due),today),href:`/capa/${r.id}?tab=followups`,detail:r.followups[0]?.description??r.followups[0]?.observations??"Seguimiento programado"});
     }
   }
 
