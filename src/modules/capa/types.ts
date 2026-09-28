@@ -16,6 +16,9 @@ export type CapaFormDefaults = {
   departmentId?: string;
   openedAt?: string;
   createdByText?: string;
+  issuedByRole?: string;
+  approvalNames?: string;
+  approvalRoles?: string;
   originType?: string;
   originCode?: string;
   applicableTo?: string;
