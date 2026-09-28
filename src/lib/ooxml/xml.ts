@@ -389,6 +389,22 @@ export function extractWordBodyRange(
   );
 }
 
+export function extractWordBodyRangeIfPresent(
+  documentXml: string,
+  startMarker: string,
+  endMarker?: string,
+  startOccurrence: "first" | "last" = "last",
+) {
+  try {
+    return extractWordBodyRange(documentXml, startMarker, endMarker, startOccurrence);
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("Word annex start marker not found:")) {
+      return documentXml;
+    }
+    throw error;
+  }
+}
+
 export function setWordParagraphText(
   documentXml: string,
   paragraphIndex: number,
