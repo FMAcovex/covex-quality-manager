@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ColumnSelector } from "@/components/column-selector";
 import { complaintColumns } from "@/modules/complaints/column-config";
+import { QmsRelationLinks } from "@/components/qms-relation-links";
 import { complaintClassificationLabel,complaintEffectivenessLabel,complaintStatusLabel,complaintTypeLabel,formatDate } from "@/modules/complaints/domain";
 import { getComplaintList } from "@/modules/complaints/queries";
 
@@ -40,7 +41,8 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
     <td data-column-key="status"><span className={`badge ${r.status==="OPEN"?"open":"closed"}`}>{complaintStatusLabel(r.status)}</span></td>
     <td data-column-key="effectiveness">{complaintEffectivenessLabel(r.effectivenessStatus)}</td><td data-column-key="closing">{formatDate(r.closedAt)}</td>
     <td data-column-key="capa" className="table-cell-wrap">{[r.internalObservations,...r.capaPlans.map(x=>x.businessCapaCode||x.description)].filter(Boolean).join(" · ")||"—"}</td>
-   </tr>):<tr><td colSpan={12} className="empty-state"><strong>No hay reclamaciones con estos filtros.</strong></td></tr>}
+    <td data-column-key="relations"><QmsRelationLinks sourceRelations={r.qmsRecord.sourceRelations} targetRelations={r.qmsRecord.targetRelations} /></td>
+   </tr>):<tr><td colSpan={13} className="empty-state"><strong>No hay reclamaciones con estos filtros.</strong></td></tr>}
   </tbody></table></div></div>
  </section>;
 }
