@@ -1,3 +1,8 @@
+import { DocumentType } from "@prisma/client";
+import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
+import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
+import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
+import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
 import { generateSimpleXlsx } from "@/lib/ooxml/simple-xlsx";
 import { formatDate,returnDecisionLabel,returnStatusLabel,returnTypeLabel } from "@/modules/returns/domain";
 type Row=Awaited<ReturnType<typeof import("@/modules/returns/documents/export-data").getReturnExportRows>>[number];
@@ -13,13 +18,6 @@ export function generateReturnSimpleList(rows:Row[]){
  ]]);
  return generateSimpleXlsx("Devoluciones",headers,out);
 }
-
-
-import { DocumentType } from "@prisma/client";
-import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
-import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
-import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
 
 const officialDate=(v:Date|null|undefined)=>v?new Intl.DateTimeFormat("es-ES").format(v):"";
 const officialText=(v:string|null|undefined)=>v??"";
