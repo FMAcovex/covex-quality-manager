@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
+import type { FollowupActionState } from "@/components/basic-followup-form";
 import {
   getApplicableFormVersion,
   getApplicableTemplateVersion,
@@ -494,21 +495,21 @@ export async function updateDeviationAction(
   }
 }
 
-export async function addDeviationFollowupAction(formData: FormData) {
+export async function addDeviationFollowupAction(_state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
   const deviationId = formData.get("deviationId")?.toString();
   const followupDate = formData.get("followupDate")?.toString();
   const completedByText = formData.get("completedByText")?.toString().trim();
   const comment = formData.get("comment")?.toString().trim();
 
   if (!deviationId || !followupDate || !completedByText || !comment) {
-    throw new Error("Fecha, cumplimentado por y seguimiento son obligatorios.");
+    return { error: "Fecha, cumplimentado por y seguimiento son obligatorios." };
   }
 
   const deviation = await prisma.deviation.findUnique({
     where: { id: deviationId },
     select: { qmsRecordId: true },
   });
-  if (!deviation) throw new Error("La desviación no existe.");
+  if (!deviation) return { error: "La desviación no existe." };
 
   const followupType = formData.get("followupType")?.toString().trim() || null;
   const nextFollowupDate = formData.get("nextFollowupDate")?.toString() || null;
@@ -568,7 +569,7 @@ export async function addDeviationFollowupAction(formData: FormData) {
   });
 
   revalidatePath(`/deviations/${deviationId}`);
-  redirect(`/deviations/${deviationId}?tab=followups`);
+  return { success: "Seguimiento guardado correctamente." };
 }
 
 
