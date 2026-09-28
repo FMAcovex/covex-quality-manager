@@ -616,3 +616,48 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
   .admin-summary{grid-template-columns:1fr 1fr;}
   .admin-row-form,.admin-catalog-heading,.catalog-item-create,.parameter-row-form,.alert-rule-form{grid-template-columns:1fr;}
 }
+
+
+/* Hito 10 — Endurecimiento y demo */
+.system-state {
+  min-height: calc(100vh - 140px);
+  display: grid;
+  place-items: center;
+}
+.system-state-card {
+  width: min(720px, 100%);
+  padding: 30px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.system-state-card h1 { margin: 4px 0 10px; }
+.system-state-card > p { color: var(--muted); line-height: 1.55; }
+.system-reference {
+  padding: 10px 12px;
+  border: 1px solid #dce5ef;
+  border-radius: 8px;
+  background: #f7f9fc;
+}
+.loading-state {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--muted);
+}
+.loading-state p { margin: 4px 0 0; font-size: 12px; }
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #dce5ef;
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: qms-spin .8s linear infinite;
+}
+@keyframes qms-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner { animation: none; border-top-color: #dce5ef; }
+}
