@@ -2,7 +2,7 @@
 
 import type { FollowupActionState } from "@/components/basic-followup-form";
 
-import { Prisma, QmsRecordType, QmsRelationType } from "@prisma/client";
+import { Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
