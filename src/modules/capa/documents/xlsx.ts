@@ -6,6 +6,7 @@ import {
   type ZipEntry,
 } from "@/lib/ooxml/zip";
 import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
+import { addFillVariants, applyStyleMap } from "@/lib/ooxml/xlsx-template";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadCapaAnnexIVTemplate } from "@/modules/capa/documents/templates";
 
@@ -58,6 +59,8 @@ export function expandCapaAnnexIVSheet(
   sheetXml: string,
   year: number,
   rows: CapaExportRow[],
+  openStyles?: Map<number, number>,
+  closedStyles?: Map<number, number>,
 ) {
   const sheetData = sheetXml.match(/<sheetData>([\s\S]*?)<\/sheetData>/);
   if (!sheetData) throw new Error("Anexo IV CAPA: sheetData no encontrado.");
@@ -75,14 +78,15 @@ export function expandCapaAnnexIVSheet(
   const dataRows = rows.map((record, index) => {
     const row = 5 + index;
     const type = record.actionType === "PREVENTIVE" ? "Preventiva" : "Correctiva";
-    const codeOrigin = [record.qmsRecord.businessCode, record.originType, record.originCode]
-      .filter(Boolean)
-      .join(" / ");
+    const codeOrigin = [
+      record.qmsRecord.businessCode ?? "",
+      [record.originType, record.originCode].filter(Boolean).join(" · "),
+    ].filter(Boolean).join("\n");
     const description = record.plannedActions.map((item) => item.description).filter(Boolean).join("\n");
     const responsible = [
-      record.departmentNameSnapshot || record.departmentCodeSnapshot,
+      record.departmentCodeSnapshot || record.departmentNameSnapshot,
       date(record.openedAt),
-    ].filter(Boolean).join(" - ");
+    ].filter(Boolean).join("\n");
     const values = [
       type,
       codeOrigin,
@@ -91,13 +95,25 @@ export function expandCapaAnnexIVSheet(
       date(record.operationalClosedAt),
       date(record.effectiveClosedAt),
     ];
+    const stateStyles = record.status === "OPEN" ? openStyles : closedStyles;
     const cells = ["A","B","C","D","E","F"]
-      .map((column, col) => xmlCell(column, row, styles.get(column) ?? "", values[col]))
+      .map((column, col) => {
+        const base = Number(styles.get(column) ?? "0");
+        return xmlCell(column, row, String(applyStyleMap(base, stateStyles)), values[col]);
+      })
       .join("");
     return `<row r="${row}">${cells}</row>`;
   });
 
-  const legendStart = 5 + Math.max(rows.length, 1);
+  const capacity = Math.max(8, rows.length);
+  for (let index = rows.length; index < capacity; index += 1) {
+    const row = 5 + index;
+    const cells = ["A","B","C","D","E","F"]
+      .map((column) => xmlCell(column, row, styles.get(column) ?? "", ""))
+      .join("");
+    dataRows.push(`<row r="${row}">${cells}</row>`);
+  }
+  const legendStart = 5 + capacity;
   const shiftedLegend = legend.map((item, index) =>
     shiftRow(item.xml, item.number, legendStart + index),
   );
@@ -117,8 +133,18 @@ export async function generateCapaAnnexIV(
   const entries = readZip(await loadCapaAnnexIVTemplate(versionCode));
   const sheetEntry = entries.find((entry) => entry.name === "xl/worksheets/sheet1.xml");
   if (!sheetEntry) throw new Error("Anexo IV CAPA: hoja principal no encontrada.");
-  const sheet = expandCapaAnnexIVSheet(sheetEntry.data.toString("utf8"), year, rows);
+  let stylesXml = getZipEntryText(entries, "xl/styles.xml");
+  const sheetXml = sheetEntry.data.toString("utf8");
+  const dataRow = sheetXml.match(/<row[^>]*\br="5"[^>]*>[\s\S]*?<\/row>/)?.[0];
+  if (!dataRow) throw new Error("Anexo IV CAPA: fila de datos modelo no encontrada.");
+  const bases = [...rowStyles(dataRow).values()];
+  const openVariant = addFillVariants(stylesXml, bases, 14);
+  stylesXml = openVariant.stylesXml;
+  const closedVariant = addFillVariants(stylesXml, bases, 15);
+  stylesXml = closedVariant.stylesXml;
+  const sheet = expandCapaAnnexIVSheet(sheetXml, year, rows, openVariant.styleMap, closedVariant.styleMap);
   updateZipEntry(entries, "xl/worksheets/sheet1.xml", sheet);
+  updateZipEntry(entries, "xl/styles.xml", stylesXml);
 
   const workbook = getZipEntryText(entries, "xl/workbook.xml")
     .replace(/name="ANEXO 2026 IMPRIMIR \(2\)"/, `name="ANEXO ${year} IMPRIMIR"`);
