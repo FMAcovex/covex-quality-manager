@@ -35,10 +35,10 @@ export default async function DeviationDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; followupError?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, followupError } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const deviation = await getDeviationDetail(id);
   if (!deviation) notFound();
@@ -180,6 +180,7 @@ export default async function DeviationDetailPage({
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
             <form action={addDeviationFollowupAction} className="inline-form">
+              {followupError ? <div className="form-errors full">{followupError}</div> : null}
               <input type="hidden" name="deviationId" value={id} />
               <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
               <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={deviation.createdByText ?? ""} required /></label>
