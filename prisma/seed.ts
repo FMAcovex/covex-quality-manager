@@ -279,7 +279,7 @@ async function main() {
     });
   }
 
-  const oldComplaintForm = await prisma.formVersion.upsert({
+  await prisma.formVersion.upsert({
     where: { module_versionCode: { module: QmsRecordType.COMPLAINT, versionCode: "REC-02" } },
     update: { isActive: false, status: "RETIRED", effectiveTo: new Date("2026-09-27") },
     create: {
