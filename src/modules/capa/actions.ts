@@ -13,6 +13,7 @@ import {
 } from "@/lib/qms/relation-rules";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
+import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
 import {
   getApplicableFormVersion,
@@ -650,61 +651,73 @@ export async function addCapaFollowupAction(id: string, _state: FollowupActionSt
   return { success: `Seguimiento ${String(sequenceNumber).padStart(2, "0")} guardado correctamente.` };
 }
 
-export async function addCapaRelationAction(id: string, formData: FormData) {
-  const capa = await prisma.capa.findUnique({
-    where: { id },
-    select: { qmsRecordId: true, createdByText: true },
-  });
-  if (!capa) throw new Error("CAPA no encontrada.");
+export async function addCapaRelationAction(
+  id: string,
+  _state: RelationActionState,
+  formData: FormData,
+): Promise<RelationActionState> {
+  try {
+    const capa = await prisma.capa.findUnique({
+      where: { id },
+      select: { qmsRecordId: true, createdByText: true },
+    });
+    if (!capa) return { error: "CAPA no encontrada." };
 
-  const code = String(formData.get("relatedCode") ?? "").trim();
-  const actor =
-    String(formData.get("createdByText") ?? "").trim() ||
-    capa.createdByText ||
-    "Usuario demo";
-  if (!code) {
-    throw new Error("Debe indicarse la codificación de la Desviación o Reclamación de origen.");
-  }
+    const code = String(formData.get("businessCode") ?? "").trim();
+    const requestedType = String(formData.get("recordType") ?? "").trim() as QmsRecordType;
+    const actor =
+      String(formData.get("actor") ?? "").trim() ||
+      capa.createdByText ||
+      "Usuario demo";
+    if (!code) return { error: "Debe indicarse la codificación del expediente de origen." };
 
-  const allowedTypes = allowedOperationalRelationTypes(QmsRecordType.CAPA);
-  const matches = await prisma.qmsRecord.findMany({
-    where: {
-      businessCode: code,
-      recordType: { in: allowedTypes },
-      id: { not: capa.qmsRecordId },
-    },
-    select: { id: true, recordType: true, businessCode: true },
-  });
-  const origin = selectOperationalRelationTarget(QmsRecordType.CAPA, matches);
-  const relation = canonicalOperationalRelation(
-    { id: capa.qmsRecordId, recordType: QmsRecordType.CAPA, businessCode: null },
-    origin,
-  );
+    const allowedTypes = allowedOperationalRelationTypes(QmsRecordType.CAPA);
+    if (!allowedTypes.includes(requestedType)) {
+      return { error: "Una CAPA solo puede tener como origen una Desviación o una Reclamación." };
+    }
 
-  await prisma.qmsRelation.upsert({
-    where: {
-      sourceRecordId_targetRecordId_relationType: {
+    const matches = await prisma.qmsRecord.findMany({
+      where: {
+        businessCode: code,
+        recordType: requestedType,
+        id: { not: capa.qmsRecordId },
+      },
+      select: { id: true, recordType: true, businessCode: true },
+    });
+    const origin = selectOperationalRelationTarget(QmsRecordType.CAPA, matches);
+    const relation = canonicalOperationalRelation(
+      { id: capa.qmsRecordId, recordType: QmsRecordType.CAPA, businessCode: null },
+      origin,
+    );
+
+    await prisma.qmsRelation.upsert({
+      where: {
+        sourceRecordId_targetRecordId_relationType: {
+          sourceRecordId: relation.sourceRecordId,
+          targetRecordId: relation.targetRecordId,
+          relationType: relation.relationType,
+        },
+      },
+      update: {
+        isActive: true,
+        createdByText: actor,
+        notes: operationalRelationLabel(relation.sourceType, relation.targetType),
+      },
+      create: {
         sourceRecordId: relation.sourceRecordId,
         targetRecordId: relation.targetRecordId,
         relationType: relation.relationType,
+        createdByText: actor,
+        notes: operationalRelationLabel(relation.sourceType, relation.targetType),
       },
-    },
-    update: {
-      isActive: true,
-      createdByText: actor,
-      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-    },
-    create: {
-      sourceRecordId: relation.sourceRecordId,
-      targetRecordId: relation.targetRecordId,
-      relationType: relation.relationType,
-      createdByText: actor,
-      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-    },
-  });
+    });
 
-  revalidatePath("/capa");
-  revalidatePath("/deviations");
-  revalidatePath("/complaints");
-  revalidatePath(`/capa/${id}`);
+    revalidatePath("/capa");
+    revalidatePath("/deviations");
+    revalidatePath("/complaints");
+    revalidatePath(`/capa/${id}`);
+    return { error: null, success: "Origen vinculado correctamente." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "No se ha podido vincular el origen." };
+  }
 }
