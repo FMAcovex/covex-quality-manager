@@ -230,6 +230,31 @@ export async function createCapaAction(
           });
         }
       }
+      if (v.fromComplaintId) {
+        const complaint = await tx.complaint.findUnique({
+          where: { id: v.fromComplaintId },
+          select: { qmsRecordId: true },
+        });
+        if (complaint) {
+          await tx.qmsRelation.upsert({
+            where: {
+              sourceRecordId_targetRecordId_relationType: {
+                sourceRecordId: complaint.qmsRecordId,
+                targetRecordId: qmsRecord.id,
+                relationType: "GENERATES",
+              },
+            },
+            update: { isActive: true, createdByText: parsed.actor },
+            create: {
+              sourceRecordId: complaint.qmsRecordId,
+              targetRecordId: qmsRecord.id,
+              relationType: "GENERATES",
+              createdByText: parsed.actor,
+              notes: "CAPA creada directamente desde una reclamación.",
+            },
+          });
+        }
+      }
       if (v.fromComplaintPlanId) {
         const plan = await tx.complaintCapaPlan.findUnique({
           where: { id: v.fromComplaintPlanId },

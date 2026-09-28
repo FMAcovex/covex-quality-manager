@@ -141,6 +141,7 @@ export function parseCapaForm(
       changeReason: text(formData, "changeReason"),
       fromDeviationPlanId: text(formData, "fromDeviationPlanId"),
       fromComplaintPlanId: text(formData, "fromComplaintPlanId"),
+      fromComplaintId: text(formData, "fromComplaintId"),
     },
   };
 }
