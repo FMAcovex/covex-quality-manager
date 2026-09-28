@@ -255,6 +255,7 @@ export function CapaForm({
         <h2>6. Conclusión y control documental</h2>
         <div className="form-grid">
           <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={defaults.conclusion} />
+          <Field label="Emitido / revisado / aprobado por" name="approvalNames" defaultValue={defaults.approvalNames} span="span-3" />
           <TextArea label="Observaciones internas" name="internalObservations" defaultValue={defaults.internalObservations} />
           <label className="field">
             <span>Documento firmado disponible</span>
