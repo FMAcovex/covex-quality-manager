@@ -244,6 +244,6 @@ export async function generateComplaintAnnexIII(r: ComplaintDocumentRecord) {
   return writeZip(entries);
 }
 
-export async function generateComplaintAnnexIV(_r: ComplaintDocumentRecord) {
+export async function generateComplaintAnnexIV() {
   throw new ComplaintTemplateUnavailableError("La respuesta al cliente (Anexo IV) no se genera desde la aplicación.");
 }
