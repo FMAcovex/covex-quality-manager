@@ -104,13 +104,16 @@ export async function createCapaAction(
 ): Promise<CapaFormState> {
   const parsed = parseCapaForm(formData);
   if (parsed.errors.length) {
-    return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors };
+    return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues };
   }
   const v = parsed.values;
   let capaId: string;
   try {
+    const duplicate = await prisma.qmsRecord.findUnique({ where: { recordType_businessCode: { recordType: QmsRecordType.CAPA, businessCode: v.businessCode! } } });
+    if (duplicate) return { error: "No se puede guardar la CAPA.", fieldErrors: ["Ya existe una CAPA con esa codificación."], fieldIssues: { businessCode: ["Ya existe una CAPA con esa codificación."] } };
+
     const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return { error: "El departamento seleccionado no existe." };
+    if (!department) return { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } };
 
     const referenceDate = toDate(v.openedAt) ?? new Date();
     const [formVersion, templateVersion] = await Promise.all([
@@ -358,7 +361,7 @@ export async function updateCapaAction(
     }
   }
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "El departamento seleccionado no existe." };
+  if (!department) return { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } };
 
   const oldSnapshot = {
     businessCode: existing.qmsRecord.businessCode,
@@ -513,10 +516,7 @@ export async function updateCapaAction(
     revalidatePath(`/capa/${id}`);
     redirect(`/capa/${id}`);
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "Ya existe una CAPA con esa codificación." };
-    }
-    throw error;
+    return persistenceFormError(error, "la CAPA");
   }
 }
 
