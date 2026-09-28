@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { DocumentTemplateActions } from "@/components/document-template-actions";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { notFound } from "next/navigation";
 import { addDeviationFollowupFormAction, addDeviationRelationAction } from "@/modules/deviations/actions";
 import { ActionFeedbackForm } from "@/components/action-feedback-form";
@@ -42,7 +44,10 @@ export default async function DeviationDetailPage({
   const { id } = await params;
   const { tab: rawTab } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
-  const deviation = await getDeviationDetail(id);
+  const [deviation, documentTemplates] = await Promise.all([
+    getDeviationDetail(id),
+    getActiveTemplateAssets("DEVIATION"),
+  ]);
   if (!deviation) notFound();
 
   const code = deviation.qmsRecord.businessCode ?? "Sin codificación";
@@ -285,10 +290,13 @@ export default async function DeviationDetailPage({
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{deviation.signedDocumentAvailable === true ? "Disponible" : deviation.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="document-actions">
-            <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
-            <span className="muted-note">Se genera desde la plantilla v06 asociada al expediente y se registra la generación.</span>
-          </div>
+          <DocumentTemplateActions
+            templates={documentTemplates}
+            documentType="DEVIATION_ANNEX_III"
+            title="Anexo III · Informe de desviación"
+            generateHref={`/api/deviations/${id}/annex-iii`}
+            generateLabel="Generar Anexo III cumplimentado"
+          />
           {deviation.qmsRecord.generatedDocuments.length ? (
             <>
               <h3>Generaciones registradas</h3>
