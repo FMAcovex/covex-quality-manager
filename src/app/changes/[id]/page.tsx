@@ -4,10 +4,11 @@ import { getActiveTemplateAssets } from "@/modules/configuration/template-querie
 import { notFound } from "next/navigation";
 import {
   addChangeControlFollowupFormAction,
-  addChangeControlRelationAction,
+  addChangeControlRelationFormAction,
 } from "@/modules/change-control/actions";
 import { ChangeFollowupForm } from "@/modules/change-control/components/change-followup-form";
 import { QmsRelatedLinks } from "@/components/qms-related-links";
+import { ActionFeedbackForm } from "@/components/action-feedback-form";
 import {
   classificationLabel,
   dictamenResultLabel,
@@ -370,12 +371,12 @@ export default async function ChangeControlDetailPage({
               ))}
             </div>
           ) : <div className="empty-panel">Sin expedientes relacionados.</div>}
-          <form action={addChangeControlRelationAction.bind(null, id)} className="relation-form inline-form">
+          <ActionFeedbackForm action={addChangeControlRelationFormAction.bind(null, id)} className="relation-form inline-form">
             <label className="field"><span>Codificación relacionada</span><input name="businessCode" required /></label>
             <label className="field"><span>Tipo de relación</span><select name="relationType"><option value="RELATED_TO">Relacionada</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implantada por</option><option value="ASSOCIATED_WITH">Asociada</option></select></label>
             <label className="field"><span>Registrado por</span><input name="actor" defaultValue={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"} /></label>
-            <div className="full"><button className="button primary" type="submit">Añadir relación</button></div>
-          </form>
+            <div className="form-action-row"><button className="button primary" type="submit">Añadir relación</button></div>
+          </ActionFeedbackForm>
         </div>
       ) : null}
 
