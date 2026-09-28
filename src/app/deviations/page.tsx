@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { DocumentType, QmsRecordType } from "@prisma/client";
+import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 import { deadlineLabel, formatDate, measuresLabel } from "@/modules/deviations/domain";
 import { getDeviationList } from "@/modules/deviations/queries";
 import { ColumnSelector } from "@/components/column-selector";
@@ -35,6 +37,7 @@ export default async function DeviationsPage({
     if (value) exportParams.set(key, value);
   });
   const currentYear = filters.year ?? String(new Date().getFullYear());
+  const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_V);
 
   return (
     <section className="workspace">
@@ -61,7 +64,7 @@ export default async function DeviationsPage({
                       .map((year) => <option key={year} value={year}>{year}</option>)}
                   </select>
                 </label>
-                <button className="button small" type="submit">Descargar</button>
+                {officialTemplateReady ? <button className="button small" type="submit">Descargar</button> : <><button className="button small" type="button" disabled>Descargar</button><span className="template-missing-note">Plantilla oficial pendiente de cargar.</span></>}
               </form>
               <a className="export-link" href={`/api/deviations/export/simple?${exportParams.toString()}`}>
                 Listado simple · filtros actuales
