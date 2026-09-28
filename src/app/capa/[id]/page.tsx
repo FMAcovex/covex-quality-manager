@@ -2,7 +2,7 @@ import Link from "next/link";
 import { DocumentTemplateActions } from "@/components/document-template-actions";
 import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { notFound } from "next/navigation";
-import { addCapaFollowupFormAction, addCapaRelationAction } from "@/modules/capa/actions";
+import { addCapaFollowupFormAction, addCapaRelationFormAction } from "@/modules/capa/actions";
 import { ActionFeedbackForm } from "@/components/action-feedback-form";
 import { QmsRelatedLinks } from "@/components/qms-related-links";
 import {
@@ -251,7 +251,7 @@ export default async function CapaDetailPage({
           ) : (
             <div className="empty-panel">No hay otros expedientes estructurados relacionados.</div>
           )}
-          <form action={addCapaRelationAction.bind(null, id)} className="inline-form relation-form">
+          <ActionFeedbackForm action={addCapaRelationFormAction.bind(null, id)} className="inline-form relation-form">
             <label className="field"><span>Código expediente</span><input name="relatedCode" placeholder="D/GC-00/001/2026" required /></label>
             <label className="field">
               <span>Relación</span>
@@ -263,8 +263,8 @@ export default async function CapaDetailPage({
               </select>
             </label>
             <label className="field"><span>Registrado por</span><input name="createdByText" defaultValue={capa.createdByText ?? ""} /></label>
-            <div className="full"><button className="button" type="submit">Añadir relación</button></div>
-          </form>
+            <div className="form-action-row"><button className="button" type="submit">Añadir relación</button></div>
+          </ActionFeedbackForm>
         </div>
       ) : null}
 
