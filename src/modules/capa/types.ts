@@ -30,7 +30,7 @@ export type CapaFormDefaults = {
   effectivenessAssessment?: string;
   effectivenessEvidence?: string;
   effectiveClosedAt?: string;
-  conclusion?: string;
+  conclusion?: string;\n  approvalNames?: string;
   internalObservations?: string;
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";
