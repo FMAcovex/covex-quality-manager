@@ -54,6 +54,53 @@ function shiftRow(rowXml: string, from: number, to: number) {
     .replace(new RegExp(`r="([A-Z]+)${from}"`, "g"), `r="$1${to}"`);
 }
 
+
+function cloneCapaXfWithFill(xf:string,fillId:number){
+ let out=xf.replace(/fillId="[^"]+"/,`fillId="${fillId}"`);
+ if(!/fillId=/.test(out))out=out.replace("<xf ",`<xf fillId="${fillId}" `);
+ if(/applyFill=/.test(out))out=out.replace(/applyFill="[^"]+"/,'applyFill="1"');
+ else out=out.replace("<xf ", '<xf applyFill="1" ');
+ return out;
+}
+
+function addCapaStatusStyles(entries:ZipEntry[]){
+ let stylesXml=getZipEntryText(entries,"xl/styles.xml");
+ const match=stylesXml.match(/<cellXfs count="(\\d+)">([\\s\\S]*?)<\\/cellXfs>/);
+ if(!match)throw new Error("Anexo IV CAPA: estilos no encontrados.");
+ const count=Number(match[1]);
+ const xfs=[...match[2].matchAll(/<xf\\b[^>]*\\/>|<xf\\b[^>]*>[\\s\\S]*?<\\/xf>/g)].map(x=>x[0]);
+ const normal=xfs[8],dateStyle=xfs[9];
+ if(!normal||!dateStyle)throw new Error("Anexo IV CAPA: estilos base no encontrados.");
+ const added=[
+  cloneCapaXfWithFill(normal,4),cloneCapaXfWithFill(dateStyle,4),
+  cloneCapaXfWithFill(normal,5),cloneCapaXfWithFill(dateStyle,5),
+ ];
+ stylesXml=stylesXml.replace(match[0],`<cellXfs count="${count+4}">${match[2]}${added.join("")}</cellXfs>`);
+ updateZipEntry(entries,"xl/styles.xml",stylesXml);
+ return {openNormal:String(count),openDate:String(count+1),closedNormal:String(count+2),closedDate:String(count+3)};
+}
+
+function applyCapaStatusStyles(sheetXml:string,rows:CapaExportRow[],styles:{openNormal:string;openDate:string;closedNormal:string;closedDate:string}){
+ rows.forEach((record,index)=>{
+  const rowNumber=5+index;
+  const closed=record.status!=="OPEN";
+  const normal=closed?styles.closedNormal:styles.openNormal;
+  const dateStyle=closed?styles.closedDate:styles.openDate;
+  const rowRegex=new RegExp(`<row([^>]*\\\\br="${rowNumber}"[^>]*)>([\\\\s\\\\S]*?)<\\\\/row>`);
+  sheetXml=sheetXml.replace(rowRegex,(_m:string,attrs:string,inner:string)=>{
+    let next=inner;
+    for(const col of ["A","B","C","D"]){
+      next=next.replace(new RegExp(`(<c[^>]*\\\\br="${col}${rowNumber}"[^>]*\\\\bs=")[^"]+(")`),`$1${normal}$2`);
+    }
+    for(const col of ["E","F"]){
+      next=next.replace(new RegExp(`(<c[^>]*\\\\br="${col}${rowNumber}"[^>]*\\\\bs=")[^"]+(")`),`$1${dateStyle}$2`);
+    }
+    return `<row${attrs}>${next}</row>`;
+  });
+ });
+ return sheetXml;
+}
+
 export function expandCapaAnnexIVSheet(
   sheetXml: string,
   year: number,
@@ -77,12 +124,12 @@ export function expandCapaAnnexIVSheet(
     const type = record.actionType === "PREVENTIVE" ? "Preventiva" : "Correctiva";
     const codeOrigin = [record.qmsRecord.businessCode, record.originType, record.originCode]
       .filter(Boolean)
-      .join(" / ");
+      .join("\n");
     const description = record.plannedActions.map((item) => item.description).filter(Boolean).join("\n");
     const responsible = [
       record.departmentNameSnapshot || record.departmentCodeSnapshot,
       date(record.openedAt),
-    ].filter(Boolean).join(" - ");
+    ].filter(Boolean).join("\n");
     const values = [
       type,
       codeOrigin,
@@ -115,9 +162,11 @@ export async function generateCapaAnnexIV(
   versionCode = "05",
 ) {
   const entries = readZip(await loadCapaAnnexIVTemplate(versionCode));
+  const statusStyles=addCapaStatusStyles(entries);
   const sheetEntry = entries.find((entry) => entry.name === "xl/worksheets/sheet1.xml");
   if (!sheetEntry) throw new Error("Anexo IV CAPA: hoja principal no encontrada.");
-  const sheet = expandCapaAnnexIVSheet(sheetEntry.data.toString("utf8"), year, rows);
+  let sheet = expandCapaAnnexIVSheet(sheetEntry.data.toString("utf8"), year, rows);
+  sheet=applyCapaStatusStyles(sheet,rows,statusStyles);
   updateZipEntry(entries, "xl/worksheets/sheet1.xml", sheet);
 
   const workbook = getZipEntryText(entries, "xl/workbook.xml")
