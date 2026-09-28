@@ -4,6 +4,7 @@ import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { type ActionFeedbackState, userFacingActionError } from "@/lib/forms/action-feedback";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
 import {
@@ -494,7 +495,7 @@ export async function updateDeviationAction(
   }
 }
 
-export async function addDeviationFollowupAction(formData: FormData) {
+async function saveDeviationFollowup(formData: FormData) {
   const deviationId = formData.get("deviationId")?.toString();
   const followupDate = formData.get("followupDate")?.toString();
   const completedByText = formData.get("completedByText")?.toString().trim();
@@ -567,7 +568,28 @@ export async function addDeviationFollowupAction(formData: FormData) {
     );
   });
 
+  revalidatePath("/deviations");
   revalidatePath(`/deviations/${deviationId}`);
+  return deviationId;
+}
+
+export async function addDeviationFollowupAction(formData: FormData) {
+  const deviationId = await saveDeviationFollowup(formData);
+  redirect(`/deviations/${deviationId}?tab=followups`);
+}
+
+export async function addDeviationFollowupFormAction(
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  let deviationId: string;
+  try {
+    deviationId = await saveDeviationFollowup(formData);
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido guardar el seguimiento."),
+    };
+  }
   redirect(`/deviations/${deviationId}?tab=followups`);
 }
 
