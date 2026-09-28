@@ -6,6 +6,7 @@ import {
   activateTemplateVersionAction,
   cloneFormVersionAction,
   registerTemplateVersionAction,
+  importTemplatePackageAction,
 } from "@/modules/configuration/admin-actions";
 import { getAdministrationOverview, moduleLabel } from "@/modules/configuration/admin-queries";
 
@@ -170,6 +171,25 @@ export default async function VersionsPage() {
           </div>
         </div>
 
+        <div className="analytics-note">
+          <strong>Paquete oficial de prueba:</strong> puedes cargar el ZIP «ANEXOS PARA APP» completo.
+          La aplicación valida cada archivo por SHA-256 y registra automáticamente las plantillas
+          de Desviaciones, CAPA, Controles de Cambios, Reclamaciones y Devoluciones. El PNT de
+          Reclamaciones se usa como referencia documental, pero no se genera la respuesta formal (Anexo IV).
+        </div>
+        <form action={importTemplatePackageAction} className="form-grid admin-template-form" encType="multipart/form-data">
+          <label className="field span-2">
+            <span>Paquete ZIP de plantillas</span>
+            <input name="package" type="file" accept=".zip,application/zip" required />
+          </label>
+          <input type="hidden" name="actor" value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"} />
+          <input type="hidden" name="reason" value="Carga del paquete auditado de plantillas para pruebas Hito 10.2" />
+          <div className="field form-submit">
+            <span>&nbsp;</span>
+            <button className="button primary">Importar y verificar ZIP</button>
+          </div>
+        </form>
+
         <div className="table-scroll">
           <table className="records-table compact-table admin-template-table">
             <thead>
@@ -332,8 +352,8 @@ export default async function VersionsPage() {
           guarda automáticamente su SHA-256 y el binario queda en PostgreSQL. Registrar
           una plantilla no significa que cualquier Word/Excel nuevo sea compatible: si
           cambia la estructura de tablas/campos del anexo, el generador debe adaptarse y
-          validarse antes de activar la versión. Para Reclamaciones y Devoluciones debe
-          cargarse el PNT DOCX completo, porque sus anexos se extraen de esa fuente controlada.
+          validarse antes de activar la versión. En Devoluciones, los Anexos IV y V se extraen
+          del PNT GC-00/028/03; el importador ZIP registra automáticamente esa fuente para ambos.
         </div>
       </section>
     </section>
