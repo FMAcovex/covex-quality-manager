@@ -1,10 +1,16 @@
 "use server";
 
-import { InvestigationMethod, Prisma, QmsRecordType, QmsRelationType } from "@prisma/client";
+import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
+import {
+  allowedOperationalRelationTypes,
+  canonicalOperationalRelation,
+  operationalRelationLabel,
+  selectOperationalRelationTarget,
+} from "@/lib/qms/relation-rules";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -577,40 +583,56 @@ export async function addDeviationFollowupAction(deviationId: string, _state: Fo
 
 
 export async function addDeviationRelationAction(id: string, formData: FormData) {
-  const deviation = await prisma.deviation.findUnique({ where: { id }, select: { qmsRecordId: true } });
+  const deviation = await prisma.deviation.findUnique({
+    where: { id },
+    select: { qmsRecordId: true },
+  });
   if (!deviation) throw new Error("Desviación no encontrada.");
 
   const code = String(formData.get("businessCode") ?? "").trim();
-  const rawType = String(formData.get("relationType") ?? "RELATED_TO");
-  const actor = String(formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo").trim();
-  if (!code) throw new Error("Debe indicarse la codificación del expediente relacionado.");
+  const actor = String(
+    formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo",
+  ).trim();
+  if (!code) throw new Error("Debe indicarse la codificación de la CAPA.");
 
-  const target = await prisma.qmsRecord.findFirst({
-    where: { businessCode: code, id: { not: deviation.qmsRecordId } },
+  const allowedTypes = allowedOperationalRelationTypes(QmsRecordType.DEVIATION);
+  const matches = await prisma.qmsRecord.findMany({
+    where: {
+      businessCode: code,
+      recordType: { in: allowedTypes },
+      id: { not: deviation.qmsRecordId },
+    },
+    select: { id: true, recordType: true, businessCode: true },
   });
-  if (!target) throw new Error("No existe un expediente QMS con esa codificación.");
-
-  const allowed = new Set(Object.values(QmsRelationType));
-  if (!allowed.has(rawType as QmsRelationType)) throw new Error("Tipo de relación no válido.");
-  const relationType = rawType as QmsRelationType;
+  const target = selectOperationalRelationTarget(QmsRecordType.DEVIATION, matches);
+  const relation = canonicalOperationalRelation(
+    { id: deviation.qmsRecordId, recordType: QmsRecordType.DEVIATION, businessCode: null },
+    target,
+  );
 
   await prisma.qmsRelation.upsert({
     where: {
       sourceRecordId_targetRecordId_relationType: {
-        sourceRecordId: deviation.qmsRecordId,
-        targetRecordId: target.id,
-        relationType,
+        sourceRecordId: relation.sourceRecordId,
+        targetRecordId: relation.targetRecordId,
+        relationType: relation.relationType,
       },
     },
-    update: { isActive: true, createdByText: actor },
-    create: {
-      sourceRecordId: deviation.qmsRecordId,
-      targetRecordId: target.id,
-      relationType,
+    update: {
+      isActive: true,
       createdByText: actor,
+      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
+    },
+    create: {
+      sourceRecordId: relation.sourceRecordId,
+      targetRecordId: relation.targetRecordId,
+      relationType: relation.relationType,
+      createdByText: actor,
+      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
     },
   });
 
   revalidatePath("/deviations");
+  revalidatePath("/capa");
   revalidatePath(`/deviations/${id}`);
 }
