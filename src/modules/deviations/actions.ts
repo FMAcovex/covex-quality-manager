@@ -184,7 +184,7 @@ export async function createDeviationAction(
     });
     deviationId = deviation.id;
   } catch (error) {
-    return persistenceFormError(error, "la desviación");
+    return persistenceFormError(error, "la desviación", { duplicateField: "businessCode" });
   }
 
   revalidatePath("/deviations");
@@ -491,7 +491,7 @@ export async function updateDeviationAction(
     revalidatePath(`/deviations/${id}`);
     redirect(`/deviations/${id}`);
   } catch (error) {
-    return persistenceFormError(error, "la desviación");
+    return persistenceFormError(error, "la desviación", { duplicateField: "businessCode" });
   }
 }
 
