@@ -1,11 +1,12 @@
-import { Buffer } from "node:buffer";
 import {
   getZipEntryText,
   readZip,
+  updateZipEntry,
   writeZip,
   type ZipEntry,
 } from "@/lib/ooxml/zip";
-import { escapeXml } from "@/lib/ooxml/xml";
+import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
+import { appendFillStyleVariants, xlsxCellStyle } from "@/lib/ooxml/xlsx-template";
 import { loadChangeAnnexVIITemplate } from "@/modules/change-control/documents/templates";
 
 export type ChangeControlExportRow = {
@@ -67,116 +68,23 @@ function state(value: string) {
   return value === "CLOSED" ? "Cerrado" : "Abierto";
 }
 
-function inlineCell(ref: string, style: string, value: string) {
-  if (!value) return `<x:c r="${ref}" s="${style}" />`;
-  return `<x:c r="${ref}" s="${style}" t="inlineStr"><x:is><x:t xml:space="preserve">${escapeXml(value)}</x:t></x:is></x:c>`;
+function xmlCell(column: string, row: number, style: number, value: string) {
+  if (!value) return `<c r="${column}${row}" s="${style}"></c>`;
+  return `<c r="${column}${row}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
 }
 
-function outputRow(rowNumber: number, row: ChangeControlExportRow) {
-  const values = [
-    row.qmsRecord.businessCode ?? "",
-    classification(row.classification),
-    row.description ?? "",
-    date(row.requestDate),
-    date(row.dictamenDate),
-    date(latestPlanned(row)),
-    date(row.executionDate),
-    date(row.effectiveClosedAt),
-  ];
-  const styles = ["175", "176", "177", "178", "178", "178", "178", "178"];
-  const cells = "BCDEFGHI"
-    .split("")
-    .map((column, index) => inlineCell(`${column}${rowNumber}`, styles[index], values[index]))
-    .join("");
-  return `<x:row r="${rowNumber}" ht="51" hidden="0" customHeight="1">${cells}</x:row>`;
+function rowStyles(templateRow: string) {
+  const styles = new Map<string, number>();
+  for (const match of templateRow.matchAll(/<c\\b([^>]*\\br="([A-Z]+)\\d+"[^>]*)/g)) {
+    styles.set(match[2], Number(match[1].match(/\\bs="([^"]+)"/)?.[1] ?? 0));
+  }
+  return styles;
 }
 
-function fixedRow(rowNumber: number, cells: string, height = "15") {
-  return `<x:row r="${rowNumber}" ht="${height}" hidden="0" customHeight="1">${cells}</x:row>`;
-}
-
-function minimalWorkbookEntries(
-  source: ZipEntry[],
-  sheetXml: string,
-  year: number,
-  maxRow: number,
-): ZipEntry[] {
-  const required = (name: string) => {
-    const entry = source.find((item) => item.name === name);
-    if (!entry) throw new Error(`Anexo VII: recurso no encontrado: ${name}`);
-    return Buffer.from(entry.data);
-  };
-  const sheetRelId = "rIdDrawing";
-  const drawingRelId = "rIdImage";
-  const normalizedSheet = sheetXml.replace(/r:id="R8f3f3d5886ef4028"/, `r:id="${sheetRelId}"`);
-
-  return [
-    {
-      name: "[Content_Types].xml",
-      data: Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Default Extension="png" ContentType="image/png"/>
-  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-  <Override PartName="/xl/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
-  <Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>
-</Types>`),
-    },
-    {
-      name: "_rels/.rels",
-      data: Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>`),
-    },
-    {
-      name: "xl/workbook.xml",
-      data: Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <bookViews><workbookView/></bookViews>
-  <sheets><sheet name="ANEXO VII ${year} IMPRIMIR" sheetId="1" r:id="rId1"/></sheets>
-  <definedNames><definedName name="_xlnm.Print_Area" localSheetId="0">'ANEXO VII ${year} IMPRIMIR'!$B$1:$I${maxRow}</definedName></definedNames>
-</workbook>`),
-    },
-    {
-      name: "xl/_rels/workbook.xml.rels",
-      data: Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>
-</Relationships>`),
-    },
-    { name: "xl/styles.xml", data: required("xl/styles.xml") },
-    { name: "xl/theme/theme1.xml", data: required("xl/theme/theme1.xml") },
-    { name: "xl/worksheets/sheet1.xml", data: Buffer.from(normalizedSheet) },
-    {
-      name: "xl/worksheets/_rels/sheet1.xml.rels",
-      data: Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="/xl/drawings/drawing1.xml" Id="${sheetRelId}"/>
-</Relationships>`),
-    },
-    {
-      name: "xl/drawings/drawing1.xml",
-      data: Buffer.from(
-        required("xl/drawings/drawing7.xml")
-          .toString("utf8")
-          .replace(/r:embed="R6fb6ea9e761443d5"/, `r:embed="${drawingRelId}"`),
-      ),
-    },
-    {
-      name: "xl/drawings/_rels/drawing1.xml.rels",
-      data: Buffer.from(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="/xl/media/image1.png" Id="${drawingRelId}"/>
-</Relationships>`),
-    },
-    { name: "xl/media/image1.png", data: required("xl/media/image3.png") },
-  ];
+function shiftRow(rowXml: string, from: number, to: number) {
+  return rowXml
+    .replace(new RegExp(`(<row[^>]*\\br=")${from}(")`), `$1${to}$2`)
+    .replace(new RegExp(`r="([A-Z]+)${from}"`, "g"), `r="$1${to}"`);
 }
 
 export async function generateChangeAnnexVII(
@@ -184,56 +92,70 @@ export async function generateChangeAnnexVII(
   rows: ChangeControlExportRow[],
   versionCode = "03",
 ) {
-  const source = readZip(await loadChangeAnnexVIITemplate(versionCode));
-  let sheet = getZipEntryText(source, "xl/worksheets/sheet7.xml");
+  const entries = readZip(await loadChangeAnnexVIITemplate(versionCode));
+  let sheet = getZipEntryText(entries, "xl/worksheets/sheet1.xml");
+  let stylesXml = getZipEntryText(entries, "xl/styles.xml");
 
-  const dataRows = rows.map((row, index) => outputRow(5 + index, row));
+  const sheetData = sheet.match(/<sheetData>([\\s\\S]*?)<\\/sheetData>/);
+  if (!sheetData) throw new Error("Anexo VII: sheetData no encontrado.");
+  const sourceRows = [...sheetData[1].matchAll(/<row\\b[^>]*\\br="(\\d+)"[^>]*>[\\s\\S]*?<\\/row>/g)]
+    .map((match) => ({ number: Number(match[1]), xml: match[0] }));
+  const byNumber = new Map(sourceRows.map((item) => [item.number, item.xml]));
+  const dataTemplate = byNumber.get(5);
+  if (!dataTemplate) throw new Error("Anexo VII: fila modelo no encontrada.");
+
+  const openLegendStyle = xlsxCellStyle(sheet, "B17");
+  const closedLegendStyle = xlsxCellStyle(sheet, "B18");
+  if (openLegendStyle === null || closedLegendStyle === null) {
+    throw new Error("Anexo VII: leyenda ABIERTA/CERRADA no encontrada.");
+  }
+
+  const base = rowStyles(dataTemplate);
+  const baseStyles = ["B","C","D","E","F","G","H","I"].map((col) => base.get(col) ?? 0);
+  const openVariants = appendFillStyleVariants(stylesXml, baseStyles, openLegendStyle);
+  stylesXml = openVariants.stylesXml;
+  const closedVariants = appendFillStyleVariants(stylesXml, baseStyles, closedLegendStyle);
+  stylesXml = closedVariants.stylesXml;
+
+  const dataRows = rows.map((record, index) => {
+    const rowNumber = 5 + index;
+    const values = [
+      record.qmsRecord.businessCode ?? "",
+      classification(record.classification),
+      record.description ?? "",
+      date(record.requestDate),
+      date(record.dictamenDate),
+      date(latestPlanned(record)),
+      date(record.executionDate),
+      date(record.effectiveClosedAt),
+    ];
+    const map = record.finalStatus === "OPEN" ? openVariants.styleMap : closedVariants.styleMap;
+    const cells = ["B","C","D","E","F","G","H","I"].map((col, i) => {
+      const baseStyle = base.get(col) ?? 0;
+      return xmlCell(col, rowNumber, map.get(baseStyle) ?? baseStyle, values[i]);
+    }).join("");
+    return `<row r="${rowNumber}" ht="51" customHeight="1">${cells}</row>`;
+  });
+
+  const headers = sourceRows.filter((item) => item.number <= 4).map((item) => item.xml);
+  const legend = sourceRows.filter((item) => item.number >= 16 && item.number <= 18);
   const legendStart = 5 + Math.max(rows.length, 1);
-  const headerRows = [
-    fixedRow(1, inlineCell("I1", "80", "Anexo VII PNT GC-00/003/03")),
-    fixedRow(
-      2,
-      [
-        inlineCell("B2", "82", `LISTADO DE CONTROLES DE CAMBIO\n"AÑO ${year}"`),
-        ...["C","D","E","F","G","H","I"].map((column) => inlineCell(`${column}2`, "82", "")),
-      ].join(""),
-      "57.6",
-    ),
-    fixedRow(
-      4,
-      [
-        "CÓDIFICACIÓN",
-        "TIPO",
-        "DESCRIPCIÓN",
-        "FECHA SOLICITUD",
-        "FECHA DE APROBACIÓN",
-        "FECHA PREVISTA EJECUCION",
-        "FECHA DE EJECUCIÓN",
-        "FECHA CIERRE",
-      ].map((value, index) => inlineCell(`${"BCDEFGHI"[index]}4`, "153", value)).join(""),
-      "58.5",
-    ),
-  ];
-  const legendRows = [
-    fixedRow(
-      legendStart,
-      inlineCell(`B${legendStart}`, "179", "LEYENDA") +
-        inlineCell(`C${legendStart}`, "180", "") +
-        inlineCell(`D${legendStart}`, "181", "FIRMA Y FECHA:"),
-      "42.75",
-    ),
-    fixedRow(legendStart + 1, inlineCell(`B${legendStart + 1}`, "182", "ABIERTA")),
-    fixedRow(legendStart + 2, inlineCell(`B${legendStart + 2}`, "183", "CERRADA")),
-  ];
+  const shiftedLegend = legend.map((item, index) => shiftRow(item.xml, item.number, legendStart + index));
+  const newSheetData = `<sheetData>${[...headers, ...dataRows, ...shiftedLegend].join("")}</sheetData>`;
+  sheet = sheet.replace(/<sheetData>[\\s\\S]*?<\\/sheetData>/, newSheetData);
+  sheet = sheet.replace(/<dimension ref="[^"]+"/, `<dimension ref="A1:N${legendStart + 2}"`);
+  sheet = setXlsxCell(sheet, "B2", `LISTADO DE CONTROLES DE CAMBIO\n"${year}"`);
 
-  const sheetData = `<x:sheetData>${[...headerRows, ...dataRows, ...legendRows].join("")}</x:sheetData>`;
-  sheet = sheet
-    .replace(/<x:sheetData>[\s\S]*?<\/x:sheetData>/, sheetData)
-    .replace(/<x:conditionalFormatting[\s\S]*?<\/x:conditionalFormatting>/g, "")
-    .replace(/<x:tableParts[\s\S]*?<\/x:tableParts>/g, "")
-    .replace(/<x:mergeCells>[\s\S]*?<\/x:mergeCells>/, '<x:mergeCells><x:mergeCell ref="B2:I2" /></x:mergeCells>');
+  updateZipEntry(entries, "xl/worksheets/sheet1.xml", sheet);
+  updateZipEntry(entries, "xl/styles.xml", stylesXml);
 
-  return writeZip(minimalWorkbookEntries(source, sheet, year, Math.max(40, legendStart + 2)));
+  let workbook = getZipEntryText(entries, "xl/workbook.xml");
+  workbook = workbook.replace(
+    /<definedName name="_xlnm.Print_Area" localSheetId="0">[\\s\\S]*?<\\/definedName>/,
+    `<definedName name="_xlnm.Print_Area" localSheetId="0">'ANEXO VII'!$B$1:$I$${legendStart + 2}</definedName>`,
+  );
+  updateZipEntry(entries, "xl/workbook.xml", workbook);
+  return writeZip(entries);
 }
 
 export function generateChangeSimpleList(rows: ChangeControlExportRow[]) {
