@@ -314,7 +314,7 @@ El Hito 9 queda listo para integración en `main`.
 
 
 ## Hito 10 — Endurecimiento y demo
-Estado: **IMPLEMENTADO; PENDIENTE DE VALIDACIÓN FINAL EN CI**.
+Estado: **COMPLETADO Y VALIDADO EN CI**.
 
 Implementación:
 - cabeceras HTTP de seguridad comunes para toda la aplicación;
@@ -338,7 +338,7 @@ Límites mantenidos:
 - el backup lógico no se presenta como política corporativa de backup/DR;
 - la V1 sigue identificada como herramienta piloto no validada GMP.
 
-Validación prevista antes del cierre:
+Validación final:
 - PostgreSQL 16 real;
 - seed base + dataset demo;
 - smoke tests acumulados de Hitos 1–10;
