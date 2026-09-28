@@ -15,7 +15,7 @@ const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
 
 async function getSnapshot(tx:Prisma.TransactionClient,id:string){
- return tx.complaint.findUniqueOrThrow({where:{id},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"asc"},{createdAt:"asc"}]},capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:true}},formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true}});
+ return tx.complaint.findUniqueOrThrow({where:{id},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"asc"},{createdAt:"asc"}]},capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:true}},derivedActions:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true}});
 }
 
 type ExistingComplaintSnapshot={departmentId:string|null;departmentCodeSnapshot:string|null;departmentNameSnapshot:string|null};
@@ -24,15 +24,22 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   departmentId:department.id,
   departmentCodeSnapshot:existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code,
   departmentNameSnapshot:existing?.departmentId===department.id?(existing.departmentNameSnapshot??department.name):department.name,
-  openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),detectedBy:v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType!,
-  partyName:v.partyName,contact:v.contact,affectedScope:v.affectedScope,reference:v.reference,lotReference:v.lotReference,quantity:v.quantity,
+  openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),receptionDate:d(v.receptionDate),detectedBy:v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType!,
+  sourceTypes:v.sourceTypes,sourceOther:v.sourceOther,scopeTypes:v.scopeTypes,scopeOther:v.scopeOther,affectedObjectTypes:v.affectedObjectTypes,affectedObjectOther:v.affectedObjectOther,
+  categoryTypes:v.categoryTypes,categoryOther:v.categoryOther,partyName:v.partyName,contact:v.contact,affectedScope:v.affectedScope,reference:v.reference,lotReference:v.lotReference,quantity:v.quantity,
   expiryReanalysis:v.expiryReanalysis,purchaseDeliveryReference:v.purchaseDeliveryReference,description:v.description,recurrent:v.recurrent,
   recurrenceReference:v.recurrenceReference,attachedDocumentation:v.attachedDocumentation,emittedBy:v.emittedBy,qaValidatedBy:v.qaValidatedBy,
-  investigation:v.investigation,impactAssessment:v.impactAssessment,investigationResult:v.investigationResult,rootCause:v.rootCause,classification:v.classification,
+  investigation:v.investigation,impactAssessment:v.impactAssessment,impactQualityGmp:v.impactQualityGmp,impactSafetyEfficacy:v.impactSafetyEfficacy,
+  impactRegulatory:v.impactRegulatory,impactEnvironment:v.impactEnvironment,impactOtherSimilar:v.impactOtherSimilar,containmentActions:v.containmentActions,
+  containmentOther:v.containmentOther,riskJustification:v.riskJustification,investigationResult:v.investigationResult,rootCause:v.rootCause,classification:v.classification,
+  potentialRecall:v.potentialRecall,recallProcedureRequired:v.recallProcedureRequired,authorityNotificationRequired:v.authorityNotificationRequired,
+  responsiblePartyCommunicationRequired:v.responsiblePartyCommunicationRequired,regulatoryJustification:v.regulatoryJustification,
   resolutionLines:v.resolutionLines,resolutionActions:v.resolutionActions,immediateActionDetails:v.immediateActionDetails,otherResolutionDetails:v.otherResolutionDetails,
-  externalCommunication:v.externalCommunication,conclusion:v.conclusion,effectivenessRequired:v.effectivenessRequired,initialEvaluationDate:d(v.initialEvaluationDate),
-  initialConclusionDate:d(v.initialConclusionDate),responseDate:d(v.responseDate),responseMedium:v.responseMedium,responseSummary:v.responseSummary,
-  effectivenessStatus:v.effectivenessStatus,effectivenessAssessment:v.effectivenessAssessment,closeConclusion:v.closeConclusion,approvalNames:v.approvalNames,
+  externalCommunication:v.externalCommunication,communicationDate:d(v.communicationDate),communicationMedium:v.communicationMedium,communicationParties:v.communicationParties,
+  communicationSummary:v.communicationSummary,partIIRequired:v.partIIRequired,conclusion:v.conclusion,effectivenessRequired:v.effectivenessRequired,initialEvaluationDate:d(v.initialEvaluationDate),
+  initialConclusionDate:d(v.initialConclusionDate),responseDate:d(v.responseDate),responseMedium:v.responseMedium,responseSummary:v.responseSummary,responseSufficient:v.responseSufficient,
+  effectivenessStatus:v.effectivenessStatus,effectivenessAssessment:v.effectivenessAssessment,closeActionStatus:v.closeActionStatus,closeActionReferences:v.closeActionReferences,
+  closeConclusion:v.closeConclusion,approvalNames:v.approvalNames,
   closeApprovalNames:v.closeApprovalNames,closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,
   signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
  };
@@ -45,6 +52,14 @@ async function replaceCapaPlans(tx:Prisma.TransactionClient,complaintId:string,p
  for(const p of plans){
   if(p.id&&preserved.has(p.id))continue;
   await tx.complaintCapaPlan.create({data:{complaintId,actionType:p.actionType,description:p.description,plannedExecutionDate:d(p.plannedExecutionDate),responsible:p.responsible||null,businessCapaCode:p.businessCapaCode||null}});
+ }
+}
+
+async function replaceDerivedActions(tx:Prisma.TransactionClient,complaintId:string,actions:ReturnType<typeof parseComplaintForm>["values"]["derivedActions"]){
+ await tx.complaintDerivedAction.deleteMany({where:{complaintId}});
+ for(let i=0;i<actions.length;i++){
+  const a=actions[i];
+  await tx.complaintDerivedAction.create({data:{complaintId,actionType:a.actionType||"OTRA",businessCode:a.businessCode||null,description:a.description||null,responsible:a.responsible||null,plannedExecutionDate:d(a.plannedExecutionDate),sortOrder:a.sortOrder??i*10}});
  }
 }
 
@@ -63,6 +78,7 @@ export async function createComplaintAction(_s:ComplaintFormState,fd:FormData):P
    const qr=await tx.qmsRecord.create({data:{recordType:"COMPLAINT",businessCode:v.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
    const rec=await tx.complaint.create({data:{qmsRecordId:qr.id,...complaintData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vlist?.id}});
    await replaceCapaPlans(tx,rec.id,v.capaPlans);
+   await replaceDerivedActions(tx,rec.id,v.derivedActions);
    await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,description:v.description}),reason:"Alta de reclamación",source:"UI"}});
    const snap=await getSnapshot(tx,rec.id); await ensureInitialVersion(tx,qr.id,snapshotJson(serializeComplaintVersion(snap)),parsed.actor);
    return rec;
@@ -80,6 +96,7 @@ export async function updateComplaintAction(id:string,_s:ComplaintFormState,fd:F
   await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode:v.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
   await tx.complaint.update({where:{id},data:complaintData(v,department,existing)});
   await replaceCapaPlans(tx,id,v.capaPlans);
+  await replaceDerivedActions(tx,id,v.derivedActions);
   await tx.changeHistory.create({data:{qmsRecordId:existing.qmsRecordId,changedByText:parsed.actor,fieldPath:"__edit__",oldValue:j({updatedAt:existing.updatedAt}),newValue:j({businessCode:v.businessCode,status:v.status}),reason:v.changeReason,source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,existing.qmsRecordId,snapshotJson(serializeComplaintVersion(snap)),parsed.actor,v.changeReason);
  });
