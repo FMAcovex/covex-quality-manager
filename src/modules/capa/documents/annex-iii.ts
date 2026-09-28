@@ -16,6 +16,10 @@ type CapaAnnexRecord = {
   qmsRecord: { businessCode: string | null };
   actionType: string;
   openedAt: Date | null;
+  createdByText: string | null;
+  issuedByRole: string | null;
+  approvalNames: string | null;
+  approvalRoles: string | null;
   originType: string | null;
   originCode: string | null;
   applicableTo: string | null;
@@ -171,6 +175,12 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
   xml = setWordCellText(xml, 1, 13, 1, date(next));
   xml = setWordCellText(xml, 1, 14, 1, date(record.operationalClosedAt));
   xml = setWordCellText(xml, 1, 15, 1, date(record.effectiveClosedAt));
+  xml = setWordCellText(xml, 2, 1, 0, record.createdByText ?? "");
+  xml = setWordCellText(xml, 2, 1, 1, record.issuedByRole ?? "");
+  xml = setWordCellText(xml, 2, 1, 3, date(record.openedAt));
+  xml = setWordCellText(xml, 2, 3, 0, record.approvalNames ?? "");
+  xml = setWordCellText(xml, 2, 3, 1, record.approvalRoles ?? "");
+  xml = setWordCellText(xml, 2, 3, 3, date(record.effectiveClosedAt ?? record.operationalClosedAt));
 
   updateZipEntry(entries, "word/document.xml", xml);
   sanitizeOfficeMetadata(entries);
