@@ -4,6 +4,7 @@ import { InvestigationMethod, Prisma, QmsRecordType, QmsRelationType } from "@pr
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -42,20 +43,21 @@ export async function createDeviationAction(
   }
 
   const v = parsed.values;
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "El departamento seleccionado no existe." };
-
-  const referenceDate = toDate(v.issueDate) ?? new Date();
-  const [formVersion, templateVersion] = await Promise.all([
-    getApplicableFormVersion(QmsRecordType.DEVIATION, referenceDate),
-    getApplicableTemplateVersion(
-      QmsRecordType.DEVIATION,
-      "DEVIATION_ANNEX_III",
-      referenceDate,
-    ),
-  ]);
-
+  let deviationId: string;
   try {
+    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
+    if (!department) return { error: "El departamento seleccionado no existe." };
+
+    const referenceDate = toDate(v.issueDate) ?? new Date();
+    const [formVersion, templateVersion] = await Promise.all([
+      getApplicableFormVersion(QmsRecordType.DEVIATION, referenceDate),
+      getApplicableTemplateVersion(
+        QmsRecordType.DEVIATION,
+        "DEVIATION_ANNEX_III",
+        referenceDate,
+      ),
+    ]);
+
     const deviation = await prisma.$transaction(async (tx) => {
       const qmsRecord = await tx.qmsRecord.create({
         data: {
@@ -177,15 +179,13 @@ export async function createDeviationAction(
 
       return created;
     });
-
-    revalidatePath("/deviations");
-    redirect(`/deviations/${deviation.id}`);
+    deviationId = deviation.id;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "Ya existe una desviación con esa codificación." };
-    }
-    throw error;
+    return persistenceFormError(error, "la desviación");
   }
+
+  revalidatePath("/deviations");
+  redirect(`/deviations/${deviationId}`);
 }
 
 export async function updateDeviationAction(
