@@ -119,13 +119,15 @@ export default async function CapaDetailPage({
                 {origins.map((record) => (
                   <div className="relation-card" key={record.id}>
                     <span>Origen</span>
-                    <strong>{item.record.businessCode ?? item.record.id}</strong>
-                    <small>{item.record.recordType}</small>
+                    <Link href={qmsRecordHref(record.recordType, record.id)}>
+                      <strong>{record.businessCode ?? qmsRecordTypeLabel(record.recordType)}</strong>
+                    </Link>
+                    <small>{qmsRecordTypeLabel(record.recordType)}</small>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="empty-panel">No hay expedientes estructurados relacionados.</div>
+              <div className="empty-panel">No hay una Desviación o Reclamación de origen vinculada.</div>
             )}
           </div>
         </>
