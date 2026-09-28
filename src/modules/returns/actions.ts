@@ -96,11 +96,14 @@ export async function addReturnFollowupAction(id:string,_state:FollowupActionSta
  const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)return{error:"Devolución no encontrada."};
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
  if(!followupDate||!completedByText||!comment)return{error:"Fecha, responsable y comentario son obligatorios."};
- await prisma.$transaction(async tx=>{
+ try{
+await prisma.$transaction(async tx=>{
   await tx.returnFollowup.create({data:{returnRecordId:id,followupDate:new Date(followupDate),completedByText,comment,nextFollowupDate:d(String(fd.get("nextFollowupDate")??"")),evidenceReference:String(fd.get("evidenceReference")??"").trim()||null}});
   await tx.changeHistory.create({data:{qmsRecordId:rec.qmsRecordId,changedByText:completedByText,fieldPath:"followups",newValue:j({followupDate,comment}),reason:"Nuevo seguimiento",source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,rec.qmsRecordId,snapshotJson(serializeReturnVersion(snap)),completedByText,"Nuevo seguimiento");
  });
+
+ }catch(e){return persistenceFormError(e,"el seguimiento de la devolución");}
  revalidatePath(`/returns/${id}`);return{success:"Seguimiento guardado correctamente."};
 }
 export async function addReturnRelationAction(id:string,fd:FormData){
