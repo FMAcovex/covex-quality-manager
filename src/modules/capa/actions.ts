@@ -494,6 +494,10 @@ export async function updateCapaAction(
   }
 }
 
+function capaFollowupError(id: string, message: string): never {
+  redirect(`/capa/${id}?tab=followups&followupError=${encodeURIComponent(message)}#new-followup`);
+}
+
 export async function addCapaFollowupAction(id: string, formData: FormData) {
   const capa = await prisma.capa.findUnique({
     where: { id },
@@ -516,10 +520,11 @@ export async function addCapaFollowupAction(id: string, formData: FormData) {
   const next = String(formData.get("nextFollowupDate") ?? "").trim();
 
   if (!date || !actor || !description) {
-    throw new Error("Fecha, cumplimentado por y descripción son obligatorios.");
+    capaFollowupError(id, "Fecha, cumplimentado por y descripción son obligatorios.");
   }
   if (capa.status === "OPEN" && (!reason || !next)) {
-    throw new Error(
+    capaFollowupError(
+      id,
       "Si la CAPA permanece abierta, el seguimiento debe indicar motivo y fecha del próximo seguimiento.",
     );
   }
@@ -606,6 +611,7 @@ export async function addCapaFollowupAction(id: string, formData: FormData) {
 
   revalidatePath("/capa");
   revalidatePath(`/capa/${id}`);
+  redirect(`/capa/${id}?tab=followups`);
 }
 
 export async function addCapaRelationAction(id: string, formData: FormData) {
