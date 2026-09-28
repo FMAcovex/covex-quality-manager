@@ -15,7 +15,7 @@ function xmlCell(column:string,row:number,style:string,value:string){
 }
 function rowStyles(rowXml:string){
  const styles=new Map<string,string>();
- for(const m of rowXml.matchAll(/<c\\b([^>]*\\br="([A-Z]+)\\d+"[^>]*)/g))styles.set(m[2],m[1].match(/\\bs="([^"]+)"/)?.[1]??"");
+ for(const m of rowXml.matchAll(new RegExp("<c\\b([^>]*\\br=\\\"([A-Z]+)\\d+\\\"[^>]*)","g")))styles.set(m[2],m[1].match(new RegExp("\\bs=\\\"([^\\\"]+)\\\""))?.[1]??"");
  return styles;
 }
 
@@ -24,9 +24,9 @@ export async function generateComplaintAnnexV(year:number,rows:Row[],versionCode
  const entry=entries.find(x=>x.name==="xl/worksheets/sheet1.xml");
  if(!entry)throw new Error("Anexo V Reclamaciones: hoja principal no encontrada.");
  let sheet=entry.data.toString("utf8");
- const data=sheet.match(/<sheetData>([\\s\\S]*?)<\\/sheetData>/);
+ const data=sheet.match(new RegExp("<sheetData>([\\s\\S]*?)</sheetData>"));
  if(!data)throw new Error("Anexo V Reclamaciones: sheetData no encontrado.");
- const source=[...data[1].matchAll(/<row\\b[^>]*\\br="(\\d+)"[^>]*>[\\s\\S]*?<\\/row>/g)].map(m=>({n:Number(m[1]),xml:m[0]}));
+ const source=[...data[1].matchAll(new RegExp("<row\\b[^>]*\\br=\\\"(\\d+)\\\"[^>]*>[\\s\\S]*?</row>","g"))].map(m=>({n:Number(m[1]),xml:m[0]}));
  const template=source.find(x=>x.n===5)?.xml;
  if(!template)throw new Error("Anexo V Reclamaciones: fila modelo no encontrada.");
  const styles=rowStyles(template);
@@ -47,7 +47,7 @@ export async function generateComplaintAnnexV(year:number,rows:Row[],versionCode
   ];
   return `<row r="${n}">${"BCDEFGHIJK".split("").map((col,j)=>xmlCell(col,n,styles.get(col)??"",String(vals[j]??""))).join("")}</row>`;
  });
- sheet=sheet.replace(/<sheetData>[\\s\\S]*?<\\/sheetData>/,`<sheetData>${[...headers,...body].join("")}</sheetData>`);
+ sheet=sheet.replace(new RegExp("<sheetData>[\\s\\S]*?</sheetData>"),`<sheetData>${[...headers,...body].join("")}</sheetData>`);
  sheet=sheet.replace(/<dimension ref="[^"]+"/,`<dimension ref="B1:K${Math.max(5,4+rows.length)}"`);
  sheet=setXlsxCell(sheet,"B2",`LISTADO DE RECLAMACIONES\n"${year}"`);
  updateZipEntry(entries,"xl/worksheets/sheet1.xml",sheet);
