@@ -9,6 +9,7 @@ import {
 } from "@/modules/capa/domain";
 import { getCapaDetail } from "@/modules/capa/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
+import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
@@ -236,8 +237,10 @@ export default async function CapaDetailPage({
               {relations.map((item, index) => (
                 <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
                   <span>{item.direction} · {relationLabel(item.type)}</span>
-                  <strong>{item.record.businessCode ?? item.record.id}</strong>
-                  <small>{item.record.recordType}</small>
+                  <Link href={qmsRecordHref(item.record.recordType, item.record.id)}>
+                    <strong>{item.record.businessCode ?? qmsRecordTypeLabel(item.record.recordType)}</strong>
+                  </Link>
+                  <small>{qmsRecordTypeLabel(item.record.recordType)}</small>
                 </div>
               ))}
             </div>
