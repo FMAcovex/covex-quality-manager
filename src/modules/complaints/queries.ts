@@ -25,7 +25,7 @@ export async function getComplaintList(filters:ComplaintListFilters){
    and.push({effectivenessStatus:filters.effectiveness as "PENDING"|"ACCEPTABLE"|"NOT_ACCEPTABLE"|"NOT_REQUIRED"});
  const where:Prisma.ComplaintWhereInput=and.length?{AND:and}:{};
  const [rows,departments,years,total,open,pendingEfficacy,followupDue]=await Promise.all([
-  prisma.complaint.findMany({where,include:{qmsRecord:true,department:true,capaPlans:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{openedAt:"desc"},{createdAt:"desc"}],take:300}),
+  prisma.complaint.findMany({where,include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:{include:{deviation:{select:{id:true}},capa:{select:{id:true}},changeControl:{select:{id:true}},complaint:{select:{id:true}},returnRecord:{select:{id:true}}}}}},targetRelations:{where:{isActive:true},include:{sourceRecord:{include:{deviation:{select:{id:true}},capa:{select:{id:true}},changeControl:{select:{id:true}},complaint:{select:{id:true}},returnRecord:{select:{id:true}}}}}}}},department:true,capaPlans:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{openedAt:"desc"},{createdAt:"desc"}],take:300}),
   prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
   prisma.qmsRecord.findMany({where:{recordType:QmsRecordType.COMPLAINT,year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}}),
   prisma.complaint.count(),prisma.complaint.count({where:{status:"OPEN"}}),
@@ -39,7 +39,7 @@ export async function getComplaintList(filters:ComplaintListFilters){
 
 export async function getComplaintDetail(id:string){
  return prisma.complaint.findUnique({where:{id},include:{
-  qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}},history:{orderBy:{changedAt:"desc"},take:100},versions:{orderBy:{sequenceNumber:"asc"}},generatedDocuments:{orderBy:{generatedAt:"desc"}}}},
+  qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:{include:{deviation:{select:{id:true}},capa:{select:{id:true}},changeControl:{select:{id:true}},complaint:{select:{id:true}},returnRecord:{select:{id:true}}}}}},targetRelations:{where:{isActive:true},include:{sourceRecord:{include:{deviation:{select:{id:true}},capa:{select:{id:true}},changeControl:{select:{id:true}},complaint:{select:{id:true}},returnRecord:{select:{id:true}}}}}},history:{orderBy:{changedAt:"desc"},take:100},versions:{orderBy:{sequenceNumber:"asc"}},generatedDocuments:{orderBy:{generatedAt:"desc"}}}},
   department:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}]},
   capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:{include:{capa:true}}}},
   formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true

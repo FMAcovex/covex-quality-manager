@@ -27,11 +27,13 @@ export function ChangeFollowupForm({
   departments,
   tasks,
   defaultResponsible,
+  error,
 }: {
   action: (formData: FormData) => Promise<void>;
   departments: Department[];
   tasks: Task[];
   defaultResponsible?: string | null;
+  error?: string;
 }) {
   const initial = useMemo<ChangeFollowupTaskInput[]>(
     () =>
@@ -55,6 +57,7 @@ export function ChangeFollowupForm({
 
   return (
     <form action={action} className="followup-form">
+      {error ? <div className="form-errors">{error}</div> : null}
       <input type="hidden" name="tasksJson" value={JSON.stringify(rows)} />
       <div className="form-grid">
         <label className="field">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addDeviationFollowupAction } from "@/modules/deviations/actions";
+import { addDeviationFollowupAction, addDeviationRelationAction } from "@/modules/deviations/actions";
+import { QmsRelationLinks } from "@/components/qms-relation-links";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
@@ -12,6 +13,7 @@ const tabs = [
   ["investigation", "Investigación"],
   ["actions", "Acciones"],
   ["followups", "Seguimientos"],
+  ["relations", "Relaciones"],
   ["versions", "Versiones"],
   ["documents", "Documentos"],
   ["history", "Historial"],
@@ -33,10 +35,10 @@ export default async function DeviationDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; followupError?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, followupError } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const deviation = await getDeviationDetail(id);
   if (!deviation) notFound();
@@ -71,7 +73,7 @@ export default async function DeviationDetailPage({
         <div className="record-actions">
           <Link className="button primary" href={`/deviations/${id}/edit`}>Editar</Link>
           <Link className="button" href={`/deviations/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
-          <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>
+          <Link className="button" href={`/deviations/${id}?tab=documents`}>Documentos</Link>
         </div>
       </div>
 
@@ -178,6 +180,7 @@ export default async function DeviationDetailPage({
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
             <form action={addDeviationFollowupAction} className="inline-form">
+              {followupError ? <div className="form-errors full">{followupError}</div> : null}
               <input type="hidden" name="deviationId" value={id} />
               <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
               <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={deviation.createdByText ?? ""} required /></label>
@@ -189,6 +192,44 @@ export default async function DeviationDetailPage({
             </form>
           </div>
         </>
+      ) : null}
+
+      {activeTab === "relations" ? (
+        <div className="card">
+          <h2>Expedientes relacionados</h2>
+          <p className="muted-note">
+            Puedes vincular esta desviación con una CAPA, reclamación, control de cambio o devolución existente. La relación se mostrará también desde el otro expediente.
+          </p>
+          <div className="relation-overview">
+            <QmsRelationLinks
+              sourceRelations={deviation.qmsRecord.sourceRelations}
+              targetRelations={deviation.qmsRecord.targetRelations}
+              empty="Sin expedientes vinculados."
+            />
+          </div>
+          <form action={addDeviationRelationAction.bind(null, id)} className="inline-form relation-form">
+            <label className="field">
+              <span>Codificación relacionada</span>
+              <input name="relatedCode" placeholder="AC/GC-00/001/2026" required />
+            </label>
+            <label className="field">
+              <span>Tipo de relación</span>
+              <select name="relationType">
+                <option value="RELATED_TO">Relacionada con</option>
+                <option value="GENERATES">Genera</option>
+                <option value="IMPLEMENTED_BY">Implantada por</option>
+                <option value="ASSOCIATED_WITH">Asociada con</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Registrado por</span>
+              <input name="createdByText" defaultValue={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
+            </label>
+            <div className="full">
+              <button className="button primary" type="submit">Añadir relación</button>
+            </div>
+          </form>
+        </div>
       ) : null}
 
       {activeTab === "versions" ? (
@@ -250,13 +291,39 @@ export default async function DeviationDetailPage({
           <h2>Documentos</h2>
           <dl className="info-grid">
             <div className="info-item"><dt>Versión formulario</dt><dd>{deviation.formVersion?.versionCode ?? "No asignada"}</dd></div>
-            <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
+            <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "06"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{deviation.signedDocumentAvailable === true ? "Disponible" : deviation.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="document-actions">
-            <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
-            <span className="muted-note">Se genera desde la plantilla v06 asociada al expediente y se registra la generación.</span>
+
+          <div className="document-family-list">
+            <div className="document-family">
+              <div>
+                <strong>Anexo III · Informe de desviación</strong>
+                <p>Documento individual del expediente.</p>
+              </div>
+              <div className="document-actions">
+                <a className="button" href="/api/templates/official?module=DEVIATION&documentType=DEVIATION_ANNEX_III&version=06">
+                  Descargar plantilla oficial
+                </a>
+                <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>
+                  Generar Anexo III cumplimentado
+                </a>
+              </div>
+            </div>
+            <div className="document-family">
+              <div>
+                <strong>Anexo V · Listado anual de desviaciones</strong>
+                <p>Plantilla y listado maestro anual; no corresponde a un único expediente.</p>
+              </div>
+              <div className="document-actions">
+                <a className="button" href="/api/templates/official?module=DEVIATION&documentType=DEVIATION_ANNEX_V&version=06">
+                  Descargar plantilla oficial
+                </a>
+                <Link className="button" href="/deviations">Ir al listado para generar el Anexo V</Link>
+              </div>
+            </div>
           </div>
+
           {deviation.qmsRecord.generatedDocuments.length ? (
             <>
               <h3>Generaciones registradas</h3>

@@ -661,3 +661,61 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner { animation: none; border-top-color: #dce5ef; }
 }
+
+
+/* Hito 10.1 — relaciones, documentos y formularios de seguimiento */
+.inline-form {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+}
+.inline-form > .field { grid-column: span 4; }
+.inline-form > .field.full,
+.inline-form > .full,
+.inline-form .form-errors.full { grid-column: 1 / -1; }
+.inline-form .field > span { min-height: 17px; line-height: 1.35; }
+.inline-form .field textarea { min-height: 96px; }
+.relation-form { margin-top: 18px; }
+.relation-overview { margin: 12px 0 4px; }
+.qms-link-list { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.qms-record-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  padding: 3px 9px;
+  border: 1px solid #cbdced;
+  border-radius: 999px;
+  background: #f4f8fd;
+  color: var(--blue-dark);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.qms-record-link:hover { text-decoration: underline; }
+.qms-record-link.disabled-link { color: var(--muted); cursor: default; text-decoration: none; }
+.document-family-list { display: grid; gap: 12px; margin-top: 18px; }
+.document-family {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) minmax(360px, 1.4fr);
+  gap: 18px;
+  align-items: center;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+.document-family strong { display: block; margin-bottom: 4px; }
+.document-family p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.document-family .document-actions { justify-content: flex-end; margin-top: 0; }
+.form-errors { line-height: 1.45; }
+
+@media (max-width: 900px) {
+  .document-family { grid-template-columns: 1fr; }
+  .document-family .document-actions { justify-content: flex-start; }
+  .inline-form > .field { grid-column: span 6; }
+}
+@media (max-width: 760px) {
+  .inline-form > .field,
+  .inline-form > .field.full,
+  .inline-form > .full { grid-column: 1 / -1; }
+}

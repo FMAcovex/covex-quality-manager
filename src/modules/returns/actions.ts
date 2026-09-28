@@ -85,10 +85,11 @@ export async function updateReturnAction(id:string,_s:ReturnFormState,fd:FormDat
  });
  revalidatePath("/returns");revalidatePath(`/returns/${id}`);redirect(`/returns/${id}`);
 }
+function returnFollowupError(id:string,message:string):never{redirect(`/returns/${id}?tab=followups&followupError=${encodeURIComponent(message)}#new-followup`);}
 export async function addReturnFollowupAction(id:string,fd:FormData){
  const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)throw new Error("Devolución no encontrada.");
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
- if(!followupDate||!completedByText||!comment)throw new Error("Fecha, responsable y comentario son obligatorios.");
+ if(!followupDate||!completedByText||!comment)returnFollowupError(id,"Fecha, responsable y comentario son obligatorios.");
  await prisma.$transaction(async tx=>{
   await tx.returnFollowup.create({data:{returnRecordId:id,followupDate:new Date(followupDate),completedByText,comment,nextFollowupDate:d(String(fd.get("nextFollowupDate")??"")),evidenceReference:String(fd.get("evidenceReference")??"").trim()||null}});
   await tx.changeHistory.create({data:{qmsRecordId:rec.qmsRecordId,changedByText:completedByText,fieldPath:"followups",newValue:j({followupDate,comment}),reason:"Nuevo seguimiento",source:"UI"}});

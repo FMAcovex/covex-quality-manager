@@ -84,10 +84,11 @@ export async function updateComplaintAction(id:string,_s:ComplaintFormState,fd:F
  revalidatePath("/complaints");revalidatePath(`/complaints/${id}`);redirect(`/complaints/${id}`);
 }
 
+function complaintFollowupError(id:string,message:string):never{redirect(`/complaints/${id}?tab=followups&followupError=${encodeURIComponent(message)}#new-followup`);}
 export async function addComplaintFollowupAction(id:string,fd:FormData){
  const rec=await prisma.complaint.findUnique({where:{id}});if(!rec)throw new Error("Reclamación no encontrada.");
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
- if(!followupDate||!completedByText||!comment)throw new Error("Fecha, responsable y comentario son obligatorios.");
+ if(!followupDate||!completedByText||!comment)complaintFollowupError(id,"Fecha, responsable y comentario son obligatorios.");
  await prisma.$transaction(async tx=>{
   await tx.complaintFollowup.create({data:{complaintId:id,followupDate:new Date(followupDate),completedByText,followupType:String(fd.get("followupType")??"").trim()||null,comment,nextFollowupDate:d(String(fd.get("nextFollowupDate")??"")),evidenceReference:String(fd.get("evidenceReference")??"").trim()||null}});
   await tx.changeHistory.create({data:{qmsRecordId:rec.qmsRecordId,changedByText:completedByText,fieldPath:"followups",newValue:j({followupDate,comment}),reason:"Nuevo seguimiento",source:"UI"}});
@@ -102,5 +103,5 @@ export async function addComplaintRelationAction(id:string,fd:FormData){
  const allowed=new Set(Object.values(QmsRelationType));if(!allowed.has(rawType as QmsRelationType))throw new Error("Tipo de relación no válido.");const type=rawType as QmsRelationType;
  const target=await prisma.qmsRecord.findFirst({where:{businessCode:code,id:{not:rec.qmsRecordId}}});if(!target)throw new Error("No existe un expediente con esa codificación.");
  await prisma.qmsRelation.upsert({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type}},update:{isActive:true,createdByText:actor},create:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type,createdByText:actor}});
- revalidatePath(`/complaints/${id}`);
+ revalidatePath("/complaints");revalidatePath("/capa");revalidatePath("/deviations");revalidatePath(`/complaints/${id}`);
 }
