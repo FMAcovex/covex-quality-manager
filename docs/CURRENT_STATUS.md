@@ -347,3 +347,22 @@ Validación final:
 - lint;
 - tests;
 - build Next.js de producción.
+
+
+## Hito 10.1 — Correcciones de prueba y UX
+Estado: **IMPLEMENTADO; PENDIENTE DE VALIDACIÓN FINAL EN CI**.
+
+Alcance:
+- errores de validación de seguimientos mostrados dentro del formulario en Desviaciones, CAPA, Controles de Cambios, Reclamaciones y Devoluciones;
+- rejillas de seguimiento responsivas y alineación consistente de etiquetas/campos;
+- relaciones QMS N:N visibles desde ambos expedientes;
+- vinculación manual de expedientes existentes desde Desviaciones y desde los módulos que ya disponían de relaciones;
+- enlaces directos a expedientes relacionados también desde los listados;
+- separación visual entre descarga de plantilla oficial y generación del anexo cumplimentado;
+- una plantilla controlada independiente por tipo documental/anexo;
+- posibilidad de adjuntar el archivo oficial a una versión de plantilla ya creada por el seed, conservando SHA-256 y sin permitir sustitución silenciosa;
+- compatibilidad de Reclamaciones y Devoluciones con plantillas independientes por anexo además del fallback histórico al PNT completo;
+- separación equivalente para los anexos/listados anuales;
+- smoke test específico de relaciones y familias documentales.
+
+Las plantillas GMP oficiales no se incluyen en Git y se cargarán mediante Administración para las pruebas funcionales.
