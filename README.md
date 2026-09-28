@@ -92,4 +92,4 @@ La CI añade PostgreSQL real y smoke tests de todos los módulos, versionado, ad
 
 ## Estado
 
-Hitos 0–9 completados. Hito 10 — Endurecimiento y demo — en validación. Hito 11 queda reservado para producción/IT.
+Hitos 0–10 completados y validados en CI. Hito 11 queda reservado para producción/IT.
