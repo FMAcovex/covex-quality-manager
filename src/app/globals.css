@@ -706,3 +706,72 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
   .followup-form, .document-grid { grid-template-columns: 1fr; }
   .followup-form .field > span { min-height: auto; }
 }
+
+/* Hito 10.8A — relaciones QMS y tarjetas vinculadas */
+.linked-record-grid {
+  display: grid;
+  gap: 10px;
+}
+.linked-record-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fbfcfe;
+}
+.linked-record-main { min-width: 0; }
+.linked-record-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.linked-record-card p {
+  margin: 0 0 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.linked-record-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.linked-record-meta div { min-width: 0; }
+.linked-record-meta dt {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 2px;
+}
+.linked-record-meta dd {
+  margin: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.linked-record-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.linked-record-action .button {
+  width: auto;
+  min-width: 105px;
+}
+.relation-card a {
+  color: var(--blue-dark);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.relation-card a:hover { text-decoration: underline; }
+
+@media (max-width: 760px) {
+  .linked-record-card { grid-template-columns: 1fr; align-items: stretch; }
+  .linked-record-meta { grid-template-columns: 1fr; }
+  .linked-record-action { justify-content: flex-start; }
+}
