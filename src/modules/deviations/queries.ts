@@ -184,11 +184,11 @@ export async function getDeviationDetail(id: string) {
         include: {
           sourceRelations: {
             where: { isActive: true },
-            include: { targetRecord: true },
+            include: { targetRecord: { include: { deviation: { select: { id: true } }, capa: { select: { id: true } }, changeControl: { select: { id: true } }, complaint: { select: { id: true } }, returnRecord: { select: { id: true } } } } },
           },
           targetRelations: {
             where: { isActive: true },
-            include: { sourceRecord: true },
+            include: { sourceRecord: { include: { deviation: { select: { id: true } }, capa: { select: { id: true } }, changeControl: { select: { id: true } }, complaint: { select: { id: true } }, returnRecord: { select: { id: true } } } } },
           },
           history: { orderBy: { changedAt: "desc" }, take: 100 },
           versions: { orderBy: { sequenceNumber: "asc" } },
