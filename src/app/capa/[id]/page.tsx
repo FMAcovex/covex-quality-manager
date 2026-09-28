@@ -11,6 +11,7 @@ import { getCapaDetail } from "@/modules/capa/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { CapaFollowupForm } from "@/modules/capa/components/capa-followup-form";
+import { OperationalRelationForm } from "@/components/operational-relation-form";
 
 export const dynamic = "force-dynamic";
 
@@ -24,13 +25,6 @@ const tabs = [
   ["documents", "Documentos"],
   ["history", "Historial"],
 ] as const;
-
-function relationLabel(type: string) {
-  if (type === "GENERATES") return "Genera";
-  if (type === "IMPLEMENTED_BY") return "Implantada por";
-  if (type === "ASSOCIATED_WITH") return "Asociada";
-  return "Relacionada";
-}
 
 export default async function CapaDetailPage({
   params,
@@ -47,18 +41,14 @@ export default async function CapaDetailPage({
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
 
-  const relations = [
-    ...capa.qmsRecord.targetRelations.map((item) => ({
-      direction: "Origen",
-      type: item.relationType,
-      record: item.sourceRecord,
-    })),
-    ...capa.qmsRecord.sourceRelations.map((item) => ({
-      direction: "Destino",
-      type: item.relationType,
-      record: item.targetRecord,
-    })),
-  ];
+  const origins = capa.qmsRecord.targetRelations
+    .filter(
+      (item) =>
+        item.relationType === "GENERATES" &&
+        (item.sourceRecord.recordType === "DEVIATION" ||
+          item.sourceRecord.recordType === "COMPLAINT"),
+    )
+    .map((item) => item.sourceRecord);
 
   return (
     <section className="workspace">
@@ -124,11 +114,11 @@ export default async function CapaDetailPage({
           </div>
           <div className="card">
             <h2>Trazabilidad con el origen</h2>
-            {relations.length ? (
+            {origins.length ? (
               <div className="relation-list">
-                {relations.map((item, index) => (
-                  <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
-                    <span>{item.direction} · {relationLabel(item.type)}</span>
+                {origins.map((record) => (
+                  <div className="relation-card" key={record.id}>
+                    <span>Origen</span>
                     <strong>{item.record.businessCode ?? item.record.id}</strong>
                     <small>{item.record.recordType}</small>
                   </div>
@@ -223,36 +213,34 @@ export default async function CapaDetailPage({
 
       {activeTab === "relations" ? (
         <div className="card">
-          <h2>Relaciones QMS</h2>
-          {relations.length ? (
+          <h2>Origen de la CAPA</h2>
+          {origins.length ? (
             <div className="relation-list">
-              {relations.map((item, index) => (
-                <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
-                  <span>{item.direction} · {relationLabel(item.type)}</span>
-                  <Link href={qmsRecordHref(item.record.recordType, item.record.id)}>
-                    <strong>{item.record.businessCode ?? qmsRecordTypeLabel(item.record.recordType)}</strong>
+              {origins.map((record) => (
+                <div className="relation-card" key={record.id}>
+                  <span>Origen</span>
+                  <Link href={qmsRecordHref(record.recordType, record.id)}>
+                    <strong>{record.businessCode ?? qmsRecordTypeLabel(record.recordType)}</strong>
                   </Link>
-                  <small>{qmsRecordTypeLabel(item.record.recordType)}</small>
+                  <small>{qmsRecordTypeLabel(record.recordType)}</small>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="empty-panel">No hay otros expedientes estructurados relacionados.</div>
+            <div className="empty-panel">No hay una Desviación o Reclamación de origen vinculada.</div>
           )}
-          <form action={addCapaRelationAction.bind(null, id)} className="inline-form relation-form">
-            <label className="field"><span>Código expediente</span><input name="relatedCode" placeholder="D/GC-00/001/2026" required /></label>
-            <label className="field">
-              <span>Relación</span>
-              <select name="relationType">
-                <option value="RELATED_TO">Relacionada con</option>
-                <option value="GENERATES">Genera</option>
-                <option value="IMPLEMENTED_BY">Implementada por</option>
-                <option value="ASSOCIATED_WITH">Asociada con</option>
-              </select>
-            </label>
-            <label className="field"><span>Registrado por</span><input name="createdByText" defaultValue={capa.createdByText ?? ""} /></label>
-            <div className="full"><button className="button" type="submit">Añadir relación</button></div>
-          </form>
+          <OperationalRelationForm
+            action={addCapaRelationAction.bind(null, id)}
+            title="Vincular expediente de origen"
+            codeLabel="Codificación de origen"
+            codePlaceholder="D/GC-00/001/2026"
+            buttonLabel="Vincular origen"
+            defaultActor={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+            targetOptions={[
+              { value: "DEVIATION", label: "Desviación" },
+              { value: "COMPLAINT", label: "Reclamación" },
+            ]}
+          />
         </div>
       ) : null}
 
