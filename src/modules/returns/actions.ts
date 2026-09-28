@@ -1,11 +1,17 @@
 "use server";
 
 import type { FollowupActionState } from "@/components/basic-followup-form";
-import { Prisma,QmsRecordType,QmsRelationType } from "@prisma/client";
+import { Prisma,QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
+import {
+  allowedOperationalRelationTypes,
+  canonicalOperationalRelation,
+  operationalRelationLabel,
+  selectOperationalRelationTarget,
+} from "@/lib/qms/relation-rules";
 import { parseReturnForm } from "@/modules/returns/validation";
 import type { ReturnFormState } from "@/modules/returns/types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
@@ -107,10 +113,25 @@ await prisma.$transaction(async tx=>{
  revalidatePath(`/returns/${id}`);return{success:"Seguimiento guardado correctamente."};
 }
 export async function addReturnRelationAction(id:string,fd:FormData){
- const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)throw new Error("Devolución no encontrada.");
- const code=String(fd.get("businessCode")??"").trim(),rawType=String(fd.get("relationType")??"RELATED_TO"),actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo");
- const allowed=new Set(Object.values(QmsRelationType));if(!allowed.has(rawType as QmsRelationType))throw new Error("Tipo de relación no válido.");const type=rawType as QmsRelationType;
- const target=await prisma.qmsRecord.findFirst({where:{businessCode:code,id:{not:rec.qmsRecordId}}});if(!target)throw new Error("No existe un expediente con esa codificación.");
- await prisma.qmsRelation.upsert({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type}},update:{isActive:true,createdByText:actor},create:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type,createdByText:actor}});
- revalidatePath(`/returns/${id}`);
+ const rec=await prisma.returnRecord.findUnique({where:{id},select:{qmsRecordId:true}});
+ if(!rec)throw new Error("Devolución no encontrada.");
+ const code=String(fd.get("businessCode")??"").trim();
+ const actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo").trim();
+ if(!code)throw new Error("Debe indicarse la codificación de la Reclamación de origen.");
+ const allowedTypes=allowedOperationalRelationTypes(QmsRecordType.RETURN);
+ const matches=await prisma.qmsRecord.findMany({
+  where:{businessCode:code,recordType:{in:allowedTypes},id:{not:rec.qmsRecordId}},
+  select:{id:true,recordType:true,businessCode:true}
+ });
+ const origin=selectOperationalRelationTarget(QmsRecordType.RETURN,matches);
+ const relation=canonicalOperationalRelation(
+  {id:rec.qmsRecordId,recordType:QmsRecordType.RETURN,businessCode:null},
+  origin
+ );
+ await prisma.qmsRelation.upsert({
+  where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType}},
+  update:{isActive:true,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)},
+  create:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)}
+ });
+ revalidatePath("/returns");revalidatePath("/complaints");revalidatePath(`/returns/${id}`);
 }
