@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addDeviationFollowupAction, addDeviationRelationAction } from "@/modules/deviations/actions";
+import { addDeviationFollowupFormAction, addDeviationRelationAction } from "@/modules/deviations/actions";
+import { ActionFeedbackForm } from "@/components/action-feedback-form";
 import { QmsRelatedLinks } from "@/components/qms-related-links";
 import { collectRelatedRecords } from "@/lib/qms/record-links";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
@@ -171,7 +172,7 @@ export default async function DeviationDetailPage({
           </div>
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
-            <form action={addDeviationFollowupAction} className="inline-form">
+            <ActionFeedbackForm action={addDeviationFollowupFormAction} className="inline-form">
               <input type="hidden" name="deviationId" value={id} />
               <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
               <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={deviation.createdByText ?? ""} required /></label>
@@ -179,8 +180,8 @@ export default async function DeviationDetailPage({
               <label className="field full"><span>Comentario / actuación *</span><textarea name="comment" required /></label>
               <label className="field"><span>Próxima fecha</span><input type="date" name="nextFollowupDate" /></label>
               <label className="field"><span>Referencia / evidencia</span><input name="evidenceReference" /></label>
-              <div className="field"><span>&nbsp;</span><button className="button primary" type="submit">Guardar seguimiento</button></div>
-            </form>
+              <div className="form-action-row"><button className="button primary" type="submit">Guardar seguimiento</button></div>
+            </ActionFeedbackForm>
           </div>
         </>
       ) : null}
