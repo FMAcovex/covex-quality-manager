@@ -90,11 +90,11 @@ function addStateStyles(stylesXml: string) {
       const source = xfs[base];
       if (!source) throw new Error(`Anexo VII: estilo base ${base} no encontrado.`);
       let clone = source;
-      clone = /fillId="\\d+"/.test(clone)
-        ? clone.replace(/fillId="\\d+"/, `fillId="${fillId}"`)
+      clone = /fillId="\d+"/.test(clone)
+        ? clone.replace(/fillId="\d+"/, `fillId="${fillId}"`)
         : clone.replace("<xf ", `<xf fillId="${fillId}" `);
-      clone = /applyFill="\\d+"/.test(clone)
-        ? clone.replace(/applyFill="\\d+"/, 'applyFill="1"')
+      clone = /applyFill="\d+"/.test(clone)
+        ? clone.replace(/applyFill="\d+"/, 'applyFill="1"')
         : clone.replace("<xf ", '<xf applyFill="1" ');
       const id = xfs.length + additions.length;
       additions.push(clone);
@@ -102,7 +102,7 @@ function addStateStyles(stylesXml: string) {
     }
   }
 
-  const attrs = match[1].replace(/count="\\d+"/, `count="${xfs.length + additions.length}"`);
+  const attrs = match[1].replace(/count="\d+"/, `count="${xfs.length + additions.length}"`);
   return {
     xml: stylesXml.replace(
       match[0],
@@ -162,7 +162,7 @@ export function buildChangeAnnexVIISheet(
     fixedRow(
       2,
       [
-        inlineCell("B2", "27", `LISTADO DE CONTROLES DE CAMBIO\\n"AÑO ${year}"`),
+        inlineCell("B2", "27", `LISTADO DE CONTROLES DE CAMBIO\n"AÑO ${year}"`),
         ...["C","D","E","F","G","H"].map((column) => inlineCell(`${column}2`, "28", "")),
         inlineCell("I2", "29", ""),
       ].join(""),
