@@ -172,7 +172,7 @@ export function CapaForm({
         </p>
         <div className="form-grid">
           <TextArea label="Descripción breve del defecto" name="defectDescription" defaultValue={defaults.defectDescription} required />
-          <TextArea label="Causa raíz" name="rootCause" defaultValue={defaults.rootCause} required />
+          <TextArea label="Causa raíz" name="rootCause" defaultValue={defaults.rootCause} required={mode === "create"} />
         </div>
       </section>
 
