@@ -122,6 +122,43 @@ export async function registerTemplateVersionAction(fd:FormData){
   revalidatePath("/settings/versions");
 }
 
+export async function attachTemplateAssetAction(id:string,fd:FormData){
+  const current=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
+  if(current.fileData||current.filePath){
+    throw new Error("Esta versión ya tiene un archivo controlado. Para cambiarlo debe registrarse una nueva versión de plantilla.");
+  }
+  const fileValue=fd.get("file");
+  if(!(fileValue instanceof File)||fileValue.size<=0)throw new Error("Selecciona el archivo oficial DOCX/XLSX.");
+  if(fileValue.size>15*1024*1024)throw new Error("La plantilla supera el límite de 15 MB.");
+  const ext=fileValue.name.toLowerCase().split(".").pop();
+  if(ext!=="docx"&&ext!=="xlsx")throw new Error("Solo se admiten plantillas DOCX o XLSX.");
+  const bytes=new Uint8Array(await fileValue.arrayBuffer());
+  const checksum=createHash("sha256").update(bytes).digest("hex");
+  const updated=await prisma.templateVersion.update({
+    where:{id},
+    data:{
+      fileName:fileValue.name,
+      mimeType:fileValue.type||null,
+      fileData:bytes,
+      fileSize:fileValue.size,
+      checksum,
+    },
+  });
+  const summary=(v:typeof current)=>({
+    id:v.id,module:v.module,documentType:v.documentType,versionCode:v.versionCode,
+    fileName:v.fileName,fileSize:v.fileSize,checksum:v.checksum,isActive:v.isActive,
+  });
+  await logChange(
+    "TemplateVersion",
+    `${current.module}:${current.documentType}:${current.versionCode}`,
+    "ATTACH_FILE",
+    summary(current),
+    summary(updated),
+    fd,
+  );
+  revalidatePath("/settings/versions");
+}
+
 export async function activateTemplateVersionAction(id:string,fd:FormData){
   const target=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
   const currentActive=await prisma.templateVersion.findFirst({where:{module:target.module,documentType:target.documentType,isActive:true,id:{not:id}},orderBy:{effectiveFrom:"desc"}});
