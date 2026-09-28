@@ -2,7 +2,7 @@ import Link from "next/link";
 import { DocumentTemplateActions } from "@/components/document-template-actions";
 import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { notFound } from "next/navigation";
-import { addDeviationFollowupFormAction, addDeviationRelationAction } from "@/modules/deviations/actions";
+import { addDeviationFollowupFormAction, addDeviationRelationFormAction } from "@/modules/deviations/actions";
 import { ActionFeedbackForm } from "@/components/action-feedback-form";
 import { QmsRelatedLinks } from "@/components/qms-related-links";
 import { collectRelatedRecords } from "@/lib/qms/record-links";
@@ -203,7 +203,7 @@ export default async function DeviationDetailPage({
           ) : (
             <div className="empty-panel">No hay expedientes relacionados.</div>
           )}
-          <form action={addDeviationRelationAction.bind(null, id)} className="inline-form relation-form">
+          <ActionFeedbackForm action={addDeviationRelationFormAction.bind(null, id)} className="inline-form relation-form">
             <label className="field">
               <span>Codificación del expediente *</span>
               <input name="businessCode" placeholder="AC/GC-00/001/2026" required />
@@ -224,7 +224,7 @@ export default async function DeviationDetailPage({
             <div className="form-action-row">
               <button className="button primary" type="submit">Vincular expediente</button>
             </div>
-          </form>
+          </ActionFeedbackForm>
         </div>
       ) : null}
 
