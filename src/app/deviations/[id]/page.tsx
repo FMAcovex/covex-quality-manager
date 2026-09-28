@@ -280,9 +280,20 @@ export default async function DeviationDetailPage({
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{deviation.signedDocumentAvailable === true ? "Disponible" : deviation.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="document-actions">
-            <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
-            <span className="muted-note">Se genera desde la plantilla v06 asociada al expediente y se registra la generación.</span>
+          <div className="document-grid">
+            <div className="document-block">
+              <h3>Anexo III · Informe de desviación</h3>
+              <p>Plantilla oficial asociada al expediente y documento Word cumplimentado con los datos vigentes.</p>
+              <div className="document-actions">
+                {deviation.anexoIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${deviation.anexoIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
+                <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+              </div>
+            </div>
+            <div className="document-block">
+              <h3>Anexo V · Listado de desviaciones</h3>
+              <p>Listado oficial anual. Se genera desde la pantalla principal de Desviaciones para el año seleccionado.</p>
+              <Link className="button" href="/deviations">Ir al listado y descargar Anexo V</Link>
+            </div>
           </div>
           {deviation.qmsRecord.generatedDocuments.length ? (
             <>
