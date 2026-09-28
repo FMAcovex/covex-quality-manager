@@ -154,7 +154,7 @@ export function expandCapaAnnexIVSheet(
 
   const legendStart = 5 + Math.max(rows.length, 1);
   const shiftedLegend = legend.map((item, index) =>
-    shiftRow(item.xml, item.number, legendStart + index),
+    shiftRow(trimRowToOfficialColumns(item.xml), item.number, legendStart + index),
   );
 
   const newSheetData = `<sheetData>${[...headers, ...dataRows, ...shiftedLegend].join("")}</sheetData>`;
