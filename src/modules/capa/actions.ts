@@ -651,5 +651,8 @@ export async function addCapaRelationAction(id: string, formData: FormData) {
     },
   });
 
+  revalidatePath("/capa");
+  revalidatePath("/deviations");
+  revalidatePath("/complaints");
   revalidatePath(`/capa/${id}`);
 }
