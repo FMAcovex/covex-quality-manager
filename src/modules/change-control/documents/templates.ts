@@ -10,7 +10,7 @@ const HASHES = {
   annexIII: "a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f",
   annexIV: "742b1de11e0e0dece4e9c65c97613c112325189e183b9cb02c56ca82cd06cc60",
   annexV: "3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4",
-  annexVII: "bdef034e5de4f314d77696230e07f2796c2d139f4868c055d68688082622ce16",
+  annexVII: "543fdac209e0513627b25a8b11de7498478b2bd5a1dba9000bc47b3031499ada",
 } as const;
 
 async function loadTemplate(
