@@ -6,6 +6,7 @@ import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { BasicFollowupForm } from "@/components/basic-followup-form";
+import { OperationalRelationForm } from "@/components/operational-relation-form";
 
 export const dynamic = "force-dynamic";
 
@@ -46,16 +47,13 @@ export default async function DeviationDetailPage({
 
   const code = deviation.qmsRecord.businessCode ?? "Sin codificación";
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
-  const related = [
-    ...deviation.qmsRecord.sourceRelations.map((relation) => ({
-      type: relation.relationType,
-      record: relation.targetRecord,
-    })),
-    ...deviation.qmsRecord.targetRelations.map((relation) => ({
-      type: relation.relationType,
-      record: relation.sourceRecord,
-    })),
-  ];
+  const relatedCapas = deviation.qmsRecord.sourceRelations
+    .filter(
+      (relation) =>
+        relation.relationType === "GENERATES" &&
+        relation.targetRecord.recordType === "CAPA",
+    )
+    .map((relation) => relation.targetRecord);
 
   return (
     <section className="workspace">
@@ -132,10 +130,20 @@ export default async function DeviationDetailPage({
                 ))}
               </div>
             ) : <div className="empty-panel">No hay CAPA propuestas.</div>}
-            {related.length ? (
+            {relatedCapas.length ? (
               <>
-                <h3>Otras relaciones QMS</h3>
-                <div className="relation-list">{related.map((item, index)=><div className="relation-card" key={index}><span>{item.type}</span><Link href={qmsRecordHref(item.record.recordType,item.record.id)}><strong>{item.record.businessCode ?? qmsRecordTypeLabel(item.record.recordType)}</strong></Link><small>{qmsRecordTypeLabel(item.record.recordType)}</small></div>)}</div>
+                <h3>CAPA vinculadas</h3>
+                <div className="relation-list">
+                  {relatedCapas.map((record) => (
+                    <div className="relation-card" key={record.id}>
+                      <span>Generada por esta desviación</span>
+                      <Link href={qmsRecordHref(record.recordType, record.id)}>
+                        <strong>{record.businessCode ?? "CAPA"}</strong>
+                      </Link>
+                      <small>CAPA</small>
+                    </div>
+                  ))}
+                </div>
               </>
             ) : null}
           </div>
@@ -198,26 +206,32 @@ export default async function DeviationDetailPage({
 
       {activeTab === "relations" ? (
         <div className="card">
-          <h2>Expedientes relacionados</h2>
-          {related.length ? (
+          <h2>CAPA relacionadas</h2>
+          <p className="section-help">
+            Una desviación puede generar una o varias CAPA. La relación se almacena una sola vez como Desviación → CAPA.
+          </p>
+          {relatedCapas.length ? (
             <div className="relation-list">
-              {related.map((item, index) => (
-                <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
-                  <span>{item.type}</span>
-                  <Link href={qmsRecordHref(item.record.recordType, item.record.id)}>
-                    <strong>{item.record.businessCode ?? qmsRecordTypeLabel(item.record.recordType)}</strong>
+              {relatedCapas.map((record) => (
+                <div className="relation-card" key={record.id}>
+                  <span>Genera CAPA</span>
+                  <Link href={qmsRecordHref(record.recordType, record.id)}>
+                    <strong>{record.businessCode ?? "CAPA"}</strong>
                   </Link>
-                  <small>{qmsRecordTypeLabel(item.record.recordType)}</small>
+                  <small>CAPA</small>
                 </div>
               ))}
             </div>
-          ) : <div className="empty-panel">No hay expedientes relacionados.</div>}
-          <form action={addDeviationRelationAction.bind(null, id)} className="inline-form relation-form">
-            <label className="field"><span>Codificación</span><input name="businessCode" placeholder="AC/GC-00/001/2026" required /></label>
-            <label className="field"><span>Relación</span><select name="relationType"><option value="RELATED_TO">Relacionada con</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implementada por</option><option value="ASSOCIATED_WITH">Asociada con</option></select></label>
-            <label className="field"><span>Registrado por</span><input name="actor" defaultValue={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} /></label>
-            <div className="full"><button className="button primary">Añadir relación</button></div>
-          </form>
+          ) : <div className="empty-panel">Esta desviación todavía no tiene CAPA vinculadas.</div>}
+          <OperationalRelationForm
+            action={addDeviationRelationAction.bind(null, id)}
+            title="Vincular CAPA existente"
+            codeLabel="Codificación CAPA"
+            codePlaceholder="AC/GC-00/001/2026"
+            buttonLabel="Vincular CAPA"
+            defaultActor={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+            targetOptions={[{ value: "CAPA", label: "CAPA" }]}
+          />
         </div>
       ) : null}
 
