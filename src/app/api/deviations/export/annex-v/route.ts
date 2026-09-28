@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { generateAnnexV } from "@/modules/deviations/documents/xlsx";
 import { prisma } from "@/lib/db";
 import { getDeviationExportRows } from "@/modules/deviations/documents/export-data";
-import { TemplateUnavailableError } from "@/modules/deviations/documents/templates";
+import { TemplateAssetError } from "@/modules/configuration/template-assets";
+import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 
 export const runtime = "nodejs";
 
