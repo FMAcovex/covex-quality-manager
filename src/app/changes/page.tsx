@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ColumnSelector } from "@/components/column-selector";
 import { changeControlColumns } from "@/modules/change-control/column-config";
+import { QmsRelatedLinks } from "@/components/qms-related-links";
+import { collectRelatedRecords } from "@/lib/qms/record-links";
 import {
   classificationLabel,
   effectivenessStatusLabel,
@@ -121,6 +123,7 @@ export default async function ChangeControlPage({
                 <th data-column-key="finalStatus">Estado final</th>
                 <th data-column-key="closureDate">Fecha cierre</th>
                 <th data-column-key="observations">Observaciones</th>
+                <th data-column-key="related">Relacionados</th>
               </tr>
             </thead>
             <tbody>
@@ -146,10 +149,11 @@ export default async function ChangeControlPage({
                     <td data-column-key="finalStatus"><span className={`status-badge ${row.finalStatus.toLowerCase()}`}>{finalStatusLabel(row.finalStatus)}</span></td>
                     <td data-column-key="closureDate">{formatDate(row.effectiveClosedAt)}</td>
                     <td data-column-key="observations" className="long-cell">{row.internalObservations ?? "—"}</td>
+                    <td data-column-key="related"><QmsRelatedLinks records={collectRelatedRecords(row.qmsRecord)} /></td>
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={16}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={17}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>
