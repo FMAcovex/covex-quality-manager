@@ -13,6 +13,7 @@ import {
 } from "@/lib/qms/relation-rules";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
+import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
 import {
   getApplicableFormVersion,
@@ -582,57 +583,69 @@ export async function addDeviationFollowupAction(deviationId: string, _state: Fo
 }
 
 
-export async function addDeviationRelationAction(id: string, formData: FormData) {
-  const deviation = await prisma.deviation.findUnique({
-    where: { id },
-    select: { qmsRecordId: true },
-  });
-  if (!deviation) throw new Error("Desviación no encontrada.");
+export async function addDeviationRelationAction(
+  id: string,
+  _state: RelationActionState,
+  formData: FormData,
+): Promise<RelationActionState> {
+  try {
+    const deviation = await prisma.deviation.findUnique({
+      where: { id },
+      select: { qmsRecordId: true },
+    });
+    if (!deviation) return { error: "Desviación no encontrada." };
 
-  const code = String(formData.get("businessCode") ?? "").trim();
-  const actor = String(
-    formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo",
-  ).trim();
-  if (!code) throw new Error("Debe indicarse la codificación de la CAPA.");
+    const code = String(formData.get("businessCode") ?? "").trim();
+    const actor = String(
+      formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo",
+    ).trim();
+    const requestedType = String(formData.get("recordType") ?? "CAPA").trim();
+    if (!code) return { error: "Debe indicarse la codificación de la CAPA." };
+    if (requestedType !== QmsRecordType.CAPA) {
+      return { error: "Una desviación solo puede vincularse operativamente con CAPA." };
+    }
 
-  const allowedTypes = allowedOperationalRelationTypes(QmsRecordType.DEVIATION);
-  const matches = await prisma.qmsRecord.findMany({
-    where: {
-      businessCode: code,
-      recordType: { in: allowedTypes },
-      id: { not: deviation.qmsRecordId },
-    },
-    select: { id: true, recordType: true, businessCode: true },
-  });
-  const target = selectOperationalRelationTarget(QmsRecordType.DEVIATION, matches);
-  const relation = canonicalOperationalRelation(
-    { id: deviation.qmsRecordId, recordType: QmsRecordType.DEVIATION, businessCode: null },
-    target,
-  );
+    const matches = await prisma.qmsRecord.findMany({
+      where: {
+        businessCode: code,
+        recordType: QmsRecordType.CAPA,
+        id: { not: deviation.qmsRecordId },
+      },
+      select: { id: true, recordType: true, businessCode: true },
+    });
+    const target = selectOperationalRelationTarget(QmsRecordType.DEVIATION, matches);
+    const relation = canonicalOperationalRelation(
+      { id: deviation.qmsRecordId, recordType: QmsRecordType.DEVIATION, businessCode: null },
+      target,
+    );
 
-  await prisma.qmsRelation.upsert({
-    where: {
-      sourceRecordId_targetRecordId_relationType: {
+    await prisma.qmsRelation.upsert({
+      where: {
+        sourceRecordId_targetRecordId_relationType: {
+          sourceRecordId: relation.sourceRecordId,
+          targetRecordId: relation.targetRecordId,
+          relationType: relation.relationType,
+        },
+      },
+      update: {
+        isActive: true,
+        createdByText: actor,
+        notes: operationalRelationLabel(relation.sourceType, relation.targetType),
+      },
+      create: {
         sourceRecordId: relation.sourceRecordId,
         targetRecordId: relation.targetRecordId,
         relationType: relation.relationType,
+        createdByText: actor,
+        notes: operationalRelationLabel(relation.sourceType, relation.targetType),
       },
-    },
-    update: {
-      isActive: true,
-      createdByText: actor,
-      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-    },
-    create: {
-      sourceRecordId: relation.sourceRecordId,
-      targetRecordId: relation.targetRecordId,
-      relationType: relation.relationType,
-      createdByText: actor,
-      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-    },
-  });
+    });
 
-  revalidatePath("/deviations");
-  revalidatePath("/capa");
-  revalidatePath(`/deviations/${id}`);
+    revalidatePath("/deviations");
+    revalidatePath("/capa");
+    revalidatePath(`/deviations/${id}`);
+    return { error: null, success: "CAPA vinculada correctamente." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "No se ha podido vincular la CAPA." };
+  }
 }
