@@ -45,7 +45,7 @@ export function finalizeComplaintAnnexVWorkbook(workbookXml:string,maxRow:number
  const names=`<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">AÑO!$B$4:$K${maxRow}</definedName><definedName name="_xlnm.Print_Area" localSheetId="0">AÑO!$B$1:$K${maxRow}</definedName><definedName name="_xlnm.Print_Titles" localSheetId="0">AÑO!$4:$4</definedName></definedNames>`;
  result=/<definedNames>[\s\S]*?<\/definedNames>/.test(result)
   ?result.replace(/<definedNames>[\s\S]*?<\/definedNames>/,names)
-  :result.replace(/(<calcPr\b)/,`${names}$1`);
+  :result.replace(/<calcPr\b/,()=>`${names}<calcPr`);
  return result;
 }
 
