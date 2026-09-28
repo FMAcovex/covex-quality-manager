@@ -28,6 +28,7 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
       APP_ENV: test
       DEFAULT_ACTOR_NAME: Usuario CI
+      ALLOW_DEMO_DATA: "true"
 
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +53,7 @@ jobs:
           pnpm changes:smoke
           pnpm hito8:smoke
           pnpm hito9:smoke
+          pnpm demo:seed
           pnpm hito10:smoke
       - name: Quality checks
         run: pnpm quality
