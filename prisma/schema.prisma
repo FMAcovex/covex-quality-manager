@@ -461,7 +461,10 @@ model Deviation {
   issueDate                  DateTime?                @db.Date
   eventDateTime              DateTime?
   detectedBy                 String?
+  eventShift                  String?
   createdByText               String?
+  qaValidatedBy               String?
+  finalApprovedBy             String?
   materialProcessAffected     String?
   provenance                  String?
   deadlineStatus              DeadlineStatus           @default(NOT_EVALUATED)
@@ -608,6 +611,7 @@ model Capa {
   effectivenessEvidence     String?
   effectiveClosedAt         DateTime?               @db.Date
   conclusion                String?
+  approvalNames             String?
   internalObservations      String?
   signedDocumentAvailable   Boolean?
   dataQualityStatus         DataQualityStatus       @default(REVIEW_REQUIRED)
@@ -824,33 +828,59 @@ model Complaint {
   departmentNameSnapshot     String?
   openedAt                   DateTime?                    @db.Date
   detectionDate              DateTime?                    @db.Date
+  receptionDate              DateTime?                    @db.Date
   detectedBy                 String?
   createdByText              String?
   complaintType              ComplaintType
+  triggerSources             String[]                     @default([])
+  triggerOther               String?
   partyName                  String?
   contact                    String?
+  scopeCategories            String[]                     @default([])
+  scopeOther                 String?
+  affectedObjectTypes        String[]                     @default([])
+  affectedObjectOther        String?
   affectedScope              String?
   reference                  String?
   lotReference               String?
   quantity                   String?
   expiryReanalysis           String?
   purchaseDeliveryReference  String?
+  complaintCategories        String[]                     @default([])
+  complaintCategoryOther     String?
   description                String?
   recurrent                  Boolean?
   recurrenceReference        String?
   attachedDocumentation      String?
   emittedBy                  String?
   qaValidatedBy              String?
+  qualityGmpImpact           TriState?
+  safetyEfficacyImpact       TriState?
+  regulatoryComplianceImpact TriState?
+  environmentImpact          TriState?
+  similarSituationsImpact    TriState?
+  containmentActions         String[]                     @default([])
+  containmentOther           String?
+  riskJustification          String?
   investigation              String?
   impactAssessment           String?
   investigationResult        ComplaintInvestigationResult?
   rootCause                  String?
   classification             ComplaintClassification?
+  withdrawalPotential        TriState?
+  recallProcedureRequired    TriState?
+  authorityNotification      TriState?
+  responsiblePartyCommunication TriState?
+  regulatoryJustification    String?
   resolutionLines            String?
   resolutionActions          ComplaintResolutionAction[] @default([])
   immediateActionDetails     String?
   otherResolutionDetails     String?
+  externalCommunicationDate  DateTime?                    @db.Date
+  externalCommunicationMedium String?
+  externalCommunicationParties String?
   externalCommunication      String?
+  continueToPartII           Boolean?
   conclusion                 String?
   effectivenessRequired      Boolean?
   initialEvaluationDate      DateTime?                    @db.Date
@@ -858,6 +888,9 @@ model Complaint {
   responseDate               DateTime?                    @db.Date
   responseMedium             String?
   responseSummary            String?
+  responseSufficient         Boolean?
+  followupActionStatus       String?
+  followupReferences         String?
   effectivenessStatus        ComplaintEffectivenessStatus @default(PENDING)
   effectivenessAssessment    String?
   closeConclusion            String?
@@ -959,6 +992,12 @@ model ReturnRecord {
   tamperEvidenceIntact            TriState?
   packagingIntegrityOk            TriState?
   customerDeclarationAvailable    TriState?
+  customerDeclarationSigner       String?
+  customerDeclarationSignerRole   String?
+  customerDeclarationDate         DateTime?       @db.Date
+  customerEvidenceTypes           String[]        @default([])
+  customerEvidenceOther           String?
+  customerDeclarationObservations String?
   storageTransportConditionsOk    TriState?
   noUseDamageContamination        TriState?
   noRecallAlertBlock              TriState?
