@@ -5,6 +5,13 @@ import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
 import { generateSimpleXlsx } from "@/lib/ooxml/simple-xlsx";
 import { formatDate,returnDecisionLabel,returnStatusLabel,returnTypeLabel } from "@/modules/returns/domain";
+
+function replaceSheetDataXml(xml:string,body:string){
+ const start=xml.indexOf("<sheetData>");
+ const end=xml.indexOf("</sheetData>",start);
+ if(start<0||end<0)throw new Error("XLSX: sheetData no encontrado.");
+ return xml.slice(0,start)+"<sheetData>"+body+"</sheetData>"+xml.slice(end+"</sheetData>".length);
+}
 type Row=Awaited<ReturnType<typeof import("@/modules/returns/documents/export-data").getReturnExportRows>>[number];
 export function generateReturnSimpleList(rows:Row[]){
  const headers=["N.º devolución","Fecha comunicación","Fecha recepción","Tipo","Cliente/Entidad","País","Documento relacionado","Producto","Formato","Lote","Cantidad","Caducidad/Reanálisis","Decisión","Destino final","Destrucción","Certificado destrucción","Estado","Último seguimiento","Próximo seguimiento"];
@@ -28,6 +35,6 @@ export async function generateReturnAnnexVIXlsx(year:number,rows:Row[],versionCo
  const data=sheet.match(/<sheetData>([\s\S]*?)<\/sheetData>/);if(!data)throw new Error("Anexo VI Devoluciones: sheetData no encontrado.");
  const source=[...data[1].matchAll(/<row\b[^>]*\br="(\d+)"[^>]*>[\s\S]*?<\/row>/g)].map(x=>({n:Number(x[1]),xml:x[0]}));const tpl=source.find(x=>x.n===5)?.xml;if(!tpl)throw new Error("Anexo VI Devoluciones: fila modelo no encontrada.");
  const st=officialStyles(tpl),headers=source.filter(x=>x.n<=4).map(x=>x.xml),flat=rows.flatMap(r=>r.products.map(p=>({r,p}))),out=flat.map(({r,p},i)=>{const n=5+i,vals=[officialText(r.qmsRecord.businessCode),officialDate(r.communicationDate),officialText(r.relatedDocument)||returnTypeLabel(r.returnType),officialText(r.customerEntity),p.productNameCode,officialText(p.format),officialText(p.lot),[p.quantity,p.unit].filter(Boolean).join(" "),officialText(p.expiryReanalysis),officialText(r.country),officialText(r.destructionManagedBy),officialText(r.destructionCertificate),[r.internalObservations,...r.followups.map(f=>`${officialDate(f.followupDate)}: ${f.comment}`)].filter(Boolean).join(" · ")];return `<row r="${n}">${["A","B","C","D","E","F","G","H","I","J","K","L","M"].map((col,j)=>officialCell(col,n,st.get(col)??"",vals[j])).join("")}</row>`;});
- sheet=sheet.replace(/<sheetData>[\\s\\S]*?<\\/sheetData>/,`<sheetData>${[...headers,...out].join("")}</sheetData>`).replace(/<dimension ref="[^"]+"/,`<dimension ref="A1:N${Math.max(5,4+flat.length)}"`);sheet=setXlsxCell(sheet,"A3",`"${year}"`);
+ sheet=replaceSheetDataXml(sheet,[...headers,...out].join("")).replace(/<dimension ref="[^"]+"/,`<dimension ref="A1:N${Math.max(5,4+flat.length)}"`);sheet=setXlsxCell(sheet,"A3",`"${year}"`);
  updateZipEntry(entries,"xl/worksheets/sheet1.xml",sheet);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
