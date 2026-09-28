@@ -14,6 +14,7 @@ import {
 } from "@/lib/qms/relation-rules";
 import { parseReturnForm } from "@/modules/returns/validation";
 import type { ReturnFormState } from "@/modules/returns/types";
+import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
 import { ensureInitialVersion,refreshCurrentVersion,serializeReturnVersion,snapshotJson } from "@/lib/qms/versioning";
 const d=(v:string|null|undefined)=>v?new Date(v):null;
@@ -112,26 +113,40 @@ await prisma.$transaction(async tx=>{
  }catch(e){return persistenceFormError(e,"el seguimiento de la devolución");}
  revalidatePath(`/returns/${id}`);return{success:"Seguimiento guardado correctamente."};
 }
-export async function addReturnRelationAction(id:string,fd:FormData){
- const rec=await prisma.returnRecord.findUnique({where:{id},select:{qmsRecordId:true}});
- if(!rec)throw new Error("Devolución no encontrada.");
- const code=String(fd.get("businessCode")??"").trim();
- const actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo").trim();
- if(!code)throw new Error("Debe indicarse la codificación de la Reclamación de origen.");
- const allowedTypes=allowedOperationalRelationTypes(QmsRecordType.RETURN);
- const matches=await prisma.qmsRecord.findMany({
-  where:{businessCode:code,recordType:{in:allowedTypes},id:{not:rec.qmsRecordId}},
-  select:{id:true,recordType:true,businessCode:true}
- });
- const origin=selectOperationalRelationTarget(QmsRecordType.RETURN,matches);
- const relation=canonicalOperationalRelation(
-  {id:rec.qmsRecordId,recordType:QmsRecordType.RETURN,businessCode:null},
-  origin
- );
- await prisma.qmsRelation.upsert({
-  where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType}},
-  update:{isActive:true,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)},
-  create:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)}
- });
- revalidatePath("/returns");revalidatePath("/complaints");revalidatePath(`/returns/${id}`);
+export async function addReturnRelationAction(
+ id:string,
+ _state:RelationActionState,
+ fd:FormData
+):Promise<RelationActionState>{
+ try{
+  const rec=await prisma.returnRecord.findUnique({where:{id},select:{qmsRecordId:true}});
+  if(!rec)return{error:"Devolución no encontrada."};
+
+  const code=String(fd.get("businessCode")??"").trim();
+  const actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo").trim();
+  const requestedType=String(fd.get("recordType")??"COMPLAINT").trim();
+  if(!code)return{error:"Debe indicarse la codificación de la Reclamación de origen."};
+  if(requestedType!==QmsRecordType.COMPLAINT){
+   return{error:"Una devolución solo puede vincularse con una Reclamación de origen."};
+  }
+
+  const matches=await prisma.qmsRecord.findMany({
+   where:{businessCode:code,recordType:QmsRecordType.COMPLAINT,id:{not:rec.qmsRecordId}},
+   select:{id:true,recordType:true,businessCode:true}
+  });
+  const origin=selectOperationalRelationTarget(QmsRecordType.RETURN,matches);
+  const relation=canonicalOperationalRelation(
+   {id:rec.qmsRecordId,recordType:QmsRecordType.RETURN,businessCode:null},
+   origin
+  );
+  await prisma.qmsRelation.upsert({
+   where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType}},
+   update:{isActive:true,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)},
+   create:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)}
+  });
+  revalidatePath("/returns");revalidatePath("/complaints");revalidatePath(`/returns/${id}`);
+  return{error:null,success:"Reclamación de origen vinculada correctamente."};
+ }catch(error){
+  return{error:error instanceof Error?error.message:"No se ha podido vincular la reclamación."};
+ }
 }
