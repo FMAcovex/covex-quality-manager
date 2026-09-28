@@ -16,7 +16,10 @@ type AnnexIIIRecord = {
   departmentNameSnapshot: string | null;
   issueDate: Date | null;
   eventDateTime: Date | null;
+  eventShift: string | null;
   detectedBy: string | null;
+  createdByText: string | null;
+  qaValidatedBy: string | null;
   materialProcessAffected: string | null;
   processEquipmentSystem: string | null;
   finishedProductSystem: string | null;
@@ -118,6 +121,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordCellText(xml, 0, 3, 1, value(record.processEquipmentSystem || record.materialProcessAffected));
   xml = setWordCellText(xml, 0, 5, 1, date(record.eventDateTime));
   xml = setWordCellText(xml, 0, 5, 2, time(record.eventDateTime));
+  xml = setWordCellText(xml, 0, 5, 5, value(record.eventShift));
   xml = setWordCellText(xml, 0, 4, 4, value(record.detectedBy));
 
   xml = markOrigin(xml, 7, Boolean(record.finishedProductSystem));
@@ -146,6 +150,8 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordCellText(xml, 1, 6, 0, value(record.whenHappened));
   xml = setWordCellText(xml, 1, 8, 0, value(record.whereHappened));
   xml = setWordCellText(xml, 1, 10, 0, value(record.howHappened));
+  xml = setWordCellText(xml, 1, 11, 1, value(record.createdByText));
+  xml = setWordCellText(xml, 1, 12, 1, value(record.qaValidatedBy));
 
   if (!record.immediateActions.length) xml = markFirstCheckbox(xml, 2, 1, 0, true);
 
@@ -211,6 +217,8 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   if (record.dispositionQuantity) xml = appendWordCellText(xml, 4, 3, 0, `Cantidad registrada: ${record.dispositionQuantity}`);
   if (record.dispositionComments) xml = appendWordCellText(xml, 4, 3, 0, record.dispositionComments);
   xml = setTriStateCell(xml, 4, 4, 1, record.clientNotification);
+  xml = setWordCellText(xml, 4, 7, 0, value(record.createdByText));
+  xml = setWordCellText(xml, 4, 11, 0, value(record.qaValidatedBy));
 
   updateZipEntry(entries, "word/document.xml", xml);
   sanitizeOfficeMetadata(entries);
