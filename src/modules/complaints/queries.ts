@@ -42,6 +42,7 @@ export async function getComplaintDetail(id:string){
   qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}},history:{orderBy:{changedAt:"desc"},take:100},versions:{orderBy:{sequenceNumber:"asc"}},generatedDocuments:{orderBy:{generatedAt:"desc"}}}},
   department:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}]},
   capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:{include:{capa:true}}}},
+  derivedActions:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},
   formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true
  }});
 }
