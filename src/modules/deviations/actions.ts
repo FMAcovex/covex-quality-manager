@@ -514,58 +514,62 @@ export async function addDeviationFollowupAction(deviationId: string, _state: Fo
   const nextFollowupDate = formData.get("nextFollowupDate")?.toString() || null;
   const evidenceReference = formData.get("evidenceReference")?.toString().trim() || null;
 
-  await prisma.$transaction(async (tx) => {
-    const followup = await tx.deviationFollowup.create({
-      data: {
-        deviationId,
-        followupDate: new Date(followupDate),
-        completedByText,
-        followupType,
-        comment,
-        nextFollowupDate: nextFollowupDate ? new Date(nextFollowupDate) : null,
-        evidenceReference,
-      },
-    });
-
-    await tx.changeHistory.create({
-      data: {
-        qmsRecordId: deviation.qmsRecordId,
-        changedByText: completedByText,
-        fieldPath: "followups",
-        newValue: jsonValue({
-          id: followup.id,
-          date: followupDate,
-          type: followupType,
+  try {
+    await prisma.$transaction(async (tx) => {
+      const followup = await tx.deviationFollowup.create({
+        data: {
+          deviationId,
+          followupDate: new Date(followupDate),
+          completedByText,
+          followupType,
           comment,
-          nextFollowupDate,
+          nextFollowupDate: nextFollowupDate ? new Date(nextFollowupDate) : null,
           evidenceReference,
-        }),
-        source: "UI",
-      },
-    });
-
-    const updatedForVersion = await tx.deviation.findUniqueOrThrow({
-      where: { id: deviationId },
-      include: {
-        qmsRecord: true,
-        immediateActions: { orderBy: { sortOrder: "asc" } },
-        followups: { orderBy: [{ followupDate: "asc" }, { createdAt: "asc" }] },
-        capaPlans: {
-          orderBy: { createdAt: "asc" },
-          include: { linkedCapaRecord: true },
         },
-        formVersion: true,
-        anexoIIITemplateVersion: true,
-      },
+      });
+
+      await tx.changeHistory.create({
+        data: {
+          qmsRecordId: deviation.qmsRecordId,
+          changedByText: completedByText,
+          fieldPath: "followups",
+          newValue: jsonValue({
+            id: followup.id,
+            date: followupDate,
+            type: followupType,
+            comment,
+            nextFollowupDate,
+            evidenceReference,
+          }),
+          source: "UI",
+        },
+      });
+
+      const updatedForVersion = await tx.deviation.findUniqueOrThrow({
+        where: { id: deviationId },
+        include: {
+          qmsRecord: true,
+          immediateActions: { orderBy: { sortOrder: "asc" } },
+          followups: { orderBy: [{ followupDate: "asc" }, { createdAt: "asc" }] },
+          capaPlans: {
+            orderBy: { createdAt: "asc" },
+            include: { linkedCapaRecord: true },
+          },
+          formVersion: true,
+          anexoIIITemplateVersion: true,
+        },
+      });
+      await refreshCurrentVersion(
+        tx,
+        deviation.qmsRecordId,
+        snapshotJson(serializeDeviationVersion(updatedForVersion)),
+        completedByText,
+        "Actualización del estado vigente con nuevo seguimiento",
+      );
     });
-    await refreshCurrentVersion(
-      tx,
-      deviation.qmsRecordId,
-      snapshotJson(serializeDeviationVersion(updatedForVersion)),
-      completedByText,
-      "Actualización del estado vigente con nuevo seguimiento",
-    );
-  });
+  } catch (error) {
+    return persistenceFormError(error, "el seguimiento de la desviación");
+  }
 
   revalidatePath(`/deviations/${deviationId}`);
   return { success: "Seguimiento guardado correctamente." };
