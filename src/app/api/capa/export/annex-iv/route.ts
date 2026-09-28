@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCapaExportRows } from "@/modules/capa/documents/export-data";
 import { generateCapaAnnexIV } from "@/modules/capa/documents/xlsx";
-import { CapaTemplateUnavailableError } from "@/modules/capa/documents/templates";
+import { TemplateAssetError } from "@/modules/configuration/template-assets";
+import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 
 export const runtime="nodejs";
 
