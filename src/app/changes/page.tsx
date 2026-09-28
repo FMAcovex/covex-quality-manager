@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { changeControlColumns } from "@/modules/change-control/column-config";
 import { QmsRelatedLinks } from "@/components/qms-related-links";
@@ -33,7 +34,8 @@ export default async function ChangeControlPage({
     effectiveness: param(query.effectiveness),
     status: param(query.status),
   };
-  const { rows, departments, years, counters } = await getChangeControlList(filters);
+  const [{ rows, departments, years, counters }, documentTemplates] = await Promise.all([getChangeControlList(filters), getActiveTemplateAssets("CHANGE_CONTROL")]);
+  const annualTemplate = documentTemplates.find((template) => template.documentType === "CHANGE_ANNEX_VII");
   const exportYear = filters.year && /^\d{4}$/.test(filters.year)
     ? filters.year
     : String(new Date().getFullYear());
@@ -60,8 +62,11 @@ export default async function ChangeControlPage({
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones de Controles de Cambios</strong>
-              <a href={`/api/changes/export/annex-vii?year=${exportYear}`}>
-                Anexo VII oficial · {exportYear}
+              {annualTemplate?.fileName || annualTemplate?.filePath ? (
+                <a className="export-link" href={`/api/settings/templates/${annualTemplate.id}/download`}>Descargar plantilla oficial · Anexo VII</a>
+              ) : <span className="muted-note">Plantilla oficial Anexo VII pendiente de cargar.</span>}
+              <a className="export-link" href={`/api/changes/export/annex-vii?year=${exportYear}`}>
+                Generar Anexo VII cumplimentado · {exportYear}
               </a>
               <a href={`/api/changes/export/simple?${simpleParams.toString()}`}>
                 Listado simple · filtros actuales
