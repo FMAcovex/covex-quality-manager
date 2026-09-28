@@ -8,6 +8,8 @@ import {
 import { getCapaList } from "@/modules/capa/queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { capaColumns } from "@/modules/capa/column-config";
+import { QmsRelatedLinks } from "@/components/qms-related-links";
+import { collectRelatedRecords } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +103,7 @@ export default async function CapaPage({
           <table id="capa-list-table" className="records-table capa-table">
             <thead>
               <tr>
-<th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre operativo</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Cierre efectivo</th><th data-column-key="observations">Observaciones</th>
+<th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre operativo</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Cierre efectivo</th><th data-column-key="observations">Observaciones</th><th data-column-key="related">Relacionados</th>
               </tr>
             </thead>
             <tbody>
@@ -134,10 +136,11 @@ export default async function CapaPage({
                     <td data-column-key="nextFollowup">{formatDate(latest?.nextFollowupDate)}</td>
                     <td data-column-key="effectiveClose">{formatDate(row.effectiveClosedAt)}</td>
                     <td data-column-key="observations" className="long-cell">{row.internalObservations ?? "—"}</td>
+                    <td data-column-key="related"><QmsRelatedLinks records={collectRelatedRecords(row.qmsRecord)} /></td>
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={16}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={17}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>
