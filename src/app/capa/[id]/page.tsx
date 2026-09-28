@@ -333,9 +333,20 @@ export default async function CapaDetailPage({
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{capa.annexIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{capa.signedDocumentAvailable === true ? "Disponible" : capa.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="document-actions">
-            <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
-            <span className="muted-note">Cada generación queda registrada en el expediente.</span>
+          <div className="document-grid">
+            <div className="document-block">
+              <h3>Anexo III · Informe CAPA</h3>
+              <p>Plantilla oficial y versión Word cumplimentada del informe/seguimiento CAPA.</p>
+              <div className="document-actions">
+                {capa.annexIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${capa.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
+                <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+              </div>
+            </div>
+            <div className="document-block">
+              <h3>Anexo IV · Listado CAPA</h3>
+              <p>Listado oficial anual de CAPA. Se descarga desde el listado principal para el año seleccionado.</p>
+              <Link className="button" href="/capa">Ir al listado y descargar Anexo IV</Link>
+            </div>
           </div>
           {capa.qmsRecord.generatedDocuments.length ? (
             <>
