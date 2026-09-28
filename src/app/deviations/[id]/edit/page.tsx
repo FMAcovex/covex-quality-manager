@@ -48,6 +48,7 @@ export default async function EditDeviationPage({
           departmentId: deviation.departmentId ?? "",
           issueDate: date(deviation.issueDate),
           eventDateTime: dateTime(deviation.eventDateTime),
+          eventShift: deviation.eventShift ?? "",
           detectedBy: deviation.detectedBy ?? "",
           createdByText: deviation.createdByText ?? "",
           materialProcessAffected: deviation.materialProcessAffected ?? "",
