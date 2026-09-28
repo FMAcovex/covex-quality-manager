@@ -198,7 +198,7 @@ export async function updateDeviationAction(
 ): Promise<FormState> {
   const parsed = parseDeviationForm(formData);
   if (parsed.errors.length) {
-    return { error: "No se puede guardar el expediente.", fieldErrors: parsed.errors };
+    return { error: "No se puede guardar el expediente.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues };
   }
 
   const existing = await prisma.deviation.findUnique({
