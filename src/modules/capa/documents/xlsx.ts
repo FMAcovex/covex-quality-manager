@@ -6,6 +6,7 @@ import {
   type ZipEntry,
 } from "@/lib/ooxml/zip";
 import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
+import { appendFillStyleVariants, xlsxCellStyle } from "@/lib/ooxml/xlsx-template";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadCapaAnnexIVTemplate } from "@/modules/capa/documents/templates";
 
@@ -58,6 +59,8 @@ export function expandCapaAnnexIVSheet(
   sheetXml: string,
   year: number,
   rows: CapaExportRow[],
+  openStyles?: Map<number, number>,
+  closedStyles?: Map<number, number>,
 ) {
   const sheetData = sheetXml.match(/<sheetData>([\s\S]*?)<\/sheetData>/);
   if (!sheetData) throw new Error("Anexo IV CAPA: sheetData no encontrado.");
@@ -75,14 +78,13 @@ export function expandCapaAnnexIVSheet(
   const dataRows = rows.map((record, index) => {
     const row = 5 + index;
     const type = record.actionType === "PREVENTIVE" ? "Preventiva" : "Correctiva";
-    const codeOrigin = [record.qmsRecord.businessCode, record.originType, record.originCode]
-      .filter(Boolean)
-      .join(" / ");
+    const origin = [record.originType, record.originCode].filter(Boolean).join(" / ");
+    const codeOrigin = [record.qmsRecord.businessCode, origin].filter(Boolean).join("\n");
     const description = record.plannedActions.map((item) => item.description).filter(Boolean).join("\n");
     const responsible = [
       record.departmentNameSnapshot || record.departmentCodeSnapshot,
       date(record.openedAt),
-    ].filter(Boolean).join(" - ");
+    ].filter(Boolean).join("\n");
     const values = [
       type,
       codeOrigin,
@@ -92,7 +94,11 @@ export function expandCapaAnnexIVSheet(
       date(record.effectiveClosedAt),
     ];
     const cells = ["A","B","C","D","E","F"]
-      .map((column, col) => xmlCell(column, row, styles.get(column) ?? "", values[col]))
+      .map((column, col) => {
+        const base = Number(styles.get(column) ?? "0");
+        const variant = (record.status === "OPEN" ? openStyles : closedStyles)?.get(base);
+        return xmlCell(column, row, String(variant ?? base), values[col]);
+      })
       .join("");
     return `<row r="${row}">${cells}</row>`;
   });
@@ -117,8 +123,24 @@ export async function generateCapaAnnexIV(
   const entries = readZip(await loadCapaAnnexIVTemplate(versionCode));
   const sheetEntry = entries.find((entry) => entry.name === "xl/worksheets/sheet1.xml");
   if (!sheetEntry) throw new Error("Anexo IV CAPA: hoja principal no encontrada.");
-  const sheet = expandCapaAnnexIVSheet(sheetEntry.data.toString("utf8"), year, rows);
+  const sourceSheet = sheetEntry.data.toString("utf8");
+  let stylesXml = getZipEntryText(entries, "xl/styles.xml");
+  const openLegendStyle = xlsxCellStyle(sourceSheet, "A14");
+  const closedLegendStyle = xlsxCellStyle(sourceSheet, "A15");
+  if (openLegendStyle === null || closedLegendStyle === null) {
+    throw new Error("Anexo IV CAPA: no se ha podido localizar la leyenda de colores.");
+  }
+  const baseStyles = ["A","B","C","D","E","F"]
+    .map((column) => xlsxCellStyle(sourceSheet, `${column}5`))
+    .filter((value): value is number => value !== null);
+  const openVariants = appendFillStyleVariants(stylesXml, baseStyles, openLegendStyle);
+  stylesXml = openVariants.stylesXml;
+  const closedVariants = appendFillStyleVariants(stylesXml, baseStyles, closedLegendStyle);
+  stylesXml = closedVariants.stylesXml;
+
+  const sheet = expandCapaAnnexIVSheet(sourceSheet, year, rows, openVariants.styleMap, closedVariants.styleMap);
   updateZipEntry(entries, "xl/worksheets/sheet1.xml", sheet);
+  updateZipEntry(entries, "xl/styles.xml", stylesXml);
 
   const workbook = getZipEntryText(entries, "xl/workbook.xml")
     .replace(/name="ANEXO 2026 IMPRIMIR \(2\)"/, `name="ANEXO ${year} IMPRIMIR"`);
