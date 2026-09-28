@@ -741,3 +741,47 @@ a.relation-chip:hover {
   .inline-form .field > span { min-height: auto; }
   .form-action-row { justify-content: flex-start; }
 }
+
+
+/* Hito 10.1 — documentos por anexo */
+.document-template-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.document-template-block {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+.document-template-block h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.document-template-block p {
+  margin: 0;
+}
+.document-template-subactions {
+  padding: 0 16px 14px;
+  margin-top: -8px;
+}
+.admin-template-upload {
+  display: grid;
+  gap: 7px;
+  min-width: 220px;
+}
+.admin-template-upload input[type="file"] {
+  max-width: 260px;
+  font-size: 11px;
+}
+@media (max-width: 760px) {
+  .document-template-block {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
