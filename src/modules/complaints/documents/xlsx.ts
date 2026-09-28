@@ -5,6 +5,13 @@ import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadComplaintPntTemplate } from "@/modules/complaints/documents/templates";
 import { generateSimpleXlsx } from "@/lib/ooxml/simple-xlsx";
 import { complaintClassificationLabel,complaintEffectivenessLabel,complaintStatusLabel,complaintTypeLabel,formatDate } from "@/modules/complaints/domain";
+
+function replaceSheetDataXml(xml:string,body:string){
+ const start=xml.indexOf("<sheetData>");
+ const end=xml.indexOf("</sheetData>",start);
+ if(start<0||end<0)throw new Error("XLSX: sheetData no encontrado.");
+ return xml.slice(0,start)+"<sheetData>"+body+"</sheetData>"+xml.slice(end+"</sheetData>".length);
+}
 type Row=Awaited<ReturnType<typeof import("@/modules/complaints/documents/export-data").getComplaintExportRows>>[number];
 export function generateComplaintSimpleList(rows:Row[]){
  const headers=["N.º reclamación","Tipo","Fecha apertura","Cliente/Proveedor","Producto/material/servicio","Lote/Ref.","Clasificación","Estado","Eficacia","Fecha cierre","Causa raíz","Recurrente","Último seguimiento","Próximo seguimiento","Observaciones/CAPA"];
@@ -26,6 +33,6 @@ export async function generateComplaintAnnexVXlsx(year:number,rows:Row[],version
  const data=sheet.match(/<sheetData>([\s\S]*?)<\/sheetData>/);if(!data)throw new Error("Anexo V Reclamaciones: sheetData no encontrado.");
  const source=[...data[1].matchAll(/<row\b[^>]*\br="(\d+)"[^>]*>[\s\S]*?<\/row>/g)].map(x=>({n:Number(x[1]),xml:x[0]}));const tpl=source.find(x=>x.n===5)?.xml;if(!tpl)throw new Error("Anexo V Reclamaciones: fila modelo no encontrada.");
  const st=officialStyles(tpl),headers=source.filter(x=>x.n<=4).map(x=>x.xml),out=rows.map((r,i)=>{const n=5+i,vals=[officialText(r.qmsRecord.businessCode),r.complaintType==="PROVIDER"?"A proveedor / subcontrata":"De cliente / agente externo",officialDate(r.openedAt),officialText(r.partyName),officialText(r.reference||r.affectedScope),officialText(r.lotReference),officialClassification(r.classification),r.closedAt?"Cerrada":"Abierta",officialDate(r.closedAt),[r.internalObservations,...r.capaPlans.map(x=>x.businessCapaCode||x.description)].filter(Boolean).join(" · ")];return `<row r="${n}">${["B","C","D","E","F","G","H","I","J","K"].map((col,j)=>officialCell(col,n,st.get(col)??"",vals[j])).join("")}</row>`;});
- sheet=sheet.replace(/<sheetData>[\\s\\S]*?<\\/sheetData>/,`<sheetData>${[...headers,...out].join("")}</sheetData>`).replace(/<dimension ref="[^"]+"/,`<dimension ref="A1:R${Math.max(5,4+rows.length)}"`);sheet=setXlsxCell(sheet,"B2",`LISTADO DE RECLAMACIONES\\n"${year}"`);
+ sheet=replaceSheetDataXml(sheet,[...headers,...out].join("")).replace(/<dimension ref="[^"]+"/,`<dimension ref="A1:R${Math.max(5,4+rows.length)}"`);sheet=setXlsxCell(sheet,"B2",`LISTADO DE RECLAMACIONES\\n"${year}"`);
  updateZipEntry(entries,"xl/worksheets/sheet1.xml",sheet);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
