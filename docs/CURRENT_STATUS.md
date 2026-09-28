@@ -186,7 +186,7 @@ Plantillas auditadas:
 - Anexo III SHA-256: a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f
 - Anexo IV SHA-256: 742b1de11e0e0dece4e9c65c97613c112325189e183b9cb02c56ca82cd06cc60
 - Anexo V SHA-256: 3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4
-- Anexo VII fuente SHA-256: bdef034e5de4f314d77696230e07f2796c2d139f4868c055d68688082622ce16
+- Anexo VII fuente SHA-256: b65671cdd652f104f4038c65e07c025b5c7374dee4b683d74fbeef55f12bc8eb
 
 Validación:
 - PostgreSQL 16 real;
@@ -347,3 +347,28 @@ Validación final:
 - lint;
 - tests;
 - build Next.js de producción.
+
+
+## Hito 10.2 — Anexos oficiales y adecuación de registros
+Estado: **IMPLEMENTADO; PENDIENTE DE VALIDACIÓN FINAL EN CI**.
+
+Objetivo:
+- adaptar los generadores a los anexos aportados el 28/09/2026;
+- comprobar que los registros estructurados contienen todos los datos necesarios para cumplimentar Word y listados;
+- mantener históricos por versión de formulario/plantilla.
+
+Cambios:
+- Desviaciones Anexo V adaptado a la plantilla oficial A:F aportada, incluyendo fecha + departamento en una única celda y color ABIERTA/CERRADA según leyenda;
+- CAPA Anexo IV mantiene campos combinados y colorea filas según la leyenda oficial;
+- Reclamaciones incorpora REC-03 como versión candidata de prueba, manteniendo REC-02 para histórico;
+- nuevo registro estructurado de Reclamaciones v03 alineado con Partes I y II del Anexo III;
+- Reclamaciones v03 no genera respuesta formal al cliente desde la aplicación;
+- Reclamaciones Anexo V anual se genera en XLSX oficial;
+- Devoluciones incorpora fechas independientes de recepción/verificación por producto;
+- Devoluciones incorpora firmante, puesto, fecha y observaciones de declaración del cliente;
+- Anexos IV y V de Devoluciones se gestionan como plantillas independientes extraídas del PNT;
+- Devoluciones Anexo VI anual se genera en XLSX oficial;
+- matriz de anexos y SHA-256 documentada en `docs/ANNEX_MAPPING.md`.
+
+Nota GMP:
+GC-00/027/03 se configura únicamente como versión candidata para esta fase de prueba porque el usuario ha indicado que todavía no está formalmente en vigor. Su activación productiva deberá coincidir con la entrada en vigor documental correspondiente.
