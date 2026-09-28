@@ -495,13 +495,12 @@ export async function updateDeviationAction(
   }
 }
 
-export async function addDeviationFollowupAction(_state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
-  const deviationId = formData.get("deviationId")?.toString();
+export async function addDeviationFollowupAction(deviationId: string, _state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
   const followupDate = formData.get("followupDate")?.toString();
   const completedByText = formData.get("completedByText")?.toString().trim();
   const comment = formData.get("comment")?.toString().trim();
 
-  if (!deviationId || !followupDate || !completedByText || !comment) {
+  if (!followupDate || !completedByText || !comment) {
     return { error: "Fecha, cumplimentado por y seguimiento son obligatorios." };
   }
 
