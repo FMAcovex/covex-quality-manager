@@ -8,6 +8,7 @@ import {
   registerTemplateVersionAction,
 } from "@/modules/configuration/admin-actions";
 import { getAdministrationOverview, moduleLabel } from "@/modules/configuration/admin-queries";
+import { evaluateRequiredTemplateReadiness } from "@/modules/configuration/template-readiness";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ const docLabel = (value: DocumentType) => value.replaceAll("_", " ");
 
 export default async function VersionsPage() {
   const data = await getAdministrationOverview();
+  const readiness = evaluateRequiredTemplateReadiness(data.templates);
 
   return (
     <section className="workspace">
@@ -27,6 +29,33 @@ export default async function VersionsPage() {
       </div>
 
       <SettingsNav active="/settings/versions" />
+
+      <section className="card template-readiness-card">
+        <div className="section-title-row">
+          <div>
+            <p className="eyebrow">Estado documental</p>
+            <h2>Plantillas controladas · {readiness.ready}/{readiness.total} listas</h2>
+            <p className="muted-note">
+              {readiness.complete
+                ? "Todas las plantillas necesarias para generar anexos y listados oficiales están cargadas."
+                : "Faltan archivos controlados. Las descargas oficiales afectadas permanecerán bloqueadas hasta cargarlos."}
+            </p>
+          </div>
+          <span className={`badge ${readiness.complete ? "open" : "warning"}`}>
+            {readiness.complete ? "Preparado" : `${readiness.total - readiness.ready} pendientes`}
+          </span>
+        </div>
+        {!readiness.complete ? (
+          <div className="readiness-grid">
+            {readiness.items.filter((item) => !item.ready).map((item) => (
+              <div className="readiness-item" key={`${item.module}-${item.documentType}-${item.versionCode}`}>
+                <strong>{item.label}</strong>
+                <span>v{item.versionCode} · archivo no cargado</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </section>
 
       <div className="analytics-note">
         <strong>Activación controlada:</strong> clonar un formulario crea un borrador.
