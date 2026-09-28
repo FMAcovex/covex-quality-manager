@@ -1,6 +1,6 @@
 import { createCapaAction } from "@/modules/capa/actions";
 import { CapaForm } from "@/modules/capa/components/capa-form";
-import { getCapaLookups, getComplaintPlanPrefill, getDeviationPlanPrefill } from "@/modules/capa/queries";
+import { getCapaLookups, getComplaintPlanPrefill, getComplaintPrefill, getDeviationPlanPrefill } from "@/modules/capa/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +14,13 @@ export default async function NewCapaPage({
     typeof params.fromDeviationPlanId === "string" ? params.fromDeviationPlanId : undefined;
   const fromComplaintPlanId =
     typeof params.fromComplaintPlanId === "string" ? params.fromComplaintPlanId : undefined;
-  const [{ departments }, deviationPlan, complaintPlan] = await Promise.all([
+  const fromComplaintId =
+    typeof params.fromComplaintId === "string" ? params.fromComplaintId : undefined;
+  const [{ departments }, deviationPlan, complaintPlan, complaint] = await Promise.all([
     getCapaLookups(),
     fromDeviationPlanId ? getDeviationPlanPrefill(fromDeviationPlanId) : Promise.resolve(null),
     fromComplaintPlanId ? getComplaintPlanPrefill(fromComplaintPlanId) : Promise.resolve(null),
+    fromComplaintId ? getComplaintPrefill(fromComplaintId) : Promise.resolve(null),
   ]);
 
   const defaults = deviationPlan
@@ -56,7 +59,19 @@ export default async function NewCapaPage({
           }],
           createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
         }
-      : {
+      : complaint
+        ? {
+            actionType: "CORRECTIVE" as const,
+            departmentId: complaint.departmentId ?? undefined,
+            openedAt: new Date().toISOString().slice(0, 10),
+            originType: "Reclamación",
+            originCode: complaint.qmsRecord.businessCode ?? undefined,
+            applicableTo: complaint.reference ?? complaint.affectedScope ?? undefined,
+            defectDescription: complaint.description ?? undefined,
+            rootCause: complaint.rootCause ?? undefined,
+            createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
+          }
+        : {
           openedAt: new Date().toISOString().slice(0, 10),
           createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
         };
@@ -68,6 +83,7 @@ export default async function NewCapaPage({
       </div>
       {deviationPlan ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde una propuesta de la desviación {deviationPlan.deviation.qmsRecord.businessCode}.</div> : null}
       {complaintPlan ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde una propuesta de la reclamación {complaintPlan.complaint.qmsRecord.businessCode}.</div> : null}
+      {complaint ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando directamente desde la reclamación {complaint.qmsRecord.businessCode}.</div> : null}
       <CapaForm
         mode="create"
         action={createCapaAction}
