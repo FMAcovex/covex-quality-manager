@@ -1,6 +1,6 @@
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { extractWordBodyRange,fillWordRowBalanced,replaceWordRowWithCopies,replaceWordRowsRangeBalanced,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { extractWordBodyRange,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadReturnTemplate } from "@/modules/returns/documents/templates";
 
@@ -19,7 +19,6 @@ const date=(v:Date|null|undefined)=>v?new Intl.DateTimeFormat("es-ES").format(v)
 const text=(v:string|null|undefined)=>v??"";
 const tri=(v:string|null|undefined)=>v==="YES"?"Sí":v==="NO"?"No":v==="NA"?"N.A.":"";
 const box=(on:boolean,label:string)=>`${on?"☒":"☐"} ${label}`;
-const typeLabel=(v:string,o:string|null)=>v==="COMMERCIAL"?"Comercial":v==="COMPLAINT"?"Reclamación":v==="RECALL"?"Retirada":v==="EXPIRY"?"Caducidad":v==="TRANSPORT"?"Transporte":o||"Otra";
 const productType=(v:string)=>({API:"API",INTERMEDIATE:"Intermedio",MEDICINE:"Medicamento",SUPPLEMENT:"Complemento alimenticio",IMPORTED_PRODUCT:"Producto importado",MEDICAL_DEVICE:"Producto sanitario",COSMETIC:"Cosmético",OTHER:"Otro"} as Record<string,string>)[v]??v;
 
 export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
