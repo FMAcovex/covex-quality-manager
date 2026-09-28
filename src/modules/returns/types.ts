@@ -9,7 +9,7 @@ export type ReturnFormDefaults={
   returnType?:"COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER";otherReturnType?:string;customerEntity?:string;country?:string;
   address?:string;relatedDocument?:string;conservationConditions?:string;deliveryNote?:string;reasonObservations?:string;
   attachedDocumentation?:string;withinAcceptedReturnPeriod?:string;roomTemperatureWithinTenDays?:string;coldChainWithinFortyEightHours?:string;
-  uniqueIdentifierActive?:string;tamperEvidenceIntact?:string;packagingIntegrityOk?:string;customerDeclarationAvailable?:string;
+  uniqueIdentifierActive?:string;tamperEvidenceIntact?:string;packagingIntegrityOk?:string;customerDeclarationAvailable?:string;customerEvidenceDeliveryDocument?:string;customerEvidenceStorageTemperature?:string;customerEvidenceReturnTemperature?:string;customerEvidenceNoTemperatureRecords?:string;customerEvidenceOther?:string;customerDeclarationObservations?:string;customerTechnicalResponsible?:string;
   storageTransportConditionsOk?:string;noUseDamageContamination?:string;noRecallAlertBlock?:string;expiryAcceptable?:string;
   qcAssessmentCompleted?:string;storageTemperatureRecord?:string;returnTransportTempEvidence?:string;transportPackagingSuitable?:string;
   receiptTemperatureAcceptable?:string;temperatureExcursionEvaluated?:string;coldChainReturnSystemValidated?:string;
