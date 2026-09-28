@@ -65,9 +65,10 @@ export async function generateReturnAnnexV(r:ReturnDocumentRecord){
  if(version!=="03")xml=extractWordBodyRange(xml,"Anexo V:", "Anexo VI:", "last");
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,1,1,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.qmsRecord.businessCode));
  xml=setWordCellTextBalanced(xml,1,2,1,r.products.map(x=>x.productNameCode).join(" · "));xml=setWordCellTextBalanced(xml,1,2,3,r.products.map(x=>text(x.lot)).filter(Boolean).join(" · "));xml=setWordCellTextBalanced(xml,1,3,1,text(r.conservationConditions));
- xml=setWordCellTextBalanced(xml,3,0,0,text(r.reasonObservations));xml=setWordCellTextBalanced(xml,4,0,1,text(r.customerDeclarationObservations));
- xml=setWordCellTextBalanced(xml,5,0,1,[text(r.customerDeclarationSignatoryName),text(r.customerDeclarationSignatoryRole),date(r.customerDeclarationSignedAt)].filter(Boolean).join(" / "));
- xml=setWordCellTextBalanced(xml,5,1,1,text(r.qaApprovalName));
+ xml=setWordCellTextBalanced(xml,3,0,0,text(r.customerDeclarationObservations));
+ xml=setWordCellTextBalanced(xml,4,0,1,[text(r.customerDeclarationSignatoryName),text(r.customerDeclarationSignatoryRole),date(r.customerDeclarationSignedAt)].filter(Boolean).join(" / "));
+ xml=setWordCellTextBalanced(xml,5,0,1,text(r.qaApprovalName));
+ xml=setWordCellTextBalanced(xml,5,1,1,text(r.technicalApprovalName));
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 
