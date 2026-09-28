@@ -19,7 +19,7 @@ export async function getAdministrationOverview(){
     prisma.formVersion.findMany({include:{_count:{select:{fieldConfigs:true,deviations:true,capas:true,changeControls:true,complaints:true,returnRecords:true}}},orderBy:[{module:"asc"},{effectiveFrom:"desc"},{createdAt:"desc"}]}),
     prisma.templateVersion.findMany({
       select:{
-        id:true,module:true,documentType:true,versionCode:true,filePath:true,fileName:true,mimeType:true,fileSize:true,checksum:true,effectiveFrom:true,effectiveTo:true,isActive:true,createdAt:true,updatedAt:true
+        id:true,module:true,documentType:true,versionCode:true,filePath:true,fileName:true,mimeType:true,fileSize:true,checksum:true,effectiveFrom:true,effectiveTo:true,isActive:true,createdAt:true
       },
       orderBy:[{module:"asc"},{documentType:"asc"},{effectiveFrom:"desc"}]
     }),
