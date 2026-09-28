@@ -7,7 +7,7 @@ import { loadStoredTemplateAsset } from "@/modules/configuration/template-assets
 export class TemplateUnavailableError extends Error {}
 
 const ANNEX_III_SHA256 = "8639c29198101a73253f0681620c89a3e2848b335d2a4be61b946f9b7a353d43";
-const ANNEX_V_SHA256 = "18e7e4b7f53df7b07387c891005c1df229a7cb549e4885d52bb55550e4874817";
+const ANNEX_V_SHA256 = "1f92410bc94e2037fe632450ce766b3ce5d44c4f55b8868056bad73c882c03f2";
 
 async function loadTemplate(configured: string | undefined, fallback: string, expectedSha: string) {
   const filePath = path.resolve(process.cwd(), configured || fallback);
