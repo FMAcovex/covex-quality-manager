@@ -15,4 +15,5 @@ export const capaColumns = [
   { key: "nextFollowup", label: "Próximo seguimiento", index: 13 },
   { key: "effectiveClose", label: "Cierre efectivo", index: 14 },
   { key: "observations", label: "Observaciones", index: 15 },
+  { key: "related", label: "Relacionados", index: 16 },
 ] as const;

@@ -4,6 +4,7 @@ import { Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { type ActionFeedbackState, userFacingActionError } from "@/lib/forms/action-feedback";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
 import {
@@ -608,6 +609,21 @@ export async function addCapaFollowupAction(id: string, formData: FormData) {
   revalidatePath(`/capa/${id}`);
 }
 
+export async function addCapaFollowupFormAction(
+  id: string,
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  try {
+    await addCapaFollowupAction(id, formData);
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido guardar el seguimiento CAPA."),
+    };
+  }
+  redirect(`/capa/${id}?tab=followups`);
+}
+
 export async function addCapaRelationAction(id: string, formData: FormData) {
   const capa = await prisma.capa.findUnique({ where: { id }, include: { qmsRecord: true } });
   if (!capa) throw new Error("CAPA no encontrada.");
@@ -646,4 +662,20 @@ export async function addCapaRelationAction(id: string, formData: FormData) {
   });
 
   revalidatePath(`/capa/${id}`);
+}
+
+
+export async function addCapaRelationFormAction(
+  id: string,
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  try {
+    await addCapaRelationAction(id, formData);
+    return { error: null };
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido vincular el expediente con la CAPA."),
+    };
+  }
 }

@@ -93,3 +93,12 @@ La CI añade PostgreSQL real y smoke tests de todos los módulos, versionado, ad
 ## Estado
 
 Hitos 0–10 completados y validados en CI. Hito 11 queda reservado para producción/IT.
+
+
+### Prueba funcional Hito 10.1
+Durante la prueba previa a producción:
+- los seguimientos y las relaciones muestran validaciones dentro de la pantalla;
+- los expedientes relacionados se muestran como enlaces navegables;
+- en Administración > Versiones y plantillas puede cargarse el archivo oficial de una versión configurada que todavía no tenga binario;
+- cada anexo separa `Descargar plantilla oficial` de `Generar ... cumplimentado`;
+- los binarios GMP siguen fuera de Git y se almacenan con SHA-256 en PostgreSQL.

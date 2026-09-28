@@ -3,6 +3,7 @@ import { Prisma,QmsRecordType,QmsRelationType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { type ActionFeedbackState, userFacingActionError } from "@/lib/forms/action-feedback";
 import { parseReturnForm } from "@/modules/returns/validation";
 import type { ReturnFormState } from "@/modules/returns/types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
@@ -85,7 +86,7 @@ export async function updateReturnAction(id:string,_s:ReturnFormState,fd:FormDat
  });
  revalidatePath("/returns");revalidatePath(`/returns/${id}`);redirect(`/returns/${id}`);
 }
-export async function addReturnFollowupAction(id:string,fd:FormData){
+async function saveReturnFollowup(id:string,fd:FormData){
  const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)throw new Error("Devolución no encontrada.");
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
  if(!followupDate||!completedByText||!comment)throw new Error("Fecha, responsable y comentario son obligatorios.");
@@ -94,7 +95,22 @@ export async function addReturnFollowupAction(id:string,fd:FormData){
   await tx.changeHistory.create({data:{qmsRecordId:rec.qmsRecordId,changedByText:completedByText,fieldPath:"followups",newValue:j({followupDate,comment}),reason:"Nuevo seguimiento",source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,rec.qmsRecordId,snapshotJson(serializeReturnVersion(snap)),completedByText,"Nuevo seguimiento");
  });
- revalidatePath(`/returns/${id}`);redirect(`/returns/${id}?tab=followups`);
+ revalidatePath("/returns");revalidatePath(`/returns/${id}`);
+}
+
+export async function addReturnFollowupAction(id:string,fd:FormData){
+ await saveReturnFollowup(id,fd);
+ redirect(`/returns/${id}?tab=followups`);
+}
+
+export async function addReturnFollowupFormAction(
+ id:string,
+ _state:ActionFeedbackState,
+ fd:FormData,
+):Promise<ActionFeedbackState>{
+ try{await saveReturnFollowup(id,fd);}
+ catch(error){return {error:userFacingActionError(error,"No se ha podido guardar el seguimiento de la devolución.")};}
+ redirect(`/returns/${id}?tab=followups`);
 }
 export async function addReturnRelationAction(id:string,fd:FormData){
  const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)throw new Error("Devolución no encontrada.");
@@ -103,4 +119,20 @@ export async function addReturnRelationAction(id:string,fd:FormData){
  const target=await prisma.qmsRecord.findFirst({where:{businessCode:code,id:{not:rec.qmsRecordId}}});if(!target)throw new Error("No existe un expediente con esa codificación.");
  await prisma.qmsRelation.upsert({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type}},update:{isActive:true,createdByText:actor},create:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type,createdByText:actor}});
  revalidatePath(`/returns/${id}`);
+}
+
+
+export async function addReturnRelationFormAction(
+  id: string,
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  try {
+    await addReturnRelationAction(id, formData);
+    return { error: null };
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido vincular el expediente con la devolución."),
+    };
+  }
 }

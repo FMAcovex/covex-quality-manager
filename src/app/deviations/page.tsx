@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { deadlineLabel, formatDate, measuresLabel } from "@/modules/deviations/domain";
 import { getDeviationList } from "@/modules/deviations/queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { deviationColumns } from "@/modules/deviations/column-config";
+import { QmsRelatedLinks } from "@/components/qms-related-links";
+import { collectRelatedRecords } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +31,13 @@ export default async function DeviationsPage({
     deadline: param(query.deadline),
   };
 
-  const { rows, departments, years, provenances, counters } = await getDeviationList(filters);
+  const [{ rows, departments, years, provenances, counters }, documentTemplates] = await Promise.all([getDeviationList(filters), getActiveTemplateAssets("DEVIATION")]);
   const exportParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value) exportParams.set(key, value);
   });
   const currentYear = filters.year ?? String(new Date().getFullYear());
+  const annualTemplate = documentTemplates.find((template) => template.documentType === "DEVIATION_ANNEX_V");
 
   return (
     <section className="workspace">
@@ -50,6 +54,9 @@ export default async function DeviationsPage({
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones</strong>
+              {annualTemplate?.fileName || annualTemplate?.filePath ? (
+                <a className="export-link" href={`/api/settings/templates/${annualTemplate.id}/download`}>Descargar plantilla oficial · Anexo V</a>
+              ) : <span className="muted-note">Plantilla oficial Anexo V pendiente de cargar.</span>}
               <form action="/api/deviations/export/annex-v" method="get" className="export-year-form">
                 <label>
                   <span>Anexo V oficial</span>
@@ -60,7 +67,7 @@ export default async function DeviationsPage({
                       .map((year) => <option key={year} value={year}>{year}</option>)}
                   </select>
                 </label>
-                <button className="button small" type="submit">Descargar</button>
+                <button className="button small primary" type="submit">Generar cumplimentado</button>
               </form>
               <a className="export-link" href={`/api/deviations/export/simple?${exportParams.toString()}`}>
                 Listado simple · filtros actuales
@@ -107,7 +114,7 @@ export default async function DeviationsPage({
         <div className="table-scroll">
           <table id="deviation-list-table">
             <thead><tr>
-<th data-column-key="control">Control</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="observations">Observaciones</th>
+<th data-column-key="control">Control</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="related">Relacionados</th><th data-column-key="document">Documento</th><th data-column-key="observations">Observaciones</th>
             </tr></thead>
             <tbody>
               {rows.length ? rows.map((row) => (
@@ -126,10 +133,11 @@ export default async function DeviationsPage({
                   <td data-column-key="deadline">{deadlineLabel(row.deadlineStatus)}</td>
                   <td data-column-key="measures">{measuresLabel(row)}</td>
                   <td data-column-key="capa" className="table-cell-wrap">{row.capaPlans.length ? row.capaPlans.map((plan)=>plan.description).join(" · ") : "—"}</td>
+                  <td data-column-key="related"><QmsRelatedLinks records={collectRelatedRecords(row.qmsRecord)} /></td>
                   <td data-column-key="document">{row.signedDocumentAvailable === true ? "Disponible" : row.signedDocumentAvailable === false ? "No disponible" : "No informado"}</td>
                   <td data-column-key="observations" className="table-cell-wrap">{row.internalObservations ?? "—"}</td>
                 </tr>
-              )) : <tr><td colSpan={16} className="empty-state"><strong>No hay desviaciones con estos filtros.</strong><span>Puedes crear una nueva desviación o limpiar los filtros.</span></td></tr>}
+              )) : <tr><td colSpan={17} className="empty-state"><strong>No hay desviaciones con estos filtros.</strong><span>Puedes crear una nueva desviación o limpiar los filtros.</span></td></tr>}
             </tbody>
           </table>
         </div>

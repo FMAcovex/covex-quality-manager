@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import {
   capaStatusLabel,
   capaTypeLabel,
@@ -8,6 +9,8 @@ import {
 import { getCapaList } from "@/modules/capa/queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { capaColumns } from "@/modules/capa/column-config";
+import { QmsRelatedLinks } from "@/components/qms-related-links";
+import { collectRelatedRecords } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +34,11 @@ export default async function CapaPage({
     origin: param(query.origin),
     followup: param(query.followup),
   };
-  const { rows, departments, years, origins, counters } = await getCapaList(filters);
+  const [{ rows, departments, years, origins, counters }, documentTemplates] = await Promise.all([getCapaList(filters), getActiveTemplateAssets("CAPA")]);
 
   const exportParams = new URLSearchParams();
+  const annualTemplate = documentTemplates.find((template) => template.documentType === "CAPA_ANNEX_IV");
+
   Object.entries(filters).forEach(([key,value]) => {
     if(value && key !== "q" && key !== "followup") exportParams.set(key,value);
   });
@@ -54,11 +59,14 @@ export default async function CapaPage({
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones CAPA</strong>
+              {annualTemplate?.fileName || annualTemplate?.filePath ? (
+                <a className="export-link" href={`/api/settings/templates/${annualTemplate.id}/download`}>Descargar plantilla oficial · Anexo IV</a>
+              ) : <span className="muted-note">Plantilla oficial Anexo IV pendiente de cargar.</span>}
               <form action="/api/capa/export/annex-iv" method="get" className="export-year-form">
                 <label><span>Anexo IV oficial</span><select name="year" defaultValue={filters.year ?? String(new Date().getFullYear())}>
                   {Array.from(new Set([Number(filters.year ?? new Date().getFullYear()),...years])).filter(Number.isInteger).sort((a,b)=>b-a).map((year)=><option key={year} value={year}>{year}</option>)}
                 </select></label>
-                <button className="button small" type="submit">Descargar</button>
+                <button className="button small primary" type="submit">Generar cumplimentado</button>
               </form>
               <a className="export-link" href={`/api/capa/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a>
               <a className="export-link" href="/api/capa/export/simple">Listado simple completo</a>
@@ -101,7 +109,7 @@ export default async function CapaPage({
           <table id="capa-list-table" className="records-table capa-table">
             <thead>
               <tr>
-<th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre operativo</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Cierre efectivo</th><th data-column-key="observations">Observaciones</th>
+<th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre operativo</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Cierre efectivo</th><th data-column-key="observations">Observaciones</th><th data-column-key="related">Relacionados</th>
               </tr>
             </thead>
             <tbody>
@@ -134,10 +142,11 @@ export default async function CapaPage({
                     <td data-column-key="nextFollowup">{formatDate(latest?.nextFollowupDate)}</td>
                     <td data-column-key="effectiveClose">{formatDate(row.effectiveClosedAt)}</td>
                     <td data-column-key="observations" className="long-cell">{row.internalObservations ?? "—"}</td>
+                    <td data-column-key="related"><QmsRelatedLinks records={collectRelatedRecords(row.qmsRecord)} /></td>
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={16}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={17}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>

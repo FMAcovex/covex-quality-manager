@@ -54,7 +54,18 @@ export async function getCapaList(filters: CapaListFilters) {
       prisma.capa.findMany({
         where,
         include: {
-          qmsRecord: true,
+          qmsRecord: {
+            include: {
+              sourceRelations: {
+                where: { isActive: true },
+                include: { targetRecord: true },
+              },
+              targetRelations: {
+                where: { isActive: true },
+                include: { sourceRecord: true },
+              },
+            },
+          },
           department: true,
           plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ followupDate: "desc" }, { sequenceNumber: "desc" }] },

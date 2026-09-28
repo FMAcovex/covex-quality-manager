@@ -4,6 +4,7 @@ import { SettingsNav } from "@/components/settings-nav";
 import {
   activateFormVersionAction,
   activateTemplateVersionAction,
+  attachTemplateAssetAction,
   cloneFormVersionAction,
   registerTemplateVersionAction,
 } from "@/modules/configuration/admin-actions";
@@ -220,9 +221,32 @@ export default async function VersionsPage() {
                           className="button small"
                           href={`/api/settings/templates/${template.id}/download`}
                         >
-                          Descargar
+                          Descargar plantilla
                         </a>
-                      ) : null}
+                      ) : (
+                        <form
+                          action={attachTemplateAssetAction.bind(null, template.id)}
+                          className="admin-template-upload"
+                        >
+                          <input
+                            name="file"
+                            type="file"
+                            required
+                            accept=".docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                          />
+                          <input
+                            type="hidden"
+                            name="actor"
+                            value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                          />
+                          <input
+                            type="hidden"
+                            name="reason"
+                            value="Carga inicial del archivo oficial de la versión configurada"
+                          />
+                          <button className="button small primary">Cargar archivo oficial</button>
+                        </form>
+                      )}
 
                       {!template.isActive ? (
                         <form action={activateTemplateVersionAction.bind(null, template.id)}>
@@ -332,8 +356,9 @@ export default async function VersionsPage() {
           guarda automáticamente su SHA-256 y el binario queda en PostgreSQL. Registrar
           una plantilla no significa que cualquier Word/Excel nuevo sea compatible: si
           cambia la estructura de tablas/campos del anexo, el generador debe adaptarse y
-          validarse antes de activar la versión. Para Reclamaciones y Devoluciones debe
-          cargarse el PNT DOCX completo, porque sus anexos se extraen de esa fuente controlada.
+          validarse antes de activar la versión. Cada tipo documental puede almacenar su
+          propio archivo oficial. Reclamaciones y Devoluciones mantienen compatibilidad
+          temporal con el PNT completo, pero admiten ya una plantilla independiente por anexo.
         </div>
       </section>
     </section>

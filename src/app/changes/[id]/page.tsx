@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { DocumentTemplateActions } from "@/components/document-template-actions";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { notFound } from "next/navigation";
 import {
-  addChangeControlFollowupAction,
-  addChangeControlRelationAction,
+  addChangeControlFollowupFormAction,
+  addChangeControlRelationFormAction,
 } from "@/modules/change-control/actions";
 import { ChangeFollowupForm } from "@/modules/change-control/components/change-followup-form";
+import { QmsRelatedLinks } from "@/components/qms-related-links";
+import { ActionFeedbackForm } from "@/components/action-feedback-form";
 import {
   classificationLabel,
   dictamenResultLabel,
@@ -56,9 +60,10 @@ export default async function ChangeControlDetailPage({
   const { id } = await params;
   const { tab: rawTab } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "request";
-  const [record, lookups] = await Promise.all([
+  const [record, lookups, documentTemplates] = await Promise.all([
     getChangeControlDetail(id),
     getChangeControlLookups(),
+    getActiveTemplateAssets("CHANGE_CONTROL"),
   ]);
   if (!record) notFound();
 
@@ -278,7 +283,7 @@ export default async function ChangeControlDetailPage({
             <div className="card" id="new-followup">
               <h2>Nuevo seguimiento</h2>
               <ChangeFollowupForm
-                action={addChangeControlFollowupAction.bind(null, id)}
+                action={addChangeControlFollowupFormAction.bind(null, id)}
                 departments={lookups.departments}
                 tasks={followupTasks}
                 defaultResponsible={record.followupResponsible}
@@ -292,17 +297,30 @@ export default async function ChangeControlDetailPage({
         <div className="card">
           <h2>Documentos del expediente</h2>
           <p className="muted-note">Solicitud (Anexo III), Dictamen (Anexo IV), Seguimientos (Anexo V) y listado maestro anual (Anexo VII) son familias documentales independientes.</p>
-          <div className="document-actions">
-            <a className="button" href={`/api/changes/${id}/annex-iii`}>Descargar Anexo III · Solicitud</a>
-            <a className="button" href={`/api/changes/${id}/annex-iv`}>Descargar Anexo IV · Dictamen</a>
-            {currentVersion ? (
-              <a className="button" href={`/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}`}>
-                Descargar Anexo V · {versionLabel(currentVersion.sequenceNumber)}
-              </a>
-            ) : (
-              <span className="badge neutral">Anexo V disponible tras Seguimiento 00</span>
-            )}
+          <div className="document-template-grid">
+            <DocumentTemplateActions
+              templates={documentTemplates}
+              documentType="CHANGE_ANNEX_III"
+              title="Anexo III · Solicitud"
+              generateHref={`/api/changes/${id}/annex-iii`}
+              generateLabel="Generar Anexo III cumplimentado"
+            />
+            <DocumentTemplateActions
+              templates={documentTemplates}
+              documentType="CHANGE_ANNEX_IV"
+              title="Anexo IV · Dictamen"
+              generateHref={`/api/changes/${id}/annex-iv`}
+              generateLabel="Generar Anexo IV cumplimentado"
+            />
+            <DocumentTemplateActions
+              templates={documentTemplates}
+              documentType="CHANGE_ANNEX_V"
+              title="Anexo V · Seguimiento"
+              generateHref={currentVersion ? `/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}` : undefined}
+              generateLabel={currentVersion ? `Generar Anexo V · ${versionLabel(currentVersion.sequenceNumber)}` : undefined}
+            />
           </div>
+          {!currentVersion ? <p className="muted-note">El Anexo V cumplimentado estará disponible tras emitir el Seguimiento 00.</p> : null}
           {record.qmsRecord.versions.length ? (
             <div className="timeline">
               {record.qmsRecord.versions.map((version) => (
@@ -347,18 +365,18 @@ export default async function ChangeControlDetailPage({
               {relations.map((item, index) => (
                 <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
                   <span>{item.direction} · {relationLabel(item.type)}</span>
-                  <strong>{item.record.businessCode ?? item.record.id}</strong>
+                  <QmsRelatedLinks records={[item.record]} />
                   <small>{item.record.recordType}</small>
                 </div>
               ))}
             </div>
           ) : <div className="empty-panel">Sin expedientes relacionados.</div>}
-          <form action={addChangeControlRelationAction.bind(null, id)} className="relation-form inline-form">
+          <ActionFeedbackForm action={addChangeControlRelationFormAction.bind(null, id)} className="relation-form inline-form">
             <label className="field"><span>Codificación relacionada</span><input name="businessCode" required /></label>
             <label className="field"><span>Tipo de relación</span><select name="relationType"><option value="RELATED_TO">Relacionada</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implantada por</option><option value="ASSOCIATED_WITH">Asociada</option></select></label>
             <label className="field"><span>Registrado por</span><input name="actor" defaultValue={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"} /></label>
-            <div className="full"><button className="button primary" type="submit">Añadir relación</button></div>
-          </form>
+            <div className="form-action-row"><button className="button primary" type="submit">Añadir relación</button></div>
+          </ActionFeedbackForm>
         </div>
       ) : null}
 

@@ -4,6 +4,7 @@ import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { type ActionFeedbackState, userFacingActionError } from "@/lib/forms/action-feedback";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
 import {
@@ -494,7 +495,7 @@ export async function updateDeviationAction(
   }
 }
 
-export async function addDeviationFollowupAction(formData: FormData) {
+async function saveDeviationFollowup(formData: FormData) {
   const deviationId = formData.get("deviationId")?.toString();
   const followupDate = formData.get("followupDate")?.toString();
   const completedByText = formData.get("completedByText")?.toString().trim();
@@ -567,6 +568,94 @@ export async function addDeviationFollowupAction(formData: FormData) {
     );
   });
 
+  revalidatePath("/deviations");
   revalidatePath(`/deviations/${deviationId}`);
+  return deviationId;
+}
+
+export async function addDeviationFollowupAction(formData: FormData) {
+  const deviationId = await saveDeviationFollowup(formData);
   redirect(`/deviations/${deviationId}?tab=followups`);
+}
+
+export async function addDeviationFollowupFormAction(
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  let deviationId: string;
+  try {
+    deviationId = await saveDeviationFollowup(formData);
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido guardar el seguimiento."),
+    };
+  }
+  redirect(`/deviations/${deviationId}?tab=followups`);
+}
+
+export async function addDeviationRelationAction(id: string, formData: FormData) {
+  const deviation = await prisma.deviation.findUnique({ where: { id } });
+  if (!deviation) throw new Error("Desviación no encontrada.");
+
+  const businessCode = String(formData.get("businessCode") ?? "").trim();
+  const relationType = String(formData.get("relationType") ?? "RELATED_TO").trim();
+  const actor =
+    String(formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo").trim() ||
+    "Usuario demo";
+  if (!businessCode) throw new Error("Debe indicarse la codificación del expediente relacionado.");
+
+  const allowed = ["GENERATES", "RELATED_TO", "IMPLEMENTED_BY", "ASSOCIATED_WITH"] as const;
+  const type = allowed.includes(relationType as (typeof allowed)[number])
+    ? (relationType as (typeof allowed)[number])
+    : "RELATED_TO";
+
+  const target = await prisma.qmsRecord.findFirst({
+    where: {
+      businessCode,
+      id: { not: deviation.qmsRecordId },
+      isActive: true,
+    },
+  });
+  if (!target) throw new Error("No existe un expediente QMS activo con esa codificación.");
+
+  await prisma.qmsRelation.upsert({
+    where: {
+      sourceRecordId_targetRecordId_relationType: {
+        sourceRecordId: deviation.qmsRecordId,
+        targetRecordId: target.id,
+        relationType: type,
+      },
+    },
+    update: { isActive: true, createdByText: actor },
+    create: {
+      sourceRecordId: deviation.qmsRecordId,
+      targetRecordId: target.id,
+      relationType: type,
+      createdByText: actor,
+    },
+  });
+
+  revalidatePath("/deviations");
+  revalidatePath("/capa");
+  revalidatePath("/complaints");
+  revalidatePath("/changes");
+  revalidatePath("/returns");
+  revalidatePath(`/deviations/${id}`);
+}
+
+
+
+export async function addDeviationRelationFormAction(
+  id: string,
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  try {
+    await addDeviationRelationAction(id, formData);
+    return { error: null };
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido vincular el expediente con la desviación."),
+    };
+  }
 }

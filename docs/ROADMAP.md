@@ -195,3 +195,15 @@ Criterio de salida:
 - smoke test específico de endurecimiento incluido en CI;
 - documentación local/demo y límites de la V1 actualizados;
 - autenticación, roles corporativos y política de backup de producción permanecen en Hito 11.
+
+
+### Hito 10.1 — Correcciones de prueba y UX
+Se ejecuta antes del Hito 11 a partir de la prueba funcional del usuario.
+
+Criterio de salida:
+- ningún error de validación habitual de seguimiento o relación debe sacar al usuario de la pantalla;
+- relaciones QMS navegables desde ambos expedientes y desde listados;
+- botones de plantilla oficial y documento cumplimentado inequívocamente separados por anexo;
+- archivos oficiales almacenables con SHA-256 sin versionarlos en Git;
+- listados oficiales anuales separados de sus plantillas;
+- CI completa y smoke específico en verde.

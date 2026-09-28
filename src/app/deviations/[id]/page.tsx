@@ -1,6 +1,11 @@
 import Link from "next/link";
+import { DocumentTemplateActions } from "@/components/document-template-actions";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { notFound } from "next/navigation";
-import { addDeviationFollowupAction } from "@/modules/deviations/actions";
+import { addDeviationFollowupFormAction, addDeviationRelationFormAction } from "@/modules/deviations/actions";
+import { ActionFeedbackForm } from "@/components/action-feedback-form";
+import { QmsRelatedLinks } from "@/components/qms-related-links";
+import { collectRelatedRecords } from "@/lib/qms/record-links";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
@@ -12,6 +17,7 @@ const tabs = [
   ["investigation", "Investigación"],
   ["actions", "Acciones"],
   ["followups", "Seguimientos"],
+  ["relations", "Relaciones"],
   ["versions", "Versiones"],
   ["documents", "Documentos"],
   ["history", "Historial"],
@@ -38,21 +44,15 @@ export default async function DeviationDetailPage({
   const { id } = await params;
   const { tab: rawTab } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
-  const deviation = await getDeviationDetail(id);
+  const [deviation, documentTemplates] = await Promise.all([
+    getDeviationDetail(id),
+    getActiveTemplateAssets("DEVIATION"),
+  ]);
   if (!deviation) notFound();
 
   const code = deviation.qmsRecord.businessCode ?? "Sin codificación";
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
-  const related = [
-    ...deviation.qmsRecord.sourceRelations.map((relation) => ({
-      type: relation.relationType,
-      record: relation.targetRecord,
-    })),
-    ...deviation.qmsRecord.targetRelations.map((relation) => ({
-      type: relation.relationType,
-      record: relation.sourceRecord,
-    })),
-  ];
+  const relatedRecords = collectRelatedRecords(deviation.qmsRecord);
 
   return (
     <section className="workspace">
@@ -118,10 +118,10 @@ export default async function DeviationDetailPage({
                 ))}
               </div>
             ) : <div className="empty-panel">No hay CAPA propuestas.</div>}
-            {related.length ? (
+            {relatedRecords.length ? (
               <>
-                <h3>Otras relaciones QMS</h3>
-                <div className="timeline">{related.map((item, index)=><div className="timeline-item" key={index}><strong>{item.type}</strong> · {item.record.businessCode ?? item.record.id}</div>)}</div>
+                <h3>Expedientes relacionados</h3>
+                <QmsRelatedLinks records={relatedRecords} />
               </>
             ) : null}
           </div>
@@ -177,7 +177,7 @@ export default async function DeviationDetailPage({
           </div>
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
-            <form action={addDeviationFollowupAction} className="inline-form">
+            <ActionFeedbackForm action={addDeviationFollowupFormAction} className="inline-form">
               <input type="hidden" name="deviationId" value={id} />
               <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
               <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={deviation.createdByText ?? ""} required /></label>
@@ -185,10 +185,47 @@ export default async function DeviationDetailPage({
               <label className="field full"><span>Comentario / actuación *</span><textarea name="comment" required /></label>
               <label className="field"><span>Próxima fecha</span><input type="date" name="nextFollowupDate" /></label>
               <label className="field"><span>Referencia / evidencia</span><input name="evidenceReference" /></label>
-              <div className="field"><span>&nbsp;</span><button className="button primary" type="submit">Guardar seguimiento</button></div>
-            </form>
+              <div className="form-action-row"><button className="button primary" type="submit">Guardar seguimiento</button></div>
+            </ActionFeedbackForm>
           </div>
         </>
+      ) : null}
+
+      {activeTab === "relations" ? (
+        <div className="card">
+          <h2>Relaciones QMS</h2>
+          <p className="section-help">
+            Vincula esta desviación con una CAPA, reclamación, control de cambio, devolución u otro expediente existente.
+            La relación se visualizará también desde el otro expediente.
+          </p>
+          {relatedRecords.length ? (
+            <QmsRelatedLinks records={relatedRecords} />
+          ) : (
+            <div className="empty-panel">No hay expedientes relacionados.</div>
+          )}
+          <ActionFeedbackForm action={addDeviationRelationFormAction.bind(null, id)} className="inline-form relation-form">
+            <label className="field">
+              <span>Codificación del expediente *</span>
+              <input name="businessCode" placeholder="AC/GC-00/001/2026" required />
+            </label>
+            <label className="field">
+              <span>Relación</span>
+              <select name="relationType" defaultValue="RELATED_TO">
+                <option value="RELATED_TO">Relacionada con</option>
+                <option value="GENERATES">Genera</option>
+                <option value="IMPLEMENTED_BY">Implementada por</option>
+                <option value="ASSOCIATED_WITH">Asociada con</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Registrado por</span>
+              <input name="actor" defaultValue={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
+            </label>
+            <div className="form-action-row">
+              <button className="button primary" type="submit">Vincular expediente</button>
+            </div>
+          </ActionFeedbackForm>
+        </div>
       ) : null}
 
       {activeTab === "versions" ? (
@@ -253,10 +290,13 @@ export default async function DeviationDetailPage({
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{deviation.signedDocumentAvailable === true ? "Disponible" : deviation.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="document-actions">
-            <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
-            <span className="muted-note">Se genera desde la plantilla v06 asociada al expediente y se registra la generación.</span>
-          </div>
+          <DocumentTemplateActions
+            templates={documentTemplates}
+            documentType="DEVIATION_ANNEX_III"
+            title="Anexo III · Informe de desviación"
+            generateHref={`/api/deviations/${id}/annex-iii`}
+            generateLabel="Generar Anexo III cumplimentado"
+          />
           {deviation.qmsRecord.generatedDocuments.length ? (
             <>
               <h3>Generaciones registradas</h3>

@@ -90,7 +90,18 @@ export async function getDeviationList(filters: DeviationListFilters) {
       prisma.deviation.findMany({
         where,
         include: {
-          qmsRecord: true,
+          qmsRecord: {
+            include: {
+              sourceRelations: {
+                where: { isActive: true },
+                include: { targetRecord: true },
+              },
+              targetRelations: {
+                where: { isActive: true },
+                include: { sourceRecord: true },
+              },
+            },
+          },
           department: true,
           immediateActions: true,
           capaPlans: true,
