@@ -1,37 +1,19 @@
 import { readZip, getZipEntryText, updateZipEntry, writeZip, type ZipEntry } from "@/lib/ooxml/zip";
 import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
+import {
+  addFillVariants,
+  applyStyleMap,
+  buildRow,
+  renumberRow,
+  replaceSheetData,
+  rowStyles,
+  setSheetDimension,
+  sheetRows,
+  updatePrintArea,
+} from "@/lib/ooxml/xlsx-template";
 import { loadAnnexVTemplate } from "@/modules/deviations/documents/templates";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { deadlineLabel, measuresLabel } from "@/modules/deviations/domain";
-
-export const ANNEX_V_CAPACITY = 61;
-
-const DETAIL_STYLES: Record<string, number> = {
-  B: 20, C: 21, D: 22, E: 22, F: 15, G: 21,
-  H: 18, I: 25, J: 25, K: 27, L: 28, M: 26,
-};
-
-export function ensureAnnexVDetailRows(sheetXml: string) {
-  for (let row = 9; row <= 65; row += 1) {
-    const rowRegex = new RegExp(`<row([^>]*\\br="${row}"[^>]*)>([\\s\\S]*?)<\\/row>`);
-    sheetXml = sheetXml.replace(rowRegex, (_match, rawAttrs: string, inner: string) => {
-      let attrs = rawAttrs;
-      if (!/\\bht=/.test(attrs)) attrs += ' ht="45"';
-      if (!/\\bcustomHeight=/.test(attrs)) attrs += ' customHeight="1"';
-      const missing = Object.entries(DETAIL_STYLES)
-        .filter(([column]) => !new RegExp(`<c[^>]*\\br="${column}${row}"(?:\\s|")`).test(inner))
-        .map(([column, style]) => `<c r="${column}${row}" s="${style}"></c>`)
-        .join("");
-      const pCell = new RegExp(`<c[^>]*\\br="P${row}"`);
-      const updatedInner = pCell.test(inner)
-        ? inner.replace(pCell, `${missing}$&`)
-        : `${inner}${missing}`;
-      return `<row${attrs}>${updatedInner}</row>`;
-    });
-  }
-  return sheetXml;
-}
-
 
 type ExportRow = {
   qmsRecord: { businessCode: string | null; year: number | null };
@@ -88,91 +70,63 @@ function removeCalcChain(entries: ZipEntry[]) {
 }
 
 export async function generateAnnexV(year: number, rows: ExportRow[], versionCode = "06") {
-  if (rows.length > ANNEX_V_CAPACITY) {
-    throw new Error(
-      `El Anexo V v06 admite ${ANNEX_V_CAPACITY} registros. Hay ${rows.length}; se requiere una plantilla controlada con mayor capacidad.`,
-    );
-  }
-
   let entries = readZip(await loadAnnexVTemplate(versionCode));
-  let detail = ensureAnnexVDetailRows(getZipEntryText(entries, "xl/worksheets/sheet1.xml"));
-  let official = getZipEntryText(entries, "xl/worksheets/sheet3.xml");
+  let sheet = getZipEntryText(entries, "xl/worksheets/sheet1.xml");
+  let stylesXml = getZipEntryText(entries, "xl/styles.xml");
   let workbook = getZipEntryText(entries, "xl/workbook.xml");
 
-  workbook = workbook
-    .replace(/name="2026"/, `name="${year}"`)
-    .replaceAll("'2026'!", `'${year}'!`)
-    .replace(
-      /<definedName name="_xlnm.Print_Area" localSheetId="0">[\s\S]*?<\/definedName>/,
-      `<definedName name="_xlnm.Print_Area" localSheetId="0">'${year}'!$B$1:$M$65</definedName>`,
-    );
-  detail = setXlsxCell(detail, "B2", `LISTADO GENERAL DE DESVIACIONES\n"${year}"`);
-  official = setXlsxCell(official, "B2", `Listado general de Desviaciones\n${year}`);
+  const sourceRows = sheetRows(sheet);
+  const dataTemplate = sourceRows.find((item) => item.number === 6)?.xml;
+  if (!dataTemplate) throw new Error("Anexo V Desviaciones: fila de datos modelo no encontrada.");
+  const templateStyles = rowStyles(dataTemplate);
+  const baseStyles = ["A","B","C","D","E","F"].map((column) => templateStyles.get(column) ?? 0);
 
-  for (let index = 0; index < ANNEX_V_CAPACITY; index += 1) {
-    const sourceRow = 5 + index;
-    const officialRow = 6 + index;
-    const row = rows[index] ?? null;
-    const values = row
-      ? [
-          row.departmentCodeSnapshot ?? "",
-          row.qmsRecord.businessCode ?? "",
-          row.materialProcessAffected ?? "",
-          row.provenance ?? "",
-          row.whatHappened ?? "",
-          classification(row.classification),
-          row.rootCause ?? "",
-          date(row.issueDate),
-          date(row.closedAt),
-          row.immediateActions.length && row.capaPlans.length
-            ? "CAPA+Correctiva Inmediata"
-            : measuresLabel(row),
-          capaCodes(row),
-          row.internalObservations ?? "",
-        ]
-      : Array(12).fill("");
+  const openVariant = addFillVariants(stylesXml, baseStyles, 13);
+  stylesXml = openVariant.stylesXml;
+  const closedVariant = addFillVariants(stylesXml, baseStyles, 14);
+  stylesXml = closedVariant.stylesXml;
 
-    const columns = ["B","C","D","E","F","G","H","I","J","K","L","M"];
-    columns.forEach((column, col) => {
-      detail = setXlsxCell(detail, `${column}${sourceRow}`, values[col] as string);
-    });
+  const headers = sourceRows.filter((item) => item.number <= 5).map((item) => item.xml);
+  const legend = sourceRows.filter((item) => item.number >= 69 && item.number <= 71);
+  const capacity = Math.max(63, rows.length);
+  const dataRows: string[] = [];
 
-    const officialValues = row
-      ? [
-          row.qmsRecord.businessCode ?? "",
-          [date(row.issueDate), row.departmentCodeSnapshot].filter(Boolean).join(" - "),
-          row.materialProcessAffected ?? "",
-          row.whatHappened ?? "",
-          capaCodes(row),
-          date(row.closedAt),
-        ]
-      : Array(6).fill("");
-    ["A","B","C","D","E","F"].forEach((column, col) => {
-      official = setXlsxCell(official, `${column}${officialRow}`, officialValues[col] as string);
-    });
+  for (let index = 0; index < capacity; index += 1) {
+    const rowNumber = 6 + index;
+    const record = rows[index];
+    if (!record) {
+      dataRows.push(buildRow(dataTemplate, rowNumber, ["A","B","C","D","E","F"].map((column) => ({
+        column,
+        value: "",
+        style: templateStyles.get(column) ?? 0,
+      }))));
+      continue;
+    }
+    const statusMap = record.status === "CLOSED" ? closedVariant.styleMap : openVariant.styleMap;
+    const values = [
+      record.qmsRecord.businessCode ?? "",
+      [date(record.issueDate), record.departmentCodeSnapshot ?? ""].filter(Boolean).join("\n"),
+      record.materialProcessAffected ?? "",
+      record.whatHappened ?? "",
+      capaCodes(record),
+      date(record.closedAt),
+    ];
+    dataRows.push(buildRow(dataTemplate, rowNumber, ["A","B","C","D","E","F"].map((column, col) => {
+      const base = templateStyles.get(column) ?? 0;
+      return { column, value: values[col], style: applyStyleMap(base, statusMap) };
+    })));
   }
 
-  updateZipEntry(entries, "xl/worksheets/sheet1.xml", detail);
-  updateZipEntry(entries, "xl/worksheets/sheet3.xml", official);
+  const legendStart = 6 + capacity;
+  const shiftedLegend = legend.map((item, index) => renumberRow(item.xml, item.number, legendStart + index));
+  sheet = replaceSheetData(sheet, [...headers, ...dataRows, ...shiftedLegend]);
+  sheet = setSheetDimension(sheet, `A1:F${legendStart + 2}`);
+  sheet = setXlsxCell(sheet, "B2", `Listado general de Desviaciones\n"${year}"`);
+  workbook = updatePrintArea(workbook, 0, `'TABLA OFICIAL'!$A$1:$F$${legendStart + 2}`);
+
+  updateZipEntry(entries, "xl/worksheets/sheet1.xml", sheet);
+  updateZipEntry(entries, "xl/styles.xml", stylesXml);
   updateZipEntry(entries, "xl/workbook.xml", workbook);
-
-  const tableEntry = entries.find((entry) => entry.name === "xl/tables/table1.xml");
-  if (tableEntry) {
-    const tableXml = tableEntry.data
-      .toString("utf8")
-      .replaceAll('ref="B4:M8"', 'ref="B4:M65"');
-    updateZipEntry(entries, "xl/tables/table1.xml", tableXml);
-  }
-
-  const appEntry = entries.find((entry) => entry.name === "docProps/app.xml");
-  if (appEntry) {
-    updateZipEntry(
-      entries,
-      "docProps/app.xml",
-      appEntry.data.toString("utf8").replaceAll("2026", String(year)),
-    );
-  }
-
   entries = removeCalcChain(entries);
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);
