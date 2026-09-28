@@ -58,16 +58,15 @@ export async function createComplaintAction(_s:ComplaintFormState,fd:FormData):P
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors};
  const v=parsed.values; const department=await prisma.department.findUnique({where:{id:v.departmentId!}}); if(!department)return{error:"El departamento no existe."};
  const ref=d(v.openedAt)??new Date();
- const [form,iii,iv,vlist]=await Promise.all([
+ const [form,iii,vlist]=await Promise.all([
   getApplicableFormVersion(QmsRecordType.COMPLAINT,ref),
   getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_III",ref),
-  getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_IV",ref),
   getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_V",ref)
  ]);
  try{
   const created=await prisma.$transaction(async tx=>{
    const qr=await tx.qmsRecord.create({data:{recordType:"COMPLAINT",businessCode:v.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
-   const rec=await tx.complaint.create({data:{qmsRecordId:qr.id,...complaintData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vlist?.id}});
+   const rec=await tx.complaint.create({data:{qmsRecordId:qr.id,...complaintData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:null,annexVTemplateVersionId:vlist?.id}});
    await replaceCapaPlans(tx,rec.id,v.capaPlans);
    await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,description:v.description}),reason:"Alta de reclamación",source:"UI"}});
    const snap=await getSnapshot(tx,rec.id); await ensureInitialVersion(tx,qr.id,snapshotJson(serializeComplaintVersion(snap)),parsed.actor);
