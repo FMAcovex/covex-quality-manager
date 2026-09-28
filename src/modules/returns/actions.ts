@@ -11,6 +11,7 @@ import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules
 import { ensureInitialVersion,refreshCurrentVersion,serializeReturnVersion,snapshotJson } from "@/lib/qms/versioning";
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
+const cleanJson=(v:unknown):Prisma.InputJsonValue=>JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
 
 async function getSnapshot(tx:Prisma.TransactionClient,id:string){
  return tx.returnRecord.findUniqueOrThrow({where:{id},include:{qmsRecord:true,products:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},followups:{orderBy:[{followupDate:"asc"},{createdAt:"asc"}]},formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true,annexVITemplateVersion:true}});
@@ -31,7 +32,8 @@ function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{i
   temperatureExcursionEvaluated:v.temperatureExcursionEvaluated,coldChainReturnSystemValidated:v.coldChainReturnSystemValidated,decision:v.decision,
   finalDestination:v.finalDestination,decisionObservations:v.decisionObservations,qaApprovalName:v.qaApprovalName,technicalApprovalName:v.technicalApprovalName,decisionDate:d(v.decisionDate),
   destructionManagedBy:v.destructionManagedBy,destructionCertificate:v.destructionCertificate,traceabilityUpdated:v.traceabilityUpdated,
-  closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
+  closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus,
+  extraData:cleanJson({returnV03Declaration:{evidence:v.declarationEvidence,otherDocumentation:v.declarationOtherDocumentation,observations:v.declarationObservations,customerTechnicalResponsible:v.customerTechnicalResponsible}})
  };
 }
 async function replaceProducts(tx:Prisma.TransactionClient,id:string,products:ReturnType<typeof parseReturnForm>["values"]["products"]){
