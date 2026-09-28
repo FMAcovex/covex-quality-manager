@@ -15,7 +15,7 @@ function xmlCell(column:string,row:number,style:string,value:string){
 }
 function stylesFrom(rowXml:string){
  const out=new Map<string,string>();
- for(const m of rowXml.matchAll(/<c\\b([^>]*\\br="([A-Z]+)\\d+"[^>]*)/g))out.set(m[2],m[1].match(/\\bs="([^"]+)"/)?.[1]??"");
+ for(const m of rowXml.matchAll(new RegExp("<c\\b([^>]*\\br=\\\"([A-Z]+)\\d+\\\"[^>]*)","g")))out.set(m[2],m[1].match(new RegExp("\\bs=\\\"([^\\\"]+)\\\""))?.[1]??"");
  return out;
 }
 
@@ -24,9 +24,9 @@ export async function generateReturnAnnexVI(year:number,rows:Row[],versionCode="
  const entry=entries.find(x=>x.name==="xl/worksheets/sheet1.xml");
  if(!entry)throw new Error("Anexo VI Devoluciones: hoja principal no encontrada.");
  let sheet=entry.data.toString("utf8");
- const data=sheet.match(/<sheetData>([\\s\\S]*?)<\\/sheetData>/);
+ const data=sheet.match(new RegExp("<sheetData>([\\s\\S]*?)</sheetData>"));
  if(!data)throw new Error("Anexo VI Devoluciones: sheetData no encontrado.");
- const source=[...data[1].matchAll(/<row\\b[^>]*\\br="(\\d+)"[^>]*>[\\s\\S]*?<\\/row>/g)].map(m=>({n:Number(m[1]),xml:m[0]}));
+ const source=[...data[1].matchAll(new RegExp("<row\\b[^>]*\\br=\\\"(\\d+)\\\"[^>]*>[\\s\\S]*?</row>","g"))].map(m=>({n:Number(m[1]),xml:m[0]}));
  const first=source.find(x=>x.n===5)?.xml, normal=source.find(x=>x.n===6)?.xml??first;
  if(!first||!normal)throw new Error("Anexo VI Devoluciones: fila modelo no encontrada.");
  const firstStyles=stylesFrom(first),normalStyles=stylesFrom(normal);
@@ -42,7 +42,7 @@ export async function generateReturnAnnexVI(year:number,rows:Row[],versionCode="
   ];
   return `<row r="${n}">${"ABCDEFGHIJKLM".split("").map((col,j)=>xmlCell(col,n,styles.get(col)??"",String(vals[j]??""))).join("")}</row>`;
  });
- sheet=sheet.replace(/<sheetData>[\\s\\S]*?<\\/sheetData>/,`<sheetData>${[...headers,...body].join("")}</sheetData>`);
+ sheet=sheet.replace(new RegExp("<sheetData>[\\s\\S]*?</sheetData>"),`<sheetData>${[...headers,...body].join("")}</sheetData>`);
  sheet=sheet.replace(/<dimension ref="[^"]+"/,`<dimension ref="A1:M${Math.max(5,4+flat.length)}"`);
  sheet=setXlsxCell(sheet,"A3",String(year));
  updateZipEntry(entries,"xl/worksheets/sheet1.xml",sheet);
