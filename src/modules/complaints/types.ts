@@ -11,7 +11,7 @@ export type ComplaintFormDefaults = {
   complaintType?: "PROVIDER" | "CUSTOMER";
   partyName?: string;
   contact?: string;
-  affectedScope?: string;
+  scopeCategories?: string[];\n  scopeOther?: string;\n  affectedObjectTypes?: string[];\n  affectedObjectOther?: string;\n  affectedScope?: string;
   reference?: string;
   lotReference?: string;
   quantity?: string;
@@ -27,7 +27,7 @@ export type ComplaintFormDefaults = {
   impactAssessment?: string;
   investigationResult?: "PROCEDENT" | "NOT_PROCEDENT" | "INCONCLUSIVE" | "NOT_ATTRIBUTABLE_TO_COVEX";
   rootCause?: string;
-  classification?: "CRITICAL" | "MAJOR" | "MINOR" | "NO_GMP_IMPACT";
+  classification?: "CRITICAL" | "MAJOR" | "MINOR" | "NO_GMP_IMPACT";\n  withdrawalPotential?: "YES"|"NO"|"NA";\n  recallProcedureRequired?: "YES"|"NO"|"NA";\n  authorityNotification?: "YES"|"NO"|"NA";\n  responsiblePartyCommunication?: "YES"|"NO"|"NA";\n  regulatoryJustification?: string;
   resolutionLines?: string;
   resolutionActions?: string[];
   immediateActionDetails?: string;
