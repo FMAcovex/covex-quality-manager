@@ -46,7 +46,7 @@ export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
 }
 
 export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Product){
- const entries=readZip(await loadReturnPntTemplate(r.annexIVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_IV));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo IV:", "Anexo V:", "last");
+ const entries=readZip(await loadReturnTemplate(r.annexIVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_IV));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo IV:", "Anexo V:", "last");
  xml=setWordCellTextBalanced(xml,0,1,0,`FECHA RECEPCIÓN: ${date(r.receivedAt)}`);
  xml=setWordCellTextBalanced(xml,0,2,0,`CÓDIGO DEVOLUCIÓN: ${text(r.qmsRecord.businessCode)}\nPRODUCTO: ${product.productNameCode}\nLOTE: ${text(product.lot)}`);
  xml=setWordCellTextBalanced(xml,0,3,0,`CLIENTE: ${text(r.customerEntity)}\nPAÍS: ${text(r.country)}`);
