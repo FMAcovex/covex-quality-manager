@@ -360,6 +360,7 @@ export function serializeComplaintVersion(record: ComplaintVersionSource) {
       closeConclusion: record.closeConclusion ?? null, approvalNames: record.approvalNames ?? null,
       closeApprovalNames: record.closeApprovalNames ?? null, closedAt: iso(record.closedAt), status: record.status,
       internalObservations: record.internalObservations ?? null, signedDocumentAvailable: record.signedDocumentAvailable ?? null,
+      extraData: record.extraData ?? null,
       dataQualityStatus: record.dataQualityStatus, includeInKpi: record.includeInKpi, kpiExclusionReason: record.kpiExclusionReason ?? null,
       formVersionId: record.formVersionId ?? null, formVersionCode: record.formVersion?.versionCode ?? null,
       annexIIITemplateVersionId: record.annexIIITemplateVersionId ?? null, annexIIITemplateVersionCode: record.annexIIITemplateVersion?.versionCode ?? null,
