@@ -20,6 +20,11 @@ const emptyCapa: CapaPlanInput = {
   responsible: "",
 };
 
+function FieldIssue({ messages }: { messages?: string[] }) {
+  if (!messages?.length) return null;
+  return <small className="field-error">{messages[0]}</small>;
+}
+
 function Field({
   label,
   name,
@@ -27,6 +32,7 @@ function Field({
   type = "text",
   span = "",
   required = false,
+  issues,
 }: {
   label: string;
   name: string;
@@ -34,11 +40,13 @@ function Field({
   type?: string;
   span?: string;
   required?: boolean;
+  issues?: string[];
 }) {
   return (
-    <label className={`field ${span}`}>
+    <label className={`field ${span} ${issues?.length ? "has-error" : ""}`}>
       <span>{label}{required ? " *" : ""}</span>
-      <input name={name} type={type} defaultValue={defaultValue ?? ""} required={required} />
+      <input name={name} type={type} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
+      <FieldIssue messages={issues} />
     </label>
   );
 }
@@ -48,17 +56,22 @@ function TextArea({
   name,
   defaultValue,
   help,
+  required = false,
+  issues,
 }: {
   label: string;
   name: string;
   defaultValue?: string;
   help?: string;
+  required?: boolean;
+  issues?: string[];
 }) {
   return (
-    <label className="field full">
-      <span>{label}</span>
+    <label className={`field full ${issues?.length ? "has-error" : ""}`}>
+      <span>{label}{required ? " *" : ""}</span>
       {help ? <small className="muted-note">{help}</small> : null}
-      <textarea name={name} defaultValue={defaultValue ?? ""} />
+      <textarea name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
+      <FieldIssue messages={issues} />
     </label>
   );
 }
@@ -101,6 +114,7 @@ export function DeviationForm({
   const [state, formAction, pending] = useActionState(action, { error: null });
   const [actions, setActions] = useState<ImmediateActionInput[]>(defaults.immediateActions ?? []);
   const [capas, setCapas] = useState<CapaPlanInput[]>(defaults.capaPlans ?? []);
+  const issues = state.fieldIssues ?? {};
 
   function updateAction(index: number, patch: Partial<ImmediateActionInput>) {
     setActions((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -128,10 +142,10 @@ export function DeviationForm({
         <h2>1. Identificación y origen</h2>
         <p className="section-help">Datos que identifican el expediente y el contexto en el que se detectó el evento.</p>
         <div className="form-grid">
-          <Field label="Codificación" name="businessCode" defaultValue={defaults.businessCode} required />
-          <label className="field">
+          <Field label="Codificación" name="businessCode" defaultValue={defaults.businessCode} required issues={issues.businessCode} />
+          <label className={`field ${issues.departmentId?.length ? "has-error" : ""}`}>
             <span>Departamento *</span>
-            <select name="departmentId" defaultValue={defaults.departmentId ?? ""} required>
+            <select name="departmentId" defaultValue={defaults.departmentId ?? ""} required aria-invalid={issues.departmentId?.length ? true : undefined}>
               <option value="">Seleccionar…</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.id}>
@@ -139,11 +153,12 @@ export function DeviationForm({
                 </option>
               ))}
             </select>
+            <FieldIssue messages={issues.departmentId} />
           </label>
-          <Field label="Fecha apertura" name="issueDate" type="date" defaultValue={defaults.issueDate} required />
-          <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={defaults.eventDateTime} />
+          <Field label="Fecha apertura" name="issueDate" type="date" defaultValue={defaults.issueDate} required issues={issues.issueDate} />
+          <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={defaults.eventDateTime} issues={issues.eventDateTime} />
           <Field label="Detectado por" name="detectedBy" defaultValue={defaults.detectedBy} />
-          <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required />
+          <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required issues={issues.createdByText} />
           {mode === "edit" ? (
             <Field label="Modificado por" name="modifiedByText" defaultValue={defaults.createdByText} />
           ) : null}
@@ -171,7 +186,7 @@ export function DeviationForm({
         <h2>2. Descripción del evento</h2>
         <p className="section-help">Registrar hechos observables. No incluir aquí causas, impacto, hipótesis ni acciones futuras.</p>
         <div className="form-grid">
-          <TextArea label="¿Qué sucedió / qué debía haber sucedido? *" name="whatHappened" defaultValue={defaults.whatHappened} />
+          <TextArea label="¿Qué sucedió / qué debía haber sucedido?" name="whatHappened" defaultValue={defaults.whatHappened} required issues={issues.whatHappened} />
           <TextArea label="¿Quién estuvo implicado y cuál fue su papel?" name="whoInvolved" defaultValue={defaults.whoInvolved} />
           <TextArea label="¿Cuándo ocurrió?" name="whenHappened" defaultValue={defaults.whenHappened} />
           <TextArea label="¿Dónde ocurrió?" name="whereHappened" defaultValue={defaults.whereHappened} />
@@ -182,6 +197,7 @@ export function DeviationForm({
       <section className="form-section">
         <h2>3. Acciones correctoras inmediatas</h2>
         <p className="section-help">Solo actuaciones ya ejecutadas para contener, corregir o controlar el evento. No confundir con CAPA.</p>
+        {issues.immediateActionsJson?.length ? <div className="field-error-block"><FieldIssue messages={issues.immediateActionsJson} /></div> : null}
         <div className="dynamic-list">
           {actions.map((item, index) => (
             <div className="dynamic-row" key={index}>
@@ -208,7 +224,7 @@ export function DeviationForm({
         <h2>4. Investigación y causa raíz</h2>
         <p className="section-help">La investigación recoge revisiones, evidencias, comparaciones, hipótesis y deducciones. La causa raíz se registra por separado cuando esté sustentada.</p>
         <div className="form-grid">
-          <TextArea label="Investigación" name="investigation" defaultValue={defaults.investigation} />
+          <TextArea label="Investigación" name="investigation" defaultValue={defaults.investigation} issues={issues.investigation} />
           <TriStateSelect label="¿Investigación concluyente?" name="investigationConclusive" defaultValue={defaults.investigationConclusive} />
           <div className="field span-3">
             <span>Metodología empleada</span>
@@ -231,7 +247,7 @@ export function DeviationForm({
               ))}
             </div>
           </div>
-          <TextArea label="Causa raíz" name="rootCause" defaultValue={defaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." />
+          <TextArea label="Causa raíz" name="rootCause" defaultValue={defaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." issues={issues.rootCause} />
           <TriStateSelect label="¿Causa raíz recurrente?" name="recurrentRootCause" defaultValue={defaults.recurrentRootCause} />
           <div className="field span-3">
             <span>Antecedentes / detalle de recurrencia</span>
@@ -244,14 +260,15 @@ export function DeviationForm({
         <h2>5. Clasificación e impacto</h2>
         <p className="section-help">La evaluación de impacto debe apoyarse en la investigación y no introducir nuevas causas.</p>
         <div className="form-grid">
-          <label className="field">
+          <label className={`field ${issues.classification?.length ? "has-error" : ""}`}>
             <span>Clasificación</span>
-            <select name="classification" defaultValue={defaults.classification ?? ""}>
+            <select name="classification" defaultValue={defaults.classification ?? ""} aria-invalid={issues.classification?.length ? true : undefined}>
               <option value="">No clasificada</option>
               <option value="CRITICAL">Crítica</option>
               <option value="MAJOR">Mayor</option>
               <option value="MINOR">Menor</option>
             </select>
+            <FieldIssue messages={issues.classification} />
           </label>
           <TriStateSelect label="Impacto validación" name="validationImpact" defaultValue={defaults.validationImpact} />
           <TriStateSelect label="Impacto registro" name="registrationImpact" defaultValue={defaults.registrationImpact} />
@@ -278,6 +295,7 @@ export function DeviationForm({
             </select>
           </label>
         </div>
+        {issues.capaPlansJson?.length ? <div className="field-error-block"><FieldIssue messages={issues.capaPlansJson} /></div> : null}
         <div className="dynamic-list" style={{ marginTop: 12 }}>
           {capas.map((item, index) => (
             <div className="dynamic-row capa" key={index}>
@@ -311,12 +329,12 @@ export function DeviationForm({
         <h2>7. Conclusión y cierre</h2>
         <p className="section-help">La conclusión sintetiza investigación, causa, impacto, CAPA y disposición. No debe introducir información nueva.</p>
         <div className="form-grid">
-          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={defaults.conclusion} />
+          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={defaults.conclusion} issues={issues.conclusion} />
           <Field label="Disposición final" name="disposition" defaultValue={defaults.disposition} span="span-2" />
           <Field label="Cantidad" name="dispositionQuantity" defaultValue={defaults.dispositionQuantity} />
           <TriStateSelect label="Notificación al cliente" name="clientNotification" defaultValue={defaults.clientNotification} />
           <TextArea label="Comentarios de disposición" name="dispositionComments" defaultValue={defaults.dispositionComments} />
-          <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={defaults.closedAt} />
+          <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={defaults.closedAt} issues={issues.closedAt} />
           <label className="field">
             <span>Estado</span>
             <select name="status" defaultValue={defaults.status ?? "OPEN"}>
