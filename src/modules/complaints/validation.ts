@@ -5,14 +5,14 @@ const classificationSchema=z.enum(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"]);
 const resultSchema=z.enum(["PROCEDENT","NOT_PROCEDENT","INCONCLUSIVE","NOT_ATTRIBUTABLE_TO_COVEX"]);
 const statusSchema=z.enum(["OPEN","CLOSED"]);
 const efficacySchema=z.enum(["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"]);
-const qualitySchema=z.enum(["COMPLETE","INCOMPLETE","REVIEW_REQUIRED"]);
+const qualitySchema=z.enum(["COMPLETE","INCOMPLETE","REVIEW_REQUIRED"]);\nconst triSchema=z.enum(["YES","NO","NA"]);
 const capaActionSchema=z.enum(["CORRECTIVE","PREVENTIVE"]);
 const resolutionSchema=z.enum([
 "RETURN","CORRECTIVE_ACTION","PREVENTIVE_ACTION","IMMEDIATE_ACTION","RECALL","CREDIT","REPLACEMENT","REJECT","REPROCESS","DISPOSE","KEEP_AS_IS","SUPPLIER_INVESTIGATION","SUPPLIER_EVALUATION","OPEN_DEVIATION","OPEN_CAPA","OPEN_CHANGE","OTHER"
 ]);
 
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"&&v.trim()?v.trim():null;}
-function bool(fd:FormData,name:string){const v=text(fd,name);return v==="true"?true:v==="false"?false:null;}
+function bool(fd:FormData,name:string){const v=text(fd,name);return v==="true"?true:v==="false"?false:null;}\nfunction strings(fd:FormData,name:string){return fd.getAll(name).map(String).map(v=>v.trim()).filter(Boolean);}\nfunction tri(fd:FormData,name:string){return enumValue(triSchema,text(fd,name));}
 function enumValue<T extends z.ZodTypeAny>(schema:T,value:string|null){if(!value)return null;const r=schema.safeParse(value);return r.success?r.data:null;}
 
 function parseCapaPlans(raw:string|null){
@@ -56,19 +56,19 @@ export function parseComplaintForm(fd:FormData){
     errors.push("La eficacia no puede figurar como No requerida si se ha indicado que es necesaria.");
   }
   return {errors,actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
-    businessCode,departmentId,openedAt,detectionDate:text(fd,"detectionDate"),detectedBy:text(fd,"detectedBy"),createdByText,
-    complaintType,partyName,contact:text(fd,"contact"),affectedScope:text(fd,"affectedScope"),reference:text(fd,"reference"),
+    businessCode,departmentId,openedAt,detectionDate:text(fd,"detectionDate"),receptionDate:text(fd,"receptionDate"),detectedBy:text(fd,"detectedBy"),createdByText,
+    complaintType,triggerSources:strings(fd,"triggerSources"),triggerOther:text(fd,"triggerOther"),partyName,contact:text(fd,"contact"),scopeCategories:strings(fd,"scopeCategories"),scopeOther:text(fd,"scopeOther"),affectedObjectTypes:strings(fd,"affectedObjectTypes"),affectedObjectOther:text(fd,"affectedObjectOther"),affectedScope:text(fd,"affectedScope"),reference:text(fd,"reference"),
     lotReference:text(fd,"lotReference"),quantity:text(fd,"quantity"),expiryReanalysis:text(fd,"expiryReanalysis"),
-    purchaseDeliveryReference:text(fd,"purchaseDeliveryReference"),description,recurrent:bool(fd,"recurrent"),
+    purchaseDeliveryReference:text(fd,"purchaseDeliveryReference"),complaintCategories:strings(fd,"complaintCategories"),complaintCategoryOther:text(fd,"complaintCategoryOther"),description,recurrent:bool(fd,"recurrent"),
     recurrenceReference:text(fd,"recurrenceReference"),attachedDocumentation:text(fd,"attachedDocumentation"),
     emittedBy:text(fd,"emittedBy"),qaValidatedBy:text(fd,"qaValidatedBy"),investigation:text(fd,"investigation"),
     impactAssessment:text(fd,"impactAssessment"),investigationResult:enumValue(resultSchema,text(fd,"investigationResult")),
-    rootCause:text(fd,"rootCause"),classification,resolutionLines:text(fd,"resolutionLines"),resolutionActions,
+    rootCause:text(fd,"rootCause"),classification,withdrawalPotential:tri(fd,"withdrawalPotential"),recallProcedureRequired:tri(fd,"recallProcedureRequired"),authorityNotification:tri(fd,"authorityNotification"),responsiblePartyCommunication:tri(fd,"responsiblePartyCommunication"),regulatoryJustification:text(fd,"regulatoryJustification"),resolutionLines:text(fd,"resolutionLines"),resolutionActions,
     immediateActionDetails:text(fd,"immediateActionDetails"),otherResolutionDetails:text(fd,"otherResolutionDetails"),
-    externalCommunication:text(fd,"externalCommunication"),conclusion:text(fd,"conclusion"),
+    externalCommunicationDate:text(fd,"externalCommunicationDate"),externalCommunicationMedium:text(fd,"externalCommunicationMedium"),externalCommunicationParties:text(fd,"externalCommunicationParties"),externalCommunication:text(fd,"externalCommunication"),continueToPartII:bool(fd,"continueToPartII"),conclusion:text(fd,"conclusion"),
     effectivenessRequired:bool(fd,"effectivenessRequired"),initialEvaluationDate:text(fd,"initialEvaluationDate"),
     initialConclusionDate:text(fd,"initialConclusionDate"),responseDate:text(fd,"responseDate"),responseMedium:text(fd,"responseMedium"),
-    responseSummary:text(fd,"responseSummary"),effectivenessStatus,effectivenessAssessment:text(fd,"effectivenessAssessment"),
+    responseSummary:text(fd,"responseSummary"),responseSufficient:bool(fd,"responseSufficient"),followupActionStatus:text(fd,"followupActionStatus"),followupReferences:text(fd,"followupReferences"),effectivenessStatus,effectivenessAssessment:text(fd,"effectivenessAssessment"),
     closeConclusion:text(fd,"closeConclusion"),approvalNames:text(fd,"approvalNames"),closeApprovalNames:text(fd,"closeApprovalNames"),
     closedAt:text(fd,"closedAt"),status,internalObservations:text(fd,"internalObservations"),
     signedDocumentAvailable:bool(fd,"signedDocumentAvailable"),dataQualityStatus:enumValue(qualitySchema,text(fd,"dataQualityStatus"))??"REVIEW_REQUIRED",
