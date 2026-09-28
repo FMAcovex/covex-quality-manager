@@ -9,6 +9,7 @@ import {
   formatDate,
 } from "@/modules/change-control/domain";
 import { getChangeControlList } from "@/modules/change-control/queries";
+import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
@@ -120,6 +121,7 @@ export default async function ChangeControlPage({
                 <th data-column-key="nextFollowup">Próximo seguimiento</th>
                 <th data-column-key="finalStatus">Estado final</th>
                 <th data-column-key="closureDate">Fecha cierre</th>
+                <th data-column-key="related">Relacionados</th>
                 <th data-column-key="observations">Observaciones</th>
               </tr>
             </thead>
@@ -145,11 +147,15 @@ export default async function ChangeControlPage({
                     <td data-column-key="nextFollowup">{formatDate(latest?.nextFollowupDate)}</td>
                     <td data-column-key="finalStatus"><span className={`status-badge ${row.finalStatus.toLowerCase()}`}>{finalStatusLabel(row.finalStatus)}</span></td>
                     <td data-column-key="closureDate">{formatDate(row.effectiveClosedAt)}</td>
+                    <td data-column-key="related"><div className="relation-chips">
+                      {[...row.qmsRecord.sourceRelations.map(x=>x.targetRecord),...row.qmsRecord.targetRelations.map(x=>x.sourceRecord)].map(record=><Link key={record.id} className="relation-chip" href={qmsRecordHref(record.recordType,record.id)} title={qmsRecordTypeLabel(record.recordType)}>{record.businessCode??qmsRecordTypeLabel(record.recordType)}</Link>)}
+                      {row.qmsRecord.sourceRelations.length+row.qmsRecord.targetRelations.length===0?"—":null}
+                    </div></td>
                     <td data-column-key="observations" className="long-cell">{row.internalObservations ?? "—"}</td>
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={16}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={17}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>

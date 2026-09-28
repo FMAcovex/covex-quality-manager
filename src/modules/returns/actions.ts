@@ -1,4 +1,6 @@
 "use server";
+
+import type { FollowupActionState } from "@/components/basic-followup-form";
 import { Prisma,QmsRecordType,QmsRelationType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -85,16 +87,16 @@ export async function updateReturnAction(id:string,_s:ReturnFormState,fd:FormDat
  });
  revalidatePath("/returns");revalidatePath(`/returns/${id}`);redirect(`/returns/${id}`);
 }
-export async function addReturnFollowupAction(id:string,fd:FormData){
- const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)throw new Error("Devolución no encontrada.");
+export async function addReturnFollowupAction(id:string,_state:FollowupActionState,fd:FormData):Promise<FollowupActionState>{
+ const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)return{error:"Devolución no encontrada."};
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
- if(!followupDate||!completedByText||!comment)throw new Error("Fecha, responsable y comentario son obligatorios.");
+ if(!followupDate||!completedByText||!comment)return{error:"Fecha, responsable y comentario son obligatorios."};
  await prisma.$transaction(async tx=>{
   await tx.returnFollowup.create({data:{returnRecordId:id,followupDate:new Date(followupDate),completedByText,comment,nextFollowupDate:d(String(fd.get("nextFollowupDate")??"")),evidenceReference:String(fd.get("evidenceReference")??"").trim()||null}});
   await tx.changeHistory.create({data:{qmsRecordId:rec.qmsRecordId,changedByText:completedByText,fieldPath:"followups",newValue:j({followupDate,comment}),reason:"Nuevo seguimiento",source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,rec.qmsRecordId,snapshotJson(serializeReturnVersion(snap)),completedByText,"Nuevo seguimiento");
  });
- revalidatePath(`/returns/${id}`);redirect(`/returns/${id}?tab=followups`);
+ revalidatePath(`/returns/${id}`);return{success:"Seguimiento guardado correctamente."};
 }
 export async function addReturnRelationAction(id:string,fd:FormData){
  const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)throw new Error("Devolución no encontrada.");

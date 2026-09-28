@@ -1,11 +1,12 @@
 "use server";
 
-import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
+import { InvestigationMethod, Prisma, QmsRecordType, QmsRelationType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
+import type { FollowupActionState } from "@/components/basic-followup-form";
 import {
   getApplicableFormVersion,
   getApplicableTemplateVersion,
@@ -494,21 +495,20 @@ export async function updateDeviationAction(
   }
 }
 
-export async function addDeviationFollowupAction(formData: FormData) {
-  const deviationId = formData.get("deviationId")?.toString();
+export async function addDeviationFollowupAction(deviationId: string, _state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
   const followupDate = formData.get("followupDate")?.toString();
   const completedByText = formData.get("completedByText")?.toString().trim();
   const comment = formData.get("comment")?.toString().trim();
 
-  if (!deviationId || !followupDate || !completedByText || !comment) {
-    throw new Error("Fecha, cumplimentado por y seguimiento son obligatorios.");
+  if (!followupDate || !completedByText || !comment) {
+    return { error: "Fecha, cumplimentado por y seguimiento son obligatorios." };
   }
 
   const deviation = await prisma.deviation.findUnique({
     where: { id: deviationId },
     select: { qmsRecordId: true },
   });
-  if (!deviation) throw new Error("La desviación no existe.");
+  if (!deviation) return { error: "La desviación no existe." };
 
   const followupType = formData.get("followupType")?.toString().trim() || null;
   const nextFollowupDate = formData.get("nextFollowupDate")?.toString() || null;
@@ -568,5 +568,45 @@ export async function addDeviationFollowupAction(formData: FormData) {
   });
 
   revalidatePath(`/deviations/${deviationId}`);
-  redirect(`/deviations/${deviationId}?tab=followups`);
+  return { success: "Seguimiento guardado correctamente." };
+}
+
+
+export async function addDeviationRelationAction(id: string, formData: FormData) {
+  const deviation = await prisma.deviation.findUnique({ where: { id }, select: { qmsRecordId: true } });
+  if (!deviation) throw new Error("Desviación no encontrada.");
+
+  const code = String(formData.get("businessCode") ?? "").trim();
+  const rawType = String(formData.get("relationType") ?? "RELATED_TO");
+  const actor = String(formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo").trim();
+  if (!code) throw new Error("Debe indicarse la codificación del expediente relacionado.");
+
+  const target = await prisma.qmsRecord.findFirst({
+    where: { businessCode: code, id: { not: deviation.qmsRecordId } },
+  });
+  if (!target) throw new Error("No existe un expediente QMS con esa codificación.");
+
+  const allowed = new Set(Object.values(QmsRelationType));
+  if (!allowed.has(rawType as QmsRelationType)) throw new Error("Tipo de relación no válido.");
+  const relationType = rawType as QmsRelationType;
+
+  await prisma.qmsRelation.upsert({
+    where: {
+      sourceRecordId_targetRecordId_relationType: {
+        sourceRecordId: deviation.qmsRecordId,
+        targetRecordId: target.id,
+        relationType,
+      },
+    },
+    update: { isActive: true, createdByText: actor },
+    create: {
+      sourceRecordId: deviation.qmsRecordId,
+      targetRecordId: target.id,
+      relationType,
+      createdByText: actor,
+    },
+  });
+
+  revalidatePath("/deviations");
+  revalidatePath(`/deviations/${id}`);
 }

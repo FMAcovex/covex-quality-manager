@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addDeviationFollowupAction } from "@/modules/deviations/actions";
+import { addDeviationFollowupAction, addDeviationRelationAction } from "@/modules/deviations/actions";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
+import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { BasicFollowupForm } from "@/components/basic-followup-form";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,7 @@ const tabs = [
   ["investigation", "Investigación"],
   ["actions", "Acciones"],
   ["followups", "Seguimientos"],
+  ["relations", "Relaciones"],
   ["versions", "Versiones"],
   ["documents", "Documentos"],
   ["history", "Historial"],
@@ -177,18 +180,34 @@ export default async function DeviationDetailPage({
           </div>
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
-            <form action={addDeviationFollowupAction} className="inline-form">
-              <input type="hidden" name="deviationId" value={id} />
-              <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
-              <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={deviation.createdByText ?? ""} required /></label>
-              <label className="field"><span>Tipo</span><input name="followupType" placeholder="Seguimiento, revisión, evidencia…" /></label>
-              <label className="field full"><span>Comentario / actuación *</span><textarea name="comment" required /></label>
-              <label className="field"><span>Próxima fecha</span><input type="date" name="nextFollowupDate" /></label>
-              <label className="field"><span>Referencia / evidencia</span><input name="evidenceReference" /></label>
-              <div className="field"><span>&nbsp;</span><button className="button primary" type="submit">Guardar seguimiento</button></div>
-            </form>
+            <BasicFollowupForm action={addDeviationFollowupAction.bind(null, id)} defaultActor={deviation.createdByText ?? ""} includeType />
           </div>
         </>
+      ) : null}
+
+      {activeTab === "relations" ? (
+        <div className="card">
+          <h2>Expedientes relacionados</h2>
+          {related.length ? (
+            <div className="relation-list">
+              {related.map((item, index) => (
+                <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
+                  <span>{item.type}</span>
+                  <Link href={qmsRecordHref(item.record.recordType, item.record.id)}>
+                    <strong>{item.record.businessCode ?? qmsRecordTypeLabel(item.record.recordType)}</strong>
+                  </Link>
+                  <small>{qmsRecordTypeLabel(item.record.recordType)}</small>
+                </div>
+              ))}
+            </div>
+          ) : <div className="empty-panel">No hay expedientes relacionados.</div>}
+          <form action={addDeviationRelationAction.bind(null, id)} className="inline-form relation-form">
+            <label className="field"><span>Codificación</span><input name="businessCode" placeholder="AC/GC-00/001/2026" required /></label>
+            <label className="field"><span>Relación</span><select name="relationType"><option value="RELATED_TO">Relacionada con</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implementada por</option><option value="ASSOCIATED_WITH">Asociada con</option></select></label>
+            <label className="field"><span>Registrado por</span><input name="actor" defaultValue={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} /></label>
+            <div className="full"><button className="button primary">Añadir relación</button></div>
+          </form>
+        </div>
       ) : null}
 
       {activeTab === "versions" ? (
@@ -253,9 +272,20 @@ export default async function DeviationDetailPage({
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{deviation.signedDocumentAvailable === true ? "Disponible" : deviation.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="document-actions">
-            <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
-            <span className="muted-note">Se genera desde la plantilla v06 asociada al expediente y se registra la generación.</span>
+          <div className="document-grid">
+            <div className="document-block">
+              <h3>Anexo III · Informe de desviación</h3>
+              <p>Plantilla oficial asociada al expediente y documento Word cumplimentado con los datos vigentes.</p>
+              <div className="document-actions">
+                {deviation.anexoIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${deviation.anexoIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
+                <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+              </div>
+            </div>
+            <div className="document-block">
+              <h3>Anexo V · Listado de desviaciones</h3>
+              <p>Listado oficial anual. Se genera desde la pantalla principal de Desviaciones para el año seleccionado.</p>
+              <Link className="button" href="/deviations">Ir al listado y descargar Anexo V</Link>
+            </div>
           </div>
           {deviation.qmsRecord.generatedDocuments.length ? (
             <>

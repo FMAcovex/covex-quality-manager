@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
+import type { FollowupActionState } from "@/components/basic-followup-form";
 import type { ChangeFollowupTaskInput } from "@/modules/change-control/types";
 
 type Department = { id: string; code: string; name: string };
@@ -28,7 +29,7 @@ export function ChangeFollowupForm({
   tasks,
   defaultResponsible,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  action: (state: FollowupActionState, formData: FormData) => Promise<FollowupActionState>;
   departments: Department[];
   tasks: Task[];
   defaultResponsible?: string | null;
@@ -49,12 +50,15 @@ export function ChangeFollowupForm({
     [tasks],
   );
   const [rows, setRows] = useState(initial);
+  const [state, formAction, pending] = useActionState(action, {});
 
   const patch = (index: number, value: Partial<ChangeFollowupTaskInput>) =>
     setRows((current) => current.map((item, i) => (i === index ? { ...item, ...value } : item)));
 
   return (
-    <form action={action} className="followup-form">
+    <form action={formAction} className="followup-form">
+      {state.error ? <div className="form-feedback error">{state.error}</div> : null}
+      {state.success ? <div className="form-feedback success">{state.success}</div> : null}
       <input type="hidden" name="tasksJson" value={JSON.stringify(rows)} />
       <div className="form-grid">
         <label className="field">
@@ -170,7 +174,7 @@ export function ChangeFollowupForm({
       </div>
       <div className="form-footer">
         <span className="muted-note">Las nuevas tareas quedarán marcadas y persistirán en los siguientes seguimientos.</span>
-        <button className="button primary" type="submit">Guardar seguimiento</button>
+        <button className="button primary" type="submit" disabled={pending}>{pending ? "Guardando…" : "Guardar seguimiento"}</button>
       </div>
     </form>
   );

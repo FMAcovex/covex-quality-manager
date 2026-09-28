@@ -20,6 +20,7 @@ import {
   getChangeControlLookups,
 } from "@/modules/change-control/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
+import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
@@ -292,16 +293,36 @@ export default async function ChangeControlDetailPage({
         <div className="card">
           <h2>Documentos del expediente</h2>
           <p className="muted-note">Solicitud (Anexo III), Dictamen (Anexo IV), Seguimientos (Anexo V) y listado maestro anual (Anexo VII) son familias documentales independientes.</p>
-          <div className="document-actions">
-            <a className="button" href={`/api/changes/${id}/annex-iii`}>Descargar Anexo III · Solicitud</a>
-            <a className="button" href={`/api/changes/${id}/annex-iv`}>Descargar Anexo IV · Dictamen</a>
-            {currentVersion ? (
-              <a className="button" href={`/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}`}>
-                Descargar Anexo V · {versionLabel(currentVersion.sequenceNumber)}
-              </a>
-            ) : (
-              <span className="badge neutral">Anexo V disponible tras Seguimiento 00</span>
-            )}
+          <div className="document-grid">
+            <div className="document-block">
+              <h3>Anexo III · Solicitud</h3>
+              <p>Plantilla oficial y solicitud cumplimentada del Control de Cambio.</p>
+              <div className="document-actions">
+                {record.annexIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${record.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
+                <a className="button primary" href={`/api/changes/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+              </div>
+            </div>
+            <div className="document-block">
+              <h3>Anexo IV · Dictamen</h3>
+              <p>Plantilla oficial y Dictamen cumplimentado.</p>
+              <div className="document-actions">
+                {record.annexIVTemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${record.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
+                <a className="button primary" href={`/api/changes/${id}/annex-iv`}>Generar Anexo IV cumplimentado</a>
+              </div>
+            </div>
+            <div className="document-block">
+              <h3>Anexo V · Seguimiento</h3>
+              <p>Cada seguimiento se genera con su versión histórica correspondiente.</p>
+              <div className="document-actions">
+                {record.annexVTemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${record.annexVTemplateVersion.id}/download`}>Descargar plantilla oficial</a> : null}
+                {currentVersion ? <a className="button primary" href={`/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}`}>Generar Anexo V · {versionLabel(currentVersion.sequenceNumber)}</a> : <span className="badge neutral">Disponible tras Seguimiento 00</span>}
+              </div>
+            </div>
+            <div className="document-block">
+              <h3>Anexo VII · Listado maestro</h3>
+              <p>Listado oficial anual de Controles de Cambios.</p>
+              <Link className="button" href="/changes">Ir al listado y descargar Anexo VII</Link>
+            </div>
           </div>
           {record.qmsRecord.versions.length ? (
             <div className="timeline">
@@ -347,8 +368,10 @@ export default async function ChangeControlDetailPage({
               {relations.map((item, index) => (
                 <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
                   <span>{item.direction} · {relationLabel(item.type)}</span>
-                  <strong>{item.record.businessCode ?? item.record.id}</strong>
-                  <small>{item.record.recordType}</small>
+                  <Link href={qmsRecordHref(item.record.recordType, item.record.id)}>
+                    <strong>{item.record.businessCode ?? qmsRecordTypeLabel(item.record.recordType)}</strong>
+                  </Link>
+                  <small>{qmsRecordTypeLabel(item.record.recordType)}</small>
                 </div>
               ))}
             </div>

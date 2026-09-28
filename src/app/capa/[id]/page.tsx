@@ -9,6 +9,8 @@ import {
 } from "@/modules/capa/domain";
 import { getCapaDetail } from "@/modules/capa/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
+import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { CapaFollowupForm } from "@/modules/capa/components/capa-followup-form";
 
 export const dynamic = "force-dynamic";
 
@@ -196,16 +198,7 @@ export default async function CapaDetailPage({
 
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
-            <form action={addCapaFollowupAction.bind(null, id)} className="inline-form">
-              <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
-              <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={capa.createdByText ?? ""} required /></label>
-              <label className="field"><span>Motivo</span><input name="reason" /></label>
-              <label className="field full"><span>Actuación realizada / resultado *</span><textarea name="description" required /></label>
-              <label className="field"><span>Próxima fecha</span><input type="date" name="nextFollowupDate" /></label>
-              <label className="field"><span>Evidencia / referencia</span><input name="evidenceReference" /></label>
-              <label className="field full"><span>Observaciones</span><textarea name="observations" /></label>
-              <div className="field"><span>&nbsp;</span><button className="button primary" type="submit">Guardar seguimiento</button></div>
-            </form>
+            <CapaFollowupForm action={addCapaFollowupAction.bind(null, id)} defaultActor={capa.createdByText ?? ""} />
           </div>
         </>
       ) : null}
@@ -236,8 +229,10 @@ export default async function CapaDetailPage({
               {relations.map((item, index) => (
                 <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
                   <span>{item.direction} · {relationLabel(item.type)}</span>
-                  <strong>{item.record.businessCode ?? item.record.id}</strong>
-                  <small>{item.record.recordType}</small>
+                  <Link href={qmsRecordHref(item.record.recordType, item.record.id)}>
+                    <strong>{item.record.businessCode ?? qmsRecordTypeLabel(item.record.recordType)}</strong>
+                  </Link>
+                  <small>{qmsRecordTypeLabel(item.record.recordType)}</small>
                 </div>
               ))}
             </div>
@@ -330,9 +325,20 @@ export default async function CapaDetailPage({
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{capa.annexIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{capa.signedDocumentAvailable === true ? "Disponible" : capa.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="document-actions">
-            <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
-            <span className="muted-note">Cada generación queda registrada en el expediente.</span>
+          <div className="document-grid">
+            <div className="document-block">
+              <h3>Anexo III · Informe CAPA</h3>
+              <p>Plantilla oficial y versión Word cumplimentada del informe/seguimiento CAPA.</p>
+              <div className="document-actions">
+                {capa.annexIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${capa.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
+                <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+              </div>
+            </div>
+            <div className="document-block">
+              <h3>Anexo IV · Listado CAPA</h3>
+              <p>Listado oficial anual de CAPA. Se descarga desde el listado principal para el año seleccionado.</p>
+              <Link className="button" href="/capa">Ir al listado y descargar Anexo IV</Link>
+            </div>
           </div>
           {capa.qmsRecord.generatedDocuments.length ? (
             <>

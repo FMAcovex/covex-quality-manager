@@ -3,6 +3,7 @@ import { deadlineLabel, formatDate, measuresLabel } from "@/modules/deviations/d
 import { getDeviationList } from "@/modules/deviations/queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { deviationColumns } from "@/modules/deviations/column-config";
+import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +108,7 @@ export default async function DeviationsPage({
         <div className="table-scroll">
           <table id="deviation-list-table">
             <thead><tr>
-<th data-column-key="control">Control</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="observations">Observaciones</th>
+<th data-column-key="control">Control</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
             </tr></thead>
             <tbody>
               {rows.length ? rows.map((row) => (
@@ -127,9 +128,19 @@ export default async function DeviationsPage({
                   <td data-column-key="measures">{measuresLabel(row)}</td>
                   <td data-column-key="capa" className="table-cell-wrap">{row.capaPlans.length ? row.capaPlans.map((plan)=>plan.description).join(" · ") : "—"}</td>
                   <td data-column-key="document">{row.signedDocumentAvailable === true ? "Disponible" : row.signedDocumentAvailable === false ? "No disponible" : "No informado"}</td>
+                  <td data-column-key="related">
+                    <div className="relation-chips">
+                      {[...row.qmsRecord.sourceRelations.map((x)=>x.targetRecord), ...row.qmsRecord.targetRelations.map((x)=>x.sourceRecord)].map((record)=>(
+                        <Link key={record.id} className="relation-chip" href={qmsRecordHref(record.recordType, record.id)} title={qmsRecordTypeLabel(record.recordType)}>
+                          {record.businessCode ?? qmsRecordTypeLabel(record.recordType)}
+                        </Link>
+                      ))}
+                      {row.qmsRecord.sourceRelations.length + row.qmsRecord.targetRelations.length === 0 ? "—" : null}
+                    </div>
+                  </td>
                   <td data-column-key="observations" className="table-cell-wrap">{row.internalObservations ?? "—"}</td>
                 </tr>
-              )) : <tr><td colSpan={16} className="empty-state"><strong>No hay desviaciones con estos filtros.</strong><span>Puedes crear una nueva desviación o limpiar los filtros.</span></td></tr>}
+              )) : <tr><td colSpan={17} className="empty-state"><strong>No hay desviaciones con estos filtros.</strong><span>Puedes crear una nueva desviación o limpiar los filtros.</span></td></tr>}
             </tbody>
           </table>
         </div>

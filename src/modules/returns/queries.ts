@@ -19,7 +19,7 @@ export async function getReturnList(filters:ReturnListFilters){
  if(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??""))and.push({decision:filters.decision as "PENDING"|"ACCEPTED"|"REJECTED"});
  const where:Prisma.ReturnRecordWhereInput=and.length?{AND:and}:{};
  const [rows,departments,years,total,open,pending,followupDue]=await Promise.all([
-  prisma.returnRecord.findMany({where,include:{qmsRecord:true,department:true,products:{orderBy:{sortOrder:"asc"}},followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{communicationDate:"desc"},{createdAt:"desc"}],take:300}),
+  prisma.returnRecord.findMany({where,include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}}}},department:true,products:{orderBy:{sortOrder:"asc"}},followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{communicationDate:"desc"},{createdAt:"desc"}],take:300}),
   prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
   prisma.qmsRecord.findMany({where:{recordType:QmsRecordType.RETURN,year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}}),
   prisma.returnRecord.count(),prisma.returnRecord.count({where:{status:"OPEN"}}),prisma.returnRecord.count({where:{decision:"PENDING"}}),
