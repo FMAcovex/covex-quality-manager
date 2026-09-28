@@ -37,7 +37,7 @@ export function finalizeReturnAnnexVISheet(sheetXml:string){
 export function finalizeReturnAnnexVIWorkbook(workbookXml:string,maxRow:number){
  const names=`<definedNames><definedName name="_xlnm.Print_Area" localSheetId="0">'&quot;AÑO&quot;'!$A$1:$M${maxRow}</definedName><definedName name="_xlnm.Print_Titles" localSheetId="0">'&quot;AÑO&quot;'!$4:$4</definedName></definedNames>`;
  if(/<definedNames>[\s\S]*?<\/definedNames>/.test(workbookXml))return workbookXml.replace(/<definedNames>[\s\S]*?<\/definedNames>/,names);
- return workbookXml.replace(/(<calcPr\b)/,`${names}$1`);
+ return workbookXml.replace(/<calcPr\b/,()=>`${names}<calcPr`);
 }
 
 export async function generateReturnAnnexVI(year:number,rows:Row[],versionCode="03"){
