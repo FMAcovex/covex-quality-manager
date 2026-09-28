@@ -33,8 +33,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    if (error instanceof TemplateUnavailableError) {
-      return NextResponse.json({ error: error.message }, { status: 503 });
+    if (error instanceof TemplateAssetError) {
+      return templateUnavailableResponse(error.message);
     }
     if (error instanceof Error && error.message.includes("admite")) {
       return NextResponse.json({ error: error.message }, { status: 409 });
