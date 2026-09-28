@@ -46,10 +46,32 @@ function parseArray<T>(raw: string | null, schema: z.ZodType<T>): T[] {
   }
 }
 
+function validDate(value: string | null) {
+  if (!value) return true;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+function validDateTime(value: string | null) {
+  if (!value) return true;
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(value)) return false;
+  return !Number.isNaN(new Date(value).getTime());
+}
+
 export function parseDeviationForm(formData: FormData) {
   const businessCode = text(formData, "businessCode");
   const departmentId = text(formData, "departmentId");
   const issueDate = text(formData, "issueDate");
+  const eventDateTime = text(formData, "eventDateTime");
   const whatHappened = text(formData, "whatHappened");
   const createdByText = text(formData, "createdByText");
   const modifiedByText = text(formData, "modifiedByText");
@@ -70,11 +92,21 @@ export function parseDeviationForm(formData: FormData) {
     .filter((value) => ["BRAINSTORMING", "FIVE_WHYS", "FTA", "ISHIKAWA"].includes(value));
 
   const errors: string[] = [];
-  if (!businessCode) errors.push("La codificación de la desviación es obligatoria.");
-  if (!departmentId) errors.push("El departamento es obligatorio.");
-  if (!issueDate) errors.push("La fecha de apertura es obligatoria.");
-  if (!whatHappened) errors.push("La descripción objetiva de lo ocurrido es obligatoria.");
-  if (!createdByText) errors.push("Debe indicarse quién cumplimenta el registro.");
+  const fieldIssues: Record<string, string[]> = {};
+  const addIssue = (field: string, message: string) => {
+    errors.push(message);
+    fieldIssues[field] = [...(fieldIssues[field] ?? []), message];
+  };
+
+  if (!businessCode) addIssue("businessCode", "La codificación de la desviación es obligatoria.");
+  if (!departmentId) addIssue("departmentId", "El departamento es obligatorio.");
+  if (!issueDate) addIssue("issueDate", "La fecha de apertura es obligatoria.");
+  else if (!validDate(issueDate)) addIssue("issueDate", "La fecha de apertura no tiene un formato válido.");
+  if (eventDateTime && !validDateTime(eventDateTime)) {
+    addIssue("eventDateTime", "La fecha/hora del evento no tiene un formato válido.");
+  }
+  if (!whatHappened) addIssue("whatHappened", "La descripción objetiva de lo ocurrido es obligatoria.");
+  if (!createdByText) addIssue("createdByText", "Debe indicarse quién cumplimenta el registro.");
 
   const investigation = text(formData, "investigation");
   const rootCause = text(formData, "rootCause");
@@ -82,28 +114,54 @@ export function parseDeviationForm(formData: FormData) {
   const conclusion = text(formData, "conclusion");
   const closedAt = text(formData, "closedAt");
 
+  if (closedAt && !validDate(closedAt)) {
+    addIssue("closedAt", "La fecha de cierre no tiene un formato válido.");
+  }
+
+  immediateActions.forEach((action, index) => {
+    if (action.executedAt && !validDate(action.executedAt)) {
+      addIssue(
+        "immediateActionsJson",
+        `La fecha de la acción inmediata ${index + 1} no tiene un formato válido.`,
+      );
+    }
+  });
+  capaPlans.forEach((plan, index) => {
+    if (plan.plannedExecutionDate && !validDate(plan.plannedExecutionDate)) {
+      addIssue(
+        "capaPlansJson",
+        `La fecha prevista de la propuesta CAPA ${index + 1} no tiene un formato válido.`,
+      );
+    }
+  });
+
   if (recordStatus === "CLOSED") {
-    if (!investigation) errors.push("Para cerrar la desviación debe existir investigación.");
-    if (!rootCause) errors.push("Para cerrar la desviación debe existir causa raíz.");
-    if (!deviationClassification) errors.push("Para cerrar la desviación debe existir clasificación.");
-    if (!conclusion) errors.push("Para cerrar la desviación debe existir conclusión/cierre.");
-    if (!closedAt) errors.push("Para cerrar la desviación debe informarse la fecha de cierre.");
+    if (!investigation) addIssue("investigation", "Para cerrar la desviación debe existir investigación.");
+    if (!rootCause) addIssue("rootCause", "Para cerrar la desviación debe existir causa raíz.");
+    if (!deviationClassification) addIssue("classification", "Para cerrar la desviación debe existir clasificación.");
+    if (!conclusion) addIssue("conclusion", "Para cerrar la desviación debe existir conclusión/cierre.");
+    if (!closedAt) addIssue("closedAt", "Para cerrar la desviación debe informarse la fecha de cierre.");
   }
 
   const capaRequiredRaw = text(formData, "capaRequired");
-  const capaRequired = capaRequiredRaw === "true" ? true : capaRequiredRaw === "false" ? false : null;
+  const capaRequired =
+    capaRequiredRaw === "true" ? true : capaRequiredRaw === "false" ? false : null;
   if (capaRequired === true && capaPlans.length === 0) {
-    errors.push("Se ha indicado que procede CAPA, pero no se ha definido ninguna acción CAPA.");
+    addIssue(
+      "capaPlansJson",
+      "Se ha indicado que procede CAPA, pero no se ha definido ninguna acción CAPA.",
+    );
   }
 
   return {
     errors,
+    fieldIssues,
     actor: modifiedByText ?? createdByText ?? "Usuario no informado",
     values: {
       businessCode,
       departmentId,
       issueDate,
-      eventDateTime: text(formData, "eventDateTime"),
+      eventDateTime,
       detectedBy: text(formData, "detectedBy"),
       createdByText,
       materialProcessAffected: text(formData, "materialProcessAffected"),
