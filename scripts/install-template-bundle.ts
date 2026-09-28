@@ -1,8 +1,8 @@
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { DocumentType, Prisma, PrismaClient, QmsRecordType } from "@prisma/client";
 import { readZip } from "../src/lib/ooxml/zip";
+import { resolveBundleTemplate, sha256, type BundleSource } from "./template-bundle-resolver";
 
 const prisma = new PrismaClient();
 
@@ -11,9 +11,11 @@ type BundleTemplate = {
   documentType: DocumentType;
   versionCode: string;
   relativePath: string;
-  sha256: string;
+  sources: BundleSource[];
   effectiveFrom: string;
 };
+
+const RETURN_PNT_SHA = "7f6b318e936cef9d2685347decf52b8951c34585dbd2ef1ebca05232a0c59a5a";
 
 const templates: BundleTemplate[] = [
   {
@@ -21,7 +23,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.DEVIATION_ANNEX_III,
     versionCode: "06",
     relativePath: "templates/deviations/v06/Anexo III Informe Desviaciones 06.docx",
-    sha256: "8639c29198101a73253f0681620c89a3e2848b335d2a4be61b946f9b7a353d43",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/deviations/v06/Anexo III Informe Desviaciones 06.docx",
+        "ANEXOS PARA APP/DESVIACIONES/Anexo III Informe Desviaciones 06.docx",
+      ],
+      sha256: "8639c29198101a73253f0681620c89a3e2848b335d2a4be61b946f9b7a353d43",
+    }],
     effectiveFrom: "2026-03-12",
   },
   {
@@ -29,7 +38,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.DEVIATION_ANNEX_V,
     versionCode: "06",
     relativePath: "templates/deviations/v06/Anexo V.xlsx",
-    sha256: "1f92410bc94e2037fe632450ce766b3ce5d44c4f55b8868056bad73c882c03f2",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/deviations/v06/Anexo V.xlsx",
+        "ANEXOS PARA APP/DESVIACIONES/Anexo V.xlsx",
+      ],
+      sha256: "1f92410bc94e2037fe632450ce766b3ce5d44c4f55b8868056bad73c882c03f2",
+    }],
     effectiveFrom: "2026-03-12",
   },
   {
@@ -37,7 +53,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.CAPA_ANNEX_III,
     versionCode: "05",
     relativePath: "templates/capa/v05/Anexo III INFORME CAPA 05.docx",
-    sha256: "73c3d57ca5ae6f4e9644a4f1cbe416992de6b367973ba98cd67f7f0bd1fea540",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/capa/v05/Anexo III INFORME CAPA 05.docx",
+        "ANEXOS PARA APP/CAPAS/Anexo III INFORME CAPA 05.docx",
+      ],
+      sha256: "73c3d57ca5ae6f4e9644a4f1cbe416992de6b367973ba98cd67f7f0bd1fea540",
+    }],
     effectiveFrom: "2026-03-11",
   },
   {
@@ -45,7 +68,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.CAPA_ANNEX_IV,
     versionCode: "05",
     relativePath: "templates/capa/v05/Anexo IV LISTADO CAPA 05 oficial.xlsx",
-    sha256: "47f3d757c2c00cbcbdba9e4f7daf2cb4d804ce522a5e1145ab5260efd8147ac3",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/capa/v05/Anexo IV LISTADO CAPA 05 oficial.xlsx",
+        "ANEXOS PARA APP/CAPAS/Anexo IV LISTADO CAPA 05 oficial.xlsx",
+      ],
+      sha256: "47f3d757c2c00cbcbdba9e4f7daf2cb4d804ce522a5e1145ab5260efd8147ac3",
+    }],
     effectiveFrom: "2026-03-11",
   },
   {
@@ -53,7 +83,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.CHANGE_ANNEX_III,
     versionCode: "03",
     relativePath: "templates/change-control/v03/Anexo III Solicitud GC-00-003-03.docx",
-    sha256: "a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/change-control/v03/Anexo III Solicitud GC-00-003-03.docx",
+        "ANEXOS PARA APP/CONTROLES DE CAMBIO/Anexo III_PNT GC003.03_Solicitud.docx",
+      ],
+      sha256: "a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f",
+    }],
     effectiveFrom: "2026-05-05",
   },
   {
@@ -61,7 +98,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.CHANGE_ANNEX_IV,
     versionCode: "03",
     relativePath: "templates/change-control/v03/Anexo IV Dictamen GC-00-003-03.docx",
-    sha256: "742b1de11e0e0dece4e9c65c97613c112325189e183b9cb02c56ca82cd06cc60",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/change-control/v03/Anexo IV Dictamen GC-00-003-03.docx",
+        "ANEXOS PARA APP/CONTROLES DE CAMBIO/Anexo IV_PNT GC003.03_Dictamen.docx",
+      ],
+      sha256: "742b1de11e0e0dece4e9c65c97613c112325189e183b9cb02c56ca82cd06cc60",
+    }],
     effectiveFrom: "2026-05-05",
   },
   {
@@ -69,7 +113,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.CHANGE_ANNEX_V,
     versionCode: "03",
     relativePath: "templates/change-control/v03/Anexo V Seguimiento GC-00-003-03.docx",
-    sha256: "3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/change-control/v03/Anexo V Seguimiento GC-00-003-03.docx",
+        "ANEXOS PARA APP/CONTROLES DE CAMBIO/Anexo V_PNT GC003.03_Informe .docx",
+      ],
+      sha256: "3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4",
+    }],
     effectiveFrom: "2026-05-05",
   },
   {
@@ -77,7 +128,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.CHANGE_ANNEX_VII,
     versionCode: "03",
     relativePath: "templates/change-control/v03/Anexo VII_PNT GC003.03_Listado seguimiento .xlsx",
-    sha256: "b65671cdd652f104f4038c65e07c025b5c7374dee4b683d74fbeef55f12bc8eb",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/change-control/v03/Anexo VII_PNT GC003.03_Listado seguimiento .xlsx",
+        "ANEXOS PARA APP/CONTROLES DE CAMBIO/Anexo VII_PNT GC003.03_Listado seguimiento .xlsx",
+      ],
+      sha256: "b65671cdd652f104f4038c65e07c025b5c7374dee4b683d74fbeef55f12bc8eb",
+    }],
     effectiveFrom: "2026-05-05",
   },
   {
@@ -85,7 +143,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.COMPLAINT_ANNEX_III,
     versionCode: "03",
     relativePath: "templates/complaints/v03/Anexo III Informe Reclamacion 03.docx",
-    sha256: "764e12076b407e9675f6291f03c8bab477f7850fbdb62fed8a904b4693b2bcde",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/complaints/v03/Anexo III Informe Reclamacion 03.docx",
+        "ANEXOS PARA APP/PNT RECLAMACIONES/Anexo III 02 INFORME RECLAMACION.docx",
+      ],
+      sha256: "764e12076b407e9675f6291f03c8bab477f7850fbdb62fed8a904b4693b2bcde",
+    }],
     effectiveFrom: "2026-09-28",
   },
   {
@@ -93,7 +158,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.COMPLAINT_ANNEX_V,
     versionCode: "03",
     relativePath: "templates/complaints/v03/Anexo V Listado Reclamaciones 03.xlsx",
-    sha256: "8d9a572fcfbc8bba05d99e3772aa0fec6fd3b716b6db2eaa5a056737d79d1d83",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/complaints/v03/Anexo V Listado Reclamaciones 03.xlsx",
+        "ANEXOS PARA APP/PNT RECLAMACIONES/Anexo V 02 LISTADO DE RECLAMACIONES.xlsx",
+      ],
+      sha256: "8d9a572fcfbc8bba05d99e3772aa0fec6fd3b716b6db2eaa5a056737d79d1d83",
+    }],
     effectiveFrom: "2026-09-28",
   },
   {
@@ -101,7 +173,14 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.RETURN_ANNEX_III,
     versionCode: "03",
     relativePath: "templates/returns/v03/Anexo III Formulario Devolucion 03.docx",
-    sha256: "9716477f2b261a4fec8b1d459fb8aa62bd42840f8fa352b4b66b15c2669745f4",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/returns/v03/Anexo III Formulario Devolucion 03.docx",
+        "ANEXOS PARA APP/DEVOLUCIONES/A3 FORMULARIO DEV 03.docx",
+      ],
+      sha256: "9716477f2b261a4fec8b1d459fb8aa62bd42840f8fa352b4b66b15c2669745f4",
+    }],
     effectiveFrom: "2026-05-26",
   },
   {
@@ -109,7 +188,20 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.RETURN_ANNEX_IV,
     versionCode: "03",
     relativePath: "templates/returns/v03/Anexo IV Hoja Devolucion Producto 03.docx",
-    sha256: "711a3cb833bd14d7aa6ddf5b2655b6e7bbc084c8331958db415feebfe69a1317",
+    sources: [
+      {
+        kind: "direct",
+        aliases: ["templates/returns/v03/Anexo IV Hoja Devolucion Producto 03.docx"],
+        sha256: "711a3cb833bd14d7aa6ddf5b2655b6e7bbc084c8331958db415feebfe69a1317",
+      },
+      {
+        kind: "word-range",
+        aliases: ["ANEXOS PARA APP/DEVOLUCIONES/GC-00.028.03 DEV PRODUCTO_CSM_CG.docx"],
+        sha256: RETURN_PNT_SHA,
+        startMarker: "Anexo IV:",
+        endMarker: "Anexo V:",
+      },
+    ],
     effectiveFrom: "2026-05-26",
   },
   {
@@ -117,7 +209,20 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.RETURN_ANNEX_V,
     versionCode: "03",
     relativePath: "templates/returns/v03/Anexo V Declaracion Cliente Conservacion 03.docx",
-    sha256: "818a01a3a61cbf29546f70d99b67c2679888bfa77785ded39a17eefe624bcafd",
+    sources: [
+      {
+        kind: "direct",
+        aliases: ["templates/returns/v03/Anexo V Declaracion Cliente Conservacion 03.docx"],
+        sha256: "818a01a3a61cbf29546f70d99b67c2679888bfa77785ded39a17eefe624bcafd",
+      },
+      {
+        kind: "word-range",
+        aliases: ["ANEXOS PARA APP/DEVOLUCIONES/GC-00.028.03 DEV PRODUCTO_CSM_CG.docx"],
+        sha256: RETURN_PNT_SHA,
+        startMarker: "Anexo V:",
+        endMarker: "Anexo VI:",
+      },
+    ],
     effectiveFrom: "2026-05-26",
   },
   {
@@ -125,14 +230,17 @@ const templates: BundleTemplate[] = [
     documentType: DocumentType.RETURN_ANNEX_VI,
     versionCode: "03",
     relativePath: "templates/returns/v03/Anexo VI Listado Devoluciones 03.xlsx",
-    sha256: "fa027508995beca7e39368f92e9d75ac2fdcf0dd7dffa57dfef8d59e6696db64",
+    sources: [{
+      kind: "direct",
+      aliases: [
+        "templates/returns/v03/Anexo VI Listado Devoluciones 03.xlsx",
+        "ANEXOS PARA APP/DEVOLUCIONES/A6 LISTADO DEV 03.xlsx",
+      ],
+      sha256: "fa027508995beca7e39368f92e9d75ac2fdcf0dd7dffa57dfef8d59e6696db64",
+    }],
     effectiveFrom: "2026-05-26",
   },
 ];
-
-function sha256(data: Buffer) {
-  return createHash("sha256").update(data).digest("hex");
-}
 
 function mimeType(fileName: string) {
   return fileName.toLowerCase().endsWith(".xlsx")
@@ -147,7 +255,7 @@ function json(value: unknown): Prisma.InputJsonValue {
 async function main() {
   const bundlePath = process.argv[2];
   if (!bundlePath) {
-    throw new Error("Uso: pnpm templates:bundle:install -- <COVEX_APP_PLANTILLAS_2A.zip>");
+    throw new Error("Uso: pnpm templates:bundle:install -- <ANEXOS PARA APP.zip | COVEX_APP_PLANTILLAS_2A.zip>");
   }
 
   const actor = process.env.DEFAULT_ACTOR_NAME || "Instalación técnica de plantillas";
@@ -155,28 +263,23 @@ async function main() {
   const entries = readZip(bundle).filter((entry) => !entry.name.endsWith("/"));
 
   const resolved = templates.map((spec) => {
-    const matches = entries.filter((entry) =>
-      entry.name.replaceAll("\\", "/").endsWith(spec.relativePath),
-    );
-    if (matches.length !== 1) {
-      throw new Error(
-        `${spec.relativePath}: se esperaba exactamente un archivo en el bundle y se encontraron ${matches.length}.`,
-      );
-    }
-    const entry = matches[0];
-    const actualSha = sha256(entry.data);
-    if (actualSha !== spec.sha256) {
-      throw new Error(
-        `${spec.relativePath}: SHA-256 no válido. Esperado ${spec.sha256}; recibido ${actualSha}.`,
-      );
-    }
-    return { spec, entry };
+    const asset = resolveBundleTemplate(spec, entries);
+    return {
+      spec,
+      entry: {
+        name: spec.relativePath,
+        data: asset.data,
+      },
+      checksum: asset.checksum,
+      sourceName: asset.sourceName,
+      derived: asset.derived,
+    };
   });
 
-  console.log(`Bundle verificado: ${resolved.length} plantillas con SHA-256 correcto.`);
+  console.log(`Bundle verificado: ${resolved.length} plantillas controladas resueltas correctamente.`);
 
   await prisma.$transaction(async (tx) => {
-    for (const { spec, entry } of resolved) {
+    for (const { spec, entry, checksum, sourceName, derived } of resolved) {
       const key = {
         module: spec.module,
         documentType: spec.documentType,
@@ -190,7 +293,7 @@ async function main() {
         mimeType: mimeType(spec.relativePath),
         fileData: new Uint8Array(entry.data),
         fileSize: entry.data.length,
-        checksum: spec.sha256,
+        checksum,
         filePath: null,
       };
 
@@ -225,7 +328,7 @@ async function main() {
             isActive: saved.isActive,
           }),
           changedByText: actor,
-          reason: "Carga controlada del bundle oficial de plantillas Hito 10.3",
+          reason: `Carga controlada del bundle oficial de plantillas Hito 10.8C2 · fuente ${sourceName}${derived ? " · anexo derivado del PNT verificado" : ""}`,
         },
       });
     }
@@ -257,7 +360,8 @@ async function main() {
     );
   }
 
-  for (const spec of templates) {
+  for (const resolvedAsset of resolved) {
+    const { spec, checksum } = resolvedAsset;
     const row = stored.find(
       (item) =>
         item.module === spec.module &&
@@ -269,8 +373,8 @@ async function main() {
     }
     const actualSha = sha256(Buffer.from(row.fileData));
     if (
-      actualSha !== spec.sha256 ||
-      row.checksum !== spec.sha256 ||
+      actualSha !== checksum ||
+      row.checksum !== checksum ||
       row.fileSize !== row.fileData.length
     ) {
       throw new Error(
