@@ -12,18 +12,22 @@ export type ReturnDocumentRecord={
  withinAcceptedReturnPeriod:string|null;roomTemperatureWithinTenDays:string|null;coldChainWithinFortyEightHours:string|null;uniqueIdentifierActive:string|null;tamperEvidenceIntact:string|null;
  packagingIntegrityOk:string|null;customerDeclarationAvailable:string|null;storageTransportConditionsOk:string|null;noUseDamageContamination:string|null;noRecallAlertBlock:string|null;expiryAcceptable:string|null;
  qcAssessmentCompleted:string|null;storageTemperatureRecord:string|null;returnTransportTempEvidence:string|null;transportPackagingSuitable:string|null;receiptTemperatureAcceptable:string|null;temperatureExcursionEvaluated:string|null;coldChainReturnSystemValidated:string|null;
- decision:string;finalDestination:string|null;decisionObservations:string|null;qaApprovalName:string|null;technicalApprovalName:string|null;decisionDate:Date|null;destructionManagedBy:string|null;destructionCertificate:string|null;traceabilityUpdated:string|null;internalObservations:string|null;
+ decision:string;finalDestination:string|null;decisionObservations:string|null;qaApprovalName:string|null;technicalApprovalName:string|null;decisionDate:Date|null;destructionManagedBy:string|null;destructionCertificate:string|null;traceabilityUpdated:string|null;internalObservations:string|null;extraData?:unknown;
  products:Product[];followups:Followup[];annexIIITemplateVersion?:{versionCode:string}|null;annexIVTemplateVersion?:{versionCode:string}|null;annexVTemplateVersion?:{versionCode:string}|null;annexVITemplateVersion?:{versionCode:string}|null;
 };
 const date=(v:Date|null|undefined)=>v?new Intl.DateTimeFormat("es-ES").format(v):"";
 const text=(v:string|null|undefined)=>v??"";
 const tri=(v:string|null|undefined)=>v==="YES"?"Sí":v==="NO"?"No":v==="NA"?"N.A.":"";
 const box=(on:boolean,label:string)=>`${on?"☒":"☐"} ${label}`;
+const asObject=(v:unknown):Record<string,unknown>=>v&&typeof v==="object"&&!Array.isArray(v)?v as Record<string,unknown>:{};
+const asStrings=(v:unknown)=>Array.isArray(v)?v.filter((x):x is string=>typeof x==="string"):[];
+const asString=(v:unknown)=>typeof v==="string"?v:"";
+const returnDeclaration=(r:ReturnDocumentRecord)=>asObject(asObject(r.extraData).returnV03Declaration);
 const typeLabel=(v:string,o:string|null)=>v==="COMMERCIAL"?"Comercial":v==="COMPLAINT"?"Reclamación":v==="RECALL"?"Retirada":v==="EXPIRY"?"Caducidad":v==="TRANSPORT"?"Transporte":o||"Otra";
 const productType=(v:string)=>({API:"API",INTERMEDIATE:"Intermedio",MEDICINE:"Medicamento",SUPPLEMENT:"Complemento alimenticio",IMPORTED_PRODUCT:"Producto importado",MEDICAL_DEVICE:"Producto sanitario",COSMETIC:"Cosmético",OTHER:"Otro"} as Record<string,string>)[v]??v;
 
 export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
- const entries=readZip(await loadReturnPntTemplate(r.annexIIITemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_III));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo III:", "Anexo IV:", "last");
+ const version=r.annexIIITemplateVersion?.versionCode??"03";const entries=readZip(await loadReturnPntTemplate(version,DocumentType.RETURN_ANNEX_III));let xml=getZipEntryText(entries,"word/document.xml");if(version!=="03"&&xml.includes("Anexo III:"))xml=extractWordBodyRange(xml,"Anexo III:", "Anexo IV:", "last");
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,1,0,3,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,1,date(r.receivedAt));
  xml=setWordCellTextBalanced(xml,1,1,3,[box(r.returnType==="COMMERCIAL","Comercial"),box(r.returnType==="COMPLAINT","Reclamación"),box(r.returnType==="RECALL","Retirada"),box(r.returnType==="EXPIRY","Caducidad"),box(r.returnType==="TRANSPORT","Transporte"),box(r.returnType==="OTHER",`Otra: ${text(r.otherReturnType)}`)].join("   "));
  xml=setWordCellTextBalanced(xml,1,2,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,2,3,text(r.country));xml=setWordCellTextBalanced(xml,1,3,1,text(r.address));xml=setWordCellTextBalanced(xml,1,4,1,text(r.relatedDocument));
@@ -52,10 +56,21 @@ export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Produ
 }
 
 export async function generateReturnAnnexV(r:ReturnDocumentRecord){
- const entries=readZip(await loadReturnPntTemplate(r.annexVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_V));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo V:", "Anexo VI:", "last");
+ const entries=readZip(await loadReturnPntTemplate(r.annexVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_V));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo V:", "Anexo VI:", "last");const declaration=returnDeclaration(r);
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,1,1,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.qmsRecord.businessCode));
  xml=setWordCellTextBalanced(xml,1,2,1,r.products.map(x=>x.productNameCode).join(" · "));xml=setWordCellTextBalanced(xml,1,2,3,r.products.map(x=>text(x.lot)).filter(Boolean).join(" · "));xml=setWordCellTextBalanced(xml,1,3,1,text(r.conservationConditions));
- xml=setWordCellTextBalanced(xml,3,0,0,text(r.reasonObservations));xml=setWordCellTextBalanced(xml,4,0,1,"");xml=setWordCellTextBalanced(xml,5,0,1,text(r.qaApprovalName));xml=setWordCellTextBalanced(xml,5,1,1,text(r.technicalApprovalName));
+ const evidence=asStrings(declaration.evidence);
+ const evidenceText=[
+  box(evidence.includes("SUPPLY_DOCUMENT"),"Copia de albarán / factura / documento de suministro."),
+  box(evidence.includes("STORAGE_TEMPERATURE"),"Registro de temperatura de almacenamiento."),
+  box(evidence.includes("RETURN_TEMPERATURE"),"Registro de temperatura de transporte o retorno."),
+  box(evidence.includes("NO_TEMPERATURE_RECORDS"),"No aplica / no se dispone de registros de temperatura por no requerir condiciones especiales."),
+  `Otra documentación: ${asString(declaration.otherDocumentation)}`,
+  `OBSERVACIONES: ${asString(declaration.observations)}`,
+ ].join("\n");
+ xml=setWordCellTextBalanced(xml,3,0,0,evidenceText);
+ xml=setWordCellTextBalanced(xml,4,0,1,asString(declaration.customerTechnicalResponsible));
+ xml=setWordCellTextBalanced(xml,5,0,1,text(r.qaApprovalName));xml=setWordCellTextBalanced(xml,5,1,1,text(r.technicalApprovalName));
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 
