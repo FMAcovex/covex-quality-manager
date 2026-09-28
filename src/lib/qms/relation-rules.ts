@@ -112,3 +112,22 @@ export function operationalRelationLabel(
   }
   return "Relación QMS";
 }
+
+
+export function selectOperationalRelationTarget(
+  currentType: QmsRecordType,
+  matches: OperationalRelationRecord[],
+) {
+  const allowed = new Set(allowedOperationalRelationTypes(currentType));
+  const candidates = matches.filter((item) => allowed.has(item.recordType));
+
+  if (candidates.length === 0) {
+    throw new Error("No existe un expediente compatible con esa codificación.");
+  }
+  if (candidates.length > 1) {
+    throw new Error(
+      "La codificación coincide con más de un tipo de expediente compatible. Debe seleccionarse el tipo de destino.",
+    );
+  }
+  return candidates[0];
+}
