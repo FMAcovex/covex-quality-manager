@@ -142,6 +142,7 @@ export function DeviationForm({
           </label>
           <Field label="Fecha apertura" name="issueDate" type="date" defaultValue={defaults.issueDate} required />
           <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={defaults.eventDateTime} />
+          <Field label="Turno" name="eventShift" defaultValue={defaults.eventShift} />
           <Field label="Detectado por" name="detectedBy" defaultValue={defaults.detectedBy} />
           <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required />
           {mode === "edit" ? (
