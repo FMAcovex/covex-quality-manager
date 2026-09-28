@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { DocumentTemplateActions } from "@/components/document-template-actions";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { notFound } from "next/navigation";
 import { addCapaFollowupFormAction, addCapaRelationAction } from "@/modules/capa/actions";
 import { ActionFeedbackForm } from "@/components/action-feedback-form";
@@ -42,7 +44,10 @@ export default async function CapaDetailPage({
   const { id } = await params;
   const { tab: rawTab } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
-  const capa = await getCapaDetail(id);
+  const [capa, documentTemplates] = await Promise.all([
+    getCapaDetail(id),
+    getActiveTemplateAssets("CAPA"),
+  ]);
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
@@ -332,10 +337,13 @@ export default async function CapaDetailPage({
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{capa.annexIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{capa.signedDocumentAvailable === true ? "Disponible" : capa.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="document-actions">
-            <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
-            <span className="muted-note">Cada generación queda registrada en el expediente.</span>
-          </div>
+          <DocumentTemplateActions
+            templates={documentTemplates}
+            documentType="CAPA_ANNEX_III"
+            title="Anexo III · Informe CAPA"
+            generateHref={`/api/capa/${id}/annex-iii`}
+            generateLabel="Generar Anexo III cumplimentado"
+          />
           {capa.qmsRecord.generatedDocuments.length ? (
             <>
               <h3>Generaciones registradas</h3>
