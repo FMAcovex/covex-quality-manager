@@ -460,6 +460,10 @@ function parseFollowupTasks(raw: string): ChangeFollowupTaskInput[] {
   }
 }
 
+function changeFollowupError(id: string, message: string): never {
+  redirect(`/changes/${id}?tab=followups&followupError=${encodeURIComponent(message)}#new-followup`);
+}
+
 export async function addChangeControlFollowupAction(id: string, formData: FormData) {
   const change = await prisma.changeControl.findUnique({
     where: { id },
@@ -478,7 +482,7 @@ export async function addChangeControlFollowupAction(id: string, formData: FormD
   });
   if (!change) throw new Error("Control de Cambio no encontrado.");
   if (change.dictamenResult !== "APPROVED") {
-    throw new Error("Solo se puede registrar seguimiento cuando el Dictamen está aprobado.");
+    changeFollowupError(id, "Solo se puede registrar seguimiento cuando el Dictamen está aprobado.");
   }
 
   const followupDate = String(formData.get("followupDate") ?? "").trim();
@@ -495,37 +499,37 @@ export async function addChangeControlFollowupAction(id: string, formData: FormD
   const approvalByText = String(formData.get("approvalByText") ?? "").trim();
   const tasks = parseFollowupTasks(String(formData.get("tasksJson") ?? "[]"));
 
-  if (!followupDate || !responsible) throw new Error("Fecha y responsable de seguimiento son obligatorios.");
-  if (!["NOT_EXECUTED", "EXECUTED"].includes(executionStatus)) throw new Error("Estado de ejecución no válido.");
+  if (!followupDate || !responsible) changeFollowupError(id, "Fecha y responsable de seguimiento son obligatorios.");
+  if (!["NOT_EXECUTED", "EXECUTED"].includes(executionStatus)) changeFollowupError(id, "Estado de ejecución no válido.");
   if (!["PENDING", "ACCEPTABLE", "NOT_ACCEPTABLE", "NOT_APPLICABLE"].includes(effectivenessStatus)) {
-    throw new Error("Estado de eficacia no válido.");
+    changeFollowupError(id, "Estado de eficacia no válido.");
   }
-  if (!tasks.length) throw new Error("El seguimiento debe incluir el estado de las acciones.");
+  if (!tasks.length) changeFollowupError(id, "El seguimiento debe incluir el estado de las acciones.");
 
   const sequenceNumber = Math.max(-1, ...change.followups.map((item) => item.sequenceNumber)) + 1;
   const existingTaskIds = new Set(change.tasks.map((item) => item.id));
   const submittedExisting = tasks.filter((item) => item.taskId && existingTaskIds.has(item.taskId));
   if (submittedExisting.length !== change.tasks.length) {
-    throw new Error("El seguimiento debe conservar todas las acciones existentes.");
+    changeFollowupError(id, "El seguimiento debe conservar todas las acciones existentes.");
   }
 
   if (executionStatus === "EXECUTED") {
-    if (!executionDate) throw new Error("Un cambio Ejecutado requiere fecha de ejecución.");
+    if (!executionDate) changeFollowupError(id, "Un cambio Ejecutado requiere fecha de ejecución.");
     const pending = tasks.some((item) => item.status === "PENDING");
-    if (pending) throw new Error("No se puede marcar Ejecutado mientras existan acciones pendientes.");
+    if (pending) changeFollowupError(id, "No se puede marcar Ejecutado mientras existan acciones pendientes.");
   }
   if (closeChange) {
     if (executionStatus === "EXECUTED") {
       if (effectivenessStatus !== "ACCEPTABLE") {
-        throw new Error("El cierre efectivo de un cambio ejecutado requiere eficacia Aceptable.");
+        changeFollowupError(id, "El cierre efectivo de un cambio ejecutado requiere eficacia Aceptable.");
       }
     } else if (effectivenessStatus !== "NOT_APPLICABLE") {
-      throw new Error("Un cierre sin ejecución debe registrar la eficacia como No aplica.");
+      changeFollowupError(id, "Un cierre sin ejecución debe registrar la eficacia como No aplica.");
     }
-    if (!conclusion) throw new Error("El cierre requiere motivo/conclusión documentado.");
-    if (!approvalByText) throw new Error("Debe identificarse la aprobación del cierre.");
+    if (!conclusion) changeFollowupError(id, "El cierre requiere motivo/conclusión documentado.");
+    if (!approvalByText) changeFollowupError(id, "Debe identificarse la aprobación del cierre.");
   } else if (!nextFollowupDate || !remainOpenReason) {
-    throw new Error("Si el cambio permanece abierto, debe indicarse motivo y próxima fecha de seguimiento.");
+    changeFollowupError(id, "Si el cambio permanece abierto, debe indicarse motivo y próxima fecha de seguimiento.");
   }
 
   await prisma.$transaction(async (tx) => {
