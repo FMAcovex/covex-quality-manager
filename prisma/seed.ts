@@ -279,16 +279,30 @@ async function main() {
     });
   }
 
-  const complaintForm = await prisma.formVersion.upsert({
+  const oldComplaintForm = await prisma.formVersion.upsert({
     where: { module_versionCode: { module: QmsRecordType.COMPLAINT, versionCode: "REC-02" } },
-    update: { isActive: true, status: "ACTIVE" },
+    update: { isActive: false, status: "RETIRED", effectiveTo: new Date("2026-09-27") },
     create: {
       module: QmsRecordType.COMPLAINT,
       versionCode: "REC-02",
       effectiveFrom: new Date("2026-05-26"),
+      effectiveTo: new Date("2026-09-27"),
+      isActive: false,
+      status: "RETIRED",
+      notes: "GC-00/027/02. Conservada para histórico.",
+    },
+  });
+
+  const complaintForm = await prisma.formVersion.upsert({
+    where: { module_versionCode: { module: QmsRecordType.COMPLAINT, versionCode: "REC-03-PRE" } },
+    update: { isActive: true, status: "ACTIVE", notes: "GC-00/027/03 preparada para pruebas; fecha corporativa de entrada en vigor pendiente." },
+    create: {
+      module: QmsRecordType.COMPLAINT,
+      versionCode: "REC-03-PRE",
+      effectiveFrom: new Date("2026-09-28"),
       isActive: true,
       status: "ACTIVE",
-      notes: "GC-00/027/02.",
+      notes: "GC-00/027/03 preparada para pruebas; fecha corporativa de entrada en vigor pendiente.",
     },
   });
 
@@ -314,11 +328,11 @@ async function main() {
       create: { formVersionId: complaintForm.id,fieldKey,label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition },
     });
   }
-  for (const documentType of [DocumentType.COMPLAINT_ANNEX_III,DocumentType.COMPLAINT_ANNEX_IV,DocumentType.COMPLAINT_ANNEX_V]) {
+  for (const documentType of [DocumentType.COMPLAINT_ANNEX_III,DocumentType.COMPLAINT_ANNEX_V]) {
     await prisma.templateVersion.upsert({
-      where: { module_documentType_versionCode: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "02" } },
+      where: { module_documentType_versionCode: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "03" } },
       update: { isActive: true },
-      create: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "02", effectiveFrom: new Date("2026-05-26"), isActive: true },
+      create: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "03", effectiveFrom: new Date("2026-09-28"), isActive: true },
     });
   }
 
