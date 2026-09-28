@@ -16,6 +16,18 @@ function TextArea({label,name,defaultValue,help}:{label:string;name:string;defau
 function Bool({label,name,defaultValue}:{label:string;name:string;defaultValue?:string}) {
  return <label className="field"><span>{label}</span><select name={name} defaultValue={defaultValue??""}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>;
 }
+function Tri({label,name,defaultValue}:{label:string;name:string;defaultValue?:string}) {
+ return <label className="field"><span>{label}</span><select name={name} defaultValue={defaultValue??""}><option value="">No informado</option><option value="YES">Sí</option><option value="NO">No</option><option value="NA">N/A</option></select></label>;
+}
+function Checks({label,name,options,defaults=[]}:{label:string;name:string;options:readonly (readonly [string,string])[];defaults?:string[]}) {
+ return <div className="field full"><span>{label}</span><div className="checkbox-group">{options.map(([v,l])=><label key={v}><input type="checkbox" name={name} value={v} defaultChecked={defaults.includes(v)}/>{l}</label>)}</div></div>;
+}
+
+const triggerOptions=[["CLIENT","Cliente"],["DISTRIBUTOR","Distribuidor"],["MAH","Titular / MAH"],["CONSUMER","Consumidor / usuario"],["AUTHORITY","Autoridad / entidad sanitaria"],["SUPPLIER","Proveedor"],["LOGISTICS","Transportista / operador logístico"],["SUBCONTRACTOR","Subcontrata"],["INTERNAL","Detección interna"],["RECALL","Retirada"]] as const;
+const scopeOptions=[["MEDICINE","Medicamento"],["API","API"],["SUPPLEMENT","Complemento alimenticio"],["COSMETIC","Cosmética"],["MEDICAL_DEVICE","Producto sanitario"],["ENVIRONMENT","Medio ambiente"]] as const;
+const objectOptions=[["PRODUCT","Producto / material"],["SERVICE","Servicio"],["EQUIPMENT","Equipo / sistema"],["TRANSPORT","Transporte"],["SUBCONTRACTED","Actividad subcontratada"]] as const;
+const categoryOptions=[["PRODUCT_QUALITY","Calidad del producto"],["SPECIFICATIONS","Especificaciones / análisis"],["PACKAGING","Acondicionamiento / envase"],["LABELING","Etiquetado / documentación"],["QUANTITY","Cantidad / contenido"],["TRANSPORT_STORAGE","Transporte / almacenamiento"],["SERVICE_SUPPLY","Servicio / suministro"],["EQUIPMENT_SYSTEM","Equipo / sistema"],["ENVIRONMENT","Medio ambiente"]] as const;
+const containmentOptions=[["BLOCK_QUARANTINE","Bloqueo / cuarentena"],["SUSPEND","Suspender uso / distribución"],["NOTICE","Aviso a cliente / proveedor / titular / autoridad"],["NONE","Ninguna"]] as const;
 
 const resolutionOptions=[
  ["RETURN","Devolución"],["CORRECTIVE_ACTION","Acc. correctora"],["PREVENTIVE_ACTION","Acc. preventiva"],["IMMEDIATE_ACTION","Acc. inmediata"],
@@ -40,18 +52,27 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
     <label className="field"><span>Departamento *</span><select name="departmentId" defaultValue={defaults.departmentId??""} required><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
     <Field label="Fecha apertura" name="openedAt" type="date" defaultValue={defaults.openedAt} required/>
     <Field label="Fecha detección" name="detectionDate" type="date" defaultValue={defaults.detectionDate}/>
+    <Field label="Fecha recepción" name="receptionDate" type="date" defaultValue={defaults.receptionDate}/>
     <Field label="Detectado por" name="detectedBy" defaultValue={defaults.detectedBy}/>
     <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required/>
     {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={defaults.createdByText}/>:null}
     <label className="field"><span>Tipo *</span><select name="complaintType" defaultValue={defaults.complaintType??""} required><option value="">Seleccionar…</option><option value="PROVIDER">A proveedor</option><option value="CUSTOMER">De cliente</option></select></label>
+    <Checks label="Origen / fuente de detección" name="triggerSources" options={triggerOptions} defaults={defaults.triggerSources}/>
+    <Field label="Otro origen / fuente" name="triggerOther" defaultValue={defaults.triggerOther} span="span-2"/>
     <Field label="Cliente / Proveedor" name="partyName" defaultValue={defaults.partyName} required span="span-2"/>
     <Field label="Contacto" name="contact" defaultValue={defaults.contact} span="span-2"/>
-    <Field label="Ámbito afectado" name="affectedScope" defaultValue={defaults.affectedScope} span="span-2"/>
+    <Checks label="Ámbito" name="scopeCategories" options={scopeOptions} defaults={defaults.scopeCategories}/>
+    <Field label="Otro ámbito" name="scopeOther" defaultValue={defaults.scopeOther} span="span-2"/>
+    <Checks label="Objeto afectado" name="affectedObjectTypes" options={objectOptions} defaults={defaults.affectedObjectTypes}/>
+    <Field label="Otro objeto afectado" name="affectedObjectOther" defaultValue={defaults.affectedObjectOther} span="span-2"/>
+    <Field label="Ámbito / detalle adicional" name="affectedScope" defaultValue={defaults.affectedScope} span="span-2"/>
     <Field label="Material / servicio / equipo" name="reference" defaultValue={defaults.reference} span="span-2"/>
     <Field label="Lote / referencia" name="lotReference" defaultValue={defaults.lotReference}/>
     <Field label="Cantidad" name="quantity" defaultValue={defaults.quantity}/>
     <Field label="Caducidad / reanálisis" name="expiryReanalysis" defaultValue={defaults.expiryReanalysis}/>
     <Field label="Pedido / albarán / certificado" name="purchaseDeliveryReference" defaultValue={defaults.purchaseDeliveryReference} span="span-2"/>
+    <Checks label="Categoría / motivo" name="complaintCategories" options={categoryOptions} defaults={defaults.complaintCategories}/>
+    <Field label="Otra categoría / motivo" name="complaintCategoryOther" defaultValue={defaults.complaintCategoryOther} span="span-2"/>
     <TextArea label="Descripción de la reclamación *" name="description" defaultValue={defaults.description}/>
     <Bool label="¿Reclamación recurrente?" name="recurrent" defaultValue={defaults.recurrent}/>
     <Field label="Referencia recurrencia" name="recurrenceReference" defaultValue={defaults.recurrenceReference} span="span-2"/>
@@ -65,8 +86,16 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    <h2>2. Investigación, impacto y causa raíz</h2>
    <p className="section-help">Misma filosofía que Desviaciones: separar hechos investigados, impacto y causa raíz sustentada.</p>
    <div className="form-grid">
+    <Tri label="Impacto calidad / cumplimiento GMP" name="qualityGmpImpact" defaultValue={defaults.qualityGmpImpact}/>
+    <Tri label="Impacto seguridad / eficacia / paciente" name="safetyEfficacyImpact" defaultValue={defaults.safetyEfficacyImpact}/>
+    <Tri label="Impacto regulatorio" name="regulatoryComplianceImpact" defaultValue={defaults.regulatoryComplianceImpact}/>
+    <Tri label="Impacto medio ambiente" name="environmentImpact" defaultValue={defaults.environmentImpact}/>
+    <Tri label="Otros lotes/productos/clientes similares" name="similarSituationsImpact" defaultValue={defaults.similarSituationsImpact}/>
+    <Checks label="Medidas inmediatas / contención" name="containmentActions" options={containmentOptions} defaults={defaults.containmentActions}/>
+    <Field label="Otra medida de contención" name="containmentOther" defaultValue={defaults.containmentOther} span="span-2"/>
+    <TextArea label="Justificación del riesgo, alcance y medidas" name="riskJustification" defaultValue={defaults.riskJustification}/>
     <TextArea label="Investigación" name="investigation" defaultValue={defaults.investigation}/>
-    <TextArea label="Impacto de la reclamación" name="impactAssessment" defaultValue={defaults.impactAssessment} help="Valorar calidad/seguridad/eficacia, GMP/regulatorio, otros lotes/productos, bloqueo o retirada."/>
+    <TextArea label="Impacto / conclusión de la investigación" name="impactAssessment" defaultValue={defaults.impactAssessment}/>
     <label className="field"><span>Conclusión investigación</span><select name="investigationResult" defaultValue={defaults.investigationResult??""}><option value="">Pendiente</option><option value="PROCEDENT">Procedente</option><option value="NOT_PROCEDENT">No procedente</option><option value="INCONCLUSIVE">No concluyente</option><option value="NOT_ATTRIBUTABLE_TO_COVEX">No atribuible a COVEX</option></select></label>
     <TextArea label="Análisis de causa raíz" name="rootCause" defaultValue={defaults.rootCause}/>
    </div>
@@ -76,6 +105,11 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    <h2>3. Clasificación y resolución</h2>
    <div className="form-grid">
     <label className="field"><span>Clasificación</span><select name="classification" defaultValue={defaults.classification??""}><option value="">Pendiente</option><option value="CRITICAL">Crítica</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option><option value="NO_GMP_IMPACT">Sin impacto GMP</option></select></label>
+    <Tri label="¿Puede requerir retirada?" name="withdrawalPotential" defaultValue={defaults.withdrawalPotential}/>
+    <Tri label="¿Activar procedimiento de retirada?" name="recallProcedureRequired" defaultValue={defaults.recallProcedureRequired}/>
+    <Tri label="¿Notificación a autoridad sanitaria?" name="authorityNotification" defaultValue={defaults.authorityNotification}/>
+    <Tri label="¿Comunicación a titular / responsable?" name="responsiblePartyCommunication" defaultValue={defaults.responsiblePartyCommunication}/>
+    <TextArea label="Justificación de evaluación regulatoria" name="regulatoryJustification" defaultValue={defaults.regulatoryJustification}/>
     <Field label="Fecha evaluación inicial" name="initialEvaluationDate" type="date" defaultValue={defaults.initialEvaluationDate}/>
     <Field label="Fecha conclusión inicial" name="initialConclusionDate" type="date" defaultValue={defaults.initialConclusionDate}/>
     <TextArea label="Líneas de actuación y resolución" name="resolutionLines" defaultValue={defaults.resolutionLines}/>
@@ -101,8 +135,12 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
   <section className="form-section">
    <h2>4. Comunicación y conclusión de Parte I</h2>
    <div className="form-grid">
-    <TextArea label="Comunicación al cliente / proveedor" name="externalCommunication" defaultValue={defaults.externalCommunication}/>
-    <TextArea label="Conclusión de Parte I" name="conclusion" defaultValue={defaults.conclusion}/>
+    <Field label="Fecha comunicación" name="externalCommunicationDate" type="date" defaultValue={defaults.externalCommunicationDate}/>
+    <Field label="Medio" name="externalCommunicationMedium" defaultValue={defaults.externalCommunicationMedium}/>
+    <Field label="Emisor / destinatario" name="externalCommunicationParties" defaultValue={defaults.externalCommunicationParties} span="span-2"/>
+    <TextArea label="Resumen de la comunicación" name="externalCommunication" defaultValue={defaults.externalCommunication}/>
+    <Bool label="¿Continúa en Parte II?" name="continueToPartII" defaultValue={defaults.continueToPartII}/>
+    <TextArea label="Conclusión de Parte I / pendientes" name="conclusion" defaultValue={defaults.conclusion}/>
     <Bool label="¿Verificación de eficacia necesaria?" name="effectivenessRequired" defaultValue={defaults.effectivenessRequired}/>
     <Field label="Aprobaciones Parte I" name="approvalNames" defaultValue={defaults.approvalNames} span="span-2"/>
    </div>
@@ -114,6 +152,9 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
     <Field label="Fecha respuesta" name="responseDate" type="date" defaultValue={defaults.responseDate}/>
     <Field label="Medio de comunicación" name="responseMedium" defaultValue={defaults.responseMedium} span="span-2"/>
     <TextArea label="Respuesta proveedor / cliente" name="responseSummary" defaultValue={defaults.responseSummary}/>
+    <Bool label="¿Respuesta suficiente?" name="responseSufficient" defaultValue={defaults.responseSufficient}/>
+    <label className="field"><span>Estado de las acciones</span><select name="followupActionStatus" defaultValue={defaults.followupActionStatus??""}><option value="">No informado</option><option value="COMPLETED">Completadas</option><option value="LINKED">Vinculadas a seguimiento independiente</option><option value="PENDING">Pendientes</option></select></label>
+    <Field label="Referencias / responsable seguimiento" name="followupReferences" defaultValue={defaults.followupReferences} span="span-2"/>
     <label className="field"><span>Verificación de eficacia</span><select name="effectivenessStatus" defaultValue={defaults.effectivenessStatus??"PENDING"}><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Aceptable</option><option value="NOT_ACCEPTABLE">No aceptable</option><option value="NOT_REQUIRED">No requerida</option></select></label>
     <TextArea label="Valoración de eficacia" name="effectivenessAssessment" defaultValue={defaults.effectivenessAssessment}/>
     <TextArea label="Conclusión y cierre" name="closeConclusion" defaultValue={defaults.closeConclusion}/>
