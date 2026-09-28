@@ -11,7 +11,29 @@ import { getAdministrationOverview, moduleLabel } from "@/modules/configuration/
 
 export const dynamic = "force-dynamic";
 
-const docLabel = (value: DocumentType) => value.replaceAll("_", " ");
+const documentLabels: Record<DocumentType, string> = {
+  DEVIATION_ANNEX_III: "Desviaciones · Anexo III · Informe",
+  DEVIATION_ANNEX_V: "Desviaciones · Anexo V · Listado anual",
+  SIMPLE_LIST: "Desviaciones · Listado simple",
+  CAPA_ANNEX_III: "CAPA · Anexo III · Informe",
+  CAPA_ANNEX_IV: "CAPA · Anexo IV · Listado anual",
+  CAPA_SIMPLE_LIST: "CAPA · Listado simple",
+  CHANGE_ANNEX_III: "Controles de Cambios · Anexo III · Solicitud",
+  CHANGE_ANNEX_IV: "Controles de Cambios · Anexo IV · Dictamen",
+  CHANGE_ANNEX_V: "Controles de Cambios · Anexo V · Seguimiento",
+  CHANGE_ANNEX_VII: "Controles de Cambios · Anexo VII · Listado anual",
+  CHANGE_SIMPLE_LIST: "Controles de Cambios · Listado simple",
+  COMPLAINT_ANNEX_III: "Reclamaciones · Anexo III · Informe",
+  COMPLAINT_ANNEX_IV: "Reclamaciones · Anexo IV · Respuesta",
+  COMPLAINT_ANNEX_V: "Reclamaciones · Anexo V · Listado anual",
+  COMPLAINT_SIMPLE_LIST: "Reclamaciones · Listado simple",
+  RETURN_ANNEX_III: "Devoluciones · Anexo III · Formulario",
+  RETURN_ANNEX_IV: "Devoluciones · Anexo IV · Hoja de devolución",
+  RETURN_ANNEX_V: "Devoluciones · Anexo V · Declaración cliente",
+  RETURN_ANNEX_VI: "Devoluciones · Anexo VI · Listado anual",
+  RETURN_SIMPLE_LIST: "Devoluciones · Listado simple",
+};
+const docLabel = (value: DocumentType) => documentLabels[value];
 
 export default async function VersionsPage() {
   const data = await getAdministrationOverview();
