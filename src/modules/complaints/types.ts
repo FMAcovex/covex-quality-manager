@@ -1,4 +1,5 @@
 export type ComplaintCapaPlanInput={id?:string;actionType:"CORRECTIVE"|"PREVENTIVE";description:string;plannedExecutionDate:string;responsible:string;businessCapaCode?:string};
+export type ComplaintDerivedActionInput={typeCode:string;actionEvidence:string;responsible:string;plannedDate:string};
 export type ComplaintFormState = { error: string | null; fieldErrors?: string[] };
 
 export type ComplaintFormDefaults = {
@@ -51,6 +52,38 @@ export type ComplaintFormDefaults = {
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";
   capaPlans?: ComplaintCapaPlanInput[];
+
+  receivedAt?: string;
+  sourceFlags?: string[];
+  sourceOther?: string;
+  scopeFlags?: string[];
+  scopeOther?: string;
+  objectFlags?: string[];
+  objectOther?: string;
+  categoryFlags?: string[];
+  categoryOther?: string;
+  impactQualityGmp?: ""|"YES"|"NO"|"NA";
+  impactSafetyEfficacy?: ""|"YES"|"NO"|"NA";
+  impactRegulatory?: ""|"YES"|"NO"|"NA";
+  impactEnvironment?: ""|"YES"|"NO"|"NA";
+  impactOtherLots?: ""|"YES"|"NO"|"NA";
+  containmentFlags?: string[];
+  containmentOther?: string;
+  riskJustification?: string;
+  regulatoryMayRequireRecall?: ""|"YES"|"NO"|"NA";
+  regulatoryActivateRecall?: ""|"YES"|"NO"|"NA";
+  regulatoryAuthorityNotification?: ""|"YES"|"NO"|"NA";
+  regulatoryResponsibleCommunication?: ""|"YES"|"NO"|"NA";
+  regulatoryJustification?: string;
+  derivedActions?: ComplaintDerivedActionInput[];
+  communicationDate?: string;
+  communicationMedium?: string;
+  communicationFromTo?: string;
+  partIOutcome?: ""|"CONTINUE_PART_II"|"CLOSE_PART_I";
+  responseSufficient?: ""|"true"|"false";
+  finalActionsStatus?: ""|"COMPLETED"|"INDEPENDENT_FOLLOWUP"|"PENDING";
+  finalActionsReferences?: string;
+  nextFollowupDate?: string;
 };
 
 export type DepartmentOption = { id: string; code: string; name: string };
