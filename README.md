@@ -2,31 +2,33 @@
 
 Aplicación web interna para gestionar procesos del Sistema de Calidad de COVEX.
 
-## Alcance previsto
+## Módulos
 
-- Desviaciones
-- CAPA
-- Controles de cambios
-- Reclamaciones
-- Devoluciones
+- Desviaciones · GC-00/023
+- CAPA · GC-00/030
+- Controles de Cambios · GC-00/003
+- Reclamaciones · GC-00/027
+- Devoluciones · GC-00/028
 - Indicadores y tendencias
-- Generación de anexos y listados
+- Administración de catálogos, versiones, plantillas y vencimientos
 
-El proyecto es independiente de COVEX Training Manager.
+La aplicación es independiente de COVEX Training Manager. La V1 es una herramienta interna de gestión y generación documental; no debe considerarse un sistema GMP validado ni sustituye los controles corporativos requeridos para producción.
 
 ## Arquitectura
 
 - Next.js + TypeScript + React
-- PostgreSQL
-- Prisma
-- Aplicación monolítica modular
-- Integraciones Microsoft 365 opcionales y posteriores al MVP
+- PostgreSQL + Prisma
+- monolito modular
+- documentos DOCX/XLSX generados en servidor
+- plantillas versionadas con control SHA-256
+- relaciones QMS N:N y versionado funcional de expedientes
+- Microsoft 365 / Entra ID reservados para Hito 11
 
-La fuente funcional de verdad está en `/docs`. Antes de implementar cambios, leer `AGENTS.md`.
+La fuente funcional de verdad está en `/docs`. Antes de cambiar comportamiento, leer `AGENTS.md`.
 
 ## Demo local sin intervención de IT
 
-Requisitos: Node.js compatible, pnpm y Docker Desktop o un PostgreSQL local.
+Requisitos: Node.js 22 compatible, pnpm y Docker Desktop o PostgreSQL local.
 
 1. Iniciar PostgreSQL:
    ```bash
@@ -37,24 +39,57 @@ Requisitos: Node.js compatible, pnpm y Docker Desktop o un PostgreSQL local.
    ```bash
    pnpm install
    ```
-4. Preparar la base:
+4. Preparar base y configuración:
    ```bash
    pnpm db:push
    pnpm db:seed
    ```
-5. Instalar una vez las plantillas oficiales v06 de Desviaciones:
+5. Opcional: cargar cinco expedientes ficticios de demostración:
    ```bash
-   pnpm templates:install -- --annex-iii "/ruta/Anexo III Informe Desviaciones 06.docx" --annex-v "/ruta/Anexo_V_Listado_de_Desviaciones_06 (2).xlsx"
+   pnpm demo:seed
    ```
-   El instalador comprueba SHA-256 antes de aceptar los archivos.
-6. Iniciar la aplicación:
+   Requiere `ALLOW_DEMO_DATA=true` y se bloquea siempre si `APP_ENV=production`.
+6. Instalar las plantillas controladas que se vayan a demostrar mediante los comandos `templates:*`.
+7. Iniciar:
    ```bash
    pnpm dev
    ```
-7. Abrir `http://localhost:3000/deviations`.
+8. Abrir `http://localhost:3000`.
 
-Las credenciales incluidas en `compose.yaml` son exclusivamente de desarrollo local y no deben reutilizarse en producción.
+Todos los registros creados por `demo:seed` usan prefijo `DEMO-` y texto explícito de datos ficticios.
+
+## Backup lógico de demo / contingencia técnica
+
+Generar una exportación lógica completa de PostgreSQL:
+
+```bash
+pnpm backup:export
+```
+
+O elegir ruta:
+
+```bash
+pnpm backup:export -- --out ./backups/mi-backup.json
+```
+
+Validar estructura y recuentos:
+
+```bash
+pnpm backup:verify -- ./backups/mi-backup.json
+```
+
+El export incluye todas las tablas Prisma y conserva de forma reversible fechas y binarios. Se genera además SHA-256. La carpeta `backups/` está excluida de Git porque puede contener el contenido completo del QMS.
+
+Este mecanismo es una exportación técnica para demo/contingencia y no sustituye una política corporativa de backup, restauración, retención o disaster recovery.
+
+## Comprobaciones
+
+```bash
+pnpm quality
+```
+
+La CI añade PostgreSQL real y smoke tests de todos los módulos, versionado, administración y endurecimiento.
 
 ## Estado
 
-Hitos 0, 1, 2 y 3 completados. Desviaciones dispone de gestión de expedientes, Anexo III DOCX, Anexo V anual XLSX y listado simple descargable.
+Hitos 0–10 completados y validados en CI. Hito 11 queda reservado para producción/IT.

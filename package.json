@@ -32,7 +32,11 @@
     "changes:smoke": "tsx scripts/smoke-change-control.ts",
     "hito8:smoke": "tsx scripts/smoke-complaints-returns.ts",
     "hito9:smoke": "tsx scripts/smoke-administration.ts",
-    "versions:backfill": "tsx scripts/backfill-record-versions.ts"
+    "versions:backfill": "tsx scripts/backfill-record-versions.ts",
+    "demo:seed": "tsx scripts/seed-demo.ts",
+    "backup:export": "tsx scripts/export-backup.ts",
+    "backup:verify": "tsx scripts/verify-backup.ts",
+    "hito10:smoke": "tsx scripts/smoke-hardening.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

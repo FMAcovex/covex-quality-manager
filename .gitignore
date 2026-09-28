@@ -20,3 +20,6 @@ templates/change-control/v03/*.xlsx
 
 templates/complaints/v02/*.docx
 templates/returns/v03/*.docx
+
+# Los backups lógicos pueden contener el contenido completo del QMS.
+backups/

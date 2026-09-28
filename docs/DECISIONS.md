@@ -227,3 +227,23 @@ El envío requiere:
 - validación correspondiente.
 
 Hasta entonces `ENABLE_ALERT_DELIVERY=false`.
+
+
+## D-041 — Datos de demostración
+El dataset de demostración del Hito 10 es exclusivamente ficticio:
+- todos los códigos visibles comienzan por `DEMO-`;
+- los textos indican expresamente que no son expedientes GMP reales;
+- la carga es idempotente;
+- requiere `ALLOW_DEMO_DATA=true`;
+- queda bloqueada siempre con `APP_ENV=production`.
+
+Los datos demo no constituyen evidencia de validación ni deben mezclarse con datos corporativos reales.
+
+## D-042 — Backup lógico del Hito 10
+La exportación lógica del Hito 10:
+- cubre todos los modelos Prisma;
+- conserva fechas y binarios con codificación reversible;
+- incorpora recuentos y checksum SHA-256;
+- puede verificarse antes de conservar o trasladar el archivo.
+
+Es una herramienta técnica de demo/contingencia. No sustituye la política corporativa futura de backup, restauración, retención, cifrado, acceso o disaster recovery, que se definirá en Hito 11 con IT.
