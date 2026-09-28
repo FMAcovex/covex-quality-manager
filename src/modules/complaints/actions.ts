@@ -15,6 +15,7 @@ import {
 } from "@/lib/qms/relation-rules";
 import { parseComplaintForm } from "@/modules/complaints/validation";
 import type { ComplaintFormState } from "@/modules/complaints/types";
+import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
 import { ensureInitialVersion,refreshCurrentVersion,snapshotJson,serializeComplaintVersion } from "@/lib/qms/versioning";
 
@@ -127,26 +128,42 @@ await prisma.$transaction(async tx=>{
  revalidatePath(`/complaints/${id}`);return{success:"Seguimiento guardado correctamente."};
 }
 
-export async function addComplaintRelationAction(id:string,fd:FormData){
- const rec=await prisma.complaint.findUnique({where:{id},select:{qmsRecordId:true}});
- if(!rec)throw new Error("Reclamación no encontrada.");
- const code=String(fd.get("businessCode")??"").trim();
- const actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo").trim();
- if(!code)throw new Error("Debe indicarse la codificación de la CAPA o Devolución.");
- const allowedTypes=allowedOperationalRelationTypes(QmsRecordType.COMPLAINT);
- const matches=await prisma.qmsRecord.findMany({
-  where:{businessCode:code,recordType:{in:allowedTypes},id:{not:rec.qmsRecordId}},
-  select:{id:true,recordType:true,businessCode:true}
- });
- const target=selectOperationalRelationTarget(QmsRecordType.COMPLAINT,matches);
- const relation=canonicalOperationalRelation(
-  {id:rec.qmsRecordId,recordType:QmsRecordType.COMPLAINT,businessCode:null},
-  target
- );
- await prisma.qmsRelation.upsert({
-  where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType}},
-  update:{isActive:true,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)},
-  create:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)}
- });
- revalidatePath("/complaints");revalidatePath("/capa");revalidatePath("/returns");revalidatePath(`/complaints/${id}`);
+export async function addComplaintRelationAction(
+ id:string,
+ _state:RelationActionState,
+ fd:FormData
+):Promise<RelationActionState>{
+ try{
+  const rec=await prisma.complaint.findUnique({where:{id},select:{qmsRecordId:true}});
+  if(!rec)return{error:"Reclamación no encontrada."};
+
+  const code=String(fd.get("businessCode")??"").trim();
+  const actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo").trim();
+  const requestedType=String(fd.get("recordType")??"").trim() as QmsRecordType;
+  if(!code)return{error:"Debe indicarse la codificación del expediente derivado."};
+
+  const allowedTypes=allowedOperationalRelationTypes(QmsRecordType.COMPLAINT);
+  if(!allowedTypes.includes(requestedType)){
+   return{error:"Una reclamación solo puede vincularse operativamente con CAPA o Devoluciones."};
+  }
+
+  const matches=await prisma.qmsRecord.findMany({
+   where:{businessCode:code,recordType:requestedType,id:{not:rec.qmsRecordId}},
+   select:{id:true,recordType:true,businessCode:true}
+  });
+  const target=selectOperationalRelationTarget(QmsRecordType.COMPLAINT,matches);
+  const relation=canonicalOperationalRelation(
+   {id:rec.qmsRecordId,recordType:QmsRecordType.COMPLAINT,businessCode:null},
+   target
+  );
+  await prisma.qmsRelation.upsert({
+   where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType}},
+   update:{isActive:true,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)},
+   create:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)}
+  });
+  revalidatePath("/complaints");revalidatePath("/capa");revalidatePath("/returns");revalidatePath(`/complaints/${id}`);
+  return{error:null,success:requestedType===QmsRecordType.CAPA?"CAPA vinculada correctamente.":"Devolución vinculada correctamente."};
+ }catch(error){
+  return{error:error instanceof Error?error.message:"No se ha podido vincular el expediente."};
+ }
 }
