@@ -4,6 +4,7 @@ import { Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -106,16 +107,17 @@ export async function createCapaAction(
     return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors };
   }
   const v = parsed.values;
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "El departamento seleccionado no existe." };
-
-  const referenceDate = toDate(v.openedAt) ?? new Date();
-  const [formVersion, templateVersion] = await Promise.all([
-    getApplicableFormVersion(QmsRecordType.CAPA, referenceDate),
-    getApplicableTemplateVersion(QmsRecordType.CAPA, "CAPA_ANNEX_III", referenceDate),
-  ]);
-
+  let capaId: string;
   try {
+    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
+    if (!department) return { error: "El departamento seleccionado no existe." };
+
+    const referenceDate = toDate(v.openedAt) ?? new Date();
+    const [formVersion, templateVersion] = await Promise.all([
+      getApplicableFormVersion(QmsRecordType.CAPA, referenceDate),
+      getApplicableTemplateVersion(QmsRecordType.CAPA, "CAPA_ANNEX_III", referenceDate),
+    ]);
+
     const capa = await prisma.$transaction(async (tx) => {
       const qmsRecord = await tx.qmsRecord.create({
         data: {
@@ -290,17 +292,15 @@ export async function createCapaAction(
       }
       return created;
     });
-
-    revalidatePath("/capa");
-    revalidatePath("/deviations");
-    revalidatePath("/complaints");
-    redirect(`/capa/${capa.id}`);
+    capaId = capa.id;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "Ya existe una CAPA con esa codificación." };
-    }
-    throw error;
+    return persistenceFormError(error, "la CAPA");
   }
+
+  revalidatePath("/capa");
+  revalidatePath("/deviations");
+  revalidatePath("/complaints");
+  redirect(`/capa/${capaId}`);
 }
 
 export async function updateCapaAction(
