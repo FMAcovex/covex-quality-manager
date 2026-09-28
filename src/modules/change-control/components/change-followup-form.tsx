@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
+import { initialActionFeedbackState, type ActionFeedbackState } from "@/lib/forms/action-feedback";
 import type { ChangeFollowupTaskInput } from "@/modules/change-control/types";
 
 type Department = { id: string; code: string; name: string };
@@ -28,7 +29,7 @@ export function ChangeFollowupForm({
   tasks,
   defaultResponsible,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  action: (state: ActionFeedbackState, formData: FormData) => Promise<ActionFeedbackState>;
   departments: Department[];
   tasks: Task[];
   defaultResponsible?: string | null;
@@ -49,12 +50,14 @@ export function ChangeFollowupForm({
     [tasks],
   );
   const [rows, setRows] = useState(initial);
+  const [state, formAction] = useActionState(action, initialActionFeedbackState);
 
   const patch = (index: number, value: Partial<ChangeFollowupTaskInput>) =>
     setRows((current) => current.map((item, i) => (i === index ? { ...item, ...value } : item)));
 
   return (
-    <form action={action} className="followup-form">
+    <form action={formAction} className="followup-form">
+      {state.error ? <div className="action-feedback-error" role="alert">{state.error}</div> : null}
       <input type="hidden" name="tasksJson" value={JSON.stringify(rows)} />
       <div className="form-grid">
         <label className="field">
