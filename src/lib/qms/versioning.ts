@@ -8,7 +8,6 @@ type DeviationVersionSource = Prisma.DeviationGetPayload<{
     immediateActions: true;
     followups: true;
     capaPlans: { include: { linkedCapaRecord: true } };
-    derivedActions: true;
     formVersion: true;
     anexoIIITemplateVersion: true;
   };
@@ -29,6 +28,7 @@ type ComplaintVersionSource = Prisma.ComplaintGetPayload<{
     qmsRecord: true;
     followups: true;
     capaPlans: { include: { linkedCapaRecord: true } };
+    derivedActions: true;
     formVersion: true;
     annexIIITemplateVersion: true;
     annexIVTemplateVersion: true;
