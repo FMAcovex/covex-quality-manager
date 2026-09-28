@@ -27,7 +27,7 @@ describe("CAPA Annex IV rows", () => {
     expect(expanded).toContain('r="A25"');
     expect(expanded).toContain('r="A26"');
     expect(expanded).toContain("AC/GC-00/020/2026");
-    expect(expanded).toContain('<dimension ref="A1:F26"');
+    expect(expanded).toContain('<dimension ref="A1:F27"');
     expect(expanded).not.toContain('ref="M1:N1"');
     expect(expanded).not.toContain('r="M1"');
     expect(expanded).toContain('fitToWidth="1"');
