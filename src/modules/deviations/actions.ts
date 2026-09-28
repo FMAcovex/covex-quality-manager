@@ -494,14 +494,19 @@ export async function updateDeviationAction(
   }
 }
 
+function deviationFollowupError(id: string, message: string): never {
+  redirect(`/deviations/${id}?tab=followups&followupError=${encodeURIComponent(message)}#new-followup`);
+}
+
 export async function addDeviationFollowupAction(formData: FormData) {
   const deviationId = formData.get("deviationId")?.toString();
   const followupDate = formData.get("followupDate")?.toString();
   const completedByText = formData.get("completedByText")?.toString().trim();
   const comment = formData.get("comment")?.toString().trim();
 
-  if (!deviationId || !followupDate || !completedByText || !comment) {
-    throw new Error("Fecha, cumplimentado por y seguimiento son obligatorios.");
+  if (!deviationId) throw new Error("No se ha identificado la desviación.");
+  if (!followupDate || !completedByText || !comment) {
+    deviationFollowupError(deviationId, "Fecha, cumplimentado por y seguimiento son obligatorios.");
   }
 
   const deviation = await prisma.deviation.findUnique({
