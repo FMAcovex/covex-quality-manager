@@ -22,8 +22,21 @@ const box=(on:boolean,label:string)=>`${on?"☒":"☐"} ${label}`;
 const typeLabel=(v:string,o:string|null)=>v==="COMMERCIAL"?"Comercial":v==="COMPLAINT"?"Reclamación":v==="RECALL"?"Retirada":v==="EXPIRY"?"Caducidad":v==="TRANSPORT"?"Transporte":o||"Otra";
 const productType=(v:string)=>({API:"API",INTERMEDIATE:"Intermedio",MEDICINE:"Medicamento",SUPPLEMENT:"Complemento alimenticio",IMPORTED_PRODUCT:"Producto importado",MEDICAL_DEVICE:"Producto sanitario",COSMETIC:"Cosmético",OTHER:"Otro"} as Record<string,string>)[v]??v;
 
+function extractAnnexOrWhole(
+ documentXml:string,
+ startMarker:string,
+ endMarker?:string,
+ startOccurrence:"first"|"last"="last",
+){
+ try{return extractWordBodyRange(documentXml,startMarker,endMarker,startOccurrence);}
+ catch(error){
+  if(error instanceof Error&&error.message.includes("Word annex start marker not found"))return documentXml;
+  throw error;
+ }
+}
+
 export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
- const entries=readZip(await loadReturnPntTemplate(r.annexIIITemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_III));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo III:", "Anexo IV:", "last");
+ const entries=readZip(await loadReturnPntTemplate(r.annexIIITemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_III));let xml=extractAnnexOrWhole(getZipEntryText(entries,"word/document.xml"),"Anexo III:", "Anexo IV:", "last");
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,1,0,3,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,1,date(r.receivedAt));
  xml=setWordCellTextBalanced(xml,1,1,3,[box(r.returnType==="COMMERCIAL","Comercial"),box(r.returnType==="COMPLAINT","Reclamación"),box(r.returnType==="RECALL","Retirada"),box(r.returnType==="EXPIRY","Caducidad"),box(r.returnType==="TRANSPORT","Transporte"),box(r.returnType==="OTHER",`Otra: ${text(r.otherReturnType)}`)].join("   "));
  xml=setWordCellTextBalanced(xml,1,2,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,2,3,text(r.country));xml=setWordCellTextBalanced(xml,1,3,1,text(r.address));xml=setWordCellTextBalanced(xml,1,4,1,text(r.relatedDocument));
@@ -41,7 +54,7 @@ export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
 }
 
 export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Product){
- const entries=readZip(await loadReturnPntTemplate(r.annexIVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_IV));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo IV:", "Anexo V:", "last");
+ const entries=readZip(await loadReturnPntTemplate(r.annexIVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_IV));let xml=extractAnnexOrWhole(getZipEntryText(entries,"word/document.xml"),"Anexo IV:", "Anexo V:", "last");
  xml=setWordCellTextBalanced(xml,0,1,0,`FECHA RECEPCIÓN: ${date(r.receivedAt)}`);
  xml=setWordCellTextBalanced(xml,0,2,0,`CÓDIGO DEVOLUCIÓN: ${text(r.qmsRecord.businessCode)}\nPRODUCTO: ${product.productNameCode}\nLOTE: ${text(product.lot)}`);
  xml=setWordCellTextBalanced(xml,0,3,0,`CLIENTE: ${text(r.customerEntity)}\nPAÍS: ${text(r.country)}`);
@@ -52,7 +65,7 @@ export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Produ
 }
 
 export async function generateReturnAnnexV(r:ReturnDocumentRecord){
- const entries=readZip(await loadReturnPntTemplate(r.annexVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_V));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo V:", "Anexo VI:", "last");
+ const entries=readZip(await loadReturnPntTemplate(r.annexVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_V));let xml=extractAnnexOrWhole(getZipEntryText(entries,"word/document.xml"),"Anexo V:", "Anexo VI:", "last");
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,1,1,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.qmsRecord.businessCode));
  xml=setWordCellTextBalanced(xml,1,2,1,r.products.map(x=>x.productNameCode).join(" · "));xml=setWordCellTextBalanced(xml,1,2,3,r.products.map(x=>text(x.lot)).filter(Boolean).join(" · "));xml=setWordCellTextBalanced(xml,1,3,1,text(r.conservationConditions));
  xml=setWordCellTextBalanced(xml,3,0,0,text(r.reasonObservations));xml=setWordCellTextBalanced(xml,4,0,1,"");xml=setWordCellTextBalanced(xml,5,0,1,text(r.qaApprovalName));xml=setWordCellTextBalanced(xml,5,1,1,text(r.technicalApprovalName));
@@ -60,7 +73,7 @@ export async function generateReturnAnnexV(r:ReturnDocumentRecord){
 }
 
 export async function generateReturnAnnexVI(year:number,records:ReturnDocumentRecord[]){
- const entries=readZip(await loadReturnPntTemplate("03",DocumentType.RETURN_ANNEX_VI));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo VI:",undefined,"last");
+ const entries=readZip(await loadReturnPntTemplate("03",DocumentType.RETURN_ANNEX_VI));let xml=extractAnnexOrWhole(getZipEntryText(entries,"word/document.xml"),"Anexo VI:",undefined,"last");
  xml=setWordCellTextBalanced(xml,0,2,0,String(year));
  const rows=records.flatMap(r=>r.products.map(p=>[
   text(r.qmsRecord.businessCode),date(r.communicationDate),text(r.relatedDocument)||typeLabel(r.returnType,r.otherReturnType),text(r.customerEntity),p.productNameCode,text(p.format),text(p.lot),
