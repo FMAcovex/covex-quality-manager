@@ -291,17 +291,40 @@ export default async function ChangeControlDetailPage({
       {activeTab === "documents" ? (
         <div className="card">
           <h2>Documentos del expediente</h2>
-          <p className="muted-note">Solicitud (Anexo III), Dictamen (Anexo IV), Seguimientos (Anexo V) y listado maestro anual (Anexo VII) son familias documentales independientes.</p>
-          <div className="document-actions">
-            <a className="button" href={`/api/changes/${id}/annex-iii`}>Descargar Anexo III · Solicitud</a>
-            <a className="button" href={`/api/changes/${id}/annex-iv`}>Descargar Anexo IV · Dictamen</a>
-            {currentVersion ? (
-              <a className="button" href={`/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}`}>
-                Descargar Anexo V · {versionLabel(currentVersion.sequenceNumber)}
-              </a>
-            ) : (
-              <span className="badge neutral">Anexo V disponible tras Seguimiento 00</span>
-            )}
+          <p className="muted-note">Cada anexo mantiene su propia plantilla controlada y su propia descarga.</p>
+          <div className="document-family-list">
+            <div className="document-family">
+              <div><strong>Anexo III · Solicitud</strong><p>Solicitud inicial del Control de Cambio.</p></div>
+              <div className="document-actions">
+                <a className="button" href="/api/templates/official?module=CHANGE_CONTROL&documentType=CHANGE_ANNEX_III&version=03">Descargar plantilla oficial</a>
+                <a className="button primary" href={`/api/changes/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+              </div>
+            </div>
+            <div className="document-family">
+              <div><strong>Anexo IV · Dictamen</strong><p>Dictamen y evaluación del cambio.</p></div>
+              <div className="document-actions">
+                <a className="button" href="/api/templates/official?module=CHANGE_CONTROL&documentType=CHANGE_ANNEX_IV&version=03">Descargar plantilla oficial</a>
+                <a className="button primary" href={`/api/changes/${id}/annex-iv`}>Generar Anexo IV cumplimentado</a>
+              </div>
+            </div>
+            <div className="document-family">
+              <div><strong>Anexo V · Seguimiento</strong><p>Seguimientos versionados 00, 01, 02…</p></div>
+              <div className="document-actions">
+                <a className="button" href="/api/templates/official?module=CHANGE_CONTROL&documentType=CHANGE_ANNEX_V&version=03">Descargar plantilla oficial</a>
+                {currentVersion ? (
+                  <a className="button primary" href={`/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}`}>
+                    Generar Anexo V · {versionLabel(currentVersion.sequenceNumber)}
+                  </a>
+                ) : <span className="badge neutral">Disponible tras Seguimiento 00</span>}
+              </div>
+            </div>
+            <div className="document-family">
+              <div><strong>Anexo VII · Listado anual</strong><p>Plantilla del listado maestro anual de Controles de Cambios.</p></div>
+              <div className="document-actions">
+                <a className="button" href="/api/templates/official?module=CHANGE_CONTROL&documentType=CHANGE_ANNEX_VII&version=03">Descargar plantilla oficial</a>
+                <Link className="button" href="/changes">Ir al listado para generar el Anexo VII</Link>
+              </div>
+            </div>
           </div>
           {record.qmsRecord.versions.length ? (
             <div className="timeline">
