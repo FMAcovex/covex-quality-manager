@@ -32,7 +32,7 @@ type ExportRow = {
 function classification(value: string | null) {
   return value === "CRITICAL" ? "Crítica" : value === "MAJOR" ? "Mayor" : value === "MINOR" ? "Menor" : "";
 }
-function date(value: Date | null) {
+export function annexVDate(value: Date | null) {
   return value ? new Intl.DateTimeFormat("es-ES").format(value) : "";
 }
 function capaCodes(row: ExportRow) {
@@ -43,6 +43,21 @@ function capaCodes(row: ExportRow) {
 }
 function capaDescriptions(row: ExportRow) {
   return row.capaPlans.map((plan) => plan.description).filter(Boolean).join(" · ");
+}
+
+
+export function annexVOfficialRowValues(record: ExportRow) {
+  return [
+    record.qmsRecord.businessCode ?? "",
+    [annexVDate(record.issueDate), record.departmentCodeSnapshot || record.departmentNameSnapshot].filter(Boolean).join(" - "),
+    record.materialProcessAffected ?? "",
+    record.whatHappened ?? "",
+    capaCodes(record),
+    annexVDate(record.closedAt),
+  ];
+}
+export function annexVOfficialFillId(status: string) {
+  return status === "CLOSED" ? 4 : 3;
 }
 
 function setCellStyle(sheetXml:string,ref:string,style:number){
@@ -92,17 +107,10 @@ export async function generateAnnexV(year: number, rows: ExportRow[], versionCod
   for(let index=0;index<ANNEX_V_CAPACITY;index+=1){
     const excelRow=6+index;
     const record=rows[index]??null;
-    const values=record?[
-      record.qmsRecord.businessCode??"",
-      [date(record.issueDate),record.departmentCodeSnapshot||record.departmentNameSnapshot].filter(Boolean).join(" - "),
-      record.materialProcessAffected??"",
-      record.whatHappened??"",
-      capaCodes(record),
-      date(record.closedAt),
-    ]:Array(6).fill("");
+    const values=record?annexVOfficialRowValues(record):Array(6).fill("");
     ["A","B","C","D","E","F"].forEach((column,i)=>{sheet=setXlsxCell(sheet,`${column}${excelRow}`,values[i] as string);});
     if(record){
-      const fillId=record.status==="CLOSED"?4:3;
+      const fillId=annexVOfficialFillId(record.status);
       ["A","B","C","D","E"].forEach(column=>{sheet=setCellStyle(sheet,`${column}${excelRow}`,styled.ids.get(`${fillId}:7`)!);});
       sheet=setCellStyle(sheet,`F${excelRow}`,styled.ids.get(`${fillId}:8`)!);
     }
@@ -133,8 +141,8 @@ export function generateSimpleList(rows: ExportRow[]) {
     row.whatHappened ?? "",
     classification(row.classification),
     row.rootCause ?? "",
-    date(row.issueDate),
-    date(row.closedAt),
+    annexVDate(row.issueDate),
+    annexVDate(row.closedAt),
     row.status === "OPEN" ? "Abierta" : "Cerrada",
     deadlineLabel(row.deadlineStatus),
     measuresLabel(row),
