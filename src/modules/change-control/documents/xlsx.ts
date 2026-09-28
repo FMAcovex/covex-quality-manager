@@ -9,6 +9,13 @@ import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
 import { appendFillStyleVariants, xlsxCellStyle } from "@/lib/ooxml/xlsx-template";
 import { loadChangeAnnexVIITemplate } from "@/modules/change-control/documents/templates";
 
+function replaceSheetDataXml(xml:string,body:string){
+ const start=xml.indexOf("<sheetData>");
+ const end=xml.indexOf("</sheetData>",start);
+ if(start<0||end<0)throw new Error("XLSX: sheetData no encontrado.");
+ return xml.slice(0,start)+"<sheetData>"+body+"</sheetData>"+xml.slice(end+"</sheetData>".length);
+}
+
 export type ChangeControlExportRow = {
   qmsRecord: { businessCode: string | null };
   departmentCodeSnapshot: string | null;
@@ -142,7 +149,7 @@ export async function generateChangeAnnexVII(
   const legendStart = 5 + Math.max(rows.length, 1);
   const shiftedLegend = legend.map((item, index) => shiftRow(item.xml, item.number, legendStart + index));
   const newSheetData = `<sheetData>${[...headers, ...dataRows, ...shiftedLegend].join("")}</sheetData>`;
-  sheet = sheet.replace(/<sheetData>[\\s\\S]*?<\\/sheetData>/, newSheetData);
+  sheet = replaceSheetDataXml(sheet, [...headers, ...dataRows, ...shiftedLegend].join(""));
   sheet = sheet.replace(/<dimension ref="[^"]+"/, `<dimension ref="A1:N${legendStart + 2}"`);
   sheet = setXlsxCell(sheet, "B2", `LISTADO DE CONTROLES DE CAMBIO\n"${year}"`);
 
