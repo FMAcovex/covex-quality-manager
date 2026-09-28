@@ -31,6 +31,7 @@ export default async function EditCapaPage({ params }: { params: Promise<{ id: s
     effectivenessEvidence: capa.effectivenessEvidence ?? undefined,
     effectiveClosedAt: capa.effectiveClosedAt?.toISOString().slice(0,10),
     conclusion: capa.conclusion ?? undefined,
+    approvalNames: capa.approvalNames ?? undefined,
     internalObservations: capa.internalObservations ?? undefined,
     signedDocumentAvailable:
       capa.signedDocumentAvailable === true

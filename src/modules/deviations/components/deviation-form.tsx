@@ -142,8 +142,10 @@ export function DeviationForm({
           </label>
           <Field label="Fecha apertura" name="issueDate" type="date" defaultValue={defaults.issueDate} required />
           <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={defaults.eventDateTime} />
+          <Field label="Turno" name="eventShift" defaultValue={defaults.eventShift} />
           <Field label="Detectado por" name="detectedBy" defaultValue={defaults.detectedBy} />
-          <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required />
+          <Field label="Cumplimentado / emitido por" name="createdByText" defaultValue={defaults.createdByText} required />
+          <Field label="Validado por Garantía de Calidad" name="qaValidatedBy" defaultValue={defaults.qaValidatedBy} />
           {mode === "edit" ? (
             <Field label="Modificado por" name="modifiedByText" defaultValue={defaults.createdByText} />
           ) : null}
@@ -312,6 +314,7 @@ export function DeviationForm({
         <p className="section-help">La conclusión sintetiza investigación, causa, impacto, CAPA y disposición. No debe introducir información nueva.</p>
         <div className="form-grid">
           <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={defaults.conclusion} />
+          <Field label="Aprobación final" name="finalApprovedBy" defaultValue={defaults.finalApprovedBy} span="span-2" />
           <Field label="Disposición final" name="disposition" defaultValue={defaults.disposition} span="span-2" />
           <Field label="Cantidad" name="dispositionQuantity" defaultValue={defaults.dispositionQuantity} />
           <TriStateSelect label="Notificación al cliente" name="clientNotification" defaultValue={defaults.clientNotification} />

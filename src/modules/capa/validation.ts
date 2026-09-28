@@ -128,6 +128,7 @@ export function parseCapaForm(
       effectivenessEvidence: text(formData, "effectivenessEvidence"),
       effectiveClosedAt,
       conclusion,
+      approvalNames: text(formData, "approvalNames"),
       internalObservations: text(formData, "internalObservations"),
       signedDocumentAvailable:
         text(formData, "signedDocumentAvailable") === "true"

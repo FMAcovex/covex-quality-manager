@@ -28,7 +28,10 @@ export type DeviationFormDefaults = {
   issueDate?: string;
   eventDateTime?: string;
   detectedBy?: string;
+  eventShift?: string;
   createdByText?: string;
+  qaValidatedBy?: string;
+  finalApprovedBy?: string;
   materialProcessAffected?: string;
   provenance?: string;
   affectedDocumentation?: string;

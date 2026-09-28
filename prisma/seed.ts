@@ -280,15 +280,15 @@ async function main() {
   }
 
   const complaintForm = await prisma.formVersion.upsert({
-    where: { module_versionCode: { module: QmsRecordType.COMPLAINT, versionCode: "REC-02" } },
+    where: { module_versionCode: { module: QmsRecordType.COMPLAINT, versionCode: "REC-03" } },
     update: { isActive: true, status: "ACTIVE" },
     create: {
       module: QmsRecordType.COMPLAINT,
-      versionCode: "REC-02",
-      effectiveFrom: new Date("2026-05-26"),
+      versionCode: "REC-03",
+      effectiveFrom: new Date("2026-09-28"),
       isActive: true,
       status: "ACTIVE",
-      notes: "GC-00/027/02.",
+      notes: "GC-00/027/03 · próxima revisión preparada para piloto; confirmar fecha formal de entrada en vigor antes de producción.",
     },
   });
 
@@ -314,11 +314,15 @@ async function main() {
       create: { formVersionId: complaintForm.id,fieldKey,label,sectionKey,sectionLabel,sortOrder,kind,valueType,required,listAvailable,listVisibleByDefault,filterable,simpleExport,officialAnnexField,editableDefinition },
     });
   }
-  for (const documentType of [DocumentType.COMPLAINT_ANNEX_III,DocumentType.COMPLAINT_ANNEX_IV,DocumentType.COMPLAINT_ANNEX_V]) {
+  await prisma.templateVersion.updateMany({
+    where: { module: QmsRecordType.COMPLAINT, versionCode: "02" },
+    data: { isActive: false },
+  });
+  for (const documentType of [DocumentType.COMPLAINT_ANNEX_III,DocumentType.COMPLAINT_ANNEX_V]) {
     await prisma.templateVersion.upsert({
-      where: { module_documentType_versionCode: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "02" } },
-      update: { isActive: true },
-      create: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "02", effectiveFrom: new Date("2026-05-26"), isActive: true },
+      where: { module_documentType_versionCode: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "03" } },
+      update: { isActive: true, effectiveFrom: new Date("2026-09-28") },
+      create: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "03", effectiveFrom: new Date("2026-09-28"), isActive: true },
     });
   }
 

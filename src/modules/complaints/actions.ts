@@ -24,14 +24,20 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   departmentId:department.id,
   departmentCodeSnapshot:existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code,
   departmentNameSnapshot:existing?.departmentId===department.id?(existing.departmentNameSnapshot??department.name):department.name,
-  openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),detectedBy:v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType!,
-  partyName:v.partyName,contact:v.contact,affectedScope:v.affectedScope,reference:v.reference,lotReference:v.lotReference,quantity:v.quantity,
-  expiryReanalysis:v.expiryReanalysis,purchaseDeliveryReference:v.purchaseDeliveryReference,description:v.description,recurrent:v.recurrent,
+  openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),receptionDate:d(v.receptionDate),detectedBy:v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType!,triggerSources:v.triggerSources,triggerOther:v.triggerOther,
+  partyName:v.partyName,contact:v.contact,scopeCategories:v.scopeCategories,scopeOther:v.scopeOther,affectedObjectTypes:v.affectedObjectTypes,affectedObjectOther:v.affectedObjectOther,affectedScope:v.affectedScope,reference:v.reference,lotReference:v.lotReference,quantity:v.quantity,
+  expiryReanalysis:v.expiryReanalysis,purchaseDeliveryReference:v.purchaseDeliveryReference,complaintCategories:v.complaintCategories,complaintCategoryOther:v.complaintCategoryOther,description:v.description,recurrent:v.recurrent,
   recurrenceReference:v.recurrenceReference,attachedDocumentation:v.attachedDocumentation,emittedBy:v.emittedBy,qaValidatedBy:v.qaValidatedBy,
+  qualityGmpImpact:v.qualityGmpImpact,safetyEfficacyImpact:v.safetyEfficacyImpact,regulatoryComplianceImpact:v.regulatoryComplianceImpact,
+  environmentImpact:v.environmentImpact,similarSituationsImpact:v.similarSituationsImpact,containmentActions:v.containmentActions,
+  containmentOther:v.containmentOther,riskJustification:v.riskJustification,
   investigation:v.investigation,impactAssessment:v.impactAssessment,investigationResult:v.investigationResult,rootCause:v.rootCause,classification:v.classification,
+  withdrawalPotential:v.withdrawalPotential,recallProcedureRequired:v.recallProcedureRequired,authorityNotification:v.authorityNotification,
+  responsiblePartyCommunication:v.responsiblePartyCommunication,regulatoryJustification:v.regulatoryJustification,
   resolutionLines:v.resolutionLines,resolutionActions:v.resolutionActions,immediateActionDetails:v.immediateActionDetails,otherResolutionDetails:v.otherResolutionDetails,
-  externalCommunication:v.externalCommunication,conclusion:v.conclusion,effectivenessRequired:v.effectivenessRequired,initialEvaluationDate:d(v.initialEvaluationDate),
+  externalCommunicationDate:d(v.externalCommunicationDate),externalCommunicationMedium:v.externalCommunicationMedium,externalCommunicationParties:v.externalCommunicationParties,externalCommunication:v.externalCommunication,continueToPartII:v.continueToPartII,conclusion:v.conclusion,effectivenessRequired:v.effectivenessRequired,initialEvaluationDate:d(v.initialEvaluationDate),
   initialConclusionDate:d(v.initialConclusionDate),responseDate:d(v.responseDate),responseMedium:v.responseMedium,responseSummary:v.responseSummary,
+  responseSufficient:v.responseSufficient,followupActionStatus:v.followupActionStatus,followupReferences:v.followupReferences,
   effectivenessStatus:v.effectivenessStatus,effectivenessAssessment:v.effectivenessAssessment,closeConclusion:v.closeConclusion,approvalNames:v.approvalNames,
   closeApprovalNames:v.closeApprovalNames,closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,
   signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
@@ -52,16 +58,15 @@ export async function createComplaintAction(_s:ComplaintFormState,fd:FormData):P
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors};
  const v=parsed.values; const department=await prisma.department.findUnique({where:{id:v.departmentId!}}); if(!department)return{error:"El departamento no existe."};
  const ref=d(v.openedAt)??new Date();
- const [form,iii,iv,vlist]=await Promise.all([
+ const [form,iii,vlist]=await Promise.all([
   getApplicableFormVersion(QmsRecordType.COMPLAINT,ref),
   getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_III",ref),
-  getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_IV",ref),
   getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_V",ref)
  ]);
  try{
   const created=await prisma.$transaction(async tx=>{
    const qr=await tx.qmsRecord.create({data:{recordType:"COMPLAINT",businessCode:v.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
-   const rec=await tx.complaint.create({data:{qmsRecordId:qr.id,...complaintData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vlist?.id}});
+   const rec=await tx.complaint.create({data:{qmsRecordId:qr.id,...complaintData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:null,annexVTemplateVersionId:vlist?.id}});
    await replaceCapaPlans(tx,rec.id,v.capaPlans);
    await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,description:v.description}),reason:"Alta de reclamación",source:"UI"}});
    const snap=await getSnapshot(tx,rec.id); await ensureInitialVersion(tx,qr.id,snapshotJson(serializeComplaintVersion(snap)),parsed.actor);

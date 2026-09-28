@@ -7,6 +7,7 @@ import {
 } from "@/lib/ooxml/zip";
 import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
+import { appendFillVariants } from "@/lib/ooxml/xlsx-styles";
 import { loadCapaAnnexIVTemplate } from "@/modules/capa/documents/templates";
 
 type CapaExportRow = {
@@ -58,6 +59,7 @@ export function expandCapaAnnexIVSheet(
   sheetXml: string,
   year: number,
   rows: CapaExportRow[],
+  styleId: (base: number, fill: number) => number = (base) => base,
 ) {
   const sheetData = sheetXml.match(/<sheetData>([\s\S]*?)<\/sheetData>/);
   if (!sheetData) throw new Error("Anexo IV CAPA: sheetData no encontrado.");
@@ -72,17 +74,25 @@ export function expandCapaAnnexIVSheet(
   const headers = sourceRows.filter((item) => item.number <= 4).map((item) => item.xml);
   const legend = sourceRows.filter((item) => item.number >= 13 && item.number <= 15);
 
-  const dataRows = rows.map((record, index) => {
+  const dataRows = Array.from({ length: Math.max(rows.length, 8) }, (_, index) => {
+    const record = rows[index] ?? null;
+    if (!record) {
+      const row = 5 + index;
+      const cells = ["A","B","C","D","E","F"].map((column) => {
+        const base = Number(styles.get(column) || (column === "E" || column === "F" ? 9 : 8));
+        return xmlCell(column, row, String(base), "");
+      }).join("");
+      return `<row r="${row}">${cells}</row>`;
+    }
     const row = 5 + index;
     const type = record.actionType === "PREVENTIVE" ? "Preventiva" : "Correctiva";
-    const codeOrigin = [record.qmsRecord.businessCode, record.originType, record.originCode]
-      .filter(Boolean)
-      .join(" / ");
+    const origin = [record.originType, record.originCode].filter(Boolean).join(" · ");
+    const codeOrigin = [record.qmsRecord.businessCode, origin].filter(Boolean).join("\n");
     const description = record.plannedActions.map((item) => item.description).filter(Boolean).join("\n");
     const responsible = [
       record.departmentNameSnapshot || record.departmentCodeSnapshot,
       date(record.openedAt),
-    ].filter(Boolean).join(" - ");
+    ].filter(Boolean).join("\n");
     const values = [
       type,
       codeOrigin,
@@ -91,13 +101,17 @@ export function expandCapaAnnexIVSheet(
       date(record.operationalClosedAt),
       date(record.effectiveClosedAt),
     ];
+    const fillId = record.status === "CLOSED" ? 5 : 4;
     const cells = ["A","B","C","D","E","F"]
-      .map((column, col) => xmlCell(column, row, styles.get(column) ?? "", values[col]))
+      .map((column, col) => {
+        const base = Number(styles.get(column) || (column === "E" || column === "F" ? 9 : 8));
+        return xmlCell(column, row, String(styleId(base, fillId)), values[col]);
+      })
       .join("");
     return `<row r="${row}">${cells}</row>`;
   });
 
-  const legendStart = 5 + Math.max(rows.length, 1);
+  const legendStart = 5 + Math.max(rows.length, 8);
   const shiftedLegend = legend.map((item, index) =>
     shiftRow(item.xml, item.number, legendStart + index),
   );
@@ -117,7 +131,16 @@ export async function generateCapaAnnexIV(
   const entries = readZip(await loadCapaAnnexIVTemplate(versionCode));
   const sheetEntry = entries.find((entry) => entry.name === "xl/worksheets/sheet1.xml");
   if (!sheetEntry) throw new Error("Anexo IV CAPA: hoja principal no encontrada.");
-  const sheet = expandCapaAnnexIVSheet(sheetEntry.data.toString("utf8"), year, rows);
+  const stylesEntry = entries.find((entry) => entry.name === "xl/styles.xml");
+  if (!stylesEntry) throw new Error("Anexo IV CAPA: styles.xml no encontrado.");
+  const variants = appendFillVariants(stylesEntry.data.toString("utf8"), [8, 9], [4, 5]);
+  updateZipEntry(entries, "xl/styles.xml", variants.stylesXml);
+  const sheet = expandCapaAnnexIVSheet(
+    sheetEntry.data.toString("utf8"),
+    year,
+    rows,
+    (base, fill) => variants.styleId(base, fill),
+  );
   updateZipEntry(entries, "xl/worksheets/sheet1.xml", sheet);
 
   const workbook = getZipEntryText(entries, "xl/workbook.xml")
