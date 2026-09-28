@@ -19,6 +19,27 @@ function stylesFrom(rowXml:string){
  return out;
 }
 
+function returnRowHeight(values:string[]){
+ const longest=Math.max(...values.map(value=>value.length),0);
+ if(longest>260)return 108;
+ if(longest>180)return 90;
+ if(longest>100)return 72;
+ return 54;
+}
+export function finalizeReturnAnnexVISheet(sheetXml:string){
+ const setup='<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>';
+ let result=sheetXml;
+ if(/<pageSetup\b[^>]*\/>/.test(result)) result=result.replace(/<pageSetup\b[^>]*\/>/,setup);
+ else if(/<pageMargins\b[^>]*\/>/.test(result)) result=result.replace(/<pageMargins\b[^>]*\/>/,(m)=>`${m}${setup}`);
+ if(!/<sheetPr\b/.test(result)) result=result.replace(/(<dimension\b)/,'<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>$1');
+ return result;
+}
+export function finalizeReturnAnnexVIWorkbook(workbookXml:string,maxRow:number){
+ const names=`<definedNames><definedName name="_xlnm.Print_Area" localSheetId="0">'&quot;AÑO&quot;'!$A$1:$M${maxRow}</definedName><definedName name="_xlnm.Print_Titles" localSheetId="0">'&quot;AÑO&quot;'!$4:$4</definedName></definedNames>`;
+ if(/<definedNames>[\s\S]*?<\/definedNames>/.test(workbookXml))return workbookXml.replace(/<definedNames>[\s\S]*?<\/definedNames>/,names);
+ return workbookXml.replace(/(<calcPr\b)/,`${names}$1`);
+}
+
 export async function generateReturnAnnexVI(year:number,rows:Row[],versionCode="03"){
  const entries=readZip(await loadReturnPntTemplate(versionCode,DocumentType.RETURN_ANNEX_VI));
  const entry=entries.find(x=>x.name==="xl/worksheets/sheet1.xml");
@@ -40,12 +61,17 @@ export async function generateReturnAnnexVI(year:number,rows:Row[],versionCode="
     r.customerEntity??"",p?.productNameCode??"",p?.format??"",p?.lot??"",[p?.quantity,p?.unit].filter(Boolean).join(" "),
     p?.expiryReanalysis??"",r.country??"",r.destructionManagedBy??"",r.destructionCertificate??"",i===0?follow:"",
   ];
-  return `<row r="${n}">${"ABCDEFGHIJKLM".split("").map((col,j)=>xmlCell(col,n,styles.get(col)??"",String(vals[j]??""))).join("")}</row>`;
+  return `<row r="${n}" ht="${returnRowHeight(vals.map(value=>String(value??"")))}" customHeight="1">${"ABCDEFGHIJKLM".split("").map((col,j)=>xmlCell(col,n,styles.get(col)??"",String(vals[j]??""))).join("")}</row>`;
  });
+ const maxRow=Math.max(5,4+flat.length);
  sheet=sheet.replace(new RegExp("<sheetData>[\\s\\S]*?</sheetData>"),`<sheetData>${[...headers,...body].join("")}</sheetData>`);
- sheet=sheet.replace(/<dimension ref="[^"]+"/,`<dimension ref="A1:M${Math.max(5,4+flat.length)}"`);
+ sheet=sheet.replace(/<dimension ref="[^"]+"/,`<dimension ref="A1:M${maxRow}"`);
  sheet=setXlsxCell(sheet,"A3",String(year));
+ sheet=finalizeReturnAnnexVISheet(sheet);
  updateZipEntry(entries,"xl/worksheets/sheet1.xml",sheet);
+ const workbookEntry=entries.find(x=>x.name==="xl/workbook.xml");
+ if(!workbookEntry)throw new Error("Anexo VI Devoluciones: workbook no encontrado.");
+ updateZipEntry(entries,"xl/workbook.xml",finalizeReturnAnnexVIWorkbook(workbookEntry.data.toString("utf8"),maxRow));
  sanitizeOfficeMetadata(entries);
  return writeZip(entries);
 }
