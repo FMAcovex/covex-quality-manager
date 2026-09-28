@@ -5,6 +5,7 @@ import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modul
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { BasicFollowupForm } from "@/components/basic-followup-form";
 
 export const dynamic = "force-dynamic";
 
@@ -179,16 +180,7 @@ export default async function DeviationDetailPage({
           </div>
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
-            <form action={addDeviationFollowupAction} className="inline-form">
-              <input type="hidden" name="deviationId" value={id} />
-              <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
-              <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={deviation.createdByText ?? ""} required /></label>
-              <label className="field"><span>Tipo</span><input name="followupType" placeholder="Seguimiento, revisión, evidencia…" /></label>
-              <label className="field full"><span>Comentario / actuación *</span><textarea name="comment" required /></label>
-              <label className="field"><span>Próxima fecha</span><input type="date" name="nextFollowupDate" /></label>
-              <label className="field"><span>Referencia / evidencia</span><input name="evidenceReference" /></label>
-              <div className="field"><span>&nbsp;</span><button className="button primary" type="submit">Guardar seguimiento</button></div>
-            </form>
+            <BasicFollowupForm action={addDeviationFollowupAction.bind(null)} defaultActor={deviation.createdByText ?? ""} includeType />
           </div>
         </>
       ) : null}
