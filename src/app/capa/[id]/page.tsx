@@ -10,6 +10,7 @@ import {
 import { getCapaDetail } from "@/modules/capa/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { CapaFollowupForm } from "@/modules/capa/components/capa-followup-form";
 
 export const dynamic = "force-dynamic";
 
@@ -197,16 +198,7 @@ export default async function CapaDetailPage({
 
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
-            <form action={addCapaFollowupAction.bind(null, id)} className="inline-form">
-              <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
-              <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={capa.createdByText ?? ""} required /></label>
-              <label className="field"><span>Motivo</span><input name="reason" /></label>
-              <label className="field full"><span>Actuación realizada / resultado *</span><textarea name="description" required /></label>
-              <label className="field"><span>Próxima fecha</span><input type="date" name="nextFollowupDate" /></label>
-              <label className="field"><span>Evidencia / referencia</span><input name="evidenceReference" /></label>
-              <label className="field full"><span>Observaciones</span><textarea name="observations" /></label>
-              <div className="field"><span>&nbsp;</span><button className="button primary" type="submit">Guardar seguimiento</button></div>
-            </form>
+            <CapaFollowupForm action={addCapaFollowupAction.bind(null, id)} defaultActor={capa.createdByText ?? ""} />
           </div>
         </>
       ) : null}
