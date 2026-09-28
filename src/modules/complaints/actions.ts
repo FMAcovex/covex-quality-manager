@@ -4,6 +4,7 @@ import { Prisma, QmsRecordType, QmsRelationType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { type ActionFeedbackState, userFacingActionError } from "@/lib/forms/action-feedback";
 import { parseComplaintForm } from "@/modules/complaints/validation";
 import type { ComplaintFormState } from "@/modules/complaints/types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
@@ -84,7 +85,7 @@ export async function updateComplaintAction(id:string,_s:ComplaintFormState,fd:F
  revalidatePath("/complaints");revalidatePath(`/complaints/${id}`);redirect(`/complaints/${id}`);
 }
 
-export async function addComplaintFollowupAction(id:string,fd:FormData){
+async function saveComplaintFollowup(id:string,fd:FormData){
  const rec=await prisma.complaint.findUnique({where:{id}});if(!rec)throw new Error("Reclamación no encontrada.");
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
  if(!followupDate||!completedByText||!comment)throw new Error("Fecha, responsable y comentario son obligatorios.");
@@ -93,7 +94,22 @@ export async function addComplaintFollowupAction(id:string,fd:FormData){
   await tx.changeHistory.create({data:{qmsRecordId:rec.qmsRecordId,changedByText:completedByText,fieldPath:"followups",newValue:j({followupDate,comment}),reason:"Nuevo seguimiento",source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,rec.qmsRecordId,snapshotJson(serializeComplaintVersion(snap)),completedByText,"Nuevo seguimiento");
  });
- revalidatePath(`/complaints/${id}`);redirect(`/complaints/${id}?tab=followups`);
+ revalidatePath("/complaints");revalidatePath(`/complaints/${id}`);
+}
+
+export async function addComplaintFollowupAction(id:string,fd:FormData){
+ await saveComplaintFollowup(id,fd);
+ redirect(`/complaints/${id}?tab=followups`);
+}
+
+export async function addComplaintFollowupFormAction(
+ id:string,
+ _state:ActionFeedbackState,
+ fd:FormData,
+):Promise<ActionFeedbackState>{
+ try{await saveComplaintFollowup(id,fd);}
+ catch(error){return {error:userFacingActionError(error,"No se ha podido guardar el seguimiento de la reclamación.")};}
+ redirect(`/complaints/${id}?tab=followups`);
 }
 
 export async function addComplaintRelationAction(id:string,fd:FormData){
