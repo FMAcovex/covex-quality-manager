@@ -4,7 +4,7 @@ import path from "node:path";
 
 const expected = {
   annexIII: "8639c29198101a73253f0681620c89a3e2848b335d2a4be61b946f9b7a353d43",
-  annexV: "18e7e4b7f53df7b07387c891005c1df229a7cb549e4885d52bb55550e4874817",
+  annexV: "1f92410bc94e2037fe632450ce766b3ce5d44c4f55b8868056bad73c882c03f2",
 };
 
 function arg(name: string) {

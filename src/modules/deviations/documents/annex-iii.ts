@@ -16,6 +16,7 @@ type AnnexIIIRecord = {
   departmentNameSnapshot: string | null;
   issueDate: Date | null;
   eventDateTime: Date | null;
+  eventShift: string | null;
   detectedBy: string | null;
   materialProcessAffected: string | null;
   processEquipmentSystem: string | null;
@@ -118,6 +119,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordCellText(xml, 0, 3, 1, value(record.processEquipmentSystem || record.materialProcessAffected));
   xml = setWordCellText(xml, 0, 5, 1, date(record.eventDateTime));
   xml = setWordCellText(xml, 0, 5, 2, time(record.eventDateTime));
+  xml = setWordCellText(xml, 0, 5, 4, value(record.eventShift));
   xml = setWordCellText(xml, 0, 4, 4, value(record.detectedBy));
 
   xml = markOrigin(xml, 7, Boolean(record.finishedProductSystem));

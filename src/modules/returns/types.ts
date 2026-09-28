@@ -16,6 +16,5 @@ export type ReturnFormDefaults={
   decision?:"PENDING"|"ACCEPTED"|"REJECTED";finalDestination?:string;decisionObservations?:string;qaApprovalName?:string;
   technicalApprovalName?:string;decisionDate?:string;destructionManagedBy?:string;destructionCertificate?:string;traceabilityUpdated?:string;
   closedAt?:string;status?:"OPEN"|"CLOSED";internalObservations?:string;signedDocumentAvailable?:string;
-  dataQualityStatus?:"COMPLETE"|"INCOMPLETE"|"REVIEW_REQUIRED";products?:ReturnProductInput[];
-};
+  dataQualityStatus?:"COMPLETE"|"INCOMPLETE"|"REVIEW_REQUIRED";products?:ReturnProductInput[];\n  customerDeclarationSignatory?:string;customerDeclarationRole?:string;customerDeclarationObservations?:string;customerDeclarationSignedAt?:string;\n};
 export type DepartmentOption={id:string;code:string;name:string};

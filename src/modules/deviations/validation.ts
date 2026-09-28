@@ -104,6 +104,7 @@ export function parseDeviationForm(formData: FormData) {
       departmentId,
       issueDate,
       eventDateTime: text(formData, "eventDateTime"),
+      eventShift: text(formData, "eventShift"),
       detectedBy: text(formData, "detectedBy"),
       createdByText,
       materialProcessAffected: text(formData, "materialProcessAffected"),
