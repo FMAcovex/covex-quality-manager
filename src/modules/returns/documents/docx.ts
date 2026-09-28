@@ -45,7 +45,10 @@ export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
 }
 
 export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Product){
- const entries=readZip(await loadReturnPntTemplate(r.annexIVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_IV));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo IV:", "Anexo V:", "last");
+ const version=r.annexIVTemplateVersion?.versionCode??"03";
+ const entries=readZip(await loadReturnPntTemplate(version,DocumentType.RETURN_ANNEX_IV));
+ let xml=getZipEntryText(entries,"word/document.xml");
+ if(version!=="03")xml=extractWordBodyRange(xml,"Anexo IV:", "Anexo V:", "last");
  xml=setWordCellTextBalanced(xml,0,1,0,`FECHA RECEPCIÓN: ${date(r.receivedAt)}`);
  xml=setWordCellTextBalanced(xml,0,2,0,`CÓDIGO DEVOLUCIÓN: ${text(r.qmsRecord.businessCode)}\nPRODUCTO: ${product.productNameCode}\nLOTE: ${text(product.lot)}`);
  xml=setWordCellTextBalanced(xml,0,3,0,`CLIENTE: ${text(r.customerEntity)}\nPAÍS: ${text(r.country)}`);
@@ -56,7 +59,10 @@ export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Produ
 }
 
 export async function generateReturnAnnexV(r:ReturnDocumentRecord){
- const entries=readZip(await loadReturnPntTemplate(r.annexVTemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_V));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo V:", "Anexo VI:", "last");
+ const version=r.annexVTemplateVersion?.versionCode??"03";
+ const entries=readZip(await loadReturnPntTemplate(version,DocumentType.RETURN_ANNEX_V));
+ let xml=getZipEntryText(entries,"word/document.xml");
+ if(version!=="03")xml=extractWordBodyRange(xml,"Anexo V:", "Anexo VI:", "last");
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,1,1,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.qmsRecord.businessCode));
  xml=setWordCellTextBalanced(xml,1,2,1,r.products.map(x=>x.productNameCode).join(" · "));xml=setWordCellTextBalanced(xml,1,2,3,r.products.map(x=>text(x.lot)).filter(Boolean).join(" · "));xml=setWordCellTextBalanced(xml,1,3,1,text(r.conservationConditions));
  xml=setWordCellTextBalanced(xml,3,0,0,text(r.reasonObservations));xml=setWordCellTextBalanced(xml,4,0,1,text(r.customerDeclarationObservations));
