@@ -1,6 +1,6 @@
 # Estado actual
 
-Fecha: 2026-09-27.
+Fecha: 2026-09-28.
 
 ## Hitos completados
 - Hito 0 — Especificación y arquitectura.
@@ -311,3 +311,39 @@ Validación:
 - build Next.js de producción.
 
 El Hito 9 queda listo para integración en `main`.
+
+
+## Hito 10 — Endurecimiento y demo
+Estado: **IMPLEMENTADO; PENDIENTE DE VALIDACIÓN FINAL EN CI**.
+
+Implementación:
+- cabeceras HTTP de seguridad comunes para toda la aplicación;
+- bloqueo de indexación por robots y cabecera `X-Robots-Tag`;
+- health check real contra PostgreSQL con respuesta 503 degradada sin detalle técnico;
+- páginas globales de error, recurso no encontrado y estado de carga;
+- exportación lógica completa de todos los modelos Prisma;
+- serialización explícita de fechas, bytes y bigint;
+- checksum SHA-256 del backup;
+- verificador de formato, modelos y recuentos;
+- carpeta de backups excluida de Git;
+- dataset ficticio idempotente con cinco expedientes `DEMO-`;
+- relaciones ficticias Desviación → CAPA y Reclamación → Devolución;
+- guardas que impiden ejecutar la carga demo sin `ALLOW_DEMO_DATA=true` o con `APP_ENV=production`;
+- smoke test específico del Hito 10 integrado en CI.
+
+Límites mantenidos:
+- no se incorpora autenticación Entra ID;
+- no se crean roles corporativos;
+- no se activa envío automático de alertas;
+- el backup lógico no se presenta como política corporativa de backup/DR;
+- la V1 sigue identificada como herramienta piloto no validada GMP.
+
+Validación prevista antes del cierre:
+- PostgreSQL 16 real;
+- seed base + dataset demo;
+- smoke tests acumulados de Hitos 1–10;
+- pruebas unitarias de cabeceras y serialización de backup;
+- Prisma validate/generate;
+- lint;
+- tests;
+- build Next.js de producción.
