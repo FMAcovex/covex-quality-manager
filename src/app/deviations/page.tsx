@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { deadlineLabel, formatDate, measuresLabel } from "@/modules/deviations/domain";
 import { getDeviationList } from "@/modules/deviations/queries";
 import { ColumnSelector } from "@/components/column-selector";
@@ -30,12 +31,13 @@ export default async function DeviationsPage({
     deadline: param(query.deadline),
   };
 
-  const { rows, departments, years, provenances, counters } = await getDeviationList(filters);
+  const [{ rows, departments, years, provenances, counters }, documentTemplates] = await Promise.all([getDeviationList(filters), getActiveTemplateAssets("DEVIATION")]);
   const exportParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value) exportParams.set(key, value);
   });
   const currentYear = filters.year ?? String(new Date().getFullYear());
+  const annualTemplate = documentTemplates.find((template) => template.documentType === "DEVIATION_ANNEX_V");
 
   return (
     <section className="workspace">
@@ -52,6 +54,9 @@ export default async function DeviationsPage({
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones</strong>
+              {annualTemplate?.fileName || annualTemplate?.filePath ? (
+                <a className="export-link" href={`/api/settings/templates/${annualTemplate.id}/download`}>Descargar plantilla oficial · Anexo V</a>
+              ) : <span className="muted-note">Plantilla oficial Anexo V pendiente de cargar.</span>}
               <form action="/api/deviations/export/annex-v" method="get" className="export-year-form">
                 <label>
                   <span>Anexo V oficial</span>
@@ -62,7 +67,7 @@ export default async function DeviationsPage({
                       .map((year) => <option key={year} value={year}>{year}</option>)}
                   </select>
                 </label>
-                <button className="button small" type="submit">Descargar</button>
+                <button className="button small primary" type="submit">Generar cumplimentado</button>
               </form>
               <a className="export-link" href={`/api/deviations/export/simple?${exportParams.toString()}`}>
                 Listado simple · filtros actuales
