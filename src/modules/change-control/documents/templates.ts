@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { DocumentType,QmsRecordType } from "@prisma/client";
+import { loadStoredTemplateAsset } from "@/modules/configuration/template-assets";
 
 export class ChangeControlTemplateUnavailableError extends Error {}
 
@@ -43,7 +45,9 @@ function requireV03(versionCode: string, label: string) {
   }
 }
 
-export function loadChangeAnnexIIITemplate(versionCode = "03") {
+export async function loadChangeAnnexIIITemplate(versionCode = "03") {
+  const stored=await loadStoredTemplateAsset(QmsRecordType.CHANGE_CONTROL,DocumentType.CHANGE_ANNEX_III,versionCode);
+  if(stored)return stored;
   requireV03(versionCode, "Anexo III");
   return loadTemplate(
     process.env.CHANGE_ANNEX_III_TEMPLATE,
@@ -53,7 +57,9 @@ export function loadChangeAnnexIIITemplate(versionCode = "03") {
   );
 }
 
-export function loadChangeAnnexIVTemplate(versionCode = "03") {
+export async function loadChangeAnnexIVTemplate(versionCode = "03") {
+  const stored=await loadStoredTemplateAsset(QmsRecordType.CHANGE_CONTROL,DocumentType.CHANGE_ANNEX_IV,versionCode);
+  if(stored)return stored;
   requireV03(versionCode, "Anexo IV");
   return loadTemplate(
     process.env.CHANGE_ANNEX_IV_TEMPLATE,
@@ -63,7 +69,9 @@ export function loadChangeAnnexIVTemplate(versionCode = "03") {
   );
 }
 
-export function loadChangeAnnexVTemplate(versionCode = "03") {
+export async function loadChangeAnnexVTemplate(versionCode = "03") {
+  const stored=await loadStoredTemplateAsset(QmsRecordType.CHANGE_CONTROL,DocumentType.CHANGE_ANNEX_V,versionCode);
+  if(stored)return stored;
   requireV03(versionCode, "Anexo V");
   return loadTemplate(
     process.env.CHANGE_ANNEX_V_TEMPLATE,
@@ -73,7 +81,9 @@ export function loadChangeAnnexVTemplate(versionCode = "03") {
   );
 }
 
-export function loadChangeAnnexVIITemplate(versionCode = "03") {
+export async function loadChangeAnnexVIITemplate(versionCode = "03") {
+  const stored=await loadStoredTemplateAsset(QmsRecordType.CHANGE_CONTROL,DocumentType.CHANGE_ANNEX_VII,versionCode);
+  if(stored)return stored;
   requireV03(versionCode, "Anexo VII");
   return loadTemplate(
     process.env.CHANGE_ANNEX_VII_TEMPLATE,

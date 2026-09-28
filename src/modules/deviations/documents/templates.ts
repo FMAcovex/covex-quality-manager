@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { DocumentType,QmsRecordType } from "@prisma/client";
+import { loadStoredTemplateAsset } from "@/modules/configuration/template-assets";
 
 export class TemplateUnavailableError extends Error {}
 
@@ -34,7 +36,9 @@ function requireV06(versionCode: string, documentName: string) {
   }
 }
 
-export function loadAnnexIIITemplate(versionCode = "06") {
+export async function loadAnnexIIITemplate(versionCode = "06") {
+  const stored=await loadStoredTemplateAsset(QmsRecordType.DEVIATION,DocumentType.DEVIATION_ANNEX_III,versionCode);
+  if(stored)return stored;
   requireV06(versionCode, "Anexo III");
   return loadTemplate(
     process.env.DEVIATION_ANNEX_III_TEMPLATE,
@@ -43,7 +47,9 @@ export function loadAnnexIIITemplate(versionCode = "06") {
   );
 }
 
-export function loadAnnexVTemplate(versionCode = "06") {
+export async function loadAnnexVTemplate(versionCode = "06") {
+  const stored=await loadStoredTemplateAsset(QmsRecordType.DEVIATION,DocumentType.DEVIATION_ANNEX_V,versionCode);
+  if(stored)return stored;
   requireV06(versionCode, "Anexo V");
   return loadTemplate(
     process.env.DEVIATION_ANNEX_V_TEMPLATE,

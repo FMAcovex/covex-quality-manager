@@ -216,3 +216,43 @@ Devoluciones:
 - Anexo VI: listado anual.
 
 Los anexos se extraen del PNT controlado instalado y se rellenan sin rediseñar su estructura.
+
+
+## W-22 — Evolución de formulario
+1. Seleccionar una versión existente.
+2. Crear clon con nuevo código y fecha de vigencia.
+3. El clon queda DRAFT e inactivo.
+4. Revisar campos/metadatos de visualización.
+5. Implementar técnicamente cualquier cambio estructural GMP que sea necesario.
+6. Ejecutar pruebas.
+7. Activar la nueva versión.
+8. La versión anterior queda RETIRED y conserva todos sus expedientes.
+
+## W-23 — Nueva plantilla documental
+1. Seleccionar módulo y tipo documental.
+2. Informar versión y vigencia.
+3. Adjuntar DOCX/XLSX controlado o registrar ruta técnica.
+4. La aplicación calcula SHA-256 cuando recibe archivo.
+5. La plantilla queda inactiva.
+6. Verificar compatibilidad con el generador y validar output.
+7. Activar.
+8. La versión anterior queda inactiva con fin de vigencia.
+
+Para Reclamaciones y Devoluciones se carga el PNT DOCX completo, del que el generador extrae el anexo correspondiente.
+
+## W-24 — Administración de catálogo
+1. Crear código nuevo cuando aparece una nueva entidad/valor.
+2. No reutilizar códigos históricos.
+3. Si deja de aplicar, marcar inactivo y opcionalmente fecha fin.
+4. Los expedientes existentes conservan su snapshot histórico.
+
+## W-25 — Vencimientos
+La bandeja administrativa calcula próximos/vencidos a partir de:
+- próximo seguimiento CAPA;
+- eficacia CAPA pendiente tras cierre operativo;
+- próximo seguimiento de Control de Cambio;
+- fecha prevista de ejecución de Control de Cambio;
+- próximo seguimiento de Reclamación;
+- próximo seguimiento de Devolución.
+
+Las reglas configuran preaviso y severidad. Hito 9 no envía notificaciones.

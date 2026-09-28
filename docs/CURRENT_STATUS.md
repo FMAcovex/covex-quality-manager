@@ -270,3 +270,44 @@ Validación:
 - build Next.js de producción.
 
 El hito queda listo para integración en `main`.
+
+
+## Hito 9 — Administración y evolución
+Estado: **COMPLETADO Y VALIDADO EN CI**.
+
+Implementación:
+- centro de Administración con navegación propia;
+- departamentos con vigencia y activación/desactivación;
+- catálogos auxiliares y valores 1:N;
+- política no destructiva;
+- historial `ConfigurationChange`;
+- versiones de formulario DRAFT/ACTIVE/RETIRED;
+- clonación de versiones conservando configuración de campos;
+- edición de metadatos de campos solo en borradores;
+- bloqueo de versiones activas;
+- activación con retirada automática de la versión anterior;
+- registro de versiones de plantilla;
+- carga DOCX/XLSX desde Administración;
+- almacenamiento de plantilla en PostgreSQL;
+- cálculo/verificación SHA-256;
+- fallback a plantillas históricas instaladas;
+- parámetros tipados;
+- reglas de vencimiento configurables;
+- bandeja central de próximos y vencidos;
+- envío automático desactivado;
+- smoke test específico de administración añadido a CI.
+
+Validación:
+- PostgreSQL 16 real;
+- esquema y seed;
+- smoke tests QMS existentes;
+- smoke específico de Administración;
+- catálogos, parámetros y reglas de vencimiento;
+- clonación de formularios y conservación de configuración;
+- almacenamiento binario de plantillas y checksum;
+- Prisma validate/generate;
+- lint;
+- tests;
+- build Next.js de producción.
+
+El Hito 9 queda listo para integración en `main`.

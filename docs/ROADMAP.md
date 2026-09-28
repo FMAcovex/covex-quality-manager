@@ -167,3 +167,18 @@ Criterio de salida:
 - indicadores y tendencia de 5 años;
 - plantillas controladas por SHA-256;
 - smoke test PostgreSQL y CI completos.
+
+
+### Criterio de salida Hito 9
+- administración separada de la operación diaria;
+- departamentos y catálogos auxiliares con activación/vigencia;
+- historial operativo de cambios administrativos;
+- clonación DRAFT y activación controlada de versiones de formulario;
+- formularios activos bloqueados frente a edición administrativa;
+- carga y versionado de plantillas DOCX/XLSX con SHA-256;
+- recuperación de plantillas almacenadas en PostgreSQL;
+- parámetros no estructurales administrables;
+- reglas configurables de vencimiento;
+- bandeja transversal de próximos/vencidos;
+- envío automático de alertas expresamente desactivado;
+- smoke test PostgreSQL y CI completos.

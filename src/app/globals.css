@@ -554,3 +554,65 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 @media (max-width: 760px) {
   .change-filters, .change-task-row { grid-template-columns: 1fr; }
 }
+
+
+/* Hito 9 — Administración y evolución */
+.settings-nav { margin-bottom: 18px; }
+.admin-summary { grid-template-columns: repeat(5, minmax(0,1fr)); }
+.admin-hub-grid { margin-bottom: 16px; }
+.admin-link-card { text-decoration:none; color:inherit; min-height:180px; }
+.admin-link-card p { color:var(--muted); line-height:1.45; }
+.admin-link-card strong { color:var(--blue-dark); }
+.admin-edit-table { min-width:1050px; }
+.admin-row-form { display:grid; grid-template-columns:2fr 1fr 1fr 1fr auto; gap:8px; align-items:center; }
+.admin-row-form input,.admin-row-form select,
+.catalog-item-form input,.catalog-item-form select,
+.catalog-item-create input,.catalog-item-create select,
+.admin-catalog-heading input,.admin-catalog-heading select,
+.parameter-row-form input,.parameter-row-form select,.parameter-row-form textarea,
+.alert-rule-form input,.alert-rule-form select,
+.field-config-form input,.field-config-form select,
+.admin-pop-form input {
+  min-height:36px; border:1px solid var(--border); border-radius:6px; padding:6px 8px; background:#fff; color:var(--text);
+}
+.admin-create-panel { margin-top:14px; }
+.admin-create-panel > summary { cursor:pointer; }
+.admin-create-panel[open] > summary { margin-bottom:14px; }
+.admin-inline-form { margin-top:12px; }
+.admin-catalog-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:14px; }
+.admin-catalog-card { border:1px solid var(--border); border-radius:10px; background:var(--surface-soft); padding:14px; min-width:0; }
+.admin-catalog-heading { display:grid; grid-template-columns:1.2fr 1fr 1.4fr .7fr auto; gap:8px; align-items:center; margin-bottom:10px; }
+.admin-catalog-heading > div { display:grid; gap:3px; }
+.admin-catalog-heading small { color:var(--muted); }
+.catalog-item-form { display:grid; grid-template-columns:1.7fr .55fr 1fr 1fr .8fr 1.5fr auto; gap:6px; min-width:900px; }
+.catalog-item-create { display:grid; grid-template-columns:1fr 1.6fr .55fr 1fr 1.4fr auto; gap:7px; margin-top:10px; }
+.admin-version-table { min-width:1250px; }
+.admin-template-table { min-width:1500px; }
+.admin-action-stack { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.admin-action-stack details { position:relative; }
+.admin-pop-form { position:absolute; right:0; top:calc(100% + 6px); z-index:25; width:320px; padding:12px; display:grid; gap:8px; background:white; border:1px solid var(--border); border-radius:8px; box-shadow:var(--shadow); }
+.admin-pop-form label { display:grid; gap:4px; color:var(--muted); font-size:11px; }
+.admin-template-form { margin-top:12px; }
+.parameter-table { min-width:1450px; }
+.parameter-row-form { display:grid; grid-template-columns:minmax(180px,2fr) .8fr 1.4fr auto; gap:8px; align-items:center; }
+.parameter-row-form textarea { min-height:70px; resize:vertical; }
+.alert-rule-table { min-width:1250px; }
+.alert-rule-form { display:grid; grid-template-columns:.8fr 1fr .9fr 1.4fr auto; gap:8px; align-items:center; }
+.alert-rule-form label { display:flex; align-items:center; gap:6px; white-space:nowrap; }
+.alert-rule-form input[type="number"] { width:80px; }
+.due-table { min-width:1150px; }
+.due-overdue td { background:#fff8f6; }
+.badge.critical { background:#ffe8e4; color:#9c2f22; border-color:#f2c1b8; }
+.field-admin-table { min-width:1450px; }
+.field-config-form { display:grid; grid-template-columns:1.4fr 1.2fr .55fr .9fr .9fr .9fr .9fr auto; gap:7px; align-items:center; min-width:1150px; }
+.field-config-readonly { display:grid; grid-template-columns:1.4fr 1.2fr .8fr .8fr .8fr .8fr .8fr; gap:10px; min-width:1000px; color:#4b5e75; }
+@media (max-width:1200px){
+  .admin-summary{grid-template-columns:repeat(3,1fr);}
+  .admin-catalog-grid{grid-template-columns:1fr;}
+  .admin-row-form{grid-template-columns:1fr 1fr 1fr;}
+  .admin-catalog-heading{grid-template-columns:1fr 1fr;}
+}
+@media (max-width:760px){
+  .admin-summary{grid-template-columns:1fr 1fr;}
+  .admin-row-form,.admin-catalog-heading,.catalog-item-create,.parameter-row-form,.alert-rule-form{grid-template-columns:1fr;}
+}

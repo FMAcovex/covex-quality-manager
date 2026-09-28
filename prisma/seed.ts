@@ -1,4 +1,4 @@
-import { DocumentType, PrismaClient, QmsRecordType } from "@prisma/client";
+import { AlertRuleKind, AlertSeverity, DocumentType, ParameterValueType, PrismaClient, QmsRecordType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -360,6 +360,95 @@ async function main() {
       where: { module_documentType_versionCode: { module: QmsRecordType.RETURN, documentType, versionCode: "03" } },
       update: { isActive: true },
       create: { module: QmsRecordType.RETURN, documentType, versionCode: "03", effectiveFrom: new Date("2026-05-26"), isActive: true },
+    });
+  }
+
+  for (const catalog of [
+    {
+      key: "DEVIATION_PROVENANCE",
+      label: "Procedencia de desviación",
+      module: QmsRecordType.DEVIATION,
+      description: "Catálogo auxiliar administrable para procedencias no estructurales.",
+      items: [
+        ["PRODUCTION","Producción",10],
+        ["QUALITY_CONTROL","Control de Calidad",20],
+        ["WAREHOUSE","Almacén / Logística",30],
+        ["SUPPLIER","Proveedor",40],
+        ["CUSTOMER","Cliente",50],
+        ["DOCUMENTATION","Documentación",60],
+        ["OTHER","Otro",90],
+      ],
+    },
+    {
+      key: "COMPLAINT_RESPONSE_MEDIUM",
+      label: "Medio de respuesta de reclamación",
+      module: QmsRecordType.COMPLAINT,
+      description: "Medios documentables usados para registrar la respuesta externa.",
+      items: [
+        ["EMAIL","Correo electrónico",10],
+        ["LETTER","Carta",20],
+        ["PORTAL","Portal cliente/proveedor",30],
+        ["MEETING","Reunión",40],
+        ["OTHER","Otro",90],
+      ],
+    },
+    {
+      key: "RETURN_FINAL_DESTINATION",
+      label: "Destino final de devolución",
+      module: QmsRecordType.RETURN,
+      description: "Catálogo auxiliar para destinos habituales; el expediente conserva texto libre.",
+      items: [
+        ["REINTEGRATION","Reintegración controlada",10],
+        ["QUARANTINE","Cuarentena",20],
+        ["REJECT","Rechazo / devolución a origen",30],
+        ["DESTRUCTION","Destrucción",40],
+        ["REPROCESS","Reproceso",50],
+        ["OTHER","Otro",90],
+      ],
+    },
+  ] as const) {
+    const created = await prisma.lookupCatalog.upsert({
+      where: { key: catalog.key },
+      update: { label: catalog.label, description: catalog.description, module: catalog.module, isActive: true },
+      create: { key: catalog.key, label: catalog.label, description: catalog.description, module: catalog.module, isActive: true },
+    });
+    for (const [key,label,sortOrder] of catalog.items) {
+      await prisma.lookupCatalogItem.upsert({
+        where: { catalogId_key: { catalogId: created.id, key } },
+        update: { label, sortOrder, isActive: true },
+        create: { catalogId: created.id, key, label, sortOrder, isActive: true },
+      });
+    }
+  }
+
+  for (const parameter of [
+    ["GLOBAL","DEFAULT_ACTOR_NAME","Nombre por defecto en modo piloto","TEXT","\"Usuario demo\"","Solo para demo/local; en producción será sustituido por identidad corporativa."],
+    ["GLOBAL","UPCOMING_WINDOW_DAYS","Ventana de próximos vencimientos","INTEGER","14","Número de días usados por la bandeja administrativa de próximos vencimientos."],
+    ["GLOBAL","DATE_FORMAT","Formato de fecha","TEXT","\"dd/MM/yyyy\"","Formato visual por defecto de la aplicación."],
+    ["GLOBAL","ALLOW_CLOSED_RECORD_EDIT","Permitir edición de expedientes cerrados","BOOLEAN","true","V1 mantiene los registros cerrados editables con historial operativo."],
+    ["GLOBAL","ENABLE_ALERT_DELIVERY","Activar envío automático de alertas","BOOLEAN","false","Debe permanecer desactivado en Hito 9; solo se prepara el motor."],
+  ] as const) {
+    const [scope,key,label,valueType,jsonValue,description]=parameter;
+    await prisma.appParameter.upsert({
+      where: { scope_key: { scope, key } },
+      update: { label, valueType: valueType as ParameterValueType, value: JSON.parse(jsonValue), description, isActive: true },
+      create: { scope, key, label, valueType: valueType as ParameterValueType, value: JSON.parse(jsonValue), description, isActive: true },
+    });
+  }
+
+  for (const rule of [
+    ["CAPA_FOLLOWUP_DUE",QmsRecordType.CAPA,"FOLLOWUP_DUE","Seguimiento CAPA próximo/vencido",7,"WARNING"],
+    ["CAPA_EFFECTIVENESS_PENDING",QmsRecordType.CAPA,"EFFECTIVENESS_PENDING","Eficacia CAPA pendiente",14,"WARNING"],
+    ["CHANGE_FOLLOWUP_DUE",QmsRecordType.CHANGE_CONTROL,"FOLLOWUP_DUE","Seguimiento de cambio próximo/vencido",7,"WARNING"],
+    ["CHANGE_PLANNED_EXECUTION_DUE",QmsRecordType.CHANGE_CONTROL,"PLANNED_EXECUTION_DUE","Ejecución de cambio próxima/vencida",7,"WARNING"],
+    ["COMPLAINT_FOLLOWUP_DUE",QmsRecordType.COMPLAINT,"FOLLOWUP_DUE","Seguimiento de reclamación próximo/vencido",7,"WARNING"],
+    ["RETURN_FOLLOWUP_DUE",QmsRecordType.RETURN,"FOLLOWUP_DUE","Seguimiento de devolución próximo/vencido",7,"INFO"],
+  ] as const) {
+    const [key,module,kind,label,leadDays,severity]=rule;
+    await prisma.alertRule.upsert({
+      where: { key },
+      update: { module, kind: kind as AlertRuleKind, label, leadDays, severity: severity as AlertSeverity, isActive: true },
+      create: { key, module, kind: kind as AlertRuleKind, label, leadDays, severity: severity as AlertSeverity, isActive: true },
     });
   }
 }
