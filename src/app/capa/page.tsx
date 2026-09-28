@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import {
   capaStatusLabel,
   capaTypeLabel,
@@ -33,9 +34,11 @@ export default async function CapaPage({
     origin: param(query.origin),
     followup: param(query.followup),
   };
-  const { rows, departments, years, origins, counters } = await getCapaList(filters);
+  const [{ rows, departments, years, origins, counters }, documentTemplates] = await Promise.all([getCapaList(filters), getActiveTemplateAssets("CAPA")]);
 
   const exportParams = new URLSearchParams();
+  const annualTemplate = documentTemplates.find((template) => template.documentType === "CAPA_ANNEX_IV");
+
   Object.entries(filters).forEach(([key,value]) => {
     if(value && key !== "q" && key !== "followup") exportParams.set(key,value);
   });
@@ -56,11 +59,14 @@ export default async function CapaPage({
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones CAPA</strong>
+              {annualTemplate?.fileName || annualTemplate?.filePath ? (
+                <a className="export-link" href={`/api/settings/templates/${annualTemplate.id}/download`}>Descargar plantilla oficial · Anexo IV</a>
+              ) : <span className="muted-note">Plantilla oficial Anexo IV pendiente de cargar.</span>}
               <form action="/api/capa/export/annex-iv" method="get" className="export-year-form">
                 <label><span>Anexo IV oficial</span><select name="year" defaultValue={filters.year ?? String(new Date().getFullYear())}>
                   {Array.from(new Set([Number(filters.year ?? new Date().getFullYear()),...years])).filter(Number.isInteger).sort((a,b)=>b-a).map((year)=><option key={year} value={year}>{year}</option>)}
                 </select></label>
-                <button className="button small" type="submit">Descargar</button>
+                <button className="button small primary" type="submit">Generar cumplimentado</button>
               </form>
               <a className="export-link" href={`/api/capa/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a>
               <a className="export-link" href="/api/capa/export/simple">Listado simple completo</a>
