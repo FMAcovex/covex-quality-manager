@@ -49,7 +49,18 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
       prisma.changeControl.findMany({
         where,
         include: {
-          qmsRecord: true,
+          qmsRecord: {
+            include: {
+              sourceRelations: {
+                where: { isActive: true },
+                include: { targetRecord: true },
+              },
+              targetRelations: {
+                where: { isActive: true },
+                include: { sourceRecord: true },
+              },
+            },
+          },
           department: true,
           tasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ sequenceNumber: "desc" }, { followupDate: "desc" }] },
