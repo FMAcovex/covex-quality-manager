@@ -19,6 +19,36 @@ function rowStyles(rowXml:string){
  return styles;
 }
 
+function complaintRowHeight(values:string[]){
+ const longest=Math.max(...values.map(value=>value.length),0);
+ if(longest>240)return 90;
+ if(longest>160)return 72;
+ if(longest>80)return 54;
+ return 36;
+}
+export function finalizeComplaintAnnexVSheet(sheetXml:string,maxRow:number){
+ let result=sheetXml
+  .replace(/<conditionalFormatting[\s\S]*?<\/conditionalFormatting>/g,"")
+  .replace(/<tableParts[\s\S]*?<\/tableParts>/g,"")
+  .replace(/<extLst[\s\S]*?<\/extLst>/g,"");
+ const filter=`<autoFilter ref="B4:K${maxRow}"/>`;
+ if(/<autoFilter\b/.test(result)) result=result.replace(/<autoFilter\b[^>]*\/>/,filter);
+ else result=result.replace(/(<mergeCells\b)/,`${filter}$1`);
+ const setup='<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>';
+ result=/<pageSetup\b[^>]*\/>/.test(result)
+  ?result.replace(/<pageSetup\b[^>]*\/>/,setup)
+  :result.replace(/(<drawing\b)/,`${setup}$1`);
+ return result;
+}
+export function finalizeComplaintAnnexVWorkbook(workbookXml:string,maxRow:number){
+ let result=workbookXml.replace(/<sheet\b[^>]*name="datos"[^>]*\/>/,"");
+ const names=`<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">AÑO!$B$4:$K${maxRow}</definedName><definedName name="_xlnm.Print_Area" localSheetId="0">AÑO!$B$1:$K${maxRow}</definedName><definedName name="_xlnm.Print_Titles" localSheetId="0">AÑO!$4:$4</definedName></definedNames>`;
+ result=/<definedNames>[\s\S]*?<\/definedNames>/.test(result)
+  ?result.replace(/<definedNames>[\s\S]*?<\/definedNames>/,names)
+  :result.replace(/(<calcPr\b)/,`${names}$1`);
+ return result;
+}
+
 export async function generateComplaintAnnexV(year:number,rows:Row[],versionCode="03"){
  const entries=readZip(await loadComplaintPntTemplate(versionCode,DocumentType.COMPLAINT_ANNEX_V));
  const entry=entries.find(x=>x.name==="xl/worksheets/sheet1.xml");
@@ -45,12 +75,15 @@ export async function generateComplaintAnnexV(year:number,rows:Row[],versionCode
    formatDate(r.closedAt),
    [r.internalObservations,...r.capaPlans.map(x=>x.businessCapaCode||x.description),f?.comment].filter(Boolean).join(" · "),
   ];
-  return `<row r="${n}">${"BCDEFGHIJK".split("").map((col,j)=>xmlCell(col,n,styles.get(col)??"",String(vals[j]??""))).join("")}</row>`;
+  return `<row r="${n}" ht="${complaintRowHeight(vals.map(value=>String(value??"")))}" customHeight="1">${"BCDEFGHIJK".split("").map((col,j)=>xmlCell(col,n,styles.get(col)??"",String(vals[j]??""))).join("")}</row>`;
  });
+ const maxRow=Math.max(5,4+rows.length);
  sheet=sheet.replace(new RegExp("<sheetData>[\\s\\S]*?</sheetData>"),`<sheetData>${[...headers,...body].join("")}</sheetData>`);
- sheet=sheet.replace(/<dimension ref="[^"]+"/,`<dimension ref="B1:K${Math.max(5,4+rows.length)}"`);
+ sheet=sheet.replace(/<dimension ref="[^"]+"/,`<dimension ref="B1:K${maxRow}"`);
  sheet=setXlsxCell(sheet,"B2",`LISTADO DE RECLAMACIONES\n"${year}"`);
+ sheet=finalizeComplaintAnnexVSheet(sheet,maxRow);
  updateZipEntry(entries,"xl/worksheets/sheet1.xml",sheet);
+ updateZipEntry(entries,"xl/workbook.xml",finalizeComplaintAnnexVWorkbook(entries.find(x=>x.name==="xl/workbook.xml")!.data.toString("utf8"),maxRow));
  sanitizeOfficeMetadata(entries);
  return writeZip(entries);
 }
