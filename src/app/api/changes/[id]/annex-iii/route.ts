@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getChangeControlDetail } from "@/modules/change-control/queries";
 import { generateChangeAnnexIII } from "@/modules/change-control/documents/annex-iii";
-import { ChangeControlTemplateUnavailableError } from "@/modules/change-control/documents/templates";
+import { TemplateAssetError } from "@/modules/configuration/template-assets";
+import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 import {
   changeControlSnapshotTemplateId,
   changeControlSnapshotToRecord,
