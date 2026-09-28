@@ -105,7 +105,7 @@ export async function registerTemplateVersionAction(fd:FormData){
   const versionCode=text(fd,"versionCode"),effectiveFrom=text(fd,"effectiveFrom");
   if(!versionCode||!effectiveFrom)throw new Error("Versión y vigencia son obligatorias.");
   const fileValue=fd.get("file");
-  let fileName:string|null=null,mimeType:string|null=null,fileData:Uint8Array|null=null,fileSize:number|null=null,checksum:string|null=text(fd,"checksum")||null;
+  let fileName:string|null=null,mimeType:string|null=null,fileData:Uint8Array<ArrayBuffer>|null=null,fileSize:number|null=null,checksum:string|null=text(fd,"checksum")||null;
   if(fileValue instanceof File&&fileValue.size>0){
     if(fileValue.size>15*1024*1024)throw new Error("La plantilla supera el límite de 15 MB.");
     const ext=fileValue.name.toLowerCase().split(".").pop();
