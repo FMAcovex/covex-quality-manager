@@ -661,3 +661,83 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner { animation: none; border-top-color: #dce5ef; }
 }
+
+
+/* Hito 10.1 — relaciones y formularios de seguimiento */
+.relation-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 150px;
+}
+.relation-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  max-width: 240px;
+  padding: 3px 9px;
+  border: 1px solid #c9d9ec;
+  border-radius: 999px;
+  background: #f3f8ff;
+  color: var(--blue-dark);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+a.relation-chip:hover {
+  border-color: #91b7e5;
+  background: #eaf3ff;
+}
+.inline-form {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+}
+.inline-form .field {
+  align-self: stretch;
+  align-content: end;
+}
+.inline-form .field > span {
+  min-height: 32px;
+  display: flex;
+  align-items: flex-end;
+  line-height: 1.3;
+}
+.inline-form .field.full > span {
+  min-height: auto;
+}
+.inline-form textarea {
+  min-height: 112px;
+}
+.inline-form .full {
+  min-width: 0;
+}
+.form-action-row {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding-top: 2px;
+}
+.action-feedback-error {
+  grid-column: 1 / -1;
+  padding: 10px 12px;
+  border: 1px solid #e8bcbc;
+  border-radius: 8px;
+  background: #fff2f2;
+  color: #8c2b2b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+@media (max-width: 900px) {
+  .inline-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .inline-form { grid-template-columns: 1fr; }
+  .inline-form .full, .form-action-row, .action-feedback-error { grid-column: auto; }
+  .inline-form .field > span { min-height: auto; }
+  .form-action-row { justify-content: flex-start; }
+}
