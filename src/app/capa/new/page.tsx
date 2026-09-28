@@ -91,6 +91,7 @@ export default async function NewCapaPage({
         defaults={defaults}
         fromDeviationPlanId={fromDeviationPlanId}
         fromComplaintPlanId={fromComplaintPlanId}
+        fromComplaintId={fromComplaintId}
       />
     </section>
   );
