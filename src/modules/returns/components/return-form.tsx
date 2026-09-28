@@ -69,7 +69,16 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
    <Tri label="Evaluación Control de Calidad" name="qcAssessmentCompleted" defaultValue={defaults.qcAssessmentCompleted}/>
   </div></section>
 
-  <section className="form-section"><h2>5. Productos termolábiles / temperatura controlada</h2><div className="form-grid">
+  <section className="form-section"><h2>5. Declaración del cliente · Anexo V</h2><p className="section-help">Datos necesarios para generar la declaración oficial de conservación del producto devuelto.</p><div className="form-grid">
+   <Field label="Nombre del declarante" name="customerDeclarationSigner" defaultValue={defaults.customerDeclarationSigner}/>
+   <Field label="Cargo del declarante" name="customerDeclarationSignerRole" defaultValue={defaults.customerDeclarationSignerRole}/>
+   <Field label="Fecha de declaración" name="customerDeclarationDate" type="date" defaultValue={defaults.customerDeclarationDate}/>
+   <div className="field full"><span>Evidencias aportadas</span><div className="checkbox-group">{[["SUPPLY_DOC","Documento de suministro / entrega"],["STORAGE_TEMP","Registro de temperatura de almacenamiento"],["RETURN_TEMP","Registro de temperatura de transporte de retorno"],["NA_TEMP","N/A · sin requisitos especiales de temperatura"],["OTHER","Otra documentación"]].map(([v,l])=><label key={v}><input type="checkbox" name="customerEvidenceTypes" value={v} defaultChecked={defaults.customerEvidenceTypes?.includes(v)}/>{l}</label>)}</div></div>
+   <Field label="Otra evidencia / documento" name="customerEvidenceOther" defaultValue={defaults.customerEvidenceOther} span="span-2"/>
+   <TextArea label="Observaciones de la declaración" name="customerDeclarationObservations" defaultValue={defaults.customerDeclarationObservations}/>
+  </div></section>
+
+  <section className="form-section"><h2>6. Productos termolábiles / temperatura controlada</h2><div className="form-grid">
    <Tri label="Registro temperatura almacenamiento" name="storageTemperatureRecord" defaultValue={defaults.storageTemperatureRecord}/>
    <Tri label="Evidencia temperatura transporte retorno" name="returnTransportTempEvidence" defaultValue={defaults.returnTransportTempEvidence}/>
    <Tri label="Embalaje de transporte conforme" name="transportPackagingSuitable" defaultValue={defaults.transportPackagingSuitable}/>
@@ -78,7 +87,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
    <Tri label="Sistema devolución termolábiles validado" name="coldChainReturnSystemValidated" defaultValue={defaults.coldChainReturnSystemValidated}/>
   </div></section>
 
-  <section className="form-section"><h2>6. Decisión de Garantía de Calidad / Dirección Técnica</h2><div className="form-grid">
+  <section className="form-section"><h2>7. Decisión de Garantía de Calidad / Dirección Técnica</h2><div className="form-grid">
    <label className="field"><span>Decisión</span><select name="decision" defaultValue={defaults.decision??"PENDING"}><option value="PENDING">Pendiente</option><option value="ACCEPTED">Aceptada</option><option value="REJECTED">Rechazada</option></select></label>
    <Field label="Fecha decisión" name="decisionDate" type="date" defaultValue={defaults.decisionDate}/>
    <TextArea label="Destino final y observaciones" name="finalDestination" defaultValue={defaults.finalDestination}/>
@@ -92,7 +101,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
    <label className="field"><span>Estado</span><select name="status" defaultValue={defaults.status??"OPEN"}><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
   </div></section>
 
-  <section className="form-section"><h2>7. Control interno</h2><div className="form-grid">
+  <section className="form-section"><h2>8. Control interno</h2><div className="form-grid">
    <TextArea label="Observaciones internas" name="internalObservations" defaultValue={defaults.internalObservations}/>
    <label className="field"><span>Documento firmado disponible</span><select name="signedDocumentAvailable" defaultValue={defaults.signedDocumentAvailable??""}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>
    <label className="field"><span>Control del dato</span><select name="dataQualityStatus" defaultValue={defaults.dataQualityStatus??"REVIEW_REQUIRED"}><option value="COMPLETE">Completo</option><option value="INCOMPLETE">Incompleto</option><option value="REVIEW_REQUIRED">Pendiente revisar</option></select></label>
