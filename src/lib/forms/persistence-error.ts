@@ -3,17 +3,23 @@ import { Prisma } from "@prisma/client";
 export type PersistenceFormError = {
   error: string;
   fieldErrors?: string[];
+  fieldIssues?: Record<string, string[]>;
 };
 
 export function persistenceFormError(
   error: unknown,
   entityLabel: string,
+  options: { duplicateField?: string } = {},
 ): PersistenceFormError {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
+      const message = "La codificación ya está utilizada por otro expediente del mismo tipo.";
       return {
         error: `No se puede guardar ${entityLabel}.`,
-        fieldErrors: ["La codificación ya está utilizada por otro expediente del mismo tipo."],
+        fieldErrors: [message],
+        fieldIssues: options.duplicateField
+          ? { [options.duplicateField]: [message] }
+          : undefined,
       };
     }
     if (error.code === "P2003") {
