@@ -137,7 +137,7 @@ export async function generateCapaAnnexIV(
   const sheetXml = sheetEntry.data.toString("utf8");
   const dataRow = sheetXml.match(/<row[^>]*\br="5"[^>]*>[\s\S]*?<\/row>/)?.[0];
   if (!dataRow) throw new Error("Anexo IV CAPA: fila de datos modelo no encontrada.");
-  const bases = [...rowStyles(dataRow).values()];
+  const bases = [...rowStyles(dataRow).values()].map(Number);
   const openVariant = addFillVariants(stylesXml, bases, 14);
   stylesXml = openVariant.stylesXml;
   const closedVariant = addFillVariants(stylesXml, bases, 15);
