@@ -8,7 +8,7 @@ import { prisma } from "@/lib/db";
 import { parseReturnForm } from "@/modules/returns/validation";
 import type { ReturnFormState } from "@/modules/returns/types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
-import { ensureInitialVersion,refreshCurrentVersion,serializeReturnVersion,snapshotJson } from "@/lib/qms/versioning";
+import { ensureInitialVersion,refreshCurrentVersion,serializeReturnVersion,snapshotJson } from "@/lib/qms/versioning";\nimport { returnDeclarationToJson } from "@/modules/returns/declaration";
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
 
@@ -31,8 +31,7 @@ function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{i
   temperatureExcursionEvaluated:v.temperatureExcursionEvaluated,coldChainReturnSystemValidated:v.coldChainReturnSystemValidated,decision:v.decision,
   finalDestination:v.finalDestination,decisionObservations:v.decisionObservations,qaApprovalName:v.qaApprovalName,technicalApprovalName:v.technicalApprovalName,decisionDate:d(v.decisionDate),
   destructionManagedBy:v.destructionManagedBy,destructionCertificate:v.destructionCertificate,traceabilityUpdated:v.traceabilityUpdated,
-  closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
- };
+  closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus,extraData:returnDeclarationToJson(v.declaration)\n };
 }
 async function replaceProducts(tx:Prisma.TransactionClient,id:string,products:ReturnType<typeof parseReturnForm>["values"]["products"]){
  await tx.returnProduct.deleteMany({where:{returnRecordId:id}});
