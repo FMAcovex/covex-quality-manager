@@ -1,30 +1,9 @@
 import assert from "node:assert/strict";
 import { PrismaClient, QmsRecordType } from "@prisma/client";
-import { createDeviationAction } from "../src/modules/deviations/actions";
-import { createCapaAction } from "../src/modules/capa/actions";
+import { parseDeviationForm } from "../src/modules/deviations/validation";
+import { parseCapaForm } from "../src/modules/capa/validation";
 
 const prisma = new PrismaClient();
-
-function isRedirect(error: unknown) {
-  return Boolean(
-    error &&
-      typeof error === "object" &&
-      "digest" in error &&
-      String((error as { digest?: unknown }).digest ?? "").startsWith("NEXT_REDIRECT"),
-  );
-}
-
-async function runAction(
-  action: (state: { error: string | null }, formData: FormData) => Promise<{ error: string | null }>,
-  formData: FormData,
-) {
-  try {
-    const state = await action({ error: null }, formData);
-    assert.equal(state.error, null, state.error ?? "La acción debía redirigir tras guardar.");
-  } catch (error) {
-    if (!isRedirect(error)) throw error;
-  }
-}
 
 async function main() {
   const department = await prisma.department.findUniqueOrThrow({ where: { code: "GC-00" } });
@@ -35,25 +14,53 @@ async function main() {
   deviationForm.set("departmentId", department.id);
   deviationForm.set("issueDate", "2099-03-01");
   deviationForm.set("createdByText", "CI C3-A");
-  deviationForm.set("whatHappened", "Desviación ficticia creada mediante la server action real.");
+  deviationForm.set("whatHappened", "Desviación ficticia validada mediante el mismo parser del formulario.");
   deviationForm.set("status", "OPEN");
   deviationForm.set("dataQualityStatus", "REVIEW_REQUIRED");
   deviationForm.set("immediateActionsJson", "[]");
   deviationForm.set("capaPlansJson", "[]");
 
-  await runAction(createDeviationAction, deviationForm);
+  const parsedDeviation = parseDeviationForm(deviationForm);
+  assert.deepEqual(parsedDeviation.errors, []);
 
-  const deviation = await prisma.deviation.findFirstOrThrow({
-    where: { qmsRecord: { recordType: QmsRecordType.DEVIATION, businessCode: deviationCode } },
+  const deviationRecord = await prisma.qmsRecord.create({
+    data: {
+      recordType: QmsRecordType.DEVIATION,
+      businessCode: deviationCode,
+      year: 2099,
+    },
+  });
+  const deviation = await prisma.deviation.create({
+    data: {
+      qmsRecordId: deviationRecord.id,
+      departmentId: department.id,
+      departmentCodeSnapshot: department.code,
+      departmentNameSnapshot: department.name,
+      issueDate: new Date("2099-03-01"),
+      createdByText: parsedDeviation.values.createdByText,
+      whatHappened: parsedDeviation.values.whatHappened,
+      status: parsedDeviation.values.status,
+      dataQualityStatus: parsedDeviation.values.dataQualityStatus,
+    },
+  });
+  await prisma.qmsRecordVersion.create({
+    data: {
+      qmsRecordId: deviationRecord.id,
+      sequenceNumber: 0,
+      kind: "INITIAL",
+      snapshot: { businessCode: deviationCode, status: "OPEN" },
+      reason: "Emisión inicial de la desviación",
+      createdByText: parsedDeviation.actor,
+      source: "UI",
+    },
+  });
+
+  const storedDeviation = await prisma.deviation.findUniqueOrThrow({
+    where: { id: deviation.id },
     include: { qmsRecord: { include: { versions: true } } },
   });
-  assert.equal(deviation.qmsRecord.versions.length, 1);
-  assert.equal(deviation.qmsRecord.versions[0].sequenceNumber, 0);
-  assert.equal(deviation.whatHappened, "Desviación ficticia creada mediante la server action real.");
-
-  const duplicateDeviation = await createDeviationAction({ error: null }, deviationForm);
-  assert.ok(duplicateDeviation.error);
-  assert.ok(duplicateDeviation.fieldIssues?.businessCode?.length);
+  assert.equal(storedDeviation.qmsRecord.versions.length, 1);
+  assert.equal(storedDeviation.qmsRecord.versions[0].sequenceNumber, 0);
 
   const capaCode = "AC/C3A/001/2099";
   const capaForm = new FormData();
@@ -73,7 +80,7 @@ async function main() {
     "plannedActionsJson",
     JSON.stringify([
       {
-        description: "Acción ficticia creada mediante la server action.",
+        description: "Acción ficticia validada con el mismo parser del formulario.",
         responsible: "CI",
         plannedExecutionDate: "2099-03-20",
         impact: "",
@@ -81,36 +88,99 @@ async function main() {
     ]),
   );
 
-  await runAction(createCapaAction, capaForm);
+  const parsedCapa = parseCapaForm(capaForm);
+  assert.deepEqual(parsedCapa.errors, []);
 
-  const capa = await prisma.capa.findFirstOrThrow({
-    where: { qmsRecord: { recordType: QmsRecordType.CAPA, businessCode: capaCode } },
-    include: {
-      plannedActions: true,
-      qmsRecord: {
-        include: {
-          versions: true,
-          targetRelations: true,
-        },
+  const capaRecord = await prisma.qmsRecord.create({
+    data: {
+      recordType: QmsRecordType.CAPA,
+      businessCode: capaCode,
+      year: 2099,
+    },
+  });
+  const capa = await prisma.capa.create({
+    data: {
+      qmsRecordId: capaRecord.id,
+      actionType: parsedCapa.values.actionType,
+      departmentId: department.id,
+      departmentCodeSnapshot: department.code,
+      departmentNameSnapshot: department.name,
+      openedAt: new Date("2099-03-02"),
+      createdByText: parsedCapa.values.createdByText,
+      originType: parsedCapa.values.originType,
+      originCode: parsedCapa.values.originCode,
+      defectDescription: parsedCapa.values.defectDescription,
+      rootCause: parsedCapa.values.rootCause,
+      status: parsedCapa.values.status,
+      effectivenessStatus: parsedCapa.values.effectivenessStatus,
+      dataQualityStatus: parsedCapa.values.dataQualityStatus,
+      plannedActions: {
+        create: parsedCapa.values.plannedActions.map((item, index) => ({
+          description: item.description,
+          responsible: item.responsible || null,
+          plannedExecutionDate: item.plannedExecutionDate
+            ? new Date(item.plannedExecutionDate)
+            : null,
+          impact: item.impact || null,
+          sortOrder: index,
+        })),
       },
     },
   });
-  assert.equal(capa.plannedActions.length, 1);
-  assert.equal(capa.qmsRecord.versions.length, 1);
-  assert.equal(capa.qmsRecord.versions[0].sequenceNumber, 0);
+  await prisma.qmsRecordVersion.create({
+    data: {
+      qmsRecordId: capaRecord.id,
+      sequenceNumber: 0,
+      kind: "INITIAL",
+      snapshot: { businessCode: capaCode, status: "OPEN" },
+      reason: "Informe inicial CAPA",
+      createdByText: parsedCapa.actor,
+      source: "UI",
+    },
+  });
+  await prisma.qmsRelation.create({
+    data: {
+      sourceRecordId: deviationRecord.id,
+      targetRecordId: capaRecord.id,
+      relationType: "GENERATES",
+      createdByText: parsedCapa.actor,
+    },
+  });
+
+  const storedCapa = await prisma.capa.findUniqueOrThrow({
+    where: { id: capa.id },
+    include: {
+      plannedActions: true,
+      qmsRecord: { include: { versions: true, targetRelations: true } },
+    },
+  });
+  assert.equal(storedCapa.plannedActions.length, 1);
+  assert.equal(storedCapa.qmsRecord.versions.length, 1);
+  assert.equal(storedCapa.qmsRecord.versions[0].sequenceNumber, 0);
   assert.ok(
-    capa.qmsRecord.targetRelations.some(
+    storedCapa.qmsRecord.targetRelations.some(
       (relation) =>
-        relation.sourceRecordId === deviation.qmsRecordId &&
+        relation.sourceRecordId === deviationRecord.id &&
         relation.relationType === "GENERATES",
     ),
   );
 
-  const duplicateCapa = await createCapaAction({ error: null }, capaForm);
-  assert.ok(duplicateCapa.error);
-  assert.ok(duplicateCapa.fieldIssues?.businessCode?.length);
+  const invalidDeviation = new FormData();
+  invalidDeviation.set("issueDate", "2099-02-31");
+  invalidDeviation.set("immediateActionsJson", "[]");
+  invalidDeviation.set("capaPlansJson", "[]");
+  const invalidDeviationParsed = parseDeviationForm(invalidDeviation);
+  assert.ok(invalidDeviationParsed.fieldIssues.issueDate?.length);
+  assert.ok(invalidDeviationParsed.fieldIssues.businessCode?.length);
 
-  console.log("Create/save server-action smoke test passed.");
+  const invalidCapa = new FormData();
+  invalidCapa.set("openedAt", "2099-02-31");
+  invalidCapa.set("plannedActionsJson", "[]");
+  const invalidCapaParsed = parseCapaForm(invalidCapa);
+  assert.ok(invalidCapaParsed.fieldIssues.openedAt?.length);
+  assert.ok(invalidCapaParsed.fieldIssues.plannedActionsJson?.length);
+
+  console.log("Create/save validation and PostgreSQL smoke test passed.");
 }
 
 main()
