@@ -10,5 +10,6 @@ export const complaintColumns=[
  {key:"status",label:"Estado",index:8},
  {key:"effectiveness",label:"Eficacia",index:9},
  {key:"closing",label:"Fecha cierre",index:10},
- {key:"capa",label:"Observaciones / CAPA",index:11}
+ {key:"capa",label:"Observaciones / CAPA",index:11},
+ {key:"relations",label:"Expedientes vinculados",index:12}
 ] as const;
