@@ -59,7 +59,7 @@ export function expandCapaAnnexIVSheet(
   sheetXml: string,
   year: number,
   rows: CapaExportRow[],
-  styleId: (base: number, fill: number) => number,
+  styleId: (base: number, fill: number) => number = (base) => base,
 ) {
   const sheetData = sheetXml.match(/<sheetData>([\s\S]*?)<\/sheetData>/);
   if (!sheetData) throw new Error("Anexo IV CAPA: sheetData no encontrado.");
