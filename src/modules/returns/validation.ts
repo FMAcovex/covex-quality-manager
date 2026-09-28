@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ReturnProductInput } from "@/modules/returns/types";
+import type { ReturnProductInput } from "@/modules/returns/types";\nimport type { ReturnDeclarationData } from "@/modules/returns/declaration";
 const typeSchema=z.enum(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"]);
 const productTypeSchema=z.enum(["API","INTERMEDIATE","MEDICINE","SUPPLEMENT","IMPORTED_PRODUCT","MEDICAL_DEVICE","COSMETIC","OTHER"]);
 const decisionSchema=z.enum(["PENDING","ACCEPTED","REJECTED"]);
@@ -36,6 +36,12 @@ export function parseReturnForm(fd:FormData){
    if(!text(fd,"finalDestination"))errors.push("Una devolución cerrada requiere destino final.");
  }
  const tri=(name:string)=>en(triSchema,text(fd,name));
+ const declaration:ReturnDeclarationData={
+  signatoryName:text(fd,"customerDeclarationSignatory"),
+  signatoryRole:text(fd,"customerDeclarationRole"),
+  observations:text(fd,"customerDeclarationObservations"),
+  signedAt:text(fd,"customerDeclarationSignedAt")
+ };
  return {errors,actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
  businessCode,departmentId,communicationDate,receivedAt:text(fd,"receivedAt"),createdByText,returnType,otherReturnType:text(fd,"otherReturnType"),
  customerEntity,country:text(fd,"country"),address:text(fd,"address"),relatedDocument:text(fd,"relatedDocument"),conservationConditions:text(fd,"conservationConditions"),
@@ -53,6 +59,6 @@ export function parseReturnForm(fd:FormData){
  decisionDate:text(fd,"decisionDate"),destructionManagedBy:text(fd,"destructionManagedBy"),destructionCertificate:text(fd,"destructionCertificate"),
  traceabilityUpdated:tri("traceabilityUpdated"),closedAt:text(fd,"closedAt"),status,internalObservations:text(fd,"internalObservations"),
  signedDocumentAvailable:bool(fd,"signedDocumentAvailable"),dataQualityStatus:en(qualitySchema,text(fd,"dataQualityStatus"))??"REVIEW_REQUIRED",
- products:ps,fromComplaintId:text(fd,"fromComplaintId"),changeReason:text(fd,"changeReason")
+ products:ps,declaration,fromComplaintId:text(fd,"fromComplaintId"),changeReason:text(fd,"changeReason")
  }};
 }
