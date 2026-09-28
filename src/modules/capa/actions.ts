@@ -663,3 +663,19 @@ export async function addCapaRelationAction(id: string, formData: FormData) {
 
   revalidatePath(`/capa/${id}`);
 }
+
+
+export async function addCapaRelationFormAction(
+  id: string,
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  try {
+    await addCapaRelationAction(id, formData);
+    return { error: null };
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido vincular el expediente con la CAPA."),
+    };
+  }
+}
