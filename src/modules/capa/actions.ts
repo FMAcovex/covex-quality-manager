@@ -5,6 +5,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
+import {
+  allowedOperationalRelationTypes,
+  canonicalOperationalRelation,
+  operationalRelationLabel,
+  selectOperationalRelationTarget,
+} from "@/lib/qms/relation-rules";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -638,41 +644,60 @@ export async function addCapaFollowupAction(id: string, _state: FollowupActionSt
 }
 
 export async function addCapaRelationAction(id: string, formData: FormData) {
-  const capa = await prisma.capa.findUnique({ where: { id }, include: { qmsRecord: true } });
+  const capa = await prisma.capa.findUnique({
+    where: { id },
+    select: { qmsRecordId: true, createdByText: true },
+  });
   if (!capa) throw new Error("CAPA no encontrada.");
 
   const code = String(formData.get("relatedCode") ?? "").trim();
-  const relationType = String(formData.get("relationType") ?? "RELATED_TO").trim();
-  const actor = String(formData.get("createdByText") ?? "").trim() || "Usuario demo";
-  if (!code) throw new Error("Debe indicarse la codificación del expediente relacionado.");
+  const actor =
+    String(formData.get("createdByText") ?? "").trim() ||
+    capa.createdByText ||
+    "Usuario demo";
+  if (!code) {
+    throw new Error("Debe indicarse la codificación de la Desviación o Reclamación de origen.");
+  }
 
-  const target = await prisma.qmsRecord.findFirst({
+  const allowedTypes = allowedOperationalRelationTypes(QmsRecordType.CAPA);
+  const matches = await prisma.qmsRecord.findMany({
     where: {
       businessCode: code,
+      recordType: { in: allowedTypes },
       id: { not: capa.qmsRecordId },
     },
+    select: { id: true, recordType: true, businessCode: true },
   });
-  if (!target) throw new Error("No existe un expediente QMS con esa codificación.");
-
-  const allowed = ["GENERATES", "RELATED_TO", "IMPLEMENTED_BY", "ASSOCIATED_WITH"];
-  const type = allowed.includes(relationType) ? relationType : "RELATED_TO";
+  const origin = selectOperationalRelationTarget(QmsRecordType.CAPA, matches);
+  const relation = canonicalOperationalRelation(
+    { id: capa.qmsRecordId, recordType: QmsRecordType.CAPA, businessCode: null },
+    origin,
+  );
 
   await prisma.qmsRelation.upsert({
     where: {
       sourceRecordId_targetRecordId_relationType: {
-        sourceRecordId: capa.qmsRecordId,
-        targetRecordId: target.id,
-        relationType: type as "GENERATES" | "RELATED_TO" | "IMPLEMENTED_BY" | "ASSOCIATED_WITH",
+        sourceRecordId: relation.sourceRecordId,
+        targetRecordId: relation.targetRecordId,
+        relationType: relation.relationType,
       },
     },
-    update: { isActive: true, createdByText: actor },
-    create: {
-      sourceRecordId: capa.qmsRecordId,
-      targetRecordId: target.id,
-      relationType: type as "GENERATES" | "RELATED_TO" | "IMPLEMENTED_BY" | "ASSOCIATED_WITH",
+    update: {
+      isActive: true,
       createdByText: actor,
+      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
+    },
+    create: {
+      sourceRecordId: relation.sourceRecordId,
+      targetRecordId: relation.targetRecordId,
+      relationType: relation.relationType,
+      createdByText: actor,
+      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
     },
   });
 
+  revalidatePath("/capa");
+  revalidatePath("/deviations");
+  revalidatePath("/complaints");
   revalidatePath(`/capa/${id}`);
 }
