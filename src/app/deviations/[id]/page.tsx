@@ -106,25 +106,36 @@ export default async function DeviationDetailPage({
           <div className="card">
             <h2>CAPA y expedientes relacionados</h2>
             {deviation.capaPlans.length ? (
-              <div className="timeline">
+              <div className="linked-record-grid">
                 {deviation.capaPlans.map((plan) => (
-                  <div className="timeline-item" key={plan.id}>
-                    <header><strong>{plan.actionType === "CORRECTIVE" ? "Correctiva" : "Preventiva"}</strong><span className="badge neutral">{plan.proposalStatus}</span></header>
-                    <p>{plan.description}</p>
-                    <small className="muted-note">Responsable: {text(plan.responsible)} · Prevista: {formatDate(plan.plannedExecutionDate)}{plan.businessCapaCode ? ` · ${plan.businessCapaCode}` : ""}</small>
-                    {plan.linkedCapaRecord ? (
-                      <Link className="button small" href={`/capa/${plan.linkedCapaRecord.id}`}>Abrir CAPA</Link>
-                    ) : (
-                      <Link className="button small" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
-                    )}
-                  </div>
+                  <article className="linked-record-card" key={plan.id}>
+                    <div className="linked-record-main">
+                      <div className="linked-record-heading">
+                        <strong>{plan.actionType === "CORRECTIVE" ? "Correctiva" : "Preventiva"}</strong>
+                        <span className="badge neutral">{plan.proposalStatus}</span>
+                      </div>
+                      <p>{plan.description}</p>
+                      <dl className="linked-record-meta">
+                        <div><dt>Responsable</dt><dd>{text(plan.responsible)}</dd></div>
+                        <div><dt>Fecha prevista</dt><dd>{formatDate(plan.plannedExecutionDate)}</dd></div>
+                        <div><dt>Código CAPA</dt><dd>{plan.businessCapaCode ?? "Pendiente"}</dd></div>
+                      </dl>
+                    </div>
+                    <div className="linked-record-action">
+                      {plan.linkedCapaRecord ? (
+                        <Link className="button small" href={qmsRecordHref("CAPA", plan.linkedCapaRecord.id)}>Abrir CAPA</Link>
+                      ) : (
+                        <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
+                      )}
+                    </div>
+                  </article>
                 ))}
               </div>
             ) : <div className="empty-panel">No hay CAPA propuestas.</div>}
             {related.length ? (
               <>
                 <h3>Otras relaciones QMS</h3>
-                <div className="timeline">{related.map((item, index)=><div className="timeline-item" key={index}><strong>{item.type}</strong> · {item.record.businessCode ?? item.record.id}</div>)}</div>
+                <div className="relation-list">{related.map((item, index)=><div className="relation-card" key={index}><span>{item.type}</span><Link href={qmsRecordHref(item.record.recordType,item.record.id)}><strong>{item.record.businessCode ?? qmsRecordTypeLabel(item.record.recordType)}</strong></Link><small>{qmsRecordTypeLabel(item.record.recordType)}</small></div>)}</div>
               </>
             ) : null}
           </div>
