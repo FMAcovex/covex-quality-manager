@@ -5,6 +5,7 @@ import { Prisma,QmsRecordType,QmsRelationType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { parseReturnForm } from "@/modules/returns/validation";
 import type { ReturnFormState } from "@/modules/returns/types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
@@ -48,14 +49,15 @@ async function replaceProducts(tx:Prisma.TransactionClient,id:string,products:Re
 }
 export async function createReturnAction(_s:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
  const parsed=parseReturnForm(fd);if(parsed.errors.length)return{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors};
- const v=parsed.values,department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return{error:"El área seleccionada no existe."};
- const ref=d(v.communicationDate)??new Date();
- const [form,iii,iv,vdecl,vi]=await Promise.all([
-  getApplicableFormVersion(QmsRecordType.RETURN,ref),getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_III",ref),
-  getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_IV",ref),getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_V",ref),
-  getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_VI",ref)
- ]);
+ const v=parsed.values;let createdId:string;
  try{
+  const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return{error:"El área seleccionada no existe."};
+  const ref=d(v.communicationDate)??new Date();
+  const [form,iii,iv,vdecl,vi]=await Promise.all([
+   getApplicableFormVersion(QmsRecordType.RETURN,ref),getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_III",ref),
+   getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_IV",ref),getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_V",ref),
+   getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_VI",ref)
+  ]);
   const created=await prisma.$transaction(async tx=>{
    const qr=await tx.qmsRecord.create({data:{recordType:"RETURN",businessCode:v.businessCode,year:v.communicationDate?new Date(v.communicationDate).getFullYear():null}});
    const rec=await tx.returnRecord.create({data:{qmsRecordId:qr.id,...recordData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vdecl?.id,annexVITemplateVersionId:vi?.id}});
@@ -74,8 +76,9 @@ export async function createReturnAction(_s:ReturnFormState,fd:FormData):Promise
    const snap=await getSnapshot(tx,rec.id);await ensureInitialVersion(tx,qr.id,snapshotJson(serializeReturnVersion(snap)),parsed.actor);
    return rec;
   });
-  revalidatePath("/returns");revalidatePath("/complaints");redirect(`/returns/${created.id}`);
- }catch(e){if(e instanceof Error&&e.message.includes("Unique constraint"))return{error:"Ya existe una devolución con esa codificación."};throw e;}
+  createdId=created.id;
+ }catch(e){return persistenceFormError(e,"la devolución");}
+ revalidatePath("/returns");revalidatePath("/complaints");redirect(`/returns/${createdId}`);
 }
 export async function updateReturnAction(id:string,_s:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
  const parsed=parseReturnForm(fd);if(parsed.errors.length)return{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors};
@@ -93,11 +96,14 @@ export async function addReturnFollowupAction(id:string,_state:FollowupActionSta
  const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)return{error:"Devolución no encontrada."};
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
  if(!followupDate||!completedByText||!comment)return{error:"Fecha, responsable y comentario son obligatorios."};
- await prisma.$transaction(async tx=>{
+ try{
+await prisma.$transaction(async tx=>{
   await tx.returnFollowup.create({data:{returnRecordId:id,followupDate:new Date(followupDate),completedByText,comment,nextFollowupDate:d(String(fd.get("nextFollowupDate")??"")),evidenceReference:String(fd.get("evidenceReference")??"").trim()||null}});
   await tx.changeHistory.create({data:{qmsRecordId:rec.qmsRecordId,changedByText:completedByText,fieldPath:"followups",newValue:j({followupDate,comment}),reason:"Nuevo seguimiento",source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,rec.qmsRecordId,snapshotJson(serializeReturnVersion(snap)),completedByText,"Nuevo seguimiento");
  });
+
+ }catch(e){return persistenceFormError(e,"el seguimiento de la devolución");}
  revalidatePath(`/returns/${id}`);return{success:"Seguimiento guardado correctamente."};
 }
 export async function addReturnRelationAction(id:string,fd:FormData){

@@ -4,6 +4,7 @@ import { InvestigationMethod, Prisma, QmsRecordType, QmsRelationType } from "@pr
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -42,20 +43,21 @@ export async function createDeviationAction(
   }
 
   const v = parsed.values;
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "El departamento seleccionado no existe." };
-
-  const referenceDate = toDate(v.issueDate) ?? new Date();
-  const [formVersion, templateVersion] = await Promise.all([
-    getApplicableFormVersion(QmsRecordType.DEVIATION, referenceDate),
-    getApplicableTemplateVersion(
-      QmsRecordType.DEVIATION,
-      "DEVIATION_ANNEX_III",
-      referenceDate,
-    ),
-  ]);
-
+  let deviationId: string;
   try {
+    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
+    if (!department) return { error: "El departamento seleccionado no existe." };
+
+    const referenceDate = toDate(v.issueDate) ?? new Date();
+    const [formVersion, templateVersion] = await Promise.all([
+      getApplicableFormVersion(QmsRecordType.DEVIATION, referenceDate),
+      getApplicableTemplateVersion(
+        QmsRecordType.DEVIATION,
+        "DEVIATION_ANNEX_III",
+        referenceDate,
+      ),
+    ]);
+
     const deviation = await prisma.$transaction(async (tx) => {
       const qmsRecord = await tx.qmsRecord.create({
         data: {
@@ -177,15 +179,13 @@ export async function createDeviationAction(
 
       return created;
     });
-
-    revalidatePath("/deviations");
-    redirect(`/deviations/${deviation.id}`);
+    deviationId = deviation.id;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "Ya existe una desviación con esa codificación." };
-    }
-    throw error;
+    return persistenceFormError(error, "la desviación");
   }
+
+  revalidatePath("/deviations");
+  redirect(`/deviations/${deviationId}`);
 }
 
 export async function updateDeviationAction(
@@ -514,58 +514,62 @@ export async function addDeviationFollowupAction(deviationId: string, _state: Fo
   const nextFollowupDate = formData.get("nextFollowupDate")?.toString() || null;
   const evidenceReference = formData.get("evidenceReference")?.toString().trim() || null;
 
-  await prisma.$transaction(async (tx) => {
-    const followup = await tx.deviationFollowup.create({
-      data: {
-        deviationId,
-        followupDate: new Date(followupDate),
-        completedByText,
-        followupType,
-        comment,
-        nextFollowupDate: nextFollowupDate ? new Date(nextFollowupDate) : null,
-        evidenceReference,
-      },
-    });
-
-    await tx.changeHistory.create({
-      data: {
-        qmsRecordId: deviation.qmsRecordId,
-        changedByText: completedByText,
-        fieldPath: "followups",
-        newValue: jsonValue({
-          id: followup.id,
-          date: followupDate,
-          type: followupType,
+  try {
+    await prisma.$transaction(async (tx) => {
+      const followup = await tx.deviationFollowup.create({
+        data: {
+          deviationId,
+          followupDate: new Date(followupDate),
+          completedByText,
+          followupType,
           comment,
-          nextFollowupDate,
+          nextFollowupDate: nextFollowupDate ? new Date(nextFollowupDate) : null,
           evidenceReference,
-        }),
-        source: "UI",
-      },
-    });
-
-    const updatedForVersion = await tx.deviation.findUniqueOrThrow({
-      where: { id: deviationId },
-      include: {
-        qmsRecord: true,
-        immediateActions: { orderBy: { sortOrder: "asc" } },
-        followups: { orderBy: [{ followupDate: "asc" }, { createdAt: "asc" }] },
-        capaPlans: {
-          orderBy: { createdAt: "asc" },
-          include: { linkedCapaRecord: true },
         },
-        formVersion: true,
-        anexoIIITemplateVersion: true,
-      },
+      });
+
+      await tx.changeHistory.create({
+        data: {
+          qmsRecordId: deviation.qmsRecordId,
+          changedByText: completedByText,
+          fieldPath: "followups",
+          newValue: jsonValue({
+            id: followup.id,
+            date: followupDate,
+            type: followupType,
+            comment,
+            nextFollowupDate,
+            evidenceReference,
+          }),
+          source: "UI",
+        },
+      });
+
+      const updatedForVersion = await tx.deviation.findUniqueOrThrow({
+        where: { id: deviationId },
+        include: {
+          qmsRecord: true,
+          immediateActions: { orderBy: { sortOrder: "asc" } },
+          followups: { orderBy: [{ followupDate: "asc" }, { createdAt: "asc" }] },
+          capaPlans: {
+            orderBy: { createdAt: "asc" },
+            include: { linkedCapaRecord: true },
+          },
+          formVersion: true,
+          anexoIIITemplateVersion: true,
+        },
+      });
+      await refreshCurrentVersion(
+        tx,
+        deviation.qmsRecordId,
+        snapshotJson(serializeDeviationVersion(updatedForVersion)),
+        completedByText,
+        "Actualización del estado vigente con nuevo seguimiento",
+      );
     });
-    await refreshCurrentVersion(
-      tx,
-      deviation.qmsRecordId,
-      snapshotJson(serializeDeviationVersion(updatedForVersion)),
-      completedByText,
-      "Actualización del estado vigente con nuevo seguimiento",
-    );
-  });
+  } catch (error) {
+    return persistenceFormError(error, "el seguimiento de la desviación");
+  }
 
   revalidatePath(`/deviations/${deviationId}`);
   return { success: "Seguimiento guardado correctamente." };

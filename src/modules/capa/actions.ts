@@ -4,6 +4,7 @@ import { Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -106,16 +107,17 @@ export async function createCapaAction(
     return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors };
   }
   const v = parsed.values;
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "El departamento seleccionado no existe." };
-
-  const referenceDate = toDate(v.openedAt) ?? new Date();
-  const [formVersion, templateVersion] = await Promise.all([
-    getApplicableFormVersion(QmsRecordType.CAPA, referenceDate),
-    getApplicableTemplateVersion(QmsRecordType.CAPA, "CAPA_ANNEX_III", referenceDate),
-  ]);
-
+  let capaId: string;
   try {
+    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
+    if (!department) return { error: "El departamento seleccionado no existe." };
+
+    const referenceDate = toDate(v.openedAt) ?? new Date();
+    const [formVersion, templateVersion] = await Promise.all([
+      getApplicableFormVersion(QmsRecordType.CAPA, referenceDate),
+      getApplicableTemplateVersion(QmsRecordType.CAPA, "CAPA_ANNEX_III", referenceDate),
+    ]);
+
     const capa = await prisma.$transaction(async (tx) => {
       const qmsRecord = await tx.qmsRecord.create({
         data: {
@@ -290,17 +292,15 @@ export async function createCapaAction(
       }
       return created;
     });
-
-    revalidatePath("/capa");
-    revalidatePath("/deviations");
-    revalidatePath("/complaints");
-    redirect(`/capa/${capa.id}`);
+    capaId = capa.id;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "Ya existe una CAPA con esa codificación." };
-    }
-    throw error;
+    return persistenceFormError(error, "la CAPA");
   }
+
+  revalidatePath("/capa");
+  revalidatePath("/deviations");
+  revalidatePath("/complaints");
+  redirect(`/capa/${capaId}`);
 }
 
 export async function updateCapaAction(
@@ -551,82 +551,86 @@ export async function addCapaFollowupAction(id: string, _state: FollowupActionSt
   const sequenceNumber =
     Math.max(0, ...capa.followups.map((item) => item.sequenceNumber)) + 1;
 
-  await prisma.$transaction(async (tx) => {
-    const existingVersion = await tx.qmsRecordVersion.findFirst({
-      where: { qmsRecordId: capa.qmsRecordId },
-      orderBy: { sequenceNumber: "desc" },
-    });
-    if (!existingVersion) {
-      const historicalSequence = Math.max(0, ...capa.followups.map((item) => item.sequenceNumber));
-      await tx.qmsRecordVersion.create({
+  try {
+    await prisma.$transaction(async (tx) => {
+      const existingVersion = await tx.qmsRecordVersion.findFirst({
+        where: { qmsRecordId: capa.qmsRecordId },
+        orderBy: { sequenceNumber: "desc" },
+      });
+      if (!existingVersion) {
+        const historicalSequence = Math.max(0, ...capa.followups.map((item) => item.sequenceNumber));
+        await tx.qmsRecordVersion.create({
+          data: {
+            qmsRecordId: capa.qmsRecordId,
+            sequenceNumber: historicalSequence,
+            kind: historicalSequence === 0 ? "INITIAL" : "HISTORICAL_STATE",
+            snapshot: snapshotJson(serializeCapaVersion(capa)),
+            reason:
+              historicalSequence === 0
+                ? "Informe inicial CAPA"
+                : "Baseline histórico al activar Hito 6.1; no reconstruye versiones anteriores no almacenadas",
+            createdByText: actor,
+            source: historicalSequence === 0 ? "UI" : "SYSTEM",
+          },
+        });
+      }
+
+      const followup = await tx.capaFollowup.create({
         data: {
-          qmsRecordId: capa.qmsRecordId,
-          sequenceNumber: historicalSequence,
-          kind: historicalSequence === 0 ? "INITIAL" : "HISTORICAL_STATE",
-          snapshot: snapshotJson(serializeCapaVersion(capa)),
-          reason:
-            historicalSequence === 0
-              ? "Informe inicial CAPA"
-              : "Baseline histórico al activar Hito 6.1; no reconstruye versiones anteriores no almacenadas",
-          createdByText: actor,
-          source: historicalSequence === 0 ? "UI" : "SYSTEM",
+          capaId: id,
+          sequenceNumber,
+          followupDate: new Date(date),
+          completedByText: actor,
+          reason: reason || null,
+          description,
+          observations: observations || null,
+          evidenceReference: evidenceReference || null,
+          nextFollowupDate: next ? new Date(next) : null,
         },
       });
-    }
+      await tx.changeHistory.create({
+        data: {
+          qmsRecordId: capa.qmsRecordId,
+          changedByText: actor,
+          fieldPath: `followups[${sequenceNumber}]`,
+          newValue: jsonValue({
+            followupDate: date,
+            reason,
+            description,
+            observations,
+            evidenceReference,
+            nextFollowupDate: next,
+          }),
+          reason: "Nuevo seguimiento CAPA",
+          source: "UI",
+        },
+      });
 
-    const followup = await tx.capaFollowup.create({
-      data: {
-        capaId: id,
+      const updatedForVersion = await tx.capa.findUniqueOrThrow({
+        where: { id },
+        include: {
+          qmsRecord: true,
+          plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
+          formVersion: true,
+          annexIIITemplateVersion: true,
+        },
+      });
+      await startNextVersion(
+        tx,
+        capa.qmsRecordId,
+        "FOLLOWUP",
+        snapshotJson(serializeCapaVersion(updatedForVersion)),
+        actor,
+        reason || `Seguimiento CAPA ${String(sequenceNumber).padStart(2, "0")}`,
+        followup.id,
+        "UI",
         sequenceNumber,
-        followupDate: new Date(date),
-        completedByText: actor,
-        reason: reason || null,
-        description,
-        observations: observations || null,
-        evidenceReference: evidenceReference || null,
-        nextFollowupDate: next ? new Date(next) : null,
-      },
+      );
     });
-    await tx.changeHistory.create({
-      data: {
-        qmsRecordId: capa.qmsRecordId,
-        changedByText: actor,
-        fieldPath: `followups[${sequenceNumber}]`,
-        newValue: jsonValue({
-          followupDate: date,
-          reason,
-          description,
-          observations,
-          evidenceReference,
-          nextFollowupDate: next,
-        }),
-        reason: "Nuevo seguimiento CAPA",
-        source: "UI",
-      },
-    });
-
-    const updatedForVersion = await tx.capa.findUniqueOrThrow({
-      where: { id },
-      include: {
-        qmsRecord: true,
-        plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
-        followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
-        formVersion: true,
-        annexIIITemplateVersion: true,
-      },
-    });
-    await startNextVersion(
-      tx,
-      capa.qmsRecordId,
-      "FOLLOWUP",
-      snapshotJson(serializeCapaVersion(updatedForVersion)),
-      actor,
-      reason || `Seguimiento CAPA ${String(sequenceNumber).padStart(2, "0")}`,
-      followup.id,
-      "UI",
-      sequenceNumber,
-    );
-  });
+  } catch (error) {
+    return persistenceFormError(error, "el seguimiento de la CAPA");
+  }
 
   revalidatePath("/capa");
   revalidatePath(`/capa/${id}`);

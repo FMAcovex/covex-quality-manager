@@ -10,6 +10,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { parseChangeControlForm } from "@/modules/change-control/validation";
 import type {
   ChangeControlFormState,
@@ -123,18 +124,19 @@ export async function createChangeControlAction(
     return { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors };
   }
   const v = parsed.values;
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "El departamento seleccionado no existe." };
-
-  const referenceDate = toDate(v.requestDate) ?? new Date();
-  const [formVersion, annexIII, annexIV, annexV] = await Promise.all([
-    getApplicableFormVersion(QmsRecordType.CHANGE_CONTROL, referenceDate),
-    getApplicableTemplateVersion(QmsRecordType.CHANGE_CONTROL, "CHANGE_ANNEX_III", referenceDate),
-    getApplicableTemplateVersion(QmsRecordType.CHANGE_CONTROL, "CHANGE_ANNEX_IV", referenceDate),
-    getApplicableTemplateVersion(QmsRecordType.CHANGE_CONTROL, "CHANGE_ANNEX_V", referenceDate),
-  ]);
-
+  let createdId: string;
   try {
+    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
+    if (!department) return { error: "El departamento seleccionado no existe." };
+
+    const referenceDate = toDate(v.requestDate) ?? new Date();
+    const [formVersion, annexIII, annexIV, annexV] = await Promise.all([
+      getApplicableFormVersion(QmsRecordType.CHANGE_CONTROL, referenceDate),
+      getApplicableTemplateVersion(QmsRecordType.CHANGE_CONTROL, "CHANGE_ANNEX_III", referenceDate),
+      getApplicableTemplateVersion(QmsRecordType.CHANGE_CONTROL, "CHANGE_ANNEX_IV", referenceDate),
+      getApplicableTemplateVersion(QmsRecordType.CHANGE_CONTROL, "CHANGE_ANNEX_V", referenceDate),
+    ]);
+
     const created = await prisma.$transaction(async (tx) => {
       const qmsRecord = await tx.qmsRecord.create({
         data: {
@@ -216,15 +218,13 @@ export async function createChangeControlAction(
 
       return change;
     });
-
-    revalidatePath("/changes");
-    redirect(`/changes/${created.id}`);
+    createdId = created.id;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "Ya existe un Control de Cambio con esa codificación." };
-    }
-    throw error;
+    return persistenceFormError(error, "el Control de Cambio");
   }
+
+  revalidatePath("/changes");
+  redirect(`/changes/${createdId}`);
 }
 
 export async function updateChangeControlAction(

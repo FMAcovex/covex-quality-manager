@@ -46,17 +46,19 @@ function TextArea({
   name,
   defaultValue,
   help,
+  required = false,
 }: {
   label: string;
   name: string;
   defaultValue?: string;
   help?: string;
+  required?: boolean;
 }) {
   return (
     <label className="field span-3">
-      <span>{label}</span>
+      <span>{label}{required ? " *" : ""}</span>
       {help ? <small className="muted-note">{help}</small> : null}
-      <textarea name={name} defaultValue={defaultValue ?? ""} />
+      <textarea name={name} defaultValue={defaultValue ?? ""} required={required} />
     </label>
   );
 }
@@ -169,8 +171,8 @@ export function CapaForm({
           La descripción y la causa deben coincidir con el documento de origen cuando exista.
         </p>
         <div className="form-grid">
-          <TextArea label="Descripción breve del defecto *" name="defectDescription" defaultValue={defaults.defectDescription} />
-          <TextArea label="Causa raíz *" name="rootCause" defaultValue={defaults.rootCause} />
+          <TextArea label="Descripción breve del defecto" name="defectDescription" defaultValue={defaults.defectDescription} required />
+          <TextArea label="Causa raíz" name="rootCause" defaultValue={defaults.rootCause} required={mode === "create"} />
         </div>
       </section>
 
@@ -183,8 +185,8 @@ export function CapaForm({
           {actions.map((item, index) => (
             <div className="dynamic-row capa capa-full" key={index}>
               <label className="field">
-                <span>Descripción de la acción</span>
-                <textarea value={item.description} onChange={(e) => updateAction(index, { description: e.target.value })} />
+                <span>Descripción de la acción *</span>
+                <textarea required value={item.description} onChange={(e) => updateAction(index, { description: e.target.value })} />
               </label>
               <label className="field">
                 <span>Responsable</span>
