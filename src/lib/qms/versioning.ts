@@ -382,7 +382,7 @@ export function serializeReturnVersion(record: ReturnVersionSource) {
       departmentNameSnapshot: record.departmentNameSnapshot ?? null, communicationDate: iso(record.communicationDate),
       receivedAt: iso(record.receivedAt), createdByText: record.createdByText ?? null, returnType: record.returnType,
       otherReturnType: record.otherReturnType ?? null, customerEntity: record.customerEntity ?? null, country: record.country ?? null,
-      address: record.address ?? null, relatedDocument: record.relatedDocument ?? null, conservationConditions: record.conservationConditions ?? null,
+      address: record.address ?? null, relatedDocument: record.relatedDocument ?? null, conservationConditions: record.conservationConditions ?? null,\n      extraData: record.extraData ?? null,
       deliveryNote: record.deliveryNote ?? null, reasonObservations: record.reasonObservations ?? null, attachedDocumentation: record.attachedDocumentation ?? null,
       withinAcceptedReturnPeriod: record.withinAcceptedReturnPeriod ?? null, roomTemperatureWithinTenDays: record.roomTemperatureWithinTenDays ?? null,
       coldChainWithinFortyEightHours: record.coldChainWithinFortyEightHours ?? null, uniqueIdentifierActive: record.uniqueIdentifierActive ?? null,
