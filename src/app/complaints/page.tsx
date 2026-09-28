@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { complaintColumns } from "@/modules/complaints/column-config";
 import { QmsRelatedLinks } from "@/components/qms-related-links";
@@ -12,13 +13,14 @@ const p=(v:string|string[]|undefined)=>Array.isArray(v)?v[0]:v;
 export default async function ComplaintsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  const q=await searchParams;
  const filters={q:p(q.q),year:p(q.year),department:p(q.department),type:p(q.type),status:p(q.status),classification:p(q.classification),effectiveness:p(q.effectiveness)};
- const {rows,departments,years,counters}=await getComplaintList(filters);
+ const [{rows,departments,years,counters},documentTemplates]=await Promise.all([getComplaintList(filters),getActiveTemplateAssets("COMPLAINT")]);
  const exportParams=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v)exportParams.set(k,v)});
  const currentYear=filters.year??String(new Date().getFullYear());
+  const annualTemplate = documentTemplates.find((template) => template.documentType === "COMPLAINT_ANNEX_V");
  return <section className="workspace">
   <div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Reclamaciones</h1><p>Registro, investigación, resolución, eficacia y cierre.</p></div>
    <div className="heading-actions"><Link href="/complaints/new" className="button primary">+ Nueva reclamación</Link><ColumnSelector tableId="complaint-list-table" storageKey="qms.columns.complaints" columns={[...complaintColumns]}/>
-    <details className="export-menu"><summary className="button">Exportar ▾</summary><div className="export-popover"><strong>Exportaciones</strong><a className="export-link" href={`/api/complaints/export/annex-v?year=${currentYear}`}>Anexo V oficial · año {currentYear}</a><a className="export-link" href={`/api/complaints/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a><a className="export-link" href={`/api/complaints/export/simple?year=${currentYear}`}>Listado simple · año {currentYear}</a></div></details>
+    <details className="export-menu"><summary className="button">Exportar ▾</summary><div className="export-popover"><strong>Exportaciones</strong>{annualTemplate?.fileName||annualTemplate?.filePath?<a className="export-link" href={`/api/settings/templates/${annualTemplate.id}/download`}>Descargar plantilla oficial · Anexo V</a>:<span className="muted-note">Plantilla oficial Anexo V pendiente de cargar.</span>}<a className="export-link" href={`/api/complaints/export/annex-v?year=${currentYear}`}>Generar Anexo V cumplimentado · año {currentYear}</a><a className="export-link" href={`/api/complaints/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a><a className="export-link" href={`/api/complaints/export/simple?year=${currentYear}`}>Listado simple · año {currentYear}</a></div></details>
    </div>
   </div>
   <div className="tabs"><Link className="tab active" href="/complaints">Expedientes</Link><Link className="tab muted" href="/complaints/indicators">Indicadores</Link></div>
