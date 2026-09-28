@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  addChangeControlFollowupAction,
+  addChangeControlFollowupFormAction,
   addChangeControlRelationAction,
 } from "@/modules/change-control/actions";
 import { ChangeFollowupForm } from "@/modules/change-control/components/change-followup-form";
+import { QmsRelatedLinks } from "@/components/qms-related-links";
 import {
   classificationLabel,
   dictamenResultLabel,
@@ -278,7 +279,7 @@ export default async function ChangeControlDetailPage({
             <div className="card" id="new-followup">
               <h2>Nuevo seguimiento</h2>
               <ChangeFollowupForm
-                action={addChangeControlFollowupAction.bind(null, id)}
+                action={addChangeControlFollowupFormAction.bind(null, id)}
                 departments={lookups.departments}
                 tasks={followupTasks}
                 defaultResponsible={record.followupResponsible}
@@ -347,7 +348,7 @@ export default async function ChangeControlDetailPage({
               {relations.map((item, index) => (
                 <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
                   <span>{item.direction} · {relationLabel(item.type)}</span>
-                  <strong>{item.record.businessCode ?? item.record.id}</strong>
+                  <QmsRelatedLinks records={[item.record]} />
                   <small>{item.record.recordType}</small>
                 </div>
               ))}
