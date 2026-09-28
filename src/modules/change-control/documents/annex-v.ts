@@ -93,7 +93,8 @@ export async function generateChangeAnnexV(
               ? "☒ N/A"
               : "☐";
         return fillWordRowBalanced(second, [
-          { text: `${status} ${task.description}`, color },
+          { text: status, color },
+          { text: task.description, color },
           { text: text(task.responsible), color },
           { text: date(task.plannedDate), color },
           { text: date(state.actualDate), color },
