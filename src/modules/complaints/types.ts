@@ -1,4 +1,6 @@
 export type ComplaintCapaPlanInput={id?:string;actionType:"CORRECTIVE"|"PREVENTIVE";description:string;plannedExecutionDate:string;responsible:string;businessCapaCode?:string};
+export type ComplaintDerivedActionInput={id?:string;typeCode:string;actionEvidence:string;responsible:string;plannedDate:string};
+
 export type ComplaintFormState = { error: string | null; fieldErrors?: string[] };
 
 export type ComplaintFormDefaults = {
@@ -51,6 +53,34 @@ export type ComplaintFormDefaults = {
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";
   capaPlans?: ComplaintCapaPlanInput[];
+  v03Origins?: string[];
+  v03OriginOther?: string;
+  v03Scopes?: string[];
+  v03AffectedItems?: string[];
+  v03CategoryReasons?: string[];
+  v03ImpactQualityGmp?: string;
+  v03ImpactSafetyEfficacyUser?: string;
+  v03ImpactRegulatory?: string;
+  v03ImpactEnvironmental?: string;
+  v03SimilarOtherLots?: string;
+  v03ContainmentActions?: string[];
+  v03ContainmentOther?: string;
+  v03RiskScopeJustification?: string;
+  v03MayRequireRecall?: string;
+  v03ActivateRecall?: string;
+  v03AuthorityNotification?: string;
+  v03MahClientCommunication?: string;
+  v03RegulatoryJustification?: string;
+  v03DerivedActions?: ComplaintDerivedActionInput[];
+  v03CommunicationDate?: string;
+  v03CommunicationMedium?: string;
+  v03CommunicationSenderRecipient?: string;
+  v03CommunicationSummary?: string;
+  v03ContinuePartII?: string;
+  v03PartIConclusionPendings?: string;
+  v03ResponseSufficient?: string;
+  v03ActionStateSummary?: string;
+  v03NextFollowupDate?: string;
 };
 
 export type DepartmentOption = { id: string; code: string; name: string };

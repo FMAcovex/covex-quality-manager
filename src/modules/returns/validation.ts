@@ -53,6 +53,10 @@ export function parseReturnForm(fd:FormData){
  decisionDate:text(fd,"decisionDate"),destructionManagedBy:text(fd,"destructionManagedBy"),destructionCertificate:text(fd,"destructionCertificate"),
  traceabilityUpdated:tri("traceabilityUpdated"),closedAt:text(fd,"closedAt"),status,internalObservations:text(fd,"internalObservations"),
  signedDocumentAvailable:bool(fd,"signedDocumentAvailable"),dataQualityStatus:en(qualitySchema,text(fd,"dataQualityStatus"))??"REVIEW_REQUIRED",
- products:ps,fromComplaintId:text(fd,"fromComplaintId"),changeReason:text(fd,"changeReason")
+ products:ps,
+ declarationEvidence:fd.getAll("declarationEvidence").map(String).map(v=>v.trim()).filter(Boolean),
+ declarationOtherDocumentation:text(fd,"declarationOtherDocumentation"),declarationObservations:text(fd,"declarationObservations"),
+ customerTechnicalResponsible:text(fd,"customerTechnicalResponsible"),
+ fromComplaintId:text(fd,"fromComplaintId"),changeReason:text(fd,"changeReason")
  }};
 }

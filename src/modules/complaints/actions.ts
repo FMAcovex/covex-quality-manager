@@ -13,6 +13,7 @@ import { ensureInitialVersion,refreshCurrentVersion,snapshotJson,serializeCompla
 
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
+const cleanJson=(v:unknown):Prisma.InputJsonValue=>JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
 
 async function getSnapshot(tx:Prisma.TransactionClient,id:string){
  return tx.complaint.findUniqueOrThrow({where:{id},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"asc"},{createdAt:"asc"}]},capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:true}},formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true}});
@@ -34,7 +35,8 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   initialConclusionDate:d(v.initialConclusionDate),responseDate:d(v.responseDate),responseMedium:v.responseMedium,responseSummary:v.responseSummary,
   effectivenessStatus:v.effectivenessStatus,effectivenessAssessment:v.effectivenessAssessment,closeConclusion:v.closeConclusion,approvalNames:v.approvalNames,
   closeApprovalNames:v.closeApprovalNames,closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,
-  signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
+  signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus,
+  extraData:cleanJson({complaintV03:v.v03Data})
  };
 }
 

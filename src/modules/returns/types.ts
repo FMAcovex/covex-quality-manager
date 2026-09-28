@@ -17,5 +17,6 @@ export type ReturnFormDefaults={
   technicalApprovalName?:string;decisionDate?:string;destructionManagedBy?:string;destructionCertificate?:string;traceabilityUpdated?:string;
   closedAt?:string;status?:"OPEN"|"CLOSED";internalObservations?:string;signedDocumentAvailable?:string;
   dataQualityStatus?:"COMPLETE"|"INCOMPLETE"|"REVIEW_REQUIRED";products?:ReturnProductInput[];
+  declarationEvidence?:string[];declarationOtherDocumentation?:string;declarationObservations?:string;customerTechnicalResponsible?:string;
 };
 export type DepartmentOption={id:string;code:string;name:string};
