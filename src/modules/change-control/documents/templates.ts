@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { DocumentType,QmsRecordType } from "@prisma/client";
-import { loadStoredTemplateAsset } from "@/modules/configuration/template-assets";
+import { loadStoredTemplateAsset, TemplateAssetError } from "@/modules/configuration/template-assets";
 
-export class ChangeControlTemplateUnavailableError extends Error {}
+export class ChangeControlTemplateUnavailableError extends TemplateAssetError {}
 
 const HASHES = {
   annexIII: "a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f",

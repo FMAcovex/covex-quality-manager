@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { DocumentType, QmsRecordType } from "@prisma/client";
+import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 import { ColumnSelector } from "@/components/column-selector";
 import { changeControlColumns } from "@/modules/change-control/column-config";
 import {
@@ -33,6 +35,7 @@ export default async function ChangeControlPage({
     status: param(query.status),
   };
   const { rows, departments, years, counters } = await getChangeControlList(filters);
+  const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.CHANGE_CONTROL, DocumentType.CHANGE_ANNEX_VII);
   const exportYear = filters.year && /^\d{4}$/.test(filters.year)
     ? filters.year
     : String(new Date().getFullYear());
@@ -59,9 +62,7 @@ export default async function ChangeControlPage({
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones de Controles de Cambios</strong>
-              <a href={`/api/changes/export/annex-vii?year=${exportYear}`}>
-                Anexo VII oficial · {exportYear}
-              </a>
+              {officialTemplateReady ? <a href={`/api/changes/export/annex-vii?year=${exportYear}`}>Anexo VII oficial · {exportYear}</a> : <span className="template-missing-note">Anexo VII bloqueado · plantilla oficial pendiente de cargar.</span>}
               <a href={`/api/changes/export/simple?${simpleParams.toString()}`}>
                 Listado simple · filtros actuales
               </a>

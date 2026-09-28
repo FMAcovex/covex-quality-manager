@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { DocumentType,QmsRecordType } from "@prisma/client";
-import { loadStoredTemplateAsset } from "@/modules/configuration/template-assets";
+import { loadStoredTemplateAsset, TemplateAssetError } from "@/modules/configuration/template-assets";
 
-export class ComplaintTemplateUnavailableError extends Error {}
+export class ComplaintTemplateUnavailableError extends TemplateAssetError {}
 
 const LEGACY_V02_PNT_SHA="f717ae907da9ed8b575f740fbf8b1536d4157174de5b7b4d240220910b570df4";
 const V03_ANNEX_III_SHA="764e12076b407e9675f6291f03c8bab477f7850fbdb62fed8a904b4693b2bcde";

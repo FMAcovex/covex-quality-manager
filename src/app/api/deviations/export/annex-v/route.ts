@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { generateAnnexV } from "@/modules/deviations/documents/xlsx";
 import { prisma } from "@/lib/db";
 import { getDeviationExportRows } from "@/modules/deviations/documents/export-data";
-import { TemplateUnavailableError } from "@/modules/deviations/documents/templates";
+import { TemplateAssetError } from "@/modules/configuration/template-assets";
+import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 
 export const runtime = "nodejs";
 
@@ -33,8 +34,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    if (error instanceof TemplateUnavailableError) {
-      return NextResponse.json({ error: error.message }, { status: 503 });
+    if (error instanceof TemplateAssetError) {
+      return templateUnavailableResponse(error.message);
     }
     if (error instanceof Error && error.message.includes("admite")) {
       return NextResponse.json({ error: error.message }, { status: 409 });

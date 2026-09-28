@@ -775,3 +775,41 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
   .linked-record-meta { grid-template-columns: 1fr; }
   .linked-record-action { justify-content: flex-start; }
 }
+
+.template-readiness-card .section-title-row {
+  align-items: flex-start;
+}
+.readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+.readiness-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+.readiness-item span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.button[disabled],
+button[disabled] {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.template-missing-note {
+  display: block;
+  margin-top: 6px;
+  color: #8a5a00;
+  font-size: 12px;
+  line-height: 1.4;
+}
+@media (max-width: 760px) {
+  .readiness-grid { grid-template-columns: 1fr; }
+}

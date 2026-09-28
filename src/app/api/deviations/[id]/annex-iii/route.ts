@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { generateAnnexIII } from "@/modules/deviations/documents/annex-iii";
-import { TemplateUnavailableError } from "@/modules/deviations/documents/templates";
+import { TemplateAssetError } from "@/modules/configuration/template-assets";
+import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 import {
   deviationSnapshotToAnnexRecord,
   recordVersionTemplateId,
@@ -70,8 +71,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       },
     });
   } catch (error) {
-    if (error instanceof TemplateUnavailableError) {
-      return NextResponse.json({ error: error.message }, { status: 503 });
+    if (error instanceof TemplateAssetError) {
+      return templateUnavailableResponse(error.message);
     }
     throw error;
   }

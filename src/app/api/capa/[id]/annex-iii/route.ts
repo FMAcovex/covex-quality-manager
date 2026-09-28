@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCapaDetail } from "@/modules/capa/queries";
 import { generateCapaAnnexIII } from "@/modules/capa/documents/annex-iii";
-import { CapaTemplateUnavailableError } from "@/modules/capa/documents/templates";
+import { TemplateAssetError } from "@/modules/configuration/template-assets";
+import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 import {
   capaSnapshotToAnnexRecord,
   recordVersionTemplateId,
@@ -71,8 +72,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       },
     });
   } catch(error) {
-    if(error instanceof CapaTemplateUnavailableError) {
-      return NextResponse.json({error:error.message},{status:503});
+    if(error instanceof TemplateAssetError) {
+      return templateUnavailableResponse(error.message);
     }
     throw error;
   }

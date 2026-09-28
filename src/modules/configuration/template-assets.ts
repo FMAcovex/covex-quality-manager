@@ -4,7 +4,8 @@ import path from "node:path";
 import { DocumentType,QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
-export class StoredTemplateIntegrityError extends Error {}
+export class TemplateAssetError extends Error {}
+export class StoredTemplateIntegrityError extends TemplateAssetError {}
 
 export async function loadStoredTemplateAsset(
   module:QmsRecordType,

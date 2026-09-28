@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getChangeControlDetail } from "@/modules/change-control/queries";
 import { generateChangeAnnexIV } from "@/modules/change-control/documents/annex-iv";
-import { ChangeControlTemplateUnavailableError } from "@/modules/change-control/documents/templates";
+import { TemplateAssetError } from "@/modules/configuration/template-assets";
+import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 import {
   changeControlSnapshotTemplateId,
   changeControlSnapshotToRecord,
@@ -66,8 +67,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       },
     });
   } catch (error) {
-    if (error instanceof ChangeControlTemplateUnavailableError) {
-      return NextResponse.json({ error: error.message }, { status: 503 });
+    if (error instanceof TemplateAssetError) {
+      return templateUnavailableResponse(error.message);
     }
     throw error;
   }

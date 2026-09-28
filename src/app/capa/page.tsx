@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { DocumentType, QmsRecordType } from "@prisma/client";
+import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 import {
   capaStatusLabel,
   capaTypeLabel,
@@ -33,6 +35,7 @@ export default async function CapaPage({
     followup: param(query.followup),
   };
   const { rows, departments, years, origins, counters } = await getCapaList(filters);
+  const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.CAPA, DocumentType.CAPA_ANNEX_IV);
 
   const exportParams = new URLSearchParams();
   Object.entries(filters).forEach(([key,value]) => {
@@ -59,7 +62,7 @@ export default async function CapaPage({
                 <label><span>Anexo IV oficial</span><select name="year" defaultValue={filters.year ?? String(new Date().getFullYear())}>
                   {Array.from(new Set([Number(filters.year ?? new Date().getFullYear()),...years])).filter(Number.isInteger).sort((a,b)=>b-a).map((year)=><option key={year} value={year}>{year}</option>)}
                 </select></label>
-                <button className="button small" type="submit">Descargar</button>
+                {officialTemplateReady ? <button className="button small" type="submit">Descargar</button> : <><button className="button small" type="button" disabled>Descargar</button><span className="template-missing-note">Plantilla oficial pendiente de cargar.</span></>}
               </form>
               <a className="export-link" href={`/api/capa/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a>
               <a className="export-link" href="/api/capa/export/simple">Listado simple completo</a>
