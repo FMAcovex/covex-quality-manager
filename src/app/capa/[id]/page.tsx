@@ -9,6 +9,7 @@ import {
 } from "@/modules/capa/domain";
 import { getCapaDetail } from "@/modules/capa/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
+import { QmsRelationLinks } from "@/components/qms-relation-links";
 
 export const dynamic = "force-dynamic";
 
@@ -84,7 +85,7 @@ export default async function CapaDetailPage({
         <div className="record-actions">
           <Link className="button primary" href={`/capa/${id}/edit`}>Editar</Link>
           <Link className="button" href={`/capa/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
-          <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
+          <Link className="button" href={`/capa/${id}?tab=documents`}>Documentos</Link>
         </div>
       </div>
 
@@ -231,19 +232,11 @@ export default async function CapaDetailPage({
       {activeTab === "relations" ? (
         <div className="card">
           <h2>Relaciones QMS</h2>
-          {relations.length ? (
-            <div className="relation-list">
-              {relations.map((item, index) => (
-                <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
-                  <span>{item.direction} · {relationLabel(item.type)}</span>
-                  <strong>{item.record.businessCode ?? item.record.id}</strong>
-                  <small>{item.record.recordType}</small>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-panel">No hay otros expedientes estructurados relacionados.</div>
-          )}
+          <QmsRelationLinks
+            sourceRelations={capa.qmsRecord.sourceRelations}
+            targetRelations={capa.qmsRecord.targetRelations}
+            empty="No hay otros expedientes estructurados relacionados."
+          />
           <form action={addCapaRelationAction.bind(null, id)} className="inline-form relation-form">
             <label className="field"><span>Código expediente</span><input name="relatedCode" placeholder="D/GC-00/001/2026" required /></label>
             <label className="field">
@@ -330,9 +323,27 @@ export default async function CapaDetailPage({
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{capa.annexIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado</dt><dd>{capa.signedDocumentAvailable === true ? "Disponible" : capa.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
           </dl>
-          <div className="document-actions">
-            <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Descargar Anexo III cumplimentado</a>
-            <span className="muted-note">Cada generación queda registrada en el expediente.</span>
+          <div className="document-family-list">
+            <div className="document-family">
+              <div>
+                <strong>Anexo III · Informe CAPA</strong>
+                <p>Documento individual del expediente y de sus versiones/seguimientos.</p>
+              </div>
+              <div className="document-actions">
+                <a className="button" href="/api/templates/official?module=CAPA&documentType=CAPA_ANNEX_III&version=05">Descargar plantilla oficial</a>
+                <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+              </div>
+            </div>
+            <div className="document-family">
+              <div>
+                <strong>Anexo IV · Listado anual CAPA</strong>
+                <p>Plantilla del listado maestro anual.</p>
+              </div>
+              <div className="document-actions">
+                <a className="button" href="/api/templates/official?module=CAPA&documentType=CAPA_ANNEX_IV&version=05">Descargar plantilla oficial</a>
+                <Link className="button" href="/capa">Ir al listado para generar el Anexo IV</Link>
+              </div>
+            </div>
           </div>
           {capa.qmsRecord.generatedDocuments.length ? (
             <>
