@@ -1,4 +1,4 @@
-import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
+import { readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
 import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadComplaintPntTemplate } from "@/modules/complaints/documents/templates";
