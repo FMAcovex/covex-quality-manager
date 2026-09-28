@@ -23,3 +23,6 @@ templates/returns/v03/*.docx
 
 # Los backups lógicos pueden contener el contenido completo del QMS.
 backups/
+
+# Generated DEMO annex QA output
+demo-annexes/
