@@ -71,8 +71,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       },
     });
   } catch(error) {
-    if(error instanceof CapaTemplateUnavailableError) {
-      return NextResponse.json({error:error.message},{status:503});
+    if(error instanceof TemplateAssetError) {
+      return templateUnavailableResponse(error.message);
     }
     throw error;
   }
