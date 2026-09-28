@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addCapaFollowupAction, addCapaRelationAction } from "@/modules/capa/actions";
+import { addCapaFollowupFormAction, addCapaRelationAction } from "@/modules/capa/actions";
+import { ActionFeedbackForm } from "@/components/action-feedback-form";
+import { QmsRelatedLinks } from "@/components/qms-related-links";
 import {
   capaStatusLabel,
   capaTypeLabel,
@@ -127,7 +129,7 @@ export default async function CapaDetailPage({
                 {relations.map((item, index) => (
                   <div className="relation-card" key={`${item.record.id}-${item.type}-${index}`}>
                     <span>{item.direction} · {relationLabel(item.type)}</span>
-                    <strong>{item.record.businessCode ?? item.record.id}</strong>
+                    <QmsRelatedLinks records={[item.record]} />
                     <small>{item.record.recordType}</small>
                   </div>
                 ))}
@@ -196,7 +198,7 @@ export default async function CapaDetailPage({
 
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
-            <form action={addCapaFollowupAction.bind(null, id)} className="inline-form">
+            <ActionFeedbackForm action={addCapaFollowupFormAction.bind(null, id)} className="inline-form">
               <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>
               <label className="field"><span>Cumplimentado por *</span><input name="completedByText" defaultValue={capa.createdByText ?? ""} required /></label>
               <label className="field"><span>Motivo</span><input name="reason" /></label>
@@ -204,8 +206,8 @@ export default async function CapaDetailPage({
               <label className="field"><span>Próxima fecha</span><input type="date" name="nextFollowupDate" /></label>
               <label className="field"><span>Evidencia / referencia</span><input name="evidenceReference" /></label>
               <label className="field full"><span>Observaciones</span><textarea name="observations" /></label>
-              <div className="field"><span>&nbsp;</span><button className="button primary" type="submit">Guardar seguimiento</button></div>
-            </form>
+              <div className="form-action-row"><button className="button primary" type="submit">Guardar seguimiento</button></div>
+            </ActionFeedbackForm>
           </div>
         </>
       ) : null}
