@@ -10,7 +10,7 @@ const HASHES = {
   annexIII: "a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f",
   annexIV: "742b1de11e0e0dece4e9c65c97613c112325189e183b9cb02c56ca82cd06cc60",
   annexV: "3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4",
-  annexVII: "bdef034e5de4f314d77696230e07f2796c2d139f4868c055d68688082622ce16",
+  annexVII: "b65671cdd652f104f4038c65e07c025b5c7374dee4b683d74fbeef55f12bc8eb",
 } as const;
 
 async function loadTemplate(
@@ -87,7 +87,7 @@ export async function loadChangeAnnexVIITemplate(versionCode = "03") {
   requireV03(versionCode, "Anexo VII");
   return loadTemplate(
     process.env.CHANGE_ANNEX_VII_TEMPLATE,
-    "templates/change-control/v03/Anexo VII Listado GC-00-003-03.xlsx",
+    "templates/change-control/v03/Anexo VII_PNT GC003.03_Listado seguimiento .xlsx",
     HASHES.annexVII,
     "Anexo VII",
   );

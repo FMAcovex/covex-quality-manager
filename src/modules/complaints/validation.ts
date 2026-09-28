@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ComplaintDerivedActionInput } from "@/modules/complaints/types";
 
 const typeSchema=z.enum(["PROVIDER","CUSTOMER"]);
 const classificationSchema=z.enum(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"]);
@@ -6,6 +7,7 @@ const resultSchema=z.enum(["PROCEDENT","NOT_PROCEDENT","INCONCLUSIVE","NOT_ATTRI
 const statusSchema=z.enum(["OPEN","CLOSED"]);
 const efficacySchema=z.enum(["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"]);
 const qualitySchema=z.enum(["COMPLETE","INCOMPLETE","REVIEW_REQUIRED"]);
+const triSchema=z.enum(["YES","NO","NA"]);
 const capaActionSchema=z.enum(["CORRECTIVE","PREVENTIVE"]);
 const resolutionSchema=z.enum([
 "RETURN","CORRECTIVE_ACTION","PREVENTIVE_ACTION","IMMEDIATE_ACTION","RECALL","CREDIT","REPLACEMENT","REJECT","REPROCESS","DISPOSE","KEEP_AS_IS","SUPPLIER_INVESTIGATION","SUPPLIER_EVALUATION","OPEN_DEVIATION","OPEN_CAPA","OPEN_CHANGE","OTHER"
@@ -14,6 +16,8 @@ const resolutionSchema=z.enum([
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"&&v.trim()?v.trim():null;}
 function bool(fd:FormData,name:string){const v=text(fd,name);return v==="true"?true:v==="false"?false:null;}
 function enumValue<T extends z.ZodTypeAny>(schema:T,value:string|null){if(!value)return null;const r=schema.safeParse(value);return r.success?r.data:null;}
+function list(fd:FormData,name:string){return fd.getAll(name).map(String).map(x=>x.trim()).filter(Boolean);}
+function tri(fd:FormData,name:string){return enumValue(triSchema,text(fd,name));}
 
 function parseCapaPlans(raw:string|null){
  if(!raw)return [];
@@ -30,6 +34,23 @@ function parseCapaPlans(raw:string|null){
   })).filter((x)=>x.description);
  }catch{return [];}
 }
+function parseDerivedActions(raw:string|null):ComplaintDerivedActionInput[]{
+ if(!raw)return [];
+ try{
+  const a=JSON.parse(raw);
+  if(!Array.isArray(a))return [];
+  return a.filter((x):x is Record<string,unknown>=>Boolean(x&&typeof x==="object")).map((x,i)=>({
+   id:typeof x.id==="string"?x.id:undefined,
+   actionType:typeof x.actionType==="string"?x.actionType.trim():"",
+   businessCode:typeof x.businessCode==="string"?x.businessCode.trim():"",
+   description:typeof x.description==="string"?x.description.trim():"",
+   responsible:typeof x.responsible==="string"?x.responsible.trim():"",
+   plannedExecutionDate:typeof x.plannedExecutionDate==="string"?x.plannedExecutionDate:"",
+   sortOrder:typeof x.sortOrder==="number"?x.sortOrder:i*10,
+  })).filter(x=>x.actionType||x.businessCode||x.description);
+ }catch{return [];}
+}
+
 export function parseComplaintForm(fd:FormData){
   const businessCode=text(fd,"businessCode"),departmentId=text(fd,"departmentId"),openedAt=text(fd,"openedAt"),
     createdByText=text(fd,"createdByText"),partyName=text(fd,"partyName"),description=text(fd,"description"),
@@ -38,6 +59,7 @@ export function parseComplaintForm(fd:FormData){
   const classification=enumValue(classificationSchema,text(fd,"classification"));
   const effectivenessStatus=enumValue(efficacySchema,text(fd,"effectivenessStatus"))??"PENDING";
   const capaPlans=parseCapaPlans(text(fd,"capaPlansJson"));
+  const derivedActions=parseDerivedActions(text(fd,"derivedActionsJson"));
   const resolutionActions=fd.getAll("resolutionActions").map(String).map(v=>enumValue(resolutionSchema,v)).filter((v):v is z.infer<typeof resolutionSchema>=>Boolean(v));
   const errors:string[]=[];
   if(!businessCode)errors.push("La codificación es obligatoria.");
@@ -55,23 +77,36 @@ export function parseComplaintForm(fd:FormData){
   if(effectivenessStatus==="NOT_REQUIRED"&&bool(fd,"effectivenessRequired")===true){
     errors.push("La eficacia no puede figurar como No requerida si se ha indicado que es necesaria.");
   }
+  if(text(fd,"sourceOther")&&!list(fd,"sourceTypes").includes("OTHER"))errors.push("Si se especifica otro origen, marca también «Otro».");
+  if(text(fd,"categoryOther")&&!list(fd,"categoryTypes").includes("OTHER"))errors.push("Si se especifica otra categoría, marca también «Otro».");
+
   return {errors,actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
-    businessCode,departmentId,openedAt,detectionDate:text(fd,"detectionDate"),detectedBy:text(fd,"detectedBy"),createdByText,
-    complaintType,partyName,contact:text(fd,"contact"),affectedScope:text(fd,"affectedScope"),reference:text(fd,"reference"),
+    businessCode,departmentId,openedAt,detectionDate:text(fd,"detectionDate"),receptionDate:text(fd,"receptionDate"),detectedBy:text(fd,"detectedBy"),createdByText,
+    complaintType,sourceTypes:list(fd,"sourceTypes"),sourceOther:text(fd,"sourceOther"),scopeTypes:list(fd,"scopeTypes"),scopeOther:text(fd,"scopeOther"),
+    affectedObjectTypes:list(fd,"affectedObjectTypes"),affectedObjectOther:text(fd,"affectedObjectOther"),categoryTypes:list(fd,"categoryTypes"),categoryOther:text(fd,"categoryOther"),
+    partyName,contact:text(fd,"contact"),affectedScope:text(fd,"affectedScope"),reference:text(fd,"reference"),
     lotReference:text(fd,"lotReference"),quantity:text(fd,"quantity"),expiryReanalysis:text(fd,"expiryReanalysis"),
     purchaseDeliveryReference:text(fd,"purchaseDeliveryReference"),description,recurrent:bool(fd,"recurrent"),
     recurrenceReference:text(fd,"recurrenceReference"),attachedDocumentation:text(fd,"attachedDocumentation"),
     emittedBy:text(fd,"emittedBy"),qaValidatedBy:text(fd,"qaValidatedBy"),investigation:text(fd,"investigation"),
-    impactAssessment:text(fd,"impactAssessment"),investigationResult:enumValue(resultSchema,text(fd,"investigationResult")),
-    rootCause:text(fd,"rootCause"),classification,resolutionLines:text(fd,"resolutionLines"),resolutionActions,
-    immediateActionDetails:text(fd,"immediateActionDetails"),otherResolutionDetails:text(fd,"otherResolutionDetails"),
-    externalCommunication:text(fd,"externalCommunication"),conclusion:text(fd,"conclusion"),
-    effectivenessRequired:bool(fd,"effectivenessRequired"),initialEvaluationDate:text(fd,"initialEvaluationDate"),
-    initialConclusionDate:text(fd,"initialConclusionDate"),responseDate:text(fd,"responseDate"),responseMedium:text(fd,"responseMedium"),
-    responseSummary:text(fd,"responseSummary"),effectivenessStatus,effectivenessAssessment:text(fd,"effectivenessAssessment"),
+    impactAssessment:text(fd,"impactAssessment"),impactQualityGmp:tri(fd,"impactQualityGmp"),impactSafetyEfficacy:tri(fd,"impactSafetyEfficacy"),
+    impactRegulatory:tri(fd,"impactRegulatory"),impactEnvironment:tri(fd,"impactEnvironment"),impactOtherSimilar:tri(fd,"impactOtherSimilar"),
+    containmentActions:list(fd,"containmentActions"),containmentOther:text(fd,"containmentOther"),riskJustification:text(fd,"riskJustification"),
+    investigationResult:enumValue(resultSchema,text(fd,"investigationResult")),rootCause:text(fd,"rootCause"),classification,
+    potentialRecall:tri(fd,"potentialRecall"),recallProcedureRequired:tri(fd,"recallProcedureRequired"),
+    authorityNotificationRequired:tri(fd,"authorityNotificationRequired"),responsiblePartyCommunicationRequired:tri(fd,"responsiblePartyCommunicationRequired"),
+    regulatoryJustification:text(fd,"regulatoryJustification"),
+    resolutionLines:text(fd,"resolutionLines"),resolutionActions,immediateActionDetails:text(fd,"immediateActionDetails"),otherResolutionDetails:text(fd,"otherResolutionDetails"),
+    externalCommunication:text(fd,"externalCommunication"),communicationDate:text(fd,"communicationDate"),communicationMedium:text(fd,"communicationMedium"),
+    communicationParties:text(fd,"communicationParties"),communicationSummary:text(fd,"communicationSummary"),
+    partIIRequired:bool(fd,"partIIRequired"),conclusion:text(fd,"conclusion"),effectivenessRequired:bool(fd,"effectivenessRequired"),
+    initialEvaluationDate:text(fd,"initialEvaluationDate"),initialConclusionDate:text(fd,"initialConclusionDate"),
+    responseDate:text(fd,"responseDate"),responseMedium:text(fd,"responseMedium"),responseSummary:text(fd,"responseSummary"),
+    responseSufficient:bool(fd,"responseSufficient"),effectivenessStatus,effectivenessAssessment:text(fd,"effectivenessAssessment"),
+    closeActionStatus:text(fd,"closeActionStatus"),closeActionReferences:text(fd,"closeActionReferences"),
     closeConclusion:text(fd,"closeConclusion"),approvalNames:text(fd,"approvalNames"),closeApprovalNames:text(fd,"closeApprovalNames"),
     closedAt:text(fd,"closedAt"),status,internalObservations:text(fd,"internalObservations"),
     signedDocumentAvailable:bool(fd,"signedDocumentAvailable"),dataQualityStatus:enumValue(qualitySchema,text(fd,"dataQualityStatus"))??"REVIEW_REQUIRED",
-    capaPlans,changeReason:text(fd,"changeReason")
+    capaPlans,derivedActions,changeReason:text(fd,"changeReason")
   }};
 }

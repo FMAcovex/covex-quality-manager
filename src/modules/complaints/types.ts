@@ -1,4 +1,5 @@
 export type ComplaintCapaPlanInput={id?:string;actionType:"CORRECTIVE"|"PREVENTIVE";description:string;plannedExecutionDate:string;responsible:string;businessCapaCode?:string};
+export type ComplaintDerivedActionInput={id?:string;actionType:string;businessCode:string;description:string;responsible:string;plannedExecutionDate:string;sortOrder?:number};
 export type ComplaintFormState = { error: string | null; fieldErrors?: string[] };
 
 export type ComplaintFormDefaults = {
@@ -6,9 +7,18 @@ export type ComplaintFormDefaults = {
   departmentId?: string;
   openedAt?: string;
   detectionDate?: string;
+  receptionDate?: string;
   detectedBy?: string;
   createdByText?: string;
   complaintType?: "PROVIDER" | "CUSTOMER";
+  sourceTypes?: string[];
+  sourceOther?: string;
+  scopeTypes?: string[];
+  scopeOther?: string;
+  affectedObjectTypes?: string[];
+  affectedObjectOther?: string;
+  categoryTypes?: string[];
+  categoryOther?: string;
   partyName?: string;
   contact?: string;
   affectedScope?: string;
@@ -25,14 +35,32 @@ export type ComplaintFormDefaults = {
   qaValidatedBy?: string;
   investigation?: string;
   impactAssessment?: string;
+  impactQualityGmp?: string;
+  impactSafetyEfficacy?: string;
+  impactRegulatory?: string;
+  impactEnvironment?: string;
+  impactOtherSimilar?: string;
+  containmentActions?: string[];
+  containmentOther?: string;
+  riskJustification?: string;
   investigationResult?: "PROCEDENT" | "NOT_PROCEDENT" | "INCONCLUSIVE" | "NOT_ATTRIBUTABLE_TO_COVEX";
   rootCause?: string;
   classification?: "CRITICAL" | "MAJOR" | "MINOR" | "NO_GMP_IMPACT";
+  potentialRecall?: string;
+  recallProcedureRequired?: string;
+  authorityNotificationRequired?: string;
+  responsiblePartyCommunicationRequired?: string;
+  regulatoryJustification?: string;
   resolutionLines?: string;
   resolutionActions?: string[];
   immediateActionDetails?: string;
   otherResolutionDetails?: string;
   externalCommunication?: string;
+  communicationDate?: string;
+  communicationMedium?: string;
+  communicationParties?: string;
+  communicationSummary?: string;
+  partIIRequired?: "" | "true" | "false";
   conclusion?: string;
   effectivenessRequired?: "" | "true" | "false";
   initialEvaluationDate?: string;
@@ -40,8 +68,11 @@ export type ComplaintFormDefaults = {
   responseDate?: string;
   responseMedium?: string;
   responseSummary?: string;
+  responseSufficient?: "" | "true" | "false";
   effectivenessStatus?: "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_REQUIRED";
   effectivenessAssessment?: string;
+  closeActionStatus?: string;
+  closeActionReferences?: string;
   closeConclusion?: string;
   approvalNames?: string;
   closeApprovalNames?: string;
@@ -51,6 +82,7 @@ export type ComplaintFormDefaults = {
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";
   capaPlans?: ComplaintCapaPlanInput[];
+  derivedActions?: ComplaintDerivedActionInput[];
 };
 
 export type DepartmentOption = { id: string; code: string; name: string };

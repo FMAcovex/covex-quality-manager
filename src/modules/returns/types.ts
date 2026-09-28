@@ -2,7 +2,7 @@ export type ReturnFormState={error:string|null;fieldErrors?:string[]};
 export type ReturnProductInput={
   id?:string; departmentId:string; productType:"API"|"INTERMEDIATE"|"MEDICINE"|"SUPPLEMENT"|"IMPORTED_PRODUCT"|"MEDICAL_DEVICE"|"COSMETIC"|"OTHER";
   otherProductType:string; productNameCode:string; format:string; lot:string; expiryReanalysis:string; quantity:string; unit:string;
-  netWeight:string; grossWeight:string; receptionObservations:string; receivedBy:string; verifiedBy:string;
+  netWeight:string; grossWeight:string; receptionObservations:string; receivedBy:string; receivedByDate:string; verifiedBy:string; verifiedByDate:string;
 };
 export type ReturnFormDefaults={
   businessCode?:string;departmentId?:string;communicationDate?:string;receivedAt?:string;createdByText?:string;
@@ -10,6 +10,7 @@ export type ReturnFormDefaults={
   address?:string;relatedDocument?:string;conservationConditions?:string;deliveryNote?:string;reasonObservations?:string;
   attachedDocumentation?:string;withinAcceptedReturnPeriod?:string;roomTemperatureWithinTenDays?:string;coldChainWithinFortyEightHours?:string;
   uniqueIdentifierActive?:string;tamperEvidenceIntact?:string;packagingIntegrityOk?:string;customerDeclarationAvailable?:string;
+  customerDeclarationSignatoryName?:string;customerDeclarationSignatoryRole?:string;customerDeclarationSignedAt?:string;customerDeclarationObservations?:string;
   storageTransportConditionsOk?:string;noUseDamageContamination?:string;noRecallAlertBlock?:string;expiryAcceptable?:string;
   qcAssessmentCompleted?:string;storageTemperatureRecord?:string;returnTransportTempEvidence?:string;transportPackagingSuitable?:string;
   receiptTemperatureAcceptable?:string;temperatureExcursionEvaluated?:string;coldChainReturnSystemValidated?:string;

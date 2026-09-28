@@ -25,7 +25,9 @@ function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{i
   deliveryNote:v.deliveryNote,reasonObservations:v.reasonObservations,attachedDocumentation:v.attachedDocumentation,
   withinAcceptedReturnPeriod:v.withinAcceptedReturnPeriod,roomTemperatureWithinTenDays:v.roomTemperatureWithinTenDays,coldChainWithinFortyEightHours:v.coldChainWithinFortyEightHours,
   uniqueIdentifierActive:v.uniqueIdentifierActive,tamperEvidenceIntact:v.tamperEvidenceIntact,packagingIntegrityOk:v.packagingIntegrityOk,
-  customerDeclarationAvailable:v.customerDeclarationAvailable,storageTransportConditionsOk:v.storageTransportConditionsOk,noUseDamageContamination:v.noUseDamageContamination,
+  customerDeclarationAvailable:v.customerDeclarationAvailable,customerDeclarationSignatoryName:v.customerDeclarationSignatoryName,
+  customerDeclarationSignatoryRole:v.customerDeclarationSignatoryRole,customerDeclarationSignedAt:d(v.customerDeclarationSignedAt),
+  customerDeclarationObservations:v.customerDeclarationObservations,storageTransportConditionsOk:v.storageTransportConditionsOk,noUseDamageContamination:v.noUseDamageContamination,
   noRecallAlertBlock:v.noRecallAlertBlock,expiryAcceptable:v.expiryAcceptable,qcAssessmentCompleted:v.qcAssessmentCompleted,storageTemperatureRecord:v.storageTemperatureRecord,
   returnTransportTempEvidence:v.returnTransportTempEvidence,transportPackagingSuitable:v.transportPackagingSuitable,receiptTemperatureAcceptable:v.receiptTemperatureAcceptable,
   temperatureExcursionEvaluated:v.temperatureExcursionEvaluated,coldChainReturnSystemValidated:v.coldChainReturnSystemValidated,decision:v.decision,
@@ -41,7 +43,7 @@ async function replaceProducts(tx:Prisma.TransactionClient,id:string,products:Re
   if(p.departmentId)department=await tx.department.findUnique({where:{id:p.departmentId}});
   await tx.returnProduct.create({data:{returnRecordId:id,departmentId:department?.id??null,productType:p.productType,otherProductType:p.otherProductType||null,productNameCode:p.productNameCode,
    format:p.format||null,lot:p.lot||null,expiryReanalysis:p.expiryReanalysis||null,quantity:p.quantity||null,unit:p.unit||null,netWeight:p.netWeight||null,grossWeight:p.grossWeight||null,
-   receptionObservations:p.receptionObservations||null,receivedBy:p.receivedBy||null,verifiedBy:p.verifiedBy||null,sortOrder:i}});
+   receptionObservations:p.receptionObservations||null,receivedBy:p.receivedBy||null,receivedByDate:d(p.receivedByDate),verifiedBy:p.verifiedBy||null,verifiedByDate:d(p.verifiedByDate),sortOrder:i}});
  }
 }
 export async function createReturnAction(_s:ReturnFormState,fd:FormData):Promise<ReturnFormState>{

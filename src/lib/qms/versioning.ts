@@ -28,6 +28,7 @@ type ComplaintVersionSource = Prisma.ComplaintGetPayload<{
     qmsRecord: true;
     followups: true;
     capaPlans: { include: { linkedCapaRecord: true } };
+    derivedActions: true;
     formVersion: true;
     annexIIITemplateVersion: true;
     annexIVTemplateVersion: true;
@@ -339,25 +340,40 @@ export function serializeComplaintVersion(record: ComplaintVersionSource) {
       departmentId: record.departmentId ?? null,
       departmentCodeSnapshot: record.departmentCodeSnapshot ?? null,
       departmentNameSnapshot: record.departmentNameSnapshot ?? null,
-      openedAt: iso(record.openedAt), detectionDate: iso(record.detectionDate),
+      openedAt: iso(record.openedAt), detectionDate: iso(record.detectionDate), receptionDate: iso(record.receptionDate),
       detectedBy: record.detectedBy ?? null, createdByText: record.createdByText ?? null,
-      complaintType: record.complaintType, partyName: record.partyName ?? null, contact: record.contact ?? null,
+      complaintType: record.complaintType, sourceTypes: record.sourceTypes ?? [], sourceOther: record.sourceOther ?? null,
+      scopeTypes: record.scopeTypes ?? [], scopeOther: record.scopeOther ?? null,
+      affectedObjectTypes: record.affectedObjectTypes ?? [], affectedObjectOther: record.affectedObjectOther ?? null,
+      categoryTypes: record.categoryTypes ?? [], categoryOther: record.categoryOther ?? null,
+      partyName: record.partyName ?? null, contact: record.contact ?? null,
       affectedScope: record.affectedScope ?? null, reference: record.reference ?? null, lotReference: record.lotReference ?? null,
       quantity: record.quantity ?? null, expiryReanalysis: record.expiryReanalysis ?? null,
       purchaseDeliveryReference: record.purchaseDeliveryReference ?? null, description: record.description ?? null,
       recurrent: record.recurrent ?? null, recurrenceReference: record.recurrenceReference ?? null,
       attachedDocumentation: record.attachedDocumentation ?? null, emittedBy: record.emittedBy ?? null,
       qaValidatedBy: record.qaValidatedBy ?? null, investigation: record.investigation ?? null,
-      impactAssessment: record.impactAssessment ?? null, investigationResult: record.investigationResult ?? null,
+      impactAssessment: record.impactAssessment ?? null, impactQualityGmp: record.impactQualityGmp ?? null,
+      impactSafetyEfficacy: record.impactSafetyEfficacy ?? null, impactRegulatory: record.impactRegulatory ?? null,
+      impactEnvironment: record.impactEnvironment ?? null, impactOtherSimilar: record.impactOtherSimilar ?? null,
+      containmentActions: record.containmentActions ?? [], containmentOther: record.containmentOther ?? null,
+      riskJustification: record.riskJustification ?? null, investigationResult: record.investigationResult ?? null,
       rootCause: record.rootCause ?? null, classification: record.classification ?? null,
+      potentialRecall: record.potentialRecall ?? null, recallProcedureRequired: record.recallProcedureRequired ?? null,
+      authorityNotificationRequired: record.authorityNotificationRequired ?? null,
+      responsiblePartyCommunicationRequired: record.responsiblePartyCommunicationRequired ?? null,
+      regulatoryJustification: record.regulatoryJustification ?? null,
       resolutionLines: record.resolutionLines ?? null, resolutionActions: record.resolutionActions,
       immediateActionDetails: record.immediateActionDetails ?? null, otherResolutionDetails: record.otherResolutionDetails ?? null,
-      externalCommunication: record.externalCommunication ?? null, conclusion: record.conclusion ?? null,
-      effectivenessRequired: record.effectivenessRequired ?? null, initialEvaluationDate: iso(record.initialEvaluationDate),
+      externalCommunication: record.externalCommunication ?? null, communicationDate: iso(record.communicationDate),
+      communicationMedium: record.communicationMedium ?? null, communicationParties: record.communicationParties ?? null,
+      communicationSummary: record.communicationSummary ?? null, partIIRequired: record.partIIRequired ?? null,
+      conclusion: record.conclusion ?? null, effectivenessRequired: record.effectivenessRequired ?? null, initialEvaluationDate: iso(record.initialEvaluationDate),
       initialConclusionDate: iso(record.initialConclusionDate), responseDate: iso(record.responseDate),
       responseMedium: record.responseMedium ?? null, responseSummary: record.responseSummary ?? null,
-      effectivenessStatus: record.effectivenessStatus, effectivenessAssessment: record.effectivenessAssessment ?? null,
-      closeConclusion: record.closeConclusion ?? null, approvalNames: record.approvalNames ?? null,
+      responseSufficient: record.responseSufficient ?? null, effectivenessStatus: record.effectivenessStatus,
+      effectivenessAssessment: record.effectivenessAssessment ?? null, closeActionStatus: record.closeActionStatus ?? null,
+      closeActionReferences: record.closeActionReferences ?? null, closeConclusion: record.closeConclusion ?? null, approvalNames: record.approvalNames ?? null,
       closeApprovalNames: record.closeApprovalNames ?? null, closedAt: iso(record.closedAt), status: record.status,
       internalObservations: record.internalObservations ?? null, signedDocumentAvailable: record.signedDocumentAvailable ?? null,
       dataQualityStatus: record.dataQualityStatus, includeInKpi: record.includeInKpi, kpiExclusionReason: record.kpiExclusionReason ?? null,
@@ -366,6 +382,7 @@ export function serializeComplaintVersion(record: ComplaintVersionSource) {
       annexIVTemplateVersionId: record.annexIVTemplateVersionId ?? null, annexIVTemplateVersionCode: record.annexIVTemplateVersion?.versionCode ?? null,
       annexVTemplateVersionId: record.annexVTemplateVersionId ?? null, annexVTemplateVersionCode: record.annexVTemplateVersion?.versionCode ?? null,
       capaPlans: record.capaPlans.map(x=>({actionType:x.actionType,description:x.description,plannedExecutionDate:iso(x.plannedExecutionDate),responsible:x.responsible??null,businessCapaCode:x.businessCapaCode??null,linkedCapaRecordId:x.linkedCapaRecordId??null,linkedCapaBusinessCode:x.linkedCapaRecord?.businessCode??null,proposalStatus:x.proposalStatus})),
+      derivedActions: record.derivedActions.map(x=>({actionType:x.actionType,businessCode:x.businessCode??null,description:x.description??null,responsible:x.responsible??null,plannedExecutionDate:iso(x.plannedExecutionDate),sortOrder:x.sortOrder})),
       followups: record.followups.map(x=>({id:x.id,followupDate:iso(x.followupDate),completedByText:x.completedByText,followupType:x.followupType??null,comment:x.comment,nextFollowupDate:iso(x.nextFollowupDate),evidenceReference:x.evidenceReference??null}))
     }
   };
@@ -386,7 +403,12 @@ export function serializeReturnVersion(record: ReturnVersionSource) {
       withinAcceptedReturnPeriod: record.withinAcceptedReturnPeriod ?? null, roomTemperatureWithinTenDays: record.roomTemperatureWithinTenDays ?? null,
       coldChainWithinFortyEightHours: record.coldChainWithinFortyEightHours ?? null, uniqueIdentifierActive: record.uniqueIdentifierActive ?? null,
       tamperEvidenceIntact: record.tamperEvidenceIntact ?? null, packagingIntegrityOk: record.packagingIntegrityOk ?? null,
-      customerDeclarationAvailable: record.customerDeclarationAvailable ?? null, storageTransportConditionsOk: record.storageTransportConditionsOk ?? null,
+      customerDeclarationAvailable: record.customerDeclarationAvailable ?? null,
+      customerDeclarationSignatoryName: record.customerDeclarationSignatoryName ?? null,
+      customerDeclarationSignatoryRole: record.customerDeclarationSignatoryRole ?? null,
+      customerDeclarationSignedAt: iso(record.customerDeclarationSignedAt),
+      customerDeclarationObservations: record.customerDeclarationObservations ?? null,
+      storageTransportConditionsOk: record.storageTransportConditionsOk ?? null,
       noUseDamageContamination: record.noUseDamageContamination ?? null, noRecallAlertBlock: record.noRecallAlertBlock ?? null,
       expiryAcceptable: record.expiryAcceptable ?? null, qcAssessmentCompleted: record.qcAssessmentCompleted ?? null,
       storageTemperatureRecord: record.storageTemperatureRecord ?? null, returnTransportTempEvidence: record.returnTransportTempEvidence ?? null,
@@ -399,7 +421,7 @@ export function serializeReturnVersion(record: ReturnVersionSource) {
       internalObservations: record.internalObservations ?? null, signedDocumentAvailable: record.signedDocumentAvailable ?? null,
       dataQualityStatus: record.dataQualityStatus, includeInKpi: record.includeInKpi, kpiExclusionReason: record.kpiExclusionReason ?? null,
       formVersionId: record.formVersionId ?? null, formVersionCode: record.formVersion?.versionCode ?? null,
-      products: record.products.map(x=>({departmentId:x.departmentId??null,productType:x.productType,otherProductType:x.otherProductType??null,productNameCode:x.productNameCode,format:x.format??null,lot:x.lot??null,expiryReanalysis:x.expiryReanalysis??null,quantity:x.quantity??null,unit:x.unit??null,netWeight:x.netWeight??null,grossWeight:x.grossWeight??null,receptionObservations:x.receptionObservations??null,receivedBy:x.receivedBy??null,verifiedBy:x.verifiedBy??null,sortOrder:x.sortOrder})),
+      products: record.products.map(x=>({departmentId:x.departmentId??null,productType:x.productType,otherProductType:x.otherProductType??null,productNameCode:x.productNameCode,format:x.format??null,lot:x.lot??null,expiryReanalysis:x.expiryReanalysis??null,quantity:x.quantity??null,unit:x.unit??null,netWeight:x.netWeight??null,grossWeight:x.grossWeight??null,receptionObservations:x.receptionObservations??null,receivedBy:x.receivedBy??null,receivedByDate:iso(x.receivedByDate),verifiedBy:x.verifiedBy??null,verifiedByDate:iso(x.verifiedByDate),sortOrder:x.sortOrder})),
       followups: record.followups.map(x=>({id:x.id,followupDate:iso(x.followupDate),completedByText:x.completedByText,comment:x.comment,nextFollowupDate:iso(x.nextFollowupDate),evidenceReference:x.evidenceReference??null}))
     }
   };

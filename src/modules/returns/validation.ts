@@ -15,7 +15,8 @@ productType:en(productTypeSchema,typeof x.productType==="string"?x.productType:n
 productNameCode:typeof x.productNameCode==="string"?x.productNameCode.trim():"",format:typeof x.format==="string"?x.format:"",lot:typeof x.lot==="string"?x.lot:"",
 expiryReanalysis:typeof x.expiryReanalysis==="string"?x.expiryReanalysis:"",quantity:typeof x.quantity==="string"?x.quantity:"",unit:typeof x.unit==="string"?x.unit:"",
 netWeight:typeof x.netWeight==="string"?x.netWeight:"",grossWeight:typeof x.grossWeight==="string"?x.grossWeight:"",receptionObservations:typeof x.receptionObservations==="string"?x.receptionObservations:"",
-receivedBy:typeof x.receivedBy==="string"?x.receivedBy:"",verifiedBy:typeof x.verifiedBy==="string"?x.verifiedBy:""
+receivedBy:typeof x.receivedBy==="string"?x.receivedBy:"",receivedByDate:typeof x.receivedByDate==="string"?x.receivedByDate:"",
+verifiedBy:typeof x.verifiedBy==="string"?x.verifiedBy:"",verifiedByDate:typeof x.verifiedByDate==="string"?x.verifiedByDate:""
 })).filter(x=>x.productNameCode);}catch{return[];}}
 export function parseReturnForm(fd:FormData){
  const businessCode=text(fd,"businessCode"),departmentId=text(fd,"departmentId"),communicationDate=text(fd,"communicationDate"),
@@ -43,7 +44,10 @@ export function parseReturnForm(fd:FormData){
  withinAcceptedReturnPeriod:tri("withinAcceptedReturnPeriod"),roomTemperatureWithinTenDays:tri("roomTemperatureWithinTenDays"),
  coldChainWithinFortyEightHours:tri("coldChainWithinFortyEightHours"),uniqueIdentifierActive:tri("uniqueIdentifierActive"),
  tamperEvidenceIntact:tri("tamperEvidenceIntact"),packagingIntegrityOk:tri("packagingIntegrityOk"),
- customerDeclarationAvailable:tri("customerDeclarationAvailable"),storageTransportConditionsOk:tri("storageTransportConditionsOk"),
+ customerDeclarationAvailable:tri("customerDeclarationAvailable"),
+ customerDeclarationSignatoryName:text(fd,"customerDeclarationSignatoryName"),customerDeclarationSignatoryRole:text(fd,"customerDeclarationSignatoryRole"),
+ customerDeclarationSignedAt:text(fd,"customerDeclarationSignedAt"),customerDeclarationObservations:text(fd,"customerDeclarationObservations"),
+ storageTransportConditionsOk:tri("storageTransportConditionsOk"),
  noUseDamageContamination:tri("noUseDamageContamination"),noRecallAlertBlock:tri("noRecallAlertBlock"),expiryAcceptable:tri("expiryAcceptable"),
  qcAssessmentCompleted:tri("qcAssessmentCompleted"),storageTemperatureRecord:tri("storageTemperatureRecord"),
  returnTransportTempEvidence:tri("returnTransportTempEvidence"),transportPackagingSuitable:tri("transportPackagingSuitable"),

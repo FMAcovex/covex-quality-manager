@@ -827,6 +827,15 @@ model Complaint {
   detectedBy                 String?
   createdByText              String?
   complaintType              ComplaintType
+  receptionDate              DateTime?                    @db.Date
+  sourceTypes                String[]                      @default([])
+  sourceOther                String?
+  scopeTypes                 String[]                      @default([])
+  scopeOther                 String?
+  affectedObjectTypes        String[]                      @default([])
+  affectedObjectOther        String?
+  categoryTypes              String[]                      @default([])
+  categoryOther              String?
   partyName                  String?
   contact                    String?
   affectedScope              String?
@@ -843,14 +852,32 @@ model Complaint {
   qaValidatedBy              String?
   investigation              String?
   impactAssessment           String?
+  impactQualityGmp           TriState?
+  impactSafetyEfficacy       TriState?
+  impactRegulatory           TriState?
+  impactEnvironment          TriState?
+  impactOtherSimilar         TriState?
+  containmentActions         String[]                      @default([])
+  containmentOther           String?
+  riskJustification          String?
   investigationResult        ComplaintInvestigationResult?
   rootCause                  String?
   classification             ComplaintClassification?
+  potentialRecall            TriState?
+  recallProcedureRequired    TriState?
+  authorityNotificationRequired TriState?
+  responsiblePartyCommunicationRequired TriState?
+  regulatoryJustification    String?
   resolutionLines            String?
   resolutionActions          ComplaintResolutionAction[] @default([])
   immediateActionDetails     String?
   otherResolutionDetails     String?
   externalCommunication      String?
+  communicationDate          DateTime?                    @db.Date
+  communicationMedium        String?
+  communicationParties       String?
+  communicationSummary       String?
+  partIIRequired             Boolean?
   conclusion                 String?
   effectivenessRequired      Boolean?
   initialEvaluationDate      DateTime?                    @db.Date
@@ -858,9 +885,12 @@ model Complaint {
   responseDate               DateTime?                    @db.Date
   responseMedium             String?
   responseSummary            String?
+  responseSufficient         Boolean?
   effectivenessStatus        ComplaintEffectivenessStatus @default(PENDING)
   effectivenessAssessment    String?
   closeConclusion            String?
+  closeActionStatus          String?
+  closeActionReferences      String?
   approvalNames              String?
   closeApprovalNames         String?
   closedAt                   DateTime?                    @db.Date
@@ -883,6 +913,7 @@ model Complaint {
   updatedAt                  DateTime                     @updatedAt
   followups                  ComplaintFollowup[]
   capaPlans                  ComplaintCapaPlan[]
+  derivedActions             ComplaintDerivedAction[]
 
   @@index([departmentId])
   @@index([openedAt])
@@ -913,6 +944,23 @@ model ComplaintCapaPlan {
   @@index([complaintId])
   @@index([linkedCapaRecordId])
   @@index([plannedExecutionDate])
+}
+
+model ComplaintDerivedAction {
+  id                   String    @id @default(uuid())
+  complaintId          String
+  complaint            Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  actionType           String
+  businessCode         String?
+  description          String?
+  responsible          String?
+  plannedExecutionDate DateTime? @db.Date
+  sortOrder            Int       @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([complaintId, sortOrder])
+  @@index([businessCode])
 }
 
 model ComplaintFollowup {
@@ -959,6 +1007,10 @@ model ReturnRecord {
   tamperEvidenceIntact            TriState?
   packagingIntegrityOk            TriState?
   customerDeclarationAvailable    TriState?
+  customerDeclarationSignatoryName String?
+  customerDeclarationSignatoryRole String?
+  customerDeclarationSignedAt      DateTime?      @db.Date
+  customerDeclarationObservations  String?
   storageTransportConditionsOk    TriState?
   noUseDamageContamination        TriState?
   noRecallAlertBlock              TriState?
@@ -1031,7 +1083,9 @@ model ReturnProduct {
   grossWeight           String?
   receptionObservations String?
   receivedBy            String?
+  receivedByDate        DateTime?          @db.Date
   verifiedBy            String?
+  verifiedByDate        DateTime?          @db.Date
   sortOrder             Int               @default(0)
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
