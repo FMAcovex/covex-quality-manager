@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { AlertRuleKind,AlertSeverity,DocumentType,FormVersionStatus,ParameterValueType,Prisma,QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { readZip } from "@/lib/ooxml/zip";
 import { isAllowedDocumentType } from "@/modules/configuration/admin-domain";
 
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"?v.trim():"";}
@@ -94,6 +95,53 @@ export async function activateFormVersionAction(id:string,fd:FormData){
   const updated=await prisma.formVersion.findUniqueOrThrow({where:{id}});
   await logChange("FormVersion",`${target.module}:${target.versionCode}`,"ACTIVATE",target,updated,fd);
   revalidatePath("/settings/versions");
+}
+
+const TEMPLATE_PACKAGE_MANIFEST=[
+  {module:QmsRecordType.DEVIATION,documentType:DocumentType.DEVIATION_ANNEX_III,versionCode:"06",effectiveFrom:"2026-03-12",suffix:"DESVIACIONES/Anexo III Informe Desviaciones 06.docx",sha:"8639c29198101a73253f0681620c89a3e2848b335d2a4be61b946f9b7a353d43"},
+  {module:QmsRecordType.DEVIATION,documentType:DocumentType.DEVIATION_ANNEX_V,versionCode:"06",effectiveFrom:"2026-03-12",suffix:"DESVIACIONES/Anexo V.xlsx",sha:"1f92410bc94e2037fe632450ce766b3ce5d44c4f55b8868056bad73c882c03f2"},
+  {module:QmsRecordType.CAPA,documentType:DocumentType.CAPA_ANNEX_III,versionCode:"05",effectiveFrom:"2026-03-11",suffix:"CAPAS/Anexo III INFORME CAPA 05.docx",sha:"73c3d57ca5ae6f4e9644a4f1cbe416992de6b367973ba98cd67f7f0bd1fea540"},
+  {module:QmsRecordType.CAPA,documentType:DocumentType.CAPA_ANNEX_IV,versionCode:"05",effectiveFrom:"2026-03-11",suffix:"CAPAS/Anexo IV LISTADO CAPA 05 oficial.xlsx",sha:"47f3d757c2c00cbcbdba9e4f7daf2cb4d804ce522a5e1145ab5260efd8147ac3"},
+  {module:QmsRecordType.CHANGE_CONTROL,documentType:DocumentType.CHANGE_ANNEX_III,versionCode:"03",effectiveFrom:"2026-05-05",suffix:"CONTROLES DE CAMBIO/Anexo III_PNT GC003.03_Solicitud.docx",sha:"a436d4aa732209e1aeb9620d5442a154a68899f875d1aa5d0dc437edd751a49f"},
+  {module:QmsRecordType.CHANGE_CONTROL,documentType:DocumentType.CHANGE_ANNEX_IV,versionCode:"03",effectiveFrom:"2026-05-05",suffix:"CONTROLES DE CAMBIO/Anexo IV_PNT GC003.03_Dictamen.docx",sha:"742b1de11e0e0dece4e9c65c97613c112325189e183b9cb02c56ca82cd06cc60"},
+  {module:QmsRecordType.CHANGE_CONTROL,documentType:DocumentType.CHANGE_ANNEX_V,versionCode:"03",effectiveFrom:"2026-05-05",suffix:"CONTROLES DE CAMBIO/Anexo V_PNT GC003.03_Informe .docx",sha:"3012e81b0172c77c59c9c97514d788e10eb332a73e4490b9c0a1c87afa6ad1e4"},
+  {module:QmsRecordType.CHANGE_CONTROL,documentType:DocumentType.CHANGE_ANNEX_VII,versionCode:"03",effectiveFrom:"2026-05-05",suffix:"CONTROLES DE CAMBIO/Anexo VII_PNT GC003.03_Listado seguimiento .xlsx",sha:"b65671cdd652f104f4038c65e07c025b5c7374dee4b683d74fbeef55f12bc8eb"},
+  {module:QmsRecordType.COMPLAINT,documentType:DocumentType.COMPLAINT_ANNEX_III,versionCode:"03",effectiveFrom:"2026-09-28",suffix:"PNT RECLAMACIONES/Anexo III 02 INFORME RECLAMACION.docx",sha:"764e12076b407e9675f6291f03c8bab477f7850fbdb62fed8a904b4693b2bcde"},
+  {module:QmsRecordType.COMPLAINT,documentType:DocumentType.COMPLAINT_ANNEX_V,versionCode:"03",effectiveFrom:"2026-09-28",suffix:"PNT RECLAMACIONES/Anexo V 02 LISTADO DE RECLAMACIONES.xlsx",sha:"8d9a572fcfbc8bba05d99e3772aa0fec6fd3b716b6db2eaa5a056737d79d1d83"},
+  {module:QmsRecordType.RETURN,documentType:DocumentType.RETURN_ANNEX_III,versionCode:"03",effectiveFrom:"2026-05-26",suffix:"DEVOLUCIONES/A3 FORMULARIO DEV 03.docx",sha:"9716477f2b261a4fec8b1d459fb8aa62bd42840f8fa352b4b66b15c2669745f4"},
+  {module:QmsRecordType.RETURN,documentType:DocumentType.RETURN_ANNEX_IV,versionCode:"03",effectiveFrom:"2026-05-26",suffix:"DEVOLUCIONES/GC-00.028.03 DEV PRODUCTO_CSM_CG.docx",sha:"7f6b318e936cef9d2685347decf52b8951c34585dbd2ef1ebca05232a0c59a5a"},
+  {module:QmsRecordType.RETURN,documentType:DocumentType.RETURN_ANNEX_V,versionCode:"03",effectiveFrom:"2026-05-26",suffix:"DEVOLUCIONES/GC-00.028.03 DEV PRODUCTO_CSM_CG.docx",sha:"7f6b318e936cef9d2685347decf52b8951c34585dbd2ef1ebca05232a0c59a5a"},
+  {module:QmsRecordType.RETURN,documentType:DocumentType.RETURN_ANNEX_VI,versionCode:"03",effectiveFrom:"2026-05-26",suffix:"DEVOLUCIONES/A6 LISTADO DEV 03.xlsx",sha:"fa027508995beca7e39368f92e9d75ac2fdcf0dd7dffa57dfef8d59e6696db64"},
+] as const;
+
+export async function importTemplatePackageAction(fd:FormData){
+ const file=fd.get("package");
+ if(!(file instanceof File)||file.size===0)throw new Error("Adjunta el ZIP de plantillas.");
+ if(file.size>15*1024*1024)throw new Error("El paquete supera el límite de 15 MB.");
+ const entries=readZip(Buffer.from(await file.arrayBuffer())).filter(x=>!x.name.endsWith("/"));
+ const normalized=(value:string)=>value.replaceAll("\\","/").normalize("NFC").toLocaleLowerCase("es-ES");
+ const imported:string[]=[];
+ await prisma.$transaction(async tx=>{
+  for(const item of TEMPLATE_PACKAGE_MANIFEST){
+   const targetSuffix=normalized(item.suffix);
+   const entry=entries.find(x=>normalized(x.name).endsWith(targetSuffix));
+   if(!entry)throw new Error(`Falta en el ZIP: ${item.suffix}`);
+   const checksum=createHash("sha256").update(entry.data).digest("hex");
+   if(checksum!==item.sha)throw new Error(`La copia de ${item.suffix} no coincide con la plantilla auditada.`);
+   const fileName=entry.name.split("/").pop()||item.suffix;
+   const mimeType=fileName.toLowerCase().endsWith(".xlsx")
+     ?"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+     :"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+   await tx.templateVersion.upsert({
+    where:{module_documentType_versionCode:{module:item.module,documentType:item.documentType,versionCode:item.versionCode}},
+    update:{fileName,mimeType,fileData:new Uint8Array(entry.data),fileSize:entry.data.length,checksum,filePath:null},
+    create:{module:item.module,documentType:item.documentType,versionCode:item.versionCode,effectiveFrom:new Date(item.effectiveFrom),isActive:true,fileName,mimeType,fileData:new Uint8Array(entry.data),fileSize:entry.data.length,checksum},
+   });
+   imported.push(`${item.module}:${item.documentType}:${item.versionCode}`);
+  }
+ });
+ await logChange("TemplatePackage","ANEXOS PARA APP","IMPORT",null,{files:imported.length,templates:imported},fd);
+ revalidatePath("/settings/versions");
 }
 
 export async function registerTemplateVersionAction(fd:FormData){
