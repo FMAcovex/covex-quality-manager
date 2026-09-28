@@ -15,4 +15,5 @@ export const deviationColumns = [
   { key: "capa", label: "Descripción CAPA", index: 13 },
   { key: "document", label: "Documento", index: 14 },
   { key: "observations", label: "Observaciones", index: 15 },
+  { key: "related", label: "Relacionados", index: 16 },
 ] as const;
