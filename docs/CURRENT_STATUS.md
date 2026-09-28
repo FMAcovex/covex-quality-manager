@@ -273,7 +273,7 @@ El hito queda listo para integración en `main`.
 
 
 ## Hito 9 — Administración y evolución
-Estado: **IMPLEMENTADO EN RAMA Y EN VALIDACIÓN CI**.
+Estado: **COMPLETADO Y VALIDADO EN CI**.
 
 Implementación:
 - centro de Administración con navegación propia;
@@ -297,7 +297,17 @@ Implementación:
 - envío automático desactivado;
 - smoke test específico de administración añadido a CI.
 
-Pendiente:
-- CI final verde;
-- marcar Hito 9 como COMPLETADO Y VALIDADO;
-- integrar PR en main.
+Validación:
+- PostgreSQL 16 real;
+- esquema y seed;
+- smoke tests QMS existentes;
+- smoke específico de Administración;
+- catálogos, parámetros y reglas de vencimiento;
+- clonación de formularios y conservación de configuración;
+- almacenamiento binario de plantillas y checksum;
+- Prisma validate/generate;
+- lint;
+- tests;
+- build Next.js de producción.
+
+El Hito 9 queda listo para integración en `main`.
