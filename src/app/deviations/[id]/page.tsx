@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addDeviationFollowupAction } from "@/modules/deviations/actions";
+import { addDeviationFollowupAction, addDeviationRelationAction } from "@/modules/deviations/actions";
+import { QmsRelatedLinks } from "@/components/qms-related-links";
+import { collectRelatedRecords } from "@/lib/qms/record-links";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
@@ -12,6 +14,7 @@ const tabs = [
   ["investigation", "Investigación"],
   ["actions", "Acciones"],
   ["followups", "Seguimientos"],
+  ["relations", "Relaciones"],
   ["versions", "Versiones"],
   ["documents", "Documentos"],
   ["history", "Historial"],
@@ -43,16 +46,7 @@ export default async function DeviationDetailPage({
 
   const code = deviation.qmsRecord.businessCode ?? "Sin codificación";
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
-  const related = [
-    ...deviation.qmsRecord.sourceRelations.map((relation) => ({
-      type: relation.relationType,
-      record: relation.targetRecord,
-    })),
-    ...deviation.qmsRecord.targetRelations.map((relation) => ({
-      type: relation.relationType,
-      record: relation.sourceRecord,
-    })),
-  ];
+  const relatedRecords = collectRelatedRecords(deviation.qmsRecord);
 
   return (
     <section className="workspace">
@@ -118,10 +112,10 @@ export default async function DeviationDetailPage({
                 ))}
               </div>
             ) : <div className="empty-panel">No hay CAPA propuestas.</div>}
-            {related.length ? (
+            {relatedRecords.length ? (
               <>
-                <h3>Otras relaciones QMS</h3>
-                <div className="timeline">{related.map((item, index)=><div className="timeline-item" key={index}><strong>{item.type}</strong> · {item.record.businessCode ?? item.record.id}</div>)}</div>
+                <h3>Expedientes relacionados</h3>
+                <QmsRelatedLinks records={relatedRecords} />
               </>
             ) : null}
           </div>
@@ -189,6 +183,43 @@ export default async function DeviationDetailPage({
             </form>
           </div>
         </>
+      ) : null}
+
+      {activeTab === "relations" ? (
+        <div className="card">
+          <h2>Relaciones QMS</h2>
+          <p className="section-help">
+            Vincula esta desviación con una CAPA, reclamación, control de cambio, devolución u otro expediente existente.
+            La relación se visualizará también desde el otro expediente.
+          </p>
+          {relatedRecords.length ? (
+            <QmsRelatedLinks records={relatedRecords} />
+          ) : (
+            <div className="empty-panel">No hay expedientes relacionados.</div>
+          )}
+          <form action={addDeviationRelationAction.bind(null, id)} className="inline-form relation-form">
+            <label className="field">
+              <span>Codificación del expediente *</span>
+              <input name="businessCode" placeholder="AC/GC-00/001/2026" required />
+            </label>
+            <label className="field">
+              <span>Relación</span>
+              <select name="relationType" defaultValue="RELATED_TO">
+                <option value="RELATED_TO">Relacionada con</option>
+                <option value="GENERATES">Genera</option>
+                <option value="IMPLEMENTED_BY">Implementada por</option>
+                <option value="ASSOCIATED_WITH">Asociada con</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Registrado por</span>
+              <input name="actor" defaultValue={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
+            </label>
+            <div className="form-action-row">
+              <button className="button primary" type="submit">Vincular expediente</button>
+            </div>
+          </form>
+        </div>
       ) : null}
 
       {activeTab === "versions" ? (
