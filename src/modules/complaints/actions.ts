@@ -10,6 +10,7 @@ import { parseComplaintForm } from "@/modules/complaints/validation";
 import type { ComplaintFormState } from "@/modules/complaints/types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
 import { ensureInitialVersion,refreshCurrentVersion,snapshotJson,serializeComplaintVersion } from "@/lib/qms/versioning";
+import { complaintRevision03ToJson } from "@/modules/complaints/revision03";
 
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
@@ -34,7 +35,7 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   initialConclusionDate:d(v.initialConclusionDate),responseDate:d(v.responseDate),responseMedium:v.responseMedium,responseSummary:v.responseSummary,
   effectivenessStatus:v.effectivenessStatus,effectivenessAssessment:v.effectivenessAssessment,closeConclusion:v.closeConclusion,approvalNames:v.approvalNames,
   closeApprovalNames:v.closeApprovalNames,closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,
-  signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
+  signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus,extraData:complaintRevision03ToJson(v.revision03)
  };
 }
 
