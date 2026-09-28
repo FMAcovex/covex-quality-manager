@@ -643,3 +643,19 @@ export async function addDeviationRelationAction(id: string, formData: FormData)
   revalidatePath(`/deviations/${id}`);
 }
 
+
+
+export async function addDeviationRelationFormAction(
+  id: string,
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  try {
+    await addDeviationRelationAction(id, formData);
+    return { error: null };
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido vincular el expediente con la desviación."),
+    };
+  }
+}
