@@ -1,9 +1,5 @@
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^$()|[\\]\\\\{}]/g, "\\$&");
-}
-
 export function xlsxCellStyle(sheetXml: string, ref: string) {
-  const escaped = escapeRegExp(ref);
+  const escaped = ref;
   const match = sheetXml.match(new RegExp(`<c\\b([^>]*\\br="${escaped}"[^>]*)>`)) ??
     sheetXml.match(new RegExp(`<c\\b([^>]*\\br="${escaped}"[^>]*)\\/>`));
   if (!match) return null;
@@ -12,7 +8,7 @@ export function xlsxCellStyle(sheetXml: string, ref: string) {
 }
 
 export function setXlsxCellStyle(sheetXml: string, ref: string, styleId: number) {
-  const escaped = escapeRegExp(ref);
+  const escaped = ref;
   const regex = new RegExp(`<c\\b([^>]*\\br="${escaped}"[^>]*)`, "g");
   return sheetXml.replace(regex, (_full, attrs: string) => {
     const updated = /\bs="\d+"/.test(attrs)
