@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useActionState,useState } from "react";
-import type { ComplaintCapaPlanInput,ComplaintFormDefaults,ComplaintFormState,DepartmentOption } from "@/modules/complaints/types";
+import type { ComplaintCapaPlanInput,ComplaintDerivedActionInput,ComplaintFormDefaults,ComplaintFormState,DepartmentOption } from "@/modules/complaints/types";
 
 const initial:ComplaintFormState={error:null};
 const emptyCapa:ComplaintCapaPlanInput={actionType:"CORRECTIVE",description:"",plannedExecutionDate:"",responsible:"",businessCapaCode:""};
+const emptyDerived:ComplaintDerivedActionInput={typeCode:"",actionEvidence:"",responsible:"",plannedDate:""};
 
 function Field({label,name,defaultValue,type="text",required=false,span=""}:{label:string;name:string;defaultValue?:string;type?:string;required?:boolean;span?:string}) {
  return <label className={`field ${span}`}><span>{label}{required?" *":""}</span><input name={name} type={type} defaultValue={defaultValue??""} required={required}/></label>;
@@ -15,6 +16,12 @@ function TextArea({label,name,defaultValue,help}:{label:string;name:string;defau
 }
 function Bool({label,name,defaultValue}:{label:string;name:string;defaultValue?:string}) {
  return <label className="field"><span>{label}</span><select name={name} defaultValue={defaultValue??""}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>;
+}
+function Tri({label,name,defaultValue}:{label:string;name:string;defaultValue?:string}) {
+ return <label className="field"><span>{label}</span><select name={name} defaultValue={defaultValue??""}><option value="">No informado</option><option value="YES">Sí</option><option value="NO">No</option><option value="NA">No aplica</option></select></label>;
+}
+function Checks({label,name,options,selected=[]}:{label:string;name:string;options:readonly (readonly [string,string])[];selected?:string[]}) {
+ return <div className="field full"><span>{label}</span><div className="checkbox-group">{options.map(([v,l])=><label key={v}><input type="checkbox" name={name} value={v} defaultChecked={selected.includes(v)}/>{l}</label>)}</div></div>;
 }
 
 const resolutionOptions=[
@@ -27,9 +34,12 @@ const resolutionOptions=[
 export function ComplaintForm({mode,action,departments,defaults={},complaintId}:{mode:"create"|"edit";action:(s:ComplaintFormState,fd:FormData)=>Promise<ComplaintFormState>;departments:DepartmentOption[];defaults?:ComplaintFormDefaults;complaintId?:string}) {
  const [state,formAction,pending]=useActionState(action,initial);
  const [capas,setCapas]=useState<ComplaintCapaPlanInput[]>(defaults.capaPlans??[]);
+ const [derived,setDerived]=useState<ComplaintDerivedActionInput[]>(defaults.v03DerivedActions??[]);
  const patch=(i:number,p:Partial<ComplaintCapaPlanInput>)=>setCapas(x=>x.map((v,n)=>n===i?{...v,...p}:v));
+ const patchDerived=(i:number,p:Partial<ComplaintDerivedActionInput>)=>setDerived(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  return <form action={formAction} className="form-stack">
   <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)}/>
+  <input type="hidden" name="v03DerivedActionsJson" value={JSON.stringify(derived)}/>
   {state.error?<div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length?<ul>{state.fieldErrors.map(x=><li key={x}>{x}</li>)}</ul>:null}</div>:null}
 
   <section className="form-section">
@@ -58,6 +68,52 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
     <TextArea label="Documentación adjunta" name="attachedDocumentation" defaultValue={defaults.attachedDocumentation}/>
     <Field label="Emitido por" name="emittedBy" defaultValue={defaults.emittedBy}/>
     <Field label="Validado por Gª Calidad" name="qaValidatedBy" defaultValue={defaults.qaValidatedBy} span="span-2"/>
+   </div>
+  </section>
+
+  <section className="form-section">
+   <div className="section-title-row"><div><h2>Próxima revisión GC-00/027/03 · datos estructurados</h2><p className="section-help">Preparación para el futuro Anexo III v03. Estos campos no activan por sí solos la nueva revisión.</p></div><span className="badge warning">Futura v03</span></div>
+   <div className="form-grid">
+    <Checks label="Origen / fuente de la reclamación" name="v03Origins" selected={defaults.v03Origins} options={[["CUSTOMER","Cliente"],["PROVIDER","Proveedor"],["SUBCONTRACTOR","Subcontrata"],["AGENT","Agente externo"],["INTERNAL","Interno"],["OTHER","Otro"]]}/>
+    <Field label="Otro origen / detalle" name="v03OriginOther" defaultValue={defaults.v03OriginOther} span="span-2"/>
+    <Checks label="Ámbito afectado" name="v03Scopes" selected={defaults.v03Scopes} options={[["PRODUCT","Producto"],["MATERIAL","Material"],["SERVICE","Servicio"],["EQUIPMENT","Equipo"],["DOCUMENTATION","Documentación"],["PROCESS","Proceso"],["OTHER","Otro"]]}/>
+    <Checks label="Elemento afectado" name="v03AffectedItems" selected={defaults.v03AffectedItems} options={[["API","API"],["MEDICINE","Medicamento"],["SUPPLEMENT","Complemento"],["MEDICAL_DEVICE","Producto sanitario"],["COSMETIC","Cosmético"],["SERVICE","Servicio"],["OTHER","Otro"]]}/>
+    <Checks label="Categoría / motivo" name="v03CategoryReasons" selected={defaults.v03CategoryReasons} options={[["QUALITY","Calidad"],["SPECIFICATION","Especificación"],["DOCUMENTATION","Documentación"],["PACKAGING","Acondicionamiento"],["TRANSPORT","Transporte"],["QUANTITY","Cantidad"],["DELIVERY","Entrega"],["COMMERCIAL","Comercial"],["OTHER","Otro"]]}/>
+    <Tri label="Impacto calidad / GMP" name="v03ImpactQualityGmp" defaultValue={defaults.v03ImpactQualityGmp}/>
+    <Tri label="Impacto seguridad / eficacia / usuario" name="v03ImpactSafetyEfficacyUser" defaultValue={defaults.v03ImpactSafetyEfficacyUser}/>
+    <Tri label="Impacto regulatorio" name="v03ImpactRegulatory" defaultValue={defaults.v03ImpactRegulatory}/>
+    <Tri label="Impacto medioambiental" name="v03ImpactEnvironmental" defaultValue={defaults.v03ImpactEnvironmental}/>
+    <Tri label="¿Otros lotes/productos/clientes similares?" name="v03SimilarOtherLots" defaultValue={defaults.v03SimilarOtherLots}/>
+    <Checks label="Medidas de contención" name="v03ContainmentActions" selected={defaults.v03ContainmentActions} options={[["BLOCK_QUARANTINE","Bloqueo / cuarentena"],["SUSPEND_USE","Suspender uso / distribución"],["NOTIFY_CUSTOMER","Notificar cliente"],["NOTIFY_PROVIDER","Notificar proveedor"],["NOTIFY_MAH","Notificar titular / MAH"],["NOTIFY_AUTHORITY","Notificar autoridad"],["NONE","Ninguna"],["OTHER","Otra"]]}/>
+    <Field label="Otra medida de contención" name="v03ContainmentOther" defaultValue={defaults.v03ContainmentOther} span="span-2"/>
+    <TextArea label="Justificación de riesgo, alcance y medidas" name="v03RiskScopeJustification" defaultValue={defaults.v03RiskScopeJustification}/>
+    <Tri label="¿Puede requerir retirada?" name="v03MayRequireRecall" defaultValue={defaults.v03MayRequireRecall}/>
+    <Tri label="¿Activar procedimiento de retirada?" name="v03ActivateRecall" defaultValue={defaults.v03ActivateRecall}/>
+    <Tri label="¿Notificación a autoridad sanitaria?" name="v03AuthorityNotification" defaultValue={defaults.v03AuthorityNotification}/>
+    <Tri label="¿Comunicación a MAH / cliente?" name="v03MahClientCommunication" defaultValue={defaults.v03MahClientCommunication}/>
+    <TextArea label="Justificación de evaluación regulatoria" name="v03RegulatoryJustification" defaultValue={defaults.v03RegulatoryJustification}/>
+   </div>
+   <h3>Acciones derivadas / expedientes relacionados</h3>
+   <div className="dynamic-list">
+    {derived.map((x,i)=><div className="dynamic-row capa" key={x.id??i}>
+      <label className="field"><span>Tipo / código</span><input value={x.typeCode} onChange={e=>patchDerived(i,{typeCode:e.target.value})}/></label>
+      <label className="field"><span>Acción / evidencia</span><input value={x.actionEvidence} onChange={e=>patchDerived(i,{actionEvidence:e.target.value})}/></label>
+      <label className="field"><span>Responsable</span><input value={x.responsible} onChange={e=>patchDerived(i,{responsible:e.target.value})}/></label>
+      <label className="field"><span>Fecha prevista</span><input type="date" value={x.plannedDate} onChange={e=>patchDerived(i,{plannedDate:e.target.value})}/></label>
+      <button className="button danger small" type="button" onClick={()=>setDerived(a=>a.filter((_,n)=>n!==i))}>Quitar</button>
+    </div>)}
+    <div><button className="button small" type="button" onClick={()=>setDerived(x=>[...x,{...emptyDerived}])}>+ Añadir acción derivada</button></div>
+   </div>
+   <div className="form-grid">
+    <Field label="Fecha comunicación" name="v03CommunicationDate" type="date" defaultValue={defaults.v03CommunicationDate}/>
+    <Field label="Medio de comunicación" name="v03CommunicationMedium" defaultValue={defaults.v03CommunicationMedium}/>
+    <Field label="Emisor / destinatario" name="v03CommunicationSenderRecipient" defaultValue={defaults.v03CommunicationSenderRecipient} span="span-2"/>
+    <TextArea label="Resumen de comunicación" name="v03CommunicationSummary" defaultValue={defaults.v03CommunicationSummary}/>
+    <Bool label="¿Continuar a Parte II?" name="v03ContinuePartII" defaultValue={defaults.v03ContinuePartII}/>
+    <TextArea label="Conclusión Parte I / pendientes / justificación" name="v03PartIConclusionPendings" defaultValue={defaults.v03PartIConclusionPendings}/>
+    <Tri label="¿Respuesta suficiente?" name="v03ResponseSufficient" defaultValue={defaults.v03ResponseSufficient}/>
+    <TextArea label="Estado de acciones / referencias / responsables" name="v03ActionStateSummary" defaultValue={defaults.v03ActionStateSummary}/>
+    <Field label="Próximo seguimiento" name="v03NextFollowupDate" type="date" defaultValue={defaults.v03NextFollowupDate}/>
    </div>
   </section>
 
