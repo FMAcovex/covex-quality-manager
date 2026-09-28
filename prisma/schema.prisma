@@ -460,6 +460,7 @@ model Deviation {
   departmentNameSnapshot     String?
   issueDate                  DateTime?                @db.Date
   eventDateTime              DateTime?
+  eventShift                 String?
   detectedBy                 String?
   createdByText               String?
   materialProcessAffected     String?
