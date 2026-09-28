@@ -120,3 +120,19 @@ export async function addReturnRelationAction(id:string,fd:FormData){
  await prisma.qmsRelation.upsert({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type}},update:{isActive:true,createdByText:actor},create:{sourceRecordId:rec.qmsRecordId,targetRecordId:target.id,relationType:type,createdByText:actor}});
  revalidatePath(`/returns/${id}`);
 }
+
+
+export async function addReturnRelationFormAction(
+  id: string,
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  try {
+    await addReturnRelationAction(id, formData);
+    return { error: null };
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido vincular el expediente con la devolución."),
+    };
+  }
+}
