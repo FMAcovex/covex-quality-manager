@@ -297,7 +297,7 @@ export async function createCapaAction(
     });
     capaId = capa.id;
   } catch (error) {
-    return persistenceFormError(error, "la CAPA");
+    return persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" });
   }
 
   revalidatePath("/capa");
@@ -516,7 +516,7 @@ export async function updateCapaAction(
     revalidatePath(`/capa/${id}`);
     redirect(`/capa/${id}`);
   } catch (error) {
-    return persistenceFormError(error, "la CAPA");
+    return persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" });
   }
 }
 
