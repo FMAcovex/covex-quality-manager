@@ -148,6 +148,11 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .checkbox-group label { display: flex; gap: 7px; align-items: center; font-size: 13px; }
 .form-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; position: sticky; bottom: 0; background: rgba(245,248,252,.95); backdrop-filter: blur(8px); padding: 12px 0; z-index: 10; }
 .form-errors { background: #fff2f2; border: 1px solid #e8bcbc; color: #8c2b2b; border-radius: 8px; padding: 12px 14px; }
+.field.has-error input,
+.field.has-error select,
+.field.has-error textarea { border-color: #c44d4d; box-shadow: 0 0 0 1px rgba(196,77,77,.08); }
+.field-error { color: #a12f2f; font-size: 12px; line-height: 1.35; }
+.field-error-block { padding: 8px 10px; border: 1px solid #e8bcbc; border-radius: 7px; background: #fff7f7; }
 .form-errors ul { margin: 6px 0 0 18px; padding: 0; }
 .inline-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 .inline-form .full { grid-column: 1 / -1; }

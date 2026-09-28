@@ -39,14 +39,17 @@ export async function createDeviationAction(
 ): Promise<FormState> {
   const parsed = parseDeviationForm(formData);
   if (parsed.errors.length) {
-    return { error: "No se puede guardar el expediente.", fieldErrors: parsed.errors };
+    return { error: "No se puede guardar el expediente.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues };
   }
 
   const v = parsed.values;
   let deviationId: string;
   try {
+    const duplicate = await prisma.qmsRecord.findUnique({ where: { recordType_businessCode: { recordType: QmsRecordType.DEVIATION, businessCode: v.businessCode! } } });
+    if (duplicate) return { error: "No se puede guardar el expediente.", fieldErrors: ["Ya existe una desviación con esa codificación."], fieldIssues: { businessCode: ["Ya existe una desviación con esa codificación."] } };
+
     const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return { error: "El departamento seleccionado no existe." };
+    if (!department) return { error: "No se puede guardar el expediente.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } };
 
     const referenceDate = toDate(v.issueDate) ?? new Date();
     const [formVersion, templateVersion] = await Promise.all([
@@ -181,7 +184,7 @@ export async function createDeviationAction(
     });
     deviationId = deviation.id;
   } catch (error) {
-    return persistenceFormError(error, "la desviación");
+    return persistenceFormError(error, "la desviación", { duplicateField: "businessCode" });
   }
 
   revalidatePath("/deviations");
@@ -195,7 +198,7 @@ export async function updateDeviationAction(
 ): Promise<FormState> {
   const parsed = parseDeviationForm(formData);
   if (parsed.errors.length) {
-    return { error: "No se puede guardar el expediente.", fieldErrors: parsed.errors };
+    return { error: "No se puede guardar el expediente.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues };
   }
 
   const existing = await prisma.deviation.findUnique({
@@ -220,7 +223,7 @@ export async function updateDeviationAction(
     v.closedAt = null;
   }
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "El departamento seleccionado no existe." };
+  if (!department) return { error: "No se puede guardar el expediente.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } };
 
   const oldSnapshot = {
     businessCode: existing.qmsRecord.businessCode,
@@ -488,10 +491,7 @@ export async function updateDeviationAction(
     revalidatePath(`/deviations/${id}`);
     redirect(`/deviations/${id}`);
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "Ya existe una desviación con esa codificación." };
-    }
-    throw error;
+    return persistenceFormError(error, "la desviación", { duplicateField: "businessCode" });
   }
 }
 

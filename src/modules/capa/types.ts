@@ -1,6 +1,7 @@
 export type CapaFormState = {
   error: string | null;
   fieldErrors?: string[];
+  fieldIssues?: Record<string, string[]>;
 };
 
 export type CapaPlannedActionInput = {
