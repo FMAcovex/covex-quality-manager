@@ -1,16 +1,19 @@
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
 import {
-  extractWordBodyRange,fillWordRowBalanced,
-  replaceWordRowWithCopies,replaceWordRowsRangeBalanced,setWordCellTextBalanced
+  appendWordCellTextBalanced,extractWordBodyRange,fillWordRowBalanced,
+  replaceWordRowWithCopies,replaceWordRowsRangeBalanced,setWordCellTextBalanced,setWordSdtCheckbox
 } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadComplaintPntTemplate } from "@/modules/complaints/documents/templates";
 
 type Capa={actionType:string;description:string;plannedExecutionDate:Date|null;responsible:string|null;businessCapaCode?:string|null};
 type Followup={followupDate:Date;comment:string;nextFollowupDate:Date|null;evidenceReference:string|null};
+type DerivedAction={typeCode:string;actionEvidence:string|null;responsible:string|null;plannedDate:Date|null};
 export type ComplaintDocumentRecord={
- qmsRecord:{businessCode:string|null};openedAt:Date|null;detectionDate:Date|null;detectedBy:string|null;complaintType:string;partyName:string|null;contact:string|null;
+ qmsRecord:{businessCode:string|null};openedAt:Date|null;detectionDate:Date|null;receivedAt:Date|null;detectedBy:string|null;complaintType:string;
+ detectionSources:string[];otherDetectionSource:string|null;scopeCategories:string[];otherScopeCategory:string|null;affectedObjects:string[];otherAffectedObject:string|null;
+ complaintCategories:string[];otherComplaintCategory:string|null;partyName:string|null;contact:string|null;
  affectedScope:string|null;reference:string|null;lotReference:string|null;quantity:string|null;expiryReanalysis:string|null;description:string|null;recurrent:boolean|null;
  recurrenceReference:string|null;attachedDocumentation:string|null;emittedBy:string|null;qaValidatedBy:string|null;investigation:string|null;impactAssessment:string|null;
  investigationResult:string|null;rootCause:string|null;classification:string|null;resolutionLines:string|null;resolutionActions:string[];immediateActionDetails:string|null;
@@ -42,7 +45,7 @@ function classificationText(v:string|null){
  ];
 }
 
-export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
+async function generateComplaintAnnexIIIv02(r:ComplaintDocumentRecord){
  const entries=readZip(await loadComplaintPntTemplate(r.annexIIITemplateVersion?.versionCode??"02",DocumentType.COMPLAINT_ANNEX_III));
  let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo III", "Anexo IV:", "last");
  xml=setWordCellTextBalanced(xml,0,1,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,0,1,3,date(r.openedAt));
@@ -68,6 +71,138 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
  xml=setWordCellTextBalanced(xml,5,5,2,`${box(r.effectivenessStatus==="PENDING","PENDIENTE")}\n${box(r.effectivenessStatus==="NOT_REQUIRED","NO REQUERIDA")}`);
  xml=setWordCellTextBalanced(xml,5,7,0,text(r.closeConclusion));xml=setWordCellTextBalanced(xml,6,2,0,text(r.closeApprovalNames));
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
+}
+
+
+function setRowBool(xml:string,table:number,row:number,value:boolean|null){
+ xml=setWordSdtCheckbox(xml,table,row,0,value===true);
+ xml=setWordSdtCheckbox(xml,table,row,1,value===false);
+ return xml;
+}
+function setRowTri(xml:string,table:number,row:number,value:string|null){
+ xml=setWordSdtCheckbox(xml,table,row,0,value==="YES");
+ xml=setWordSdtCheckbox(xml,table,row,1,value==="NO");
+ xml=setWordSdtCheckbox(xml,table,row,2,value==="NA");
+ return xml;
+}
+function setCheckboxSet(xml:string,table:number,row:number,ordered:string[],selected:string[]){
+ const set=new Set(selected);
+ ordered.forEach((key,index)=>{xml=setWordSdtCheckbox(xml,table,row,index,set.has(key));});
+ return xml;
+}
+
+async function generateComplaintAnnexIIIv03(r:ComplaintDocumentRecord){
+ const entries=readZip(await loadComplaintPntTemplate("03",DocumentType.COMPLAINT_ANNEX_III));
+ let xml=getZipEntryText(entries,"word/document.xml");
+ const version=r.annexIIITemplateVersion?.versionCode??"03";
+ xml=setWordCellTextBalanced(xml,0,1,1,text(r.qmsRecord.businessCode));
+ xml=setWordCellTextBalanced(xml,0,1,3,date(r.openedAt));
+ xml=setWordCellTextBalanced(xml,0,1,5,version);
+
+ xml=setWordCellTextBalanced(xml,1,1,1,date(r.detectionDate));
+ xml=setWordCellTextBalanced(xml,1,1,3,date(r.receivedAt));
+ xml=setWordSdtCheckbox(xml,1,2,0,r.complaintType==="PROVIDER");
+ xml=setWordSdtCheckbox(xml,1,2,1,r.complaintType==="CUSTOMER");
+
+ xml=setCheckboxSet(xml,1,3,["CLIENT","DISTRIBUTOR","MAH","CONSUMER","AUTHORITY","SUPPLIER","LOGISTICS","SUBCONTRACTOR","INTERNAL","RECALL","OTHER"],r.detectionSources);
+ xml=setWordCellTextBalanced(xml,1,4,1,text(r.otherDetectionSource));
+ xml=setWordCellTextBalanced(xml,1,5,1,text(r.contact));
+ xml=setCheckboxSet(xml,1,6,["MEDICINE","API","SUPPLEMENT","COSMETIC","MEDICAL_DEVICE","ENVIRONMENT","OTHER"],r.scopeCategories);
+ if(r.otherScopeCategory)xml=appendWordCellTextBalanced(xml,1,6,1,"Otro: "+r.otherScopeCategory);
+ xml=setCheckboxSet(xml,1,7,["PRODUCT_MATERIAL","SERVICE","EQUIPMENT_SYSTEM","TRANSPORT","SUBCONTRACTED_ACTIVITY","OTHER"],r.affectedObjects);
+ if(r.otherAffectedObject)xml=appendWordCellTextBalanced(xml,1,7,1,"Otro: "+r.otherAffectedObject);
+ xml=setWordCellTextBalanced(xml,1,8,1,text(r.reference));
+ xml=setWordCellTextBalanced(xml,1,8,3,text(r.lotReference));
+ xml=setWordCellTextBalanced(xml,1,9,3,text(r.quantity));
+ xml=setWordCellTextBalanced(xml,1,10,3,text(r.expiryReanalysis));
+ xml=setCheckboxSet(xml,1,12,["PRODUCT_QUALITY","SPECIFICATIONS_ANALYSIS","PACKAGING_CONTAINER","LABEL_DOCUMENTATION","QUANTITY_CONTENT","TRANSPORT_STORAGE","SERVICE_SUPPLY","EQUIPMENT_SYSTEM","ENVIRONMENT","OTHER"],r.complaintCategories);
+ if(r.otherComplaintCategory)xml=appendWordCellTextBalanced(xml,1,12,0,"Otro: "+r.otherComplaintCategory);
+ xml=setWordCellTextBalanced(xml,1,13,0,text(r.description));
+ xml=setWordSdtCheckbox(xml,1,14,0,r.recurrent===true);
+ xml=setWordSdtCheckbox(xml,1,14,1,r.recurrent===false);
+ xml=setWordCellTextBalanced(xml,1,14,3,text(r.recurrenceReference));
+ xml=setWordCellTextBalanced(xml,1,15,1,text(r.attachedDocumentation));
+ xml=setWordCellTextBalanced(xml,1,16,1,text(r.emittedBy));
+ xml=setWordCellTextBalanced(xml,1,17,1,text(r.qaValidatedBy));
+
+ xml=setRowBool(xml,1,20,r.impactQualityGmp);
+ xml=setRowBool(xml,1,21,r.impactSafetyEfficacy);
+ xml=setRowBool(xml,1,22,r.impactRegulatory);
+ xml=setRowBool(xml,1,23,r.impactEnvironment);
+ xml=setRowBool(xml,1,24,r.impactOtherSimilar);
+ xml=setCheckboxSet(xml,1,26,["BLOCK_QUARANTINE","SUSPEND_USE_DISTRIBUTION","NOTIFY_STAKEHOLDERS","NONE","OTHER"],r.containmentActions);
+ if(r.otherContainmentAction)xml=appendWordCellTextBalanced(xml,1,26,0,"Otra: "+r.otherContainmentAction);
+ xml=setWordCellTextBalanced(xml,1,28,0,text(r.containmentJustification));
+ const investigation=[text(r.investigation),text(r.impactAssessment),r.investigationResult==="NOT_ATTRIBUTABLE_TO_COVEX"?"Resultado adicional: No atribuible a COVEX":""].filter(Boolean).join("\n\n");
+ xml=setWordCellTextBalanced(xml,1,31,0,investigation);
+ xml=setWordSdtCheckbox(xml,1,32,0,r.investigationResult==="PROCEDENT");
+ xml=setWordSdtCheckbox(xml,1,32,1,r.investigationResult==="NOT_PROCEDENT");
+ xml=setWordSdtCheckbox(xml,1,32,2,r.investigationResult==="INCONCLUSIVE");
+ xml=setWordCellTextBalanced(xml,1,35,0,text(r.rootCause));
+
+ ([["CRITICAL",37],["MAJOR",38],["MINOR",39],["NO_GMP_IMPACT",40]] as Array<[string,number]>).forEach(([value,row])=>{
+   xml=setWordSdtCheckbox(xml,1,row,0,r.classification===value);
+ });
+ xml=setRowTri(xml,1,43,r.recallPotential);
+ xml=setRowTri(xml,1,44,r.recallProcedureRequired);
+ xml=setRowTri(xml,1,45,r.authorityNotificationRequired);
+ xml=setRowTri(xml,1,46,r.responsibleClientCommunicationRequired);
+ xml=setWordCellTextBalanced(xml,1,47,1,text(r.regulatoryJustification));
+ xml=setWordCellTextBalanced(xml,1,50,0,text(r.resolutionLines));
+
+ const actions=new Set(r.resolutionActions);
+ ["RETURN","CORRECTIVE_ACTION","PREVENTIVE_ACTION","IMMEDIATE_ACTION","RECALL","CREDIT","REPLACEMENT","OTHER"].forEach((key,index)=>{
+   xml=setWordSdtCheckbox(xml,1,52,index,actions.has(key));
+ });
+ if(r.immediateActionDetails)xml=appendWordCellTextBalanced(xml,1,52,0,"Acción inmediata: "+r.immediateActionDetails);
+ if(r.otherResolutionDetails)xml=appendWordCellTextBalanced(xml,1,52,1,"Otros: "+r.otherResolutionDetails);
+
+ xml=replaceWordRowWithCopies(xml,1,55,r.derivedActions.length?r.derivedActions.map(a=>[
+   text(a.typeCode),text(a.actionEvidence),text(a.responsible),date(a.plannedDate)
+ ]):[["","","",""]]);
+
+ xml=setWordCellTextBalanced(xml,1,57,1,[date(r.communicationDate),text(r.communicationMedium)].filter(Boolean).join(" · "));
+ xml=setWordCellTextBalanced(xml,1,57,3,text(r.communicationSenderRecipient));
+ xml=setWordCellTextBalanced(xml,1,59,0,text(r.communicationSummary||r.externalCommunication));
+ xml=setWordSdtCheckbox(xml,1,61,0,r.continueToPartII===true);
+ xml=setWordSdtCheckbox(xml,1,61,1,r.continueToPartII===false);
+ xml=setWordCellTextBalanced(xml,1,63,0,text(r.conclusion));
+
+ xml=setWordCellTextBalanced(xml,2,2,0,text(r.approvalNames));
+ xml=setWordCellTextBalanced(xml,2,4,0,text(r.qaValidatedBy));
+
+ xml=setWordCellTextBalanced(xml,3,4,0,text(r.responseSummary));
+ xml=setWordSdtCheckbox(xml,3,5,0,r.responseSufficient===true);
+ xml=setWordSdtCheckbox(xml,3,5,1,r.responseSufficient===false);
+ xml=setWordSdtCheckbox(xml,3,7,0,r.effectivenessStatus==="ACCEPTABLE");
+ xml=setWordSdtCheckbox(xml,3,7,1,r.effectivenessStatus==="NOT_ACCEPTABLE");
+ xml=setWordSdtCheckbox(xml,3,7,2,r.effectivenessStatus==="PENDING");
+ xml=setWordSdtCheckbox(xml,3,7,3,r.effectivenessStatus==="NOT_REQUIRED");
+ xml=setWordCellTextBalanced(xml,3,8,0,text(r.effectivenessAssessment));
+ xml=setWordSdtCheckbox(xml,3,10,0,r.closureActionStatus==="COMPLETED");
+ xml=setWordSdtCheckbox(xml,3,10,1,r.closureActionStatus==="LINKED");
+ xml=setWordSdtCheckbox(xml,3,10,2,r.closureActionStatus==="PENDING");
+ if(r.closureActionReferences||r.closureActionResponsible){
+   xml=appendWordCellTextBalanced(xml,3,10,0,[
+     r.closureActionReferences?"Referencias: "+r.closureActionReferences:"",
+     r.closureActionResponsible?"Responsable: "+r.closureActionResponsible:""
+   ].filter(Boolean).join(" · "));
+ }
+ xml=setWordCellTextBalanced(xml,3,12,0,text(r.closeConclusion));
+ xml=setWordSdtCheckbox(xml,3,13,0,r.status==="CLOSED");
+ xml=setWordSdtCheckbox(xml,3,13,1,r.status==="OPEN");
+ xml=setWordCellTextBalanced(xml,3,13,3,date(r.closedAt));
+ xml=setWordCellTextBalanced(xml,3,14,1,date(r.followups[0]?.nextFollowupDate??null));
+ xml=setWordCellTextBalanced(xml,4,1,0,text(r.closeApprovalNames));
+
+ updateZipEntry(entries,"word/document.xml",xml);
+ sanitizeOfficeMetadata(entries);
+ return writeZip(entries);
+}
+
+export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
+ const version=r.annexIIITemplateVersion?.versionCode??"02";
+ return version==="03"?generateComplaintAnnexIIIv03(r):generateComplaintAnnexIIIv02(r);
 }
 
 export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
