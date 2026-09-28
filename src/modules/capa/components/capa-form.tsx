@@ -134,7 +134,10 @@ export function CapaForm({
             </select>
           </label>
           <Field label="Fecha apertura" name="openedAt" type="date" defaultValue={defaults.openedAt} required />
-          <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required />
+          <Field label="Elaborado / emitido por" name="createdByText" defaultValue={defaults.createdByText} required />
+          <Field label="Puesto del emisor" name="issuedByRole" defaultValue={defaults.issuedByRole} />
+          <Field label="Revisado / aprobado por" name="approvalNames" defaultValue={defaults.approvalNames} span="span-2" />
+          <Field label="Puesto(s) aprobador(es)" name="approvalRoles" defaultValue={defaults.approvalRoles} span="span-2" />
           {mode === "edit" ? (
             <Field label="Modificado por" name="modifiedByText" defaultValue={defaults.createdByText} />
           ) : null}
