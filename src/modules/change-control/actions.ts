@@ -705,3 +705,19 @@ export async function addChangeControlRelationAction(id: string, formData: FormD
 
   revalidatePath(`/changes/${id}`);
 }
+
+
+export async function addChangeControlRelationFormAction(
+  id: string,
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  try {
+    await addChangeControlRelationAction(id, formData);
+    return { error: null };
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido vincular el expediente con la Control de Cambio."),
+    };
+  }
+}
