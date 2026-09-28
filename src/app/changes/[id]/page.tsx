@@ -51,10 +51,10 @@ export default async function ChangeControlDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; followupError?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, followupError } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "request";
   const [record, lookups] = await Promise.all([
     getChangeControlDetail(id),
@@ -282,6 +282,7 @@ export default async function ChangeControlDetailPage({
                 departments={lookups.departments}
                 tasks={followupTasks}
                 defaultResponsible={record.followupResponsible}
+                error={followupError}
               />
             </div>
           ) : null}
