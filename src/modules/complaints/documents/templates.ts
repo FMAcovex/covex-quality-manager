@@ -1,21 +1,35 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { DocumentType,QmsRecordType } from "@prisma/client";
+import { DocumentType, QmsRecordType } from "@prisma/client";
 import { loadStoredTemplateAsset } from "@/modules/configuration/template-assets";
 
 export class ComplaintTemplateUnavailableError extends Error {}
-const SHA="f717ae907da9ed8b575f740fbf8b1536d4157174de5b7b4d240220910b570df4";
 
-export async function loadComplaintPntTemplate(versionCode="02",documentType:DocumentType=DocumentType.COMPLAINT_ANNEX_III){
- const stored=await loadStoredTemplateAsset(QmsRecordType.COMPLAINT,documentType,versionCode);
- if(stored)return stored;
- if(versionCode!=="02")throw new ComplaintTemplateUnavailableError(`No hay plantilla controlada para Reclamaciones versión ${versionCode}.`);
- const filePath=path.resolve(process.cwd(),process.env.COMPLAINT_PNT_TEMPLATE||"templates/complaints/v02/GC-00-027-02 Reclamaciones.docx");
- let buffer:Buffer;
- try{buffer=await readFile(filePath);}catch{throw new ComplaintTemplateUnavailableError(`Plantilla de Reclamaciones no instalada: ${filePath}. Ejecuta pnpm templates:complaints:install.`);}
- const sha=createHash("sha256").update(buffer).digest("hex");
- if(sha!==SHA)throw new ComplaintTemplateUnavailableError("La plantilla de Reclamaciones no coincide con GC-00/027/02 auditado.");
- return buffer;
+const ANNEX_III_SHA = "764e12076b407e9675f6291f03c8bab477f7850fbdb62fed8a904b4693b2bcde";
+const ANNEX_V_SHA = "8d9a572fcfbc8bba05d99e3772aa0fec6fd3b716b6db2eaa5a056737d79d1d83";
+
+async function fallback(file: string, expected: string) {
+  const filePath = path.resolve(process.cwd(), file);
+  let buffer: Buffer;
+  try { buffer = await readFile(filePath); }
+  catch { throw new ComplaintTemplateUnavailableError(`Plantilla de Reclamaciones no instalada: ${filePath}.`); }
+  const sha = createHash("sha256").update(buffer).digest("hex");
+  if (sha !== expected) throw new ComplaintTemplateUnavailableError("La plantilla de Reclamaciones no coincide con la revisión v03 auditada.");
+  return buffer;
 }
-export const auditedComplaintTemplateHash=SHA;
+
+export async function loadComplaintTemplate(documentType: DocumentType, versionCode = "03") {
+  const stored = await loadStoredTemplateAsset(QmsRecordType.COMPLAINT, documentType, versionCode);
+  if (stored) return stored;
+  if (versionCode !== "03") throw new ComplaintTemplateUnavailableError(`No hay plantilla controlada para Reclamaciones versión ${versionCode}.`);
+  if (documentType === DocumentType.COMPLAINT_ANNEX_III) {
+    return fallback("templates/complaints/v03/Anexo III INFORME RECLAMACION.docx", ANNEX_III_SHA);
+  }
+  if (documentType === DocumentType.COMPLAINT_ANNEX_V) {
+    return fallback("templates/complaints/v03/Anexo V LISTADO DE RECLAMACIONES.xlsx", ANNEX_V_SHA);
+  }
+  throw new ComplaintTemplateUnavailableError("Ese documento de Reclamaciones no se genera desde la aplicación.");
+}
+
+export const auditedComplaintTemplateHashes = { annexIII: ANNEX_III_SHA, annexV: ANNEX_V_SHA };
