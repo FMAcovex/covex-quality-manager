@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useActionState,useState } from "react";
 import type { DepartmentOption,ReturnFormDefaults,ReturnFormState,ReturnProductInput } from "@/modules/returns/types";
 const initial:ReturnFormState={error:null};
-const emptyProduct:ReturnProductInput={departmentId:"",productType:"API",otherProductType:"",productNameCode:"",format:"",lot:"",expiryReanalysis:"",quantity:"",unit:"",netWeight:"",grossWeight:"",receptionObservations:"",receivedBy:"",verifiedBy:""};
+const emptyProduct:ReturnProductInput={departmentId:"",productType:"API",otherProductType:"",productNameCode:"",format:"",lot:"",expiryReanalysis:"",quantity:"",unit:"",netWeight:"",grossWeight:"",receptionObservations:"",receivedBy:"",receivedByDate:"",verifiedBy:"",verifiedByDate:""};
 
 function Field({label,name,defaultValue,type="text",required=false,span=""}:{label:string;name:string;defaultValue?:string;type?:string;required?:boolean;span?:string}){return <label className={`field ${span}`}><span>{label}{required?" *":""}</span><input name={name} type={type} defaultValue={defaultValue??""} required={required}/></label>;}
 function TextArea({label,name,defaultValue}:{label:string;name:string;defaultValue?:string}){return <label className="field full"><span>{label}</span><textarea name={name} defaultValue={defaultValue??""}/></label>;}
@@ -33,7 +33,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
   </div></section>
 
   <section className="form-section"><h2>2. Producto(s) devuelto(s)</h2><p className="section-help">Añadir tantas líneas como sea necesario.</p>
-   <div className="table-scroll"><table className="records-table followup-task-table"><thead><tr><th>Tipo</th><th>Producto / código</th><th>Formato</th><th>Lote</th><th>Cad./reanálisis</th><th>Cantidad</th><th>Unidad</th><th>Peso neto</th><th>Peso bruto</th><th>Recibido por</th><th>Verificado por</th><th>Observaciones recepción</th><th></th></tr></thead><tbody>
+   <div className="table-scroll"><table className="records-table followup-task-table"><thead><tr><th>Tipo</th><th>Producto / código</th><th>Formato</th><th>Lote</th><th>Cad./reanálisis</th><th>Cantidad</th><th>Unidad</th><th>Peso neto</th><th>Peso bruto</th><th>Recibido por</th><th>Fecha recepción firma</th><th>Verificado por</th><th>Fecha verificación</th><th>Observaciones recepción</th><th></th></tr></thead><tbody>
    {products.map((p,i)=><tr key={p.id??i}>
     <td><select value={p.productType} onChange={e=>patch(i,{productType:e.target.value as ReturnProductInput["productType"]})}><option value="API">API</option><option value="INTERMEDIATE">Intermedio</option><option value="MEDICINE">Medicamento</option><option value="SUPPLEMENT">Complemento</option><option value="IMPORTED_PRODUCT">Importado</option><option value="MEDICAL_DEVICE">Producto sanitario</option><option value="COSMETIC">Cosmético</option><option value="OTHER">Otro</option></select></td>
     <td><input value={p.productNameCode} onChange={e=>patch(i,{productNameCode:e.target.value})}/></td>
@@ -45,7 +45,9 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
     <td><input value={p.netWeight} onChange={e=>patch(i,{netWeight:e.target.value})}/></td>
     <td><input value={p.grossWeight} onChange={e=>patch(i,{grossWeight:e.target.value})}/></td>
     <td><input value={p.receivedBy} onChange={e=>patch(i,{receivedBy:e.target.value})}/></td>
+    <td><input type="date" value={p.receivedByDate} onChange={e=>patch(i,{receivedByDate:e.target.value})}/></td>
     <td><input value={p.verifiedBy} onChange={e=>patch(i,{verifiedBy:e.target.value})}/></td>
+    <td><input type="date" value={p.verifiedByDate} onChange={e=>patch(i,{verifiedByDate:e.target.value})}/></td>
     <td><textarea value={p.receptionObservations} onChange={e=>patch(i,{receptionObservations:e.target.value})}/></td>
     <td><button type="button" className="button danger small" onClick={()=>setProducts(x=>x.filter((_,n)=>n!==i))}>Quitar</button></td>
    </tr>)}</tbody></table></div>
@@ -78,7 +80,14 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
    <Tri label="Sistema devolución termolábiles validado" name="coldChainReturnSystemValidated" defaultValue={defaults.coldChainReturnSystemValidated}/>
   </div></section>
 
-  <section className="form-section"><h2>6. Decisión de Garantía de Calidad / Dirección Técnica</h2><div className="form-grid">
+  <section className="form-section"><h2>6. Declaración del cliente · Anexo V</h2><p className="section-help">Datos necesarios para generar la declaración oficial de conservación del producto devuelto.</p><div className="form-grid">
+   <Field label="Responsable técnico de la entidad" name="customerDeclarationSignatoryName" defaultValue={defaults.customerDeclarationSignatoryName} span="span-2"/>
+   <Field label="Puesto / función" name="customerDeclarationSignatoryRole" defaultValue={defaults.customerDeclarationSignatoryRole}/>
+   <Field label="Fecha de firma" name="customerDeclarationSignedAt" type="date" defaultValue={defaults.customerDeclarationSignedAt}/>
+   <TextArea label="Observaciones de la declaración" name="customerDeclarationObservations" defaultValue={defaults.customerDeclarationObservations}/>
+  </div></section>
+
+  <section className="form-section"><h2>7. Decisión de Garantía de Calidad / Dirección Técnica</h2><div className="form-grid">
    <label className="field"><span>Decisión</span><select name="decision" defaultValue={defaults.decision??"PENDING"}><option value="PENDING">Pendiente</option><option value="ACCEPTED">Aceptada</option><option value="REJECTED">Rechazada</option></select></label>
    <Field label="Fecha decisión" name="decisionDate" type="date" defaultValue={defaults.decisionDate}/>
    <TextArea label="Destino final y observaciones" name="finalDestination" defaultValue={defaults.finalDestination}/>
@@ -92,7 +101,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
    <label className="field"><span>Estado</span><select name="status" defaultValue={defaults.status??"OPEN"}><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
   </div></section>
 
-  <section className="form-section"><h2>7. Control interno</h2><div className="form-grid">
+  <section className="form-section"><h2>8. Control interno</h2><div className="form-grid">
    <TextArea label="Observaciones internas" name="internalObservations" defaultValue={defaults.internalObservations}/>
    <label className="field"><span>Documento firmado disponible</span><select name="signedDocumentAvailable" defaultValue={defaults.signedDocumentAvailable??""}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>
    <label className="field"><span>Control del dato</span><select name="dataQualityStatus" defaultValue={defaults.dataQualityStatus??"REVIEW_REQUIRED"}><option value="COMPLETE">Completo</option><option value="INCOMPLETE">Incompleto</option><option value="REVIEW_REQUIRED">Pendiente revisar</option></select></label>
