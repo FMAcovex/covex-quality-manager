@@ -24,7 +24,10 @@ const typeLabel=(v:string,o:string|null)=>v==="COMMERCIAL"?"Comercial":v==="COMP
 const productType=(v:string)=>({API:"API",INTERMEDIATE:"Intermedio",MEDICINE:"Medicamento",SUPPLEMENT:"Complemento alimenticio",IMPORTED_PRODUCT:"Producto importado",MEDICAL_DEVICE:"Producto sanitario",COSMETIC:"Cosmético",OTHER:"Otro"} as Record<string,string>)[v]??v;
 
 export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
- const entries=readZip(await loadReturnPntTemplate(r.annexIIITemplateVersion?.versionCode??"03",DocumentType.RETURN_ANNEX_III));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo III:", "Anexo IV:", "last");
+ const version=r.annexIIITemplateVersion?.versionCode??"03";
+ const entries=readZip(await loadReturnPntTemplate(version,DocumentType.RETURN_ANNEX_III));
+ let xml=getZipEntryText(entries,"word/document.xml");
+ if(version!=="03")xml=extractWordBodyRange(xml,"Anexo III:", "Anexo IV:", "last");
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,1,0,3,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,1,date(r.receivedAt));
  xml=setWordCellTextBalanced(xml,1,1,3,[box(r.returnType==="COMMERCIAL","Comercial"),box(r.returnType==="COMPLAINT","Reclamación"),box(r.returnType==="RECALL","Retirada"),box(r.returnType==="EXPIRY","Caducidad"),box(r.returnType==="TRANSPORT","Transporte"),box(r.returnType==="OTHER",`Otra: ${text(r.otherReturnType)}`)].join("   "));
  xml=setWordCellTextBalanced(xml,1,2,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,2,3,text(r.country));xml=setWordCellTextBalanced(xml,1,3,1,text(r.address));xml=setWordCellTextBalanced(xml,1,4,1,text(r.relatedDocument));
