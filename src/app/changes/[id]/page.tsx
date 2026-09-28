@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { DocumentTemplateActions } from "@/components/document-template-actions";
+import { getActiveTemplateAssets } from "@/modules/configuration/template-queries";
 import { notFound } from "next/navigation";
 import {
   addChangeControlFollowupFormAction,
@@ -57,9 +59,10 @@ export default async function ChangeControlDetailPage({
   const { id } = await params;
   const { tab: rawTab } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "request";
-  const [record, lookups] = await Promise.all([
+  const [record, lookups, documentTemplates] = await Promise.all([
     getChangeControlDetail(id),
     getChangeControlLookups(),
+    getActiveTemplateAssets("CHANGE_CONTROL"),
   ]);
   if (!record) notFound();
 
@@ -293,17 +296,30 @@ export default async function ChangeControlDetailPage({
         <div className="card">
           <h2>Documentos del expediente</h2>
           <p className="muted-note">Solicitud (Anexo III), Dictamen (Anexo IV), Seguimientos (Anexo V) y listado maestro anual (Anexo VII) son familias documentales independientes.</p>
-          <div className="document-actions">
-            <a className="button" href={`/api/changes/${id}/annex-iii`}>Descargar Anexo III · Solicitud</a>
-            <a className="button" href={`/api/changes/${id}/annex-iv`}>Descargar Anexo IV · Dictamen</a>
-            {currentVersion ? (
-              <a className="button" href={`/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}`}>
-                Descargar Anexo V · {versionLabel(currentVersion.sequenceNumber)}
-              </a>
-            ) : (
-              <span className="badge neutral">Anexo V disponible tras Seguimiento 00</span>
-            )}
+          <div className="document-template-grid">
+            <DocumentTemplateActions
+              templates={documentTemplates}
+              documentType="CHANGE_ANNEX_III"
+              title="Anexo III · Solicitud"
+              generateHref={`/api/changes/${id}/annex-iii`}
+              generateLabel="Generar Anexo III cumplimentado"
+            />
+            <DocumentTemplateActions
+              templates={documentTemplates}
+              documentType="CHANGE_ANNEX_IV"
+              title="Anexo IV · Dictamen"
+              generateHref={`/api/changes/${id}/annex-iv`}
+              generateLabel="Generar Anexo IV cumplimentado"
+            />
+            <DocumentTemplateActions
+              templates={documentTemplates}
+              documentType="CHANGE_ANNEX_V"
+              title="Anexo V · Seguimiento"
+              generateHref={currentVersion ? `/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}` : undefined}
+              generateLabel={currentVersion ? `Generar Anexo V · ${versionLabel(currentVersion.sequenceNumber)}` : undefined}
+            />
           </div>
+          {!currentVersion ? <p className="muted-note">El Anexo V cumplimentado estará disponible tras emitir el Seguimiento 00.</p> : null}
           {record.qmsRecord.versions.length ? (
             <div className="timeline">
               {record.qmsRecord.versions.map((version) => (
