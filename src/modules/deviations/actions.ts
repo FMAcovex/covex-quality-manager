@@ -1,6 +1,6 @@
 "use server";
 
-import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
+import { InvestigationMethod, Prisma, QmsRecordType, QmsRelationType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -569,4 +569,44 @@ export async function addDeviationFollowupAction(formData: FormData) {
 
   revalidatePath(`/deviations/${deviationId}`);
   redirect(`/deviations/${deviationId}?tab=followups`);
+}
+
+
+export async function addDeviationRelationAction(id: string, formData: FormData) {
+  const deviation = await prisma.deviation.findUnique({ where: { id }, select: { qmsRecordId: true } });
+  if (!deviation) throw new Error("Desviación no encontrada.");
+
+  const code = String(formData.get("businessCode") ?? "").trim();
+  const rawType = String(formData.get("relationType") ?? "RELATED_TO");
+  const actor = String(formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo").trim();
+  if (!code) throw new Error("Debe indicarse la codificación del expediente relacionado.");
+
+  const target = await prisma.qmsRecord.findFirst({
+    where: { businessCode: code, id: { not: deviation.qmsRecordId } },
+  });
+  if (!target) throw new Error("No existe un expediente QMS con esa codificación.");
+
+  const allowed = new Set(Object.values(QmsRelationType));
+  if (!allowed.has(rawType as QmsRelationType)) throw new Error("Tipo de relación no válido.");
+  const relationType = rawType as QmsRelationType;
+
+  await prisma.qmsRelation.upsert({
+    where: {
+      sourceRecordId_targetRecordId_relationType: {
+        sourceRecordId: deviation.qmsRecordId,
+        targetRecordId: target.id,
+        relationType,
+      },
+    },
+    update: { isActive: true, createdByText: actor },
+    create: {
+      sourceRecordId: deviation.qmsRecordId,
+      targetRecordId: target.id,
+      relationType,
+      createdByText: actor,
+    },
+  });
+
+  revalidatePath("/deviations");
+  revalidatePath(`/deviations/${id}`);
 }
