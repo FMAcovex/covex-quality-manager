@@ -460,8 +460,10 @@ model Deviation {
   departmentNameSnapshot     String?
   issueDate                  DateTime?                @db.Date
   eventDateTime              DateTime?
+  eventShift                 String?
   detectedBy                 String?
   createdByText               String?
+  qaValidatedBy              String?
   materialProcessAffected     String?
   provenance                  String?
   deadlineStatus              DeadlineStatus           @default(NOT_EVALUATED)
@@ -593,6 +595,9 @@ model Capa {
   departmentNameSnapshot    String?
   openedAt                  DateTime?               @db.Date
   createdByText             String?
+  issuedByRole              String?
+  approvalNames             String?
+  approvalRoles             String?
   originType                String?
   originCode                String?
   applicableTo              String?
@@ -824,9 +829,18 @@ model Complaint {
   departmentNameSnapshot     String?
   openedAt                   DateTime?                    @db.Date
   detectionDate              DateTime?                    @db.Date
+  receivedAt                 DateTime?                    @db.Date
   detectedBy                 String?
   createdByText              String?
   complaintType              ComplaintType
+  detectionSources           String[]                     @default([])
+  otherDetectionSource       String?
+  scopeCategories            String[]                     @default([])
+  otherScopeCategory         String?
+  affectedObjects            String[]                     @default([])
+  otherAffectedObject        String?
+  complaintCategories        String[]                     @default([])
+  otherComplaintCategory     String?
   partyName                  String?
   contact                    String?
   affectedScope              String?
@@ -843,24 +857,46 @@ model Complaint {
   qaValidatedBy              String?
   investigation              String?
   impactAssessment           String?
+  impactQualityGmp            Boolean?
+  impactSafetyEfficacy        Boolean?
+  impactRegulatory            Boolean?
+  impactEnvironment           Boolean?
+  impactOtherSimilar          Boolean?
+  containmentActions          String[]                     @default([])
+  otherContainmentAction      String?
+  containmentJustification    String?
   investigationResult        ComplaintInvestigationResult?
   rootCause                  String?
   classification             ComplaintClassification?
+  recallPotential             TriState?
+  recallProcedureRequired     TriState?
+  authorityNotificationRequired TriState?
+  responsibleClientCommunicationRequired TriState?
+  regulatoryJustification     String?
   resolutionLines            String?
   resolutionActions          ComplaintResolutionAction[] @default([])
   immediateActionDetails     String?
   otherResolutionDetails     String?
   externalCommunication      String?
+  communicationDate           DateTime?                    @db.Date
+  communicationMedium         String?
+  communicationSenderRecipient String?
+  communicationSummary        String?
   conclusion                 String?
+  continueToPartII           Boolean?
   effectivenessRequired      Boolean?
   initialEvaluationDate      DateTime?                    @db.Date
   initialConclusionDate      DateTime?                    @db.Date
   responseDate               DateTime?                    @db.Date
   responseMedium             String?
   responseSummary            String?
+  responseSufficient         Boolean?
   effectivenessStatus        ComplaintEffectivenessStatus @default(PENDING)
   effectivenessAssessment    String?
   closeConclusion            String?
+  closureActionStatus        String?
+  closureActionReferences    String?
+  closureActionResponsible   String?
   approvalNames              String?
   closeApprovalNames         String?
   closedAt                   DateTime?                    @db.Date
@@ -883,6 +919,7 @@ model Complaint {
   updatedAt                  DateTime                     @updatedAt
   followups                  ComplaintFollowup[]
   capaPlans                  ComplaintCapaPlan[]
+  derivedActions             ComplaintDerivedAction[]
 
   @@index([departmentId])
   @@index([openedAt])
@@ -913,6 +950,22 @@ model ComplaintCapaPlan {
   @@index([complaintId])
   @@index([linkedCapaRecordId])
   @@index([plannedExecutionDate])
+}
+
+model ComplaintDerivedAction {
+  id             String    @id @default(uuid())
+  complaintId    String
+  complaint      Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  typeCode       String
+  actionEvidence String?
+  responsible    String?
+  plannedDate    DateTime? @db.Date
+  sortOrder      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([complaintId, sortOrder])
+  @@index([plannedDate])
 }
 
 model ComplaintFollowup {
@@ -959,6 +1012,13 @@ model ReturnRecord {
   tamperEvidenceIntact            TriState?
   packagingIntegrityOk            TriState?
   customerDeclarationAvailable    TriState?
+  customerEvidenceDeliveryDocument TriState?
+  customerEvidenceStorageTemperature TriState?
+  customerEvidenceReturnTemperature TriState?
+  customerEvidenceNoTemperatureRecords TriState?
+  customerEvidenceOther           String?
+  customerDeclarationObservations String?
+  customerTechnicalResponsible    String?
   storageTransportConditionsOk    TriState?
   noUseDamageContamination        TriState?
   noRecallAlertBlock              TriState?
