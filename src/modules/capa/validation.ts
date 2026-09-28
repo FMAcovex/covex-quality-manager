@@ -40,6 +40,21 @@ function parseArray<T>(raw: string | null, schema: z.ZodType<T>): T[] {
   }
 }
 
+function validDate(value: string | null) {
+  if (!value) return true;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
 export function parseCapaForm(
   formData: FormData,
   options: { allowHistoricalIncomplete?: boolean } = {},
@@ -66,46 +81,70 @@ export function parseCapaForm(
   const effectivenessAssessment = text(formData, "effectivenessAssessment");
 
   const errors: string[] = [];
-  if (!businessCode) errors.push("La codificación AC/AP es obligatoria.");
-  if (!departmentId) errors.push("El departamento responsable es obligatorio.");
-  if (!openedAt) errors.push("La fecha de apertura es obligatoria.");
-  if (!createdByText) errors.push("Debe indicarse quién cumplimenta el registro.");
-  if (!originType) errors.push("Debe indicarse el origen de la CAPA.");
-  if (!defectDescription) errors.push("La descripción breve del defecto es obligatoria.");
-  if (!rootCause && !options.allowHistoricalIncomplete) errors.push("La causa raíz es obligatoria.");
-  if (!plannedActions.length) errors.push("Debe existir al menos una acción propuesta.");
+  const fieldIssues: Record<string, string[]> = {};
+  const addIssue = (field: string, message: string) => {
+    errors.push(message);
+    fieldIssues[field] = [...(fieldIssues[field] ?? []), message];
+  };
+
+  if (!businessCode) addIssue("businessCode", "La codificación AC/AP es obligatoria.");
+  if (!departmentId) addIssue("departmentId", "El departamento responsable es obligatorio.");
+  if (!openedAt) addIssue("openedAt", "La fecha de apertura es obligatoria.");
+  else if (!validDate(openedAt)) addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");
+  if (!createdByText) addIssue("createdByText", "Debe indicarse quién cumplimenta el registro.");
+  if (!originType) addIssue("originType", "Debe indicarse el origen de la CAPA.");
+  if (!defectDescription) addIssue("defectDescription", "La descripción breve del defecto es obligatoria.");
+  if (!rootCause && !options.allowHistoricalIncomplete) addIssue("rootCause", "La causa raíz es obligatoria.");
+  if (!plannedActions.length) addIssue("plannedActionsJson", "Debe existir al menos una acción propuesta.");
+
+  plannedActions.forEach((action, index) => {
+    if (action.plannedExecutionDate && !validDate(action.plannedExecutionDate)) {
+      addIssue(
+        "plannedActionsJson",
+        `La fecha prevista de la acción ${index + 1} no tiene un formato válido.`,
+      );
+    }
+  });
+
+  if (operationalClosedAt && !validDate(operationalClosedAt)) {
+    addIssue("operationalClosedAt", "La fecha de cierre operativo no tiene un formato válido.");
+  }
+  if (effectiveClosedAt && !validDate(effectiveClosedAt)) {
+    addIssue("effectiveClosedAt", "La fecha de cierre efectivo no tiene un formato válido.");
+  }
 
   if (recordStatus === "CLOSED" && !options.allowHistoricalIncomplete) {
     if (!operationalClosedAt) {
-      errors.push("Una CAPA cerrada debe tener fecha de cierre operativo.");
+      addIssue("operationalClosedAt", "Una CAPA cerrada debe tener fecha de cierre operativo.");
     }
     if (!conclusion) {
-      errors.push("Una CAPA cerrada debe tener conclusión de cierre.");
+      addIssue("conclusion", "Una CAPA cerrada debe tener conclusión de cierre.");
     }
   }
 
   if (recordStatus === "CANCELLED" && !cancellationReason && !options.allowHistoricalIncomplete) {
-    errors.push("Una CAPA cancelada debe incluir el motivo de cancelación.");
+    addIssue("cancellationReason", "Una CAPA cancelada debe incluir el motivo de cancelación.");
   }
 
   if (effectiveClosedAt && !options.allowHistoricalIncomplete) {
     if (recordStatus !== "CLOSED") {
-      errors.push("El cierre efectivo solo puede registrarse cuando la CAPA está cerrada operativamente.");
+      addIssue("status", "El cierre efectivo solo puede registrarse cuando la CAPA está cerrada operativamente.");
     }
     if (effectivenessStatus !== "CONFORMING") {
-      errors.push("El cierre efectivo requiere una verificación de eficacia Conforme.");
+      addIssue("effectivenessStatus", "El cierre efectivo requiere una verificación de eficacia Conforme.");
     }
     if (!effectivenessAssessment) {
-      errors.push("El cierre efectivo requiere una valoración documentada de la eficacia.");
+      addIssue("effectivenessAssessment", "El cierre efectivo requiere una valoración documentada de la eficacia.");
     }
   }
 
   if (effectivenessStatus === "NONCONFORMING" && effectiveClosedAt && !options.allowHistoricalIncomplete) {
-    errors.push("Una eficacia No conforme no puede tener fecha de cierre efectivo.");
+    addIssue("effectiveClosedAt", "Una eficacia No conforme no puede tener fecha de cierre efectivo.");
   }
 
   return {
     errors,
+    fieldIssues,
     actor: text(formData, "modifiedByText") ?? createdByText ?? "Usuario no informado",
     values: {
       businessCode,
