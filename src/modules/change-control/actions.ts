@@ -8,6 +8,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { type ActionFeedbackState, userFacingActionError } from "@/lib/forms/action-feedback";
 import { parseChangeControlForm } from "@/modules/change-control/validation";
 import type {
   ChangeControlFormState,
@@ -460,7 +461,7 @@ function parseFollowupTasks(raw: string): ChangeFollowupTaskInput[] {
   }
 }
 
-export async function addChangeControlFollowupAction(id: string, formData: FormData) {
+async function saveChangeControlFollowup(id: string, formData: FormData) {
   const change = await prisma.changeControl.findUnique({
     where: { id },
     include: {
@@ -649,6 +650,25 @@ export async function addChangeControlFollowupAction(id: string, formData: FormD
 
   revalidatePath("/changes");
   revalidatePath(`/changes/${id}`);
+}
+
+export async function addChangeControlFollowupAction(id: string, formData: FormData) {
+  await saveChangeControlFollowup(id, formData);
+  redirect(`/changes/${id}?tab=followups`);
+}
+
+export async function addChangeControlFollowupFormAction(
+  id: string,
+  _state: ActionFeedbackState,
+  formData: FormData,
+): Promise<ActionFeedbackState> {
+  try {
+    await saveChangeControlFollowup(id, formData);
+  } catch (error) {
+    return {
+      error: userFacingActionError(error, "No se ha podido guardar el seguimiento del Control de Cambio."),
+    };
+  }
   redirect(`/changes/${id}?tab=followups`);
 }
 
