@@ -1,3 +1,8 @@
+import { DocumentType } from "@prisma/client";
+import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
+import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
+import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
+import { loadComplaintPntTemplate } from "@/modules/complaints/documents/templates";
 import { generateSimpleXlsx } from "@/lib/ooxml/simple-xlsx";
 import { complaintClassificationLabel,complaintEffectivenessLabel,complaintStatusLabel,complaintTypeLabel,formatDate } from "@/modules/complaints/domain";
 type Row=Awaited<ReturnType<typeof import("@/modules/complaints/documents/export-data").getComplaintExportRows>>[number];
@@ -10,13 +15,6 @@ export function generateComplaintSimpleList(rows:Row[]){
   [r.internalObservations,...r.capaPlans.map(x=>x.businessCapaCode||x.description)].filter(Boolean).join(" · ")
  ]}));
 }
-
-
-import { DocumentType } from "@prisma/client";
-import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
-import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
-import { loadComplaintPntTemplate } from "@/modules/complaints/documents/templates";
 
 const officialDate=(v:Date|null|undefined)=>v?new Intl.DateTimeFormat("es-ES").format(v):"";
 const officialText=(v:string|null|undefined)=>v??"";
