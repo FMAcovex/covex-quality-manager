@@ -38,7 +38,8 @@
     "backup:verify": "tsx scripts/verify-backup.ts",
     "hito10:smoke": "tsx scripts/smoke-hardening.ts",
     "templates:bundle:install": "tsx scripts/install-template-bundle.ts",
-    "demo:annexes": "tsx scripts/generate-demo-annexes.ts"
+    "demo:annexes": "tsx scripts/generate-demo-annexes.ts",
+    "create-save:smoke": "tsx scripts/smoke-create-save.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
