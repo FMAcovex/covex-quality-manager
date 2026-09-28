@@ -57,22 +57,22 @@ function shiftRow(rowXml: string, from: number, to: number) {
 function setCellStyle(sheetXml:string,ref:string,style:number){
   const re=new RegExp(`(<c\\b[^>]*\\br="${ref}"[^>]*)(>)`);
   return sheetXml.replace(re,(_m,attrs:string,end:string)=>{
-    const next=/\\bs="[^"]*"/.test(attrs)?attrs.replace(/\\bs="[^"]*"/,`s="${style}"`):`${attrs} s="${style}"`;
+    const next=/\bs="[^"]*"/.test(attrs)?attrs.replace(/\bs="[^"]*"/,`s="${style}"`):`${attrs} s="${style}"`;
     return `${next}${end}`;
   });
 }
 function addCapaFilledStyles(stylesXml:string){
-  const match=stylesXml.match(/<cellXfs\\b([^>]*)>([\\s\\S]*?)<\\/cellXfs>/);
+  const match=stylesXml.match(new RegExp("<cellXfs\\b([^>]*)>([\\s\\S]*?)</cellXfs>"));
   if(!match)throw new Error("Anexo IV CAPA: cellXfs no encontrado.");
-  const xfs=[...match[2].matchAll(/<xf\\b[^>]*(?:\\/>|>[\\s\\S]*?<\\/xf>)/g)].map(x=>x[0]);
+  const xfs=[...match[2].matchAll(new RegExp("<xf\\b[^>]*(?:/>|>[\\s\\S]*?</xf>)","g"))].map(x=>x[0]);
   const ids=new Map<string,number>(); const additions:string[]=[];
   for(const fillId of [4,5]) for(const base of [8,9]){
     let clone=xfs[base]; if(!clone)throw new Error(`Anexo IV CAPA: estilo base ${base} no encontrado.`);
-    clone=/fillId="\\d+"/.test(clone)?clone.replace(/fillId="\\d+"/,`fillId="${fillId}"`):clone.replace("<xf ",`<xf fillId="${fillId}" `);
-    clone=/applyFill="\\d+"/.test(clone)?clone.replace(/applyFill="\\d+"/,'applyFill="1"'):clone.replace("<xf ",'<xf applyFill="1" ');
+    clone=/fillId="\d+"/.test(clone)?clone.replace(/fillId="\d+"/,`fillId="${fillId}"`):clone.replace("<xf ",`<xf fillId="${fillId}" `);
+    clone=/applyFill="\d+"/.test(clone)?clone.replace(/applyFill="\d+"/,'applyFill="1"'):clone.replace("<xf ",'<xf applyFill="1" ');
     const id=xfs.length+additions.length; additions.push(clone); ids.set(`${fillId}:${base}`,id);
   }
-  const attrs=match[1].replace(/count="\\d+"/,`count="${xfs.length+additions.length}"`);
+  const attrs=match[1].replace(/count="\d+"/,`count="${xfs.length+additions.length}"`);
   return {xml:stylesXml.replace(match[0],`<cellXfs${attrs}>${match[2]}${additions.join("")}</cellXfs>`),ids};
 }
 
