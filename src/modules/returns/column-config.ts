@@ -14,5 +14,6 @@ export const returnColumns=[
  {key:"destination",label:"Destino final",index:12},
  {key:"destruction",label:"Destrucción / Certificado",index:13},
  {key:"status",label:"Estado",index:14},
- {key:"followup",label:"Seguimiento y control",index:15}
+ {key:"followup",label:"Seguimiento y control",index:15},
+ {key:"qmsRelated",label:"Expedientes relacionados",index:16}
 ] as const;
