@@ -361,6 +361,7 @@ export function serializeComplaintVersion(record: ComplaintVersionSource) {
       closeApprovalNames: record.closeApprovalNames ?? null, closedAt: iso(record.closedAt), status: record.status,
       internalObservations: record.internalObservations ?? null, signedDocumentAvailable: record.signedDocumentAvailable ?? null,
       dataQualityStatus: record.dataQualityStatus, includeInKpi: record.includeInKpi, kpiExclusionReason: record.kpiExclusionReason ?? null,
+      extraData: record.extraData ?? null,
       formVersionId: record.formVersionId ?? null, formVersionCode: record.formVersion?.versionCode ?? null,
       annexIIITemplateVersionId: record.annexIIITemplateVersionId ?? null, annexIIITemplateVersionCode: record.annexIIITemplateVersion?.versionCode ?? null,
       annexIVTemplateVersionId: record.annexIVTemplateVersionId ?? null, annexIVTemplateVersionCode: record.annexIVTemplateVersion?.versionCode ?? null,
@@ -398,6 +399,7 @@ export function serializeReturnVersion(record: ReturnVersionSource) {
       traceabilityUpdated: record.traceabilityUpdated ?? null, closedAt: iso(record.closedAt), status: record.status,
       internalObservations: record.internalObservations ?? null, signedDocumentAvailable: record.signedDocumentAvailable ?? null,
       dataQualityStatus: record.dataQualityStatus, includeInKpi: record.includeInKpi, kpiExclusionReason: record.kpiExclusionReason ?? null,
+      extraData: record.extraData ?? null,
       formVersionId: record.formVersionId ?? null, formVersionCode: record.formVersion?.versionCode ?? null,
       products: record.products.map(x=>({departmentId:x.departmentId??null,productType:x.productType,otherProductType:x.otherProductType??null,productNameCode:x.productNameCode,format:x.format??null,lot:x.lot??null,expiryReanalysis:x.expiryReanalysis??null,quantity:x.quantity??null,unit:x.unit??null,netWeight:x.netWeight??null,grossWeight:x.grossWeight??null,receptionObservations:x.receptionObservations??null,receivedBy:x.receivedBy??null,verifiedBy:x.verifiedBy??null,sortOrder:x.sortOrder})),
       followups: record.followups.map(x=>({id:x.id,followupDate:iso(x.followupDate),completedByText:x.completedByText,comment:x.comment,nextFollowupDate:iso(x.nextFollowupDate),evidenceReference:x.evidenceReference??null}))
