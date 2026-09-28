@@ -7,6 +7,34 @@ import { deadlineLabel, measuresLabel } from "@/modules/deviations/domain";
 
 export const ANNEX_V_CAPACITY = 63;
 
+const DETAIL_STYLES: Record<string, number> = {
+  B: 20, C: 21, D: 22, E: 22, F: 15, G: 21,
+  H: 18, I: 25, J: 25, K: 27, L: 28, M: 26,
+};
+
+export function ensureAnnexVDetailRows(sheetXml: string) {
+  for (let row = 9; row <= 65; row += 1) {
+    const rowRegex = new RegExp(`<row([^>]*\\br="${row}"[^>]*)>([\\s\\S]*?)<\\/row>`);
+    sheetXml = sheetXml.replace(rowRegex, (_match, rawAttrs: string, inner: string) => {
+      let attrs = rawAttrs;
+      if (!/\\bht=/.test(attrs)) attrs += ' ht="45"';
+      if (!/\\bcustomHeight=/.test(attrs)) attrs += ' customHeight="1"';
+      const missing = Object.entries(DETAIL_STYLES)
+        .filter(([column]) => !new RegExp(`<c[^>]*\\br="${column}${row}"(?:\\s|")`).test(inner))
+        .map(([column, style]) => `<c r="${column}${row}" s="${style}"></c>`)
+        .join("");
+      const pCell = new RegExp(`<c[^>]*\\br="P${row}"`);
+      const updatedInner = pCell.test(inner)
+        ? inner.replace(pCell, `${missing}export const ANNEX_V_CAPACITY = 63;
+
+`)
+        : `${inner}${missing}`;
+      return `<row${attrs}>${updatedInner}</row>`;
+    });
+  }
+  return sheetXml;
+}
+
 type ExportRow = {
   qmsRecord: { businessCode: string | null; year: number | null };
   departmentCodeSnapshot: string | null;
