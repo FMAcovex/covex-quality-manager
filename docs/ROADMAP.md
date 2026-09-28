@@ -182,3 +182,16 @@ Criterio de salida:
 - bandeja transversal de próximos/vencidos;
 - envío automático de alertas expresamente desactivado;
 - smoke test PostgreSQL y CI completos.
+
+
+### Criterio de salida Hito 10
+- errores globales y estados de carga seguros;
+- health check que verifique conectividad real con PostgreSQL sin exponer detalles internos;
+- cabeceras HTTP de seguridad y bloqueo de indexación;
+- exportación lógica completa de la base con SHA-256 y verificación estructural;
+- backups excluidos de Git y documentados como artefactos sensibles;
+- dataset ficticio idempotente y protegido por `ALLOW_DEMO_DATA`;
+- demo transversal de los cinco módulos con relaciones QMS;
+- smoke test específico de endurecimiento incluido en CI;
+- documentación local/demo y límites de la V1 actualizados;
+- autenticación, roles corporativos y política de backup de producción permanecen en Hito 11.
