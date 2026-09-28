@@ -180,7 +180,7 @@ export default async function DeviationDetailPage({
           </div>
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
-            <BasicFollowupForm action={addDeviationFollowupAction.bind(null)} defaultActor={deviation.createdByText ?? ""} includeType />
+            <BasicFollowupForm action={addDeviationFollowupAction.bind(null, id)} defaultActor={deviation.createdByText ?? ""} includeType />
           </div>
         </>
       ) : null}
