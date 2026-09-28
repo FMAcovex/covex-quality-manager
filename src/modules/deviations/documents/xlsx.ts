@@ -1,4 +1,4 @@
-import { readZip, getZipEntryText, updateZipEntry, writeZip, type ZipEntry } from "@/lib/ooxml/zip";
+import { readZip, updateZipEntry, writeZip, type ZipEntry } from "@/lib/ooxml/zip";
 import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
 import { loadAnnexVTemplate } from "@/modules/deviations/documents/templates";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
@@ -59,7 +59,7 @@ function shiftRow(rowXmlValue: string, from: number, to: number) {
 }
 
 export async function generateAnnexV(year: number, rows: ExportRow[], versionCode = "06") {
-  let entries = readZip(await loadAnnexVTemplate(versionCode));
+  const entries = readZip(await loadAnnexVTemplate(versionCode));
   const sheetEntry = entries.find((entry) => entry.name === "xl/worksheets/sheet1.xml");
   if (!sheetEntry) throw new Error("Anexo V Desviaciones: hoja oficial no encontrada.");
   let sheet = sheetEntry.data.toString("utf8");
