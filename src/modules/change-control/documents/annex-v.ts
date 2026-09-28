@@ -45,6 +45,26 @@ function groupTasks(
   return { groups, stateByTask };
 }
 
+export function changeAnnexVTaskValues(
+  task: Pick<ChangeDocumentTask, "description" | "responsible" | "plannedDate" | "origin">,
+  state: { status: "PENDING" | "COMPLETED" | "NOT_APPLICABLE"; actualDate?: Date | null; evidenceComment?: string | null },
+) {
+  const status =
+    state.status === "COMPLETED"
+      ? "☒"
+      : state.status === "NOT_APPLICABLE"
+        ? "☒ N/A"
+        : "☐";
+  return [
+    status,
+    task.description,
+    text(task.responsible),
+    date(task.plannedDate),
+    date(state.actualDate),
+    text(state.evidenceComment),
+  ];
+}
+
 export async function generateChangeAnnexV(
   record: ChangeDocumentRecord,
   followupSequence: number,
@@ -86,20 +106,10 @@ export async function generateChangeAnnexV(
         const state = stateByTask.get(task.id)!;
         const isNew = task.origin === "FOLLOWUP";
         const color = isNew ? "0070C0" : undefined;
-        const status =
-          state.status === "COMPLETED"
-            ? "☒"
-            : state.status === "NOT_APPLICABLE"
-              ? "☒ N/A"
-              : "☐";
-        return fillWordRowBalanced(second, [
-          { text: status, color },
-          { text: task.description, color },
-          { text: text(task.responsible), color },
-          { text: date(task.plannedDate), color },
-          { text: date(state.actualDate), color },
-          { text: text(state.evidenceComment), color },
-        ]);
+        return fillWordRowBalanced(
+          second,
+          changeAnnexVTaskValues(task, state).map((value) => ({ text: value, color })),
+        );
       }),
     ]),
   );
