@@ -247,3 +247,16 @@ La exportación lógica del Hito 10:
 - puede verificarse antes de conservar o trasladar el archivo.
 
 Es una herramienta técnica de demo/contingencia. No sustituye la política corporativa futura de backup, restauración, retención, cifrado, acceso o disaster recovery, que se definirá en Hito 11 con IT.
+
+
+## D-043 — Plantilla independiente por anexo
+Cada `DocumentType` representa una familia documental controlada y puede almacenar su propio archivo DOCX/XLSX en PostgreSQL con SHA-256. La interfaz diferencia siempre:
+- descargar la plantilla oficial sin cumplimentar;
+- generar el documento cumplimentado desde los datos del expediente.
+
+Una versión sembrada sin binario puede recibir su archivo oficial mediante Administración. Si ya existe archivo controlado, no se sobrescribe: el cambio exige registrar una nueva versión de plantilla.
+
+Reclamaciones y Devoluciones conservan temporalmente compatibilidad técnica con el PNT completo usado como fuente, pero admiten ya archivos independientes por anexo.
+
+## D-044 — Relaciones QMS navegables
+Las relaciones entre Desviaciones, CAPA, Controles de Cambios, Reclamaciones y Devoluciones se almacenan una sola vez en `QmsRelation` y se visualizan en ambos sentidos. Los listados pueden mostrar los expedientes relacionados como enlaces navegables; no se duplican campos de relación por módulo.
