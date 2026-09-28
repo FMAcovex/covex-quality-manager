@@ -63,43 +63,50 @@ function snapshot(v: ReturnType<typeof parseCapaForm>["values"]) {
   };
 }
 
-function recordTypeFromCode(code: string | null) {
-  if (!code) return null;
-  const normalized = code.trim().toUpperCase();
-  if (normalized.startsWith("D/")) return QmsRecordType.DEVIATION;
-  if (normalized.startsWith("R/")) return QmsRecordType.COMPLAINT;
-  if (normalized.startsWith("C/")) return QmsRecordType.CHANGE_CONTROL;
-  if (normalized.startsWith("DEV/")) return QmsRecordType.RETURN;
-  return null;
-}
-
 async function relatePrimaryOrigin(
   tx: Prisma.TransactionClient,
   capaRecordId: string,
   originCode: string | null,
   actor: string,
 ) {
-  const recordType = recordTypeFromCode(originCode);
-  if (!recordType || !originCode) return;
-  const origin = await tx.qmsRecord.findUnique({
-    where: { recordType_businessCode: { recordType, businessCode: originCode.trim() } },
+  if (!originCode) return;
+
+  const allowedTypes = allowedOperationalRelationTypes(QmsRecordType.CAPA);
+  const matches = await tx.qmsRecord.findMany({
+    where: {
+      businessCode: originCode.trim(),
+      recordType: { in: allowedTypes },
+      id: { not: capaRecordId },
+    },
+    select: { id: true, recordType: true, businessCode: true },
   });
-  if (!origin) return;
+  if (!matches.length) return;
+
+  const origin = selectOperationalRelationTarget(QmsRecordType.CAPA, matches);
+  const relation = canonicalOperationalRelation(
+    { id: capaRecordId, recordType: QmsRecordType.CAPA, businessCode: null },
+    origin,
+  );
+
   await tx.qmsRelation.upsert({
     where: {
       sourceRecordId_targetRecordId_relationType: {
-        sourceRecordId: origin.id,
-        targetRecordId: capaRecordId,
-        relationType: "GENERATES",
+        sourceRecordId: relation.sourceRecordId,
+        targetRecordId: relation.targetRecordId,
+        relationType: relation.relationType,
       },
     },
-    update: { isActive: true, createdByText: actor },
-    create: {
-      sourceRecordId: origin.id,
-      targetRecordId: capaRecordId,
-      relationType: "GENERATES",
+    update: {
+      isActive: true,
       createdByText: actor,
-      notes: "Relación automática por código de origen CAPA.",
+      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
+    },
+    create: {
+      sourceRecordId: relation.sourceRecordId,
+      targetRecordId: relation.targetRecordId,
+      relationType: relation.relationType,
+      createdByText: actor,
+      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
     },
   });
 }
