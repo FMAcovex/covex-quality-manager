@@ -14,5 +14,6 @@ export const changeControlColumns = [
   { key: "nextFollowup", label: "Próximo seguimiento", index: 12 },
   { key: "finalStatus", label: "Estado final", index: 13 },
   { key: "closureDate", label: "Fecha cierre", index: 14 },
-  { key: "observations", label: "Observaciones", index: 15 },
+  { key: "related", label: "Relacionados", index: 15 },
+  { key: "observations", label: "Observaciones", index: 16 },
 ] as const;
