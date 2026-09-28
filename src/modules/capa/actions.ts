@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
+import type { FollowupActionState } from "@/components/basic-followup-form";
 import {
   getApplicableFormVersion,
   getApplicableTemplateVersion,
@@ -494,7 +495,7 @@ export async function updateCapaAction(
   }
 }
 
-export async function addCapaFollowupAction(id: string, formData: FormData) {
+export async function addCapaFollowupAction(id: string, _state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
   const capa = await prisma.capa.findUnique({
     where: { id },
     include: {
@@ -505,7 +506,7 @@ export async function addCapaFollowupAction(id: string, formData: FormData) {
       annexIIITemplateVersion: true,
     },
   });
-  if (!capa) throw new Error("CAPA no encontrada.");
+  if (!capa) return { error: "CAPA no encontrada." };
 
   const date = String(formData.get("followupDate") ?? "").trim();
   const actor = String(formData.get("completedByText") ?? "").trim();
@@ -516,12 +517,10 @@ export async function addCapaFollowupAction(id: string, formData: FormData) {
   const next = String(formData.get("nextFollowupDate") ?? "").trim();
 
   if (!date || !actor || !description) {
-    throw new Error("Fecha, cumplimentado por y descripción son obligatorios.");
+    return { error: "Fecha, cumplimentado por y descripción son obligatorios." };
   }
   if (capa.status === "OPEN" && (!reason || !next)) {
-    throw new Error(
-      "Si la CAPA permanece abierta, el seguimiento debe indicar motivo y fecha del próximo seguimiento.",
-    );
+    return { error: "Si la CAPA permanece abierta, el seguimiento debe indicar motivo y fecha del próximo seguimiento." };
   }
 
   const sequenceNumber =
@@ -606,6 +605,7 @@ export async function addCapaFollowupAction(id: string, formData: FormData) {
 
   revalidatePath("/capa");
   revalidatePath(`/capa/${id}`);
+  return { success: `Seguimiento ${String(sequenceNumber).padStart(2, "0")} guardado correctamente.` };
 }
 
 export async function addCapaRelationAction(id: string, formData: FormData) {
