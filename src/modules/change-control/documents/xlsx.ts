@@ -75,8 +75,8 @@ function xmlCell(column: string, row: number, style: number, value: string) {
 
 function rowStyles(templateRow: string) {
   const styles = new Map<string, number>();
-  for (const match of templateRow.matchAll(/<c\\b([^>]*\\br="([A-Z]+)\\d+"[^>]*)/g)) {
-    styles.set(match[2], Number(match[1].match(/\\bs="([^"]+)"/)?.[1] ?? 0));
+  for (const match of templateRow.matchAll(/<c\b([^>]*\br="([A-Z]+)\d+"[^>]*)/g)) {
+    styles.set(match[2], Number(match[1].match(/\bs="([^"]+)"/)?.[1] ?? 0));
   }
   return styles;
 }
@@ -96,9 +96,9 @@ export async function generateChangeAnnexVII(
   let sheet = getZipEntryText(entries, "xl/worksheets/sheet1.xml");
   let stylesXml = getZipEntryText(entries, "xl/styles.xml");
 
-  const sheetData = sheet.match(/<sheetData>([\\s\\S]*?)<\\/sheetData>/);
+  const sheetData = sheet.match(/<sheetData>([\s\S]*?)<\/sheetData>/);
   if (!sheetData) throw new Error("Anexo VII: sheetData no encontrado.");
-  const sourceRows = [...sheetData[1].matchAll(/<row\\b[^>]*\\br="(\\d+)"[^>]*>[\\s\\S]*?<\\/row>/g)]
+  const sourceRows = [...sheetData[1].matchAll(/<row\b[^>]*\br="(\d+)"[^>]*>[\s\S]*?<\/row>/g)]
     .map((match) => ({ number: Number(match[1]), xml: match[0] }));
   const byNumber = new Map(sourceRows.map((item) => [item.number, item.xml]));
   const dataTemplate = byNumber.get(5);
