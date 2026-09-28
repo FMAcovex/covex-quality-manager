@@ -30,24 +30,45 @@ export type ComplaintDocumentRecord={
 const date=(v:Date|null|undefined)=>v?new Intl.DateTimeFormat("es-ES").format(v):"";
 const text=(v:string|null|undefined)=>v??"";
 const box=(on:boolean,label:string)=>`${on?"☒":"☐"} ${label}`;
-function implications(r:ComplaintDocumentRecord){
- const s=new Set(r.resolutionActions);
+export function complaintClassificationMarks(value:string|null){
  return [
-  box(s.has("RETURN"),"DEVOLUCIÓN"),box(s.has("CORRECTIVE_ACTION"),"ACC. CORRECTORA"),box(s.has("PREVENTIVE_ACTION"),"ACC. PREVENTIVA"),
-  box(s.has("IMMEDIATE_ACTION"),`ACC. INMEDIATA ${text(r.immediateActionDetails)}`),box(s.has("RECALL"),"RETIRADA DEL MERCADO"),
-  box(s.has("CREDIT"),"ABONO"),box(s.has("REPLACEMENT"),"REPOSICIÓN"),box(s.has("REJECT"),"RECHAZO"),box(s.has("REPROCESS"),"REPROCESO"),
-  box(s.has("DISPOSE"),"ELIMINACIÓN"),box(s.has("KEEP_AS_IS"),"MANTENER SITUACIÓN"),box(s.has("SUPPLIER_INVESTIGATION"),"INVESTIGACIÓN PROVEEDOR"),
-  box(s.has("SUPPLIER_EVALUATION"),"EVALUACIÓN PROVEEDOR"),box(s.has("OPEN_DEVIATION"),"ABRIR DESVIACIÓN"),box(s.has("OPEN_CAPA"),"ABRIR CAPA"),
-  box(s.has("OPEN_CHANGE"),"ABRIR CAMBIO"),box(s.has("OTHER"),`OTROS ${text(r.otherResolutionDetails)}`)
- ].join("\n");
-}
-function classificationText(v:string|null){
- return [
-  box(v==="CRITICAL","Crítica: Riesgo grave para paciente/usuario, posible retirada, bloqueo/rechazo de lote o impacto regulatorio."),
-  box(v==="MAJOR","Mayor: Posible impacto en calidad, cumplimiento GMP, lote, suministro o documentación esencial."),
-  box(v==="MINOR","Menor: Sin impacto crítico en calidad/seguridad/eficacia; impacto limitado o administrativo."),
-  box(v==="NO_GMP_IMPACT","Sin impacto GMP: Reclamación comercial, logística o administrativa sin impacto en calidad.")
+  value==="CRITICAL"?"☒":"☐",
+  value==="MAJOR"?"☒":"☐",
+  value==="MINOR"?"☒":"☐",
+  value==="NO_GMP_IMPACT"?"☒":"☐",
  ];
+}
+
+const resolutionLabels:Record<string,string>={
+ REJECT:"RECHAZO",
+ REPROCESS:"REPROCESO",
+ DISPOSE:"ELIMINACIÓN",
+ KEEP_AS_IS:"MANTENER SITUACIÓN",
+ SUPPLIER_INVESTIGATION:"INVESTIGACIÓN PROVEEDOR",
+ SUPPLIER_EVALUATION:"EVALUACIÓN PROVEEDOR",
+ OPEN_DEVIATION:"ABRIR DESVIACIÓN",
+ OPEN_CAPA:"ABRIR CAPA",
+ OPEN_CHANGE:"ABRIR CAMBIO",
+};
+
+export function complaintResolutionCells(r:Pick<ComplaintDocumentRecord,"resolutionActions"|"immediateActionDetails"|"otherResolutionDetails">){
+ const selected=new Set(r.resolutionActions);
+ const explicit=new Set(["RETURN","CORRECTIVE_ACTION","PREVENTIVE_ACTION","IMMEDIATE_ACTION","RECALL","CREDIT","REPLACEMENT","OTHER"]);
+ const extra=r.resolutionActions.filter(action=>!explicit.has(action)).map(action=>resolutionLabels[action]??action);
+ const otherDetails=[...extra,text(r.otherResolutionDetails)].filter(Boolean).join(" · ");
+ const left=[
+  box(selected.has("RETURN"),"DEVOLUCIÓN:"),
+  box(selected.has("CORRECTIVE_ACTION"),"ACC. CORRECTORA:"),
+  box(selected.has("PREVENTIVE_ACTION"),"ACC. PREVENTIVA:"),
+  box(selected.has("IMMEDIATE_ACTION"),`ACC. INMEDIATA (especificar): ${text(r.immediateActionDetails)}`),
+ ].join("\n");
+ const right=[
+  box(selected.has("RECALL"),"RETIRADA DEL MERCADO:"),
+  box(selected.has("CREDIT"),"ABONO"),
+  box(selected.has("REPLACEMENT"),"REPOSICIÓN"),
+  box(selected.has("OTHER")||extra.length>0,`OTROS (especificar): ${otherDetails}`),
+ ].join("\n");
+ return [left,right] as const;
 }
 
 export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
@@ -96,11 +117,11 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
  xml=setWordCellTextBalanced(xml,1,31,0,[text(r.investigation),text(r.impactAssessment)].filter(Boolean).join("\n\n"));
  xml=setWordCellTextBalanced(xml,1,32,1,[box(r.investigationResult==="PROCEDENT","Procedente"),box(r.investigationResult==="NOT_PROCEDENT","No procedente"),box(r.investigationResult==="INCONCLUSIVE","No concluyente")].join("   "));
  xml=setWordCellTextBalanced(xml,1,35,0,text(r.rootCause));
- const cls=classificationText(r.classification);for(let i=0;i<4;i++)xml=setWordCellTextBalanced(xml,1,37+i,0,cls[i]);
+ const classificationMarks=complaintClassificationMarks(r.classification);for(let i=0;i<4;i++)xml=setWordCellTextBalanced(xml,1,37+i,0,classificationMarks[i]);
  xml=setWordCellTextBalanced(xml,1,43,1,tri(r.potentialRecall));xml=setWordCellTextBalanced(xml,1,44,1,tri(r.recallProcedureRequired));
  xml=setWordCellTextBalanced(xml,1,45,1,tri(r.authorityNotificationRequired));xml=setWordCellTextBalanced(xml,1,46,1,tri(r.responsiblePartyCommunicationRequired));
  xml=setWordCellTextBalanced(xml,1,47,1,text(r.regulatoryJustification));xml=setWordCellTextBalanced(xml,1,50,0,text(r.resolutionLines));
- xml=setWordCellTextBalanced(xml,1,52,0,implications(r));xml=setWordCellTextBalanced(xml,1,52,1,"");
+ {const [left,right]=complaintResolutionCells(r);xml=setWordCellTextBalanced(xml,1,52,0,left);xml=setWordCellTextBalanced(xml,1,52,1,right);}
  xml=replaceWordRowWithCopies(xml,1,55,r.derivedActions.length?r.derivedActions.map(x=>[[x.actionType,x.businessCode].filter(Boolean).join(" / "),text(x.description),text(x.responsible),date(x.plannedExecutionDate)]):[["","","",""]]);
  xml=setWordCellTextBalanced(xml,1,57,1,[date(r.communicationDate),text(r.communicationMedium)].filter(Boolean).join(" / "));xml=setWordCellTextBalanced(xml,1,57,3,text(r.communicationParties));
  xml=setWordCellTextBalanced(xml,1,59,0,text(r.communicationSummary||r.externalCommunication));
@@ -123,7 +144,7 @@ export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
  let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo IV:", "Anexo V:", "last");
  xml=setWordCellTextBalanced(xml,0,1,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,0,1,3,date(r.openedAt));xml=setWordCellTextBalanced(xml,0,2,1,text(r.partyName));xml=setWordCellTextBalanced(xml,0,3,1,text(r.contact));
  xml=setWordCellTextBalanced(xml,0,4,1,text(r.reference));xml=setWordCellTextBalanced(xml,0,4,3,text(r.lotReference));xml=setWordCellTextBalanced(xml,0,5,3,text(r.quantity));xml=setWordCellTextBalanced(xml,0,6,3,text(r.expiryReanalysis));
- xml=setWordCellTextBalanced(xml,0,8,0,text(r.description));xml=setWordCellTextBalanced(xml,0,10,0,text(r.resolutionLines));xml=setWordCellTextBalanced(xml,0,12,0,implications(r));xml=setWordCellTextBalanced(xml,0,12,1,"");
+ xml=setWordCellTextBalanced(xml,0,8,0,text(r.description));xml=setWordCellTextBalanced(xml,0,10,0,text(r.resolutionLines));{const [left,right]=complaintResolutionCells(r);xml=setWordCellTextBalanced(xml,0,12,0,left);xml=setWordCellTextBalanced(xml,0,12,1,right);}
  xml=setWordCellTextBalanced(xml,0,14,0,text(r.closeConclusion||r.conclusion));
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
