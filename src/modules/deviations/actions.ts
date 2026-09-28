@@ -570,3 +570,54 @@ export async function addDeviationFollowupAction(formData: FormData) {
   revalidatePath(`/deviations/${deviationId}`);
   redirect(`/deviations/${deviationId}?tab=followups`);
 }
+
+export async function addDeviationRelationAction(id: string, formData: FormData) {
+  const deviation = await prisma.deviation.findUnique({ where: { id } });
+  if (!deviation) throw new Error("Desviación no encontrada.");
+
+  const businessCode = String(formData.get("businessCode") ?? "").trim();
+  const relationType = String(formData.get("relationType") ?? "RELATED_TO").trim();
+  const actor =
+    String(formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo").trim() ||
+    "Usuario demo";
+  if (!businessCode) throw new Error("Debe indicarse la codificación del expediente relacionado.");
+
+  const allowed = ["GENERATES", "RELATED_TO", "IMPLEMENTED_BY", "ASSOCIATED_WITH"] as const;
+  const type = allowed.includes(relationType as (typeof allowed)[number])
+    ? (relationType as (typeof allowed)[number])
+    : "RELATED_TO";
+
+  const target = await prisma.qmsRecord.findFirst({
+    where: {
+      businessCode,
+      id: { not: deviation.qmsRecordId },
+      isActive: true,
+    },
+  });
+  if (!target) throw new Error("No existe un expediente QMS activo con esa codificación.");
+
+  await prisma.qmsRelation.upsert({
+    where: {
+      sourceRecordId_targetRecordId_relationType: {
+        sourceRecordId: deviation.qmsRecordId,
+        targetRecordId: target.id,
+        relationType: type,
+      },
+    },
+    update: { isActive: true, createdByText: actor },
+    create: {
+      sourceRecordId: deviation.qmsRecordId,
+      targetRecordId: target.id,
+      relationType: type,
+      createdByText: actor,
+    },
+  });
+
+  revalidatePath("/deviations");
+  revalidatePath("/capa");
+  revalidatePath("/complaints");
+  revalidatePath("/changes");
+  revalidatePath("/returns");
+  revalidatePath(`/deviations/${id}`);
+}
+
