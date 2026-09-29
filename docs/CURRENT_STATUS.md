@@ -538,7 +538,7 @@ Se añade un smoke transversal con PostgreSQL real que comprueba:
 El smoke queda registrado como `pnpm b4-3:smoke` y se ejecuta permanentemente en CI.
 
 ## Hito 10.8C3-C1 — Flujo canónico de seguimiento y versión CAPA
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN MAIN (PR #48)**.
 
 Diagnóstico:
 - `QmsRecordVersion` ya soportaba correctamente V00 y V01/V02… por seguimiento;
@@ -558,4 +558,21 @@ Cambios:
 - seguimiento, actualización del expediente, historial y creación de V01/V02 se ejecutan en una única transacción;
 - no se añaden campos nuevos a Prisma: el estado histórico de cada seguimiento se conserva en el snapshot funcional `QmsRecordVersion`.
 
-Se añaden pruebas unitarias de las transiciones. No se aborda todavía C2 (presentación detallada del histórico/versiones) ni C3 (prueba transversal V00 → V01 → V02 y anexos históricos).
+Se añaden pruebas unitarias de las transiciones.
+
+## Hito 10.8C3-C2 — UX e histórico de seguimientos CAPA
+Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+
+Cambios de interfaz:
+- el formulario identifica explícitamente qué seguimiento y versión V01/V02… se va a crear;
+- la captura se organiza en tres bloques: seguimiento/evidencia, estado/cierre operativo y verificación de eficacia;
+- estado y eficacia parten de los valores vigentes del expediente;
+- los campos de cierre/cancelación se muestran según el estado seleccionado;
+- ejecución/cierre operativo y eficacia se presentan como conceptos separados;
+- cada tarjeta histórica de seguimiento resuelve la `QmsRecordVersion` exacta mediante `sourceEntityId`, con fallback por secuencia para históricos;
+- cada seguimiento muestra versión, estado CAPA, eficacia y si la versión es histórica o vigente;
+- se muestran cierre operativo, cierre efectivo y próxima fecha correspondientes;
+- desde el propio seguimiento se puede descargar el Anexo III de esa versión exacta;
+- se añade helper probado para resolver seguimiento ↔ versión y calcular la siguiente secuencia.
+
+No se modifica el modelo de datos ni las reglas de transición de C1. Queda pendiente C3: prueba transversal V00 → V01 → V02 con documentos históricos.

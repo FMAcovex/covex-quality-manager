@@ -11,6 +11,10 @@ import { getCapaDetail } from "@/modules/capa/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { CapaFollowupForm } from "@/modules/capa/components/capa-followup-form";
+import {
+  nextCapaFollowupSequence,
+  resolveCapaFollowupVersion,
+} from "@/modules/capa/followup-version-ui";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +50,7 @@ export default async function CapaDetailPage({
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
+  const nextFollowupSequence = nextCapaFollowupSequence(capa.followups);
 
   const origins = capa.qmsRecord.targetRelations
     .filter(
@@ -179,30 +184,87 @@ export default async function CapaDetailPage({
         <>
           <div className="card">
             <div className="section-title-row">
-              <h2>Histórico de seguimientos</h2>
-              <span className="badge neutral">Versión inicial 00</span>
+              <div>
+                <h2>Histórico de seguimientos</h2>
+                <p className="muted-note">
+                  V00 es el informe inicial. Cada seguimiento conserva el estado completo de la CAPA en V01, V02, V03…
+                </p>
+              </div>
+              <span className="badge neutral">
+                Actual {currentVersion ? versionLabel(currentVersion.sequenceNumber) : "V00"}
+              </span>
             </div>
             {capa.followups.length ? (
               <div className="timeline">
-                {capa.followups.map((item) => (
-                  <article className="timeline-item" key={item.id}>
-                    <div className="timeline-marker">{String(item.sequenceNumber).padStart(2, "0")}</div>
-                    <div>
-                      <header>
-                        <strong>{formatDate(item.followupDate)}</strong>
-                        <span>{item.completedByText}</span>
-                      </header>
-                      {item.reason ? <p><strong>Motivo:</strong> {item.reason}</p> : null}
-                      <p>{item.description}</p>
-                      {item.observations ? <p><strong>Observaciones:</strong> {item.observations}</p> : null}
-                      {item.evidenceReference ? <p><strong>Evidencia:</strong> {item.evidenceReference}</p> : null}
-                      <small className="muted-note">Próximo seguimiento: {formatDate(item.nextFollowupDate)}</small>
-                    </div>
-                  </article>
-                ))}
+                {capa.followups.map((item) => {
+                  const version = resolveCapaFollowupVersion(
+                    capa.qmsRecord.versions,
+                    item,
+                  );
+                  const summary = version
+                    ? recordVersionSummary("CAPA", version.snapshot)
+                    : null;
+                  const sequence = version?.sequenceNumber ?? item.sequenceNumber;
+
+                  return (
+                    <article className="timeline-item" key={item.id}>
+                      <div className="timeline-marker">
+                        {String(item.sequenceNumber).padStart(2, "0")}
+                      </div>
+                      <div>
+                        <header>
+                          <strong>
+                            Seguimiento {String(item.sequenceNumber).padStart(2, "0")}
+                            {version ? ` · ${versionLabel(sequence)}` : ""}
+                          </strong>
+                          <span>{formatDate(item.followupDate)} · {item.completedByText}</span>
+                          {summary ? (
+                            <>
+                              <span className={`badge ${summary.status === "OPEN" ? "open" : summary.status === "CLOSED" ? "closed" : "neutral"}`}>
+                                {capaStatusLabel(String(summary.status ?? "OPEN"))}
+                              </span>
+                              <span className="badge neutral">
+                                Eficacia {effectivenessLabel(String(summary.effectivenessStatus ?? "PENDING"))}
+                              </span>
+                            </>
+                          ) : null}
+                          {version ? (
+                            <span className="badge neutral">
+                              {version.frozenAt ? "Histórica" : "Vigente"}
+                            </span>
+                          ) : null}
+                        </header>
+                        {item.reason ? <p><strong>Motivo:</strong> {item.reason}</p> : null}
+                        <p><strong>Actuación / resultado:</strong> {item.description}</p>
+                        {item.evidenceReference ? (
+                          <p><strong>Evidencia de ejecución:</strong> {item.evidenceReference}</p>
+                        ) : null}
+                        {item.observations ? (
+                          <p><strong>Observaciones:</strong> {item.observations}</p>
+                        ) : null}
+                        <p className="muted-note">
+                          Próximo seguimiento: {formatDate(item.nextFollowupDate)}
+                          {summary ? ` · Cierre operativo: ${formatDate(summary.closedAt)} · Cierre efectivo: ${formatDate(summary.effectiveClosedAt)}` : ""}
+                        </p>
+                        {version ? (
+                          <div className="document-actions">
+                            <a
+                              className="button small"
+                              href={`/api/capa/${id}/annex-iii?version=${sequence}`}
+                            >
+                              Descargar Anexo III {versionLabel(sequence)}
+                            </a>
+                          </div>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             ) : (
-              <div className="empty-panel">Todavía no hay seguimientos. El informe inicial corresponde a la versión 00.</div>
+              <div className="empty-panel">
+                Todavía no hay seguimientos. El informe inicial corresponde a V00.
+              </div>
             )}
           </div>
 
@@ -211,6 +273,7 @@ export default async function CapaDetailPage({
             <CapaFollowupForm
               action={addCapaFollowupAction.bind(null, id)}
               defaultActor={capa.createdByText ?? ""}
+              nextSequenceNumber={nextFollowupSequence}
               defaults={{
                 status: capa.status,
                 operationalClosedAt: capa.operationalClosedAt?.toISOString().slice(0, 10) ?? "",
