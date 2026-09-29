@@ -70,6 +70,26 @@ async function main() {
     assert.equal(deviationV01.sequenceNumber, 1);
     assert.equal(deviationV02.sequenceNumber, 2);
 
+    await prisma.recordVersionDocument.create({
+      data: {
+        recordVersionId: deviationV01.id,
+        kind: "SIGNED_PDF",
+        fileName: "desviacion-V01-firmada.pdf",
+        mimeType: "application/pdf",
+        fileData: new Uint8Array(Buffer.from("%PDF-1.4\nsmoke\n")),
+        fileSize: 15,
+        checksum: "smoke-checksum-v01",
+        uploadedByText: "Usuario smoke",
+      },
+    });
+    const signedVersion = await prisma.qmsRecordVersion.findUniqueOrThrow({
+      where: { id: deviationV01.id },
+      include: { documents: true },
+    });
+    assert.equal(signedVersion.documents.length, 1);
+    assert.equal(signedVersion.documents[0]?.kind, "SIGNED_PDF");
+    assert.equal(signedVersion.documents[0]?.fileName, "desviacion-V01-firmada.pdf");
+
     await prisma.qmsRecordVersion.create({
       data: {
         qmsRecordId: capaRecord.id,
@@ -128,6 +148,13 @@ async function main() {
 
     console.log("Record versioning PostgreSQL smoke test passed.");
   } finally {
+    await prisma.recordVersionDocument.deleteMany({
+      where: {
+        recordVersion: {
+          qmsRecordId: { in: [deviationRecord.id, capaRecord.id] },
+        },
+      },
+    });
     await prisma.qmsRecordVersion.deleteMany({
       where: { qmsRecordId: { in: [deviationRecord.id, capaRecord.id] } },
     });
