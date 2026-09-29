@@ -19,7 +19,11 @@ async function main() {
         kind: "INITIAL",
         snapshot: {
           recordType: "DEVIATION",
-          deviation: { status: "CLOSED", closedAt: "2099-01-15T00:00:00.000Z" },
+          deviation: {
+            status: "OPEN",
+            closedAt: null,
+            investigation: "Investigación inicial V00",
+          },
         },
         frozenAt: new Date(),
       },
@@ -28,16 +32,43 @@ async function main() {
       data: {
         qmsRecordId: deviationRecord.id,
         sequenceNumber: 1,
+        kind: "FOLLOWUP",
+        snapshot: {
+          recordType: "DEVIATION",
+          deviation: {
+            status: "CLOSED",
+            closedAt: "2099-01-15T00:00:00.000Z",
+            investigation: "Investigación completada V01",
+          },
+        },
+        frozenAt: new Date(),
+      },
+    });
+    const deviationV02 = await prisma.qmsRecordVersion.create({
+      data: {
+        qmsRecordId: deviationRecord.id,
+        sequenceNumber: 2,
         kind: "REOPENING",
         snapshot: {
           recordType: "DEVIATION",
-          deviation: { status: "OPEN", closedAt: null },
+          deviation: {
+            status: "OPEN",
+            closedAt: null,
+            investigation: "Investigación ampliada V02",
+          },
         },
       },
     });
 
+    const deviationVersions = await prisma.qmsRecordVersion.findMany({
+      where: { qmsRecordId: deviationRecord.id },
+      orderBy: { sequenceNumber: "asc" },
+    });
+    assert.deepEqual(deviationVersions.map((item) => item.sequenceNumber), [0, 1, 2]);
+    assert.deepEqual(deviationVersions.map((item) => item.kind), ["INITIAL", "FOLLOWUP", "REOPENING"]);
     assert.equal(deviationV00.sequenceNumber, 0);
     assert.equal(deviationV01.sequenceNumber, 1);
+    assert.equal(deviationV02.sequenceNumber, 2);
 
     await prisma.qmsRecordVersion.create({
       data: {
