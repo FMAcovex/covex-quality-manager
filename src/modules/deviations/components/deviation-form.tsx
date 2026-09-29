@@ -131,6 +131,8 @@ export function DeviationForm({
     <form action={formAction} className="form-stack">
       <input type="hidden" name="immediateActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)} />
+      <input type="hidden" name="provenance" value={defaults.provenance ?? ""} />
+      <input type="hidden" name="processEquipmentSystem" value={defaults.processEquipmentSystem ?? ""} />
 
       {state.error ? (
         <div className="form-errors">
@@ -162,23 +164,18 @@ export function DeviationForm({
           <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={defaults.eventDateTime} issues={issues.eventDateTime} />
           <Field label="Detectado por" name="detectedBy" defaultValue={defaults.detectedBy} />
           <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required issues={issues.createdByText} />
+          <Field label="Breve descripción del proceso/equipo/sistema afectado" name="materialProcessAffected" defaultValue={defaults.materialProcessAffected} span="span-2" />
         </div>
       </section>
 
       <section className="form-section">
         <h2>A. Origen</h2>
         <p className="section-help">Origen principal de la desviación y datos asociados, manteniendo la información existente del expediente.</p>
-        <div className="form-grid">
-          <Field label="Material / proceso afectado" name="materialProcessAffected" defaultValue={defaults.materialProcessAffected} span="span-2" />
-          <Field label="Procedencia" name="provenance" defaultValue={defaults.provenance} span="span-2" />
-        </div>
-
         <div className="deviation-origin-grid">
           <div className="deviation-origin-group">
             <h3>Producto terminado / Sistema</h3>
             <div className="form-grid">
               <Field label="Producto terminado / sistema" name="finishedProductSystem" defaultValue={defaults.finishedProductSystem} span="span-2" />
-              <Field label="Proceso / equipo / sistema" name="processEquipmentSystem" defaultValue={defaults.processEquipmentSystem} span="span-2" />
               <Field label="Nº de lote" name="productLot" defaultValue={defaults.productLot} />
               <Field label="Tamaño de lote" name="lotSize" defaultValue={defaults.lotSize} />
               <Field label="Cantidad afectada" name="affectedQuantity" defaultValue={defaults.affectedQuantity} />
