@@ -31,20 +31,20 @@ type OriginType =
   | "OTHER";
 
 function inferOrigin(defaults: DeviationFormDefaults): OriginType {
-  if (formDefaults.provenance && [
+  if (defaults.provenance && [
     "FINISHED_PRODUCT_SYSTEM",
     "CLIENT",
     "RAW_PACKAGING_MATERIAL",
     "SUPPLIER",
     "EQUIPMENT_LINE",
     "OTHER",
-  ].includes(formDefaults.provenance)) return formDefaults.provenance as OriginType;
-  if (formDefaults.finishedProductSystem || formDefaults.productLot || formDefaults.lotSize || formDefaults.affectedQuantity) return "FINISHED_PRODUCT_SYSTEM";
-  if (formDefaults.client) return "CLIENT";
-  if (formDefaults.rawOrPackagingMaterial || formDefaults.materialLot || formDefaults.materialLotSize || formDefaults.materialAffectedQuantity) return "RAW_PACKAGING_MATERIAL";
-  if (formDefaults.supplier || formDefaults.supplierLot) return "SUPPLIER";
-  if (formDefaults.affectedEquipmentLine) return "EQUIPMENT_LINE";
-  if (formDefaults.otherOrigin) return "OTHER";
+  ].includes(defaults.provenance)) return defaults.provenance as OriginType;
+  if (defaults.finishedProductSystem || defaults.productLot || defaults.lotSize || defaults.affectedQuantity) return "FINISHED_PRODUCT_SYSTEM";
+  if (defaults.client) return "CLIENT";
+  if (defaults.rawOrPackagingMaterial || defaults.materialLot || defaults.materialLotSize || defaults.materialAffectedQuantity) return "RAW_PACKAGING_MATERIAL";
+  if (defaults.supplier || defaults.supplierLot) return "SUPPLIER";
+  if (defaults.affectedEquipmentLine) return "EQUIPMENT_LINE";
+  if (defaults.otherOrigin) return "OTHER";
   return "";
 }
 
