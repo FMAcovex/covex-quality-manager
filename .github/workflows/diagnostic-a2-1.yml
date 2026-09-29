@@ -37,3 +37,13 @@ jobs:
       - run: pnpm db:push
       - run: pnpm db:seed
       - run: pnpm exec vitest run src/modules/create-actions.diagnostic.test.ts --reporter=verbose
+      - name: Start Next.js and wait until ready
+        run: |
+          pnpm dev &
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3000/deviations/new > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - run: pnpm dlx @playwright/test@1.56.1 install --with-deps chromium
+      - run: pnpm dlx @playwright/test@1.56.1 test --config=playwright.a2-1.config.ts
