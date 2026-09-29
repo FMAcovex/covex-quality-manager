@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 import { ColumnSelector } from "@/components/column-selector";
@@ -31,7 +32,30 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
    <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status??""}><option value="">Todos</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
    <label className="filter-placeholder"><span>Eficacia</span><select name="effectiveness" defaultValue={filters.effectiveness??""}><option value="">Todas</option><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Aceptable</option><option value="NOT_ACCEPTABLE">No aceptable</option><option value="NOT_REQUIRED">No requerida</option></select></label>
    <div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/complaints">Limpiar</Link></div>
-  </div><div className="search-row"><input name="q" defaultValue={filters.q??""} placeholder="Buscar código, cliente/proveedor, producto, lote, descripción, causa raíz o CAPA…"/><button className="button">Buscar</button></div></form>
+  </div><div className="search-row">
+          <SearchAutocomplete
+            defaultValue={filters.q ?? ""}
+            placeholder="Buscar código, reclamante, referencia, lote, descripción o causa raíz…"
+            suggestions={rows.map((row) => ({
+              id: row.id,
+              href: `/complaints/${row.id}`,
+              code: row.qmsRecord.businessCode ?? "Sin código",
+              title: row.description ?? row.partyName ?? "Sin descripción",
+              meta: [row.departmentCodeSnapshot, row.status === "OPEN" ? "Abierta" : "Cerrada"].filter(Boolean).join(" · "),
+              searchText: [
+                row.qmsRecord.businessCode,
+                row.partyName,
+                row.reference,
+                row.lotReference,
+                row.description,
+                row.rootCause,
+                row.internalObservations,
+                ...row.capaPlans.map((plan) => plan.description),
+              ].filter(Boolean).join(" "),
+            }))}
+          />
+          <button className="button" type="submit">Buscar</button>
+        </div></form>
   <div className="status-strip"><div><strong>{counters.total}</strong><span>Reclamaciones</span></div><div><strong>{counters.open}</strong><span>Abiertas</span></div><div><strong>{counters.pendingEfficacy}</strong><span>Eficacia pendiente</span></div><div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div></div>
   <div className="table-card"><div className="table-scroll"><table id="complaint-list-table"><thead><tr>{complaintColumns.map(c=><th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>
    {rows.length?rows.map(r=><tr key={r.id}>

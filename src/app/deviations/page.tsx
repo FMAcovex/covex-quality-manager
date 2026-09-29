@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 import { deadlineLabel, formatDate, measuresLabel } from "@/modules/deviations/domain";
@@ -95,7 +96,26 @@ export default async function DeviationsPage({
           <div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/deviations">Limpiar</Link></div>
         </div>
         <div className="search-row">
-          <input name="q" defaultValue={filters.q ?? ""} placeholder="Buscar por código, descripción, material/proceso, causa raíz, CAPA u observaciones…" />
+          <SearchAutocomplete
+            defaultValue={filters.q ?? ""}
+            placeholder="Buscar por código, descripción, material/proceso, causa raíz, CAPA u observaciones…"
+            suggestions={rows.map((row) => ({
+              id: row.id,
+              href: `/deviations/${row.id}`,
+              code: row.qmsRecord.businessCode ?? "Sin código",
+              title: row.whatHappened ?? row.materialProcessAffected ?? "Sin descripción",
+              meta: [row.departmentCodeSnapshot ?? row.department?.code, row.status === "OPEN" ? "Abierta" : "Cerrada"].filter(Boolean).join(" · "),
+              searchText: [
+                row.qmsRecord.businessCode,
+                row.materialProcessAffected,
+                row.provenance,
+                row.whatHappened,
+                row.rootCause,
+                row.internalObservations,
+                ...row.capaPlans.map((plan) => plan.description),
+              ].filter(Boolean).join(" "),
+            }))}
+          />
           <button className="button" type="submit">Buscar</button>
         </div>
       </form>
