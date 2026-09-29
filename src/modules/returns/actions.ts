@@ -11,6 +11,11 @@ import {
 } from "@/lib/qms/relation-rules";
 import { createQmsRelation } from "@/lib/qms/relation-service";
 import { parseReturnForm } from "@/modules/returns/validation";
+import {
+  ComplaintReturnLinkError,
+  getComplaintReturnOrigin,
+  registerComplaintReturnOrigin,
+} from "@/modules/returns/complaint-origin";
 import type { ReturnFormState } from "@/modules/returns/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
@@ -64,26 +69,33 @@ export async function createReturnAction(_s:ReturnFormState,fd:FormData):Promise
    getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_VI",ref)
   ]);
   const created=await prisma.$transaction(async tx=>{
+   const complaintOrigin=v.fromComplaintId
+    ?await getComplaintReturnOrigin(tx,v.fromComplaintId)
+    :null;
+   const canonicalValues=complaintOrigin
+    ?{...v,returnType:"COMPLAINT" as const,relatedDocument:complaintOrigin.complaintBusinessCode}
+    :v;
    const qr=await tx.qmsRecord.create({data:{recordType:"RETURN",businessCode:v.businessCode,year:v.communicationDate?new Date(v.communicationDate).getFullYear():null}});
-   const rec=await tx.returnRecord.create({data:{qmsRecordId:qr.id,...recordData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vdecl?.id,annexVITemplateVersionId:vi?.id}});
+   const rec=await tx.returnRecord.create({data:{qmsRecordId:qr.id,...recordData(canonicalValues,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vdecl?.id,annexVITemplateVersionId:vi?.id}});
    await replaceProducts(tx,rec.id,v.products);
    await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,customerEntity:v.customerEntity}),reason:"Alta de devolución",source:"UI"}});
-   if(v.fromComplaintId){
-    const complaint=await tx.complaint.findUnique({where:{id:v.fromComplaintId}});
-    if(complaint){
-     await createQmsRelation(tx,{
-      sourceRecordId:complaint.qmsRecordId,
-      targetRecordId:qr.id,
-      createdByText:parsed.actor,
-      notes:"Devolución creada desde la reclamación."
-     });
-    }
+   if(complaintOrigin){
+    await registerComplaintReturnOrigin(tx,{
+     complaintQmsRecordId:complaintOrigin.complaintQmsRecordId,
+     returnQmsRecordId:qr.id,
+     actor:parsed.actor
+    });
    }
    const snap=await getSnapshot(tx,rec.id);await ensureInitialVersion(tx,qr.id,snapshotJson(serializeReturnVersion(snap)),parsed.actor);
    return rec;
   });
   createdId=created.id;
- }catch(e){return persistenceFormError(e,"la devolución");}
+ }catch(e){
+  if(e instanceof ComplaintReturnLinkError){
+   return{error:"No se puede guardar la devolución.",fieldErrors:[e.message]};
+  }
+  return persistenceFormError(e,"la devolución");
+ }
  revalidatePath("/returns");revalidatePath("/complaints");redirect(`/returns/${createdId}`);
 }
 export async function updateReturnAction(id:string,_s:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
