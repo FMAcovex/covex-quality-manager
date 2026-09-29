@@ -73,9 +73,18 @@ export function parseDeviationForm(formData: FormData) {
   const issueDate = text(formData, "issueDate");
   const eventDateTime = text(formData, "eventDateTime");
   const whatHappened = text(formData, "whatHappened");
+  const whoInvolved = text(formData, "whoInvolved");
+  const whenHappened = text(formData, "whenHappened");
+  const whereHappened = text(formData, "whereHappened");
+  const howHappened = text(formData, "howHappened");
+  const detectedBy = text(formData, "detectedBy");
+  const materialProcessAffected = text(formData, "materialProcessAffected");
   const createdByText = text(formData, "createdByText");
   const modifiedByText = text(formData, "modifiedByText");
-  const recordStatus = enumValue(status, text(formData, "status")) ?? "OPEN";
+  const statusRaw = text(formData, "status");
+  const recordStatus = enumValue(status, statusRaw) ?? "OPEN";
+  const dataQualityRaw = text(formData, "dataQualityStatus");
+  const dataQualityStatus = enumValue(dataQuality, dataQualityRaw) ?? "REVIEW_REQUIRED";
 
   const immediateActions = parseArray<ImmediateActionInput>(
     text(formData, "immediateActionsJson"),
@@ -105,14 +114,57 @@ export function parseDeviationForm(formData: FormData) {
   if (eventDateTime && !validDateTime(eventDateTime)) {
     addIssue("eventDateTime", "La fecha/hora del evento no tiene un formato válido.");
   }
+  if (!eventDateTime) addIssue("eventDateTime", "La fecha/hora del evento es obligatoria.");
+  if (!detectedBy) addIssue("detectedBy", "Debe indicarse quién detectó la desviación.");
+  if (!materialProcessAffected) addIssue("materialProcessAffected", "La breve descripción del proceso/equipo/sistema afectado es obligatoria.");
   if (!whatHappened) addIssue("whatHappened", "La descripción objetiva de lo ocurrido es obligatoria.");
+  if (!whoInvolved) addIssue("whoInvolved", "Debe indicarse quién estuvo implicado y cuál fue su papel.");
+  if (!whenHappened) addIssue("whenHappened", "Debe indicarse cuándo ocurrió.");
+  if (!whereHappened) addIssue("whereHappened", "Debe indicarse dónde ocurrió.");
+  if (!howHappened) addIssue("howHappened", "Debe indicarse cómo se detectó o cómo ocurrió.");
   if (!createdByText) addIssue("createdByText", "Debe indicarse quién cumplimenta el registro.");
 
+  const affectedDocumentation = text(formData, "affectedDocumentation");
   const investigation = text(formData, "investigation");
+  const investigationConclusive = enumValue(triState, text(formData, "investigationConclusive"));
   const rootCause = text(formData, "rootCause");
+  const recurrentRootCause = enumValue(triState, text(formData, "recurrentRootCause"));
+  const recurrenceDetails = text(formData, "recurrenceDetails");
   const deviationClassification = enumValue(classification, text(formData, "classification"));
+  const validationImpact = enumValue(triState, text(formData, "validationImpact"));
+  const registrationImpact = enumValue(triState, text(formData, "registrationImpact"));
+  const stabilityImpact = enumValue(triState, text(formData, "stabilityImpact"));
+  const otherProcessesImpact = enumValue(triState, text(formData, "otherProcessesImpact"));
+  const otherProcessesImpactDetails = text(formData, "otherProcessesImpactDetails");
+  const affectsFinishedProduct = enumValue(triState, text(formData, "affectsFinishedProduct"));
   const conclusion = text(formData, "conclusion");
+  const disposition = text(formData, "disposition");
+  const dispositionQuantity = text(formData, "dispositionQuantity");
+  const dispositionComments = text(formData, "dispositionComments");
+  const clientNotification = enumValue(triState, text(formData, "clientNotification"));
   const closedAt = text(formData, "closedAt");
+
+  if (!affectedDocumentation) addIssue("affectedDocumentation", "La documentación afectada es obligatoria.");
+  if (!investigation) addIssue("investigation", "La investigación y sus conclusiones son obligatorias.");
+  if (!investigationConclusive) addIssue("investigationConclusive", "Debe indicarse si la investigación es concluyente o no concluyente.");
+  if (methods.length === 0) addIssue("investigationMethods", "Debe seleccionarse al menos una metodología de análisis.");
+  if (!rootCause) addIssue("rootCause", "La causa raíz es obligatoria.");
+  if (!recurrentRootCause) addIssue("recurrentRootCause", "Debe indicarse si la causa raíz es recurrente.");
+  if (!recurrenceDetails) addIssue("recurrenceDetails", "Los antecedentes o el detalle de recurrencia son obligatorios.");
+  if (!deviationClassification) addIssue("classification", "La clasificación de la desviación es obligatoria.");
+  if (!validationImpact) addIssue("validationImpact", "Debe evaluarse el impacto sobre validación.");
+  if (!registrationImpact) addIssue("registrationImpact", "Debe evaluarse el impacto sobre registro.");
+  if (!stabilityImpact) addIssue("stabilityImpact", "Debe evaluarse el impacto sobre estabilidad.");
+  if (!otherProcessesImpact) addIssue("otherProcessesImpact", "Debe evaluarse el impacto sobre otros procesos o productos.");
+  if (!affectsFinishedProduct) addIssue("affectsFinishedProduct", "Debe indicarse si afecta a producto terminado.");
+  if (!otherProcessesImpactDetails) addIssue("otherProcessesImpactDetails", "La justificación/detalle del impacto es obligatoria.");
+  if (!conclusion) addIssue("conclusion", "La conclusión/cierre es obligatoria.");
+  if (!disposition) addIssue("disposition", "La disposición final es obligatoria.");
+  if (!dispositionQuantity) addIssue("dispositionQuantity", "La cantidad es obligatoria.");
+  if (!clientNotification) addIssue("clientNotification", "Debe indicarse si procede notificación al cliente.");
+  if (!dispositionComments) addIssue("dispositionComments", "Los comentarios de disposición son obligatorios.");
+  if (!statusRaw) addIssue("status", "El estado del expediente es obligatorio.");
+  if (!dataQualityRaw) addIssue("dataQualityStatus", "El control de estado es obligatorio.");
 
   if (closedAt && !validDate(closedAt)) {
     addIssue("closedAt", "La fecha de cierre no tiene un formato válido.");
@@ -146,13 +198,9 @@ export function parseDeviationForm(formData: FormData) {
   const capaRequiredRaw = text(formData, "capaRequired");
   const capaRequired =
     capaRequiredRaw === "true" ? true : capaRequiredRaw === "false" ? false : null;
-  if (capaRequired === true && capaPlans.length === 0) {
-    addIssue(
-      "capaPlansJson",
-      "Se ha indicado que procede CAPA, pero no se ha definido ninguna acción CAPA.",
-    );
+  if (capaRequired === null) {
+    addIssue("capaRequired", "Debe indicarse si procede abrir CAPA.");
   }
-
   return {
     errors,
     fieldIssues,
@@ -162,11 +210,11 @@ export function parseDeviationForm(formData: FormData) {
       departmentId,
       issueDate,
       eventDateTime,
-      detectedBy: text(formData, "detectedBy"),
+      detectedBy,
       createdByText,
-      materialProcessAffected: text(formData, "materialProcessAffected"),
+      materialProcessAffected,
       provenance: text(formData, "provenance"),
-      affectedDocumentation: text(formData, "affectedDocumentation"),
+      affectedDocumentation,
       processEquipmentSystem: text(formData, "processEquipmentSystem"),
       finishedProductSystem: text(formData, "finishedProductSystem"),
       productLot: text(formData, "productLot"),
@@ -182,29 +230,29 @@ export function parseDeviationForm(formData: FormData) {
       affectedEquipmentLine: text(formData, "affectedEquipmentLine"),
       otherOrigin: text(formData, "otherOrigin"),
       whatHappened,
-      whoInvolved: text(formData, "whoInvolved"),
-      whenHappened: text(formData, "whenHappened"),
-      whereHappened: text(formData, "whereHappened"),
-      howHappened: text(formData, "howHappened"),
+      whoInvolved,
+      whenHappened,
+      whereHappened,
+      howHappened,
       investigation,
-      investigationConclusive: enumValue(triState, text(formData, "investigationConclusive")),
+      investigationConclusive,
       investigationMethods: methods,
       rootCause,
-      recurrentRootCause: enumValue(triState, text(formData, "recurrentRootCause")),
-      recurrenceDetails: text(formData, "recurrenceDetails"),
+      recurrentRootCause,
+      recurrenceDetails,
       classification: deviationClassification,
-      validationImpact: enumValue(triState, text(formData, "validationImpact")),
-      registrationImpact: enumValue(triState, text(formData, "registrationImpact")),
-      stabilityImpact: enumValue(triState, text(formData, "stabilityImpact")),
-      otherProcessesImpact: enumValue(triState, text(formData, "otherProcessesImpact")),
-      otherProcessesImpactDetails: text(formData, "otherProcessesImpactDetails"),
-      affectsFinishedProduct: enumValue(triState, text(formData, "affectsFinishedProduct")),
+      validationImpact,
+      registrationImpact,
+      stabilityImpact,
+      otherProcessesImpact,
+      otherProcessesImpactDetails,
+      affectsFinishedProduct,
       capaRequired,
       conclusion,
-      disposition: text(formData, "disposition"),
-      dispositionQuantity: text(formData, "dispositionQuantity"),
-      dispositionComments: text(formData, "dispositionComments"),
-      clientNotification: enumValue(triState, text(formData, "clientNotification")),
+      disposition,
+      dispositionQuantity,
+      dispositionComments,
+      clientNotification,
       closedAt,
       status: recordStatus,
       internalObservations: text(formData, "internalObservations"),
@@ -214,8 +262,7 @@ export function parseDeviationForm(formData: FormData) {
           : text(formData, "signedDocumentAvailable") === "false"
             ? false
             : null,
-      dataQualityStatus:
-        enumValue(dataQuality, text(formData, "dataQualityStatus")) ?? "REVIEW_REQUIRED",
+      dataQualityStatus,
       immediateActions,
       capaPlans,
     },
