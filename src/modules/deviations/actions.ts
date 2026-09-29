@@ -492,12 +492,13 @@ export async function updateDeviationAction(
       }
     });
 
-    revalidatePath("/deviations");
-    revalidatePath(`/deviations/${id}`);
-    redirect(`/deviations/${id}`);
   } catch (error) {
     return persistenceFormError(error, "la desviación", { duplicateField: "businessCode" });
   }
+
+  revalidatePath("/deviations");
+  revalidatePath(`/deviations/${id}`);
+  redirect(`/deviations/${id}`);
 }
 
 export async function addDeviationFollowupAction(deviationId: string, _state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
