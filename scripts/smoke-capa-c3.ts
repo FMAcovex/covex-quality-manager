@@ -34,7 +34,7 @@ async function checkDownloads(capaId: string, recordId: string, versions: Array<
   if (!baseUrl) return;
   for (const version of versions) {
     const response = await fetch(`${baseUrl}/api/capa/${capaId}/annex-iii?version=${version.sequenceNumber}`);
-    assert.equal(response.status, 200, `Anexo III V${version.sequenceNumber}: ${await response.text().catch(() => "")}`);
+    if (response.status !== 200) throw new Error(`Anexo III V${version.sequenceNumber}: HTTP ${response.status} ${await response.text()}`);
     assert.match(response.headers.get("content-type") ?? "", /wordprocessingml.document/);
     assert.match(response.headers.get("content-disposition") ?? "", new RegExp(`_V0${version.sequenceNumber}\\.docx`));
     const entries = readZip(Buffer.from(await response.arrayBuffer()));
