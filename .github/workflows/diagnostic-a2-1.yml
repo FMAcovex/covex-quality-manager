@@ -37,9 +37,11 @@ jobs:
       - run: pnpm db:push
       - run: pnpm db:seed
       - run: pnpm exec vitest run src/modules/create-actions.diagnostic.test.ts --reporter=verbose
-      - name: Start Next.js and wait until ready
+      - name: Build production app
+        run: pnpm build
+      - name: Start production Next.js and wait until ready
         run: |
-          pnpm dev &
+          pnpm start &
           for attempt in {1..60}; do
             if curl --fail --silent http://127.0.0.1:3000/deviations/new > /dev/null; then exit 0; fi
             sleep 1
