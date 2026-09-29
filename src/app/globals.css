@@ -1100,3 +1100,176 @@ button[disabled] {
     text-align: left;
   }
 }
+
+
+/* Ajuste UX — versiones del expediente de Desviaciones */
+.version-section-title-row {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.version-section-title-row .section-title-copy {
+  flex: 1 1 520px;
+  min-width: 0;
+}
+.version-section-help {
+  max-width: 980px;
+  margin: 0;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.record-version-item {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  padding: 16px 18px;
+}
+.record-version-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.record-version-header > strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.record-version-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.record-version-detail {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 0 18px;
+  border-right: 1px solid var(--border);
+}
+.record-version-detail:first-child { padding-left: 0; }
+.record-version-detail:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+.record-version-detail > span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.record-version-detail > strong {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.record-version-item .document-actions {
+  min-width: 0;
+}
+.record-version-item .document-actions .button {
+  max-width: 100%;
+  height: auto;
+  min-height: 36px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  line-height: 1.3;
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.version-signed-document {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  min-width: 0;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.version-signed-document > strong,
+.version-signed-document > small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.version-signed-document .inline-form {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  align-items: end;
+  min-width: 0;
+  margin-top: 6px;
+}
+.version-signed-document .field,
+.version-signed-document .field input,
+.version-signed-document .field textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+.version-signed-document input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+}
+@media (max-width: 900px) {
+  .record-version-details {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 14px;
+  }
+  .record-version-detail {
+    border-right: 0;
+    padding: 0 14px 0 0;
+  }
+  .record-version-detail:last-child {
+    grid-column: 1 / -1;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .version-signed-document .inline-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .version-signed-document .inline-form .full {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 760px) {
+  .version-section-title-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .version-section-title-row .section-title-copy {
+    flex-basis: auto;
+  }
+  .record-version-item {
+    padding: 14px;
+  }
+  .record-version-details {
+    grid-template-columns: 1fr;
+  }
+  .record-version-detail,
+  .record-version-detail:first-child,
+  .record-version-detail:last-child {
+    grid-column: auto;
+    padding: 10px 0;
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .record-version-detail:last-child {
+    border-bottom: 0;
+  }
+  .record-version-item .document-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .record-version-item .document-actions .button {
+    width: 100%;
+  }
+  .version-signed-document .inline-form {
+    grid-template-columns: 1fr;
+  }
+  .version-signed-document .inline-form .full {
+    grid-column: auto;
+  }
+}
