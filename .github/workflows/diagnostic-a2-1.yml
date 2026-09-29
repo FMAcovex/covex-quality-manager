@@ -1,0 +1,39 @@
+name: Diagnostic A2.1
+
+on:
+  push:
+    branches: [diagnostic/hito-10-8c3-a2-1]
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: covex_quality
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d covex_quality"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
+      APP_ENV: test
+      DEFAULT_ACTOR_NAME: Usuario CI
+    steps:
+      - uses: actions/checkout@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:push
+      - run: pnpm db:seed
+      - run: pnpm exec vitest run src/modules/create-actions.diagnostic.test.ts --reporter=verbose
