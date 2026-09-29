@@ -182,42 +182,50 @@ export default async function DeviationDetailPage({
               Acciones CAPA propuestas o registradas a partir de esta desviación.
             </p>
             {deviation.capaPlans.length ? (
-              <div className="linked-record-grid">
-                {deviation.capaPlans.map((plan) => {
-                  const navigation = capaPlanNavigation(plan);
-                  const capaCode =
-                    plan.businessCapaCode ??
-                    plan.linkedCapaRecord?.businessCode ??
-                    (plan.proposalStatus === "PROPOSED" ? "Pendiente" : "—");
-
-                  return (
-                    <article className="linked-record-card" key={plan.id}>
-                      <div className="linked-record-main">
-                        <div className="linked-record-heading">
-                          <strong>{plan.actionType === "CORRECTIVE" ? "Correctiva" : "Preventiva"}</strong>
-                          <span className="badge neutral">{capaProposalStatusLabel(plan.proposalStatus)}</span>
-                        </div>
-                        <p className="linked-record-description">{plan.description}</p>
-                        <dl className="linked-record-meta">
-                          <div><dt>Responsable</dt><dd>{text(plan.responsible)}</dd></div>
-                          <div><dt>Fecha prevista</dt><dd>{formatDate(plan.plannedExecutionDate)}</dd></div>
-                          <div><dt>Código CAPA</dt><dd>{capaCode}</dd></div>
-                        </dl>
-                      </div>
-                      <div className="linked-record-action">
-                        {navigation.kind === "OPEN" ? (
-                          <Link className="button small" href={qmsRecordHref("CAPA", navigation.recordId)}>Abrir CAPA</Link>
-                        ) : navigation.kind === "CREATE" ? (
-                          <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
-                        ) : (
-                          <span className="muted-note">
-                            {plan.proposalStatus === "CANCELLED" ? "Propuesta cancelada" : "Vínculo CAPA no disponible"}
-                          </span>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
+              <div className="table-scroll">
+                <table className="action-overview-table capa-action-table">
+                  <thead>
+                    <tr>
+                      <th>Código CAPA</th>
+                      <th>Descripción CAPA</th>
+                      <th>Fecha prevista</th>
+                      <th>Responsable</th>
+                      <th>Estado</th>
+                      <th aria-label="Acción" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deviation.capaPlans.map((plan) => {
+                      const navigation = capaPlanNavigation(plan);
+                      const capaCode =
+                        plan.businessCapaCode ??
+                        plan.linkedCapaRecord?.businessCode ??
+                        (plan.proposalStatus === "PROPOSED" ? "Pendiente" : "—");
+                      return (
+                        <tr key={plan.id}>
+                          <td>
+                            {navigation.kind === "OPEN" ? (
+                              <Link className="summary-link" href={qmsRecordHref("CAPA", navigation.recordId)}>{capaCode}</Link>
+                            ) : capaCode}
+                          </td>
+                          <td className="action-description-cell">{plan.description}</td>
+                          <td>{formatDate(plan.plannedExecutionDate)}</td>
+                          <td>{text(plan.responsible)}</td>
+                          <td><span className="badge neutral">{capaProposalStatusLabel(plan.proposalStatus)}</span></td>
+                          <td className="action-link-cell">
+                            {navigation.kind === "OPEN" ? (
+                              <Link className="button small" href={qmsRecordHref("CAPA", navigation.recordId)}>Abrir CAPA</Link>
+                            ) : navigation.kind === "CREATE" ? (
+                              <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
+                            ) : (
+                              <span className="muted-note">{plan.proposalStatus === "CANCELLED" ? "Cancelada" : "Sin vínculo"}</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             ) : <div className="empty-panel">No hay CAPA propuestas.</div>}
           </div>
@@ -279,45 +287,77 @@ export default async function DeviationDetailPage({
           <div className="card">
             <h2>Acciones inmediatas</h2>
             {deviation.immediateActions.length ? (
-              <div className="action-record-list">
-                {deviation.immediateActions.map((action, index) => (
-                  <article className="action-record" key={action.id}>
-                    <div className="action-record-number">{String(index + 1).padStart(2, "0")}</div>
-                    <div className="action-record-body">
-                      <div className="action-record-description">
-                        <span>Acción ejecutada</span>
-                        <p>{action.description}</p>
-                      </div>
-                      <dl className="action-record-meta">
-                        <div><dt>Responsable</dt><dd>{text(action.executedBy)}</dd></div>
-                        <div><dt>Fecha de ejecución</dt><dd>{formatDate(action.executedAt)}</dd></div>
-                      </dl>
-                    </div>
-                  </article>
-                ))}
+              <div className="table-scroll">
+                <table className="action-overview-table immediate-action-table">
+                  <thead>
+                    <tr>
+                      <th aria-label="Número">N.º</th>
+                      <th>Descripción</th>
+                      <th>Ejecutada por</th>
+                      <th>Fecha de ejecución</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deviation.immediateActions.map((action, index) => (
+                      <tr key={action.id}>
+                        <td className="action-number-cell">{String(index + 1).padStart(2, "0")}</td>
+                        <td className="action-description-cell">{action.description}</td>
+                        <td>{text(action.executedBy)}</td>
+                        <td>{formatDate(action.executedAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : <div className="empty-panel">No se han registrado acciones inmediatas.</div>}
           </div>
           <div className="card">
             <h2>CAPA propuestas</h2>
             {deviation.capaPlans.length ? (
-              <div className="action-record-list">
-                {deviation.capaPlans.map((plan, index) => (
-                  <article className="action-record" key={plan.id}>
-                    <div className="action-record-number">{String(index + 1).padStart(2, "0")}</div>
-                    <div className="action-record-body">
-                      <div className="action-record-description">
-                        <span>{plan.actionType === "CORRECTIVE" ? "Acción correctiva" : "Acción preventiva"}</span>
-                        <p>{plan.description}</p>
-                      </div>
-                      <dl className="action-record-meta">
-                        <div><dt>Responsable</dt><dd>{text(plan.responsible)}</dd></div>
-                        <div><dt>Fecha prevista</dt><dd>{formatDate(plan.plannedExecutionDate)}</dd></div>
-                        <div><dt>Estado</dt><dd>{capaProposalStatusLabel(plan.proposalStatus)}</dd></div>
-                      </dl>
-                    </div>
-                  </article>
-                ))}
+              <div className="table-scroll">
+                <table className="action-overview-table capa-action-table">
+                  <thead>
+                    <tr>
+                      <th aria-label="Número">N.º</th>
+                      <th>Código CAPA</th>
+                      <th>Descripción CAPA</th>
+                      <th>Fecha prevista</th>
+                      <th>Responsable</th>
+                      <th>Estado</th>
+                      <th aria-label="Acción" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deviation.capaPlans.map((plan, index) => {
+                      const navigation = capaPlanNavigation(plan);
+                      const capaCode =
+                        plan.businessCapaCode ??
+                        plan.linkedCapaRecord?.businessCode ??
+                        (plan.proposalStatus === "PROPOSED" ? "Pendiente" : "—");
+                      return (
+                        <tr key={plan.id}>
+                          <td className="action-number-cell">{String(index + 1).padStart(2, "0")}</td>
+                          <td>
+                            {navigation.kind === "OPEN" ? (
+                              <Link className="summary-link" href={qmsRecordHref("CAPA", navigation.recordId)}>{capaCode}</Link>
+                            ) : capaCode}
+                          </td>
+                          <td className="action-description-cell">{plan.description}</td>
+                          <td>{formatDate(plan.plannedExecutionDate)}</td>
+                          <td>{text(plan.responsible)}</td>
+                          <td>{capaProposalStatusLabel(plan.proposalStatus)}</td>
+                          <td className="action-link-cell">
+                            {navigation.kind === "OPEN" ? (
+                              <Link className="button small" href={qmsRecordHref("CAPA", navigation.recordId)}>Abrir CAPA</Link>
+                            ) : navigation.kind === "CREATE" ? (
+                              <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             ) : <div className="empty-panel">No se han definido CAPA.</div>}
           </div>
