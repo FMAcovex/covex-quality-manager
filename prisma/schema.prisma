@@ -233,6 +233,10 @@ enum RecordVersionKind {
   HISTORICAL_STATE
 }
 
+enum RecordVersionDocumentKind {
+  SIGNED_PDF
+}
+
 enum DocumentType {
   DEVIATION_ANNEX_III
   DEVIATION_ANNEX_V
@@ -1141,10 +1145,29 @@ model QmsRecordVersion {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   generatedDocuments GeneratedDocument[]
+  documents          RecordVersionDocument[]
 
   @@unique([qmsRecordId, sequenceNumber])
   @@index([qmsRecordId, frozenAt])
   @@index([kind])
+}
+
+model RecordVersionDocument {
+  id               String                    @id @default(uuid())
+  recordVersionId  String
+  recordVersion    QmsRecordVersion          @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  kind             RecordVersionDocumentKind
+  fileName         String
+  mimeType         String                    @default("application/pdf")
+  fileData         Bytes
+  fileSize         Int
+  checksum         String
+  uploadedByText   String?
+  uploadedAt       DateTime                  @default(now())
+
+  @@unique([recordVersionId, kind])
+  @@index([recordVersionId, uploadedAt])
+  @@index([kind, uploadedAt])
 }
 
 model GeneratedDocument {

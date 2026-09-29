@@ -345,14 +345,17 @@ export function DeviationForm({
               <option value="CLOSED">Cerrada</option>
             </select>
           </label>
-          <label className="field">
-            <span>Documento firmado disponible</span>
-            <select name="signedDocumentAvailable" defaultValue={defaults.signedDocumentAvailable ?? ""}>
-              <option value="">No informado</option>
-              <option value="true">Sí</option>
-              <option value="false">No</option>
-            </select>
-          </label>
+          <div className="field">
+            <span>Documento firmado</span>
+            <input
+              type="hidden"
+              name="signedDocumentAvailable"
+              value={defaults.signedDocumentAvailable ?? ""}
+            />
+            <small className="muted-note">
+              El PDF firmado se carga y controla por versión desde la pestaña Versiones del expediente.
+            </small>
+          </div>
           <label className="field">
             <span>Control del dato</span>
             <select name="dataQualityStatus" defaultValue={defaults.dataQualityStatus ?? "REVIEW_REQUIRED"}>
