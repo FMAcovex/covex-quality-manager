@@ -1010,8 +1010,17 @@ button[disabled] {
 .immediate-action-table td:nth-child(4) {
   width: 160px;
 }
-.capa-action-table th:first-child:not(:last-child),
-.capa-action-table td:first-child:not(:last-child) {
+.summary-capa-table th:first-child,
+.summary-capa-table td:first-child {
+  width: 160px;
+}
+.capa-action-table th:first-child,
+.capa-action-table td:first-child {
+  width: 56px;
+  text-align: center;
+}
+.capa-action-table th:nth-child(2),
+.capa-action-table td:nth-child(2) {
   width: 150px;
 }
 .capa-action-table th:nth-last-child(4),
