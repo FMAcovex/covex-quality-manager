@@ -17,6 +17,9 @@ import {
 } from "@/modules/capa/followup-version-ui";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 
+import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+
 export const dynamic = "force-dynamic";
 
 const tabs = [
@@ -68,7 +71,7 @@ export default async function CapaDetailPage({
         <div>
           <p className="eyebrow"><Link href="/capa">← CAPA</Link></p>
           <div className="record-title-line">
-            <h1>{capa.qmsRecord.businessCode ?? "CAPA sin código"}</h1>
+            <h1>{qmsRecordDisplayCode(capa.qmsRecord, "CAPA sin código")}</h1>
             <span className="badge neutral">{capaTypeLabel(capa.actionType)}</span>
             <span className={`badge ${capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral"}`}>
               {capaStatusLabel(capa.status)}
@@ -91,6 +94,16 @@ export default async function CapaDetailPage({
           <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
         </div>
       </div>
+
+      <QmsAdministrativeStatus
+        qmsRecordId={capa.qmsRecord.id}
+        isActive={capa.qmsRecord.isActive}
+        code={qmsRecordDisplayCode(capa.qmsRecord)}
+        annulledAt={capa.qmsRecord.annulledAt?.toISOString() ?? null}
+        annulledByText={capa.qmsRecord.annulledByText}
+        annulledReason={capa.qmsRecord.annulledReason}
+        defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+      />
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (
