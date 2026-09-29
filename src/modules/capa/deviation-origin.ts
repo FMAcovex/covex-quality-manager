@@ -16,6 +16,7 @@ export type DeviationCapaPlanClient = Pick<
 const planSelect = {
   id: true,
   linkedCapaRecordId: true,
+  proposalStatus: true,
   deviation: {
     select: {
       qmsRecordId: true,
@@ -43,7 +44,13 @@ export async function getDeviationCapaPlanOrigin(
     );
   }
 
-  if (plan.linkedCapaRecordId) {
+  if (plan.proposalStatus === "CANCELLED") {
+    throw new DeviationCapaPlanLinkError(
+      "La propuesta CAPA está cancelada y no puede generar una CAPA.",
+    );
+  }
+
+  if (plan.proposalStatus !== "PROPOSED" || plan.linkedCapaRecordId) {
     throw new DeviationCapaPlanLinkError(
       "Esta propuesta ya está registrada como una CAPA y no puede generar otra distinta.",
     );
@@ -76,10 +83,13 @@ export async function registerDeviationCapaPlan(
     );
   }
 
-  if (
-    plan.linkedCapaRecordId &&
-    plan.linkedCapaRecordId !== input.capaQmsRecordId
-  ) {
+  if (plan.proposalStatus === "CANCELLED") {
+    throw new DeviationCapaPlanLinkError(
+      "La propuesta CAPA está cancelada y no puede registrarse.",
+    );
+  }
+
+  if (plan.proposalStatus !== "PROPOSED" || plan.linkedCapaRecordId) {
     throw new DeviationCapaPlanLinkError(
       "Esta propuesta ya está registrada como una CAPA y no puede reasignarse a otra.",
     );
@@ -88,10 +98,8 @@ export async function registerDeviationCapaPlan(
   const updated = await client.deviationCapaPlan.updateMany({
     where: {
       id: input.planId,
-      OR: [
-        { linkedCapaRecordId: null },
-        { linkedCapaRecordId: input.capaQmsRecordId },
-      ],
+      proposalStatus: "PROPOSED",
+      linkedCapaRecordId: null,
     },
     data: {
       linkedCapaRecordId: input.capaQmsRecordId,
