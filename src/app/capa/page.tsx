@@ -12,6 +12,7 @@ import { getCapaList } from "@/modules/capa/queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { capaColumns } from "@/modules/capa/column-config";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 
 export const dynamic = "force-dynamic";
 
@@ -120,12 +121,14 @@ export default async function CapaPage({
         <div><span>Seguimiento vencido</span><strong>{counters.overdueFollowups}</strong></div>
       </div>
 
+      <ManualReminderToolbar tableId="capa-list-table" moduleLabel="CAPA" />
+
       <div className="table-card">
         <div className="table-scroll">
           <table id="capa-list-table" className="records-table capa-table">
             <thead>
               <tr>
-<th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre operativo</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Cierre efectivo</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
+<th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las CAPA visibles" /></th><th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre operativo</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Cierre efectivo</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
               </tr>
             </thead>
             <tbody>
@@ -142,6 +145,19 @@ export default async function CapaPage({
                   : "—";
                 return (
                   <tr key={row.id}>
+                    <td className="reminder-select-column">
+                      <input
+                        type="checkbox"
+                        data-reminder-record="true"
+                        data-reminder-id={row.qmsRecord.id}
+                        data-reminder-code={row.qmsRecord.businessCode ?? "Sin código"}
+                        data-reminder-summary={actionDescription}
+                        data-reminder-status={capaStatusLabel(row.status)}
+                        data-reminder-meta={row.departmentCodeSnapshot ?? ""}
+                        data-reminder-href={`/capa/${row.id}`}
+                        aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "CAPA"}`}
+                      />
+                    </td>
                     <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td>
                     <td data-column-key="type"><span className="badge neutral">{capaTypeLabel(row.actionType)}</span></td>
                     <td data-column-key="code" className="sticky-code"><Link href={`/capa/${row.id}`}><strong>{row.qmsRecord.businessCode ?? "Sin código"}</strong></Link></td>
@@ -171,7 +187,7 @@ export default async function CapaPage({
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={17}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={18}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>
