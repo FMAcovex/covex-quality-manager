@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addDeviationFollowupAction, addDeviationRelationAction } from "@/modules/deviations/actions";
+import { addDeviationRelationAction } from "@/modules/deviations/actions";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
@@ -9,7 +9,6 @@ import {
   capaPlanNavigation,
   capaProposalStatusLabel,
 } from "@/modules/capa/proposal-ui";
-import { BasicFollowupForm } from "@/components/basic-followup-form";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +19,6 @@ const tabs = [
   ["investigation", "Investigación"],
   ["actions", "Acciones"],
   ["conclusion", "Conclusión"],
-  ["followups", "Seguimientos"],
   ["relations", "Relaciones"],
   ["versions", "Versiones"],
   ["documents", "Documentos"],
@@ -130,7 +128,6 @@ export default async function DeviationDetailPage({
         </div>
         <div className="record-actions">
           <Link className="button primary" href={`/deviations/${id}/edit`}>Editar</Link>
-          <Link className="button" href={`/deviations/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
           <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>
         </div>
       </div>
@@ -378,19 +375,6 @@ export default async function DeviationDetailPage({
         </div>
       ) : null}
 
-      {activeTab === "followups" ? (
-        <>
-          <div className="card">
-            <h2>Histórico de seguimientos</h2>
-            {deviation.followups.length ? <div className="timeline">{deviation.followups.map((followup)=><div className="timeline-item" key={followup.id}><header><strong>{formatDate(followup.followupDate)}</strong><span>{followup.followupType ?? "Seguimiento"}</span><span className="muted-note">{followup.completedByText}</span></header><p>{followup.comment}</p><small className="muted-note">Próxima fecha: {formatDate(followup.nextFollowupDate)} · Evidencia: {text(followup.evidenceReference)}</small></div>)}</div> : <div className="empty-panel">Todavía no hay seguimientos.</div>}
-          </div>
-          <div className="card" id="new-followup">
-            <h2>Añadir seguimiento</h2>
-            <BasicFollowupForm action={addDeviationFollowupAction.bind(null, id)} defaultActor={deviation.createdByText ?? ""} includeType />
-          </div>
-        </>
-      ) : null}
-
       {activeTab === "relations" ? (
         <div className="card">
           <h2>CAPA relacionadas</h2>
@@ -428,7 +412,7 @@ export default async function DeviationDetailPage({
             <div>
               <h2>Versiones del expediente</h2>
               <p className="muted-note">
-                Una edición normal actualiza la versión vigente. Solo una reapertura crea una nueva versión funcional.
+                Guardar cambios actualiza la versión vigente. Generar una nueva versión congela la anterior y crea el siguiente seguimiento completo.
               </p>
             </div>
             {currentVersion ? <span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span> : null}
@@ -440,9 +424,11 @@ export default async function DeviationDetailPage({
                 const kind =
                   item.kind === "REOPENING"
                     ? "Reapertura"
-                    : item.kind === "HISTORICAL_STATE"
-                      ? "Baseline histórico"
-                      : "Versión inicial";
+                    : item.kind === "FOLLOWUP"
+                      ? "Seguimiento"
+                      : item.kind === "HISTORICAL_STATE"
+                        ? "Baseline histórico"
+                        : "Versión inicial";
                 return (
                   <article className="timeline-item" key={item.id}>
                     <header>
