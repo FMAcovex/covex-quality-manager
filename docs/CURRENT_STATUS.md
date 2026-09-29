@@ -444,3 +444,19 @@ Se añade un smoke transversal con PostgreSQL real que comprueba:
 - los enlaces QMS de ida y vuelta se resuelven con el identificador del expediente correcto.
 
 El smoke queda registrado como `pnpm b2-3:smoke` y se ejecuta en el workflow CI antes del smoke general de Hito 10.
+
+## Hito 10.8C3-B3.1 — Flujo canónico Reclamación → CAPA
+Estado: **COMPLETADO Y VALIDADO EN CI — PR #42**.
+
+Cambios limitados a backend:
+- una propuesta `ComplaintCapaPlan` en estado `PROPOSED` puede generar una única CAPA real;
+- la propuesta se marca `REGISTERED` y conserva `linkedCapaRecordId` solo para identificar qué propuesta originó qué CAPA;
+- la relación de negocio se crea una sola vez mediante `QmsRelation` Reclamación → CAPA;
+- cuando existe `fromComplaintPlanId`, no se crea además otra relación mediante `originCode`;
+- `originType` y `originCode` se canonicalizan desde la Reclamación real asociada a la propuesta;
+- propuestas registradas o canceladas no pueden generar una CAPA adicional;
+- el cambio de propuesta a `REGISTERED` se protege con actualización condicionada dentro de la misma transacción;
+- la creación directa desde `fromComplaintId` usa también una única relación explícita y no duplica el intento mediante `originCode`;
+- las CAPA creadas manualmente sin origen explícito conservan el fallback existente por `originCode`.
+
+Se añaden pruebas unitarias del flujo canónico, reutilización bloqueada, cambio concurrente y creación directa. No se aborda todavía B3.2 (UX/navegación) ni B3.3 (prueba transversal).
