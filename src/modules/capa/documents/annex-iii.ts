@@ -136,7 +136,7 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
             : "",
         )
         .filter(Boolean)
-        .join("\\n"),
+        .join("\n"),
     );
   }
 
@@ -178,7 +178,7 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
         [
           `Seguimiento ${String(followup.sequenceNumber).padStart(2, "0")}: ${followup.description}`,
           followup.evidenceReference ? `Evidencia: ${followup.evidenceReference}` : "",
-        ].filter(Boolean).join("\\n"),
+        ].filter(Boolean).join("\n"),
       ]),
     );
   }
