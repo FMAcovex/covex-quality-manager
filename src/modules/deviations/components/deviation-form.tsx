@@ -21,6 +21,33 @@ const emptyCapa: CapaPlanInput = {
   responsible: "",
 };
 
+type OriginType =
+  | ""
+  | "FINISHED_PRODUCT_SYSTEM"
+  | "CLIENT"
+  | "RAW_PACKAGING_MATERIAL"
+  | "SUPPLIER"
+  | "EQUIPMENT_LINE"
+  | "OTHER";
+
+function inferOrigin(defaults: DeviationFormDefaults): OriginType {
+  if (formDefaults.provenance && [
+    "FINISHED_PRODUCT_SYSTEM",
+    "CLIENT",
+    "RAW_PACKAGING_MATERIAL",
+    "SUPPLIER",
+    "EQUIPMENT_LINE",
+    "OTHER",
+  ].includes(formDefaults.provenance)) return formDefaults.provenance as OriginType;
+  if (formDefaults.finishedProductSystem || formDefaults.productLot || formDefaults.lotSize || formDefaults.affectedQuantity) return "FINISHED_PRODUCT_SYSTEM";
+  if (formDefaults.client) return "CLIENT";
+  if (formDefaults.rawOrPackagingMaterial || formDefaults.materialLot || formDefaults.materialLotSize || formDefaults.materialAffectedQuantity) return "RAW_PACKAGING_MATERIAL";
+  if (formDefaults.supplier || formDefaults.supplierLot) return "SUPPLIER";
+  if (formDefaults.affectedEquipmentLine) return "EQUIPMENT_LINE";
+  if (formDefaults.otherOrigin) return "OTHER";
+  return "";
+}
+
 function FieldIssue({ messages }: { messages?: string[] }) {
   if (!messages?.length) return null;
   return <small className="field-error">{messages[0]}</small>;
@@ -125,8 +152,18 @@ export function DeviationForm({
   currentVersionSequence?: number;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null });
-  const [actions, setActions] = useState<ImmediateActionInput[]>(defaults.immediateActions ?? []);
-  const [capas, setCapas] = useState<CapaPlanInput[]>(defaults.capaPlans ?? []);
+  const submitted = state.submittedValues;
+  const formDefaults = new Proxy(defaults, {
+    get(target, prop) {
+      if (typeof prop !== "string") return Reflect.get(target, prop);
+      const submittedValue = submitted?.[prop];
+      if (submittedValue !== undefined) return submittedValue;
+      return Reflect.get(target, prop);
+    },
+  }) as DeviationFormDefaults;
+  const [actions, setActions] = useState<ImmediateActionInput[]>(formDefaults.immediateActions ?? []);
+  const [capas, setCapas] = useState<CapaPlanInput[]>(formDefaults.capaPlans ?? []);
+  const [origin, setOrigin] = useState<OriginType>(() => inferOrigin(formDefaults));
   const issues = state.fieldIssues ?? {};
 
   function updateAction(index: number, patch: Partial<ImmediateActionInput>) {
@@ -138,11 +175,10 @@ export function DeviationForm({
   }
 
   return (
-    <form action={formAction} className="form-stack">
+    <form key={state.formRevision ?? 0} action={formAction} className="form-stack">
       <input type="hidden" name="immediateActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)} />
-      <input type="hidden" name="provenance" value={defaults.provenance ?? ""} />
-      <input type="hidden" name="processEquipmentSystem" value={defaults.processEquipmentSystem ?? ""} />
+      <input type="hidden" name="processEquipmentSystem" value={formDefaults.processEquipmentSystem ?? ""} />
 
       {state.error ? (
         <div className="form-errors">
@@ -157,10 +193,10 @@ export function DeviationForm({
         <h2>Identificación</h2>
         <p className="section-help">Datos que identifican el expediente y su registro inicial.</p>
         <div className="form-grid">
-          <Field label="Codificación" name="businessCode" defaultValue={defaults.businessCode} required issues={issues.businessCode} />
+          <Field label="Codificación" name="businessCode" defaultValue={formDefaults.businessCode} required issues={issues.businessCode} />
           <label className={`field ${issues.departmentId?.length ? "has-error" : ""}`}>
             <span>Departamento *</span>
-            <select name="departmentId" defaultValue={defaults.departmentId ?? ""} required aria-invalid={issues.departmentId?.length ? true : undefined}>
+            <select name="departmentId" defaultValue={formDefaults.departmentId ?? ""} required aria-invalid={issues.departmentId?.length ? true : undefined}>
               <option value="">Seleccionar…</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.id}>
@@ -170,74 +206,109 @@ export function DeviationForm({
             </select>
             <FieldIssue messages={issues.departmentId} />
           </label>
-          <Field label="Fecha apertura" name="issueDate" type="date" defaultValue={defaults.issueDate} required issues={issues.issueDate} />
-          <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={defaults.eventDateTime} required issues={issues.eventDateTime} />
-          <Field label="Detectado por" name="detectedBy" defaultValue={defaults.detectedBy} required issues={issues.detectedBy} />
-          <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required issues={issues.createdByText} />
-          <Field label="Breve descripción del proceso/equipo/sistema afectado" name="materialProcessAffected" defaultValue={defaults.materialProcessAffected} span="span-2" required issues={issues.materialProcessAffected} />
+          <Field label="Fecha apertura" name="issueDate" type="date" defaultValue={formDefaults.issueDate} required issues={issues.issueDate} />
+          <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={formDefaults.eventDateTime} required issues={issues.eventDateTime} />
+          <Field label="Detectado por" name="detectedBy" defaultValue={formDefaults.detectedBy} required issues={issues.detectedBy} />
+          <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required issues={issues.createdByText} />
+          <Field label="Breve descripción del proceso/equipo/sistema afectado" name="materialProcessAffected" defaultValue={formDefaults.materialProcessAffected} span="span-2" required issues={issues.materialProcessAffected} />
         </div>
       </section>
 
       <section className="form-section">
         <h2>A. Origen</h2>
-        <p className="section-help">Origen principal de la desviación y datos asociados, manteniendo la información existente del expediente.</p>
-        <div className="deviation-origin-grid">
+        <p className="section-help">Selecciona, si corresponde, un único origen principal. Solo se muestran los campos asociados al origen elegido.</p>
+        <div className="origin-selector" role="radiogroup" aria-label="Origen principal de la desviación">
+          {[
+            ["FINISHED_PRODUCT_SYSTEM", "Producto terminado / Sistema"],
+            ["CLIENT", "Cliente"],
+            ["RAW_PACKAGING_MATERIAL", "Materia prima / Material de acondicionamiento"],
+            ["SUPPLIER", "Proveedor"],
+            ["EQUIPMENT_LINE", "Equipo / Línea afectada"],
+            ["OTHER", "Otros"],
+          ].map(([value, label]) => (
+            <label key={value} className={`origin-option ${origin === value ? "selected" : ""}`}>
+              <input
+                type="radio"
+                name="provenance"
+                value={value}
+                checked={origin === value}
+                onChange={() => setOrigin(value as OriginType)}
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+          {origin ? (
+            <button type="button" className="button small" onClick={() => setOrigin("")}>Quitar selección</button>
+          ) : null}
+        </div>
+
+        {origin === "FINISHED_PRODUCT_SYSTEM" ? (
           <div className="deviation-origin-group">
             <h3>Producto terminado / Sistema</h3>
             <div className="form-grid">
-              <Field label="Producto terminado / sistema" name="finishedProductSystem" defaultValue={defaults.finishedProductSystem} span="span-2" />
-              <Field label="Nº de lote" name="productLot" defaultValue={defaults.productLot} />
-              <Field label="Tamaño de lote" name="lotSize" defaultValue={defaults.lotSize} />
-              <Field label="Cantidad afectada" name="affectedQuantity" defaultValue={defaults.affectedQuantity} />
+              <Field label="Producto terminado / sistema" name="finishedProductSystem" defaultValue={formDefaults.finishedProductSystem} span="span-2" required issues={issues.finishedProductSystem} />
+              <Field label="Nº de lote" name="productLot" defaultValue={formDefaults.productLot} required issues={issues.productLot} />
+              <Field label="Tamaño de lote" name="lotSize" defaultValue={formDefaults.lotSize} required issues={issues.lotSize} />
+              <Field label="Cantidad afectada" name="affectedQuantity" defaultValue={formDefaults.affectedQuantity} required issues={issues.affectedQuantity} />
             </div>
           </div>
+        ) : null}
 
+        {origin === "CLIENT" ? (
           <div className="deviation-origin-group">
             <h3>Cliente</h3>
             <div className="form-grid">
-              <Field label="Cliente" name="client" defaultValue={defaults.client} span="span-2" />
+              <Field label="Cliente" name="client" defaultValue={formDefaults.client} span="span-2" required issues={issues.client} />
             </div>
           </div>
+        ) : null}
 
+        {origin === "RAW_PACKAGING_MATERIAL" ? (
           <div className="deviation-origin-group">
             <h3>Materia prima / Material de acondicionamiento</h3>
             <div className="form-grid">
-              <Field label="Materia prima / material de acondicionamiento" name="rawOrPackagingMaterial" defaultValue={defaults.rawOrPackagingMaterial} span="span-2" />
-              <Field label="Nº de lote" name="materialLot" defaultValue={defaults.materialLot} />
-              <Field label="Tamaño de lote / cantidad" name="materialLotSize" defaultValue={defaults.materialLotSize} />
-              <Field label="Cantidad afectada" name="materialAffectedQuantity" defaultValue={defaults.materialAffectedQuantity} />
+              <Field label="Materia prima / material de acondicionamiento" name="rawOrPackagingMaterial" defaultValue={formDefaults.rawOrPackagingMaterial} span="span-2" required issues={issues.rawOrPackagingMaterial} />
+              <Field label="Nº de lote" name="materialLot" defaultValue={formDefaults.materialLot} required issues={issues.materialLot} />
+              <Field label="Tamaño de lote / cantidad (cuando proceda)" name="materialLotSize" defaultValue={formDefaults.materialLotSize} />
+              <Field label="Cantidad afectada" name="materialAffectedQuantity" defaultValue={formDefaults.materialAffectedQuantity} required issues={issues.materialAffectedQuantity} />
             </div>
           </div>
+        ) : null}
 
+        {origin === "SUPPLIER" ? (
           <div className="deviation-origin-group">
             <h3>Proveedor</h3>
             <div className="form-grid">
-              <Field label="Proveedor" name="supplier" defaultValue={defaults.supplier} span="span-2" />
-              <Field label="Lote de proveedor" name="supplierLot" defaultValue={defaults.supplierLot} />
+              <Field label="Proveedor" name="supplier" defaultValue={formDefaults.supplier} span="span-2" required issues={issues.supplier} />
+              <Field label="Lote de proveedor" name="supplierLot" defaultValue={formDefaults.supplierLot} required issues={issues.supplierLot} />
             </div>
           </div>
+        ) : null}
 
+        {origin === "EQUIPMENT_LINE" ? (
           <div className="deviation-origin-group">
             <h3>Equipo / Línea afectada</h3>
             <div className="form-grid">
-              <Field label="Equipo o línea afectada" name="affectedEquipmentLine" defaultValue={defaults.affectedEquipmentLine} span="span-2" />
+              <Field label="Equipo o línea afectada" name="affectedEquipmentLine" defaultValue={formDefaults.affectedEquipmentLine} span="span-2" required issues={issues.affectedEquipmentLine} />
             </div>
           </div>
+        ) : null}
 
+        {origin === "OTHER" ? (
           <div className="deviation-origin-group">
             <h3>Otros</h3>
             <div className="form-grid">
-              <Field label="Especificar" name="otherOrigin" defaultValue={defaults.otherOrigin} span="span-2" />
+              <Field label="Especificar" name="otherOrigin" defaultValue={formDefaults.otherOrigin} span="span-2" required issues={issues.otherOrigin} />
             </div>
           </div>
-        </div>
+        ) : null}
       </section>
 
       <section className="form-section">
         <h2>B. Documentación afectada</h2>
         <p className="section-help">Documentos, procedimientos, instrucciones o registros afectados por la desviación.</p>
         <div className="form-grid">
-          <TextArea label="Documentación afectada" name="affectedDocumentation" defaultValue={defaults.affectedDocumentation} required issues={issues.affectedDocumentation} />
+          <TextArea label="Documentación afectada" name="affectedDocumentation" defaultValue={formDefaults.affectedDocumentation} required issues={issues.affectedDocumentation} />
         </div>
       </section>
 
@@ -245,11 +316,11 @@ export function DeviationForm({
         <h2>C. Descripción del evento</h2>
         <p className="section-help">Registrar hechos observables. No incluir aquí causas, impacto, hipótesis ni acciones futuras.</p>
         <div className="form-grid">
-          <TextArea label="¿Qué sucedió / qué debía haber sucedido?" name="whatHappened" defaultValue={defaults.whatHappened} required issues={issues.whatHappened} />
-          <TextArea label="¿Quién estuvo implicado y cuál fue su papel?" name="whoInvolved" defaultValue={defaults.whoInvolved} required issues={issues.whoInvolved} />
-          <TextArea label="¿Cuándo ocurrió?" name="whenHappened" defaultValue={defaults.whenHappened} required issues={issues.whenHappened} />
-          <TextArea label="¿Dónde ocurrió?" name="whereHappened" defaultValue={defaults.whereHappened} required issues={issues.whereHappened} />
-          <TextArea label="¿Cómo se detectó / cómo ocurrió?" name="howHappened" defaultValue={defaults.howHappened} required issues={issues.howHappened} />
+          <TextArea label="¿Qué sucedió / qué debía haber sucedido?" name="whatHappened" defaultValue={formDefaults.whatHappened} required issues={issues.whatHappened} />
+          <TextArea label="¿Quién estuvo implicado y cuál fue su papel?" name="whoInvolved" defaultValue={formDefaults.whoInvolved} required issues={issues.whoInvolved} />
+          <TextArea label="¿Cuándo ocurrió?" name="whenHappened" defaultValue={formDefaults.whenHappened} required issues={issues.whenHappened} />
+          <TextArea label="¿Dónde ocurrió?" name="whereHappened" defaultValue={formDefaults.whereHappened} required issues={issues.whereHappened} />
+          <TextArea label="¿Cómo se detectó / cómo ocurrió?" name="howHappened" defaultValue={formDefaults.howHappened} required issues={issues.howHappened} />
         </div>
       </section>
 
@@ -283,8 +354,8 @@ export function DeviationForm({
         <h2>E. Investigación</h2>
         <p className="section-help">Documentar la investigación realizada y si las evidencias permiten alcanzar una conclusión.</p>
         <div className="form-grid">
-          <TextArea label="Investigación realizada / resultado y conclusiones" name="investigation" defaultValue={defaults.investigation} required issues={issues.investigation} />
-          <TriStateSelect label="¿Investigación concluyente?" name="investigationConclusive" defaultValue={defaults.investigationConclusive} required issues={issues.investigationConclusive} />
+          <TextArea label="Investigación realizada / resultado y conclusiones" name="investigation" defaultValue={formDefaults.investigation} required issues={issues.investigation} />
+          <TriStateSelect label="¿Investigación concluyente?" name="investigationConclusive" defaultValue={formDefaults.investigationConclusive} required issues={issues.investigationConclusive} />
         </div>
       </section>
 
@@ -306,7 +377,7 @@ export function DeviationForm({
                     type="checkbox"
                     name="investigationMethods"
                     value={value}
-                    defaultChecked={defaults.investigationMethods?.includes(value)}
+                    defaultChecked={formDefaults.investigationMethods?.includes(value)}
                   />
                   {label}
                 </label>
@@ -314,11 +385,11 @@ export function DeviationForm({
             </div>
             <FieldIssue messages={issues.investigationMethods} />
           </div>
-          <TextArea label="Causa raíz" name="rootCause" defaultValue={defaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." required issues={issues.rootCause} />
-          <TriStateSelect label="¿Causa raíz recurrente?" name="recurrentRootCause" defaultValue={defaults.recurrentRootCause} required issues={issues.recurrentRootCause} />
+          <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." required issues={issues.rootCause} />
+          <TriStateSelect label="¿Causa raíz recurrente?" name="recurrentRootCause" defaultValue={formDefaults.recurrentRootCause} required issues={issues.recurrentRootCause} />
           <label className={`field span-3 ${issues.recurrenceDetails?.length ? "has-error" : ""}`}>
             <span>Antecedentes / detalle de recurrencia *</span>
-            <textarea name="recurrenceDetails" defaultValue={defaults.recurrenceDetails ?? ""} required aria-invalid={issues.recurrenceDetails?.length ? true : undefined} />
+            <textarea name="recurrenceDetails" defaultValue={formDefaults.recurrenceDetails ?? ""} required aria-invalid={issues.recurrenceDetails?.length ? true : undefined} />
             <FieldIssue messages={issues.recurrenceDetails} />
           </label>
         </div>
@@ -330,7 +401,7 @@ export function DeviationForm({
         <div className="form-grid">
           <label className={`field ${issues.classification?.length ? "has-error" : ""}`}>
             <span>Clasificación *</span>
-            <select name="classification" defaultValue={defaults.classification ?? ""} required aria-invalid={issues.classification?.length ? true : undefined}>
+            <select name="classification" defaultValue={formDefaults.classification ?? ""} required aria-invalid={issues.classification?.length ? true : undefined}>
               <option value="">No clasificada</option>
               <option value="CRITICAL">Crítica</option>
               <option value="MAJOR">Mayor</option>
@@ -345,14 +416,14 @@ export function DeviationForm({
         <h2>I. Impacto</h2>
         <p className="section-help">La evaluación de impacto debe apoyarse en la investigación y no introducir nuevas causas.</p>
         <div className="form-grid">
-          <TriStateSelect label="Impacto validación" name="validationImpact" defaultValue={defaults.validationImpact} required issues={issues.validationImpact} />
-          <TriStateSelect label="Impacto registro" name="registrationImpact" defaultValue={defaults.registrationImpact} required issues={issues.registrationImpact} />
-          <TriStateSelect label="Impacto estabilidad" name="stabilityImpact" defaultValue={defaults.stabilityImpact} required issues={issues.stabilityImpact} />
-          <TriStateSelect label="Otros procesos / productos" name="otherProcessesImpact" defaultValue={defaults.otherProcessesImpact} required issues={issues.otherProcessesImpact} />
-          <TriStateSelect label="Afecta a producto terminado" name="affectsFinishedProduct" defaultValue={defaults.affectsFinishedProduct} required issues={issues.affectsFinishedProduct} />
+          <TriStateSelect label="Impacto validación" name="validationImpact" defaultValue={formDefaults.validationImpact} required issues={issues.validationImpact} />
+          <TriStateSelect label="Impacto registro" name="registrationImpact" defaultValue={formDefaults.registrationImpact} required issues={issues.registrationImpact} />
+          <TriStateSelect label="Impacto estabilidad" name="stabilityImpact" defaultValue={formDefaults.stabilityImpact} required issues={issues.stabilityImpact} />
+          <TriStateSelect label="Otros procesos / productos" name="otherProcessesImpact" defaultValue={formDefaults.otherProcessesImpact} required issues={issues.otherProcessesImpact} />
+          <TriStateSelect label="Afecta a producto terminado" name="affectsFinishedProduct" defaultValue={formDefaults.affectsFinishedProduct} required issues={issues.affectsFinishedProduct} />
           <label className={`field span-2 ${issues.otherProcessesImpactDetails?.length ? "has-error" : ""}`}>
             <span>Detalle / justificación de impacto *</span>
-            <textarea name="otherProcessesImpactDetails" defaultValue={defaults.otherProcessesImpactDetails ?? ""} required aria-invalid={issues.otherProcessesImpactDetails?.length ? true : undefined} />
+            <textarea name="otherProcessesImpactDetails" defaultValue={formDefaults.otherProcessesImpactDetails ?? ""} required aria-invalid={issues.otherProcessesImpactDetails?.length ? true : undefined} />
             <FieldIssue messages={issues.otherProcessesImpactDetails} />
           </label>
         </div>
@@ -364,7 +435,7 @@ export function DeviationForm({
         <div className="form-grid">
           <label className={`field ${issues.capaRequired?.length ? "has-error" : ""}`}>
             <span>¿Procede abrir CAPA? *</span>
-            <select name="capaRequired" defaultValue={defaults.capaRequired ?? ""} required aria-invalid={issues.capaRequired?.length ? true : undefined}>
+            <select name="capaRequired" defaultValue={formDefaults.capaRequired ?? ""} required aria-invalid={issues.capaRequired?.length ? true : undefined}>
               <option value="">Pendiente</option>
               <option value="true">Sí</option>
               <option value="false">No</option>
@@ -406,11 +477,11 @@ export function DeviationForm({
         <h2>K-L. Conclusión y cierre</h2>
         <p className="section-help">La conclusión sintetiza investigación, causa, impacto, CAPA y disposición. No debe introducir información nueva.</p>
         <div className="form-grid">
-          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={defaults.conclusion} required issues={issues.conclusion} />
-          <Field label="Disposición final" name="disposition" defaultValue={defaults.disposition} span="span-2" required issues={issues.disposition} />
-          <Field label="Cantidad" name="dispositionQuantity" defaultValue={defaults.dispositionQuantity} required issues={issues.dispositionQuantity} />
-          <TriStateSelect label="Notificación al cliente" name="clientNotification" defaultValue={defaults.clientNotification} required issues={issues.clientNotification} />
-          <TextArea label="Comentarios de disposición" name="dispositionComments" defaultValue={defaults.dispositionComments} required issues={issues.dispositionComments} />
+          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={formDefaults.conclusion} required issues={issues.conclusion} />
+          <Field label="Disposición final" name="disposition" defaultValue={formDefaults.disposition} span="span-2" required issues={issues.disposition} />
+          <Field label="Cantidad" name="dispositionQuantity" defaultValue={formDefaults.dispositionQuantity} required issues={issues.dispositionQuantity} />
+          <TriStateSelect label="Notificación al cliente" name="clientNotification" defaultValue={formDefaults.clientNotification} required issues={issues.clientNotification} />
+          <TextArea label="Comentarios de disposición" name="dispositionComments" defaultValue={formDefaults.dispositionComments} required issues={issues.dispositionComments} />
         </div>
       </section>
 
@@ -418,10 +489,10 @@ export function DeviationForm({
         <h2>Información final del expediente</h2>
         <p className="section-help">Estado administrativo y controles finales del expediente.</p>
         <div className="form-grid">
-          <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={defaults.closedAt} issues={issues.closedAt} />
+          <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={formDefaults.closedAt} issues={issues.closedAt} />
           <label className={`field ${issues.status?.length ? "has-error" : ""}`}>
             <span>Estado *</span>
-            <select name="status" defaultValue={defaults.status ?? "OPEN"} required aria-invalid={issues.status?.length ? true : undefined}>
+            <select name="status" defaultValue={formDefaults.status ?? "OPEN"} required aria-invalid={issues.status?.length ? true : undefined}>
               <option value="OPEN">Abierta</option>
               <option value="CLOSED">Cerrada</option>
             </select>
@@ -429,7 +500,7 @@ export function DeviationForm({
           </label>
           <label className={`field ${issues.dataQualityStatus?.length ? "has-error" : ""}`}>
             <span>Control de estado *</span>
-            <select name="dataQualityStatus" defaultValue={defaults.dataQualityStatus ?? "REVIEW_REQUIRED"} required aria-invalid={issues.dataQualityStatus?.length ? true : undefined}>
+            <select name="dataQualityStatus" defaultValue={formDefaults.dataQualityStatus ?? "REVIEW_REQUIRED"} required aria-invalid={issues.dataQualityStatus?.length ? true : undefined}>
               <option value="COMPLETE">Completo</option>
               <option value="INCOMPLETE">Incompleto</option>
               <option value="REVIEW_REQUIRED">Pendiente de revisar</option>
@@ -441,13 +512,13 @@ export function DeviationForm({
             <input
               type="hidden"
               name="signedDocumentAvailable"
-              value={defaults.signedDocumentAvailable ?? ""}
+              value={formDefaults.signedDocumentAvailable ?? ""}
             />
             <small className="muted-note">
               El PDF firmado se carga y controla por versión desde la pestaña Versiones del expediente.
             </small>
           </div>
-          <TextArea label="Observaciones internas" name="internalObservations" defaultValue={defaults.internalObservations} />
+          <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations} />
         </div>
       </section>
 
@@ -456,7 +527,7 @@ export function DeviationForm({
           <h2>Edición / nueva versión</h2>
           <p className="section-help">Campos propios de la modificación y del versionado. Se mantienen separados de los apartados A-L.</p>
           <div className="form-grid">
-            <Field label="Modificado por" name="modifiedByText" defaultValue={defaults.createdByText} />
+            <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText} />
             <TextArea
               label="Motivo del cambio / seguimiento"
               name="changeReason"
