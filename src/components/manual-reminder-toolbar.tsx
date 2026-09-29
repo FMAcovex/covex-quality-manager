@@ -48,6 +48,7 @@ export function ManualReminderToolbar({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
 
   useEffect(() => {
     const table = document.getElementById(tableId);
@@ -140,7 +141,7 @@ export function ManualReminderToolbar({
     setIsOpen(true);
   };
 
-  const openMailClient = () => {
+  const openMailClient = async () => {
     const toList = parseRecipients(to);
     const ccList = parseRecipients(cc);
 
@@ -166,8 +167,38 @@ export function ManualReminderToolbar({
     if (ccList.length) query.set("cc", ccList.join(","));
 
     const mailto = `mailto:${toList.join(",")}?${query.toString()}`;
+
+    setIsPreparing(true);
     setError(null);
-    window.location.href = mailto;
+
+    try {
+      const response = await fetch("/api/reminders/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordIds: selected.map((record) => record.id),
+          recipients: toList,
+          ccRecipients: ccList,
+          subject: subject.trim(),
+          message: body,
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+
+      if (!response.ok) {
+        setError(result?.error ?? "No se ha podido registrar el recordatorio.");
+        return;
+      }
+
+      window.location.href = mailto;
+    } catch {
+      setError("No se ha podido registrar el recordatorio. Inténtalo de nuevo.");
+    } finally {
+      setIsPreparing(false);
+    }
   };
 
   return (
@@ -282,11 +313,16 @@ export function ManualReminderToolbar({
 
             <div className="manual-reminder-dialog-footer">
               <span className="muted-note">
-                Fase manual: la aplicación prepara el correo, pero el envío se realiza
-                desde Outlook o el cliente de correo del usuario.
+                La preparación queda registrada en el expediente. El envío real se
+                realiza desde Outlook o el cliente de correo del usuario.
               </span>
-              <button type="button" className="button primary" onClick={openMailClient}>
-                Abrir correo
+              <button
+                type="button"
+                className="button primary"
+                onClick={openMailClient}
+                disabled={isPreparing}
+              >
+                {isPreparing ? "Preparando…" : "Abrir correo"}
               </button>
             </div>
           </div>
