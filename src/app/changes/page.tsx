@@ -187,7 +187,7 @@ export default async function ChangeControlPage({
                     <td data-column-key="finalStatus"><span className={`status-badge ${row.finalStatus.toLowerCase()}`}>{finalStatusLabel(row.finalStatus)}</span></td>
                     <td data-column-key="closureDate">{formatDate(row.effectiveClosedAt)}</td>
                     <td data-column-key="related"><div className="relation-chips">
-                      {[...row.qmsRecord.sourceRelations.map(x=>x.targetRecord),...row.qmsRecord.targetRelations.map(x=>x.sourceRecord)].map(record=><Link key={record.id} className="relation-chip" href={qmsRecordHref(record.recordType,record.id)} title={qmsRecordTypeLabel(record.recordType)}>{record.businessCode??qmsRecordTypeLabel(record.recordType)}</Link>)}
+                      {[...row.qmsRecord.sourceRelations.map(x=>x.targetRecord),...row.qmsRecord.targetRelations.map(x=>x.sourceRecord)].map(record=><Link key={record.id} className="relation-chip" href={qmsRecordHref(record.recordType,record.id)} title={qmsRecordTypeLabel(record.recordType)}>{qmsRecordDisplayCode(record,qmsRecordTypeLabel(record.recordType))}{!record.isActive?" · Anulado":""}</Link>)}
                       {row.qmsRecord.sourceRelations.length+row.qmsRecord.targetRelations.length===0?"—":null}
                     </div></td>
                     <td data-column-key="observations" className="long-cell">{row.internalObservations ?? "—"}</td>
