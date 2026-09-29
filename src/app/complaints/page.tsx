@@ -4,7 +4,7 @@ import { DocumentType, QmsRecordType } from "@prisma/client";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 import { ColumnSelector } from "@/components/column-selector";
 import { complaintColumns } from "@/modules/complaints/column-config";
-import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { complaintClassificationLabel,complaintEffectivenessLabel,complaintStatusLabel,complaintTypeLabel,formatDate } from "@/modules/complaints/domain";
 import { getComplaintList } from "@/modules/complaints/queries";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
@@ -14,7 +14,7 @@ const p=(v:string|string[]|undefined)=>Array.isArray(v)?v[0]:v;
 
 export default async function ComplaintsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  const q=await searchParams;
- const filters={q:p(q.q),year:p(q.year),department:p(q.department),type:p(q.type),status:p(q.status),classification:p(q.classification),effectiveness:p(q.effectiveness)};
+ const filters={q:p(q.q),administrative:p(q.administrative),year:p(q.year),department:p(q.department),type:p(q.type),status:p(q.status),classification:p(q.classification),effectiveness:p(q.effectiveness)};
  const {rows,departments,years,counters}=await getComplaintList(filters);const officialTemplateReady=await isActiveTemplateAssetReady(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_V);
  const exportParams=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v)exportParams.set(k,v)});
  const currentYear=filters.year??String(new Date().getFullYear());
@@ -26,7 +26,7 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
   </div>
   <div className="tabs"><Link className="tab active" href="/complaints">Expedientes</Link><Link className="tab muted" href="/complaints/indicators">Indicadores</Link></div>
   <form method="get" className="toolbar-form"><div className="filter-panel operational">
-   <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year??""}><option value="">Todos</option>{years.map(y=><option key={y}>{y}</option>)}</select></label>
+   <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative??""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label><select name="year" defaultValue={filters.year??""}><option value="">Todos</option>{years.map(y=><option key={y}>{y}</option>)}</select></label>
    <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department??""}><option value="">Todos</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
    <label className="filter-placeholder"><span>Tipo</span><select name="type" defaultValue={filters.type??""}><option value="">Todos</option><option value="CUSTOMER">De cliente</option><option value="PROVIDER">A proveedor</option></select></label>
    <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification??""}><option value="">Todas</option><option value="CRITICAL">Crítica</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option><option value="NO_GMP_IMPACT">Sin impacto GMP</option></select></label>
@@ -61,9 +61,9 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
   <ManualReminderToolbar tableId="complaint-list-table" moduleLabel="Reclamaciones" />
   <div className="table-card"><div className="table-scroll"><table id="complaint-list-table"><thead><tr><th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las reclamaciones visibles" /></th>{complaintColumns.map(c=><th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>
    {rows.length?rows.map(r=><tr key={r.id}>
-    <td className="reminder-select-column"><input type="checkbox" data-reminder-record="true" data-reminder-id={r.qmsRecord.id} data-reminder-code={r.qmsRecord.businessCode??"Sin código"} data-reminder-summary={r.description??r.partyName??"Sin descripción"} data-reminder-status={complaintStatusLabel(r.status)} data-reminder-meta={r.departmentCodeSnapshot??""} data-reminder-href={`/complaints/${r.id}`} aria-label={`Seleccionar ${r.qmsRecord.businessCode??"reclamación"}`} /></td>
+    <td className="reminder-select-column"><input type="checkbox" data-reminder-record="true" data-reminder-id={r.qmsRecord.id} data-reminder-code={qmsRecordDisplayCode(r.qmsRecord)} data-reminder-summary={r.description??r.partyName??"Sin descripción"} data-reminder-status={complaintStatusLabel(r.status)} data-reminder-meta={r.departmentCodeSnapshot??""} data-reminder-href={`/complaints/${r.id}`} aria-label={`Seleccionar ${r.qmsRecord.businessCode??"reclamación"}`} /></td>
     <td data-column-key="control">{r.dataQualityStatus!=="COMPLETE"?<span className="control-flag">⚠ Revisar</span>:"—"}</td>
-    <td data-column-key="code"><Link className="summary-link" href={`/complaints/${r.id}`}>{r.qmsRecord.businessCode??"Sin código"}</Link></td>
+    <td data-column-key="code"><Link className="summary-link" href={`/complaints/${r.id}`}>{qmsRecordDisplayCode(r.qmsRecord)}</Link>{!r.qmsRecord.isActive?<span className="badge neutral">Anulado</span>:null}</td>
     <td data-column-key="type">{complaintTypeLabel(r.complaintType)}</td><td data-column-key="opening">{formatDate(r.openedAt)}</td><td data-column-key="party">{r.partyName??"—"}</td>
     <td data-column-key="product" className="table-cell-wrap">{r.reference??r.affectedScope??"—"}</td><td data-column-key="lot">{r.lotReference??"—"}</td>
     <td data-column-key="classification"><span className={`badge ${r.classification?.toLowerCase()??"neutral"}`}>{complaintClassificationLabel(r.classification)}</span></td>
