@@ -27,13 +27,14 @@ export async function getComplaintList(filters:ComplaintListFilters){
  if(["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"].includes(filters.effectiveness??""))
    and.push({effectivenessStatus:filters.effectiveness as "PENDING"|"ACCEPTABLE"|"NOT_ACCEPTABLE"|"NOT_REQUIRED"});
  const where:Prisma.ComplaintWhereInput=and.length?{AND:and}:{};
+ const administrativeWhere:Prisma.ComplaintWhereInput=filters.administrative==="ANNULLED"?{qmsRecord:{isActive:false}}:filters.administrative==="ALL"?{}:{qmsRecord:{isActive:true}};
  const [rows,departments,years,total,open,pendingEfficacy,followupDue]=await Promise.all([
   prisma.complaint.findMany({where,include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}}}},department:true,capaPlans:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{openedAt:"desc"},{createdAt:"desc"}],take:300}),
   prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
   prisma.qmsRecord.findMany({where:{recordType:QmsRecordType.COMPLAINT,year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}}),
-  prisma.complaint.count(),prisma.complaint.count({where:{status:"OPEN"}}),
-  prisma.complaint.count({where:{status:"OPEN",effectivenessStatus:"PENDING"}}),
-  prisma.complaint.findMany({where:{status:"OPEN"},select:{followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1,select:{nextFollowupDate:true}}}})
+  prisma.complaint.count({where:administrativeWhere}),prisma.complaint.count({where:{AND:[administrativeWhere,{status:"OPEN"}]}}),
+  prisma.complaint.count({where:{AND:[administrativeWhere,{status:"OPEN",effectivenessStatus:"PENDING"}]}}),
+  prisma.complaint.findMany({where:{AND:[administrativeWhere,{status:"OPEN"}]},select:{followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1,select:{nextFollowupDate:true}}}})
  ]);
  return {rows,departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{
   total,open,pendingEfficacy,followupDue:followupDue.filter(r=>r.followups[0]?.nextFollowupDate&&r.followups[0].nextFollowupDate<=new Date()).length
