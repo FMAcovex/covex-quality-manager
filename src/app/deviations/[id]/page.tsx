@@ -183,7 +183,7 @@ export default async function DeviationDetailPage({
             </p>
             {deviation.capaPlans.length ? (
               <div className="table-scroll">
-                <table className="action-overview-table capa-action-table">
+                <table className="action-overview-table summary-capa-table">
                   <thead>
                     <tr>
                       <th>Código CAPA</th>
