@@ -56,6 +56,7 @@ jobs:
           pnpm demo:seed
           pnpm create-save:smoke
           pnpm relations:smoke
+          pnpm b2-3:smoke
           pnpm hito10:smoke
       - name: Quality checks
         run: pnpm quality

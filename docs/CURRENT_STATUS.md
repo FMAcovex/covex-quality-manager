@@ -414,7 +414,7 @@ Cambios limitados a backend:
 B2.1 no incluye rediseño visual ni prueba transversal manual.
 
 ## Hito 10.8C3-B2.2 — UX y navegación Desviación ↔ CAPA
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN MAIN (PR #40)**.
 
 Cambios de interfaz:
 - el resumen de Desviación muestra cada propuesta CAPA una sola vez;
@@ -426,4 +426,21 @@ Cambios de interfaz:
 - en CAPA, el código de origen enlaza al expediente cuando existe un único origen QMS;
 - las tarjetas de origen identifican explícitamente `Desviación de origen` o `Reclamación de origen`.
 
-Se añaden pruebas unitarias para la lógica de navegación de propuestas. No se ejecuta todavía B2.3 (prueba transversal manual con dos propuestas y dos CAPA).
+Se añaden pruebas unitarias para la lógica de navegación de propuestas.
+
+## Hito 10.8C3-B2.3 — Prueba transversal Desviación → dos CAPA
+Estado: **COMPLETADO Y VALIDADO EN CI — PR #41**.
+
+Se añade un smoke transversal con PostgreSQL real que comprueba:
+- una Desviación con dos propuestas CAPA independientes;
+- ambas propuestas comienzan en `PROPOSED`;
+- cada propuesta genera una CAPA distinta;
+- ambas propuestas terminan en `REGISTERED` y conservan su `linkedCapaRecordId`;
+- existen exactamente dos `QmsRelation` `Desviación → CAPA`;
+- repetir la creación lógica de la misma relación no duplica filas;
+- no existen relaciones inversas artificiales `CAPA → Desviación`;
+- cada CAPA recupera la misma Desviación como origen mediante la vista inversa;
+- la lógica de navegación de cada propuesta registrada devuelve `Abrir CAPA`;
+- los enlaces QMS de ida y vuelta se resuelven con el identificador del expediente correcto.
+
+El smoke queda registrado como `pnpm b2-3:smoke` y se ejecuta en el workflow CI antes del smoke general de Hito 10.

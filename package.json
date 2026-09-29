@@ -40,7 +40,8 @@
     "templates:bundle:install": "tsx scripts/install-template-bundle.ts",
     "demo:annexes": "tsx scripts/generate-demo-annexes.ts",
     "create-save:smoke": "tsx scripts/smoke-create-save.ts",
-    "relations:smoke": "tsx scripts/smoke-operational-relations.ts"
+    "relations:smoke": "tsx scripts/smoke-operational-relations.ts",
+    "b2-3:smoke": "tsx scripts/smoke-deviation-capa-b2-3.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
