@@ -59,7 +59,34 @@ export async function uploadDeviationSignedPdfAction(
   }
 
   const checksum = createHash("sha256").update(bytes).digest("hex");
-  await prisma.recordVersionDocument.upsert({
+  const existingDocument = await prisma.recordVersionDocument.findUnique({
+    where: {
+      recordVersionId_kind: {
+        recordVersionId,
+        kind: "SIGNED_PDF",
+      },
+    },
+    select: {
+      id: true,
+      fileName: true,
+      fileSize: true,
+      checksum: true,
+      uploadedByText: true,
+      uploadedAt: true,
+    },
+  });
+  const replacementReasonValue = formData.get("replacementReason");
+  const replacementReason =
+    typeof replacementReasonValue === "string" ? replacementReasonValue.trim() : "";
+  if (existingDocument && !replacementReason) {
+    return {
+      error: "Para sustituir un PDF firmado debe indicarse el motivo.",
+      success: null,
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.recordVersionDocument.upsert({
     where: {
       recordVersionId_kind: {
         recordVersionId,
@@ -85,6 +112,37 @@ export async function uploadDeviationSignedPdfAction(
       checksum,
       uploadedByText: actor(formData),
     },
+    });
+
+    await tx.changeHistory.create({
+      data: {
+        qmsRecordId: deviation.qmsRecordId,
+        changedByText: actor(formData),
+        fieldPath: "__signed_document__",
+        oldValue: existingDocument
+          ? {
+              recordVersionId,
+              sequenceNumber: version.sequenceNumber,
+              fileName: existingDocument.fileName,
+              fileSize: existingDocument.fileSize,
+              checksum: existingDocument.checksum,
+              uploadedByText: existingDocument.uploadedByText,
+              uploadedAt: existingDocument.uploadedAt.toISOString(),
+            }
+          : undefined,
+        newValue: {
+          recordVersionId,
+          sequenceNumber: version.sequenceNumber,
+          fileName: fileValue.name,
+          fileSize: fileValue.size,
+          checksum,
+        },
+        reason: existingDocument
+          ? replacementReason
+          : `Carga de PDF firmado V${String(version.sequenceNumber).padStart(2, "0")}`,
+        source: "UI",
+      },
+    });
   });
 
   revalidatePath(`/deviations/${deviationId}`);
