@@ -201,13 +201,6 @@ export function parseDeviationForm(formData: FormData) {
   if (capaRequired === null) {
     addIssue("capaRequired", "Debe indicarse si procede abrir CAPA.");
   }
-  if (capaRequired === true && capaPlans.length === 0) {
-    addIssue(
-      "capaPlansJson",
-      "Se ha indicado que procede CAPA, pero no se ha definido ninguna acción CAPA.",
-    );
-  }
-
   return {
     errors,
     fieldIssues,
