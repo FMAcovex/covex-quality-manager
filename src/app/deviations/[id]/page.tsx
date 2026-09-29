@@ -66,6 +66,13 @@ function investigationMethodLabel(value: string) {
   return labels[value] ?? value;
 }
 
+function investigationResultLabel(value: string | null) {
+  if (value === "YES") return "Concluyente";
+  if (value === "NO") return "No concluyente";
+  if (value === "NA") return "No aplica";
+  return "No informado";
+}
+
 export default async function DeviationDetailPage({
   params,
   searchParams,
@@ -241,7 +248,7 @@ export default async function DeviationDetailPage({
             <h2>Investigación</h2>
             <dl className="info-grid compact-info-grid">
               <div className="info-item full"><dt>Investigación realizada</dt><dd className="prose-value">{text(deviation.investigation)}</dd></div>
-              <div className="info-item"><dt>Resultado</dt><dd>{triStateLabel(deviation.investigationConclusive)} concluyente</dd></div>
+              <div className="info-item"><dt>Resultado</dt><dd>{investigationResultLabel(deviation.investigationConclusive)}</dd></div>
             </dl>
           </div>
           <div className="card root-cause-card">
