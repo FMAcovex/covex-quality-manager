@@ -492,3 +492,18 @@ Se añade un smoke transversal con PostgreSQL real que comprueba:
 - los enlaces QMS de ida/vuelta resuelven el expediente correcto.
 
 El smoke queda registrado como `pnpm b3-3:smoke` y se ejecuta permanentemente en CI.
+
+## Hito 10.8C3-B4.1 — Flujo canónico Reclamación → Devolución
+Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+
+Cambios limitados a backend:
+- cuando una devolución se crea con `fromComplaintId`, la Reclamación se resuelve dentro de la misma transacción;
+- si la Reclamación ya no existe, el alta falla con un mensaje funcional y no se crea una devolución huérfana;
+- `returnType` se canonicaliza a `COMPLAINT`;
+- `relatedDocument` se canonicaliza al código de negocio de la Reclamación real;
+- la relación de negocio se crea una sola vez como `QmsRelation` Reclamación → Devolución;
+- una misma Reclamación puede originar varias Devoluciones distintas;
+- reintentar la misma relación exacta sigue siendo idempotente por la capa común de relaciones;
+- las Devoluciones creadas manualmente sin `fromComplaintId` mantienen su comportamiento actual.
+
+Se añaden pruebas unitarias para resolución de origen, origen inexistente, varias devoluciones por reclamación e idempotencia. No se aborda todavía B4.2 (UX/navegación) ni B4.3 (prueba transversal).
