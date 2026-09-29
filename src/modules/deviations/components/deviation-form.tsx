@@ -237,7 +237,7 @@ export function DeviationForm({
         <h2>B. Documentación afectada</h2>
         <p className="section-help">Documentos, procedimientos, instrucciones o registros afectados por la desviación.</p>
         <div className="form-grid">
-          <TextArea label="Documentación afectada" name="affectedDocumentation" defaultValue={defaults.affectedDocumentation} />
+          <TextArea label="Documentación afectada" name="affectedDocumentation" defaultValue={defaults.affectedDocumentation} required issues={issues.affectedDocumentation} />
         </div>
       </section>
 
@@ -292,8 +292,8 @@ export function DeviationForm({
         <h2>F-G. Causa raíz</h2>
         <p className="section-help">Metodología de análisis, causa de fondo, recurrencia y antecedentes relacionados.</p>
         <div className="form-grid">
-          <div className="field full">
-            <span>Metodología empleada</span>
+          <div className={`field full ${issues.investigationMethods?.length ? "has-error" : ""}`}>
+            <span>Metodología empleada *</span>
             <div className="checkbox-group">
               {[
                 ["BRAINSTORMING", "Brainstorming"],
@@ -312,13 +312,15 @@ export function DeviationForm({
                 </label>
               ))}
             </div>
+            <FieldIssue messages={issues.investigationMethods} />
           </div>
-          <TextArea label="Causa raíz" name="rootCause" defaultValue={defaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." issues={issues.rootCause} />
-          <TriStateSelect label="¿Causa raíz recurrente?" name="recurrentRootCause" defaultValue={defaults.recurrentRootCause} />
-          <div className="field span-3">
-            <span>Antecedentes / detalle de recurrencia</span>
-            <textarea name="recurrenceDetails" defaultValue={defaults.recurrenceDetails ?? ""} />
-          </div>
+          <TextArea label="Causa raíz" name="rootCause" defaultValue={defaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." required issues={issues.rootCause} />
+          <TriStateSelect label="¿Causa raíz recurrente?" name="recurrentRootCause" defaultValue={defaults.recurrentRootCause} required issues={issues.recurrentRootCause} />
+          <label className={`field span-3 ${issues.recurrenceDetails?.length ? "has-error" : ""}`}>
+            <span>Antecedentes / detalle de recurrencia *</span>
+            <textarea name="recurrenceDetails" defaultValue={defaults.recurrenceDetails ?? ""} required aria-invalid={issues.recurrenceDetails?.length ? true : undefined} />
+            <FieldIssue messages={issues.recurrenceDetails} />
+          </label>
         </div>
       </section>
 
@@ -327,8 +329,8 @@ export function DeviationForm({
         <p className="section-help">Clasificación GMP del evento según su criticidad.</p>
         <div className="form-grid">
           <label className={`field ${issues.classification?.length ? "has-error" : ""}`}>
-            <span>Clasificación</span>
-            <select name="classification" defaultValue={defaults.classification ?? ""} aria-invalid={issues.classification?.length ? true : undefined}>
+            <span>Clasificación *</span>
+            <select name="classification" defaultValue={defaults.classification ?? ""} required aria-invalid={issues.classification?.length ? true : undefined}>
               <option value="">No clasificada</option>
               <option value="CRITICAL">Crítica</option>
               <option value="MAJOR">Mayor</option>
@@ -343,15 +345,16 @@ export function DeviationForm({
         <h2>I. Impacto</h2>
         <p className="section-help">La evaluación de impacto debe apoyarse en la investigación y no introducir nuevas causas.</p>
         <div className="form-grid">
-          <TriStateSelect label="Impacto validación" name="validationImpact" defaultValue={defaults.validationImpact} />
-          <TriStateSelect label="Impacto registro" name="registrationImpact" defaultValue={defaults.registrationImpact} />
-          <TriStateSelect label="Impacto estabilidad" name="stabilityImpact" defaultValue={defaults.stabilityImpact} />
-          <TriStateSelect label="Otros procesos / productos" name="otherProcessesImpact" defaultValue={defaults.otherProcessesImpact} />
-          <TriStateSelect label="Afecta a producto terminado" name="affectsFinishedProduct" defaultValue={defaults.affectsFinishedProduct} />
-          <div className="field span-2">
-            <span>Detalle otros procesos / productos</span>
-            <textarea name="otherProcessesImpactDetails" defaultValue={defaults.otherProcessesImpactDetails ?? ""} />
-          </div>
+          <TriStateSelect label="Impacto validación" name="validationImpact" defaultValue={defaults.validationImpact} required issues={issues.validationImpact} />
+          <TriStateSelect label="Impacto registro" name="registrationImpact" defaultValue={defaults.registrationImpact} required issues={issues.registrationImpact} />
+          <TriStateSelect label="Impacto estabilidad" name="stabilityImpact" defaultValue={defaults.stabilityImpact} required issues={issues.stabilityImpact} />
+          <TriStateSelect label="Otros procesos / productos" name="otherProcessesImpact" defaultValue={defaults.otherProcessesImpact} required issues={issues.otherProcessesImpact} />
+          <TriStateSelect label="Afecta a producto terminado" name="affectsFinishedProduct" defaultValue={defaults.affectsFinishedProduct} required issues={issues.affectsFinishedProduct} />
+          <label className={`field span-2 ${issues.otherProcessesImpactDetails?.length ? "has-error" : ""}`}>
+            <span>Detalle / justificación de impacto *</span>
+            <textarea name="otherProcessesImpactDetails" defaultValue={defaults.otherProcessesImpactDetails ?? ""} required aria-invalid={issues.otherProcessesImpactDetails?.length ? true : undefined} />
+            <FieldIssue messages={issues.otherProcessesImpactDetails} />
+          </label>
         </div>
       </section>
 
@@ -359,13 +362,14 @@ export function DeviationForm({
         <h2>J. CAPA</h2>
         <p className="section-help">Las CAPA deben derivar de la causa raíz. Se mantienen las propuestas y vínculos existentes sin cambiar su lógica en D1.</p>
         <div className="form-grid">
-          <label className="field">
-            <span>¿Procede abrir CAPA?</span>
-            <select name="capaRequired" defaultValue={defaults.capaRequired ?? ""}>
+          <label className={`field ${issues.capaRequired?.length ? "has-error" : ""}`}>
+            <span>¿Procede abrir CAPA? *</span>
+            <select name="capaRequired" defaultValue={defaults.capaRequired ?? ""} required aria-invalid={issues.capaRequired?.length ? true : undefined}>
               <option value="">Pendiente</option>
               <option value="true">Sí</option>
               <option value="false">No</option>
             </select>
+            <FieldIssue messages={issues.capaRequired} />
           </label>
         </div>
         {issues.capaPlansJson?.length ? <div className="field-error-block"><FieldIssue messages={issues.capaPlansJson} /></div> : null}
@@ -402,11 +406,11 @@ export function DeviationForm({
         <h2>K-L. Conclusión y cierre</h2>
         <p className="section-help">La conclusión sintetiza investigación, causa, impacto, CAPA y disposición. No debe introducir información nueva.</p>
         <div className="form-grid">
-          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={defaults.conclusion} issues={issues.conclusion} />
-          <Field label="Disposición final" name="disposition" defaultValue={defaults.disposition} span="span-2" />
-          <Field label="Cantidad" name="dispositionQuantity" defaultValue={defaults.dispositionQuantity} />
-          <TriStateSelect label="Notificación al cliente" name="clientNotification" defaultValue={defaults.clientNotification} />
-          <TextArea label="Comentarios de disposición" name="dispositionComments" defaultValue={defaults.dispositionComments} />
+          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={defaults.conclusion} required issues={issues.conclusion} />
+          <Field label="Disposición final" name="disposition" defaultValue={defaults.disposition} span="span-2" required issues={issues.disposition} />
+          <Field label="Cantidad" name="dispositionQuantity" defaultValue={defaults.dispositionQuantity} required issues={issues.dispositionQuantity} />
+          <TriStateSelect label="Notificación al cliente" name="clientNotification" defaultValue={defaults.clientNotification} required issues={issues.clientNotification} />
+          <TextArea label="Comentarios de disposición" name="dispositionComments" defaultValue={defaults.dispositionComments} required issues={issues.dispositionComments} />
         </div>
       </section>
 
@@ -415,20 +419,22 @@ export function DeviationForm({
         <p className="section-help">Estado administrativo y controles finales del expediente.</p>
         <div className="form-grid">
           <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={defaults.closedAt} issues={issues.closedAt} />
-          <label className="field">
-            <span>Estado</span>
-            <select name="status" defaultValue={defaults.status ?? "OPEN"}>
+          <label className={`field ${issues.status?.length ? "has-error" : ""}`}>
+            <span>Estado *</span>
+            <select name="status" defaultValue={defaults.status ?? "OPEN"} required aria-invalid={issues.status?.length ? true : undefined}>
               <option value="OPEN">Abierta</option>
               <option value="CLOSED">Cerrada</option>
             </select>
+            <FieldIssue messages={issues.status} />
           </label>
-          <label className="field">
-            <span>Control de estado</span>
-            <select name="dataQualityStatus" defaultValue={defaults.dataQualityStatus ?? "REVIEW_REQUIRED"}>
+          <label className={`field ${issues.dataQualityStatus?.length ? "has-error" : ""}`}>
+            <span>Control de estado *</span>
+            <select name="dataQualityStatus" defaultValue={defaults.dataQualityStatus ?? "REVIEW_REQUIRED"} required aria-invalid={issues.dataQualityStatus?.length ? true : undefined}>
               <option value="COMPLETE">Completo</option>
               <option value="INCOMPLETE">Incompleto</option>
               <option value="REVIEW_REQUIRED">Pendiente de revisar</option>
             </select>
+            <FieldIssue messages={issues.dataQualityStatus} />
           </label>
           <div className="field">
             <span>Documento firmado</span>
