@@ -1,15 +1,43 @@
 import assert from "node:assert/strict";
 import { PrismaClient, QmsRecordType } from "@prisma/client";
 import {
-  canonicalOperationalRelation,
-  operationalRelationLabel,
-} from "../src/lib/qms/relation-rules";
+  createQmsRelation,
+  getIncomingRelations,
+  getOutgoingRelations,
+} from "../src/lib/qms/relation-service";
+import { canRelate } from "../src/lib/qms/relation-rules";
 import { qmsRecordHref } from "../src/lib/qms/record-links";
 
 const prisma = new PrismaClient();
 
 async function main() {
   const department = await prisma.department.findUniqueOrThrow({ where: { code: "GC-00" } });
+  const existingRelations = await prisma.qmsRelation.findMany({
+    include: { sourceRecord: true, targetRecord: true },
+  });
+  const incompatibleHistoricalRelations = existingRelations.filter(
+    (relation) =>
+      relation.sourceRecordId === relation.targetRecordId ||
+      !canRelate(
+        relation.sourceRecord.recordType,
+        relation.targetRecord.recordType,
+        relation.relationType,
+      ),
+  );
+  if (incompatibleHistoricalRelations.length) {
+    console.warn(
+      "Relaciones históricas fuera de la matriz B1 (no modificadas):",
+      incompatibleHistoricalRelations.map((relation) => ({
+        id: relation.id,
+        source: relation.sourceRecord.businessCode ?? relation.sourceRecordId,
+        target: relation.targetRecord.businessCode ?? relation.targetRecordId,
+        relationType: relation.relationType,
+      })),
+    );
+  }
+  console.log(
+    `Relaciones históricas incompatibles detectadas: ${incompatibleHistoricalRelations.length}`,
+  );
 
   const records = await Promise.all([
     prisma.qmsRecord.create({
@@ -104,31 +132,24 @@ async function main() {
     });
 
     const desired = [
-      canonicalOperationalRelation(
-        { id: deviationQr.id, recordType: QmsRecordType.DEVIATION, businessCode: deviationQr.businessCode },
-        { id: deviationCapaQr.id, recordType: QmsRecordType.CAPA, businessCode: deviationCapaQr.businessCode },
-      ),
-      canonicalOperationalRelation(
-        { id: complaintCapaQr.id, recordType: QmsRecordType.CAPA, businessCode: complaintCapaQr.businessCode },
-        { id: complaintQr.id, recordType: QmsRecordType.COMPLAINT, businessCode: complaintQr.businessCode },
-      ),
-      canonicalOperationalRelation(
-        { id: returnQr.id, recordType: QmsRecordType.RETURN, businessCode: returnQr.businessCode },
-        { id: complaintQr.id, recordType: QmsRecordType.COMPLAINT, businessCode: complaintQr.businessCode },
-      ),
+      { sourceRecordId: deviationQr.id, targetRecordId: deviationCapaQr.id },
+      { sourceRecordId: complaintQr.id, targetRecordId: complaintCapaQr.id },
+      { sourceRecordId: complaintQr.id, targetRecordId: returnQr.id },
     ];
 
     for (const relation of desired) {
-      await prisma.qmsRelation.create({
-        data: {
-          sourceRecordId: relation.sourceRecordId,
-          targetRecordId: relation.targetRecordId,
-          relationType: relation.relationType,
-          createdByText: "CI B3",
-          notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-        },
-      });
+      await createQmsRelation(prisma, { ...relation, createdByText: "CI B3" });
     }
+    await createQmsRelation(prisma, { ...desired[0], createdByText: "CI B3 duplicado" });
+
+    const capaOrigins = await getIncomingRelations(prisma, deviationCapaQr.id);
+    assert.equal(capaOrigins.length, 1);
+    assert.equal(capaOrigins[0].sourceRecord.recordType, QmsRecordType.DEVIATION);
+    const complaintDerived = await getOutgoingRelations(prisma, complaintQr.id);
+    assert.deepEqual(
+      complaintDerived.map((relation) => relation.targetRecord.recordType).sort(),
+      [QmsRecordType.CAPA, QmsRecordType.RETURN].sort(),
+    );
 
     const deviation = await prisma.deviation.findFirstOrThrow({
       where: { qmsRecordId: deviationQr.id },
@@ -213,7 +234,7 @@ async function main() {
         OR: desired.map((relation) => ({
           sourceRecordId: relation.sourceRecordId,
           targetRecordId: relation.targetRecordId,
-          relationType: relation.relationType,
+          relationType: "GENERATES" as const,
         })),
       },
     });

@@ -6,11 +6,13 @@ import {
   ChangeTaskOrigin,
   Prisma,
   QmsRecordType,
+  QmsRelationType,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
+import { createQmsRelation } from "@/lib/qms/relation-service";
 import { parseChangeControlForm } from "@/modules/change-control/validation";
 import type {
   ChangeControlFormState,
@@ -656,34 +658,38 @@ export async function addChangeControlFollowupAction(id: string, _state: Followu
 
 export async function addChangeControlRelationAction(id: string, formData: FormData) {
   const change = await prisma.changeControl.findUnique({ where: { id } });
-  if (!change) throw new Error("Control de Cambio no encontrado.");
+  if (!change) {
+    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("Control de Cambio no encontrado.")}`);
+  }
   const businessCode = String(formData.get("businessCode") ?? "").trim();
   const relationType = String(formData.get("relationType") ?? "RELATED_TO");
   const actor = String(formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo").trim();
-  const allowed = ["GENERATES", "RELATED_TO", "IMPLEMENTED_BY", "ASSOCIATED_WITH"];
-  if (!businessCode || !allowed.includes(relationType)) throw new Error("Relación incompleta.");
+  const relationTypes = Object.values(QmsRelationType) as string[];
+  if (!businessCode || !relationTypes.includes(relationType)) {
+    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("Relación incompleta.")}`);
+  }
 
   const target = await prisma.qmsRecord.findFirst({
     where: { businessCode, id: { not: change.qmsRecordId } },
   });
-  if (!target) throw new Error("No existe un expediente con esa codificación.");
+  if (!target) {
+    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("No existe un expediente con esa codificación.")}`);
+  }
 
-  await prisma.qmsRelation.upsert({
-    where: {
-      sourceRecordId_targetRecordId_relationType: {
-        sourceRecordId: change.qmsRecordId,
-        targetRecordId: target.id,
-        relationType: relationType as "GENERATES" | "RELATED_TO" | "IMPLEMENTED_BY" | "ASSOCIATED_WITH",
-      },
-    },
-    update: { isActive: true, createdByText: actor },
-    create: {
+  try {
+    await createQmsRelation(prisma, {
       sourceRecordId: change.qmsRecordId,
       targetRecordId: target.id,
-      relationType: relationType as "GENERATES" | "RELATED_TO" | "IMPLEMENTED_BY" | "ASSOCIATED_WITH",
+      relationType: relationType as QmsRelationType,
       createdByText: actor,
-    },
-  });
+    });
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "No se ha podido crear la relación QMS.";
+    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent(message)}`);
+  }
 
   revalidatePath(`/changes/${id}`);
+  redirect(`/changes/${id}?tab=relations`);
 }

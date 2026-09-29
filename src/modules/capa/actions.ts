@@ -6,11 +6,10 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import {
-  allowedOperationalRelationTypes,
-  canonicalOperationalRelation,
-  operationalRelationLabel,
+  allowedIncomingRelationTypes,
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
+import { createQmsRelation } from "@/lib/qms/relation-service";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -72,7 +71,7 @@ async function relatePrimaryOrigin(
 ) {
   if (!originCode) return;
 
-  const allowedTypes = allowedOperationalRelationTypes(QmsRecordType.CAPA);
+  const allowedTypes = allowedIncomingRelationTypes(QmsRecordType.CAPA);
   const matches = await tx.qmsRecord.findMany({
     where: {
       businessCode: originCode.trim(),
@@ -84,31 +83,10 @@ async function relatePrimaryOrigin(
   if (!matches.length) return;
 
   const origin = selectOperationalRelationTarget(QmsRecordType.CAPA, matches);
-  const relation = canonicalOperationalRelation(
-    { id: capaRecordId, recordType: QmsRecordType.CAPA, businessCode: null },
-    origin,
-  );
-
-  await tx.qmsRelation.upsert({
-    where: {
-      sourceRecordId_targetRecordId_relationType: {
-        sourceRecordId: relation.sourceRecordId,
-        targetRecordId: relation.targetRecordId,
-        relationType: relation.relationType,
-      },
-    },
-    update: {
-      isActive: true,
-      createdByText: actor,
-      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-    },
-    create: {
-      sourceRecordId: relation.sourceRecordId,
-      targetRecordId: relation.targetRecordId,
-      relationType: relation.relationType,
-      createdByText: actor,
-      notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-    },
+  await createQmsRelation(tx, {
+    sourceRecordId: origin.id,
+    targetRecordId: capaRecordId,
+    createdByText: actor,
   });
 }
 
@@ -230,22 +208,11 @@ export async function createCapaAction(
               proposalStatus: "REGISTERED",
             },
           });
-          await tx.qmsRelation.upsert({
-            where: {
-              sourceRecordId_targetRecordId_relationType: {
-                sourceRecordId: plan.deviation.qmsRecordId,
-                targetRecordId: qmsRecord.id,
-                relationType: "GENERATES",
-              },
-            },
-            update: { isActive: true, createdByText: parsed.actor },
-            create: {
-              sourceRecordId: plan.deviation.qmsRecordId,
-              targetRecordId: qmsRecord.id,
-              relationType: "GENERATES",
-              createdByText: parsed.actor,
-              notes: "CAPA creada desde la propuesta registrada en la desviación.",
-            },
+          await createQmsRelation(tx, {
+            sourceRecordId: plan.deviation.qmsRecordId,
+            targetRecordId: qmsRecord.id,
+            createdByText: parsed.actor,
+            notes: "CAPA creada desde la propuesta registrada en la desviación.",
           });
         }
       }
@@ -255,22 +222,11 @@ export async function createCapaAction(
           select: { qmsRecordId: true },
         });
         if (complaint) {
-          await tx.qmsRelation.upsert({
-            where: {
-              sourceRecordId_targetRecordId_relationType: {
-                sourceRecordId: complaint.qmsRecordId,
-                targetRecordId: qmsRecord.id,
-                relationType: "GENERATES",
-              },
-            },
-            update: { isActive: true, createdByText: parsed.actor },
-            create: {
-              sourceRecordId: complaint.qmsRecordId,
-              targetRecordId: qmsRecord.id,
-              relationType: "GENERATES",
-              createdByText: parsed.actor,
-              notes: "CAPA creada directamente desde una reclamación.",
-            },
+          await createQmsRelation(tx, {
+            sourceRecordId: complaint.qmsRecordId,
+            targetRecordId: qmsRecord.id,
+            createdByText: parsed.actor,
+            notes: "CAPA creada directamente desde una reclamación.",
           });
         }
       }
@@ -288,22 +244,11 @@ export async function createCapaAction(
               proposalStatus: "REGISTERED",
             },
           });
-          await tx.qmsRelation.upsert({
-            where: {
-              sourceRecordId_targetRecordId_relationType: {
-                sourceRecordId: plan.complaint.qmsRecordId,
-                targetRecordId: qmsRecord.id,
-                relationType: "GENERATES",
-              },
-            },
-            update: { isActive: true, createdByText: parsed.actor },
-            create: {
-              sourceRecordId: plan.complaint.qmsRecordId,
-              targetRecordId: qmsRecord.id,
-              relationType: "GENERATES",
-              createdByText: parsed.actor,
-              notes: "CAPA creada desde la propuesta registrada en la reclamación.",
-            },
+          await createQmsRelation(tx, {
+            sourceRecordId: plan.complaint.qmsRecordId,
+            targetRecordId: qmsRecord.id,
+            createdByText: parsed.actor,
+            notes: "CAPA creada desde la propuesta registrada en la reclamación.",
           });
         }
       }
@@ -671,7 +616,7 @@ export async function addCapaRelationAction(
       "Usuario demo";
     if (!code) return { error: "Debe indicarse la codificación del expediente de origen." };
 
-    const allowedTypes = allowedOperationalRelationTypes(QmsRecordType.CAPA);
+    const allowedTypes = allowedIncomingRelationTypes(QmsRecordType.CAPA);
     if (!allowedTypes.includes(requestedType)) {
       return { error: "Una CAPA solo puede tener como origen una Desviación o una Reclamación." };
     }
@@ -685,31 +630,10 @@ export async function addCapaRelationAction(
       select: { id: true, recordType: true, businessCode: true },
     });
     const origin = selectOperationalRelationTarget(QmsRecordType.CAPA, matches);
-    const relation = canonicalOperationalRelation(
-      { id: capa.qmsRecordId, recordType: QmsRecordType.CAPA, businessCode: null },
-      origin,
-    );
-
-    await prisma.qmsRelation.upsert({
-      where: {
-        sourceRecordId_targetRecordId_relationType: {
-          sourceRecordId: relation.sourceRecordId,
-          targetRecordId: relation.targetRecordId,
-          relationType: relation.relationType,
-        },
-      },
-      update: {
-        isActive: true,
-        createdByText: actor,
-        notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-      },
-      create: {
-        sourceRecordId: relation.sourceRecordId,
-        targetRecordId: relation.targetRecordId,
-        relationType: relation.relationType,
-        createdByText: actor,
-        notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-      },
+    await createQmsRelation(prisma, {
+      sourceRecordId: origin.id,
+      targetRecordId: capa.qmsRecordId,
+      createdByText: actor,
     });
 
     revalidatePath("/capa");

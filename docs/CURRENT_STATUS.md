@@ -1,6 +1,6 @@
 # Estado actual
 
-Fecha: 2026-09-28.
+Fecha: 2026-09-29.
 
 ## Hitos completados
 - Hito 0 — Especificación y arquitectura.
@@ -372,3 +372,28 @@ Cambios:
 
 Nota GMP:
 GC-00/027/03 se configura únicamente como versión candidata para esta fase de prueba porque el usuario ha indicado que todavía no está formalmente en vigor. Su activación productiva deberá coincidir con la entrada en vigor documental correspondiente.
+
+
+## Hito 10.8C3-B1 — Modelo y reglas transversales de relaciones QMS
+Estado: **IMPLEMENTADO Y VALIDADO EN CI**.
+
+Infraestructura común:
+- matriz direccional única para Desviación → CAPA, Reclamación → CAPA y Reclamación → Devolución;
+- validación de ambos extremos como IDs reales de `QmsRecord`;
+- creación idempotente mediante la unicidad `(sourceRecordId, targetRecordId, relationType)`;
+- reactivación de una relación desactivada sin crear otra fila;
+- consultas comunes de relaciones salientes y entrantes para derivar la vista inversa;
+- errores funcionales para combinaciones inválidas, autorrelaciones e IDs inexistentes;
+- escritura centralizada desde Desviaciones, CAPA, Reclamaciones, Devoluciones y carga DEMO;
+- Control de Cambios excluido de las nuevas relaciones operativas.
+
+No se modifica el versionado funcional, anexos, plantillas ni generadores documentales.
+
+Validación:
+- PostgreSQL 16, esquema, seed y dataset DEMO;
+- auditoría histórica: 0 relaciones incompatibles detectadas en el dataset de CI;
+- smoke transversal de relaciones y smoke tests acumulados;
+- Prisma validate/generate;
+- 75 tests unitarios;
+- lint sin avisos;
+- build Next.js de producción.

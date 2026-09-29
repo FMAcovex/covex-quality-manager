@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { QmsRecordType } from "@prisma/client";
+import { QmsRecordType, QmsRelationType } from "@prisma/client";
 import {
-  allowedOperationalRelationTypes,
+  allowedIncomingRelationTypes,
+  allowedOutgoingRelationTypes,
+  canRelate,
   canonicalOperationalRelation,
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
@@ -12,82 +14,75 @@ const rec = (id: string, recordType: QmsRecordType, businessCode: string) => ({
   businessCode,
 });
 
-describe("Hito 10.8C3-B1 operational relation rules", () => {
-  it("allows Deviation -> CAPA", () => {
-    const relation = canonicalOperationalRelation(
-      rec("d1", QmsRecordType.DEVIATION, "D/1"),
-      rec("c1", QmsRecordType.CAPA, "AC/1"),
-    );
-    expect(relation).toMatchObject({
-      sourceRecordId: "d1",
-      targetRecordId: "c1",
-      relationType: "GENERATES",
+describe("Hito 10.8C3-B1: reglas direccionales QMS", () => {
+  it.each([
+    [QmsRecordType.DEVIATION, QmsRecordType.CAPA],
+    [QmsRecordType.COMPLAINT, QmsRecordType.CAPA],
+    [QmsRecordType.COMPLAINT, QmsRecordType.RETURN],
+  ])("permite %s -> %s con GENERATES", (sourceType, targetType) => {
+    expect(canRelate(sourceType, targetType, QmsRelationType.GENERATES)).toBe(true);
+    expect(
+      canonicalOperationalRelation(
+        rec("source", sourceType, "SOURCE/1"),
+        rec("target", targetType, "TARGET/1"),
+      ),
+    ).toMatchObject({
+      sourceRecordId: "source",
+      targetRecordId: "target",
+      relationType: QmsRelationType.GENERATES,
     });
   });
 
-  it("normalizes CAPA -> Deviation to Deviation -> CAPA", () => {
-    const relation = canonicalOperationalRelation(
-      rec("c1", QmsRecordType.CAPA, "AC/1"),
-      rec("d1", QmsRecordType.DEVIATION, "D/1"),
-    );
-    expect(relation).toMatchObject({
-      sourceRecordId: "d1",
-      targetRecordId: "c1",
-      relationType: "GENERATES",
-    });
-  });
-
-  it("allows Complaint -> CAPA and inverse lookup", () => {
-    expect(
-      canonicalOperationalRelation(
-        rec("r1", QmsRecordType.COMPLAINT, "R/1"),
-        rec("c1", QmsRecordType.CAPA, "AC/1"),
-      ),
-    ).toMatchObject({ sourceRecordId: "r1", targetRecordId: "c1" });
-
-    expect(
-      canonicalOperationalRelation(
-        rec("c1", QmsRecordType.CAPA, "AC/1"),
-        rec("r1", QmsRecordType.COMPLAINT, "R/1"),
-      ),
-    ).toMatchObject({ sourceRecordId: "r1", targetRecordId: "c1" });
-  });
-
-  it("allows Complaint -> Return and inverse lookup", () => {
-    expect(
-      canonicalOperationalRelation(
-        rec("r1", QmsRecordType.COMPLAINT, "R/1"),
-        rec("v1", QmsRecordType.RETURN, "DEV/1"),
-      ),
-    ).toMatchObject({ sourceRecordId: "r1", targetRecordId: "v1" });
-
-    expect(
-      canonicalOperationalRelation(
-        rec("v1", QmsRecordType.RETURN, "DEV/1"),
-        rec("r1", QmsRecordType.COMPLAINT, "R/1"),
-      ),
-    ).toMatchObject({ sourceRecordId: "r1", targetRecordId: "v1" });
-  });
-
-  it("rejects invalid operational combinations", () => {
+  it.each([
+    [QmsRecordType.CAPA, QmsRecordType.DEVIATION],
+    [QmsRecordType.RETURN, QmsRecordType.CAPA],
+    [QmsRecordType.RETURN, QmsRecordType.DEVIATION],
+    [QmsRecordType.DEVIATION, QmsRecordType.RETURN],
+    [QmsRecordType.CAPA, QmsRecordType.RETURN],
+    [QmsRecordType.CHANGE_CONTROL, QmsRecordType.CAPA],
+  ])("bloquea %s -> %s", (sourceType, targetType) => {
+    expect(canRelate(sourceType, targetType, QmsRelationType.GENERATES)).toBe(false);
     expect(() =>
       canonicalOperationalRelation(
-        rec("d1", QmsRecordType.DEVIATION, "D/1"),
-        rec("r1", QmsRecordType.COMPLAINT, "R/1"),
+        rec("source", sourceType, "SOURCE/1"),
+        rec("target", targetType, "TARGET/1"),
       ),
-    ).toThrow();
-
-    expect(() =>
-      canonicalOperationalRelation(
-        rec("c1", QmsRecordType.CAPA, "AC/1"),
-        rec("v1", QmsRecordType.RETURN, "DEV/1"),
-      ),
-    ).toThrow();
-
-    expect(allowedOperationalRelationTypes(QmsRecordType.CHANGE_CONTROL)).toEqual([]);
+    ).toThrow(/Relación no permitida/);
   });
 
-  it("rejects ambiguous code resolution", () => {
+  it("bloquea cualquier tipo distinto de GENERATES", () => {
+    expect(
+      canRelate(
+        QmsRecordType.DEVIATION,
+        QmsRecordType.CAPA,
+        QmsRelationType.RELATED_TO,
+      ),
+    ).toBe(false);
+  });
+
+  it("bloquea una relación del expediente consigo mismo", () => {
+    expect(() =>
+      canonicalOperationalRelation(
+        rec("same", QmsRecordType.DEVIATION, "D/1"),
+        rec("same", QmsRecordType.CAPA, "AC/1"),
+      ),
+    ).toThrow("Un expediente no puede relacionarse consigo mismo.");
+  });
+
+  it("expone por separado destinos y orígenes permitidos", () => {
+    expect(allowedOutgoingRelationTypes(QmsRecordType.COMPLAINT)).toEqual([
+      QmsRecordType.CAPA,
+      QmsRecordType.RETURN,
+    ]);
+    expect(allowedIncomingRelationTypes(QmsRecordType.CAPA)).toEqual([
+      QmsRecordType.DEVIATION,
+      QmsRecordType.COMPLAINT,
+    ]);
+    expect(allowedOutgoingRelationTypes(QmsRecordType.CHANGE_CONTROL)).toEqual([]);
+    expect(allowedIncomingRelationTypes(QmsRecordType.CHANGE_CONTROL)).toEqual([]);
+  });
+
+  it("rechaza una codificación ambigua entre tipos compatibles", () => {
     expect(() =>
       selectOperationalRelationTarget(QmsRecordType.COMPLAINT, [
         rec("c1", QmsRecordType.CAPA, "X/1"),
@@ -96,7 +91,7 @@ describe("Hito 10.8C3-B1 operational relation rules", () => {
     ).toThrow(/más de un tipo/);
   });
 
-  it("ignores non-compatible records when resolving a code", () => {
+  it("ignora registros no compatibles al resolver una codificación", () => {
     const target = selectOperationalRelationTarget(QmsRecordType.DEVIATION, [
       rec("r1", QmsRecordType.COMPLAINT, "AC/1"),
       rec("c1", QmsRecordType.CAPA, "AC/1"),

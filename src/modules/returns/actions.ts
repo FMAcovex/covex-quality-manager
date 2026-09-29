@@ -7,11 +7,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import {
-  allowedOperationalRelationTypes,
-  canonicalOperationalRelation,
-  operationalRelationLabel,
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
+import { createQmsRelation } from "@/lib/qms/relation-service";
 import { parseReturnForm } from "@/modules/returns/validation";
 import type { ReturnFormState } from "@/modules/returns/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -73,10 +71,11 @@ export async function createReturnAction(_s:ReturnFormState,fd:FormData):Promise
    if(v.fromComplaintId){
     const complaint=await tx.complaint.findUnique({where:{id:v.fromComplaintId}});
     if(complaint){
-     await tx.qmsRelation.upsert({
-      where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:complaint.qmsRecordId,targetRecordId:qr.id,relationType:"GENERATES"}},
-      update:{isActive:true,createdByText:parsed.actor,notes:"Devolución creada desde la reclamación."},
-      create:{sourceRecordId:complaint.qmsRecordId,targetRecordId:qr.id,relationType:"GENERATES",createdByText:parsed.actor,notes:"Devolución creada desde la reclamación."}
+     await createQmsRelation(tx,{
+      sourceRecordId:complaint.qmsRecordId,
+      targetRecordId:qr.id,
+      createdByText:parsed.actor,
+      notes:"Devolución creada desde la reclamación."
      });
     }
    }
@@ -135,14 +134,10 @@ export async function addReturnRelationAction(
    select:{id:true,recordType:true,businessCode:true}
   });
   const origin=selectOperationalRelationTarget(QmsRecordType.RETURN,matches);
-  const relation=canonicalOperationalRelation(
-   {id:rec.qmsRecordId,recordType:QmsRecordType.RETURN,businessCode:null},
-   origin
-  );
-  await prisma.qmsRelation.upsert({
-   where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType}},
-   update:{isActive:true,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)},
-   create:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)}
+  await createQmsRelation(prisma,{
+   sourceRecordId:origin.id,
+   targetRecordId:rec.qmsRecordId,
+   createdByText:actor
   });
   revalidatePath("/returns");revalidatePath("/complaints");revalidatePath(`/returns/${id}`);
   return{error:null,success:"Reclamación de origen vinculada correctamente."};

@@ -8,11 +8,10 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import {
-  allowedOperationalRelationTypes,
-  canonicalOperationalRelation,
-  operationalRelationLabel,
+  allowedOutgoingRelationTypes,
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
+import { createQmsRelation } from "@/lib/qms/relation-service";
 import { parseComplaintForm } from "@/modules/complaints/validation";
 import type { ComplaintFormState } from "@/modules/complaints/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -142,7 +141,7 @@ export async function addComplaintRelationAction(
   const requestedType=String(fd.get("recordType")??"").trim() as QmsRecordType;
   if(!code)return{error:"Debe indicarse la codificación del expediente derivado."};
 
-  const allowedTypes=allowedOperationalRelationTypes(QmsRecordType.COMPLAINT);
+  const allowedTypes=allowedOutgoingRelationTypes(QmsRecordType.COMPLAINT);
   if(!allowedTypes.includes(requestedType)){
    return{error:"Una reclamación solo puede vincularse operativamente con CAPA o Devoluciones."};
   }
@@ -152,14 +151,10 @@ export async function addComplaintRelationAction(
    select:{id:true,recordType:true,businessCode:true}
   });
   const target=selectOperationalRelationTarget(QmsRecordType.COMPLAINT,matches);
-  const relation=canonicalOperationalRelation(
-   {id:rec.qmsRecordId,recordType:QmsRecordType.COMPLAINT,businessCode:null},
-   target
-  );
-  await prisma.qmsRelation.upsert({
-   where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType}},
-   update:{isActive:true,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)},
-   create:{sourceRecordId:relation.sourceRecordId,targetRecordId:relation.targetRecordId,relationType:relation.relationType,createdByText:actor,notes:operationalRelationLabel(relation.sourceType,relation.targetType)}
+  await createQmsRelation(prisma,{
+   sourceRecordId:rec.qmsRecordId,
+   targetRecordId:target.id,
+   createdByText:actor
   });
   revalidatePath("/complaints");revalidatePath("/capa");revalidatePath("/returns");revalidatePath(`/complaints/${id}`);
   return{error:null,success:requestedType===QmsRecordType.CAPA?"CAPA vinculada correctamente.":"Devolución vinculada correctamente."};

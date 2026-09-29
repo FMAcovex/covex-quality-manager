@@ -4,7 +4,7 @@ import { addReturnFollowupAction,addReturnRelationAction } from "@/modules/retur
 import { formatDate,productTypeLabel,returnDecisionLabel,returnStatusLabel,returnTypeLabel,tri } from "@/modules/returns/domain";
 import { getReturnDetail } from "@/modules/returns/queries";
 import { BasicFollowupForm } from "@/components/basic-followup-form";
-import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { qmsRecordHref } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 export const dynamic="force-dynamic";
 const tabs=[["summary","Resumen"],["checks","Comprobaciones"],["followups","Seguimientos"],["relations","Relaciones"],["documents","Documentos"],["history","Historial"]] as const;

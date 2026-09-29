@@ -52,10 +52,10 @@ export default async function ChangeControlDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; relationError?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, relationError } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "request";
   const [record, lookups] = await Promise.all([
     getChangeControlDetail(id),
@@ -376,6 +376,7 @@ export default async function ChangeControlDetailPage({
               ))}
             </div>
           ) : <div className="empty-panel">Sin expedientes relacionados.</div>}
+          {relationError ? <p className="form-error">{relationError}</p> : null}
           <form action={addChangeControlRelationAction.bind(null, id)} className="relation-form inline-form">
             <label className="field"><span>Codificación relacionada</span><input name="businessCode" required /></label>
             <label className="field"><span>Tipo de relación</span><select name="relationType"><option value="RELATED_TO">Relacionada</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implantada por</option><option value="ASSOCIATED_WITH">Asociada</option></select></label>

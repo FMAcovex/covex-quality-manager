@@ -4,7 +4,7 @@ import { addDeviationFollowupAction, addDeviationRelationAction } from "@/module
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
-import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { qmsRecordHref } from "@/lib/qms/record-links";
 import { BasicFollowupForm } from "@/components/basic-followup-form";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 

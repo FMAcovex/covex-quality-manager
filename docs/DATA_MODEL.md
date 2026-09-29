@@ -45,11 +45,21 @@ Tipos conceptuales iniciales:
 - IMPLEMENTED_BY;
 - ASSOCIATED_WITH.
 
+Regla operativa vigente de 10.8C3-B1: solo se crea `GENERATES` para
+Desviación → CAPA, Reclamación → CAPA y Reclamación → Devolución. Los demás
+valores del enum se conservan por compatibilidad del esquema, pero no están
+habilitados por la capa común de creación.
+
 Las relaciones direccionales se almacenan una sola vez en una dirección canónica. La interfaz deriva la etiqueta inversa cuando proceda. Ejemplo: si `Desviación GENERATES CAPA`, desde la CAPA se muestra `ORIGINATES_FROM Desviación` sin crear una segunda fila.
 
 Para relaciones simétricas como RELATED_TO, normalizar el orden de los UUID antes de guardar para impedir duplicados invertidos.
 
 No duplicar la misma relación exacta accidentalmente. Definir unicidad para `sourceRecordId + targetRecordId + relationType`; si una relación fue desactivada, reactivar la existente en lugar de insertar un duplicado.
+
+Toda escritura operativa pasa por el servicio común de relaciones, que resuelve
+ambos extremos contra `QmsRecord`, aplica la matriz direccional y utiliza la
+clave única anterior de forma idempotente. Las consultas inversas se realizan
+por `targetRecordId`; no generan una segunda fila.
 
 ## 3. Department
 

@@ -77,11 +77,15 @@ Las relaciones entre expedientes son multirrelación N:N.
 
 Se implementarán mediante una entidad común `QmsRecord` y `QmsRelation`, con claves foráneas reales. Esto permite:
 - una desviación -> varias CAPA;
-- una CAPA -> varias desviaciones;
-- reclamación -> varias desviaciones/CAPA/devoluciones;
-- expediente -> varios tipos de expedientes relacionados.
+- una reclamación -> varias CAPA;
+- una reclamación -> varias devoluciones;
+- una CAPA o devolución -> consultar sus expedientes de origen mediante la vista inversa.
 
-Cada relación se almacena una sola vez en dirección canónica; la vista inversa se deriva en la interfaz. Las relaciones simétricas se normalizan para evitar duplicados invertidos.
+En el bloque 10.8C3-B1 las únicas relaciones operativas autorizadas son
+`DEVIATION GENERATES CAPA`, `COMPLAINT GENERATES CAPA` y
+`COMPLAINT GENERATES RETURN`. Control de Cambios no participa todavía.
+
+Cada relación se almacena una sola vez en dirección canónica; la vista inversa se deriva en la interfaz. La capa común de relaciones valida los tipos de ambos `QmsRecord` y evita que los módulos creen combinaciones adicionales.
 
 ## D-019 — CAPA
 Las CAPA se vinculan formalmente a su/s expediente/s de origen. Una CAPA no es solo texto dentro de la desviación.
@@ -165,7 +169,7 @@ El Anexo VII conserva exclusivamente las columnas del formato oficial. El listad
 ## D-032 — Reclamaciones y Devoluciones como expedientes independientes
 Reclamaciones y Devoluciones reutilizan el patrón visual y operativo de Desviaciones, pero mantienen entidades, PNT y anexos propios.
 
-Una devolución puede derivar de una reclamación y viceversa, pero la vinculación se modela mediante QmsRelation y no mediante anidación o texto libre.
+Una devolución puede derivar de una reclamación. La vinculación se modela como una única `QmsRelation` Reclamación → Devolución; la devolución consulta la misma fila como relación de origen, sin almacenar otra relación inversa.
 
 ## D-033 — CAPA desde Reclamaciones
 Reclamaciones dispone de propuestas CAPA 1:N. Una propuesta puede crear un expediente CAPA real, actualizando la propuesta y generando una relación GENERATES.

@@ -186,7 +186,7 @@ Los Anexos V históricos se generan desde el snapshot exacto de la versión sele
 6. Registrar comunicación/respuesta.
 7. Evaluar eficacia si aplica.
 8. Cerrar con conclusión y fecha.
-9. Mantener relaciones con devolución, desviación, CAPA, cambio o retirada.
+9. Mantener relaciones Reclamación → CAPA y Reclamación → Devolución mediante la capa común QMS.
 
 Las CAPA propuestas pueden convertirse directamente en un expediente CAPA real conservando relación QMS.
 
@@ -200,7 +200,7 @@ Las CAPA propuestas pueden convertirse directamente en un expediente CAPA real c
 6. GC/DT decide Aceptada/Rechazada y destino final.
 7. Registrar destrucción/trazabilidad cuando corresponda.
 8. Cerrar el expediente.
-9. Relacionar con reclamación/desviación/CAPA/retirada cuando exista expediente origen o derivado.
+9. Consultar o vincular la Reclamación de origen mediante la única relación canónica Reclamación → Devolución.
 
 ## W-21 — Documentos de Reclamaciones y Devoluciones
 
