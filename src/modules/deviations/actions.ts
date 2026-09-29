@@ -10,6 +10,10 @@ import {
 } from "@/lib/qms/relation-rules";
 import { createQmsRelation } from "@/lib/qms/relation-service";
 import { parseDeviationForm } from "@/modules/deviations/validation";
+import {
+  deviationSaveMode,
+  deviationVersionKind,
+} from "@/modules/deviations/version-mode";
 import type { FormState } from "@/modules/deviations/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -202,8 +206,17 @@ export async function updateDeviationAction(
   formData: FormData,
 ): Promise<FormState> {
   const parsed = parseDeviationForm(formData);
+  const saveMode = deviationSaveMode(formData.get("saveMode"));
+  const versionReason = formData.get("changeReason")?.toString().trim() || "";
   if (parsed.errors.length) {
     return { error: "No se puede guardar el expediente.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues };
+  }
+  if (saveMode === "CREATE_VERSION" && !versionReason) {
+    return {
+      error: "No se puede generar la nueva versión.",
+      fieldErrors: ["Debe indicarse el motivo del seguimiento o de la nueva versión."],
+      fieldIssues: { changeReason: ["Debe indicarse el motivo del seguimiento o de la nueva versión."] },
+    };
   }
 
   const existing = await prisma.deviation.findUnique({
@@ -224,6 +237,7 @@ export async function updateDeviationAction(
 
   const v = parsed.values;
   const reopening = existing.status === "CLOSED" && v.status === "OPEN";
+  const versionKind = deviationVersionKind({ saveMode, reopening });
   if (reopening) {
     v.closedAt = null;
   }
@@ -328,7 +342,7 @@ export async function updateDeviationAction(
         existing.qmsRecordId,
         snapshotJson(serializeDeviationVersion(existing)),
         parsed.actor,
-        reopening ? "Estado anterior a la reapertura" : undefined,
+        versionKind ? "Estado anterior a la nueva versión" : undefined,
       );
 
       await tx.qmsRecord.update({
@@ -462,22 +476,25 @@ export async function updateDeviationAction(
         },
       });
       const versionSnapshot = snapshotJson(serializeDeviationVersion(updatedForVersion));
-      if (reopening) {
-        await startNextVersion(
+      if (versionKind) {
+        const newVersion = await startNextVersion(
           tx,
           existing.qmsRecordId,
-          "REOPENING",
+          versionKind,
           versionSnapshot,
           parsed.actor,
-          formData.get("changeReason")?.toString().trim() || "Reapertura de la desviación",
+          versionReason,
         );
         await tx.changeHistory.create({
           data: {
             qmsRecordId: existing.qmsRecordId,
             changedByText: parsed.actor,
             fieldPath: "__version__",
-            newValue: jsonValue({ kind: "REOPENING" }),
-            reason: formData.get("changeReason")?.toString().trim() || "Reapertura de la desviación",
+            newValue: jsonValue({
+              kind: versionKind,
+              sequenceNumber: newVersion.sequenceNumber,
+            }),
+            reason: versionReason,
             source: "UI",
           },
         });
@@ -487,7 +504,7 @@ export async function updateDeviationAction(
           existing.qmsRecordId,
           versionSnapshot,
           parsed.actor,
-          formData.get("changeReason")?.toString().trim() || null,
+          versionReason || null,
         );
       }
     });
