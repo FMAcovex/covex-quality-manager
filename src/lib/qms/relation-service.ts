@@ -40,7 +40,7 @@ async function getQmsRecord(
       `El expediente QMS de ${role} no existe o ya no está disponible.`,
     );
   }
-  if (!record.isActive) {
+  if (record.isActive === false) {
     throw new QmsRelationValidationError(
       `El expediente QMS de ${role} está anulado y no puede usarse para crear nuevas relaciones.`,
     );
