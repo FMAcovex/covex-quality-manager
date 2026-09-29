@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 
 export type ChangeControlExportFilters = {
   q?: string;
+  administrative?: string;
   year?: string;
   department?: string;
   classification?: string;
@@ -14,6 +15,8 @@ export type ChangeControlExportFilters = {
 
 export async function getChangeControlExportRows(filters: ChangeControlExportFilters) {
   const and: Prisma.ChangeControlWhereInput[] = [];
+  if (filters.administrative === "ANNULLED") and.push({ qmsRecord: { isActive: false } });
+  else if (filters.administrative !== "ALL") and.push({ qmsRecord: { isActive: true } });
   if (filters.q) {
     and.push({
       OR: [
