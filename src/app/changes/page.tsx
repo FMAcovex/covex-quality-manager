@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 import { ColumnSelector } from "@/components/column-selector";
@@ -90,7 +91,25 @@ export default async function ChangeControlPage({
           <div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/changes">Limpiar</Link></div>
         </div>
         <div className="search-row">
-          <input name="q" defaultValue={filters.q ?? ""} placeholder="Buscar código, descripción, solicitante, tarea u observaciones…" />
+          <SearchAutocomplete
+            defaultValue={filters.q ?? ""}
+            placeholder="Buscar código, descripción, solicitante, tarea u observaciones…"
+            suggestions={rows.map((row) => ({
+              id: row.id,
+              href: `/changes/${row.id}`,
+              code: row.qmsRecord.businessCode ?? "Sin código",
+              title: row.description ?? "Sin descripción",
+              meta: [row.departmentCodeSnapshot, row.finalStatus === "OPEN" ? "Abierto" : "Cerrado"].filter(Boolean).join(" · "),
+              searchText: [
+                row.qmsRecord.businessCode,
+                row.description,
+                row.justification,
+                row.requesterName,
+                row.internalObservations,
+                ...row.tasks.map((task) => task.description),
+              ].filter(Boolean).join(" "),
+            }))}
+          />
           <button className="button" type="submit">Buscar</button>
         </div>
       </form>
