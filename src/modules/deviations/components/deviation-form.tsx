@@ -527,10 +527,11 @@ export function DeviationForm({
           <h2>Edición / nueva versión</h2>
           <p className="section-help">Campos propios de la modificación y del versionado. Se mantienen separados de los apartados A-L.</p>
           <div className="form-grid">
-            <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText} />
+            <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.modifiedByText ?? formDefaults.createdByText} />
             <TextArea
               label="Motivo del cambio / seguimiento"
               name="changeReason"
+              defaultValue={formDefaults.changeReason}
               help={`Obligatorio al generar ${deviationVersionLabel(currentVersionSequence + 1)}. Quedará asociado a la versión.`}
               issues={issues.changeReason}
             />
