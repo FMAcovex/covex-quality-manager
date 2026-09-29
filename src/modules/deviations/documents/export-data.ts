@@ -5,6 +5,8 @@ import type { DeviationListFilters } from "@/modules/deviations/queries";
 
 export function buildDeviationWhere(filters: DeviationListFilters): Prisma.DeviationWhereInput {
   const and: Prisma.DeviationWhereInput[] = [];
+  if (filters.administrative === "ANNULLED") and.push({ qmsRecord: { isActive: false } });
+  else if (filters.administrative !== "ALL") and.push({ qmsRecord: { isActive: true } });
   if (filters.q) and.push({ OR: [
     { qmsRecord: { businessCode: { contains: filters.q, mode: "insensitive" } } },
     { materialProcessAffected: { contains: filters.q, mode: "insensitive" } },
