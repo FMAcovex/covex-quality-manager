@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   capaPlanNavigation,
   capaProposalStatusLabel,
-} from "@/modules/deviations/capa-plan-ui";
+} from "@/modules/capa/proposal-ui";
 
-describe("Hito 10.8C3-B2.2: navegación de propuestas CAPA", () => {
+describe("Navegación compartida de propuestas CAPA", () => {
   it("ofrece crear CAPA únicamente a una propuesta pendiente", () => {
     expect(
       capaPlanNavigation({

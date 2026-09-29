@@ -9,7 +9,7 @@ import {
   getDeviationCapaPlanOrigin,
   registerDeviationCapaPlan,
 } from "../src/modules/capa/deviation-origin";
-import { capaPlanNavigation } from "../src/modules/deviations/capa-plan-ui";
+import { capaPlanNavigation } from "../src/modules/capa/proposal-ui";
 import { createQmsRelation } from "../src/lib/qms/relation-service";
 import { qmsRecordHref } from "../src/lib/qms/record-links";
 

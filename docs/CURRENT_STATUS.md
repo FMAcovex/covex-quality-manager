@@ -446,7 +446,7 @@ Se añade un smoke transversal con PostgreSQL real que comprueba:
 El smoke queda registrado como `pnpm b2-3:smoke` y se ejecuta en el workflow CI antes del smoke general de Hito 10.
 
 ## Hito 10.8C3-B3.1 — Flujo canónico Reclamación → CAPA
-Estado: **COMPLETADO Y VALIDADO EN CI — PR #42**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN MAIN (PR #42)**.
 
 Cambios limitados a backend:
 - una propuesta `ComplaintCapaPlan` en estado `PROPOSED` puede generar una única CAPA real;
@@ -459,4 +459,19 @@ Cambios limitados a backend:
 - la creación directa desde `fromComplaintId` usa también una única relación explícita y no duplica el intento mediante `originCode`;
 - las CAPA creadas manualmente sin origen explícito conservan el fallback existente por `originCode`.
 
-Se añaden pruebas unitarias del flujo canónico, reutilización bloqueada, cambio concurrente y creación directa. No se aborda todavía B3.2 (UX/navegación) ni B3.3 (prueba transversal).
+Se añaden pruebas unitarias del flujo canónico, reutilización bloqueada, cambio concurrente y creación directa.
+
+## Hito 10.8C3-B3.2 — UX y navegación Reclamación ↔ CAPA
+Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+
+Cambios de interfaz:
+- Reclamaciones y Desviaciones reutilizan una única lógica compartida de estados/navegación de propuestas CAPA;
+- una propuesta `PROPOSED` muestra `Pendiente` y ofrece `Crear CAPA`;
+- una propuesta `REGISTERED` muestra `Registrada`, su código y `Abrir CAPA`;
+- una propuesta `CANCELLED` muestra `Cancelada` y no ofrece crear otra CAPA;
+- el resumen de Reclamación usa tarjetas vinculadas coherentes con Desviaciones;
+- la navegación abre el expediente CAPA a través del resolver QMS;
+- la pestaña `Relaciones` sigue mostrando todas las relaciones reales Reclamación → CAPA/Devolución;
+- la vista CAPA → Reclamación de origen ya queda cubierta por la UX común introducida en B2.2.
+
+La lógica compartida conserva pruebas unitarias para los tres estados. No se aborda todavía B3.3.
