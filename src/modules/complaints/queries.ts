@@ -3,13 +3,16 @@ import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 export type ComplaintListFilters={
-  q?:string;year?:string;department?:string;type?:string;status?:string;classification?:string;effectiveness?:string;
+  q?:string;administrative?:string;year?:string;department?:string;type?:string;status?:string;classification?:string;effectiveness?:string;
 };
 
 export async function getComplaintList(filters:ComplaintListFilters){
  const and:Prisma.ComplaintWhereInput[]=[];
+ if(filters.administrative==="ANNULLED")and.push({qmsRecord:{isActive:false}});
+ else if(filters.administrative!=="ALL")and.push({qmsRecord:{isActive:true}});
  if(filters.q)and.push({OR:[
   {qmsRecord:{businessCode:{contains:filters.q,mode:"insensitive"}}},
+  {qmsRecord:{annulledBusinessCode:{contains:filters.q,mode:"insensitive"}}},
   {partyName:{contains:filters.q,mode:"insensitive"}},{reference:{contains:filters.q,mode:"insensitive"}},
   {lotReference:{contains:filters.q,mode:"insensitive"}},{description:{contains:filters.q,mode:"insensitive"}},
   {rootCause:{contains:filters.q,mode:"insensitive"}},{internalObservations:{contains:filters.q,mode:"insensitive"}},
