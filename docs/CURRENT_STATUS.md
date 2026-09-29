@@ -462,7 +462,7 @@ Cambios limitados a backend:
 Se añaden pruebas unitarias del flujo canónico, reutilización bloqueada, cambio concurrente y creación directa.
 
 ## Hito 10.8C3-B3.2 — UX y navegación Reclamación ↔ CAPA
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN MAIN (PR #43)**.
 
 Cambios de interfaz:
 - Reclamaciones y Desviaciones reutilizan una única lógica compartida de estados/navegación de propuestas CAPA;
@@ -474,4 +474,21 @@ Cambios de interfaz:
 - la pestaña `Relaciones` sigue mostrando todas las relaciones reales Reclamación → CAPA/Devolución;
 - la vista CAPA → Reclamación de origen ya queda cubierta por la UX común introducida en B2.2.
 
-La lógica compartida conserva pruebas unitarias para los tres estados. No se aborda todavía B3.3.
+La lógica compartida conserva pruebas unitarias para los tres estados.
+
+## Hito 10.8C3-B3.3 — Prueba transversal Reclamación → dos CAPA
+Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+
+Se añade un smoke transversal con PostgreSQL real que comprueba:
+- una Reclamación con dos propuestas CAPA independientes;
+- ambas propuestas comienzan en `PROPOSED`;
+- cada propuesta genera una CAPA distinta;
+- ambas propuestas terminan en `REGISTERED` con su `linkedCapaRecordId` y código CAPA;
+- existen exactamente dos `QmsRelation` `Reclamación → CAPA`;
+- reintentar la misma relación no crea filas duplicadas;
+- no existen relaciones inversas artificiales `CAPA → Reclamación`;
+- cada CAPA recupera la misma Reclamación como origen mediante la vista inversa;
+- la lógica compartida de navegación devuelve `Abrir CAPA` para ambas propuestas registradas;
+- los enlaces QMS de ida/vuelta resuelven el expediente correcto.
+
+El smoke queda registrado como `pnpm b3-3:smoke` y se ejecuta permanentemente en CI.
