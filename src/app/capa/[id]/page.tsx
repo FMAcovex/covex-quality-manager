@@ -11,6 +11,10 @@ import { getCapaDetail } from "@/modules/capa/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { CapaFollowupForm } from "@/modules/capa/components/capa-followup-form";
+import {
+  nextCapaFollowupSequence,
+  resolveCapaFollowupVersion,
+} from "@/modules/capa/followup-version-ui";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 
 export const dynamic = "force-dynamic";
@@ -46,18 +50,7 @@ export default async function CapaDetailPage({
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
-  const nextFollowupSequence =
-    Math.max(0, ...capa.followups.map((item) => item.sequenceNumber)) + 1;
-  const followupVersionsBySource = new Map(
-    capa.qmsRecord.versions
-      .filter((version) => version.kind === "FOLLOWUP" && version.sourceEntityId)
-      .map((version) => [version.sourceEntityId!, version]),
-  );
-  const followupVersionsBySequence = new Map(
-    capa.qmsRecord.versions
-      .filter((version) => version.kind === "FOLLOWUP")
-      .map((version) => [version.sequenceNumber, version]),
-  );
+  const nextFollowupSequence = nextCapaFollowupSequence(capa.followups);
 
   const origins = capa.qmsRecord.targetRelations
     .filter(
@@ -204,10 +197,10 @@ export default async function CapaDetailPage({
             {capa.followups.length ? (
               <div className="timeline">
                 {capa.followups.map((item) => {
-                  const version =
-                    followupVersionsBySource.get(item.id) ??
-                    followupVersionsBySequence.get(item.sequenceNumber) ??
-                    null;
+                  const version = resolveCapaFollowupVersion(
+                    capa.qmsRecord.versions,
+                    item,
+                  );
                   const summary = version
                     ? recordVersionSummary("CAPA", version.snapshot)
                     : null;
