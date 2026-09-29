@@ -73,6 +73,12 @@ export function parseDeviationForm(formData: FormData) {
   const issueDate = text(formData, "issueDate");
   const eventDateTime = text(formData, "eventDateTime");
   const whatHappened = text(formData, "whatHappened");
+  const whoInvolved = text(formData, "whoInvolved");
+  const whenHappened = text(formData, "whenHappened");
+  const whereHappened = text(formData, "whereHappened");
+  const howHappened = text(formData, "howHappened");
+  const detectedBy = text(formData, "detectedBy");
+  const materialProcessAffected = text(formData, "materialProcessAffected");
   const createdByText = text(formData, "createdByText");
   const modifiedByText = text(formData, "modifiedByText");
   const recordStatus = enumValue(status, text(formData, "status")) ?? "OPEN";
@@ -105,14 +111,25 @@ export function parseDeviationForm(formData: FormData) {
   if (eventDateTime && !validDateTime(eventDateTime)) {
     addIssue("eventDateTime", "La fecha/hora del evento no tiene un formato válido.");
   }
+  if (!eventDateTime) addIssue("eventDateTime", "La fecha/hora del evento es obligatoria.");
+  if (!detectedBy) addIssue("detectedBy", "Debe indicarse quién detectó la desviación.");
+  if (!materialProcessAffected) addIssue("materialProcessAffected", "La breve descripción del proceso/equipo/sistema afectado es obligatoria.");
   if (!whatHappened) addIssue("whatHappened", "La descripción objetiva de lo ocurrido es obligatoria.");
+  if (!whoInvolved) addIssue("whoInvolved", "Debe indicarse quién estuvo implicado y cuál fue su papel.");
+  if (!whenHappened) addIssue("whenHappened", "Debe indicarse cuándo ocurrió.");
+  if (!whereHappened) addIssue("whereHappened", "Debe indicarse dónde ocurrió.");
+  if (!howHappened) addIssue("howHappened", "Debe indicarse cómo se detectó o cómo ocurrió.");
   if (!createdByText) addIssue("createdByText", "Debe indicarse quién cumplimenta el registro.");
 
   const investigation = text(formData, "investigation");
+  const investigationConclusive = enumValue(triState, text(formData, "investigationConclusive"));
   const rootCause = text(formData, "rootCause");
   const deviationClassification = enumValue(classification, text(formData, "classification"));
   const conclusion = text(formData, "conclusion");
   const closedAt = text(formData, "closedAt");
+
+  if (!investigation) addIssue("investigation", "La investigación y sus conclusiones son obligatorias.");
+  if (!investigationConclusive) addIssue("investigationConclusive", "Debe indicarse si la investigación es concluyente o no concluyente.");
 
   if (closedAt && !validDate(closedAt)) {
     addIssue("closedAt", "La fecha de cierre no tiene un formato válido.");
@@ -162,9 +179,9 @@ export function parseDeviationForm(formData: FormData) {
       departmentId,
       issueDate,
       eventDateTime,
-      detectedBy: text(formData, "detectedBy"),
+      detectedBy,
       createdByText,
-      materialProcessAffected: text(formData, "materialProcessAffected"),
+      materialProcessAffected,
       provenance: text(formData, "provenance"),
       affectedDocumentation: text(formData, "affectedDocumentation"),
       processEquipmentSystem: text(formData, "processEquipmentSystem"),
@@ -182,12 +199,12 @@ export function parseDeviationForm(formData: FormData) {
       affectedEquipmentLine: text(formData, "affectedEquipmentLine"),
       otherOrigin: text(formData, "otherOrigin"),
       whatHappened,
-      whoInvolved: text(formData, "whoInvolved"),
-      whenHappened: text(formData, "whenHappened"),
-      whereHappened: text(formData, "whereHappened"),
-      howHappened: text(formData, "howHappened"),
+      whoInvolved,
+      whenHappened,
+      whereHappened,
+      howHappened,
       investigation,
-      investigationConclusive: enumValue(triState, text(formData, "investigationConclusive")),
+      investigationConclusive,
       investigationMethods: methods,
       rootCause,
       recurrentRootCause: enumValue(triState, text(formData, "recurrentRootCause")),
