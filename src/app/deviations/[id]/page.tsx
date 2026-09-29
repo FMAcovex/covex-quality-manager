@@ -505,9 +505,9 @@ export default async function DeviationDetailPage({
       ) : null}
 
       {activeTab === "documents" ? (
-        <div className="card">
+        <div className="card documents-card">
           <h2>Documentos</h2>
-          <dl className="info-grid">
+          <dl className="info-grid documents-info-grid">
             <div className="info-item"><dt>Versión formulario</dt><dd>{deviation.formVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado de la versión vigente</dt><dd>{currentVersion ? `${versionLabel(currentVersion.sequenceNumber)} · ${currentSignedDocument ? "Disponible" : "No cargado"}` : "Sin versión"}</dd></div>
@@ -532,9 +532,11 @@ export default async function DeviationDetailPage({
               <h3>Generaciones registradas</h3>
               <div className="timeline">
                 {deviation.qmsRecord.generatedDocuments.map((document) => (
-                  <div className="timeline-item" key={document.id}>
-                    <strong>{document.documentType}</strong>
-                    <small className="muted-note"> · {formatDate(document.generatedAt)} · {document.generatedByText ?? "Usuario no informado"}</small>
+                  <div className="timeline-item document-generation-item" key={document.id}>
+                    <strong className="document-generation-type">{document.documentType}</strong>
+                    <small className="muted-note document-generation-meta">
+                      Generado {formatDate(document.generatedAt)} · {document.generatedByText ?? "Usuario no informado"}
+                    </small>
                   </div>
                 ))}
               </div>
@@ -547,7 +549,23 @@ export default async function DeviationDetailPage({
         <div className="card">
           <h2>Historial interno de modificaciones</h2>
           <p className="muted-note">Historial operativo de V1. No constituye un audit trail GMP validado.</p>
-          {deviation.qmsRecord.history.length ? <div className="timeline">{deviation.qmsRecord.history.map((event)=><div className="timeline-item" key={event.id}><header><strong>{formatDate(event.changedAt)}</strong><span>{event.changedByText ?? "Sistema"}</span><span className="badge neutral">{event.source}</span></header><p><strong>{event.fieldPath}</strong>{event.reason ? ` · Motivo: ${event.reason}` : ""}</p></div>)}</div> : <div className="empty-panel">Sin modificaciones registradas.</div>}
+          {deviation.qmsRecord.history.length ? (
+            <div className="timeline">
+              {deviation.qmsRecord.history.map((event) => (
+                <div className="timeline-item history-entry" key={event.id}>
+                  <header className="history-entry-header">
+                    <strong>{formatDate(event.changedAt)}</strong>
+                    <span>{event.changedByText ?? "Sistema"}</span>
+                    <span className="badge neutral">{event.source}</span>
+                  </header>
+                  <p className="history-entry-detail">
+                    <strong>{event.fieldPath}</strong>
+                    {event.reason ? <span> · Motivo: {event.reason}</span> : null}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
         </div>
       ) : null}
     </section>

@@ -1273,3 +1273,105 @@ button[disabled] {
     grid-column: auto;
   }
 }
+
+
+/* Ajuste UX — Documentos e Historial de Desviaciones */
+.documents-info-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.documents-card .info-item dt,
+.documents-card .info-item dd,
+.documents-card .document-block,
+.documents-card .document-block h3,
+.documents-card .document-block p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.documents-card .document-actions {
+  min-width: 0;
+}
+.documents-card .document-actions .button {
+  max-width: 100%;
+  height: auto;
+  min-height: 40px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  line-height: 1.3;
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.document-generation-item,
+.history-entry {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  padding: 14px 16px;
+}
+.document-generation-type {
+  display: block;
+  min-width: 0;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.document-generation-meta {
+  display: block;
+  min-width: 0;
+  margin-top: 5px;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.history-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+.history-entry-header > strong,
+.history-entry-header > span:not(.badge) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.history-entry-header .badge {
+  flex: 0 0 auto;
+}
+.history-entry-detail {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.history-entry-detail strong,
+.history-entry-detail span {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 1000px) {
+  .documents-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .documents-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .documents-card .document-grid {
+    grid-template-columns: 1fr;
+  }
+  .documents-card .document-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .documents-card .document-actions .button {
+    width: 100%;
+  }
+  .history-entry-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+}
