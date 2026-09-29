@@ -226,6 +226,10 @@ enum HistorySource {
   SYSTEM
 }
 
+enum ReminderStatus {
+  PREPARED
+}
+
 enum RecordVersionKind {
   INITIAL
   REOPENING
@@ -329,6 +333,7 @@ model QmsRecord {
   history            ChangeHistory[]
   versions           QmsRecordVersion[]
   generatedDocuments GeneratedDocument[]
+  reminders          ReminderLog[]
   linkedCapaPlans    DeviationCapaPlan[] @relation("LinkedCapaRecord")
   complaintLinkedCapaPlans ComplaintCapaPlan[] @relation("ComplaintLinkedCapaRecord")
   historicalImports  HistoricalImportRow[]
@@ -1310,4 +1315,24 @@ model HistoricalImportRow {
   @@index([businessCode])
   @@index([qmsRecordId])
   @@index([result])
+}
+
+
+model ReminderLog {
+  id             String         @id @default(uuid())
+  qmsRecordId    String
+  qmsRecord      QmsRecord      @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  batchId        String
+  channel        String         @default("EMAIL")
+  status         ReminderStatus @default(PREPARED)
+  recipients     String[]
+  ccRecipients   String[]
+  subject        String
+  message        String         @db.Text
+  createdByText  String?
+  createdAt      DateTime       @default(now())
+
+  @@index([qmsRecordId, createdAt])
+  @@index([batchId])
+  @@index([createdAt])
 }
