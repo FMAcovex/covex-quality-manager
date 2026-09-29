@@ -446,7 +446,7 @@ Se añade un smoke transversal con PostgreSQL real que comprueba:
 El smoke queda registrado como `pnpm b2-3:smoke` y se ejecuta en el workflow CI antes del smoke general de Hito 10.
 
 ## Hito 10.8C3-B3.1 — Flujo canónico Reclamación → CAPA
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO Y VALIDADO EN CI — PR #42**.
 
 Cambios limitados a backend:
 - una propuesta `ComplaintCapaPlan` en estado `PROPOSED` puede generar una única CAPA real;
