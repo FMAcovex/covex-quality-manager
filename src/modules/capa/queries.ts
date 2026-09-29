@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 
 export type CapaListFilters = {
   q?: string;
+  administrative?: string;
   year?: string;
   department?: string;
   type?: string;
@@ -16,10 +17,17 @@ export type CapaListFilters = {
 export async function getCapaList(filters: CapaListFilters) {
   const and: Prisma.CapaWhereInput[] = [];
 
+  if (filters.administrative === "ANNULLED") {
+    and.push({ qmsRecord: { isActive: false } });
+  } else if (filters.administrative !== "ALL") {
+    and.push({ qmsRecord: { isActive: true } });
+  }
+
   if (filters.q) {
     and.push({
       OR: [
         { qmsRecord: { businessCode: { contains: filters.q, mode: "insensitive" } } },
+        { qmsRecord: { annulledBusinessCode: { contains: filters.q, mode: "insensitive" } } },
         { originCode: { contains: filters.q, mode: "insensitive" } },
         { originType: { contains: filters.q, mode: "insensitive" } },
         { defectDescription: { contains: filters.q, mode: "insensitive" } },
