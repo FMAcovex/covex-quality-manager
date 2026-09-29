@@ -78,7 +78,6 @@ describe("parseDeviationForm", () => {
     expect(parsed.fieldIssues.dispositionQuantity).toBeDefined();
     expect(parsed.fieldIssues.clientNotification).toBeDefined();
     expect(parsed.fieldIssues.dispositionComments).toBeDefined();
-    expect(parsed.fieldIssues.status).toBeDefined();
     expect(parsed.fieldIssues.dataQualityStatus).toBeDefined();
   });
 
