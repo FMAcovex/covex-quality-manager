@@ -37,3 +37,16 @@ export type CapaFormDefaults = {
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";
   plannedActions?: CapaPlannedActionInput[];
 };
+
+
+export type CapaFollowupDefaults = {
+  status: "OPEN" | "CLOSED" | "CANCELLED";
+  operationalClosedAt?: string;
+  cancellationReason?: string;
+  conclusion?: string;
+  effectivenessStatus: "CONFORMING" | "NONCONFORMING" | "PENDING" | "NA";
+  effectivenessCriteria?: string;
+  effectivenessAssessment?: string;
+  effectivenessEvidence?: string;
+  effectiveClosedAt?: string;
+};

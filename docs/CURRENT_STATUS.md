@@ -521,7 +521,7 @@ Cambios de interfaz:
 - la Reclamación continúa mostrando sus Devoluciones derivadas sin duplicar relaciones.
 
 ## Hito 10.8C3-B4.3 — Prueba transversal Reclamación → dos Devoluciones
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN MAIN (PR #47)**.
 
 Se añade un smoke transversal con PostgreSQL real que comprueba:
 - una Reclamación que origina dos Devoluciones distintas;
@@ -536,3 +536,26 @@ Se añade un smoke transversal con PostgreSQL real que comprueba:
 - los enlaces QMS ida/vuelta resuelven el expediente correcto.
 
 El smoke queda registrado como `pnpm b4-3:smoke` y se ejecuta permanentemente en CI.
+
+## Hito 10.8C3-C1 — Flujo canónico de seguimiento y versión CAPA
+Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+
+Diagnóstico:
+- `QmsRecordVersion` ya soportaba correctamente V00 y V01/V02… por seguimiento;
+- el Anexo III histórico ya puede generarse desde cualquier snapshot persistido;
+- el formulario de seguimiento solo registraba texto, evidencia y próxima fecha;
+- para cambiar estado, cierre operativo o eficacia era necesario editar la CAPA por separado, lo que podía actualizar la versión vigente antes de crear el siguiente seguimiento.
+
+Cambios:
+- el seguimiento CAPA incorpora el estado que debe quedar vigente después del seguimiento;
+- puede registrar en la misma operación estado Abierta/Cerrada/Cancelada, cierre operativo y conclusión;
+- puede actualizar eficacia, criterio, valoración, evidencia y cierre efectivo;
+- las reglas de cierre ya documentadas se validan antes de persistir;
+- una CAPA que permanece abierta sigue requiriendo motivo y próxima fecha;
+- el cierre operativo requiere fecha, conclusión y evidencia de ejecución en el seguimiento actual o en uno anterior;
+- una cancelación requiere motivo;
+- el cierre efectivo requiere estado Cerrada, eficacia Conforme y valoración documentada;
+- seguimiento, actualización del expediente, historial y creación de V01/V02 se ejecutan en una única transacción;
+- no se añaden campos nuevos a Prisma: el estado histórico de cada seguimiento se conserva en el snapshot funcional `QmsRecordVersion`.
+
+Se añaden pruebas unitarias de las transiciones. No se aborda todavía C2 (presentación detallada del histórico/versiones) ni C3 (prueba transversal V00 → V01 → V02 y anexos históricos).
