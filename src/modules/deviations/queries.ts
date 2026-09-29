@@ -92,6 +92,12 @@ export async function getDeviationList(filters: DeviationListFilters) {
   }
 
   const where: Prisma.DeviationWhereInput = and.length ? { AND: and } : {};
+  const administrativeWhere: Prisma.DeviationWhereInput =
+    filters.administrative === "ANNULLED"
+      ? { qmsRecord: { isActive: false } }
+      : filters.administrative === "ALL"
+        ? {}
+        : { qmsRecord: { isActive: true } };
 
   const [rows, departments, yearRows, provenanceRows, total, open, overdue, followupDue] =
     await Promise.all([
@@ -124,11 +130,11 @@ export async function getDeviationList(filters: DeviationListFilters) {
         distinct: ["provenance"],
         orderBy: { provenance: "asc" },
       }),
-      prisma.deviation.count(),
-      prisma.deviation.count({ where: { status: "OPEN" } }),
-      prisma.deviation.count({ where: { status: "OPEN", deadlineStatus: "OUT_OF_TIME" } }),
+      prisma.deviation.count({ where: administrativeWhere }),
+      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
+      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN", deadlineStatus: "OUT_OF_TIME" }] } }),
       prisma.deviation.findMany({
-        where: { status: "OPEN" },
+        where: { AND: [administrativeWhere, { status: "OPEN" }] },
         select: {
           followups: {
             orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }],
