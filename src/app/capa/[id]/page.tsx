@@ -26,6 +26,12 @@ const tabs = [
   ["history", "Historial"],
 ] as const;
 
+function originRelationLabel(recordType: string) {
+  if (recordType === "DEVIATION") return "Desviación de origen";
+  if (recordType === "COMPLAINT") return "Reclamación de origen";
+  return "Expediente de origen";
+}
+
 export default async function CapaDetailPage({
   params,
   searchParams,
@@ -49,6 +55,7 @@ export default async function CapaDetailPage({
           item.sourceRecord.recordType === "COMPLAINT"),
     )
     .map((item) => item.sourceRecord);
+  const primaryOrigin = origins.length === 1 ? origins[0] : null;
 
   return (
     <section className="workspace">
@@ -100,7 +107,18 @@ export default async function CapaDetailPage({
               <div className="info-item"><dt>Tipo</dt><dd>{capaTypeLabel(capa.actionType)}</dd></div>
               <div className="info-item"><dt>Departamento</dt><dd>{capa.departmentCodeSnapshot ?? "—"} · {capa.departmentNameSnapshot ?? ""}</dd></div>
               <div className="info-item"><dt>Origen</dt><dd>{capa.originType ?? "—"}</dd></div>
-              <div className="info-item"><dt>Código origen</dt><dd>{capa.originCode ?? "—"}</dd></div>
+              <div className="info-item">
+                <dt>Código origen</dt>
+                <dd>
+                  {primaryOrigin ? (
+                    <Link href={qmsRecordHref(primaryOrigin.recordType, primaryOrigin.id)}>
+                      {capa.originCode ?? primaryOrigin.businessCode ?? qmsRecordTypeLabel(primaryOrigin.recordType)}
+                    </Link>
+                  ) : (
+                    capa.originCode ?? "—"
+                  )}
+                </dd>
+              </div>
               <div className="info-item full"><dt>Aplica a</dt><dd>{capa.applicableTo ?? "—"}</dd></div>
               <div className="info-item full"><dt>Descripción breve del defecto</dt><dd className="prose-value">{capa.defectDescription ?? "—"}</dd></div>
               <div className="info-item wide"><dt>Causa raíz</dt><dd className="prose-value">{capa.rootCause ?? "—"}</dd></div>
@@ -113,16 +131,16 @@ export default async function CapaDetailPage({
             </dl>
           </div>
           <div className="card">
-            <h2>Trazabilidad con el origen</h2>
+            <h2>Expediente de origen</h2>
             {origins.length ? (
               <div className="relation-list">
                 {origins.map((record) => (
                   <div className="relation-card" key={record.id}>
-                    <span>Origen</span>
+                    <span>{originRelationLabel(record.recordType)}</span>
                     <Link href={qmsRecordHref(record.recordType, record.id)}>
                       <strong>{record.businessCode ?? qmsRecordTypeLabel(record.recordType)}</strong>
                     </Link>
-                    <small>{qmsRecordTypeLabel(record.recordType)}</small>
+                    <small>El código abre el expediente de origen.</small>
                   </div>
                 ))}
               </div>
@@ -220,11 +238,11 @@ export default async function CapaDetailPage({
             <div className="relation-list">
               {origins.map((record) => (
                 <div className="relation-card" key={record.id}>
-                  <span>Origen</span>
+                  <span>{originRelationLabel(record.recordType)}</span>
                   <Link href={qmsRecordHref(record.recordType, record.id)}>
                     <strong>{record.businessCode ?? qmsRecordTypeLabel(record.recordType)}</strong>
                   </Link>
-                  <small>{qmsRecordTypeLabel(record.recordType)}</small>
+                  <small>Vista inversa de la relación QMS.</small>
                 </div>
               ))}
             </div>

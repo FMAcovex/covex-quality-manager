@@ -399,7 +399,7 @@ Validación:
 - build Next.js de producción.
 
 ## Hito 10.8C3-B2.1 — Flujo canónico Desviación → CAPA
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN MAIN (PR #39)**.
 
 Cambios limitados a backend:
 - una propuesta `DeviationCapaPlan` en estado `PROPOSED` puede generar una única CAPA real;
@@ -411,4 +411,19 @@ Cambios limitados a backend:
 - propuestas ya registradas o canceladas no pueden generar una CAPA adicional;
 - actualización de propuesta y creación de relación permanecen dentro de la misma transacción de alta de CAPA.
 
-No se aborda todavía B2.2 (UX/navegación) ni B2.3 (prueba transversal manual).
+B2.1 no incluye rediseño visual ni prueba transversal manual.
+
+## Hito 10.8C3-B2.2 — UX y navegación Desviación ↔ CAPA
+Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+
+Cambios de interfaz:
+- el resumen de Desviación muestra cada propuesta CAPA una sola vez;
+- una propuesta `PROPOSED` ofrece `Crear CAPA`;
+- una propuesta `REGISTERED` muestra su código y ofrece `Abrir CAPA`;
+- una propuesta `CANCELLED` no ofrece crear CAPA;
+- se elimina del resumen el bloque redundante adicional de CAPA vinculadas;
+- la pestaña `Relaciones` conserva la vista derivada desde `QmsRelation`;
+- en CAPA, el código de origen enlaza al expediente cuando existe un único origen QMS;
+- las tarjetas de origen identifican explícitamente `Desviación de origen` o `Reclamación de origen`.
+
+Se añaden pruebas unitarias para la lógica de navegación de propuestas. No se ejecuta todavía B2.3 (prueba transversal manual con dos propuestas y dos CAPA).

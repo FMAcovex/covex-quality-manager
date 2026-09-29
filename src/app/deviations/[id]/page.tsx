@@ -5,6 +5,10 @@ import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modul
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref } from "@/lib/qms/record-links";
+import {
+  capaPlanNavigation,
+  capaProposalStatusLabel,
+} from "@/modules/deviations/capa-plan-ui";
 import { BasicFollowupForm } from "@/components/basic-followup-form";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 
@@ -102,50 +106,49 @@ export default async function DeviationDetailPage({
             </dl>
           </div>
           <div className="card">
-            <h2>CAPA y expedientes relacionados</h2>
+            <h2>CAPA relacionadas</h2>
+            <p className="section-help">
+              Cada propuesta se muestra una sola vez. Cuando se registra como CAPA, el mismo bloque pasa a enlazar con el expediente real.
+            </p>
             {deviation.capaPlans.length ? (
               <div className="linked-record-grid">
-                {deviation.capaPlans.map((plan) => (
-                  <article className="linked-record-card" key={plan.id}>
-                    <div className="linked-record-main">
-                      <div className="linked-record-heading">
-                        <strong>{plan.actionType === "CORRECTIVE" ? "Correctiva" : "Preventiva"}</strong>
-                        <span className="badge neutral">{plan.proposalStatus}</span>
+                {deviation.capaPlans.map((plan) => {
+                  const navigation = capaPlanNavigation(plan);
+                  const capaCode =
+                    plan.businessCapaCode ??
+                    plan.linkedCapaRecord?.businessCode ??
+                    (plan.proposalStatus === "PROPOSED" ? "Pendiente" : "—");
+
+                  return (
+                    <article className="linked-record-card" key={plan.id}>
+                      <div className="linked-record-main">
+                        <div className="linked-record-heading">
+                          <strong>{plan.actionType === "CORRECTIVE" ? "Correctiva" : "Preventiva"}</strong>
+                          <span className="badge neutral">{capaProposalStatusLabel(plan.proposalStatus)}</span>
+                        </div>
+                        <p>{plan.description}</p>
+                        <dl className="linked-record-meta">
+                          <div><dt>Responsable</dt><dd>{text(plan.responsible)}</dd></div>
+                          <div><dt>Fecha prevista</dt><dd>{formatDate(plan.plannedExecutionDate)}</dd></div>
+                          <div><dt>Código CAPA</dt><dd>{capaCode}</dd></div>
+                        </dl>
                       </div>
-                      <p>{plan.description}</p>
-                      <dl className="linked-record-meta">
-                        <div><dt>Responsable</dt><dd>{text(plan.responsible)}</dd></div>
-                        <div><dt>Fecha prevista</dt><dd>{formatDate(plan.plannedExecutionDate)}</dd></div>
-                        <div><dt>Código CAPA</dt><dd>{plan.businessCapaCode ?? "Pendiente"}</dd></div>
-                      </dl>
-                    </div>
-                    <div className="linked-record-action">
-                      {plan.linkedCapaRecord ? (
-                        <Link className="button small" href={qmsRecordHref("CAPA", plan.linkedCapaRecord.id)}>Abrir CAPA</Link>
-                      ) : (
-                        <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
-                      )}
-                    </div>
-                  </article>
-                ))}
+                      <div className="linked-record-action">
+                        {navigation.kind === "OPEN" ? (
+                          <Link className="button small" href={qmsRecordHref("CAPA", navigation.recordId)}>Abrir CAPA</Link>
+                        ) : navigation.kind === "CREATE" ? (
+                          <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
+                        ) : (
+                          <span className="muted-note">
+                            {plan.proposalStatus === "CANCELLED" ? "Propuesta cancelada" : "Vínculo CAPA no disponible"}
+                          </span>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             ) : <div className="empty-panel">No hay CAPA propuestas.</div>}
-            {relatedCapas.length ? (
-              <>
-                <h3>CAPA vinculadas</h3>
-                <div className="relation-list">
-                  {relatedCapas.map((record) => (
-                    <div className="relation-card" key={record.id}>
-                      <span>Generada por esta desviación</span>
-                      <Link href={qmsRecordHref(record.recordType, record.id)}>
-                        <strong>{record.businessCode ?? "CAPA"}</strong>
-                      </Link>
-                      <small>CAPA</small>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : null}
           </div>
         </>
       ) : null}
