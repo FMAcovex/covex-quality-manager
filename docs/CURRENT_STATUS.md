@@ -509,7 +509,7 @@ Cambios limitados a backend:
 Se añaden pruebas unitarias para resolución de origen, origen inexistente, varias devoluciones por reclamación e idempotencia.
 
 ## Hito 10.8C3-B4.2 — UX y navegación Reclamación ↔ Devolución
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN MAIN (PR #46)**.
 
 Cambios de interfaz:
 - al crear una Devolución desde una Reclamación, el campo Tipo se muestra fijado a `Reclamación`;
@@ -520,4 +520,19 @@ Cambios de interfaz:
 - la pestaña `Relaciones` conserva la vista inversa derivada de la única `QmsRelation` Reclamación → Devolución;
 - la Reclamación continúa mostrando sus Devoluciones derivadas sin duplicar relaciones.
 
-No se aborda todavía B4.3 (prueba transversal).
+## Hito 10.8C3-B4.3 — Prueba transversal Reclamación → dos Devoluciones
+Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+
+Se añade un smoke transversal con PostgreSQL real que comprueba:
+- una Reclamación que origina dos Devoluciones distintas;
+- ambas Devoluciones conservan `returnType = COMPLAINT`;
+- ambas conservan como `relatedDocument` el código real de la Reclamación;
+- cada Devolución incluye producto ficticio propio para simular el flujo real;
+- existen exactamente dos `QmsRelation` Reclamación → Devolución;
+- reintentar la misma relación no crea filas duplicadas;
+- no existen relaciones inversas artificiales Devolución → Reclamación;
+- cada Devolución recupera la Reclamación como origen mediante la vista inversa;
+- la Reclamación recupera las dos Devoluciones como expedientes derivados;
+- los enlaces QMS ida/vuelta resuelven el expediente correcto.
+
+El smoke queda registrado como `pnpm b4-3:smoke` y se ejecuta permanentemente en CI.
