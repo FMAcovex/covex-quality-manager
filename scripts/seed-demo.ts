@@ -54,8 +54,9 @@ async function main() {
       departmentCodeSnapshot: department.code,
       departmentNameSnapshot: department.name,
       issueDate: new Date("2026-09-15"),
-      materialProcessAffected: "Lote demostración · acondicionamiento secundario",
+      materialProcessAffected: "Acondicionamiento secundario del lote demostración",
       provenance: "DOCUMENTATION",
+      finishedProductSystem: "Producto terminado demostración",
       whatHappened:
         "Caso ficticio: durante una comprobación de entrenamiento se detectó una discrepancia documental en una etiqueta simulada.",
       rootCause:
@@ -70,8 +71,9 @@ async function main() {
       departmentCodeSnapshot: department.code,
       departmentNameSnapshot: department.name,
       issueDate: new Date("2026-09-15"),
-      materialProcessAffected: "Lote demostración · acondicionamiento secundario",
+      materialProcessAffected: "Acondicionamiento secundario del lote demostración",
       provenance: "DOCUMENTATION",
+      finishedProductSystem: "Producto terminado demostración",
       whatHappened:
         "Caso ficticio: durante una comprobación de entrenamiento se detectó una discrepancia documental en una etiqueta simulada.",
       rootCause:
