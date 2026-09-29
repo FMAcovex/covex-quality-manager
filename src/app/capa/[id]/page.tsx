@@ -208,7 +208,21 @@ export default async function CapaDetailPage({
 
           <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
-            <CapaFollowupForm action={addCapaFollowupAction.bind(null, id)} defaultActor={capa.createdByText ?? ""} />
+            <CapaFollowupForm
+              action={addCapaFollowupAction.bind(null, id)}
+              defaultActor={capa.createdByText ?? ""}
+              defaults={{
+                status: capa.status,
+                operationalClosedAt: capa.operationalClosedAt?.toISOString().slice(0, 10) ?? "",
+                cancellationReason: capa.cancellationReason ?? "",
+                conclusion: capa.conclusion ?? "",
+                effectivenessStatus: capa.effectivenessStatus,
+                effectivenessCriteria: capa.effectivenessCriteria ?? "",
+                effectivenessAssessment: capa.effectivenessAssessment ?? "",
+                effectivenessEvidence: capa.effectivenessEvidence ?? "",
+                effectiveClosedAt: capa.effectiveClosedAt?.toISOString().slice(0, 10) ?? "",
+              }}
+            />
           </div>
         </>
       ) : null}
