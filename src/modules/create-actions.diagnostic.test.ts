@@ -3,6 +3,7 @@ import { PrismaClient, QmsRecordType } from "@prisma/client";
 
 const diagnostic = vi.hoisted(() => ({ causes: [] as unknown[] }));
 
+vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({
   redirect: (location: string) => {
