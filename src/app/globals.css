@@ -953,60 +953,78 @@ button[disabled] {
 .root-cause-card {
   border-left: 4px solid #8aaed6;
 }
-.action-record-list {
-  display: grid;
-  gap: 10px;
+.action-overview-table {
+  width: 100%;
+  min-width: 780px;
+  table-layout: fixed;
+  border-collapse: collapse;
 }
-.action-record {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: #fbfcfe;
-}
-.action-record-number {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #edf4fb;
-  color: var(--blue-dark);
-  font-size: 12px;
+.action-overview-table th {
+  padding: 9px 10px;
+  border-bottom: 1px solid #cfd9e6;
+  background: #f7f9fc;
+  color: #41536b;
+  font-size: 10px;
   font-weight: 800;
-}
-.action-record-body {
-  min-width: 0;
-  display: grid;
-  gap: 12px;
-}
-.action-record-description > span {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
+  text-align: left;
   text-transform: uppercase;
+  vertical-align: bottom;
 }
-.action-record-description p {
-  margin: 4px 0 0;
-  line-height: 1.5;
+.action-overview-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e3e9f0;
+  background: transparent;
+  line-height: 1.45;
+  vertical-align: top;
   overflow-wrap: anywhere;
 }
-.action-record-meta {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(140px, 1fr));
-  gap: 10px;
-  margin: 0;
+.action-overview-table tbody tr:last-child td {
+  border-bottom: 0;
 }
-.action-record-meta dt {
-  color: var(--muted);
-  font-size: 10px;
-  text-transform: uppercase;
+.action-overview-table tbody tr:hover td {
+  background: #f9fbfe;
 }
-.action-record-meta dd {
-  margin: 3px 0 0;
-  overflow-wrap: anywhere;
+.action-overview-table .action-number-cell {
+  width: 56px;
+  color: var(--blue-dark);
+  font-weight: 800;
+  text-align: center;
+}
+.action-overview-table .action-description-cell {
+  width: 42%;
+  white-space: normal;
+}
+.action-overview-table .action-link-cell {
+  width: 120px;
+  text-align: right;
+}
+.immediate-action-table th:first-child,
+.immediate-action-table td:first-child {
+  width: 56px;
+}
+.immediate-action-table th:nth-child(3),
+.immediate-action-table td:nth-child(3) {
+  width: 190px;
+}
+.immediate-action-table th:nth-child(4),
+.immediate-action-table td:nth-child(4) {
+  width: 160px;
+}
+.capa-action-table th:first-child:not(:last-child),
+.capa-action-table td:first-child:not(:last-child) {
+  width: 150px;
+}
+.capa-action-table th:nth-last-child(4),
+.capa-action-table td:nth-last-child(4) {
+  width: 145px;
+}
+.capa-action-table th:nth-last-child(3),
+.capa-action-table td:nth-last-child(3) {
+  width: 160px;
+}
+.capa-action-table th:nth-last-child(2),
+.capa-action-table td:nth-last-child(2) {
+  width: 115px;
 }
 .conclusion-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1018,8 +1036,7 @@ button[disabled] {
   .conclusion-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .related-capa-summary .linked-record-meta,
-  .action-record-meta {
+  .related-capa-summary .linked-record-meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1029,11 +1046,7 @@ button[disabled] {
   .origin-detail-grid,
   .description-detail-grid,
   .conclusion-grid,
-  .related-capa-summary .linked-record-meta,
-  .action-record-meta {
-    grid-template-columns: 1fr;
-  }
-  .action-record {
+  .related-capa-summary .linked-record-meta {
     grid-template-columns: 1fr;
   }
 }
