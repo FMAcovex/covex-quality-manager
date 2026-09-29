@@ -8,7 +8,7 @@ import { qmsRecordHref } from "@/lib/qms/record-links";
 import {
   capaPlanNavigation,
   capaProposalStatusLabel,
-} from "@/modules/deviations/capa-plan-ui";
+} from "@/modules/capa/proposal-ui";
 import { BasicFollowupForm } from "@/components/basic-followup-form";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 
