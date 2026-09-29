@@ -116,7 +116,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
     [record.departmentCodeSnapshot, record.departmentNameSnapshot].filter(Boolean).join(" - "),
   );
   xml = setWordCellText(xml, 0, 2, 3, record.recordVersionLabel ?? "V00");
-  xml = setWordCellText(xml, 0, 3, 1, value(record.processEquipmentSystem || record.materialProcessAffected));
+  xml = setWordCellText(xml, 0, 3, 1, value(record.materialProcessAffected || record.processEquipmentSystem));
   xml = setWordCellText(xml, 0, 5, 1, date(record.eventDateTime));
   xml = setWordCellText(xml, 0, 5, 2, time(record.eventDateTime));
   xml = setWordCellText(xml, 0, 4, 4, value(record.detectedBy));
