@@ -109,15 +109,25 @@ export function ManualReminderToolbar({
         ? `Recordatorio · ${selected[0]?.code ?? moduleLabel}`
         : `Recordatorio · ${moduleLabel} · ${selected.length} expedientes`;
 
+    const separator = "────────────────────────────────────────";
     const recordsText = selected
-      .map((record) => {
-        const detail = [record.status, record.meta].filter(Boolean).join(" · ");
+      .map((record, index) => {
         const lines = [
-          `• ${record.code}${detail ? ` · ${detail}` : ""}`,
-          record.summary ? `  ${record.summary}` : "",
-          record.href ? `  ${origin}${record.href}` : "",
-        ].filter(Boolean);
-        return lines.join("\n");
+          selected.length > 1 ? `${index + 1}. ${record.code}` : record.code,
+          record.status ? `Estado: ${record.status}` : "",
+          record.meta ? `Departamento / Área: ${record.meta}` : "",
+          record.summary ? "" : "",
+          record.summary ? "Descripción:" : "",
+          record.summary ? record.summary : "",
+          record.href ? "" : "",
+          record.href ? "Acceso al expediente:" : "",
+          record.href ? `${origin}${record.href}` : "",
+        ].filter((line, lineIndex, source) => {
+          if (line !== "") return true;
+          return lineIndex > 0 && source[lineIndex - 1] !== "";
+        });
+
+        return [separator, ...lines, separator].join("\n");
       })
       .join("\n\n");
 
@@ -125,12 +135,14 @@ export function ManualReminderToolbar({
       "Buenos días,",
       "",
       selected.length === 1
-        ? "Os envío un recordatorio sobre el siguiente expediente de Calidad:"
-        : "Os envío un recordatorio sobre los siguientes expedientes de Calidad:",
+        ? "Se envía un recordatorio de seguimiento sobre el siguiente expediente del Sistema de Calidad de COVEX:"
+        : "Se envía un recordatorio de seguimiento sobre los siguientes expedientes del Sistema de Calidad de COVEX:",
       "",
+      "EXPEDIENTES",
       recordsText,
       "",
-      "Por favor, revisad el estado y las acciones pendientes.",
+      "ACCIÓN SOLICITADA",
+      "Por favor, revisad el estado del expediente y actualizad o completad las acciones pendientes que correspondan.",
       "",
       "Gracias.",
     ].join("\n");
