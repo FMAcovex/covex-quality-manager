@@ -10,6 +10,8 @@ import {
   capaProposalStatusLabel,
 } from "@/modules/capa/proposal-ui";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
+import { uploadDeviationSignedPdfAction } from "@/modules/deviations/signed-document-actions";
+import { SignedVersionDocumentForm } from "@/modules/deviations/components/signed-version-document-form";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +88,7 @@ export default async function DeviationDetailPage({
 
   const code = deviation.qmsRecord.businessCode ?? "Sin codificación";
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
+  const currentSignedDocument = currentVersion?.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
   const relatedCapas = deviation.qmsRecord.sourceRelations
     .filter(
       (relation) =>
@@ -148,7 +151,7 @@ export default async function DeviationDetailPage({
               <div className="info-item"><dt>En plazo</dt><dd>{deadlineLabel(deviation.deadlineStatus)}</dd></div>
               <div className="info-item"><dt>Fecha de cierre</dt><dd>{formatDate(deviation.closedAt)}</dd></div>
               <div className="info-item"><dt>Medidas adoptadas</dt><dd>{measuresLabel(deviation)}</dd></div>
-              <div className="info-item"><dt>Documento firmado</dt><dd>{deviation.signedDocumentAvailable === true ? "Disponible" : deviation.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
+              <div className="info-item"><dt>Documento firmado</dt><dd>{currentVersion ? `${versionLabel(currentVersion.sequenceNumber)} · ${currentSignedDocument ? "Disponible" : "No cargado"}` : "Sin versión"}</dd></div>
               <div className="info-item"><dt>Calidad del dato</dt><dd>{dataQualityLabel(deviation.dataQualityStatus)}</dd></div>
               <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value">{text(deviation.internalObservations)}</dd></div>
             </dl>
@@ -445,11 +448,43 @@ export default async function DeviationDetailPage({
                     <small className="muted-note">
                       Registrada {formatDate(item.createdAt)} · {item.createdByText ?? "Sistema"}
                     </small>
-                    <div className="document-actions">
-                      <a className="button small" href={`/api/deviations/${id}/annex-iii?version=${item.sequenceNumber}`}>
-                        Descargar Anexo III {versionLabel(item.sequenceNumber)}
-                      </a>
-                    </div>
+                    {(() => {
+                      const signedDocument = item.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
+                      return (
+                        <>
+                          <div className="document-actions">
+                            <a className="button small" href={`/api/deviations/${id}/annex-iii?version=${item.sequenceNumber}`}>
+                              Descargar Anexo III {versionLabel(item.sequenceNumber)}
+                            </a>
+                            {signedDocument ? (
+                              <a
+                                className="button small"
+                                href={`/api/deviations/${id}/versions/${item.sequenceNumber}/signed-pdf`}
+                              >
+                                Descargar PDF firmado {versionLabel(item.sequenceNumber)}
+                              </a>
+                            ) : null}
+                          </div>
+                          <div className="version-signed-document">
+                            <strong>PDF firmado: {signedDocument ? "Disponible" : "No cargado"}</strong>
+                            {signedDocument ? (
+                              <small className="muted-note">
+                                {signedDocument.fileName} · {Math.max(1, Math.round(signedDocument.fileSize / 1024))} KB · cargado {formatDate(signedDocument.uploadedAt)} · {signedDocument.uploadedByText ?? "Usuario no informado"}
+                              </small>
+                            ) : (
+                              <small className="muted-note">
+                                Carga aquí el documento firmado correspondiente exclusivamente a {versionLabel(item.sequenceNumber)}.
+                              </small>
+                            )}
+                            <SignedVersionDocumentForm
+                              action={uploadDeviationSignedPdfAction.bind(null, id, item.id)}
+                              defaultActor={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+                              replace={Boolean(signedDocument)}
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
                   </article>
                 );
               })}
@@ -468,7 +503,7 @@ export default async function DeviationDetailPage({
           <dl className="info-grid">
             <div className="info-item"><dt>Versión formulario</dt><dd>{deviation.formVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
-            <div className="info-item"><dt>Documento firmado</dt><dd>{deviation.signedDocumentAvailable === true ? "Disponible" : deviation.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
+            <div className="info-item"><dt>Documento firmado de la versión vigente</dt><dd>{currentVersion ? `${versionLabel(currentVersion.sequenceNumber)} · ${currentSignedDocument ? "Disponible" : "No cargado"}` : "Sin versión"}</dd></div>
           </dl>
           <div className="document-grid">
             <div className="document-block">
