@@ -411,11 +411,11 @@ export default async function DeviationDetailPage({
 
       {activeTab === "versions" ? (
         <div className="card">
-          <div className="section-title-row">
-            <div>
+          <div className="section-title-row version-section-title-row">
+            <div className="section-title-copy">
               <h2>Versiones del expediente</h2>
-              <p className="muted-note">
-                Guardar cambios actualiza la versión vigente. Generar una nueva versión congela la anterior y crea el siguiente seguimiento completo.
+              <p className="muted-note version-section-help">
+                Guardar cambios mantiene la versión vigente. Crear una nueva versión conserva la versión anterior como histórica y genera la siguiente versión del expediente.
               </p>
             </div>
             {currentVersion ? <span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span> : null}
@@ -425,29 +425,36 @@ export default async function DeviationDetailPage({
               {deviation.qmsRecord.versions.map((item) => {
                 const summary = recordVersionSummary("DEVIATION", item.snapshot);
                 const kind =
-                  item.kind === "REOPENING"
-                    ? "Reapertura"
-                    : item.kind === "FOLLOWUP"
-                      ? "Seguimiento"
+                  item.sequenceNumber === 0
+                    ? "Versión inicial"
+                    : item.kind === "REOPENING"
+                      ? "Reapertura"
                       : item.kind === "HISTORICAL_STATE"
-                        ? "Baseline histórico"
-                        : "Versión inicial";
+                        ? "Estado histórico"
+                        : "Versión";
                 return (
-                  <article className="timeline-item" key={item.id}>
-                    <header>
+                  <article className="timeline-item record-version-item" key={item.id}>
+                    <header className="record-version-header">
                       <strong>{versionLabel(item.sequenceNumber)} · {kind}</strong>
                       <span className={`badge ${summary.status === "OPEN" ? "open" : "closed"}`}>
                         {summary.status === "OPEN" ? "Abierta" : "Cerrada"}
                       </span>
                       {item.frozenAt ? <span className="badge neutral">Histórica</span> : <span className="badge neutral">Vigente</span>}
                     </header>
-                    <p>
-                      Fecha de cierre de esta versión: {formatDate(summary.closedAt)}
-                      {item.reason ? ` · ${item.reason}` : ""}
-                    </p>
-                    <small className="muted-note">
-                      Registrada {formatDate(item.createdAt)} · {item.createdByText ?? "Sistema"}
-                    </small>
+                    <div className="record-version-details">
+                      <div className="record-version-detail">
+                        <span>Fecha de cierre de esta versión</span>
+                        <strong>{formatDate(summary.closedAt)}</strong>
+                      </div>
+                      <div className="record-version-detail">
+                        <span>Motivo de esta versión</span>
+                        <strong>{item.reason ?? "—"}</strong>
+                      </div>
+                      <div className="record-version-detail">
+                        <span>Registrada</span>
+                        <strong>{formatDate(item.createdAt)} · {item.createdByText ?? "Sistema"}</strong>
+                      </div>
+                    </div>
                     {(() => {
                       const signedDocument = item.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
                       return (
