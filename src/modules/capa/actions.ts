@@ -15,6 +15,13 @@ import {
   getDeviationCapaPlanOrigin,
   registerDeviationCapaPlan,
 } from "@/modules/capa/deviation-origin";
+import {
+  ComplaintCapaLinkError,
+  getComplaintCapaPlanOrigin,
+  getComplaintDirectOrigin,
+  registerComplaintCapaPlan,
+  registerComplaintDirectOrigin,
+} from "@/modules/capa/complaint-origin";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -122,13 +129,33 @@ export async function createCapaAction(
       const deviationOrigin = v.fromDeviationPlanId
         ? await getDeviationCapaPlanOrigin(tx, v.fromDeviationPlanId)
         : null;
+      const complaintPlanOrigin =
+        !deviationOrigin && v.fromComplaintPlanId
+          ? await getComplaintCapaPlanOrigin(tx, v.fromComplaintPlanId)
+          : null;
+      const complaintDirectOrigin =
+        !deviationOrigin && !complaintPlanOrigin && v.fromComplaintId
+          ? await getComplaintDirectOrigin(tx, v.fromComplaintId)
+          : null;
       const canonicalValues = deviationOrigin
         ? {
             ...v,
             originType: "Desviación",
             originCode: deviationOrigin.deviationBusinessCode,
           }
-        : v;
+        : complaintPlanOrigin
+          ? {
+              ...v,
+              originType: "Reclamación",
+              originCode: complaintPlanOrigin.complaintBusinessCode,
+            }
+          : complaintDirectOrigin
+            ? {
+                ...v,
+                originType: "Reclamación",
+                originCode: complaintDirectOrigin.complaintBusinessCode,
+              }
+            : v;
 
       const qmsRecord = await tx.qmsRecord.create({
         data: {
@@ -215,6 +242,19 @@ export async function createCapaAction(
           capaBusinessCode: v.businessCode!,
           actor: parsed.actor,
         });
+      } else if (complaintPlanOrigin) {
+        await registerComplaintCapaPlan(tx, {
+          planId: complaintPlanOrigin.planId,
+          capaQmsRecordId: qmsRecord.id,
+          capaBusinessCode: v.businessCode!,
+          actor: parsed.actor,
+        });
+      } else if (complaintDirectOrigin) {
+        await registerComplaintDirectOrigin(tx, {
+          complaintQmsRecordId: complaintDirectOrigin.complaintQmsRecordId,
+          capaQmsRecordId: qmsRecord.id,
+          actor: parsed.actor,
+        });
       } else {
         await relatePrimaryOrigin(
           tx,
@@ -223,47 +263,14 @@ export async function createCapaAction(
           parsed.actor,
         );
       }
-      if (v.fromComplaintId) {
-        const complaint = await tx.complaint.findUnique({
-          where: { id: v.fromComplaintId },
-          select: { qmsRecordId: true },
-        });
-        if (complaint) {
-          await createQmsRelation(tx, {
-            sourceRecordId: complaint.qmsRecordId,
-            targetRecordId: qmsRecord.id,
-            createdByText: parsed.actor,
-            notes: "CAPA creada directamente desde una reclamación.",
-          });
-        }
-      }
-      if (v.fromComplaintPlanId) {
-        const plan = await tx.complaintCapaPlan.findUnique({
-          where: { id: v.fromComplaintPlanId },
-          include: { complaint: true },
-        });
-        if (plan) {
-          await tx.complaintCapaPlan.update({
-            where: { id: plan.id },
-            data: {
-              linkedCapaRecordId: qmsRecord.id,
-              businessCapaCode: v.businessCode,
-              proposalStatus: "REGISTERED",
-            },
-          });
-          await createQmsRelation(tx, {
-            sourceRecordId: plan.complaint.qmsRecordId,
-            targetRecordId: qmsRecord.id,
-            createdByText: parsed.actor,
-            notes: "CAPA creada desde la propuesta registrada en la reclamación.",
-          });
-        }
-      }
       return created;
     });
     capaId = capa.id;
   } catch (error) {
-    if (error instanceof DeviationCapaPlanLinkError) {
+    if (
+      error instanceof DeviationCapaPlanLinkError ||
+      error instanceof ComplaintCapaLinkError
+    ) {
       return {
         error: "No se puede guardar la CAPA.",
         fieldErrors: [error.message],
