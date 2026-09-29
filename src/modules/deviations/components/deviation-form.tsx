@@ -1,4 +1,5 @@
 "use client";
+import { deviationVersionLabel } from "@/modules/deviations/version-mode";
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
@@ -104,12 +105,14 @@ export function DeviationForm({
   defaults = {},
   mode,
   deviationId,
+  currentVersionSequence = 0,
 }: {
   action: FormAction;
   departments: DepartmentOption[];
   defaults?: DeviationFormDefaults;
   mode: "create" | "edit";
   deviationId?: string;
+  currentVersionSequence?: number;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null });
   const [actions, setActions] = useState<ImmediateActionInput[]>(defaults.immediateActions ?? []);
@@ -360,16 +363,48 @@ export function DeviationForm({
           </label>
           <TextArea label="Observaciones internas" name="internalObservations" defaultValue={defaults.internalObservations} />
           {mode === "edit" ? (
-            <TextArea label="Motivo del cambio (opcional en V1)" name="changeReason" />
+            <TextArea
+              label="Motivo del cambio / seguimiento"
+              name="changeReason"
+              help={`Obligatorio al generar ${deviationVersionLabel(currentVersionSequence + 1)}. Quedará asociado a la versión.`}
+              issues={issues.changeReason}
+            />
           ) : null}
         </div>
       </section>
 
       <div className="form-footer">
         <Link className="button" href={deviationId ? `/deviations/${deviationId}` : "/deviations"}>Cancelar</Link>
-        <button type="submit" className="button primary" disabled={pending}>
-          {pending ? "Guardando…" : mode === "create" ? "Guardar desviación" : "Guardar cambios"}
-        </button>
+        {mode === "create" ? (
+          <button type="submit" className="button primary" disabled={pending}>
+            {pending ? "Guardando…" : "Guardar desviación"}
+          </button>
+        ) : (
+          <div className="version-submit-group">
+            <div className="version-submit-note">
+              <strong>Versión vigente {deviationVersionLabel(currentVersionSequence)}</strong>
+              <span>Guardar cambios mantiene esta versión. Generar una nueva versión congela la vigente.</span>
+            </div>
+            <button
+              type="submit"
+              name="saveMode"
+              value="update-current"
+              className="button"
+              disabled={pending}
+            >
+              {pending ? "Guardando…" : "Guardar cambios"}
+            </button>
+            <button
+              type="submit"
+              name="saveMode"
+              value="new-version"
+              className="button primary"
+              disabled={pending}
+            >
+              {pending ? "Guardando…" : `Generar nueva versión / seguimiento ${deviationVersionLabel(currentVersionSequence + 1)}`}
+            </button>
+          </div>
+        )}
       </div>
     </form>
   );

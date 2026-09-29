@@ -12,6 +12,7 @@ import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 
 type AnnexIIIRecord = {
   qmsRecord: { businessCode: string | null };
+  recordVersionLabel?: string | null;
   departmentCodeSnapshot: string | null;
   departmentNameSnapshot: string | null;
   issueDate: Date | null;
@@ -114,7 +115,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
     1,
     [record.departmentCodeSnapshot, record.departmentNameSnapshot].filter(Boolean).join(" - "),
   );
-  xml = setWordCellText(xml, 0, 2, 3, record.anexoIIITemplateVersion?.versionCode ?? "06");
+  xml = setWordCellText(xml, 0, 2, 3, record.recordVersionLabel ?? "V00");
   xml = setWordCellText(xml, 0, 3, 1, value(record.processEquipmentSystem || record.materialProcessAffected));
   xml = setWordCellText(xml, 0, 5, 1, date(record.eventDateTime));
   xml = setWordCellText(xml, 0, 5, 2, time(record.eventDateTime));
