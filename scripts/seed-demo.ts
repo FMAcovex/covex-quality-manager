@@ -6,6 +6,7 @@ import {
   ReturnType,
   PrismaClient,
 } from "@prisma/client";
+import { createQmsRelation } from "../src/lib/qms/relation-service";
 
 const prisma = new PrismaClient();
 
@@ -587,39 +588,17 @@ async function main() {
     },
   });
 
-  await prisma.qmsRelation.upsert({
-    where: {
-      sourceRecordId_targetRecordId_relationType: {
-        sourceRecordId: devQms.id,
-        targetRecordId: capaQms.id,
-        relationType: "GENERATES",
-      },
-    },
-    update: { isActive: true, notes: "Relación ficticia de demostración." },
-    create: {
-      sourceRecordId: devQms.id,
-      targetRecordId: capaQms.id,
-      relationType: "GENERATES",
-      createdByText: "Usuario demo",
-      notes: "Relación ficticia de demostración.",
-    },
+  await createQmsRelation(prisma, {
+    sourceRecordId: devQms.id,
+    targetRecordId: capaQms.id,
+    createdByText: "Usuario demo",
+    notes: "Relación ficticia de demostración.",
   });
-  await prisma.qmsRelation.upsert({
-    where: {
-      sourceRecordId_targetRecordId_relationType: {
-        sourceRecordId: complaintQms.id,
-        targetRecordId: returnQms.id,
-        relationType: "GENERATES",
-      },
-    },
-    update: { isActive: true, notes: "Relación ficticia de demostración." },
-    create: {
-      sourceRecordId: complaintQms.id,
-      targetRecordId: returnQms.id,
-      relationType: "GENERATES",
-      createdByText: "Usuario demo",
-      notes: "Relación ficticia de demostración.",
-    },
+  await createQmsRelation(prisma, {
+    sourceRecordId: complaintQms.id,
+    targetRecordId: returnQms.id,
+    createdByText: "Usuario demo",
+    notes: "Relación ficticia de demostración.",
   });
 
   const records = await prisma.qmsRecord.findMany({

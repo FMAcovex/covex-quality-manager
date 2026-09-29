@@ -6,11 +6,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import {
-  allowedOperationalRelationTypes,
-  canonicalOperationalRelation,
-  operationalRelationLabel,
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
+import { createQmsRelation } from "@/lib/qms/relation-service";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import type { FormState } from "@/modules/deviations/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -614,31 +612,10 @@ export async function addDeviationRelationAction(
       select: { id: true, recordType: true, businessCode: true },
     });
     const target = selectOperationalRelationTarget(QmsRecordType.DEVIATION, matches);
-    const relation = canonicalOperationalRelation(
-      { id: deviation.qmsRecordId, recordType: QmsRecordType.DEVIATION, businessCode: null },
-      target,
-    );
-
-    await prisma.qmsRelation.upsert({
-      where: {
-        sourceRecordId_targetRecordId_relationType: {
-          sourceRecordId: relation.sourceRecordId,
-          targetRecordId: relation.targetRecordId,
-          relationType: relation.relationType,
-        },
-      },
-      update: {
-        isActive: true,
-        createdByText: actor,
-        notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-      },
-      create: {
-        sourceRecordId: relation.sourceRecordId,
-        targetRecordId: relation.targetRecordId,
-        relationType: relation.relationType,
-        createdByText: actor,
-        notes: operationalRelationLabel(relation.sourceType, relation.targetType),
-      },
+    await createQmsRelation(prisma, {
+      sourceRecordId: deviation.qmsRecordId,
+      targetRecordId: target.id,
+      createdByText: actor,
     });
 
     revalidatePath("/deviations");
