@@ -50,6 +50,12 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
   }
 
   const where: Prisma.ChangeControlWhereInput = and.length ? { AND: and } : {};
+  const administrativeWhere: Prisma.ChangeControlWhereInput =
+    filters.administrative === "ANNULLED"
+      ? { qmsRecord: { isActive: false } }
+      : filters.administrative === "ALL"
+        ? {}
+        : { qmsRecord: { isActive: true } };
   const [rows, departments, years, total, open, executedPendingEfficacy, overdue] =
     await Promise.all([
       prisma.changeControl.findMany({
@@ -75,13 +81,13 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
         distinct: ["year"],
         orderBy: { year: "desc" },
       }),
-      prisma.changeControl.count(),
-      prisma.changeControl.count({ where: { finalStatus: "OPEN" } }),
+      prisma.changeControl.count({ where: administrativeWhere }),
+      prisma.changeControl.count({ where: { AND: [administrativeWhere, { finalStatus: "OPEN" }] } }),
       prisma.changeControl.count({
-        where: { executionStatus: "EXECUTED", effectivenessStatus: "PENDING", finalStatus: "OPEN" },
+        where: { AND: [administrativeWhere, { executionStatus: "EXECUTED", effectivenessStatus: "PENDING", finalStatus: "OPEN" }] },
       }),
       prisma.changeControl.findMany({
-        where: { finalStatus: "OPEN" },
+        where: { AND: [administrativeWhere, { finalStatus: "OPEN" }] },
         select: {
           followups: {
             orderBy: [{ sequenceNumber: "desc" }, { followupDate: "desc" }],
