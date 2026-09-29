@@ -22,6 +22,9 @@ import {
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 
+import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+
 export const dynamic = "force-dynamic";
 
 const tabs = [
@@ -98,7 +101,7 @@ export default async function ChangeControlDetailPage({
         <div>
           <p className="eyebrow"><Link href="/changes">← Controles de Cambios</Link></p>
           <div className="record-title-line">
-            <h1>{record.qmsRecord.businessCode ?? "Control de Cambio sin código"}</h1>
+            <h1>{qmsRecordDisplayCode(record.qmsRecord, "Control de Cambio sin código")}</h1>
             <span className="badge neutral">{classificationLabel(record.classification)}</span>
             <span className={`badge ${record.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>
               {executionStatusLabel(record.executionStatus)}
@@ -122,6 +125,16 @@ export default async function ChangeControlDetailPage({
           ) : null}
         </div>
       </div>
+
+      <QmsAdministrativeStatus
+        qmsRecordId={record.qmsRecord.id}
+        isActive={record.qmsRecord.isActive}
+        code={qmsRecordDisplayCode(record.qmsRecord)}
+        annulledAt={record.qmsRecord.annulledAt?.toISOString() ?? null}
+        annulledByText={record.qmsRecord.annulledByText}
+        annulledReason={record.qmsRecord.annulledReason}
+        defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+      />
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (
