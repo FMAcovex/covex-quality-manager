@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { getZipEntryText, readZip, writeZip } from "@/lib/ooxml/zip";
+import { getZipEntryText, readZip } from "@/lib/ooxml/zip";
 import { generateCapaAnnexIII } from "@/modules/capa/documents/annex-iii";
 
-vi.mock("@/modules/capa/documents/templates", () => {
+vi.mock("@/modules/capa/documents/templates", async () => {
+  const { writeZip } = await import("@/lib/ooxml/zip");
   const plain = () => "<w:tc><w:p><w:r><w:t>Vacío</w:t></w:r></w:p></w:tc>";
   const checkbox = () =>
     '<w:tc><w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:p><w:r><w:t>☐</w:t></w:r></w:p></w:sdtContent></w:sdt></w:tc>';
