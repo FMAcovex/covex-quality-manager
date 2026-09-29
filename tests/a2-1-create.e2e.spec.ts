@@ -30,7 +30,7 @@ test("alta real de Desviación y CAPA mediante useActionState", async ({ page })
   await page.locator('[name="defectDescription"]').fill("Defecto ficticio enviado por el formulario React real.");
   await page.locator('[name="rootCause"]').fill("Causa ficticia sustentada.");
   await page.getByLabel("Descripción de la acción").fill("Acción planificada ficticia");
-  await page.getByLabel("Responsable").fill("QA");
+  await page.getByRole("textbox", { name: "Responsable", exact: true }).fill("QA");
   await page.getByLabel("Fecha prevista").fill("2098-04-20");
   await page.getByRole("button", { name: /Guardar CAPA/ }).click();
   await expect(page).toHaveURL(/\/capa\/[0-9a-f-]+$/);
