@@ -55,6 +55,12 @@ export async function getCapaList(filters: CapaListFilters) {
   if (filters.origin) and.push({ originType: filters.origin });
 
   const where: Prisma.CapaWhereInput = and.length ? { AND: and } : {};
+  const administrativeWhere: Prisma.CapaWhereInput =
+    filters.administrative === "ANNULLED"
+      ? { qmsRecord: { isActive: false } }
+      : filters.administrative === "ALL"
+        ? {}
+        : { qmsRecord: { isActive: true } };
   const now = new Date();
 
   const [rows, departments, years, origins, total, open, pendingEfficacy, overdueFollowups] =
@@ -88,17 +94,18 @@ export async function getCapaList(filters: CapaListFilters) {
         distinct: ["originType"],
         orderBy: { originType: "asc" },
       }),
-      prisma.capa.count(),
-      prisma.capa.count({ where: { status: "OPEN" } }),
+      prisma.capa.count({ where: administrativeWhere }),
+      prisma.capa.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
       prisma.capa.count({
         where: {
-          status: "CLOSED",
-          effectivenessStatus: "PENDING",
-          effectiveClosedAt: null,
+          AND: [
+            administrativeWhere,
+            { status: "CLOSED", effectivenessStatus: "PENDING", effectiveClosedAt: null },
+          ],
         },
       }),
       prisma.capa.findMany({
-        where: { status: "OPEN" },
+        where: { AND: [administrativeWhere, { status: "OPEN" }] },
         select: {
           followups: {
             orderBy: [{ followupDate: "desc" }, { sequenceNumber: "desc" }],
