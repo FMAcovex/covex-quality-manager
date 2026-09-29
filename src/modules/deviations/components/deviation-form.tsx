@@ -167,24 +167,62 @@ export function DeviationForm({
 
       <section className="form-section">
         <h2>A. Origen</h2>
-        <p className="section-help">Contexto y origen del evento. La elección única y los campos condicionales se incorporarán en D2.</p>
+        <p className="section-help">Origen principal de la desviación y datos asociados, manteniendo la información existente del expediente.</p>
         <div className="form-grid">
           <Field label="Material / proceso afectado" name="materialProcessAffected" defaultValue={defaults.materialProcessAffected} span="span-2" />
           <Field label="Procedencia" name="provenance" defaultValue={defaults.provenance} span="span-2" />
-          <Field label="Proceso / equipo / sistema" name="processEquipmentSystem" defaultValue={defaults.processEquipmentSystem} span="span-2" />
-          <Field label="Producto terminado / sistema" name="finishedProductSystem" defaultValue={defaults.finishedProductSystem} span="span-2" />
-          <Field label="Lote producto" name="productLot" defaultValue={defaults.productLot} />
-          <Field label="Tamaño lote" name="lotSize" defaultValue={defaults.lotSize} />
-          <Field label="Cantidad afectada" name="affectedQuantity" defaultValue={defaults.affectedQuantity} />
-          <Field label="Cliente" name="client" defaultValue={defaults.client} />
-          <Field label="Materia prima / material acond." name="rawOrPackagingMaterial" defaultValue={defaults.rawOrPackagingMaterial} span="span-2" />
-          <Field label="Lote material" name="materialLot" defaultValue={defaults.materialLot} />
-          <Field label="Tamaño lote material" name="materialLotSize" defaultValue={defaults.materialLotSize} />
-          <Field label="Cantidad material afectada" name="materialAffectedQuantity" defaultValue={defaults.materialAffectedQuantity} />
-          <Field label="Proveedor" name="supplier" defaultValue={defaults.supplier} />
-          <Field label="Lote proveedor" name="supplierLot" defaultValue={defaults.supplierLot} />
-          <Field label="Equipo / línea afectada" name="affectedEquipmentLine" defaultValue={defaults.affectedEquipmentLine} />
-          <Field label="Otro origen" name="otherOrigin" defaultValue={defaults.otherOrigin} span="span-2" />
+        </div>
+
+        <div className="deviation-origin-grid">
+          <div className="deviation-origin-group">
+            <h3>Producto terminado / Sistema</h3>
+            <div className="form-grid">
+              <Field label="Producto terminado / sistema" name="finishedProductSystem" defaultValue={defaults.finishedProductSystem} span="span-2" />
+              <Field label="Proceso / equipo / sistema" name="processEquipmentSystem" defaultValue={defaults.processEquipmentSystem} span="span-2" />
+              <Field label="Nº de lote" name="productLot" defaultValue={defaults.productLot} />
+              <Field label="Tamaño de lote" name="lotSize" defaultValue={defaults.lotSize} />
+              <Field label="Cantidad afectada" name="affectedQuantity" defaultValue={defaults.affectedQuantity} />
+            </div>
+          </div>
+
+          <div className="deviation-origin-group">
+            <h3>Cliente</h3>
+            <div className="form-grid">
+              <Field label="Cliente" name="client" defaultValue={defaults.client} span="span-2" />
+            </div>
+          </div>
+
+          <div className="deviation-origin-group">
+            <h3>Materia prima / Material de acondicionamiento</h3>
+            <div className="form-grid">
+              <Field label="Materia prima / material de acondicionamiento" name="rawOrPackagingMaterial" defaultValue={defaults.rawOrPackagingMaterial} span="span-2" />
+              <Field label="Nº de lote" name="materialLot" defaultValue={defaults.materialLot} />
+              <Field label="Tamaño de lote / cantidad" name="materialLotSize" defaultValue={defaults.materialLotSize} />
+              <Field label="Cantidad afectada" name="materialAffectedQuantity" defaultValue={defaults.materialAffectedQuantity} />
+            </div>
+          </div>
+
+          <div className="deviation-origin-group">
+            <h3>Proveedor</h3>
+            <div className="form-grid">
+              <Field label="Proveedor" name="supplier" defaultValue={defaults.supplier} span="span-2" />
+              <Field label="Lote de proveedor" name="supplierLot" defaultValue={defaults.supplierLot} />
+            </div>
+          </div>
+
+          <div className="deviation-origin-group">
+            <h3>Equipo / Línea afectada</h3>
+            <div className="form-grid">
+              <Field label="Equipo o línea afectada" name="affectedEquipmentLine" defaultValue={defaults.affectedEquipmentLine} span="span-2" />
+            </div>
+          </div>
+
+          <div className="deviation-origin-group">
+            <h3>Otros</h3>
+            <div className="form-grid">
+              <Field label="Especificar" name="otherOrigin" defaultValue={defaults.otherOrigin} span="span-2" />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -238,7 +276,7 @@ export function DeviationForm({
         <h2>E. Investigación</h2>
         <p className="section-help">Documentar la investigación realizada y si las evidencias permiten alcanzar una conclusión.</p>
         <div className="form-grid">
-          <TextArea label="Investigación" name="investigation" defaultValue={defaults.investigation} issues={issues.investigation} />
+          <TextArea label="Investigación realizada / resultado y conclusiones" name="investigation" defaultValue={defaults.investigation} issues={issues.investigation} />
           <TriStateSelect label="¿Investigación concluyente?" name="investigationConclusive" defaultValue={defaults.investigationConclusive} />
         </div>
       </section>
@@ -378,7 +416,7 @@ export function DeviationForm({
             </select>
           </label>
           <label className="field">
-            <span>Control del dato</span>
+            <span>Control de estado</span>
             <select name="dataQualityStatus" defaultValue={defaults.dataQualityStatus ?? "REVIEW_REQUIRED"}>
               <option value="COMPLETE">Completo</option>
               <option value="INCOMPLETE">Incompleto</option>
