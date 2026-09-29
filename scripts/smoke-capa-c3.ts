@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { PrismaClient, QmsRecordType } from "@prisma/client";
-import { addCapaFollowupAction } from "../src/modules/capa/actions";
+import { saveCapaFollowup } from "../src/modules/capa/followup-service";
 import { capaSnapshotToAnnexRecord } from "../src/lib/qms/versioning";
 import { resolveCapaFollowupVersion } from "../src/modules/capa/followup-version-ui";
 import { getZipEntryText, readZip } from "../src/lib/ooxml/zip";
@@ -17,17 +17,9 @@ function form(fields: Record<string, string>) {
 }
 
 async function followup(capaId: string, fields: Record<string, string>) {
-  let result: Awaited<ReturnType<typeof addCapaFollowupAction>> | undefined;
-  try {
-    result = await addCapaFollowupAction(capaId, {}, form(fields));
-  } catch (error) {
-    // La Server Action persiste antes de invalidar la caché. Fuera de una
-    // petición Next, revalidatePath carece de request store.
-    if (!(error instanceof Error) || !/revalidate|request store|static generation store/i.test(error.message)) {
-      throw error;
-    }
-  }
-  assert.equal(result?.error, undefined, result?.error);
+  const result = await saveCapaFollowup(capaId, form(fields));
+  assert.equal(result.error, undefined, result.error);
+  assert.ok(result.success);
 }
 
 async function checkDownloads(capaId: string, recordId: string, versions: Array<{ id: string; sequenceNumber: number }>) {
