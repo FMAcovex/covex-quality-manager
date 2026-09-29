@@ -12,6 +12,7 @@ import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 
 type AnnexIIIRecord = {
   qmsRecord: { businessCode: string | null };
+  recordVersionLabel: string | null;
   departmentCodeSnapshot: string | null;
   departmentNameSnapshot: string | null;
   issueDate: Date | null;
