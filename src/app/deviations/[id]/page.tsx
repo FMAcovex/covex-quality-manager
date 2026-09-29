@@ -16,8 +16,10 @@ export const dynamic = "force-dynamic";
 
 const tabs = [
   ["summary", "Resumen"],
+  ["description", "Descripción"],
   ["investigation", "Investigación"],
   ["actions", "Acciones"],
+  ["conclusion", "Conclusión"],
   ["followups", "Seguimientos"],
   ["relations", "Relaciones"],
   ["versions", "Versiones"],
@@ -34,6 +36,41 @@ function classificationLabel(value: string | null) {
   if (value === "MAJOR") return "Mayor";
   if (value === "MINOR") return "Menor";
   return "Sin clasificar";
+}
+
+function provenanceLabel(value: string | null) {
+  const labels: Record<string, string> = {
+    DOCUMENTATION: "Documentación",
+    PROCESS: "Proceso",
+    EQUIPMENT: "Equipo",
+    MATERIAL: "Material",
+    SUPPLIER: "Proveedor",
+    OTHER: "Otro",
+  };
+  return value ? labels[value] ?? value : "—";
+}
+
+function dataQualityLabel(value: string) {
+  if (value === "COMPLETE") return "Completo";
+  if (value === "INCOMPLETE") return "Incompleto";
+  return "Revisión necesaria";
+}
+
+function investigationMethodLabel(value: string) {
+  const labels: Record<string, string> = {
+    BRAINSTORMING: "Brainstorming",
+    FIVE_WHYS: "5 porqués",
+    FTA: "Árbol de fallos (FTA)",
+    ISHIKAWA: "Ishikawa",
+  };
+  return labels[value] ?? value;
+}
+
+function investigationResultLabel(value: string | null) {
+  if (value === "YES") return "Concluyente";
+  if (value === "NO") return "No concluyente";
+  if (value === "NA") return "No aplica";
+  return "No informado";
 }
 
 export default async function DeviationDetailPage({
@@ -58,6 +95,24 @@ export default async function DeviationDetailPage({
         relation.targetRecord.recordType === "CAPA",
     )
     .map((relation) => relation.targetRecord);
+  const originDetails = [
+    { label: "Procedencia", value: deviation.provenance ? provenanceLabel(deviation.provenance) : null },
+    { label: "Proceso / equipo / sistema", value: deviation.processEquipmentSystem },
+    { label: "Sistema de producto terminado", value: deviation.finishedProductSystem },
+    { label: "Lote de producto", value: deviation.productLot },
+    { label: "Tamaño de lote", value: deviation.lotSize },
+    { label: "Cantidad afectada", value: deviation.affectedQuantity },
+    { label: "Cliente", value: deviation.client },
+    { label: "Materia prima / material de acondicionamiento", value: deviation.rawOrPackagingMaterial },
+    { label: "Lote de material", value: deviation.materialLot },
+    { label: "Tamaño de lote de material", value: deviation.materialLotSize },
+    { label: "Cantidad de material afectada", value: deviation.materialAffectedQuantity },
+    { label: "Proveedor", value: deviation.supplier },
+    { label: "Lote del proveedor", value: deviation.supplierLot },
+    { label: "Equipo / línea afectada", value: deviation.affectedEquipmentLine },
+    { label: "Documentación afectada", value: deviation.affectedDocumentation },
+    { label: "Otro origen", value: deviation.otherOrigin },
+  ].filter((item) => Boolean(item.value?.trim()));
 
   return (
     <section className="workspace">
@@ -88,82 +143,129 @@ export default async function DeviationDetailPage({
 
       {activeTab === "summary" ? (
         <>
-          <div className="card">
+          <div className="card deviation-summary-card">
             <h2>Resumen del expediente</h2>
-            <dl className="info-grid">
+            <dl className="info-grid compact-info-grid">
               <div className="info-item"><dt>Material / proceso</dt><dd>{text(deviation.materialProcessAffected)}</dd></div>
-              <div className="info-item"><dt>Procedencia</dt><dd>{text(deviation.provenance)}</dd></div>
               <div className="info-item"><dt>Clasificación</dt><dd>{classificationLabel(deviation.classification)}</dd></div>
               <div className="info-item"><dt>En plazo</dt><dd>{deadlineLabel(deviation.deadlineStatus)}</dd></div>
-              <div className="info-item full"><dt>Descripción</dt><dd className="prose-value">{text(deviation.whatHappened)}</dd></div>
-              <div className="info-item wide"><dt>Causa raíz</dt><dd className="prose-value">{text(deviation.rootCause)}</dd></div>
-              <div className="info-item"><dt>Medidas</dt><dd>{measuresLabel(deviation)}</dd></div>
-              <div className="info-item"><dt>Recurrencia</dt><dd>{triStateLabel(deviation.recurrentRootCause)}</dd></div>
-              <div className="info-item"><dt>Afecta producto terminado</dt><dd>{triStateLabel(deviation.affectsFinishedProduct)}</dd></div>
+              <div className="info-item"><dt>Fecha de cierre</dt><dd>{formatDate(deviation.closedAt)}</dd></div>
+              <div className="info-item"><dt>Medidas adoptadas</dt><dd>{measuresLabel(deviation)}</dd></div>
               <div className="info-item"><dt>Documento firmado</dt><dd>{deviation.signedDocumentAvailable === true ? "Disponible" : deviation.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
-              <div className="info-item"><dt>Control del dato</dt><dd>{deviation.dataQualityStatus}</dd></div>
+              <div className="info-item"><dt>Calidad del dato</dt><dd>{dataQualityLabel(deviation.dataQualityStatus)}</dd></div>
               <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value">{text(deviation.internalObservations)}</dd></div>
             </dl>
           </div>
-          <div className="card">
+
+          {originDetails.length ? (
+            <div className="card origin-card">
+              <div className="section-title-row">
+                <div>
+                  <h2>Origen</h2>
+                  <p className="section-help">Apartado A del Anexo III · se muestran únicamente los datos informados.</p>
+                </div>
+              </div>
+              <dl className="origin-detail-grid">
+                {originDetails.map((item) => (
+                  <div className="info-item" key={item.label}>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
+
+          <div className="card related-capa-summary">
             <h2>CAPA relacionadas</h2>
             <p className="section-help">
-              Cada propuesta se muestra una sola vez. Cuando se registra como CAPA, el mismo bloque pasa a enlazar con el expediente real.
+              Acciones CAPA propuestas o registradas a partir de esta desviación.
             </p>
             {deviation.capaPlans.length ? (
-              <div className="linked-record-grid">
-                {deviation.capaPlans.map((plan) => {
-                  const navigation = capaPlanNavigation(plan);
-                  const capaCode =
-                    plan.businessCapaCode ??
-                    plan.linkedCapaRecord?.businessCode ??
-                    (plan.proposalStatus === "PROPOSED" ? "Pendiente" : "—");
-
-                  return (
-                    <article className="linked-record-card" key={plan.id}>
-                      <div className="linked-record-main">
-                        <div className="linked-record-heading">
-                          <strong>{plan.actionType === "CORRECTIVE" ? "Correctiva" : "Preventiva"}</strong>
-                          <span className="badge neutral">{capaProposalStatusLabel(plan.proposalStatus)}</span>
-                        </div>
-                        <p>{plan.description}</p>
-                        <dl className="linked-record-meta">
-                          <div><dt>Responsable</dt><dd>{text(plan.responsible)}</dd></div>
-                          <div><dt>Fecha prevista</dt><dd>{formatDate(plan.plannedExecutionDate)}</dd></div>
-                          <div><dt>Código CAPA</dt><dd>{capaCode}</dd></div>
-                        </dl>
-                      </div>
-                      <div className="linked-record-action">
-                        {navigation.kind === "OPEN" ? (
-                          <Link className="button small" href={qmsRecordHref("CAPA", navigation.recordId)}>Abrir CAPA</Link>
-                        ) : navigation.kind === "CREATE" ? (
-                          <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
-                        ) : (
-                          <span className="muted-note">
-                            {plan.proposalStatus === "CANCELLED" ? "Propuesta cancelada" : "Vínculo CAPA no disponible"}
-                          </span>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
+              <div className="table-scroll">
+                <table className="action-overview-table summary-capa-table">
+                  <thead>
+                    <tr>
+                      <th>Código CAPA</th>
+                      <th>Descripción CAPA</th>
+                      <th>Fecha prevista</th>
+                      <th>Responsable</th>
+                      <th>Estado</th>
+                      <th aria-label="Acción" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deviation.capaPlans.map((plan) => {
+                      const navigation = capaPlanNavigation(plan);
+                      const capaCode =
+                        plan.businessCapaCode ??
+                        plan.linkedCapaRecord?.businessCode ??
+                        (plan.proposalStatus === "PROPOSED" ? "Pendiente" : "—");
+                      return (
+                        <tr key={plan.id}>
+                          <td>
+                            {navigation.kind === "OPEN" ? (
+                              <Link className="summary-link" href={qmsRecordHref("CAPA", navigation.recordId)}>{capaCode}</Link>
+                            ) : capaCode}
+                          </td>
+                          <td className="action-description-cell">{plan.description}</td>
+                          <td>{formatDate(plan.plannedExecutionDate)}</td>
+                          <td>{text(plan.responsible)}</td>
+                          <td><span className="badge neutral">{capaProposalStatusLabel(plan.proposalStatus)}</span></td>
+                          <td className="action-link-cell">
+                            {navigation.kind === "OPEN" ? (
+                              <Link className="button small" href={qmsRecordHref("CAPA", navigation.recordId)}>Abrir CAPA</Link>
+                            ) : navigation.kind === "CREATE" ? (
+                              <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
+                            ) : (
+                              <span className="muted-note">{plan.proposalStatus === "CANCELLED" ? "Cancelada" : "Sin vínculo"}</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             ) : <div className="empty-panel">No hay CAPA propuestas.</div>}
           </div>
         </>
       ) : null}
 
+      {activeTab === "description" ? (
+        <div className="card">
+          <div className="section-title-row">
+            <div>
+              <h2>Descripción del evento</h2>
+              <p className="section-help">Apartado C del Anexo III · hechos observables del evento.</p>
+            </div>
+          </div>
+          <dl className="description-detail-grid">
+            <div className="info-item full"><dt>Qué sucedió / qué debía haber sucedido</dt><dd className="prose-value">{text(deviation.whatHappened)}</dd></div>
+            {deviation.whoInvolved ? <div className="info-item"><dt>Quién estuvo implicado</dt><dd className="prose-value">{deviation.whoInvolved}</dd></div> : null}
+            {deviation.whenHappened ? <div className="info-item"><dt>Cuándo ocurrió</dt><dd className="prose-value">{deviation.whenHappened}</dd></div> : null}
+            {deviation.whereHappened ? <div className="info-item"><dt>Dónde ocurrió</dt><dd className="prose-value">{deviation.whereHappened}</dd></div> : null}
+            {deviation.howHappened ? <div className="info-item"><dt>Cómo ocurrió / cómo se detectó</dt><dd className="prose-value">{deviation.howHappened}</dd></div> : null}
+          </dl>
+        </div>
+      ) : null}
+
       {activeTab === "investigation" ? (
         <>
           <div className="card">
             <h2>Investigación</h2>
-            <dl className="info-grid">
+            <dl className="info-grid compact-info-grid">
               <div className="info-item full"><dt>Investigación realizada</dt><dd className="prose-value">{text(deviation.investigation)}</dd></div>
-              <div className="info-item"><dt>Concluyente</dt><dd>{triStateLabel(deviation.investigationConclusive)}</dd></div>
-              <div className="info-item wide"><dt>Metodología</dt><dd>{deviation.investigationMethods.length ? deviation.investigationMethods.join(", ") : "—"}</dd></div>
-              <div className="info-item full"><dt>Causa raíz</dt><dd className="prose-value">{text(deviation.rootCause)}</dd></div>
-              <div className="info-item"><dt>Recurrente</dt><dd>{triStateLabel(deviation.recurrentRootCause)}</dd></div>
-              <div className="info-item wide"><dt>Antecedentes</dt><dd className="prose-value">{text(deviation.recurrenceDetails)}</dd></div>
+              <div className="info-item"><dt>Resultado</dt><dd>{investigationResultLabel(deviation.investigationConclusive)}</dd></div>
+            </dl>
+          </div>
+          <div className="card root-cause-card">
+            <h2>Causa raíz</h2>
+            <dl className="info-grid compact-info-grid">
+              <div className="info-item full"><dt>Causa raíz establecida</dt><dd className="prose-value">{text(deviation.rootCause)}</dd></div>
+              <div className="info-item"><dt>Metodología</dt><dd>{deviation.investigationMethods.length ? deviation.investigationMethods.map(investigationMethodLabel).join(", ") : "No informada"}</dd></div>
+              <div className="info-item"><dt>Recurrencia</dt><dd>{triStateLabel(deviation.recurrentRootCause)}</dd></div>
+              <div className="info-item wide"><dt>Antecedentes / detalle</dt><dd className="prose-value">{text(deviation.recurrenceDetails)}</dd></div>
             </dl>
           </div>
           <div className="card">
@@ -184,14 +286,96 @@ export default async function DeviationDetailPage({
         <>
           <div className="card">
             <h2>Acciones inmediatas</h2>
-            {deviation.immediateActions.length ? <div className="timeline">{deviation.immediateActions.map((action)=><div className="timeline-item" key={action.id}><p>{action.description}</p><small className="muted-note">Ejecutada por {text(action.executedBy)} · {formatDate(action.executedAt)}</small></div>)}</div> : <div className="empty-panel">No se han registrado acciones inmediatas.</div>}
+            {deviation.immediateActions.length ? (
+              <div className="table-scroll">
+                <table className="action-overview-table immediate-action-table">
+                  <thead>
+                    <tr>
+                      <th aria-label="Número">N.º</th>
+                      <th>Descripción</th>
+                      <th>Ejecutada por</th>
+                      <th>Fecha de ejecución</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deviation.immediateActions.map((action, index) => (
+                      <tr key={action.id}>
+                        <td className="action-number-cell">{String(index + 1).padStart(2, "0")}</td>
+                        <td className="action-description-cell">{action.description}</td>
+                        <td>{text(action.executedBy)}</td>
+                        <td>{formatDate(action.executedAt)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <div className="empty-panel">No se han registrado acciones inmediatas.</div>}
           </div>
           <div className="card">
             <h2>CAPA propuestas</h2>
-            {deviation.capaPlans.length ? <div className="timeline">{deviation.capaPlans.map((plan)=><div className="timeline-item" key={plan.id}><header><strong>{plan.actionType === "CORRECTIVE" ? "Acción correctiva" : "Acción preventiva"}</strong></header><p>{plan.description}</p><small className="muted-note">Responsable {text(plan.responsible)} · Prevista {formatDate(plan.plannedExecutionDate)}</small></div>)}</div> : <div className="empty-panel">No se han definido CAPA.</div>}
+            {deviation.capaPlans.length ? (
+              <div className="table-scroll">
+                <table className="action-overview-table capa-action-table">
+                  <thead>
+                    <tr>
+                      <th aria-label="Número">N.º</th>
+                      <th>Código CAPA</th>
+                      <th>Descripción CAPA</th>
+                      <th>Fecha prevista</th>
+                      <th>Responsable</th>
+                      <th>Estado</th>
+                      <th aria-label="Acción" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deviation.capaPlans.map((plan, index) => {
+                      const navigation = capaPlanNavigation(plan);
+                      const capaCode =
+                        plan.businessCapaCode ??
+                        plan.linkedCapaRecord?.businessCode ??
+                        (plan.proposalStatus === "PROPOSED" ? "Pendiente" : "—");
+                      return (
+                        <tr key={plan.id}>
+                          <td className="action-number-cell">{String(index + 1).padStart(2, "0")}</td>
+                          <td>
+                            {navigation.kind === "OPEN" ? (
+                              <Link className="summary-link" href={qmsRecordHref("CAPA", navigation.recordId)}>{capaCode}</Link>
+                            ) : capaCode}
+                          </td>
+                          <td className="action-description-cell">{plan.description}</td>
+                          <td>{formatDate(plan.plannedExecutionDate)}</td>
+                          <td>{text(plan.responsible)}</td>
+                          <td>{capaProposalStatusLabel(plan.proposalStatus)}</td>
+                          <td className="action-link-cell">
+                            {navigation.kind === "OPEN" ? (
+                              <Link className="button small" href={qmsRecordHref("CAPA", navigation.recordId)}>Abrir CAPA</Link>
+                            ) : navigation.kind === "CREATE" ? (
+                              <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : <div className="empty-panel">No se han definido CAPA.</div>}
           </div>
-          <div className="card"><h2>Conclusión y disposición</h2><dl className="info-grid"><div className="info-item full"><dt>Conclusión/cierre</dt><dd className="prose-value">{text(deviation.conclusion)}</dd></div><div className="info-item"><dt>Disposición</dt><dd>{text(deviation.disposition)}</dd></div><div className="info-item"><dt>Cantidad</dt><dd>{text(deviation.dispositionQuantity)}</dd></div><div className="info-item"><dt>Notificación cliente</dt><dd>{triStateLabel(deviation.clientNotification)}</dd></div><div className="info-item full"><dt>Comentarios disposición</dt><dd className="prose-value">{text(deviation.dispositionComments)}</dd></div></dl></div>
         </>
+      ) : null}
+
+      {activeTab === "conclusion" ? (
+        <div className="card">
+          <h2>Conclusión y disposición</h2>
+          <dl className="info-grid conclusion-grid">
+            <div className="info-item full"><dt>Conclusión / cierre</dt><dd className="prose-value">{text(deviation.conclusion)}</dd></div>
+            <div className="info-item"><dt>Disposición</dt><dd>{text(deviation.disposition)}</dd></div>
+            <div className="info-item"><dt>Cantidad</dt><dd>{text(deviation.dispositionQuantity)}</dd></div>
+            <div className="info-item"><dt>Notificación al cliente</dt><dd>{triStateLabel(deviation.clientNotification)}</dd></div>
+            <div className="info-item"><dt>Fecha de cierre</dt><dd>{formatDate(deviation.closedAt)}</dd></div>
+            <div className="info-item full"><dt>Comentarios de disposición</dt><dd className="prose-value">{text(deviation.dispositionComments)}</dd></div>
+          </dl>
+        </div>
       ) : null}
 
       {activeTab === "followups" ? (

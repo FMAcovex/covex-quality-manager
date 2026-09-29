@@ -894,3 +894,168 @@ button[disabled] {
     white-space: normal;
   }
 }
+
+
+/* Hito 10.10 D1 — expediente de Desviaciones */
+.deviation-summary-card .compact-info-grid,
+.compact-info-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 20px;
+}
+.origin-detail-grid,
+.description-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+.description-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.origin-detail-grid .info-item,
+.description-detail-grid .info-item,
+.compact-info-grid .info-item {
+  min-width: 0;
+}
+.origin-detail-grid dd,
+.description-detail-grid dd,
+.compact-info-grid dd {
+  overflow-wrap: anywhere;
+}
+.related-capa-summary .linked-record-card {
+  align-items: stretch;
+}
+.related-capa-summary .linked-record-main {
+  display: grid;
+  gap: 10px;
+}
+.linked-record-description {
+  padding: 10px 12px;
+  border-left: 3px solid #b8d1ee;
+  border-radius: 4px;
+  background: #f6f9fd;
+}
+.related-capa-summary .linked-record-meta {
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 12px;
+}
+.related-capa-summary .linked-record-meta > div,
+.action-record-meta > div {
+  padding: 9px 10px;
+  border: 1px solid #e1e8f0;
+  border-radius: 7px;
+  background: #fff;
+}
+.related-capa-summary .linked-record-action {
+  min-width: 122px;
+  align-items: flex-end;
+}
+.root-cause-card {
+  border-left: 4px solid #8aaed6;
+}
+.action-overview-table {
+  width: 100%;
+  min-width: 780px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.action-overview-table th {
+  padding: 9px 10px;
+  border-bottom: 1px solid #cfd9e6;
+  background: #f7f9fc;
+  color: #41536b;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+  vertical-align: bottom;
+}
+.action-overview-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e3e9f0;
+  background: transparent;
+  line-height: 1.45;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.action-overview-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.action-overview-table tbody tr:hover td {
+  background: #f9fbfe;
+}
+.action-overview-table .action-number-cell {
+  width: 56px;
+  color: var(--blue-dark);
+  font-weight: 800;
+  text-align: center;
+}
+.action-overview-table .action-description-cell {
+  width: 42%;
+  white-space: normal;
+}
+.action-overview-table .action-link-cell {
+  width: 120px;
+  text-align: right;
+}
+.immediate-action-table th:first-child,
+.immediate-action-table td:first-child {
+  width: 56px;
+}
+.immediate-action-table th:nth-child(3),
+.immediate-action-table td:nth-child(3) {
+  width: 190px;
+}
+.immediate-action-table th:nth-child(4),
+.immediate-action-table td:nth-child(4) {
+  width: 160px;
+}
+.summary-capa-table th:first-child,
+.summary-capa-table td:first-child {
+  width: 160px;
+}
+.capa-action-table th:first-child,
+.capa-action-table td:first-child {
+  width: 56px;
+  text-align: center;
+}
+.capa-action-table th:nth-child(2),
+.capa-action-table td:nth-child(2) {
+  width: 150px;
+}
+.capa-action-table th:nth-last-child(4),
+.capa-action-table td:nth-last-child(4) {
+  width: 145px;
+}
+.capa-action-table th:nth-last-child(3),
+.capa-action-table td:nth-last-child(3) {
+  width: 160px;
+}
+.capa-action-table th:nth-last-child(2),
+.capa-action-table td:nth-last-child(2) {
+  width: 115px;
+}
+.conclusion-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .deviation-summary-card .compact-info-grid,
+  .compact-info-grid,
+  .origin-detail-grid,
+  .conclusion-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .related-capa-summary .linked-record-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .deviation-summary-card .compact-info-grid,
+  .compact-info-grid,
+  .origin-detail-grid,
+  .description-detail-grid,
+  .conclusion-grid,
+  .related-capa-summary .linked-record-meta {
+    grid-template-columns: 1fr;
+  }
+}
