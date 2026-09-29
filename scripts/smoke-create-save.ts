@@ -13,8 +13,17 @@ async function main() {
   deviationForm.set("businessCode", deviationCode);
   deviationForm.set("departmentId", department.id);
   deviationForm.set("issueDate", "2099-03-01");
+  deviationForm.set("eventDateTime", "2099-03-01T09:15");
+  deviationForm.set("detectedBy", "CI C3-A");
+  deviationForm.set("materialProcessAffected", "Proceso ficticio de validación");
   deviationForm.set("createdByText", "CI C3-A");
   deviationForm.set("whatHappened", "Desviación ficticia validada mediante el mismo parser del formulario.");
+  deviationForm.set("whoInvolved", "Usuario ficticio de CI");
+  deviationForm.set("whenHappened", "Durante la prueba automática de creación");
+  deviationForm.set("whereHappened", "Entorno CI");
+  deviationForm.set("howHappened", "Durante la validación automática del formulario");
+  deviationForm.set("investigation", "Se revisó el caso ficticio y la investigación automática resultó concluyente.");
+  deviationForm.set("investigationConclusive", "YES");
   deviationForm.set("status", "OPEN");
   deviationForm.set("dataQualityStatus", "REVIEW_REQUIRED");
   deviationForm.set("immediateActionsJson", "[]");
