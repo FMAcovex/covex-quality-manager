@@ -10,6 +10,11 @@ import {
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
 import { createQmsRelation } from "@/lib/qms/relation-service";
+import {
+  DeviationCapaPlanLinkError,
+  getDeviationCapaPlanOrigin,
+  registerDeviationCapaPlan,
+} from "@/modules/capa/deviation-origin";
 import { parseCapaForm } from "@/modules/capa/validation";
 import type { CapaFormState } from "@/modules/capa/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -114,6 +119,17 @@ export async function createCapaAction(
     ]);
 
     const capa = await prisma.$transaction(async (tx) => {
+      const deviationOrigin = v.fromDeviationPlanId
+        ? await getDeviationCapaPlanOrigin(tx, v.fromDeviationPlanId)
+        : null;
+      const canonicalValues = deviationOrigin
+        ? {
+            ...v,
+            originType: "Desviación",
+            originCode: deviationOrigin.deviationBusinessCode,
+          }
+        : v;
+
       const qmsRecord = await tx.qmsRecord.create({
         data: {
           recordType: QmsRecordType.CAPA,
@@ -131,8 +147,8 @@ export async function createCapaAction(
           departmentNameSnapshot: department.name,
           openedAt: toDate(v.openedAt),
           createdByText: v.createdByText,
-          originType: v.originType,
-          originCode: v.originCode,
+          originType: canonicalValues.originType,
+          originCode: canonicalValues.originCode,
           applicableTo: v.applicableTo,
           defectDescription: v.defectDescription,
           rootCause: v.rootCause,
@@ -168,7 +184,7 @@ export async function createCapaAction(
           qmsRecordId: qmsRecord.id,
           changedByText: parsed.actor,
           fieldPath: "__created__",
-          newValue: jsonValue(snapshot(v)),
+          newValue: jsonValue(snapshot(canonicalValues)),
           source: "UI",
         },
       });
@@ -192,29 +208,20 @@ export async function createCapaAction(
         "Informe inicial CAPA",
       );
 
-      await relatePrimaryOrigin(tx, qmsRecord.id, v.originCode, parsed.actor);
-
-      if (v.fromDeviationPlanId) {
-        const plan = await tx.deviationCapaPlan.findUnique({
-          where: { id: v.fromDeviationPlanId },
-          include: { deviation: true },
+      if (deviationOrigin) {
+        await registerDeviationCapaPlan(tx, {
+          planId: deviationOrigin.planId,
+          capaQmsRecordId: qmsRecord.id,
+          capaBusinessCode: v.businessCode!,
+          actor: parsed.actor,
         });
-        if (plan) {
-          await tx.deviationCapaPlan.update({
-            where: { id: plan.id },
-            data: {
-              linkedCapaRecordId: qmsRecord.id,
-              businessCapaCode: v.businessCode,
-              proposalStatus: "REGISTERED",
-            },
-          });
-          await createQmsRelation(tx, {
-            sourceRecordId: plan.deviation.qmsRecordId,
-            targetRecordId: qmsRecord.id,
-            createdByText: parsed.actor,
-            notes: "CAPA creada desde la propuesta registrada en la desviación.",
-          });
-        }
+      } else {
+        await relatePrimaryOrigin(
+          tx,
+          qmsRecord.id,
+          canonicalValues.originCode,
+          parsed.actor,
+        );
       }
       if (v.fromComplaintId) {
         const complaint = await tx.complaint.findUnique({
@@ -256,6 +263,12 @@ export async function createCapaAction(
     });
     capaId = capa.id;
   } catch (error) {
+    if (error instanceof DeviationCapaPlanLinkError) {
+      return {
+        error: "No se puede guardar la CAPA.",
+        fieldErrors: [error.message],
+      };
+    }
     return persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" });
   }
 

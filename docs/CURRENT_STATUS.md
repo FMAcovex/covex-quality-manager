@@ -397,3 +397,18 @@ Validación:
 - 75 tests unitarios;
 - lint sin avisos;
 - build Next.js de producción.
+
+## Hito 10.8C3-B2.1 — Flujo canónico Desviación → CAPA
+Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+
+Cambios limitados a backend:
+- una propuesta `DeviationCapaPlan` en estado `PROPOSED` puede generar una única CAPA real;
+- la propuesta se marca `REGISTERED` y conserva `linkedCapaRecordId` únicamente para identificar qué propuesta originó qué CAPA;
+- la relación de negocio se crea una sola vez mediante `QmsRelation` Desviación → CAPA;
+- cuando existe `fromDeviationPlanId`, se omite la creación genérica adicional basada en `originCode`;
+- `originType` y `originCode` de la CAPA se canonicalizan desde la Desviación de la propuesta;
+- dos propuestas distintas de la misma Desviación pueden generar dos CAPA distintas;
+- propuestas ya registradas o canceladas no pueden generar una CAPA adicional;
+- actualización de propuesta y creación de relación permanecen dentro de la misma transacción de alta de CAPA.
+
+No se aborda todavía B2.2 (UX/navegación) ni B2.3 (prueba transversal manual).
