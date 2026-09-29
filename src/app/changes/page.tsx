@@ -13,6 +13,7 @@ import {
 } from "@/modules/change-control/domain";
 import { getChangeControlList } from "@/modules/change-control/queries";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 
 export const dynamic = "force-dynamic";
 
@@ -121,11 +122,14 @@ export default async function ChangeControlPage({
         <div><span>Seguimiento vencido</span><strong>{counters.overdue}</strong></div>
       </div>
 
+      <ManualReminderToolbar tableId="change-control-list-table" moduleLabel="Controles de Cambios" />
+
       <div className="table-card">
         <div className="table-scroll">
           <table id="change-control-list-table" className="records-table change-table">
             <thead>
               <tr>
+                <th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todos los Controles de Cambios visibles" /></th>
                 <th data-column-key="control">Control</th>
                 <th data-column-key="department">Departamento</th>
                 <th data-column-key="code">Codificación</th>
@@ -152,6 +156,19 @@ export default async function ChangeControlPage({
                 const planned = row.plannedImplementationDate ?? (taskDates.length ? new Date(Math.max(...taskDates.map((d) => d.getTime()))) : null);
                 return (
                   <tr key={row.id}>
+                    <td className="reminder-select-column">
+                      <input
+                        type="checkbox"
+                        data-reminder-record="true"
+                        data-reminder-id={row.qmsRecord.id}
+                        data-reminder-code={row.qmsRecord.businessCode ?? "Sin código"}
+                        data-reminder-summary={row.description ?? "Sin descripción"}
+                        data-reminder-status={finalStatusLabel(row.finalStatus)}
+                        data-reminder-meta={row.departmentCodeSnapshot ?? ""}
+                        data-reminder-href={`/changes/${row.id}`}
+                        aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "Control de Cambio"}`}
+                      />
+                    </td>
                     <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ Revisar</span> : "—"}</td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
                     <td data-column-key="code" className="sticky-code"><Link href={`/changes/${row.id}`}><strong>{row.qmsRecord.businessCode ?? "Sin código"}</strong></Link></td>
@@ -175,7 +192,7 @@ export default async function ChangeControlPage({
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={17}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={18}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>
