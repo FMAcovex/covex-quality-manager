@@ -89,12 +89,10 @@ describe("parseDeviationForm", () => {
     expect(parsed.errors).toContain("Para cerrar la desviación debe informarse la fecha de cierre.");
   });
 
-  it("no permite indicar que procede CAPA sin definir una acción CAPA", () => {
+  it("permite indicar que procede CAPA sin exigir una propuesta en el mismo guardado", () => {
     const form = baseForm();
     form.set("capaRequired", "true");
     const parsed = parseDeviationForm(form);
-    expect(parsed.errors).toContain(
-      "Se ha indicado que procede CAPA, pero no se ha definido ninguna acción CAPA.",
-    );
+    expect(parsed.fieldIssues.capaPlansJson).toBeUndefined();
   });
 });
