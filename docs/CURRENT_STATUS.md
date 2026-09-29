@@ -586,3 +586,18 @@ Se añade un smoke PostgreSQL con la acción real de seguimiento: V00 abierta y 
 Se corrige la interpretación de `?version=0/1/2` en la descarga de Anexo III, que anteriormente trataba esas peticiones como versión vigente. El parser tiene pruebas para V00, V01, V02 e inválidos.
 
 `pnpm c3:smoke` verifica el ciclo y limpia sus datos ficticios. Con el servidor en marcha y la plantilla oficial instalada, `C3_BASE_URL=<URL de la app> pnpm c3:smoke` descarga los tres DOCX, inspecciona el contenido diferenciado y comprueba el vínculo `GeneratedDocument.recordVersionId`. Sin `C3_BASE_URL`, el smoke no afirma haber probado los documentos.
+
+
+## Mejora transversal — Anulación administrativa de expedientes
+Estado: **IMPLEMENTADA EN RAMA; PENDIENTE DE VALIDACIÓN FINAL**.
+
+- aplica a Desviaciones, CAPA, Controles de Cambios, Reclamaciones y Devoluciones;
+- no existe borrado físico;
+- motivo y usuario obligatorios;
+- conservación del código histórico y liberación del código para reutilización;
+- filtro común Activos / Anulados / Todos, con Activos por defecto;
+- expedientes anulados identificados expresamente;
+- relaciones históricas conservadas e identificadas;
+- bloqueo de nuevas relaciones con anulados;
+- reactivación condicionada a que el código original continúe libre;
+- exportaciones e indicadores excluyen anulados por defecto.
