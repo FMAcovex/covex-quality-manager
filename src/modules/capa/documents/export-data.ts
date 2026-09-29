@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 export type CapaExportFilters = {
+  administrative?: string;
   year?: string;
   department?: string;
   type?: string;
@@ -13,6 +14,8 @@ export type CapaExportFilters = {
 
 export async function getCapaExportRows(filters: CapaExportFilters) {
   const and: Prisma.CapaWhereInput[] = [];
+  if (filters.administrative === "ANNULLED") and.push({ qmsRecord: { isActive: false } });
+  else if (filters.administrative !== "ALL") and.push({ qmsRecord: { isActive: true } });
   if (filters.year && /^\d{4}$/.test(filters.year)) {
     and.push({ qmsRecord: { year: Number(filters.year) } });
   }
