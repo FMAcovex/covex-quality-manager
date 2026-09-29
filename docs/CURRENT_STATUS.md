@@ -375,7 +375,7 @@ GC-00/027/03 se configura únicamente como versión candidata para esta fase de 
 
 
 ## Hito 10.8C3-B1 — Modelo y reglas transversales de relaciones QMS
-Estado: **IMPLEMENTADO; PENDIENTE DE VALIDACIÓN FINAL EN CI**.
+Estado: **IMPLEMENTADO Y VALIDADO EN CI**.
 
 Infraestructura común:
 - matriz direccional única para Desviación → CAPA, Reclamación → CAPA y Reclamación → Devolución;
@@ -388,3 +388,12 @@ Infraestructura común:
 - Control de Cambios excluido de las nuevas relaciones operativas.
 
 No se modifica el versionado funcional, anexos, plantillas ni generadores documentales.
+
+Validación:
+- PostgreSQL 16, esquema, seed y dataset DEMO;
+- auditoría histórica: 0 relaciones incompatibles detectadas en el dataset de CI;
+- smoke transversal de relaciones y smoke tests acumulados;
+- Prisma validate/generate;
+- 75 tests unitarios;
+- lint sin avisos;
+- build Next.js de producción.
