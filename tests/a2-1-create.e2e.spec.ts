@@ -7,7 +7,7 @@ const capaCode = `AC/A21/E2E/${stamp}`;
 test("alta real de Desviación y CAPA mediante useActionState", async ({ page }) => {
   await page.goto("/deviations/new");
   await page.locator('[name="businessCode"]').fill(deviationCode);
-  await page.locator('[name="departmentId"]').selectOption({ label: /GC-00/ });
+  await page.locator('[name="departmentId"]').selectOption({ index: 1 });
   await page.locator('[name="issueDate"]').fill("2098-04-01");
   await page.locator('[name="eventDateTime"]').fill("2098-04-01T10:15");
   await page.locator('[name="createdByText"]').fill("Diagnóstico A2.1 E2E");
@@ -22,7 +22,7 @@ test("alta real de Desviación y CAPA mediante useActionState", async ({ page })
 
   await page.goto("/capa/new");
   await page.locator('[name="businessCode"]').fill(capaCode);
-  await page.locator('[name="departmentId"]').selectOption({ label: /GC-00/ });
+  await page.locator('[name="departmentId"]').selectOption({ index: 1 });
   await page.locator('[name="openedAt"]').fill("2098-04-02");
   await page.locator('[name="createdByText"]').fill("Diagnóstico A2.1 E2E");
   await page.locator('[name="originType"]').selectOption({ label: "Desviación" });
