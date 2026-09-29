@@ -561,7 +561,7 @@ Cambios:
 Se añaden pruebas unitarias de las transiciones.
 
 ## Hito 10.8C3-C2 — UX e histórico de seguimientos CAPA
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN MAIN (PR #49)**.
 
 Cambios de interfaz:
 - el formulario identifica explícitamente qué seguimiento y versión V01/V02… se va a crear;
@@ -576,3 +576,13 @@ Cambios de interfaz:
 - se añade helper probado para resolver seguimiento ↔ versión y calcular la siguiente secuencia.
 
 No se modifica el modelo de datos ni las reglas de transición de C1. Queda pendiente C3: prueba transversal V00 → V01 → V02 con documentos históricos.
+
+
+## Hito 10.8C3-C3 — Prueba transversal CAPA V00 → V01 → V02
+Estado: **EN VALIDACIÓN EN RAMA**.
+
+Se añade un smoke PostgreSQL con la acción real de seguimiento: V00 abierta y eficacia pendiente; V01 abierta con actuación, evidencia y próxima fecha; V02 cerrada con cierre operativo y eficacia conforme. Comprueba snapshots históricos, congelación de V00/V01, vínculo `sourceEntityId` y resolución del histórico sin modificar C1/C2.
+
+Se corrige la interpretación de `?version=0/1/2` en la descarga de Anexo III, que anteriormente trataba esas peticiones como versión vigente. El parser tiene pruebas para V00, V01, V02 e inválidos.
+
+`pnpm c3:smoke` verifica el ciclo y limpia sus datos ficticios. Con el servidor en marcha y la plantilla oficial instalada, `C3_BASE_URL=<URL de la app> pnpm c3:smoke` descarga los tres DOCX, inspecciona el contenido diferenciado y comprueba el vínculo `GeneratedDocument.recordVersionId`. Sin `C3_BASE_URL`, el smoke no afirma haber probado los documentos.

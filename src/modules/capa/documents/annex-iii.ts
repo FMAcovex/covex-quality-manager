@@ -120,22 +120,10 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
     );
   }
 
-  if (record.followups.length) {
-    const chronological = [...record.followups].sort(
-      (a, b) => a.sequenceNumber - b.sequenceNumber,
-    );
-    xml = replaceWordRowWithCopies(
-      xml,
-      1,
-      2,
-      chronological.map((followup) => [
-        date(followup.followupDate),
-        [
-          `Seguimiento ${String(followup.sequenceNumber).padStart(2, "0")}: ${followup.description}`,
-          followup.evidenceReference ? `Evidencia: ${followup.evidenceReference}` : "",
-        ].filter(Boolean).join("\n"),
-      ]),
-    );
+  const chronological = [...record.followups].sort(
+    (a, b) => a.sequenceNumber - b.sequenceNumber,
+  );
+  if (chronological.length) {
     xml = setWordCellText(
       xml,
       1,
@@ -173,10 +161,27 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
   );
   xml = setWordCellText(xml, 1, 12, 0, record.conclusion ?? "");
 
-  const next = record.followups.find((item) => item.nextFollowupDate)?.nextFollowupDate ?? null;
+  const next = latest?.nextFollowupDate ?? null;
   xml = setWordCellText(xml, 1, 13, 1, date(next));
   xml = setWordCellText(xml, 1, 14, 1, date(record.operationalClosedAt));
   xml = setWordCellText(xml, 1, 15, 1, date(record.effectiveClosedAt));
+
+  // Insertar filas al final: la tabla utiliza índices absolutos para los
+  // campos de estado, eficacia y cierre situados después del seguimiento.
+  if (chronological.length) {
+    xml = replaceWordRowWithCopies(
+      xml,
+      1,
+      2,
+      chronological.map((followup) => [
+        date(followup.followupDate),
+        [
+          `Seguimiento ${String(followup.sequenceNumber).padStart(2, "0")}: ${followup.description}`,
+          followup.evidenceReference ? `Evidencia: ${followup.evidenceReference}` : "",
+        ].filter(Boolean).join("\n"),
+      ]),
+    );
+  }
 
   updateZipEntry(entries, "word/document.xml", xml);
   sanitizeOfficeMetadata(entries);

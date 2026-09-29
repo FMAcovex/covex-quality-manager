@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCapaDetail } from "@/modules/capa/queries";
 import { generateCapaAnnexIII } from "@/modules/capa/documents/annex-iii";
+import { parseCapaAnnexVersion } from "@/modules/capa/documents/version-query";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 import {
@@ -22,10 +23,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (!capa) return NextResponse.json({ error: "CAPA no encontrada." }, { status: 404 });
 
   const requestedVersion = new URL(request.url).searchParams.get("version");
-  const sequenceNumber =
-    requestedVersion !== null && /^\\d+$/.test(requestedVersion)
-      ? Number(requestedVersion)
-      : null;
+  const parsedVersion = parseCapaAnnexVersion(requestedVersion);
+  if (!parsedVersion.valid) {
+    return NextResponse.json({ error: "La versión solicitada no es válida." }, { status: 400 });
+  }
+  const sequenceNumber = parsedVersion.sequenceNumber;
   const storedVersion =
     sequenceNumber === null
       ? capa.qmsRecord.versions.at(-1) ?? null
