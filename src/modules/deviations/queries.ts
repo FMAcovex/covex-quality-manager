@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 
 export type DeviationListFilters = {
   q?: string;
+  administrative?: string;
   year?: string;
   department?: string;
   status?: string;
@@ -17,10 +18,17 @@ export type DeviationListFilters = {
 export async function getDeviationList(filters: DeviationListFilters) {
   const and: Prisma.DeviationWhereInput[] = [];
 
+  if (filters.administrative === "ANNULLED") {
+    and.push({ qmsRecord: { isActive: false } });
+  } else if (filters.administrative !== "ALL") {
+    and.push({ qmsRecord: { isActive: true } });
+  }
+
   if (filters.q) {
     and.push({
       OR: [
         { qmsRecord: { businessCode: { contains: filters.q, mode: "insensitive" } } },
+        { qmsRecord: { annulledBusinessCode: { contains: filters.q, mode: "insensitive" } } },
         { materialProcessAffected: { contains: filters.q, mode: "insensitive" } },
         { provenance: { contains: filters.q, mode: "insensitive" } },
         { whatHappened: { contains: filters.q, mode: "insensitive" } },
