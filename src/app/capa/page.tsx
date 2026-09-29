@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 import {
@@ -88,7 +89,26 @@ export default async function CapaPage({
           <div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/capa">Limpiar</Link></div>
         </div>
         <div className="search-row">
-          <input name="q" defaultValue={filters.q ?? ""} placeholder="Buscar código, origen, acción, causa raíz u observaciones…" />
+          <SearchAutocomplete
+            defaultValue={filters.q ?? ""}
+            placeholder="Buscar código, origen, acción, causa raíz u observaciones…"
+            suggestions={rows.map((row) => ({
+              id: row.id,
+              href: `/capa/${row.id}`,
+              code: row.qmsRecord.businessCode ?? "Sin código",
+              title: row.plannedActions[0]?.description ?? row.defectDescription ?? "Sin descripción",
+              meta: [row.departmentCodeSnapshot, row.status === "OPEN" ? "Abierta" : row.status === "CLOSED" ? "Cerrada" : "Cancelada"].filter(Boolean).join(" · "),
+              searchText: [
+                row.qmsRecord.businessCode,
+                row.originCode,
+                row.originType,
+                row.defectDescription,
+                row.rootCause,
+                row.internalObservations,
+                ...row.plannedActions.map((action) => action.description),
+              ].filter(Boolean).join(" "),
+            }))}
+          />
           <button className="button" type="submit">Buscar</button>
         </div>
       </form>
