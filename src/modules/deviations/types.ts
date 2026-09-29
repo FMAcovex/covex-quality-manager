@@ -2,6 +2,8 @@ export type FormState = {
   error: string | null;
   fieldErrors?: string[];
   fieldIssues?: Record<string, string[]>;
+  submittedValues?: Record<string, string | string[]>;
+  formRevision?: number;
 };
 
 export type DepartmentOption = {
