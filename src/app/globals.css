@@ -894,3 +894,146 @@ button[disabled] {
     white-space: normal;
   }
 }
+
+
+/* Hito 10.10 D1 — expediente de Desviaciones */
+.deviation-summary-card .compact-info-grid,
+.compact-info-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 20px;
+}
+.origin-detail-grid,
+.description-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+.description-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.origin-detail-grid .info-item,
+.description-detail-grid .info-item,
+.compact-info-grid .info-item {
+  min-width: 0;
+}
+.origin-detail-grid dd,
+.description-detail-grid dd,
+.compact-info-grid dd {
+  overflow-wrap: anywhere;
+}
+.related-capa-summary .linked-record-card {
+  align-items: stretch;
+}
+.related-capa-summary .linked-record-main {
+  display: grid;
+  gap: 10px;
+}
+.linked-record-description {
+  padding: 10px 12px;
+  border-left: 3px solid #b8d1ee;
+  border-radius: 4px;
+  background: #f6f9fd;
+}
+.related-capa-summary .linked-record-meta {
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 12px;
+}
+.related-capa-summary .linked-record-meta > div,
+.action-record-meta > div {
+  padding: 9px 10px;
+  border: 1px solid #e1e8f0;
+  border-radius: 7px;
+  background: #fff;
+}
+.related-capa-summary .linked-record-action {
+  min-width: 122px;
+  align-items: flex-end;
+}
+.root-cause-card {
+  border-left: 4px solid #8aaed6;
+}
+.action-record-list {
+  display: grid;
+  gap: 10px;
+}
+.action-record {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fbfcfe;
+}
+.action-record-number {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #edf4fb;
+  color: var(--blue-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+.action-record-body {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+.action-record-description > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.action-record-description p {
+  margin: 4px 0 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.action-record-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.action-record-meta dt {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.action-record-meta dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+.conclusion-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 1100px) {
+  .deviation-summary-card .compact-info-grid,
+  .compact-info-grid,
+  .origin-detail-grid,
+  .conclusion-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .related-capa-summary .linked-record-meta,
+  .action-record-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .deviation-summary-card .compact-info-grid,
+  .compact-info-grid,
+  .origin-detail-grid,
+  .description-detail-grid,
+  .conclusion-grid,
+  .related-capa-summary .linked-record-meta,
+  .action-record-meta {
+    grid-template-columns: 1fr;
+  }
+  .action-record {
+    grid-template-columns: 1fr;
+  }
+}
