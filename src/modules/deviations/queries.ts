@@ -165,6 +165,7 @@ export async function getDeviationDetail(id: string) {
             include: { sourceRecord: true },
           },
           history: { orderBy: { changedAt: "desc" }, take: 100 },
+          reminders: { orderBy: { createdAt: "desc" }, take: 50 },
           versions: {
             orderBy: { sequenceNumber: "asc" },
             include: {

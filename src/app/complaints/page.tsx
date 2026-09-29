@@ -7,6 +7,7 @@ import { complaintColumns } from "@/modules/complaints/column-config";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { complaintClassificationLabel,complaintEffectivenessLabel,complaintStatusLabel,complaintTypeLabel,formatDate } from "@/modules/complaints/domain";
 import { getComplaintList } from "@/modules/complaints/queries";
+import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 
 export const dynamic="force-dynamic";
 const p=(v:string|string[]|undefined)=>Array.isArray(v)?v[0]:v;
@@ -57,8 +58,10 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
           <button className="button" type="submit">Buscar</button>
         </div></form>
   <div className="status-strip"><div><strong>{counters.total}</strong><span>Reclamaciones</span></div><div><strong>{counters.open}</strong><span>Abiertas</span></div><div><strong>{counters.pendingEfficacy}</strong><span>Eficacia pendiente</span></div><div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div></div>
-  <div className="table-card"><div className="table-scroll"><table id="complaint-list-table"><thead><tr>{complaintColumns.map(c=><th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>
+  <ManualReminderToolbar tableId="complaint-list-table" moduleLabel="Reclamaciones" />
+  <div className="table-card"><div className="table-scroll"><table id="complaint-list-table"><thead><tr><th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las reclamaciones visibles" /></th>{complaintColumns.map(c=><th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>
    {rows.length?rows.map(r=><tr key={r.id}>
+    <td className="reminder-select-column"><input type="checkbox" data-reminder-record="true" data-reminder-id={r.qmsRecord.id} data-reminder-code={r.qmsRecord.businessCode??"Sin código"} data-reminder-summary={r.description??r.partyName??"Sin descripción"} data-reminder-status={complaintStatusLabel(r.status)} data-reminder-meta={r.departmentCodeSnapshot??""} data-reminder-href={`/complaints/${r.id}`} aria-label={`Seleccionar ${r.qmsRecord.businessCode??"reclamación"}`} /></td>
     <td data-column-key="control">{r.dataQualityStatus!=="COMPLETE"?<span className="control-flag">⚠ Revisar</span>:"—"}</td>
     <td data-column-key="code"><Link className="summary-link" href={`/complaints/${r.id}`}>{r.qmsRecord.businessCode??"Sin código"}</Link></td>
     <td data-column-key="type">{complaintTypeLabel(r.complaintType)}</td><td data-column-key="opening">{formatDate(r.openedAt)}</td><td data-column-key="party">{r.partyName??"—"}</td>
@@ -71,7 +74,7 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
       {[...r.qmsRecord.sourceRelations.map(x=>x.targetRecord),...r.qmsRecord.targetRelations.map(x=>x.sourceRecord)].map(record=><Link key={record.id} className="relation-chip" href={qmsRecordHref(record.recordType,record.id)} title={qmsRecordTypeLabel(record.recordType)}>{record.businessCode??qmsRecordTypeLabel(record.recordType)}</Link>)}
       {r.qmsRecord.sourceRelations.length+r.qmsRecord.targetRelations.length===0?"—":null}
     </div></td>
-   </tr>):<tr><td colSpan={13} className="empty-state"><strong>No hay reclamaciones con estos filtros.</strong></td></tr>}
+   </tr>):<tr><td colSpan={14} className="empty-state"><strong>No hay reclamaciones con estos filtros.</strong></td></tr>}
   </tbody></table></div></div>
  </section>;
 }

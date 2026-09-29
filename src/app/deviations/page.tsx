@@ -7,6 +7,7 @@ import { getDeviationList } from "@/modules/deviations/queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { deviationColumns } from "@/modules/deviations/column-config";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 
 export const dynamic = "force-dynamic";
 
@@ -127,15 +128,30 @@ export default async function DeviationsPage({
         <div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div>
       </div>
 
+      <ManualReminderToolbar tableId="deviation-list-table" moduleLabel="Desviaciones" />
+
       <div className="table-card">
         <div className="table-scroll">
           <table id="deviation-list-table">
             <thead><tr>
-<th data-column-key="control">Control</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
+<th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las desviaciones visibles" /></th><th data-column-key="control">Control</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
             </tr></thead>
             <tbody>
               {rows.length ? rows.map((row) => (
                 <tr key={row.id}>
+                  <td className="reminder-select-column">
+                    <input
+                      type="checkbox"
+                      data-reminder-record="true"
+                      data-reminder-id={row.qmsRecord.id}
+                      data-reminder-code={row.qmsRecord.businessCode ?? "Sin código"}
+                      data-reminder-summary={row.whatHappened ?? row.materialProcessAffected ?? "Sin descripción"}
+                      data-reminder-status={row.status === "OPEN" ? "Abierta" : "Cerrada"}
+                      data-reminder-meta={row.departmentCodeSnapshot ?? row.department?.code ?? ""}
+                      data-reminder-href={`/deviations/${row.id}`}
+                      aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "desviación"}`}
+                    />
+                  </td>
                   <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td>
                   <td data-column-key="code"><Link className="summary-link" href={`/deviations/${row.id}`}>{row.qmsRecord.businessCode ?? "Sin código"}</Link></td>
                   <td data-column-key="department">{row.departmentCodeSnapshot ?? row.department?.code ?? "—"}</td>
@@ -163,7 +179,7 @@ export default async function DeviationsPage({
                   </td>
                   <td data-column-key="observations" className="table-cell-wrap">{row.internalObservations ?? "—"}</td>
                 </tr>
-              )) : <tr><td colSpan={17} className="empty-state"><strong>No hay desviaciones con estos filtros.</strong><span>Puedes crear una nueva desviación o limpiar los filtros.</span></td></tr>}
+              )) : <tr><td colSpan={18} className="empty-state"><strong>No hay desviaciones con estos filtros.</strong><span>Puedes crear una nueva desviación o limpiar los filtros.</span></td></tr>}
             </tbody>
           </table>
         </div>
