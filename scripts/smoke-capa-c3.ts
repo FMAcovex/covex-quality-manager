@@ -91,7 +91,16 @@ async function main() {
     for (const item of stored.followups) {
       assert.equal(resolveCapaFollowupVersion(versions, item)?.sequenceNumber, item.sequenceNumber);
     }
-    const [v00, v01, v02] = versions.map(v => capaSnapshotToAnnexRecord(v.snapshot));
+    type HistoricalCapa = {
+      status: string;
+      effectivenessStatus: string;
+      defectDescription: string;
+      followups: Array<{ description: string }>;
+      effectiveClosedAt: Date | null;
+    };
+    const [v00, v01, v02] = versions.map(v =>
+      capaSnapshotToAnnexRecord(v.snapshot) as unknown as HistoricalCapa
+    );
     assert.equal(v00.status, "OPEN");
     assert.equal(v00.followups.length, 0);
     assert.equal(v00.defectDescription, "C3 MARCA V00");
