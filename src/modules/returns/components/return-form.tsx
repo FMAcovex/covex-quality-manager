@@ -22,12 +22,12 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
    <Field label="Fecha recepción" name="receivedAt" type="date" defaultValue={defaults.receivedAt}/>
    <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required/>
    {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={defaults.createdByText}/>:null}
-   <label className="field"><span>Tipo *</span><select name="returnType" defaultValue={defaults.returnType??""} required><option value="">Seleccionar…</option><option value="COMMERCIAL">Comercial</option><option value="COMPLAINT">Reclamación</option><option value="RECALL">Retirada</option><option value="EXPIRY">Caducidad</option><option value="TRANSPORT">Transporte</option><option value="OTHER">Otra</option></select></label>
+   {fromComplaintId?<><input type="hidden" name="returnType" value="COMPLAINT"/><label className="field"><span>Tipo *</span><select value="COMPLAINT" disabled><option value="COMPLAINT">Reclamación</option></select><small className="muted-note">Fijado por la Reclamación de origen.</small></label></>:<label className="field"><span>Tipo *</span><select name="returnType" defaultValue={defaults.returnType??""} required><option value="">Seleccionar…</option><option value="COMMERCIAL">Comercial</option><option value="COMPLAINT">Reclamación</option><option value="RECALL">Retirada</option><option value="EXPIRY">Caducidad</option><option value="TRANSPORT">Transporte</option><option value="OTHER">Otra</option></select></label>}
    <Field label="Otra · especificar" name="otherReturnType" defaultValue={defaults.otherReturnType}/>
    <Field label="Cliente / entidad" name="customerEntity" defaultValue={defaults.customerEntity} required span="span-2"/>
    <Field label="País" name="country" defaultValue={defaults.country}/>
    <Field label="Dirección" name="address" defaultValue={defaults.address} span="span-2"/>
-   <Field label="Documento relacionado" name="relatedDocument" defaultValue={defaults.relatedDocument} span="span-2"/>
+   {fromComplaintId?<><input type="hidden" name="relatedDocument" value={defaults.relatedDocument??""}/><label className="field span-2"><span>Documento relacionado</span><input value={defaults.relatedDocument??""} readOnly/><small className="muted-note">Código de la Reclamación de origen.</small></label></>:<Field label="Documento relacionado" name="relatedDocument" defaultValue={defaults.relatedDocument} span="span-2"/>}
    <Field label="Condiciones de conservación" name="conservationConditions" defaultValue={defaults.conservationConditions} span="span-2"/>
    <Field label="N.º albarán" name="deliveryNote" defaultValue={defaults.deliveryNote}/>
   </div></section>

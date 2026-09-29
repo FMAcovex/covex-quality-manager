@@ -494,7 +494,7 @@ Se añade un smoke transversal con PostgreSQL real que comprueba:
 El smoke queda registrado como `pnpm b3-3:smoke` y se ejecuta permanentemente en CI.
 
 ## Hito 10.8C3-B4.1 — Flujo canónico Reclamación → Devolución
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN MAIN (PR #45)**.
 
 Cambios limitados a backend:
 - cuando una devolución se crea con `fromComplaintId`, la Reclamación se resuelve dentro de la misma transacción;
@@ -506,4 +506,18 @@ Cambios limitados a backend:
 - reintentar la misma relación exacta sigue siendo idempotente por la capa común de relaciones;
 - las Devoluciones creadas manualmente sin `fromComplaintId` mantienen su comportamiento actual.
 
-Se añaden pruebas unitarias para resolución de origen, origen inexistente, varias devoluciones por reclamación e idempotencia. No se aborda todavía B4.2 (UX/navegación) ni B4.3 (prueba transversal).
+Se añaden pruebas unitarias para resolución de origen, origen inexistente, varias devoluciones por reclamación e idempotencia.
+
+## Hito 10.8C3-B4.2 — UX y navegación Reclamación ↔ Devolución
+Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+
+Cambios de interfaz:
+- al crear una Devolución desde una Reclamación, el campo Tipo se muestra fijado a `Reclamación`;
+- el Documento relacionado se muestra fijado al código de la Reclamación de origen;
+- ambos valores se envían mediante campos ocultos y coinciden con la canonicalización del servidor;
+- el Resumen de Devolución muestra el Documento relacionado como enlace cuando existe un único origen QMS;
+- el Resumen incorpora una tarjeta `Reclamación de origen` navegable;
+- la pestaña `Relaciones` conserva la vista inversa derivada de la única `QmsRelation` Reclamación → Devolución;
+- la Reclamación continúa mostrando sus Devoluciones derivadas sin duplicar relaciones.
+
+No se aborda todavía B4.3 (prueba transversal).
