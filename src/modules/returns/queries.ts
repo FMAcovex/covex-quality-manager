@@ -2,12 +2,15 @@ import "server-only";
 import { Prisma,QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
-export type ReturnListFilters={q?:string;year?:string;department?:string;type?:string;status?:string;decision?:string};
+export type ReturnListFilters={q?:string;administrative?:string;year?:string;department?:string;type?:string;status?:string;decision?:string};
 
 export async function getReturnList(filters:ReturnListFilters){
  const and:Prisma.ReturnRecordWhereInput[]=[];
+ if(filters.administrative==="ANNULLED")and.push({qmsRecord:{isActive:false}});
+ else if(filters.administrative!=="ALL")and.push({qmsRecord:{isActive:true}});
  if(filters.q)and.push({OR:[
   {qmsRecord:{businessCode:{contains:filters.q,mode:"insensitive"}}},
+  {qmsRecord:{annulledBusinessCode:{contains:filters.q,mode:"insensitive"}}},
   {customerEntity:{contains:filters.q,mode:"insensitive"}},{country:{contains:filters.q,mode:"insensitive"}},
   {reasonObservations:{contains:filters.q,mode:"insensitive"}},{finalDestination:{contains:filters.q,mode:"insensitive"}},
   {products:{some:{OR:[{productNameCode:{contains:filters.q,mode:"insensitive"}},{lot:{contains:filters.q,mode:"insensitive"}}]}}}
