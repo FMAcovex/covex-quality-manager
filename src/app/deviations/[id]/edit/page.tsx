@@ -34,7 +34,7 @@ export default async function EditDeviationPage({
         <div>
           <p className="eyebrow">Desviaciones</p>
           <h1>Editar {deviation.qmsRecord.businessCode ?? "desviación"}</h1>
-          <p>Los cambios quedan registrados en el historial interno de la aplicación.</p>
+          <p>Edita la versión vigente o genera el siguiente seguimiento como una versión completa del expediente.</p>
         </div>
         <Link className="button" href={`/deviations/${id}`}>← Volver al expediente</Link>
       </div>
@@ -43,6 +43,7 @@ export default async function EditDeviationPage({
         departments={lookups.departments}
         mode="edit"
         deviationId={id}
+        currentVersionSequence={deviation.qmsRecord.versions.at(-1)?.sequenceNumber ?? 0}
         defaults={{
           businessCode: deviation.qmsRecord.businessCode ?? "",
           departmentId: deviation.departmentId ?? "",
