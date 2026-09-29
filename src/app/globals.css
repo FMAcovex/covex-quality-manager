@@ -1059,3 +1059,44 @@ button[disabled] {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Hito 10.10 D2 — generación de versiones completas */
+.version-submit-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.version-submit-note {
+  display: grid;
+  gap: 2px;
+  max-width: 430px;
+  margin-right: 6px;
+  text-align: right;
+}
+.version-submit-note strong {
+  color: var(--blue-dark);
+  font-size: 12px;
+}
+.version-submit-note span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+@media (max-width: 850px) {
+  .form-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .version-submit-group {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .version-submit-note {
+    max-width: none;
+    margin-right: 0;
+    text-align: left;
+  }
+}
