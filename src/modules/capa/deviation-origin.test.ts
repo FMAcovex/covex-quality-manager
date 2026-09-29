@@ -18,6 +18,24 @@ type MemoryPlan = {
   };
 };
 
+type MemoryRelationUpsertArgs = {
+  where: {
+    sourceRecordId_targetRecordId_relationType: {
+      sourceRecordId: string;
+      targetRecordId: string;
+      relationType: QmsRelationType;
+    };
+  };
+  update: {
+    isActive: boolean;
+  };
+  create: {
+    sourceRecordId: string;
+    targetRecordId: string;
+    relationType: QmsRelationType;
+  };
+};
+
 function createMemoryClient(plans: MemoryPlan[]) {
   const planMap = new Map(plans.map((plan) => [plan.id, plan]));
   const records = new Map([
@@ -96,7 +114,7 @@ function createMemoryClient(plans: MemoryPlan[]) {
       }),
     },
     qmsRelation: {
-      upsert: vi.fn(async ({ where, update, create }: any) => {
+      upsert: vi.fn(async ({ where, update, create }: MemoryRelationUpsertArgs) => {
         const key = where.sourceRecordId_targetRecordId_relationType;
         const existing = relations.find(
           (relation) =>
@@ -188,7 +206,7 @@ describe("Hito 10.8C3-B2.1: propuesta Desviación -> CAPA", () => {
 
   it("si la propuesta cambia durante el guardado, no crea la relación", async () => {
     const { client } = createMemoryClient([plan("plan-1")]);
-    client.deviationCapaPlan.updateMany = vi.fn(async () => ({ count: 0 })) as any;
+    vi.spyOn(client.deviationCapaPlan, "updateMany").mockResolvedValue({ count: 0 });
 
     await expect(
       registerDeviationCapaPlan(client, {
