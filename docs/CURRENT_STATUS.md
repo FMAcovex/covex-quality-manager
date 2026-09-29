@@ -429,7 +429,7 @@ Cambios de interfaz:
 Se añaden pruebas unitarias para la lógica de navegación de propuestas.
 
 ## Hito 10.8C3-B2.3 — Prueba transversal Desviación → dos CAPA
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO Y VALIDADO EN CI — PR #41**.
 
 Se añade un smoke transversal con PostgreSQL real que comprueba:
 - una Desviación con dos propuestas CAPA independientes;
