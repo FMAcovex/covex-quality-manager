@@ -17,6 +17,9 @@ import {
 } from "@/modules/capa/followup-version-ui";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 
+import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+
 export const dynamic = "force-dynamic";
 
 const tabs = [
@@ -68,7 +71,7 @@ export default async function CapaDetailPage({
         <div>
           <p className="eyebrow"><Link href="/capa">← CAPA</Link></p>
           <div className="record-title-line">
-            <h1>{capa.qmsRecord.businessCode ?? "CAPA sin código"}</h1>
+            <h1>{qmsRecordDisplayCode(capa.qmsRecord, "CAPA sin código")}</h1>
             <span className="badge neutral">{capaTypeLabel(capa.actionType)}</span>
             <span className={`badge ${capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral"}`}>
               {capaStatusLabel(capa.status)}
@@ -91,6 +94,16 @@ export default async function CapaDetailPage({
           <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
         </div>
       </div>
+
+      <QmsAdministrativeStatus
+        qmsRecordId={capa.qmsRecord.id}
+        isActive={capa.qmsRecord.isActive}
+        code={qmsRecordDisplayCode(capa.qmsRecord)}
+        annulledAt={capa.qmsRecord.annulledAt?.toISOString() ?? null}
+        annulledByText={capa.qmsRecord.annulledByText}
+        annulledReason={capa.qmsRecord.annulledReason}
+        defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+      />
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (
@@ -117,7 +130,7 @@ export default async function CapaDetailPage({
                 <dd>
                   {primaryOrigin ? (
                     <Link href={qmsRecordHref(primaryOrigin.recordType, primaryOrigin.id)}>
-                      {capa.originCode ?? primaryOrigin.businessCode ?? qmsRecordTypeLabel(primaryOrigin.recordType)}
+                      {capa.originCode ?? qmsRecordDisplayCode(primaryOrigin, qmsRecordTypeLabel(primaryOrigin.recordType))}{!primaryOrigin.isActive ? " · Anulado" : ""}
                     </Link>
                   ) : (
                     capa.originCode ?? "—"
@@ -143,7 +156,7 @@ export default async function CapaDetailPage({
                   <div className="relation-card" key={record.id}>
                     <span>{originRelationLabel(record.recordType)}</span>
                     <Link href={qmsRecordHref(record.recordType, record.id)}>
-                      <strong>{record.businessCode ?? qmsRecordTypeLabel(record.recordType)}</strong>
+                      <strong>{qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))}{!record.isActive ? " · Anulado" : ""}</strong>
                     </Link>
                     <small>El código abre el expediente de origen.</small>
                   </div>
@@ -317,7 +330,7 @@ export default async function CapaDetailPage({
                 <div className="relation-card" key={record.id}>
                   <span>{originRelationLabel(record.recordType)}</span>
                   <Link href={qmsRecordHref(record.recordType, record.id)}>
-                    <strong>{record.businessCode ?? qmsRecordTypeLabel(record.recordType)}</strong>
+                    <strong>{qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))}{!record.isActive ? " · Anulado" : ""}</strong>
                   </Link>
                   <small>Vista inversa de la relación QMS.</small>
                 </div>

@@ -2,12 +2,15 @@ import "server-only";
 import { Prisma,QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
-export type ReturnListFilters={q?:string;year?:string;department?:string;type?:string;status?:string;decision?:string};
+export type ReturnListFilters={q?:string;administrative?:string;year?:string;department?:string;type?:string;status?:string;decision?:string};
 
 export async function getReturnList(filters:ReturnListFilters){
  const and:Prisma.ReturnRecordWhereInput[]=[];
+ if(filters.administrative==="ANNULLED")and.push({qmsRecord:{isActive:false}});
+ else if(filters.administrative!=="ALL")and.push({qmsRecord:{isActive:true}});
  if(filters.q)and.push({OR:[
   {qmsRecord:{businessCode:{contains:filters.q,mode:"insensitive"}}},
+  {qmsRecord:{annulledBusinessCode:{contains:filters.q,mode:"insensitive"}}},
   {customerEntity:{contains:filters.q,mode:"insensitive"}},{country:{contains:filters.q,mode:"insensitive"}},
   {reasonObservations:{contains:filters.q,mode:"insensitive"}},{finalDestination:{contains:filters.q,mode:"insensitive"}},
   {products:{some:{OR:[{productNameCode:{contains:filters.q,mode:"insensitive"}},{lot:{contains:filters.q,mode:"insensitive"}}]}}}
@@ -18,12 +21,13 @@ export async function getReturnList(filters:ReturnListFilters){
  if(filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
  if(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??""))and.push({decision:filters.decision as "PENDING"|"ACCEPTED"|"REJECTED"});
  const where:Prisma.ReturnRecordWhereInput=and.length?{AND:and}:{};
+ const administrativeWhere:Prisma.ReturnRecordWhereInput=filters.administrative==="ANNULLED"?{qmsRecord:{isActive:false}}:filters.administrative==="ALL"?{}:{qmsRecord:{isActive:true}};
  const [rows,departments,years,total,open,pending,followupDue]=await Promise.all([
   prisma.returnRecord.findMany({where,include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}}}},department:true,products:{orderBy:{sortOrder:"asc"}},followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{communicationDate:"desc"},{createdAt:"desc"}],take:300}),
   prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
   prisma.qmsRecord.findMany({where:{recordType:QmsRecordType.RETURN,year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}}),
-  prisma.returnRecord.count(),prisma.returnRecord.count({where:{status:"OPEN"}}),prisma.returnRecord.count({where:{decision:"PENDING"}}),
-  prisma.returnRecord.findMany({where:{status:"OPEN"},select:{followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1,select:{nextFollowupDate:true}}}})
+  prisma.returnRecord.count({where:administrativeWhere}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:"OPEN"}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{decision:"PENDING"}]}}),
+  prisma.returnRecord.findMany({where:{AND:[administrativeWhere,{status:"OPEN"}]},select:{followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1,select:{nextFollowupDate:true}}}})
  ]);
  return {rows,departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{total,open,pending,followupDue:followupDue.filter(r=>r.followups[0]?.nextFollowupDate&&r.followups[0].nextFollowupDate<=new Date()).length}};
 }

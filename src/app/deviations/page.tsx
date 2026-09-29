@@ -6,7 +6,7 @@ import { deadlineLabel, formatDate, measuresLabel } from "@/modules/deviations/d
 import { getDeviationList } from "@/modules/deviations/queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { deviationColumns } from "@/modules/deviations/column-config";
-import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,7 @@ export default async function DeviationsPage({
   const query = await searchParams;
   const filters = {
     q: param(query.q),
+    administrative: param(query.administrative),
     year: param(query.year),
     department: param(query.department),
     status: param(query.status),
@@ -86,6 +87,7 @@ export default async function DeviationsPage({
 
       <form method="get" className="toolbar-form">
         <div className="filter-panel operational">
+          <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
           <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year ?? ""}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
           <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
           <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
@@ -144,7 +146,7 @@ export default async function DeviationsPage({
                       type="checkbox"
                       data-reminder-record="true"
                       data-reminder-id={row.qmsRecord.id}
-                      data-reminder-code={row.qmsRecord.businessCode ?? "Sin código"}
+                      data-reminder-code={qmsRecordDisplayCode(row.qmsRecord)}
                       data-reminder-summary={row.whatHappened ?? row.materialProcessAffected ?? "Sin descripción"}
                       data-reminder-status={row.status === "OPEN" ? "Abierta" : "Cerrada"}
                       data-reminder-meta={row.departmentCodeSnapshot ?? row.department?.code ?? ""}
@@ -153,7 +155,7 @@ export default async function DeviationsPage({
                     />
                   </td>
                   <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td>
-                  <td data-column-key="code"><Link className="summary-link" href={`/deviations/${row.id}`}>{row.qmsRecord.businessCode ?? "Sin código"}</Link></td>
+                  <td data-column-key="code"><Link className="summary-link" href={`/deviations/${row.id}`}>{qmsRecordDisplayCode(row.qmsRecord)}</Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                   <td data-column-key="department">{row.departmentCodeSnapshot ?? row.department?.code ?? "—"}</td>
                   <td data-column-key="material" className="table-cell-medium">{row.materialProcessAffected ?? "—"}</td>
                   <td data-column-key="provenance">{row.provenance ?? "—"}</td>
@@ -171,7 +173,7 @@ export default async function DeviationsPage({
                     <div className="relation-chips">
                       {[...row.qmsRecord.sourceRelations.map((x)=>x.targetRecord), ...row.qmsRecord.targetRelations.map((x)=>x.sourceRecord)].map((record)=>(
                         <Link key={record.id} className="relation-chip" href={qmsRecordHref(record.recordType, record.id)} title={qmsRecordTypeLabel(record.recordType)}>
-                          {record.businessCode ?? qmsRecordTypeLabel(record.recordType)}
+                          {qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))}{!record.isActive ? " · Anulado" : ""}
                         </Link>
                       ))}
                       {row.qmsRecord.sourceRelations.length + row.qmsRecord.targetRelations.length === 0 ? "—" : null}

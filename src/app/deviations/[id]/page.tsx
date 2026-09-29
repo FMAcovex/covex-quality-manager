@@ -13,6 +13,9 @@ import { OperationalRelationForm } from "@/components/operational-relation-form"
 import { uploadDeviationSignedPdfAction } from "@/modules/deviations/signed-document-actions";
 import { SignedVersionDocumentForm } from "@/modules/deviations/components/signed-version-document-form";
 
+import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+
 export const dynamic = "force-dynamic";
 
 const tabs = [
@@ -86,7 +89,7 @@ export default async function DeviationDetailPage({
   const deviation = await getDeviationDetail(id);
   if (!deviation) notFound();
 
-  const code = deviation.qmsRecord.businessCode ?? "Sin codificación";
+  const code = qmsRecordDisplayCode(deviation.qmsRecord, "Sin codificación");
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
   const currentSignedDocument = currentVersion?.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
   const relatedCapas = deviation.qmsRecord.sourceRelations
@@ -134,6 +137,16 @@ export default async function DeviationDetailPage({
           <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>
         </div>
       </div>
+
+      <QmsAdministrativeStatus
+        qmsRecordId={deviation.qmsRecord.id}
+        isActive={deviation.qmsRecord.isActive}
+        code={qmsRecordDisplayCode(deviation.qmsRecord)}
+        annulledAt={deviation.qmsRecord.annulledAt?.toISOString() ?? null}
+        annulledByText={deviation.qmsRecord.annulledByText}
+        annulledReason={deviation.qmsRecord.annulledReason}
+        defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+      />
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (

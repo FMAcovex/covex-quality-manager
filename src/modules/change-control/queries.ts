@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 
 export type ChangeControlListFilters = {
   q?: string;
+  administrative?: string;
   year?: string;
   department?: string;
   classification?: string;
@@ -14,6 +15,11 @@ export type ChangeControlListFilters = {
 
 export async function getChangeControlList(filters: ChangeControlListFilters) {
   const and: Prisma.ChangeControlWhereInput[] = [];
+  if (filters.administrative === "ANNULLED") {
+    and.push({ qmsRecord: { isActive: false } });
+  } else if (filters.administrative !== "ALL") {
+    and.push({ qmsRecord: { isActive: true } });
+  }
   if (filters.q) {
     and.push({
       OR: [
@@ -44,6 +50,12 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
   }
 
   const where: Prisma.ChangeControlWhereInput = and.length ? { AND: and } : {};
+  const administrativeWhere: Prisma.ChangeControlWhereInput =
+    filters.administrative === "ANNULLED"
+      ? { qmsRecord: { isActive: false } }
+      : filters.administrative === "ALL"
+        ? {}
+        : { qmsRecord: { isActive: true } };
   const [rows, departments, years, total, open, executedPendingEfficacy, overdue] =
     await Promise.all([
       prisma.changeControl.findMany({
@@ -69,13 +81,13 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
         distinct: ["year"],
         orderBy: { year: "desc" },
       }),
-      prisma.changeControl.count(),
-      prisma.changeControl.count({ where: { finalStatus: "OPEN" } }),
+      prisma.changeControl.count({ where: administrativeWhere }),
+      prisma.changeControl.count({ where: { AND: [administrativeWhere, { finalStatus: "OPEN" }] } }),
       prisma.changeControl.count({
-        where: { executionStatus: "EXECUTED", effectivenessStatus: "PENDING", finalStatus: "OPEN" },
+        where: { AND: [administrativeWhere, { executionStatus: "EXECUTED", effectivenessStatus: "PENDING", finalStatus: "OPEN" }] },
       }),
       prisma.changeControl.findMany({
-        where: { finalStatus: "OPEN" },
+        where: { AND: [administrativeWhere, { finalStatus: "OPEN" }] },
         select: {
           followups: {
             orderBy: [{ sequenceNumber: "desc" }, { followupDate: "desc" }],

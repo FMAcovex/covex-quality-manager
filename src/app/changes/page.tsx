@@ -12,7 +12,7 @@ import {
   formatDate,
 } from "@/modules/change-control/domain";
 import { getChangeControlList } from "@/modules/change-control/queries";
-import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +29,7 @@ export default async function ChangeControlPage({
   const query = await searchParams;
   const filters = {
     q: param(query.q),
+    administrative: param(query.administrative),
     year: param(query.year),
     department: param(query.department),
     classification: param(query.classification),
@@ -83,6 +84,7 @@ export default async function ChangeControlPage({
 
       <form method="get" className="toolbar-form">
         <div className="filter-panel operational change-filters">
+          <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
           <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year ?? ""}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
           <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
           <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification ?? ""}><option value="">Todas</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option></select></label>
@@ -161,7 +163,7 @@ export default async function ChangeControlPage({
                         type="checkbox"
                         data-reminder-record="true"
                         data-reminder-id={row.qmsRecord.id}
-                        data-reminder-code={row.qmsRecord.businessCode ?? "Sin código"}
+                        data-reminder-code={qmsRecordDisplayCode(row.qmsRecord)}
                         data-reminder-summary={row.description ?? "Sin descripción"}
                         data-reminder-status={finalStatusLabel(row.finalStatus)}
                         data-reminder-meta={row.departmentCodeSnapshot ?? ""}
@@ -171,7 +173,7 @@ export default async function ChangeControlPage({
                     </td>
                     <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ Revisar</span> : "—"}</td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
-                    <td data-column-key="code" className="sticky-code"><Link href={`/changes/${row.id}`}><strong>{row.qmsRecord.businessCode ?? "Sin código"}</strong></Link></td>
+                    <td data-column-key="code" className="sticky-code"><Link href={`/changes/${row.id}`}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                     <td data-column-key="description" className="long-cell">{row.description ?? "—"}</td>
                     <td data-column-key="requestDate">{formatDate(row.requestDate)}</td>
                     <td data-column-key="approvalDate">{formatDate(row.dictamenDate)}</td>
@@ -185,7 +187,7 @@ export default async function ChangeControlPage({
                     <td data-column-key="finalStatus"><span className={`status-badge ${row.finalStatus.toLowerCase()}`}>{finalStatusLabel(row.finalStatus)}</span></td>
                     <td data-column-key="closureDate">{formatDate(row.effectiveClosedAt)}</td>
                     <td data-column-key="related"><div className="relation-chips">
-                      {[...row.qmsRecord.sourceRelations.map(x=>x.targetRecord),...row.qmsRecord.targetRelations.map(x=>x.sourceRecord)].map(record=><Link key={record.id} className="relation-chip" href={qmsRecordHref(record.recordType,record.id)} title={qmsRecordTypeLabel(record.recordType)}>{record.businessCode??qmsRecordTypeLabel(record.recordType)}</Link>)}
+                      {[...row.qmsRecord.sourceRelations.map(x=>x.targetRecord),...row.qmsRecord.targetRelations.map(x=>x.sourceRecord)].map(record=><Link key={record.id} className="relation-chip" href={qmsRecordHref(record.recordType,record.id)} title={qmsRecordTypeLabel(record.recordType)}>{qmsRecordDisplayCode(record,qmsRecordTypeLabel(record.recordType))}{!record.isActive?" · Anulado":""}</Link>)}
                       {row.qmsRecord.sourceRelations.length+row.qmsRecord.targetRelations.length===0?"—":null}
                     </div></td>
                     <td data-column-key="observations" className="long-cell">{row.internalObservations ?? "—"}</td>

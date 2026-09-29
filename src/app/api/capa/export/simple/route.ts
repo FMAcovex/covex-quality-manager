@@ -6,6 +6,7 @@ export const runtime="nodejs";
 export async function GET(request:Request) {
   const url=new URL(request.url);
   const filters={
+    administrative:url.searchParams.get("administrative")??undefined,
     year:url.searchParams.get("year")??undefined,
     department:url.searchParams.get("department")??undefined,
     type:url.searchParams.get("type")??undefined,

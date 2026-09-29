@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 
 export type CapaListFilters = {
   q?: string;
+  administrative?: string;
   year?: string;
   department?: string;
   type?: string;
@@ -16,10 +17,17 @@ export type CapaListFilters = {
 export async function getCapaList(filters: CapaListFilters) {
   const and: Prisma.CapaWhereInput[] = [];
 
+  if (filters.administrative === "ANNULLED") {
+    and.push({ qmsRecord: { isActive: false } });
+  } else if (filters.administrative !== "ALL") {
+    and.push({ qmsRecord: { isActive: true } });
+  }
+
   if (filters.q) {
     and.push({
       OR: [
         { qmsRecord: { businessCode: { contains: filters.q, mode: "insensitive" } } },
+        { qmsRecord: { annulledBusinessCode: { contains: filters.q, mode: "insensitive" } } },
         { originCode: { contains: filters.q, mode: "insensitive" } },
         { originType: { contains: filters.q, mode: "insensitive" } },
         { defectDescription: { contains: filters.q, mode: "insensitive" } },
@@ -47,6 +55,12 @@ export async function getCapaList(filters: CapaListFilters) {
   if (filters.origin) and.push({ originType: filters.origin });
 
   const where: Prisma.CapaWhereInput = and.length ? { AND: and } : {};
+  const administrativeWhere: Prisma.CapaWhereInput =
+    filters.administrative === "ANNULLED"
+      ? { qmsRecord: { isActive: false } }
+      : filters.administrative === "ALL"
+        ? {}
+        : { qmsRecord: { isActive: true } };
   const now = new Date();
 
   const [rows, departments, years, origins, total, open, pendingEfficacy, overdueFollowups] =
@@ -80,17 +94,18 @@ export async function getCapaList(filters: CapaListFilters) {
         distinct: ["originType"],
         orderBy: { originType: "asc" },
       }),
-      prisma.capa.count(),
-      prisma.capa.count({ where: { status: "OPEN" } }),
+      prisma.capa.count({ where: administrativeWhere }),
+      prisma.capa.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
       prisma.capa.count({
         where: {
-          status: "CLOSED",
-          effectivenessStatus: "PENDING",
-          effectiveClosedAt: null,
+          AND: [
+            administrativeWhere,
+            { status: "CLOSED", effectivenessStatus: "PENDING", effectiveClosedAt: null },
+          ],
         },
       }),
       prisma.capa.findMany({
-        where: { status: "OPEN" },
+        where: { AND: [administrativeWhere, { status: "OPEN" }] },
         select: {
           followups: {
             orderBy: [{ followupDate: "desc" }, { sequenceNumber: "desc" }],

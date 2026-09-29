@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 
 export type DeviationListFilters = {
   q?: string;
+  administrative?: string;
   year?: string;
   department?: string;
   status?: string;
@@ -17,10 +18,17 @@ export type DeviationListFilters = {
 export async function getDeviationList(filters: DeviationListFilters) {
   const and: Prisma.DeviationWhereInput[] = [];
 
+  if (filters.administrative === "ANNULLED") {
+    and.push({ qmsRecord: { isActive: false } });
+  } else if (filters.administrative !== "ALL") {
+    and.push({ qmsRecord: { isActive: true } });
+  }
+
   if (filters.q) {
     and.push({
       OR: [
         { qmsRecord: { businessCode: { contains: filters.q, mode: "insensitive" } } },
+        { qmsRecord: { annulledBusinessCode: { contains: filters.q, mode: "insensitive" } } },
         { materialProcessAffected: { contains: filters.q, mode: "insensitive" } },
         { provenance: { contains: filters.q, mode: "insensitive" } },
         { whatHappened: { contains: filters.q, mode: "insensitive" } },
@@ -84,6 +92,12 @@ export async function getDeviationList(filters: DeviationListFilters) {
   }
 
   const where: Prisma.DeviationWhereInput = and.length ? { AND: and } : {};
+  const administrativeWhere: Prisma.DeviationWhereInput =
+    filters.administrative === "ANNULLED"
+      ? { qmsRecord: { isActive: false } }
+      : filters.administrative === "ALL"
+        ? {}
+        : { qmsRecord: { isActive: true } };
 
   const [rows, departments, yearRows, provenanceRows, total, open, overdue, followupDue] =
     await Promise.all([
@@ -116,11 +130,11 @@ export async function getDeviationList(filters: DeviationListFilters) {
         distinct: ["provenance"],
         orderBy: { provenance: "asc" },
       }),
-      prisma.deviation.count(),
-      prisma.deviation.count({ where: { status: "OPEN" } }),
-      prisma.deviation.count({ where: { status: "OPEN", deadlineStatus: "OUT_OF_TIME" } }),
+      prisma.deviation.count({ where: administrativeWhere }),
+      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
+      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN", deadlineStatus: "OUT_OF_TIME" }] } }),
       prisma.deviation.findMany({
-        where: { status: "OPEN" },
+        where: { AND: [administrativeWhere, { status: "OPEN" }] },
         select: {
           followups: {
             orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }],

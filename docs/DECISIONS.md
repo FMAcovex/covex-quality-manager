@@ -251,3 +251,19 @@ La exportación lógica del Hito 10:
 - puede verificarse antes de conservar o trasladar el archivo.
 
 Es una herramienta técnica de demo/contingencia. No sustituye la política corporativa futura de backup, restauración, retención, cifrado, acceso o disaster recovery, que se definirá en Hito 11 con IT.
+
+
+## D-043 — Anulación administrativa de expedientes
+Los expedientes de negocio no se borran físicamente desde la interfaz. Cuando un expediente se crea por error o debe retirarse de la operativa se utiliza una anulación lógica transversal.
+
+Reglas:
+- la anulación exige motivo y usuario;
+- se conservan UUID, datos del módulo, versiones, documentos, relaciones e historial;
+- el código visible original se conserva en `annulledBusinessCode`;
+- `businessCode` se libera al anular para permitir reutilizar la codificación;
+- solo puede existir un expediente activo por módulo y codificación;
+- los listados muestran por defecto únicamente expedientes activos y ofrecen filtro Activos / Anulados / Todos;
+- exportaciones e indicadores excluyen anulados por defecto;
+- las relaciones ya existentes se conservan y muestran el código histórico con estado Anulado;
+- no pueden crearse nuevas relaciones con expedientes anulados;
+- la reactivación exige motivo y recupera el código original solo si no ha sido reutilizado por otro expediente activo.

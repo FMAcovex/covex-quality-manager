@@ -22,6 +22,8 @@ const relationRecordSelect = {
   id: true,
   recordType: true,
   businessCode: true,
+  annulledBusinessCode: true,
+  isActive: true,
 } as const;
 
 async function getQmsRecord(
@@ -36,6 +38,11 @@ async function getQmsRecord(
   if (!record) {
     throw new QmsRelationValidationError(
       `El expediente QMS de ${role} no existe o ya no está disponible.`,
+    );
+  }
+  if (record.isActive === false) {
+    throw new QmsRelationValidationError(
+      `El expediente QMS de ${role} está anulado y no puede usarse para crear nuevas relaciones.`,
     );
   }
   return record;

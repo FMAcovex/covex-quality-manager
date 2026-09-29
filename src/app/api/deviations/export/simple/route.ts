@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const names = ["q","year","department","status","classification","provenance","measures","capa","deadline"] as const;
+  const names = ["q","administrative","year","department","status","classification","provenance","measures","capa","deadline"] as const;
   const filters = Object.fromEntries(names.map((name) => [name, url.searchParams.get(name) || undefined]));
   const rows = await getDeviationExportRows(filters);
   const buffer = generateSimpleList(rows);

@@ -319,8 +319,12 @@ model QmsRecord {
   id                 String              @id @default(uuid())
   recordType         QmsRecordType
   businessCode       String?
+  annulledBusinessCode String?
   year               Int?
   isActive           Boolean             @default(true)
+  annulledAt         DateTime?
+  annulledByText     String?
+  annulledReason     String?              @db.Text
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   deviation          Deviation?
@@ -340,7 +344,9 @@ model QmsRecord {
 
   @@unique([recordType, businessCode])
   @@index([recordType, year])
+  @@index([recordType, isActive])
   @@index([businessCode])
+  @@index([annulledBusinessCode])
 }
 
 model QmsRelation {

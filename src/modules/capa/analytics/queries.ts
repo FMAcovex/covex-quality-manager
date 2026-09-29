@@ -10,6 +10,7 @@ export async function getCapaAnalytics(filters:CapaAnalyticsFilters) {
   const records=await prisma.capa.findMany({
     where:{
       includeInKpi:true,
+      qmsRecord:{isActive:true},
       ...(filters.department?{departmentId:filters.department}:{}),
       ...(filters.type==="CORRECTIVE"||filters.type==="PREVENTIVE"?{actionType:filters.type}:{}),
       ...(filters.origin?{originType:filters.origin}:{}),

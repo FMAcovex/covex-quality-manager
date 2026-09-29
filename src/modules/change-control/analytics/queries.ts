@@ -17,6 +17,7 @@ export async function getChangeAnalytics(filters: ChangeAnalyticsFilters) {
   const records = await prisma.changeControl.findMany({
     where: {
       includeInKpi: true,
+      qmsRecord: { isActive: true },
       ...(filters.department ? { departmentId: filters.department } : {}),
       ...(filters.classification === "MAJOR" || filters.classification === "MINOR"
         ? { classification: filters.classification }
