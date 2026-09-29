@@ -36,9 +36,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   }
 
   type AnnexRecord = Parameters<typeof generateAnnexIII>[0];
+  const recordVersionLabel = versionLabel(storedVersion?.sequenceNumber ?? 0);
   const annexRecord: AnnexRecord = storedVersion
-    ? (deviationSnapshotToAnnexRecord(storedVersion.snapshot) as unknown as AnnexRecord)
-    : deviation;
+    ? ({
+        ...deviationSnapshotToAnnexRecord(storedVersion.snapshot),
+        recordVersionLabel,
+      } as unknown as AnnexRecord)
+    : ({ ...deviation, recordVersionLabel } as AnnexRecord);
 
   try {
     const buffer = await generateAnnexIII(annexRecord);
