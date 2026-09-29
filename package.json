@@ -43,7 +43,8 @@
     "relations:smoke": "tsx scripts/smoke-operational-relations.ts",
     "b2-3:smoke": "tsx scripts/smoke-deviation-capa-b2-3.ts",
     "b3-3:smoke": "tsx scripts/smoke-complaint-capa-b3-3.ts",
-    "b4-3:smoke": "tsx scripts/smoke-complaint-return-b4-3.ts"
+    "b4-3:smoke": "tsx scripts/smoke-complaint-return-b4-3.ts",
+    "c3:smoke": "tsx scripts/smoke-capa-c3.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
