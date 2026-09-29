@@ -36,7 +36,6 @@ import {
   refreshCurrentVersion,
   serializeCapaVersion,
   snapshotJson,
-  startNextVersion,
 } from "@/lib/qms/versioning";
 
 function toDate(value: string | null) {
