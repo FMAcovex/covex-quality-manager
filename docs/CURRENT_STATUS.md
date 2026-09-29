@@ -477,7 +477,7 @@ Cambios de interfaz:
 La lógica compartida conserva pruebas unitarias para los tres estados.
 
 ## Hito 10.8C3-B3.3 — Prueba transversal Reclamación → dos CAPA
-Estado: **IMPLEMENTADO EN RAMA, PENDIENTE DE VALIDACIÓN CI**.
+Estado: **COMPLETADO Y VALIDADO EN CI — PR #44**.
 
 Se añade un smoke transversal con PostgreSQL real que comprueba:
 - una Reclamación con dos propuestas CAPA independientes;
