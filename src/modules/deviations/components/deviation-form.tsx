@@ -81,20 +81,30 @@ function TriStateSelect({
   label,
   name,
   defaultValue,
+  required = false,
+  issues,
 }: {
   label: string;
   name: string;
   defaultValue?: string;
+  required?: boolean;
+  issues?: string[];
 }) {
   return (
-    <label className="field">
-      <span>{label}</span>
-      <select name={name} defaultValue={defaultValue ?? ""}>
+    <label className={`field ${issues?.length ? "has-error" : ""}`}>
+      <span>{label}{required ? " *" : ""}</span>
+      <select
+        name={name}
+        defaultValue={defaultValue ?? ""}
+        required={required}
+        aria-invalid={issues?.length ? true : undefined}
+      >
         <option value="">No informado</option>
         <option value="YES">Sí</option>
         <option value="NO">No</option>
         <option value="NA">N/A</option>
       </select>
+      <FieldIssue messages={issues} />
     </label>
   );
 }
@@ -161,10 +171,10 @@ export function DeviationForm({
             <FieldIssue messages={issues.departmentId} />
           </label>
           <Field label="Fecha apertura" name="issueDate" type="date" defaultValue={defaults.issueDate} required issues={issues.issueDate} />
-          <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={defaults.eventDateTime} issues={issues.eventDateTime} />
-          <Field label="Detectado por" name="detectedBy" defaultValue={defaults.detectedBy} />
+          <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={defaults.eventDateTime} required issues={issues.eventDateTime} />
+          <Field label="Detectado por" name="detectedBy" defaultValue={defaults.detectedBy} required issues={issues.detectedBy} />
           <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required issues={issues.createdByText} />
-          <Field label="Breve descripción del proceso/equipo/sistema afectado" name="materialProcessAffected" defaultValue={defaults.materialProcessAffected} span="span-2" />
+          <Field label="Breve descripción del proceso/equipo/sistema afectado" name="materialProcessAffected" defaultValue={defaults.materialProcessAffected} span="span-2" required issues={issues.materialProcessAffected} />
         </div>
       </section>
 
@@ -236,10 +246,10 @@ export function DeviationForm({
         <p className="section-help">Registrar hechos observables. No incluir aquí causas, impacto, hipótesis ni acciones futuras.</p>
         <div className="form-grid">
           <TextArea label="¿Qué sucedió / qué debía haber sucedido?" name="whatHappened" defaultValue={defaults.whatHappened} required issues={issues.whatHappened} />
-          <TextArea label="¿Quién estuvo implicado y cuál fue su papel?" name="whoInvolved" defaultValue={defaults.whoInvolved} />
-          <TextArea label="¿Cuándo ocurrió?" name="whenHappened" defaultValue={defaults.whenHappened} />
-          <TextArea label="¿Dónde ocurrió?" name="whereHappened" defaultValue={defaults.whereHappened} />
-          <TextArea label="¿Cómo se detectó / cómo ocurrió?" name="howHappened" defaultValue={defaults.howHappened} />
+          <TextArea label="¿Quién estuvo implicado y cuál fue su papel?" name="whoInvolved" defaultValue={defaults.whoInvolved} required issues={issues.whoInvolved} />
+          <TextArea label="¿Cuándo ocurrió?" name="whenHappened" defaultValue={defaults.whenHappened} required issues={issues.whenHappened} />
+          <TextArea label="¿Dónde ocurrió?" name="whereHappened" defaultValue={defaults.whereHappened} required issues={issues.whereHappened} />
+          <TextArea label="¿Cómo se detectó / cómo ocurrió?" name="howHappened" defaultValue={defaults.howHappened} required issues={issues.howHappened} />
         </div>
       </section>
 
@@ -273,8 +283,8 @@ export function DeviationForm({
         <h2>E. Investigación</h2>
         <p className="section-help">Documentar la investigación realizada y si las evidencias permiten alcanzar una conclusión.</p>
         <div className="form-grid">
-          <TextArea label="Investigación realizada / resultado y conclusiones" name="investigation" defaultValue={defaults.investigation} issues={issues.investigation} />
-          <TriStateSelect label="¿Investigación concluyente?" name="investigationConclusive" defaultValue={defaults.investigationConclusive} />
+          <TextArea label="Investigación realizada / resultado y conclusiones" name="investigation" defaultValue={defaults.investigation} required issues={issues.investigation} />
+          <TriStateSelect label="¿Investigación concluyente?" name="investigationConclusive" defaultValue={defaults.investigationConclusive} required issues={issues.investigationConclusive} />
         </div>
       </section>
 
