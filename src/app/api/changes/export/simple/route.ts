@@ -7,6 +7,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const filters = {
     q: url.searchParams.get("q") ?? undefined,
+    administrative: url.searchParams.get("administrative") ?? undefined,
     year: url.searchParams.get("year") ?? undefined,
     department: url.searchParams.get("department") ?? undefined,
     classification: url.searchParams.get("classification") ?? undefined,
