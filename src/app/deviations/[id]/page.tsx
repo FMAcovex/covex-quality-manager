@@ -127,7 +127,7 @@ export default async function DeviationDetailPage({
           <p className="muted-note">Apertura {formatDate(deviation.issueDate)} · Cumplimentado por {text(deviation.createdByText)}</p>
         </div>
         <div className="record-actions">
-          <Link className="button primary" href={`/deviations/${id}/edit`}>Editar</Link>
+          <Link className="button primary" href={`/deviations/${id}/edit`}>Editar/nueva versión</Link>
           <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>
         </div>
       </div>
