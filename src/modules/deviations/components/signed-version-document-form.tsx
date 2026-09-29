@@ -31,6 +31,16 @@ export function SignedVersionDocumentForm({
         <span>Cargado por</span>
         <input name="actor" defaultValue={defaultActor} required />
       </label>
+      {replace ? (
+        <label className="field full">
+          <span>Motivo de sustitución</span>
+          <textarea
+            name="replacementReason"
+            required
+            placeholder="Indica por qué se sustituye el PDF firmado ya cargado."
+          />
+        </label>
+      ) : null}
       <div className="full">
         <button type="submit" className="button" disabled={pending}>
           {pending ? "Cargando…" : replace ? "Sustituir PDF firmado" : "Cargar PDF firmado"}
