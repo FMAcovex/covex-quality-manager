@@ -11,7 +11,7 @@ import {
 import { getCapaList } from "@/modules/capa/queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { capaColumns } from "@/modules/capa/column-config";
-import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +28,7 @@ export default async function CapaPage({
   const query = await searchParams;
   const filters = {
     q: param(query.q),
+    administrative: param(query.administrative),
     year: param(query.year),
     department: param(query.department),
     type: param(query.type),
@@ -80,6 +81,7 @@ export default async function CapaPage({
 
       <form method="get" className="toolbar-form">
         <div className="filter-panel operational capa-filters">
+          <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
           <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year ?? ""}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
           <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
           <label className="filter-placeholder"><span>Tipo</span><select name="type" defaultValue={filters.type ?? ""}><option value="">Todas</option><option value="CORRECTIVE">Correctiva</option><option value="PREVENTIVE">Preventiva</option></select></label>
@@ -150,7 +152,7 @@ export default async function CapaPage({
                         type="checkbox"
                         data-reminder-record="true"
                         data-reminder-id={row.qmsRecord.id}
-                        data-reminder-code={row.qmsRecord.businessCode ?? "Sin código"}
+                        data-reminder-code={qmsRecordDisplayCode(row.qmsRecord)}
                         data-reminder-summary={actionDescription}
                         data-reminder-status={capaStatusLabel(row.status)}
                         data-reminder-meta={row.departmentCodeSnapshot ?? ""}
@@ -160,7 +162,7 @@ export default async function CapaPage({
                     </td>
                     <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td>
                     <td data-column-key="type"><span className="badge neutral">{capaTypeLabel(row.actionType)}</span></td>
-                    <td data-column-key="code" className="sticky-code"><Link href={`/capa/${row.id}`}><strong>{row.qmsRecord.businessCode ?? "Sin código"}</strong></Link></td>
+                    <td data-column-key="code" className="sticky-code"><Link href={`/capa/${row.id}`}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
                     <td data-column-key="origin">{row.originType ?? "—"}</td>
                     <td data-column-key="originCode">{row.originCode ?? "—"}</td>
