@@ -200,7 +200,14 @@ export function DeviationForm({
         <h2>Identificación</h2>
         <p className="section-help">Datos que identifican el expediente y su registro inicial.</p>
         <div className="form-grid">
-          <Field label="Codificación" name="businessCode" defaultValue={formDefaults.businessCode} required issues={issues.businessCode} />
+          <div className="field">
+            <span>Codificación</span>
+            <input type="hidden" name="businessCode" value={formDefaults.businessCode ?? ""} />
+            <div className="readonly-field">
+              {formDefaults.businessCode ?? (recordStatus === "DRAFT" ? "Se asignará al abrir la desviación" : "Asignación automática al guardar")}
+            </div>
+            <small className="muted-note">Formato automático: D/XX-NN/ZZZ/YYYY.</small>
+          </div>
           <label className={`field ${issues.departmentId?.length ? "has-error" : ""}`}>
             <span>Departamento *</span>
             <select name="departmentId" defaultValue={formDefaults.departmentId ?? ""} required aria-invalid={issues.departmentId?.length ? true : undefined}>
