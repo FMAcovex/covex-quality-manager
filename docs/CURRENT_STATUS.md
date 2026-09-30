@@ -670,3 +670,16 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - se añaden pruebas unitarias del mecanismo común;
 - Desviaciones mantiene el comportamiento ya validado y queda como referencia funcional del patrón.
 
+
+
+## D5.2 — Relaciones y desvinculación reutilizable
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
+
+- se centraliza la vinculación por código en `linkOperationalRelationByBusinessCode`;
+- se centraliza la desvinculación desde cualquiera de los extremos en `deactivateOperationalRelation`;
+- Desviaciones y CAPA reutilizan el patrón común ya validado en D-046;
+- Reclamaciones incorpora desvinculación tanto de CAPA como de Devoluciones;
+- Devoluciones incorpora desvinculación de la Reclamación de origen;
+- revincular reactiva la misma fila `QmsRelation` y no crea duplicados;
+- se conserva la dirección canónica Desviación → CAPA, Reclamación → CAPA y Reclamación → Devolución;
+- se añaden pruebas unitarias del ciclo vincular → desvincular → revincular desde extremos inversos.
