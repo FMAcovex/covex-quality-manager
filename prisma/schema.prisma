@@ -72,6 +72,7 @@ enum CapaProposalStatus {
 }
 
 enum CapaStatus {
+  DRAFT
   OPEN
   CLOSED
   CANCELLED
@@ -124,6 +125,7 @@ enum ChangeEffectivenessStatus {
 }
 
 enum ChangeFinalStatus {
+  DRAFT
   OPEN
   CLOSED
 }
@@ -159,6 +161,7 @@ enum ComplaintInvestigationResult {
 }
 
 enum ComplaintStatus {
+  DRAFT
   OPEN
   CLOSED
 }
@@ -217,6 +220,7 @@ enum ReturnDecision {
 }
 
 enum ReturnStatus {
+  DRAFT
   OPEN
   CLOSED
 }
