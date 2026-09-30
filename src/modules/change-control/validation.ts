@@ -76,22 +76,28 @@ export function parseChangeControlForm(formData: FormData) {
   const decision = enumValue(requestDecision, text(formData, "requestDecision")) ?? "PENDING";
   const result = enumValue(dictamenResult, text(formData, "dictamenResult")) ?? "PENDING";
   const classValue = enumValue(classification, text(formData, "classification"));
+  const storedFinalStatus = enumValue(finalStatusSchema, text(formData, "finalStatus")) ?? "OPEN";
+  const finalStatus = requestedWorkflowStatus(formData, storedFinalStatus);
+  const draftMode = finalStatus === "DRAFT";
 
   const errors: string[] = [];
-  if (!businessCode) errors.push("La codificación del Control de Cambio es obligatoria.");
-  if (!departmentId) errors.push("El departamento/área solicitante es obligatorio.");
-  if (!requestDate) errors.push("La fecha de solicitud es obligatoria.");
-  if (!requesterName) errors.push("Debe identificarse el solicitante.");
-  if (!scopeValues.length) errors.push("Debe seleccionarse al menos un alcance.");
-  if (!description) errors.push("La descripción del cambio es obligatoria.");
-  if (!justification) errors.push("La justificación del cambio es obligatoria.");
-  if (scopeValues.includes("OTHER") && !text(formData, "otherScope")) {
+  const required = (condition: boolean, message: string) => {
+    if (condition && !draftMode) errors.push(message);
+  };
+  required(!businessCode, "La codificación del Control de Cambio es obligatoria.");
+  required(!departmentId, "El departamento/área solicitante es obligatorio.");
+  required(!requestDate, "La fecha de solicitud es obligatoria.");
+  required(!requesterName, "Debe identificarse el solicitante.");
+  required(!scopeValues.length, "Debe seleccionarse al menos un alcance.");
+  required(!description, "La descripción del cambio es obligatoria.");
+  required(!justification, "La justificación del cambio es obligatoria.");
+  if (!draftMode && scopeValues.includes("OTHER") && !text(formData, "otherScope")) {
     errors.push("Debe especificarse el alcance cuando se selecciona Otros.");
   }
-  if (decision === "ACCEPTED" && !text(formData, "requestDecisionDate")) {
+  if (!draftMode && decision === "ACCEPTED" && !text(formData, "requestDecisionDate")) {
     errors.push("Una solicitud aceptada debe tener fecha de aceptación.");
   }
-  if (result === "APPROVED") {
+  if (!draftMode && result === "APPROVED") {
     if (!classValue) errors.push("Un dictamen aprobado debe clasificar el cambio como Mayor o Menor.");
     if (!text(formData, "dictamenDate")) errors.push("Un dictamen aprobado debe tener fecha de aprobación.");
     if (!text(formData, "followupResponsible")) errors.push("Debe indicarse el responsable de seguimiento.");
@@ -146,6 +152,7 @@ export function parseChangeControlForm(formData: FormData) {
       signedDocumentAvailable: bool(formData, "signedDocumentAvailable"),
       dataQualityStatus:
         enumValue(dataQuality, text(formData, "dataQualityStatus")) ?? "REVIEW_REQUIRED",
+      finalStatus,
       tasks,
       changeReason: text(formData, "changeReason"),
     },
