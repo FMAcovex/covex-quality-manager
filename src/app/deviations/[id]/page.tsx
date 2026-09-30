@@ -455,8 +455,8 @@ export default async function DeviationDetailPage({
                   <article className="timeline-item record-version-item" key={item.id}>
                     <header className="record-version-header">
                       <strong>{versionLabel(item.sequenceNumber)} · {kind}</strong>
-                      <span className={`badge ${summary.status === "OPEN" ? "open" : "closed"}`}>
-                        {summary.status === "OPEN" ? "Abierta" : "Cerrada"}
+                      <span className={`badge ${summary.status === "DRAFT" ? "neutral" : summary.status === "OPEN" ? "open" : "closed"}`}>
+                        {summary.status === "DRAFT" ? "Borrador" : summary.status === "OPEN" ? "Abierta" : "Cerrada"}
                       </span>
                       {item.frozenAt ? <span className="badge neutral">Histórica</span> : <span className="badge neutral">Vigente</span>}
                     </header>
