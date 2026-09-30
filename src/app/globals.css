@@ -1522,3 +1522,12 @@ button[disabled] {
     width: 100%;
   }
 }
+
+
+/* D2.3 — estado borrador de Desviaciones */
+.draft-notice {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
