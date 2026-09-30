@@ -111,7 +111,9 @@ async function main() {
       await ensureInitialVersion(
         tx,
         capaRecord.id,
-        snapshotJson(serializeCapaVersion(source)),
+        snapshotJson(
+          serializeCapaVersion(source, { versionFollowupDate: source.openedAt }),
+        ),
         actor,
         "UI",
         "Seguimiento 00 R1",
@@ -127,7 +129,9 @@ async function main() {
       await refreshCurrentVersion(
         tx,
         capaRecord.id,
-        snapshotJson(serializeCapaVersion(source)),
+        snapshotJson(
+          serializeCapaVersion(source, { versionFollowupDate: source.openedAt }),
+        ),
         actor,
         "Edición ordinaria",
       );
@@ -157,7 +161,11 @@ async function main() {
         tx,
         capaRecord.id,
         RecordVersionKind.FOLLOWUP,
-        snapshotJson(serializeCapaVersion(source)),
+        snapshotJson(
+          serializeCapaVersion(source, {
+            versionFollowupDate: new Date("2098-02-01"),
+          }),
+        ),
         actor,
         "Seguimiento funcional R1",
       );
