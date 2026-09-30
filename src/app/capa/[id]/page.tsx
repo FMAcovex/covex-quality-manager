@@ -89,9 +89,9 @@ export default async function CapaDetailPage({
           </p>
         </div>
         <div className="record-actions">
-          <Link className="button primary" href={`/capa/${id}/edit`}>Editar</Link>
-          <Link className="button" href={`/capa/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
-          <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
+          <Link className="button primary" href={`/capa/${id}/edit`}>{capa.status === "DRAFT" ? "Editar borrador" : "Editar"}</Link>
+          {capa.status === "OPEN" ? <Link className="button" href={`/capa/${id}?tab=followups#new-followup`}>+ Seguimiento</Link> : null}
+          {capa.status === "DRAFT" ? <span className="muted-note">Los documentos oficiales estarán disponibles al abrir la CAPA.</span> : <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>}
         </div>
       </div>
 
@@ -281,7 +281,7 @@ export default async function CapaDetailPage({
             )}
           </div>
 
-          <div className="card" id="new-followup">
+          {capa.status === "OPEN" ? <div className="card" id="new-followup">
             <h2>Añadir seguimiento</h2>
             <CapaFollowupForm
               action={addCapaFollowupAction.bind(null, id)}
@@ -299,7 +299,7 @@ export default async function CapaDetailPage({
                 effectiveClosedAt: capa.effectiveClosedAt?.toISOString().slice(0, 10) ?? "",
               }}
             />
-          </div>
+          </div> : null}
         </>
       ) : null}
 
