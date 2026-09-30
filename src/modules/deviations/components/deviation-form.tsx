@@ -164,6 +164,7 @@ export function DeviationForm({
   const [actions, setActions] = useState<ImmediateActionInput[]>(formDefaults.immediateActions ?? []);
   const [capas, setCapas] = useState<CapaPlanInput[]>(formDefaults.capaPlans ?? []);
   const [origin, setOrigin] = useState<OriginType>(() => inferOrigin(formDefaults));
+  const [recordStatus, setRecordStatus] = useState<"DRAFT" | "OPEN" | "CLOSED">(formDefaults.status ?? (mode === "create" ? "DRAFT" : "OPEN"));
   const issues = state.fieldIssues ?? {};
 
   function updateAction(index: number, patch: Partial<ImmediateActionInput>) {
@@ -175,7 +176,7 @@ export function DeviationForm({
   }
 
   return (
-    <form key={state.formRevision ?? 0} action={formAction} className="form-stack">
+    <form key={state.formRevision ?? 0} action={formAction} className="form-stack" noValidate>
       <input type="hidden" name="immediateActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)} />
       <input type="hidden" name="processEquipmentSystem" value={formDefaults.processEquipmentSystem ?? ""} />
@@ -492,9 +493,16 @@ export function DeviationForm({
           <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={formDefaults.closedAt} issues={issues.closedAt} />
           <label className={`field ${issues.status?.length ? "has-error" : ""}`}>
             <span>Estado *</span>
-            <select name="status" defaultValue={formDefaults.status ?? "OPEN"} required aria-invalid={issues.status?.length ? true : undefined}>
+            <select
+              name="status"
+              value={recordStatus}
+              onChange={(e) => setRecordStatus(e.target.value as "DRAFT" | "OPEN" | "CLOSED")}
+              required
+              aria-invalid={issues.status?.length ? true : undefined}
+            >
+              {(mode === "create" || formDefaults.status === "DRAFT") ? <option value="DRAFT">Borrador</option> : null}
               <option value="OPEN">Abierta</option>
-              <option value="CLOSED">Cerrada</option>
+              {formDefaults.status !== "DRAFT" ? <option value="CLOSED">Cerrada</option> : null}
             </select>
             <FieldIssue messages={issues.status} />
           </label>
@@ -542,9 +550,23 @@ export function DeviationForm({
       <div className="form-footer">
         <Link className="button" href={deviationId ? `/deviations/${deviationId}` : "/deviations"}>Cancelar</Link>
         {mode === "create" ? (
-          <button type="submit" className="button primary" disabled={pending}>
-            {pending ? "Guardando…" : "Guardar desviación"}
-          </button>
+          <div className="version-submit-group">
+            <button type="submit" name="saveIntent" value="draft" className="button" disabled={pending}>
+              {pending ? "Guardando…" : "Guardar borrador"}
+            </button>
+            <button type="submit" name="saveIntent" value="open" className="button primary" disabled={pending}>
+              {pending ? "Guardando…" : "Abrir desviación"}
+            </button>
+          </div>
+        ) : formDefaults.status === "DRAFT" ? (
+          <div className="version-submit-group">
+            <button type="submit" name="saveIntent" value="draft" className="button" disabled={pending}>
+              {pending ? "Guardando…" : "Guardar borrador"}
+            </button>
+            <button type="submit" name="saveIntent" value="open" className="button primary" disabled={pending}>
+              {pending ? "Guardando…" : "Abrir desviación"}
+            </button>
+          </div>
         ) : (
           <div className="version-submit-group">
             <div className="version-submit-note">
