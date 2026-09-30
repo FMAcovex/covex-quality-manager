@@ -214,6 +214,7 @@ async function main() {
     await prisma.qmsRelation.deleteMany({
       where: { OR: [{ sourceRecordId: { in: [deviationRecord.id, complaintRecord.id] } }, { targetRecordId: capaRecord.id }] },
     });
+    await prisma.changeHistory.deleteMany({ where: { qmsRecordId: capaRecord.id } });
     await prisma.qmsRecordVersion.deleteMany({ where: { qmsRecordId: capaRecord.id } });
     await prisma.capa.deleteMany({ where: { qmsRecordId: capaRecord.id } });
     await prisma.complaint.deleteMany({ where: { qmsRecordId: complaintRecord.id } });
