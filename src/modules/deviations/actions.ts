@@ -6,9 +6,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import {
-  selectOperationalRelationTarget,
-} from "@/lib/qms/relation-rules";
-import { createQmsRelation, deactivateQmsRelation } from "@/lib/qms/relation-service";
+  deactivateOperationalRelation,
+  linkOperationalRelationByBusinessCode,
+} from "@/lib/qms/relation-service";
 import {
   assignDeviationBusinessCode,
   DeviationBusinessCodeError,
@@ -758,18 +758,11 @@ export async function addDeviationRelationAction(
       return { error: "Una desviación solo puede vincularse operativamente con CAPA." };
     }
 
-    const matches = await prisma.qmsRecord.findMany({
-      where: {
-        businessCode: code,
-        recordType: QmsRecordType.CAPA,
-        id: { not: deviation.qmsRecordId },
-      },
-      select: { id: true, recordType: true, businessCode: true },
-    });
-    const target = selectOperationalRelationTarget(QmsRecordType.DEVIATION, matches);
-    await createQmsRelation(prisma, {
-      sourceRecordId: deviation.qmsRecordId,
-      targetRecordId: target.id,
+    await linkOperationalRelationByBusinessCode(prisma, {
+      currentRecordId: deviation.qmsRecordId,
+      currentType: QmsRecordType.DEVIATION,
+      relatedType: QmsRecordType.CAPA,
+      businessCode: code,
       createdByText: actor,
     });
 
@@ -798,23 +791,14 @@ export async function unlinkDeviationCapaAction(
   });
   if (!deviation) throw new Error("La desviación no existe.");
 
-  await prisma.$transaction(async (tx) => {
-    await deactivateQmsRelation(tx, {
-      sourceRecordId: deviation.qmsRecordId,
-      targetRecordId: capaQmsRecordId,
-    });
-    await tx.changeHistory.create({
-      data: {
-        qmsRecordId: deviation.qmsRecordId,
-        changedByText: actor,
-        fieldPath: "relations",
-        oldValue: jsonValue({ targetRecordId: capaQmsRecordId, relationType: "GENERATES" }),
-        newValue: jsonValue({ active: false }),
-        reason: "Desvinculación de CAPA",
-        source: "UI",
-      },
-    });
-  });
+  await prisma.$transaction((tx) =>
+    deactivateOperationalRelation(tx, {
+      currentRecordId: deviation.qmsRecordId,
+      relatedRecordId: capaQmsRecordId,
+      changedByText: actor,
+      reason: "Desvinculación de CAPA",
+    }),
+  );
 
   revalidatePath("/deviations");
   revalidatePath("/capa");
