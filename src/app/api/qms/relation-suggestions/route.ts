@@ -79,7 +79,7 @@ export async function GET(request: Request) {
           relationType: QmsRelationType.GENERATES,
           isActive: true,
         },
-        select: { targetRecordId: true },
+        select: { sourceRecordId: true, targetRecordId: true },
       })
     : await prisma.qmsRelation.findMany({
         where: {
@@ -87,7 +87,7 @@ export async function GET(request: Request) {
           relationType: QmsRelationType.GENERATES,
           isActive: true,
         },
-        select: { sourceRecordId: true },
+        select: { sourceRecordId: true, targetRecordId: true },
       });
 
   const alreadyLinkedIds = activeRelations.map((relation) =>
