@@ -724,3 +724,18 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
 - Borradores excluidos de KPI y exportaciones;
 - contador y filtro específico de Borradores en listado;
 - origen procedente de propuesta se conserva pendiente y se formaliza al abrir.
+
+
+## D5.4B — Borrador transversal · Control de Cambios
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
+
+- `ChangeFinalStatus` incorpora `DRAFT`;
+- alta inicial en Borrador;
+- guardado incompleto permitido;
+- validación completa de la solicitud al pasar a Abierto;
+- codificación asignada/fijada al abrir;
+- prohibido volver a Borrador desde estados operativos;
+- seguimientos, relaciones nuevas y Anexos III/IV/V bloqueados mientras está en Borrador;
+- Borradores excluidos de KPI y exportaciones;
+- filtro y contador específico de Borradores en listado;
+- pruebas unitarias específicas D5.4B.
