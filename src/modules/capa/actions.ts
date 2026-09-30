@@ -498,7 +498,12 @@ export async function updateCapaAction(
     })),
   };
 
-  const newSnapshot = snapshot(v);
+  const newSnapshot = {
+    ...snapshot(v),
+    impactAssessment: existing.impactAssessment,
+    effectivenessCriteria: existing.effectivenessCriteria,
+    effectivenessEvidence: existing.effectivenessEvidence,
+  };
   const changed = Object.entries(newSnapshot).filter(([key, value]) => {
     return JSON.stringify((oldSnapshot as Record<string, unknown>)[key] ?? null) !==
       JSON.stringify(value ?? null);
