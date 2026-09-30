@@ -51,7 +51,6 @@ export function extractDeviationSequence(
 async function usedDeviationCodes(
   db: QmsRecordReader,
   departmentCode: string,
-  year: number,
 ) {
   const prefix = deviationCodePrefix(departmentCode);
   return db.qmsRecord.findMany({
@@ -90,7 +89,7 @@ export async function suggestDeviationBusinessCode(
   departmentCode: string,
   year: number,
 ) {
-  const records = await usedDeviationCodes(db, departmentCode, year);
+  const records = await usedDeviationCodes(db, departmentCode);
   const nextSequence = nextSequenceFromRecords(records, departmentCode, year);
   if (nextSequence > 999) {
     throw new DeviationBusinessCodeError(
