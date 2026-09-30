@@ -150,13 +150,23 @@ export async function createChangeControlAction(
     ]);
 
     const created = await prisma.$transaction(async (tx) => {
-      const requestYear = v.requestDate ? new Date(v.requestDate).getFullYear() : new Date().getFullYear();
-      const businessCode = await assignOperationalBusinessCode(tx, {
-        recordType: QmsRecordType.CHANGE_CONTROL,
-        year: requestYear,
-        departmentCode: department.code,
-        requestedCode: v.businessCode,
-      });
+      const requestYear = v.requestDate ? new Date(v.requestDate).getFullYear() : null;
+      let businessCode = v.businessCode;
+      if (department && requestYear && (v.finalStatus !== "DRAFT" || businessCode)) {
+        businessCode = await assignOperationalBusinessCode(tx, {
+          recordType: QmsRecordType.CHANGE_CONTROL,
+          year: requestYear,
+          departmentCode: department.code,
+          requestedCode: businessCode,
+        });
+      } else if (v.finalStatus !== "DRAFT") {
+        throw new OperationalBusinessCodeError(
+          "INVALID_FORMAT",
+          "Para abrir el Control de Cambio deben estar informados departamento y fecha de solicitud.",
+        );
+      } else {
+        businessCode = null;
+      }
       v.businessCode = businessCode;
 
       const qmsRecord = await tx.qmsRecord.create({
@@ -170,9 +180,9 @@ export async function createChangeControlAction(
       const change = await tx.changeControl.create({
         data: {
           qmsRecordId: qmsRecord.id,
-          departmentId: department.id,
-          departmentCodeSnapshot: department.code,
-          departmentNameSnapshot: department.name,
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department?.code ?? null,
+          departmentNameSnapshot: department?.name ?? null,
           requestDate: toDate(v.requestDate),
           requesterName: v.requesterName,
           requesterPosition: v.requesterPosition,
@@ -214,6 +224,7 @@ export async function createChangeControlAction(
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
+          finalStatus: v.finalStatus,
           formVersionId: formVersion?.id,
           annexIIITemplateVersionId: annexIII?.id,
           annexIVTemplateVersionId: annexIV?.id,
@@ -232,7 +243,7 @@ export async function createChangeControlAction(
           changedByText: parsed.actor,
           fieldPath: "__created__",
           newValue: jsonValue(scalarSnapshot(v)),
-          reason: "Alta del Control de Cambio",
+          reason: v.finalStatus === "DRAFT" ? "Borrador inicial del Control de Cambio" : "Alta del Control de Cambio",
           source: "UI",
         },
       });
