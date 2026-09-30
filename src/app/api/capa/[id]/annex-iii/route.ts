@@ -21,6 +21,12 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   const capa = await getCapaDetail(id);
   if (!capa) return NextResponse.json({ error: "CAPA no encontrada." }, { status: 404 });
+  if (capa.status === "DRAFT") {
+    return NextResponse.json(
+      { error: "El Anexo III no se genera mientras la CAPA esté en borrador." },
+      { status: 409 },
+    );
+  }
 
   const requestedVersion = new URL(request.url).searchParams.get("version");
   const parsedVersion = parseCapaAnnexVersion(requestedVersion);
