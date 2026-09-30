@@ -35,7 +35,14 @@ export async function saveCapaExecutionEvidence(
   const evidenceReference = String(formData.get("evidenceReference") ?? "").trim();
   const observations = String(formData.get("observations") ?? "").trim();
 
-  if (!followupDate || !/^\d{4}-\d{2}-\d{2}$/.test(followupDate)) {
+  const parsedEvidenceDate = followupDate ? new Date(`${followupDate}T00:00:00Z`) : null;
+  if (
+    !followupDate ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(followupDate) ||
+    !parsedEvidenceDate ||
+    Number.isNaN(parsedEvidenceDate.getTime()) ||
+    parsedEvidenceDate.toISOString().slice(0, 10) !== followupDate
+  ) {
     return { error: "Debe indicarse una fecha válida para la evidencia de ejecución." };
   }
   if (!completedByText) {
@@ -54,7 +61,7 @@ export async function saveCapaExecutionEvidence(
         data: {
           capaId: id,
           sequenceNumber,
-          followupDate: new Date(followupDate),
+          followupDate: parsedEvidenceDate,
           completedByText,
           reason: "Evidencia de ejecución",
           description: "Registro de evidencia de ejecución",
