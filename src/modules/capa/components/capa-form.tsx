@@ -291,6 +291,17 @@ export function CapaForm({
             <FieldIssue messages={issues.openedAt} />
           </label>
 
+          {mode === "edit" && !draftExisting ? (
+            <Field
+              label="Fecha del seguimiento"
+              name="versionFollowupDate"
+              type="date"
+              defaultValue={formDefaults.versionFollowupDate}
+              help="Solo se utiliza al pulsar Guardar como nuevo seguimiento. El Seguimiento 00 utiliza la fecha de apertura."
+              issues={issues.versionFollowupDate}
+            />
+          ) : null}
+
           <Field
             label="Cumplimentado por"
             name="createdByText"
