@@ -52,7 +52,7 @@ export async function getCapaList(filters: CapaListFilters) {
   if (filters.origin?.length) {
     const relationTypes = filters.origin
       .map((value) => value === "Desviación" ? QmsRecordType.DEVIATION : value === "Reclamación" ? QmsRecordType.COMPLAINT : null)
-      .filter((value): value is QmsRecordType => Boolean(value));
+      .filter((value): value is "DEVIATION" | "COMPLAINT" => value !== null);
     if (relationTypes.length) {
       and.push({
         qmsRecord: {
