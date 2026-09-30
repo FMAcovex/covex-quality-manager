@@ -333,3 +333,22 @@ Reglas:
 - al cambiar el tipo de expediente relacionado, las sugerencias se recalculan;
 - seleccionar una sugerencia rellena la codificación; la creación de la relación continúa validándose en servidor;
 - el buscador no amplía la matriz de relaciones ni sustituye las validaciones de D-018/D-047.
+
+
+## D-049 — Codificación sugerida y controlada transversal
+El patrón de D-045 se extiende a CAPA, Controles de Cambios, Reclamaciones y Devoluciones sin modificar los códigos históricos existentes.
+
+Reglas:
+- la interfaz propone el siguiente correlativo disponible según los datos identificativos del módulo;
+- el usuario puede aceptar la sugerencia, introducir manualmente otro código válido o dejar el campo vacío para que el servidor asigne el siguiente correlativo al guardar;
+- la asignación definitiva se realiza dentro de la transacción con bloqueo PostgreSQL por serie/año;
+- se consideran tanto `businessCode` como `annulledBusinessCode`, por lo que una codificación histórica anulada no se reutiliza;
+- después de crear el expediente, la codificación queda fijada y se muestra como solo lectura en edición;
+- los expedientes históricos conservan su codificación aunque no responda al patrón actual;
+- formatos aplicados en V1:
+  - CAPA correctiva: `AC/<departamento>/ZZZ/YYYY`;
+  - CAPA preventiva: `AP/<departamento>/ZZZ/YYYY`;
+  - Control de Cambio: `C/<departamento>/ZZZ/YYYY`;
+  - Reclamación de cliente: `R/C/ZZZ/YYYY`;
+  - Reclamación a proveedor: `R/P/ZZZ/YYYY`;
+  - Devolución: `DEV/<área-almacén>/ZZZ/YYYY`.
