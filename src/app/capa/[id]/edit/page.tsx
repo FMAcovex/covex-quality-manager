@@ -40,8 +40,10 @@ export default async function EditCapaPage({ params }: { params: Promise<{ id: s
     defectDescription: capa.defectDescription ?? undefined,
     rootCause: capa.rootCause ?? undefined,
     impactAssessment: capa.impactAssessment ?? undefined,
-    nextFollowupDate: capa.nextFollowupDate?.toISOString().slice(0,10),
+    // Se fuerza una nueva fecha en cada edición/seguimiento para evitar arrastrar la anterior.
+    nextFollowupDate: undefined,
     actionFollowupObservations: capa.actionFollowupObservations ?? undefined,
+    operationalStatusDescription: capa.operationalStatusDescription ?? undefined,
     actionFollowups: capa.actionFollowups.map((item) => ({
       followupDate: item.followupDate?.toISOString().slice(0,10) ?? "",
       description: item.description ?? "",
