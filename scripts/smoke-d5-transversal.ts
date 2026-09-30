@@ -104,40 +104,40 @@ async function assertSourceContracts() {
     },
   ];
 
-  for (const module of modules) {
+  for (const moduleConfig of modules) {
     const [listSource, actionsSource, detailSource] = await Promise.all([
-      readFile(module.list, "utf8"),
-      readFile(module.actions, "utf8"),
-      readFile(module.detail, "utf8"),
+      readFile(moduleConfig.list, "utf8"),
+      readFile(moduleConfig.actions, "utf8"),
+      readFile(moduleConfig.detail, "utf8"),
     ]);
 
     assert.ok(
       listSource.includes("MultiSelectFilter"),
-      `${module.name}: el listado debe usar filtros multiselección D5.5.`,
+      `${moduleConfig.name}: el listado debe usar filtros multiselección D5.5.`,
     );
     assert.ok(
       listSource.includes("queryList("),
-      `${module.name}: el listado debe leer parámetros repetidos.`,
+      `${moduleConfig.name}: el listado debe leer parámetros repetidos.`,
     );
     assert.ok(
       actionsSource.includes("DRAFT"),
-      `${module.name}: las acciones deben contemplar el estado Borrador.`,
+      `${moduleConfig.name}: las acciones deben contemplar el estado Borrador.`,
     );
     assert.ok(
       actionsSource.includes("assignOperationalBusinessCode") ||
-        module.name === "Desviaciones",
-      `${module.name}: debe conservar la codificación operacional controlada.`,
+        moduleConfig.name === "Desviaciones",
+      `${moduleConfig.name}: debe conservar la codificación operacional controlada.`,
     );
     assert.ok(
       detailSource.includes("DRAFT") || detailSource.includes("Borrador"),
-      `${module.name}: el detalle debe distinguir el Borrador.`,
+      `${moduleConfig.name}: el detalle debe distinguir el Borrador.`,
     );
 
-    for (const annex of module.annexes) {
+    for (const annex of moduleConfig.annexes) {
       const annexSource = await readFile(annex, "utf8");
       assert.ok(
         annexSource.includes("DRAFT"),
-        `${module.name}: ${annex} debe bloquear documentos oficiales en Borrador.`,
+        `${moduleConfig.name}: ${annex} debe bloquear documentos oficiales en Borrador.`,
       );
     }
   }
