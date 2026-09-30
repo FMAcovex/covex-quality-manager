@@ -90,10 +90,20 @@ export default async function CapaDetailPage({
         </div>
         <div className="record-actions">
           <Link className="button primary" href={`/capa/${id}/edit`}>Editar</Link>
-          <Link className="button" href={`/capa/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
-          <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
+          {capa.status !== "DRAFT" ? (
+            <>
+              <Link className="button" href={`/capa/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
+              <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
+            </>
+          ) : null}
         </div>
       </div>
+
+      {capa.status === "DRAFT" ? (
+        <div className="analytics-note">
+          <strong>Borrador:</strong> este expediente todavía no es una CAPA operativa. Completa los campos obligatorios y cambia el estado a Abierta para iniciar su ciclo de seguimiento.
+        </div>
+      ) : null}
 
       <QmsAdministrativeStatus
         qmsRecordId={capa.qmsRecord.id}
@@ -194,7 +204,9 @@ export default async function CapaDetailPage({
       ) : null}
 
       {activeTab === "followups" ? (
-        <>
+        capa.status === "DRAFT" ? (
+          <div className="empty-panel">Los seguimientos estarán disponibles cuando la CAPA pase a estado Abierta.</div>
+        ) : <>
           <div className="card">
             <div className="section-title-row">
               <div>
@@ -343,20 +355,24 @@ export default async function CapaDetailPage({
           ) : (
             <div className="empty-panel">No hay una Desviación o Reclamación de origen vinculada.</div>
           )}
-          <OperationalRelationForm
-            action={addCapaRelationAction.bind(null, id)}
-            title="Vincular expediente de origen"
-            codeLabel="Codificación de origen"
-            codePlaceholder="D/GC-00/001/2026"
-            buttonLabel="Vincular origen"
-            defaultActor={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
-            targetOptions={[
-              { value: "DEVIATION", label: "Desviación" },
-              { value: "COMPLAINT", label: "Reclamación" },
-            ]}
-            currentRecordId={capa.qmsRecord.id}
-            currentRecordType="CAPA"
-          />
+          {capa.status === "DRAFT" ? (
+            <div className="empty-panel">Las relaciones operativas se habilitan al abrir la CAPA.</div>
+          ) : (
+            <OperationalRelationForm
+              action={addCapaRelationAction.bind(null, id)}
+              title="Vincular expediente de origen"
+              codeLabel="Codificación de origen"
+              codePlaceholder="D/GC-00/001/2026"
+              buttonLabel="Vincular origen"
+              defaultActor={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+              targetOptions={[
+                { value: "DEVIATION", label: "Desviación" },
+                { value: "COMPLAINT", label: "Reclamación" },
+              ]}
+              currentRecordId={capa.qmsRecord.id}
+              currentRecordType="CAPA"
+            />
+          )}
         </div>
       ) : null}
 
@@ -435,7 +451,7 @@ export default async function CapaDetailPage({
               <p>Plantilla oficial y versión Word cumplimentada del informe/seguimiento CAPA.</p>
               <div className="document-actions">
                 {capa.annexIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${capa.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
-                <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+                {capa.status === "DRAFT" ? <span className="muted-note">Disponible al abrir la CAPA.</span> : <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>}
               </div>
             </div>
             <div className="document-block">
