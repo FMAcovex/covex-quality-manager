@@ -97,7 +97,7 @@ export async function createReturnAction(previous:ReturnFormState,fd:FormData):P
    }
    v.businessCode=businessCode;
    const qr=await tx.qmsRecord.create({data:{recordType:"RETURN",businessCode,year:communicationYear}});
-   const rec=await tx.returnRecord.create({data:{qmsRecordId:qr.id,...recordData(canonicalValues,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vdecl?.id,annexVITemplateVersionId:vi?.id}});
+   const rec=await tx.returnRecord.create({data:{qmsRecordId:qr.id,...recordData(canonicalValues,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vdecl?.id,annexVITemplateVersionId:vi?.id,extraData:v.status==="DRAFT"&&complaintOrigin?{pendingComplaintId:v.fromComplaintId}:undefined}});
    await replaceProducts(tx,rec.id,v.products);
    await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,customerEntity:v.customerEntity}),reason:v.status==="DRAFT"?"Borrador inicial de devolución":"Alta de devolución",source:"UI"}});
    if(complaintOrigin&&v.status!=="DRAFT"){
@@ -126,6 +126,10 @@ export async function updateReturnAction(id:string,previous:ReturnFormState,fd:F
  const parsed=parseReturnForm(fd);if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors});
  const v=parsed.values,existing=await prisma.returnRecord.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return preserveFormState(previous,fd,{error:"La devolución ya no existe."});
  const requestedBusinessCode=v.businessCode;
+ const pendingComplaintId=existing.status==="DRAFT"&&existing.extraData&&typeof existing.extraData==="object"&&!Array.isArray(existing.extraData)
+  ?(existing.extraData as {pendingComplaintId?:string|null}).pendingComplaintId??null
+  :null;
+ const becomingOperational=existing.status==="DRAFT"&&v.status!=="DRAFT";
  v.businessCode=existing.qmsRecord.businessCode??requestedBusinessCode;
  if(existing.status!=="DRAFT"&&v.status==="DRAFT")return preserveFormState(previous,fd,{error:"No se puede volver a borrador una devolución ya operativa.",fieldErrors:["Una devolución abierta o cerrada no puede volver al estado Borrador."]});
  const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
@@ -143,7 +147,11 @@ export async function updateReturnAction(id:string,previous:ReturnFormState,fd:F
   }
   v.businessCode=businessCode;
   await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode,year:communicationYear}});
-  await tx.returnRecord.update({where:{id},data:recordData(v,department,existing)});await replaceProducts(tx,id,v.products);
+  await tx.returnRecord.update({where:{id},data:{...recordData(v,department,existing),extraData:becomingOperational?Prisma.DbNull:existing.extraData??undefined}});await replaceProducts(tx,id,v.products);
+  if(becomingOperational&&pendingComplaintId){
+   const complaintOrigin=await getComplaintReturnOrigin(tx,pendingComplaintId);
+   await registerComplaintReturnOrigin(tx,{complaintQmsRecordId:complaintOrigin.complaintQmsRecordId,returnQmsRecordId:existing.qmsRecordId,actor:parsed.actor});
+  }
   await tx.changeHistory.create({data:{qmsRecordId:existing.qmsRecordId,changedByText:parsed.actor,fieldPath:"__edit__",oldValue:j({updatedAt:existing.updatedAt}),newValue:j({businessCode:v.businessCode,status:v.status}),reason:v.changeReason,source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,existing.qmsRecordId,snapshotJson(serializeReturnVersion(snap)),parsed.actor,v.changeReason);
  });
