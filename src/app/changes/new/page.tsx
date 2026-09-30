@@ -22,6 +22,7 @@ export default async function NewChangeControlPage() {
         defaults={{
           requestDate: new Date().toISOString().slice(0, 10),
           requesterName: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
+          finalStatus: "DRAFT",
         }}
       />
     </section>
