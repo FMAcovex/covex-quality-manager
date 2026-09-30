@@ -40,6 +40,7 @@ export default async function NewCapaPage({
           impact: "",
         }],
         createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
+        status: "DRAFT" as const,
       }
     : complaintPlan
       ? {
@@ -58,6 +59,7 @@ export default async function NewCapaPage({
             impact: "",
           }],
           createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
+          status: "DRAFT" as const,
         }
       : complaint
         ? {
@@ -74,6 +76,7 @@ export default async function NewCapaPage({
         : {
           openedAt: new Date().toISOString().slice(0, 10),
           createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
+          status: "DRAFT" as const,
         };
 
   return (
