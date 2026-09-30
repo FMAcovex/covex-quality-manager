@@ -21,7 +21,7 @@ export type ReturnFormDefaults={
   receiptTemperatureAcceptable?:string;temperatureExcursionEvaluated?:string;coldChainReturnSystemValidated?:string;
   decision?:"PENDING"|"ACCEPTED"|"REJECTED";finalDestination?:string;decisionObservations?:string;qaApprovalName?:string;
   technicalApprovalName?:string;decisionDate?:string;destructionManagedBy?:string;destructionCertificate?:string;traceabilityUpdated?:string;
-  closedAt?:string;status?:"OPEN"|"CLOSED";internalObservations?:string;signedDocumentAvailable?:string;
+  closedAt?:string;status?:"DRAFT"|"OPEN"|"CLOSED";internalObservations?:string;signedDocumentAvailable?:string;
   dataQualityStatus?:"COMPLETE"|"INCOMPLETE"|"REVIEW_REQUIRED";products?:ReturnProductInput[];
 };
 export type DepartmentOption={id:string;code:string;name:string};
