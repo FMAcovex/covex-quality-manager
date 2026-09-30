@@ -105,6 +105,7 @@ export default async function CapaPage({
                 row.qmsRecord.businessCode,
                 row.originCode,
                 row.originType,
+                ...row.qmsRecord.targetRelations.map((relation) => relation.sourceRecord.businessCode),
                 row.defectDescription,
                 row.rootCause,
                 row.internalObservations,
@@ -131,12 +132,15 @@ export default async function CapaPage({
           <table id="capa-list-table" className="records-table capa-table">
             <thead>
               <tr>
-<th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las CAPA visibles" /></th><th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre operativo</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Cierre efectivo</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
+<th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las CAPA visibles" /></th><th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre y ejecución</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Verificación final</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => {
-                const latest = row.followups[0];
+                const currentVersion = row.qmsRecord.versions[0] ?? null;
+                const originRecords = row.qmsRecord.targetRelations
+                  .filter((item) => item.relationType === "GENERATES" && (item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT"))
+                  .map((item) => item.sourceRecord);
                 const plannedDates = row.plannedActions
                   .map((item) => item.plannedExecutionDate)
                   .filter((value): value is Date => Boolean(value));
@@ -165,16 +169,16 @@ export default async function CapaPage({
                     <td data-column-key="type"><span className="badge neutral">{capaTypeLabel(row.actionType)}</span></td>
                     <td data-column-key="code" className="sticky-code"><Link href={`/capa/${row.id}`}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
-                    <td data-column-key="origin">{row.originType ?? "—"}</td>
-                    <td data-column-key="originCode">{row.originCode ?? "—"}</td>
+                    <td data-column-key="origin">{originRecords.length ? originRecords.map((record) => qmsRecordTypeLabel(record.recordType)).join(" · ") : row.originType ?? "—"}</td>
+                    <td data-column-key="originCode">{originRecords.length ? originRecords.map((record) => qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))).join(" · ") : row.originCode ?? "—"}</td>
                     <td data-column-key="description" className="long-cell">{actionDescription}</td>
                     <td data-column-key="opening">{formatDate(row.openedAt)}</td>
                     <td data-column-key="planned">{formatDate(plannedDate)}</td>
                     <td data-column-key="status"><span className={`status-badge ${row.status.toLowerCase()}`}>{capaStatusLabel(row.status)}</span></td>
                     <td data-column-key="operationalClose">{formatDate(row.operationalClosedAt)}</td>
                     <td data-column-key="effectiveness"><span className={`badge ${row.effectivenessStatus === "CONFORMING" ? "closed" : row.effectivenessStatus === "NONCONFORMING" ? "major" : "warning"}`}>{effectivenessLabel(row.effectivenessStatus)}</span></td>
-                    <td data-column-key="latestFollowup">{latest ? `${String(latest.sequenceNumber).padStart(2,"0")} · ${formatDate(latest.followupDate)}` : "00 · inicial"}</td>
-                    <td data-column-key="nextFollowup">{formatDate(latest?.nextFollowupDate)}</td>
+                    <td data-column-key="latestFollowup">{currentVersion ? `Seguimiento ${String(currentVersion.sequenceNumber).padStart(2,"0")}` : "Seguimiento 00"}</td>
+                    <td data-column-key="nextFollowup">{formatDate(row.nextFollowupDate)}</td>
                     <td data-column-key="effectiveClose">{formatDate(row.effectiveClosedAt)}</td>
                     <td data-column-key="related">
                       <div className="relation-chips">
