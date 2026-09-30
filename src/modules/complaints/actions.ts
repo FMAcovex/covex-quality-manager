@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
+import { preserveFormState } from "@/lib/forms/preserved-state";
 import {
   allowedOutgoingRelationTypes,
   selectOperationalRelationTarget,
@@ -70,11 +71,11 @@ async function replaceDerivedActions(tx:Prisma.TransactionClient,complaintId:str
  }
 }
 
-export async function createComplaintAction(_s:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
- const parsed=parseComplaintForm(fd); if(parsed.errors.length)return{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors};
+export async function createComplaintAction(previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
+ const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values; let createdId:string;
  try{
-  const department=await prisma.department.findUnique({where:{id:v.departmentId!}}); if(!department)return{error:"El departamento no existe."};
+  const department=await prisma.department.findUnique({where:{id:v.departmentId!}}); if(!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
   const ref=d(v.openedAt)??new Date();
   const [form,iii,iv,vlist]=await Promise.all([
    getApplicableFormVersion(QmsRecordType.COMPLAINT,ref),
@@ -92,15 +93,16 @@ export async function createComplaintAction(_s:ComplaintFormState,fd:FormData):P
    return rec;
   });
   createdId=created.id;
- }catch(e){return persistenceFormError(e,"la reclamación");}
+ }catch(e){return preserveFormState(previous,fd,persistenceFormError(e,"la reclamación"));}
  revalidatePath("/complaints");redirect(`/complaints/${createdId}`);
 }
 
-export async function updateComplaintAction(id:string,_s:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
- const parsed=parseComplaintForm(fd); if(parsed.errors.length)return{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors};
+export async function updateComplaintAction(id:string,previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
+ const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values;
- const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return{error:"La reclamación ya no existe."};
- const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return{error:"El departamento no existe."};
+ const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
+ const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
+ try{
  await prisma.$transaction(async tx=>{
   await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode:v.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
   await tx.complaint.update({where:{id},data:complaintData(v,department,existing)});
@@ -109,6 +111,8 @@ export async function updateComplaintAction(id:string,_s:ComplaintFormState,fd:F
   await tx.changeHistory.create({data:{qmsRecordId:existing.qmsRecordId,changedByText:parsed.actor,fieldPath:"__edit__",oldValue:j({updatedAt:existing.updatedAt}),newValue:j({businessCode:v.businessCode,status:v.status}),reason:v.changeReason,source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,existing.qmsRecordId,snapshotJson(serializeComplaintVersion(snap)),parsed.actor,v.changeReason);
  });
+
+ }catch(e){return preserveFormState(previous,fd,persistenceFormError(e,"la reclamación"));}
  revalidatePath("/complaints");revalidatePath(`/complaints/${id}`);redirect(`/complaints/${id}`);
 }
 

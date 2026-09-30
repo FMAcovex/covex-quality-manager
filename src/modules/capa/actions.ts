@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
+import { preserveFormState } from "@/lib/forms/preserved-state";
 import {
   allowedIncomingRelationTypes,
   selectOperationalRelationTarget,
@@ -103,21 +104,21 @@ async function relatePrimaryOrigin(
 }
 
 export async function createCapaAction(
-  _previous: CapaFormState,
+  previous: CapaFormState,
   formData: FormData,
 ): Promise<CapaFormState> {
   const parsed = parseCapaForm(formData);
   if (parsed.errors.length) {
-    return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues };
+    return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
   }
   const v = parsed.values;
   let capaId: string;
   try {
     const duplicate = await prisma.qmsRecord.findUnique({ where: { recordType_businessCode: { recordType: QmsRecordType.CAPA, businessCode: v.businessCode! } } });
-    if (duplicate) return { error: "No se puede guardar la CAPA.", fieldErrors: ["Ya existe una CAPA con esa codificación."], fieldIssues: { businessCode: ["Ya existe una CAPA con esa codificación."] } };
+    if (duplicate) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["Ya existe una CAPA con esa codificación."], fieldIssues: { businessCode: ["Ya existe una CAPA con esa codificación."] } });
 
     const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } };
+    if (!department) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
 
     const referenceDate = toDate(v.openedAt) ?? new Date();
     const [formVersion, templateVersion] = await Promise.all([
@@ -271,12 +272,12 @@ export async function createCapaAction(
       error instanceof DeviationCapaPlanLinkError ||
       error instanceof ComplaintCapaLinkError
     ) {
-      return {
+      return preserveFormState(previous, formData, {
         error: "No se puede guardar la CAPA.",
         fieldErrors: [error.message],
-      };
+      });
     }
-    return persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" });
+    return preserveFormState(previous, formData, persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" }));
   }
 
   revalidatePath("/capa");
@@ -287,7 +288,7 @@ export async function createCapaAction(
 
 export async function updateCapaAction(
   id: string,
-  _previous: CapaFormState,
+  previous: CapaFormState,
   formData: FormData,
 ): Promise<CapaFormState> {
   const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: true });
@@ -305,12 +306,12 @@ export async function updateCapaAction(
       annexIIITemplateVersion: true,
     },
   });
-  if (!existing) return { error: "La CAPA ya no existe." };
+  if (!existing) return preserveFormState(previous, formData, { error: "La CAPA ya no existe." });
 
   const v = parsed.values;
 
   if (existing.rootCause && !v.rootCause) {
-    return { error: "No se puede eliminar una causa raíz ya documentada." };
+    return preserveFormState(previous, formData, { error: "No se puede eliminar una causa raíz ya documentada." });
   }
 
   if (existing.status !== "CLOSED" && v.status === "CLOSED") {
@@ -320,12 +321,12 @@ export async function updateCapaAction(
     const hasEvidence = existing.followups.some((item) => Boolean(item.evidenceReference?.trim()));
     if (!hasEvidence) transitionErrors.push("La transición a Cerrada requiere una evidencia de ejecución referenciada en un seguimiento.");
     if (transitionErrors.length) {
-      return { error: "No se puede cerrar operativamente la CAPA.", fieldErrors: transitionErrors };
+      return preserveFormState(previous, formData, { error: "No se puede cerrar operativamente la CAPA.", fieldErrors: transitionErrors });
     }
   }
 
   if (existing.status !== "CANCELLED" && v.status === "CANCELLED" && !v.cancellationReason) {
-    return { error: "La transición a Cancelada requiere motivo de cancelación." };
+    return preserveFormState(previous, formData, { error: "La transición a Cancelada requiere motivo de cancelación." });
   }
 
   const isNewEffectiveClosure =
@@ -336,7 +337,7 @@ export async function updateCapaAction(
     if (v.effectivenessStatus !== "CONFORMING") transitionErrors.push("El cierre efectivo requiere eficacia Conforme.");
     if (!v.effectivenessAssessment) transitionErrors.push("El cierre efectivo requiere valoración documentada de la eficacia.");
     if (transitionErrors.length) {
-      return { error: "No se puede registrar el cierre efectivo.", fieldErrors: transitionErrors };
+      return preserveFormState(previous, formData, { error: "No se puede registrar el cierre efectivo.", fieldErrors: transitionErrors });
     }
   }
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
@@ -495,7 +496,7 @@ export async function updateCapaAction(
     revalidatePath(`/capa/${id}`);
     redirect(`/capa/${id}`);
   } catch (error) {
-    return persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" });
+    return preserveFormState(previous, formData, persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" }));
   }
 }
 
