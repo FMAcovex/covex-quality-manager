@@ -5,8 +5,18 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const names = ["q","administrative","year","department","status","classification","provenance","measures","capa","deadline"] as const;
-  const filters = Object.fromEntries(names.map((name) => [name, url.searchParams.get(name) || undefined]));
+  const filters = {
+    q: url.searchParams.get("q") || undefined,
+    administrative: url.searchParams.get("administrative") || undefined,
+    year: url.searchParams.getAll("year"),
+    department: url.searchParams.getAll("department"),
+    status: url.searchParams.getAll("status"),
+    classification: url.searchParams.getAll("classification"),
+    provenance: url.searchParams.getAll("provenance"),
+    measures: url.searchParams.get("measures") || undefined,
+    capa: url.searchParams.get("capa") || undefined,
+    deadline: url.searchParams.get("deadline") || undefined,
+  };
   const rows = await getDeviationExportRows(filters);
   const buffer = generateSimpleList(rows);
   const year = url.searchParams.get("year");
