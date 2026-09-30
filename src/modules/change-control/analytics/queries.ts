@@ -18,6 +18,7 @@ export async function getChangeAnalytics(filters: ChangeAnalyticsFilters) {
     where: {
       includeInKpi: true,
       qmsRecord: { isActive: true },
+      finalStatus: { not: "DRAFT" },
       ...(filters.department ? { departmentId: filters.department } : {}),
       ...(filters.classification === "MAJOR" || filters.classification === "MINOR"
         ? { classification: filters.classification }
