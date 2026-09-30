@@ -89,7 +89,6 @@ function draftMissingIssues(defaults: DeviationFormDefaults, origin: OriginType)
     "dispositionQuantity",
     "clientNotification",
     "dispositionComments",
-    "dataQualityStatus",
   ].forEach((field) => pending(field as keyof DeviationFormDefaults));
 
   if (origin === "FINISHED_PRODUCT_SYSTEM") {
@@ -577,7 +576,7 @@ export function DeviationForm({
             >
               {(mode === "create" || formDefaults.status === "DRAFT") ? <option value="DRAFT">Borrador</option> : null}
               <option value="OPEN">Abierta</option>
-              {formDefaults.status !== "DRAFT" ? <option value="CLOSED">Cerrada</option> : null}
+              {mode !== "create" && formDefaults.status !== "DRAFT" ? <option value="CLOSED">Cerrada</option> : null}
             </select>
             <FieldIssue messages={issues.status} />
           </label>
