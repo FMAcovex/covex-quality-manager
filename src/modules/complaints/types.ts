@@ -82,7 +82,7 @@ export type ComplaintFormDefaults = {
   approvalNames?: string;
   closeApprovalNames?: string;
   closedAt?: string;
-  status?: "OPEN" | "CLOSED";
+  status?: "DRAFT" | "OPEN" | "CLOSED";
   internalObservations?: string;
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";
