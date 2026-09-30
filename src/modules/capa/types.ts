@@ -42,6 +42,7 @@ export type CapaFormDefaults = {
   impactAssessment?: string;
   nextFollowupDate?: string;
   actionFollowupObservations?: string;
+  operationalStatusDescription?: string;
   status?: "DRAFT" | "OPEN" | "CLOSED" | "CANCELLED";
   cancellationReason?: string;
   operationalClosedAt?: string;
