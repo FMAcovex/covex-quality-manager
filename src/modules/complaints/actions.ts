@@ -27,12 +27,12 @@ async function getSnapshot(tx:Prisma.TransactionClient,id:string){
 }
 
 type ExistingComplaintSnapshot={departmentId:string|null;departmentCodeSnapshot:string|null;departmentNameSnapshot:string|null};
-function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],department:{id:string;code:string;name:string},existing?:ExistingComplaintSnapshot){
+function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],department:{id:string;code:string;name:string}|null,existing?:ExistingComplaintSnapshot){
  return {
-  departmentId:department.id,
-  departmentCodeSnapshot:existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code,
-  departmentNameSnapshot:existing?.departmentId===department.id?(existing.departmentNameSnapshot??department.name):department.name,
-  openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),receptionDate:d(v.receptionDate),detectedBy:v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType!,
+  departmentId:department?.id??null,
+  departmentCodeSnapshot:department?(existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code):null,
+  departmentNameSnapshot:department?(existing?.departmentId===department.id?(existing.departmentNameSnapshot??department.name):department.name):null,
+  openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),receptionDate:d(v.receptionDate),detectedBy:v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType,
   sourceTypes:v.sourceTypes,sourceOther:v.sourceOther,scopeTypes:v.scopeTypes,scopeOther:v.scopeOther,affectedObjectTypes:v.affectedObjectTypes,affectedObjectOther:v.affectedObjectOther,
   categoryTypes:v.categoryTypes,categoryOther:v.categoryOther,partyName:v.partyName,contact:v.contact,affectedScope:v.affectedScope,reference:v.reference,lotReference:v.lotReference,quantity:v.quantity,
   expiryReanalysis:v.expiryReanalysis,purchaseDeliveryReference:v.purchaseDeliveryReference,description:v.description,recurrent:v.recurrent,
@@ -75,7 +75,7 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values; let createdId:string;
  try{
-  const department=await prisma.department.findUnique({where:{id:v.departmentId!}}); if(!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
+  const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null; if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
   const ref=d(v.openedAt)??new Date();
   const [form,iii,iv,vlist]=await Promise.all([
    getApplicableFormVersion(QmsRecordType.COMPLAINT,ref),
@@ -101,7 +101,8 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values;
  const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
- const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
+ if(existing.status!=="DRAFT"&&v.status==="DRAFT")return preserveFormState(previous,fd,{error:"Una reclamación abierta o cerrada no puede volver a Borrador."});
+ const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
  try{
  await prisma.$transaction(async tx=>{
   await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode:v.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
