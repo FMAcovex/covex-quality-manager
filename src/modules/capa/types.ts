@@ -43,7 +43,7 @@ export type CapaFormDefaults = {
 
 
 export type CapaFollowupDefaults = {
-  status: "DRAFT" | "OPEN" | "CLOSED" | "CANCELLED";
+  status: "OPEN" | "CLOSED" | "CANCELLED";
   operationalClosedAt?: string;
   cancellationReason?: string;
   conclusion?: string;
