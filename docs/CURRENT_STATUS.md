@@ -799,9 +799,9 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
 
 
 ## R1 — CAPA · Bloque 1 funcional + UX
-Estado: **IMPLEMENTADO EN PR; PENDIENTE DE CI ACTUALIZADA Y VALIDACIÓN MANUAL**.
+Estado: **COMPLETADO Y FUSIONADO EN `main` mediante PR #77; CI #409 verde y validación manual realizada.**.
 
-- rama: `feature/r1-capa-functional-ux`;
+- PR #77 fusionado por squash en `main` (`e52f50f`);
 - separación entre Seguimientos funcionales (`QmsRecordVersion`) y Seguimiento de la acción;
 - nuevo `CapaActionFollowup` sin backfill destructivo de `CapaFollowup`;
 - formularios Nueva/Editar alineados con siete apartados: Identificación/origen, Defecto/causa raíz, Acción propuesta, Seguimiento de la acción, Evaluación de eficacia, Estado operativo y Conclusión;
