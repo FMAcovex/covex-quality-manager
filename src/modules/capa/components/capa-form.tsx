@@ -104,6 +104,7 @@ export function CapaForm({
   const [effectivenessStatus, setEffectivenessStatus] = useState<"CONFORMING" | "NONCONFORMING" | "PENDING" | "NA">(
     formDefaults.effectivenessStatus ?? "PENDING",
   );
+  const draft = recordStatus === "DRAFT";
   const draftExisting = mode === "edit" && defaults.status === "DRAFT";
   const issues = state.fieldIssues ?? {};
 
@@ -167,19 +168,19 @@ export function CapaForm({
             />
           </div>
           <label className={`field ${issues.departmentId?.length ? "has-error" : ""}`}>
-            <span>Departamento responsable *</span>
-            <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} aria-invalid={issues.departmentId?.length ? true : undefined}>
+            <span>Departamento responsable{draft ? "" : " *"}</span>
+            <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required={!draft} aria-invalid={issues.departmentId?.length ? true : undefined}>
               <option value="">Seleccionar…</option>
               {departments.map((department) => <option key={department.id} value={department.id}>{department.code} — {department.name}</option>)}
             </select>
             <FieldIssue messages={issues.departmentId} />
           </label>
           <label className={`field ${issues.openedAt?.length ? "has-error" : ""}`}>
-            <span>Fecha apertura *</span>
-            <input name="openedAt" type="date" value={openedAt} onChange={(event) => setOpenedAt(event.target.value)} aria-invalid={issues.openedAt?.length ? true : undefined} />
+            <span>Fecha apertura{draft ? "" : " *"}</span>
+            <input name="openedAt" type="date" value={openedAt} onChange={(event) => setOpenedAt(event.target.value)} required={!draft} aria-invalid={issues.openedAt?.length ? true : undefined} />
             <FieldIssue messages={issues.openedAt} />
           </label>
-          <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} issues={issues.createdByText} />
+          <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required={!draft} issues={issues.createdByText} />
           {mode === "edit" ? <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText} /> : null}
           <CapaOriginSelector value={origins} onChange={setOrigins} currentRecordId={qmsRecordId} />
           {issues.originsJson?.length ? <div className="field-error-block span-3"><FieldIssue messages={issues.originsJson} /></div> : null}
@@ -190,8 +191,8 @@ export function CapaForm({
         <h2>2. Defecto y causa raíz</h2>
         <div className="form-grid">
           <Field label="Materia / material / producto / sistema / equipo" name="applicableTo" defaultValue={formDefaults.applicableTo} span="span-3" />
-          <TextArea label="Descripción breve del defecto" name="defectDescription" defaultValue={formDefaults.defectDescription} issues={issues.defectDescription} />
-          <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} issues={issues.rootCause} />
+          <TextArea label="Descripción breve del defecto" name="defectDescription" defaultValue={formDefaults.defectDescription} required={!draft} issues={issues.defectDescription} />
+          <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} required={!draft} issues={issues.rootCause} />
         </div>
       </section>
 
@@ -203,7 +204,7 @@ export function CapaForm({
           {actions.map((item, index) => (
             <div className="dynamic-row capa capa-full" key={index}>
               <strong>Acción {String(index + 1).padStart(2, "0")}</strong>
-              <label className="field"><span>Descripción *</span><textarea value={item.description} onChange={(e) => updateAction(index, { description: e.target.value })} /></label>
+              <label className="field"><span>Descripción{draft ? "" : " *"}</span><textarea required={!draft} value={item.description} onChange={(e) => updateAction(index, { description: e.target.value })} /></label>
               <label className="field"><span>Responsable</span><input value={item.responsible} onChange={(e) => updateAction(index, { responsible: e.target.value })} /></label>
               <label className="field"><span>Fecha prevista</span><input type="date" value={item.plannedExecutionDate} onChange={(e) => updateAction(index, { plannedExecutionDate: e.target.value })} /></label>
               <label className="field"><span>Impacto sobre otras áreas / registro</span><textarea value={item.impact} onChange={(e) => updateAction(index, { impact: e.target.value })} /></label>
@@ -301,7 +302,7 @@ export function CapaForm({
       <div className="form-footer">
         <Link className="button" href={capaId ? `/capa/${capaId}` : "/capa"}>Cancelar</Link>
         {(mode === "create" || draftExisting) ? (
-          <button type="submit" name="saveIntent" value="SAVE_DRAFT" className="button" disabled={pending}>{pending ? "Guardando…" : "Guardar borrador"}</button>
+          <button type="submit" name="saveIntent" value="SAVE_DRAFT" className="button" formNoValidate disabled={pending}>{pending ? "Guardando…" : "Guardar borrador"}</button>
         ) : null}
         <button type="submit" name="saveIntent" value="UPDATE_CURRENT" className="button primary" disabled={pending}>
           {pending ? "Guardando…" : "Guardar CAPA"}
