@@ -1,10 +1,11 @@
 import { z } from "zod";
 import type { ComplaintDerivedActionInput } from "@/modules/complaints/types";
+import { requestedWorkflowStatus } from "@/lib/forms/draft-workflow";
 
 const typeSchema=z.enum(["PROVIDER","CUSTOMER"]);
 const classificationSchema=z.enum(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"]);
 const resultSchema=z.enum(["PROCEDENT","NOT_PROCEDENT","INCONCLUSIVE","NOT_ATTRIBUTABLE_TO_COVEX"]);
-const statusSchema=z.enum(["OPEN","CLOSED"]);
+const statusSchema=z.enum(["DRAFT","OPEN","CLOSED"]);
 const efficacySchema=z.enum(["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"]);
 const qualitySchema=z.enum(["COMPLETE","INCOMPLETE","REVIEW_REQUIRED"]);
 const triSchema=z.enum(["YES","NO","NA"]);
@@ -55,20 +56,23 @@ export function parseComplaintForm(fd:FormData){
   const businessCode=text(fd,"businessCode"),departmentId=text(fd,"departmentId"),openedAt=text(fd,"openedAt"),
     createdByText=text(fd,"createdByText"),partyName=text(fd,"partyName"),description=text(fd,"description"),
     complaintType=enumValue(typeSchema,text(fd,"complaintType"));
-  const status=enumValue(statusSchema,text(fd,"status"))??"OPEN";
+  const storedStatus=enumValue(statusSchema,text(fd,"status"))??"OPEN";
+  const status=requestedWorkflowStatus(fd,storedStatus);
+  const draftMode=status==="DRAFT";
   const classification=enumValue(classificationSchema,text(fd,"classification"));
   const effectivenessStatus=enumValue(efficacySchema,text(fd,"effectivenessStatus"))??"PENDING";
   const capaPlans=parseCapaPlans(text(fd,"capaPlansJson"));
   const derivedActions=parseDerivedActions(text(fd,"derivedActionsJson"));
   const resolutionActions=fd.getAll("resolutionActions").map(String).map(v=>enumValue(resolutionSchema,v)).filter((v):v is z.infer<typeof resolutionSchema>=>Boolean(v));
   const errors:string[]=[];
-  if(!businessCode)errors.push("La codificación es obligatoria.");
-  if(!departmentId)errors.push("El departamento es obligatorio.");
-  if(!openedAt)errors.push("La fecha de apertura es obligatoria.");
-  if(!createdByText)errors.push("Debe indicarse quién cumplimenta el expediente.");
-  if(!complaintType)errors.push("Debe seleccionarse el tipo de reclamación.");
-  if(!partyName)errors.push("Debe indicarse el cliente/proveedor.");
-  if(!description)errors.push("La descripción de la reclamación es obligatoria.");
+  const required=(condition:boolean,message:string)=>{if(condition&&!draftMode)errors.push(message);};
+  required(!businessCode,"La codificación es obligatoria.");
+  required(!departmentId,"El departamento es obligatorio.");
+  required(!openedAt,"La fecha de apertura es obligatoria.");
+  required(!createdByText,"Debe indicarse quién cumplimenta el expediente.");
+  required(!complaintType,"Debe seleccionarse el tipo de reclamación.");
+  required(!partyName,"Debe indicarse el cliente/proveedor.");
+  required(!description,"La descripción de la reclamación es obligatoria.");
   if(status==="CLOSED"){
     if(!text(fd,"closedAt"))errors.push("Una reclamación cerrada requiere fecha de cierre.");
     if(!text(fd,"closeConclusion")&&!text(fd,"conclusion"))errors.push("Una reclamación cerrada requiere conclusión.");
@@ -77,8 +81,8 @@ export function parseComplaintForm(fd:FormData){
   if(effectivenessStatus==="NOT_REQUIRED"&&bool(fd,"effectivenessRequired")===true){
     errors.push("La eficacia no puede figurar como No requerida si se ha indicado que es necesaria.");
   }
-  if(text(fd,"sourceOther")&&!list(fd,"sourceTypes").includes("OTHER"))errors.push("Si se especifica otro origen, marca también «Otro».");
-  if(text(fd,"categoryOther")&&!list(fd,"categoryTypes").includes("OTHER"))errors.push("Si se especifica otra categoría, marca también «Otro».");
+  if(!draftMode&&text(fd,"sourceOther")&&!list(fd,"sourceTypes").includes("OTHER"))errors.push("Si se especifica otro origen, marca también «Otro».");
+  if(!draftMode&&text(fd,"categoryOther")&&!list(fd,"categoryTypes").includes("OTHER"))errors.push("Si se especifica otra categoría, marca también «Otro».");
 
   return {errors,actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
     businessCode,departmentId,openedAt,detectionDate:text(fd,"detectionDate"),receptionDate:text(fd,"receptionDate"),detectedBy:text(fd,"detectedBy"),createdByText,
