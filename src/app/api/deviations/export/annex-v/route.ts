@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   if (!Number.isInteger(year) || year < 2000 || year > 2100) {
     return NextResponse.json({ error: "Selecciona un año válido." }, { status: 400 });
   }
-  const rows = await getDeviationExportRows({ year: String(year) });
+  const rows = await getDeviationExportRows({ year: [String(year)] });
   const templateVersion = await prisma.templateVersion.findFirst({
     where: {
       module: "DEVIATION",
