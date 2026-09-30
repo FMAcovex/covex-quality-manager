@@ -121,7 +121,7 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
     if (!conclusion) addIssue("conclusion", "Una CAPA cerrada debe tener conclusión de cierre.");
   }
   if (recordStatus === "CANCELLED" && !cancellationReason && !options.allowHistoricalIncomplete) addIssue("cancellationReason", "Una CAPA cancelada debe incluir el motivo de cancelación.");
-  if (effectivenessStatus !== "PENDING" && effectivenessStatus !== "NA" && !effectiveClosedAt && !options.allowHistoricalIncomplete) {
+  if (effectivenessStatus !== "PENDING" && !effectiveClosedAt && !options.allowHistoricalIncomplete) {
     addIssue("effectiveClosedAt", "La fecha de verificación final es obligatoria cuando la eficacia deja de estar Pendiente.");
   }
   if (effectiveClosedAt && !options.allowHistoricalIncomplete) {
