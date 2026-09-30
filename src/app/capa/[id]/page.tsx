@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addCapaRelationAction, unlinkCapaOriginAction } from "@/modules/capa/actions";
+import { addCapaExecutionEvidenceAction, addCapaRelationAction, unlinkCapaOriginAction } from "@/modules/capa/actions";
 import {
   capaStatusLabel,
   capaTypeLabel,
@@ -12,6 +12,7 @@ import { recordVersionSummary } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { CapaExecutionEvidenceForm } from "@/modules/capa/components/capa-execution-evidence-form";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,10 @@ export default async function CapaDetailPage({
           item.sourceRecord.recordType === "COMPLAINT"),
     )
     .map((item) => item.sourceRecord);
+
+  const executionEvidence = capa.followups.filter((item) =>
+    Boolean(item.evidenceReference?.trim()),
+  );
 
   return (
     <section className="workspace">
@@ -204,6 +209,39 @@ export default async function CapaDetailPage({
               <dd className="prose-value">{capa.actionFollowupObservations}</dd>
             </div>
           ) : null}
+
+          <div style={{ marginTop: 24 }}>
+            <h3>Evidencia de ejecución</h3>
+            <p className="muted-note">
+              La evidencia de ejecución se conserva en el histórico legacy de CAPA y no crea un nuevo Seguimiento 00/01/02.
+            </p>
+            {executionEvidence.length ? (
+              <div className="table-scroll">
+                <table className="records-table compact-table">
+                  <thead><tr><th>Fecha</th><th>Registrado por</th><th>Evidencia / referencia</th><th>Observaciones</th></tr></thead>
+                  <tbody>
+                    {executionEvidence.map((item) => (
+                      <tr key={item.id}>
+                        <td>{formatDate(item.followupDate)}</td>
+                        <td>{item.completedByText}</td>
+                        <td className="table-cell-wrap">{item.evidenceReference}</td>
+                        <td className="table-cell-wrap">{item.observations ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <div className="empty-panel">No hay evidencia de ejecución registrada.</div>}
+
+            {capa.status === "DRAFT" ? (
+              <div className="empty-panel">La evidencia de ejecución podrá registrarse cuando la CAPA esté abierta.</div>
+            ) : (
+              <CapaExecutionEvidenceForm
+                action={addCapaExecutionEvidenceAction.bind(null, id)}
+                defaultActor={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+              />
+            )}
+          </div>
         </div>
       ) : null}
 
