@@ -267,3 +267,16 @@ Reglas:
 - las relaciones ya existentes se conservan y muestran el código histórico con estado Anulado;
 - no pueden crearse nuevas relaciones con expedientes anulados;
 - la reactivación exige motivo y recupera el código original solo si no ha sido reutilizado por otro expediente activo.
+
+## D-044 — Estado Borrador en Desviaciones
+Las Desviaciones incorporan un estado operativo `DRAFT` previo a `OPEN`.
+
+Reglas:
+- un borrador puede guardarse con campos obligatorios pendientes;
+- los campos pendientes se identifican visualmente en el formulario;
+- la transición Borrador → Abierta exige superar todas las validaciones obligatorias;
+- una desviación Abierta o Cerrada no puede volver a Borrador;
+- los borradores no cuentan como desviaciones abiertas ni entran en indicadores, vencimientos, seguimientos u exportaciones oficiales por defecto;
+- el Anexo III no se genera mientras el expediente esté en Borrador;
+- el código de negocio puede permanecer vacío durante el borrador; la asignación automática definitiva se resolverá en D3 al abrir el expediente.
+
