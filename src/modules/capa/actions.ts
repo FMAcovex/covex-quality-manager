@@ -42,6 +42,7 @@ import {
   getApplicableTemplateVersion,
 } from "@/modules/configuration/runtime";
 import {
+  capaSnapshotVersionFollowupDate,
   ensureInitialVersion,
   refreshCurrentVersion,
   startNextVersion,
@@ -63,6 +64,7 @@ function snapshot(v: ReturnType<typeof parseCapaForm>["values"]) {
     actionType: v.actionType,
     departmentId: v.departmentId,
     openedAt: v.openedAt,
+    versionFollowupDate: v.versionFollowupDate,
     createdByText: v.createdByText,
     originType: v.originType,
     originCode: v.originCode,
@@ -277,6 +279,49 @@ export async function createCapaAction(
         },
       });
 
+      if (v.status !== "DRAFT") {
+        if (deviationOrigin) {
+          await registerDeviationCapaPlan(tx, {
+            planId: deviationOrigin.planId,
+            capaQmsRecordId: qmsRecord.id,
+            capaBusinessCode: v.businessCode!,
+            actor: parsed.actor,
+          });
+        } else if (complaintPlanOrigin) {
+          await registerComplaintCapaPlan(tx, {
+            planId: complaintPlanOrigin.planId,
+            capaQmsRecordId: qmsRecord.id,
+            capaBusinessCode: v.businessCode!,
+            actor: parsed.actor,
+          });
+        } else if (complaintDirectOrigin) {
+          await registerComplaintDirectOrigin(tx, {
+            complaintQmsRecordId: complaintDirectOrigin.complaintQmsRecordId,
+            capaQmsRecordId: qmsRecord.id,
+            actor: parsed.actor,
+          });
+        } else if (!v.origins.length) {
+          await relatePrimaryOrigin(
+            tx,
+            qmsRecord.id,
+            canonicalValues.originCode,
+            parsed.actor,
+          );
+        }
+
+        const selectedOriginIds = new Set(v.origins.map((item) => item.id));
+        if (deviationOrigin?.deviationQmsRecordId) selectedOriginIds.add(deviationOrigin.deviationQmsRecordId);
+        if (complaintPlanOrigin?.complaintQmsRecordId) selectedOriginIds.add(complaintPlanOrigin.complaintQmsRecordId);
+        if (complaintDirectOrigin?.complaintQmsRecordId) selectedOriginIds.add(complaintDirectOrigin.complaintQmsRecordId);
+        if (selectedOriginIds.size) {
+          await syncOperationalOriginRelations(tx, {
+            capaRecordId: qmsRecord.id,
+            originRecordIds: [...selectedOriginIds],
+            changedByText: parsed.actor,
+          });
+        }
+      }
+
       const versionRecord = await tx.capa.findUniqueOrThrow({
         where: { id: created.id },
         include: {
@@ -298,56 +343,16 @@ export async function createCapaAction(
       await ensureInitialVersion(
         tx,
         qmsRecord.id,
-        snapshotJson(serializeCapaVersion(versionRecord)),
+        snapshotJson(
+          serializeCapaVersion(versionRecord, {
+            versionFollowupDate: versionRecord.openedAt,
+          }),
+        ),
         parsed.actor,
         "UI",
         v.status === "DRAFT" ? "Borrador inicial CAPA" : "Informe inicial CAPA",
       );
 
-      if (v.status === "DRAFT") {
-        return created;
-      }
-
-      if (deviationOrigin) {
-        await registerDeviationCapaPlan(tx, {
-          planId: deviationOrigin.planId,
-          capaQmsRecordId: qmsRecord.id,
-          capaBusinessCode: v.businessCode!,
-          actor: parsed.actor,
-        });
-      } else if (complaintPlanOrigin) {
-        await registerComplaintCapaPlan(tx, {
-          planId: complaintPlanOrigin.planId,
-          capaQmsRecordId: qmsRecord.id,
-          capaBusinessCode: v.businessCode!,
-          actor: parsed.actor,
-        });
-      } else if (complaintDirectOrigin) {
-        await registerComplaintDirectOrigin(tx, {
-          complaintQmsRecordId: complaintDirectOrigin.complaintQmsRecordId,
-          capaQmsRecordId: qmsRecord.id,
-          actor: parsed.actor,
-        });
-      } else if (!v.origins.length) {
-        await relatePrimaryOrigin(
-          tx,
-          qmsRecord.id,
-          canonicalValues.originCode,
-          parsed.actor,
-        );
-      }
-
-      const selectedOriginIds = new Set(v.origins.map((item) => item.id));
-      if (deviationOrigin?.deviationQmsRecordId) selectedOriginIds.add(deviationOrigin.deviationQmsRecordId);
-      if (complaintPlanOrigin?.complaintQmsRecordId) selectedOriginIds.add(complaintPlanOrigin.complaintQmsRecordId);
-      if (complaintDirectOrigin?.complaintQmsRecordId) selectedOriginIds.add(complaintDirectOrigin.complaintQmsRecordId);
-      if (selectedOriginIds.size) {
-        await syncOperationalOriginRelations(tx, {
-          capaRecordId: qmsRecord.id,
-          originRecordIds: [...selectedOriginIds],
-          changedByText: parsed.actor,
-        });
-      }
       return created;
     });
     capaId = capa.id;
@@ -408,6 +413,7 @@ export async function updateCapaAction(
   }
 
   const v = parsed.values;
+  const historyReason = v.saveIntent === "CREATE_FOLLOWUP_VERSION" ? v.changeReason : null;
   const requestedBusinessCode = v.businessCode;
   v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
   if (existing.status !== "DRAFT" && v.status === "DRAFT") {
@@ -532,7 +538,14 @@ export async function updateCapaAction(
             qmsRecordId: existing.qmsRecordId,
             sequenceNumber: historicalSequence,
             kind: "HISTORICAL_STATE",
-            snapshot: snapshotJson(serializeCapaVersion(existing)),
+            snapshot: snapshotJson(
+              serializeCapaVersion(existing, {
+                versionFollowupDate:
+                  historicalSequence === 0
+                    ? existing.openedAt
+                    : existing.followups.find((item) => item.sequenceNumber === historicalSequence)?.followupDate ?? null,
+              }),
+            ),
             reason: "Baseline histórico al activar Hito 6.1; no reconstruye versiones anteriores no almacenadas",
             createdByText: parsed.actor,
             source: "SYSTEM",
@@ -649,7 +662,7 @@ export async function updateCapaAction(
             fieldPath,
             oldValue: jsonValue((oldSnapshot as Record<string, unknown>)[fieldPath]),
             newValue: jsonValue(newValue),
-            reason: v.changeReason,
+            reason: historyReason,
             source: "UI",
           },
         });
@@ -731,7 +744,22 @@ export async function updateCapaAction(
           annexIIITemplateVersion: true,
         },
       });
-      const versionSnapshot = snapshotJson(serializeCapaVersion(updatedForVersion));
+      const latestVersion = await tx.qmsRecordVersion.findFirst({
+        where: { qmsRecordId: existing.qmsRecordId },
+        orderBy: { sequenceNumber: "desc" },
+      });
+      const versionFollowupDate =
+        v.saveIntent === "CREATE_FOLLOWUP_VERSION"
+          ? toDate(v.versionFollowupDate)
+          : latestVersion
+            ? capaSnapshotVersionFollowupDate(
+                latestVersion.snapshot,
+                latestVersion.sequenceNumber,
+              ) ?? (latestVersion.sequenceNumber === 0 ? updatedForVersion.openedAt : null)
+            : updatedForVersion.openedAt;
+      const versionSnapshot = snapshotJson(
+        serializeCapaVersion(updatedForVersion, { versionFollowupDate }),
+      );
       if (v.saveIntent === "CREATE_FOLLOWUP_VERSION") {
         await startNextVersion(
           tx,
@@ -747,7 +775,7 @@ export async function updateCapaAction(
           existing.qmsRecordId,
           versionSnapshot,
           parsed.actor,
-          v.changeReason || null,
+          null,
         );
       }
     });
