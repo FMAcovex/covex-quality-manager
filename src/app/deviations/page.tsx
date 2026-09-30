@@ -8,12 +8,12 @@ import { ColumnSelector } from "@/components/column-selector";
 import { deviationColumns } from "@/modules/deviations/column-config";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
+import { MultiSelectFilter } from "@/components/multi-select-filter";
+import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
 
 export const dynamic = "force-dynamic";
 
-function param(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
+const param = firstQueryValue;
 
 export default async function DeviationsPage({
   searchParams,
@@ -24,11 +24,11 @@ export default async function DeviationsPage({
   const filters = {
     q: param(query.q),
     administrative: param(query.administrative),
-    year: param(query.year),
-    department: param(query.department),
-    status: param(query.status),
-    classification: param(query.classification),
-    provenance: param(query.provenance),
+    year: queryList(query.year),
+    department: queryList(query.department),
+    status: queryList(query.status),
+    classification: queryList(query.classification),
+    provenance: queryList(query.provenance),
     measures: param(query.measures),
     capa: param(query.capa),
     deadline: param(query.deadline),
@@ -36,10 +36,8 @@ export default async function DeviationsPage({
 
   const { rows, departments, years, provenances, counters } = await getDeviationList(filters);
   const exportParams = new URLSearchParams();
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) exportParams.set(key, value);
-  });
-  const currentYear = filters.year ?? String(new Date().getFullYear());
+  Object.entries(filters).forEach(([key, value]) => appendFilterValues(exportParams, key, value));
+  const currentYear = filters.year[0] ?? String(new Date().getFullYear());
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_V);
 
   return (
@@ -88,7 +86,7 @@ export default async function DeviationsPage({
       <form method="get" className="toolbar-form">
         <div className="filter-panel operational">
           <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-          <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year ?? ""}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
+          <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={currentYear}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
           <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
           <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="DRAFT">Borrador</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
           <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification ?? ""}><option value="">Todas</option><option value="CRITICAL">Crítica</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option></select></label>
