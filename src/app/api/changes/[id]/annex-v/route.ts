@@ -20,6 +20,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   const record = await getChangeControlDetail(id);
   if (!record) return NextResponse.json({ error: "Control de Cambio no encontrado." }, { status: 404 });
+  if (record.finalStatus === "DRAFT") {
+    return NextResponse.json({ error: "No se generan documentos oficiales mientras el Control de Cambio esté en borrador." }, { status: 409 });
+  }
 
   const requestedVersion = new URL(request.url).searchParams.get("version");
   const sequenceNumber =
