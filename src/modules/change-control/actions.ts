@@ -12,6 +12,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
+import { preserveFormState } from "@/lib/forms/preserved-state";
 import { createQmsRelation } from "@/lib/qms/relation-service";
 import { parseChangeControlForm } from "@/modules/change-control/validation";
 import type {
@@ -118,18 +119,18 @@ async function taskCreateData(
 }
 
 export async function createChangeControlAction(
-  _previous: ChangeControlFormState,
+  previous: ChangeControlFormState,
   formData: FormData,
 ): Promise<ChangeControlFormState> {
   const parsed = parseChangeControlForm(formData);
   if (parsed.errors.length) {
-    return { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors };
+    return preserveFormState(previous, formData, { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors });
   }
   const v = parsed.values;
   let createdId: string;
   try {
     const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return { error: "El departamento seleccionado no existe." };
+    if (!department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
 
     const referenceDate = toDate(v.requestDate) ?? new Date();
     const [formVersion, annexIII, annexIV, annexV] = await Promise.all([
@@ -222,7 +223,7 @@ export async function createChangeControlAction(
     });
     createdId = created.id;
   } catch (error) {
-    return persistenceFormError(error, "el Control de Cambio");
+    return preserveFormState(previous, formData, persistenceFormError(error, "el Control de Cambio"));
   }
 
   revalidatePath("/changes");
@@ -231,12 +232,12 @@ export async function createChangeControlAction(
 
 export async function updateChangeControlAction(
   id: string,
-  _previous: ChangeControlFormState,
+  previous: ChangeControlFormState,
   formData: FormData,
 ): Promise<ChangeControlFormState> {
   const parsed = parseChangeControlForm(formData);
   if (parsed.errors.length) {
-    return { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors };
+    return preserveFormState(previous, formData, { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors });
   }
 
   const existing = await prisma.changeControl.findUnique({
@@ -254,11 +255,11 @@ export async function updateChangeControlAction(
       annexVTemplateVersion: true,
     },
   });
-  if (!existing) return { error: "El Control de Cambio ya no existe." };
+  if (!existing) return preserveFormState(previous, formData, { error: "El Control de Cambio ya no existe." });
 
   const v = parsed.values;
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "El departamento seleccionado no existe." };
+  if (!department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
 
   if (existing.dictamenResult === "APPROVED") {
     const oldBaseline = existing.tasks
@@ -276,12 +277,12 @@ export async function updateChangeControlAction(
       plannedDate: item.plannedDate,
     }));
     if (JSON.stringify(oldBaseline) !== JSON.stringify(incoming)) {
-      return {
+      return preserveFormState(previous, formData, {
         error: "El plan aprobado del Dictamen está bloqueado.",
         fieldErrors: [
           "No se pueden sustituir ni modificar silenciosamente las acciones del Dictamen aprobado. Añade las nuevas acciones desde un seguimiento.",
         ],
-      };
+      });
     }
   }
 
@@ -432,9 +433,9 @@ export async function updateChangeControlAction(
     redirect(`/changes/${id}`);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "Ya existe un Control de Cambio con esa codificación." };
+      return preserveFormState(previous, formData, { error: "Ya existe un Control de Cambio con esa codificación." });
     }
-    throw error;
+    return preserveFormState(previous, formData, persistenceFormError(error, "el Control de Cambio"));
   }
 }
 
