@@ -1,7 +1,9 @@
 export type ChangeControlFormState = {
   error: string | null;
   fieldErrors?: string[];
-};
+
+  submittedValues?: Record<string, string | string[]>;
+  formRevision?: number;};
 
 export type ChangeTaskInput = {
   id?: string;
