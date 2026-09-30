@@ -280,3 +280,16 @@ Reglas:
 - el Anexo III no se genera mientras el expediente esté en Borrador;
 - el código de negocio puede permanecer vacío durante el borrador; la asignación automática definitiva se resolverá en D3 al abrir el expediente.
 
+## D-045 — Codificación automática de Desviaciones
+La codificación oficial de una Desviación se asigna automáticamente al abrir el expediente, nunca durante el estado Borrador.
+
+Reglas:
+- formato `D/XX-NN/ZZZ/YYYY`, usando el código del departamento, correlativo de tres cifras y año de apertura;
+- el borrador mantiene `businessCode = null` y no consume numeración oficial;
+- la asignación se realiza dentro de la misma transacción que abre/crea la desviación;
+- un bloqueo transaccional de PostgreSQL serializa la asignación por departamento y año para evitar duplicados concurrentes;
+- el siguiente correlativo se calcula considerando tanto `businessCode` como `annulledBusinessCode`;
+- una codificación que haya existido alguna vez en una Desviación no se reutiliza automáticamente, aunque el expediente haya sido anulado;
+- una vez asignado, el código permanece estable durante las ediciones y versiones posteriores;
+- la lógica se centraliza en `src/lib/qms/business-code.ts` para facilitar reutilización controlada en otros módulos.
+
