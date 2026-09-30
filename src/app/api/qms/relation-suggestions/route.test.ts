@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { QmsRecordType } from "@prisma/client";
 
-const findUnique = vi.fn();
-const findManyRelations = vi.fn();
-const findManyRecords = vi.fn();
+const { findUnique, findManyRelations, findManyRecords } = vi.hoisted(() => ({
+  findUnique: vi.fn(),
+  findManyRelations: vi.fn(),
+  findManyRecords: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
