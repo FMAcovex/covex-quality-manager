@@ -38,6 +38,7 @@ export function effectivenessStatusLabel(value: string) {
 }
 
 export function finalStatusLabel(value: string) {
+  if (value === "DRAFT") return "Borrador";
   return value === "CLOSED" ? "Cerrado" : "Abierto";
 }
 
