@@ -14,6 +14,7 @@ export function complaintClassificationLabel(value: string | null | undefined) {
   return "Sin clasificar";
 }
 export function complaintStatusLabel(value: string) {
+  if (value === "DRAFT") return "Borrador";
   return value === "CLOSED" ? "Cerrada" : "Abierta";
 }
 export function complaintEffectivenessLabel(value: string) {
