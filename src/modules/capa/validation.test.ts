@@ -18,6 +18,30 @@ function base(){
   return f;
 }
 describe("parseCapaForm",()=>{
+  it("allows a minimal incomplete CAPA draft",()=>{
+    const f=new FormData();
+    f.set("status","DRAFT");
+    f.set("actionType","CORRECTIVE");
+    f.set("plannedActionsJson","[]");
+    const parsed=parseCapaForm(f);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.values.status).toBe("DRAFT");
+    expect(parsed.values.businessCode).toBeNull();
+  });
+  it("requires operational fields when a draft is opened",()=>{
+    const f=new FormData();
+    f.set("status","OPEN");
+    f.set("actionType","CORRECTIVE");
+    f.set("plannedActionsJson","[]");
+    const parsed=parseCapaForm(f);
+    expect(parsed.fieldIssues.departmentId).toBeDefined();
+    expect(parsed.fieldIssues.openedAt).toBeDefined();
+    expect(parsed.fieldIssues.createdByText).toBeDefined();
+    expect(parsed.fieldIssues.originType).toBeDefined();
+    expect(parsed.fieldIssues.defectDescription).toBeDefined();
+    expect(parsed.fieldIssues.rootCause).toBeDefined();
+    expect(parsed.fieldIssues.plannedActionsJson).toBeDefined();
+  });
   it("allows an open CAPA with planned action",()=>{
     expect(parseCapaForm(base()).errors).toEqual([]);
   });
