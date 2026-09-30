@@ -87,6 +87,7 @@ function scalarSnapshot(v: ReturnType<typeof parseChangeControlForm>["values"]) 
     internalObservations: v.internalObservations,
     signedDocumentAvailable: v.signedDocumentAvailable,
     dataQualityStatus: v.dataQualityStatus,
+    finalStatus: v.finalStatus,
     tasks: v.tasks,
   };
 }
@@ -133,8 +134,12 @@ export async function createChangeControlAction(
   const v = parsed.values;
   let createdId: string;
   try {
-    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
+    const department = v.departmentId
+      ? await prisma.department.findUnique({ where: { id: v.departmentId } })
+      : null;
+    if (v.finalStatus !== "DRAFT" && !department) {
+      return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
+    }
 
     const referenceDate = toDate(v.requestDate) ?? new Date();
     const [formVersion, annexIII, annexIV, annexV] = await Promise.all([
