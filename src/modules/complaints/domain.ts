@@ -3,7 +3,8 @@ export function formatDate(value: Date | string | null | undefined) {
   const date = value instanceof Date ? value : new Date(value);
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
 }
-export function complaintTypeLabel(value: string) {
+export function complaintTypeLabel(value: string | null | undefined) {
+  if (!value) return "Pendiente";
   return value === "PROVIDER" ? "A proveedor" : "De cliente";
 }
 export function complaintClassificationLabel(value: string | null | undefined) {
@@ -14,6 +15,7 @@ export function complaintClassificationLabel(value: string | null | undefined) {
   return "Sin clasificar";
 }
 export function complaintStatusLabel(value: string) {
+  if (value === "DRAFT") return "Borrador";
   return value === "CLOSED" ? "Cerrada" : "Abierta";
 }
 export function complaintEffectivenessLabel(value: string) {
