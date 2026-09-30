@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ChangeTaskInput } from "@/modules/change-control/types";
+import { requestedWorkflowStatus } from "@/lib/forms/draft-workflow";
 
 const scope = z.enum([
   "INSTALLATIONS",
@@ -15,6 +16,7 @@ const classification = z.enum(["MAJOR", "MINOR"]);
 const dictamenResult = z.enum(["PENDING", "APPROVED", "REJECTED"]);
 const triState = z.enum(["YES", "NO", "NA"]);
 const dataQuality = z.enum(["COMPLETE", "INCOMPLETE", "REVIEW_REQUIRED"]);
+const finalStatusSchema = z.enum(["DRAFT", "OPEN", "CLOSED"]);
 
 const taskSchema = z.object({
   id: z.string().optional(),
