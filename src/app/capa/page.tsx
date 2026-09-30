@@ -85,7 +85,7 @@ export default async function CapaPage({
           <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year ?? ""}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
           <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
           <label className="filter-placeholder"><span>Tipo</span><select name="type" defaultValue={filters.type ?? ""}><option value="">Todas</option><option value="CORRECTIVE">Correctiva</option><option value="PREVENTIVE">Preventiva</option></select></label>
-          <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option><option value="CANCELLED">Cancelada</option></select></label>
+          <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="DRAFT">Borrador</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option><option value="CANCELLED">Cancelada</option></select></label>
           <label className="filter-placeholder"><span>Eficacia</span><select name="effectiveness" defaultValue={filters.effectiveness ?? ""}><option value="">Todas</option><option value="PENDING">Pendiente</option><option value="CONFORMING">Conforme</option><option value="NONCONFORMING">No conforme</option><option value="NA">N/A histórico</option></select></label>
           <label className="filter-placeholder"><span>Origen</span><select name="origin" defaultValue={filters.origin ?? ""}><option value="">Todos</option>{origins.map((value)=><option key={value} value={value}>{value}</option>)}</select></label>
           <label className="filter-placeholder"><span>Seguimiento</span><select name="followup" defaultValue={filters.followup ?? ""}><option value="">Todos</option><option value="due">Vencido</option><option value="scheduled">Programado</option><option value="none">Sin próxima fecha</option></select></label>
@@ -100,7 +100,7 @@ export default async function CapaPage({
               href: `/capa/${row.id}`,
               code: row.qmsRecord.businessCode ?? "Sin código",
               title: row.plannedActions[0]?.description ?? row.defectDescription ?? "Sin descripción",
-              meta: [row.departmentCodeSnapshot, row.status === "OPEN" ? "Abierta" : row.status === "CLOSED" ? "Cerrada" : "Cancelada"].filter(Boolean).join(" · "),
+              meta: [row.departmentCodeSnapshot, capaStatusLabel(row.status)].filter(Boolean).join(" · "),
               searchText: [
                 row.qmsRecord.businessCode,
                 row.originCode,
@@ -118,6 +118,7 @@ export default async function CapaPage({
 
       <div className="summary-strip">
         <div><span>Total</span><strong>{counters.total}</strong></div>
+        <div><span>Borradores</span><strong>{counters.drafts}</strong></div>
         <div><span>Abiertas</span><strong>{counters.open}</strong></div>
         <div><span>Cerradas · eficacia pendiente</span><strong>{counters.pendingEfficacy}</strong></div>
         <div><span>Seguimiento vencido</span><strong>{counters.overdueFollowups}</strong></div>
