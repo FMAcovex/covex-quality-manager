@@ -1531,3 +1531,12 @@ button[disabled] {
   align-items: baseline;
   flex-wrap: wrap;
 }
+
+
+/* D2.3 — errores requeridos solo al intentar abrir */
+.form-stack:not(.show-required-errors) :is(input, select, textarea):required:invalid {
+  box-shadow: none;
+}
+.form-stack:not(.show-required-errors) .field:has(:is(input, select, textarea):required:invalid) {
+  outline: none;
+}
