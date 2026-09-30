@@ -21,7 +21,9 @@ export async function getCapaExportRows(filters: CapaExportFilters) {
   const years = validYears(filters.year); if (years.length) and.push({ qmsRecord: { year: { in: years } } });
   if (filters.department?.length) and.push({ departmentId: { in: filters.department } });
   const types = validValues(filters.type, ["CORRECTIVE","PREVENTIVE"] as const); if (types.length) and.push({ actionType: { in: types as ("CORRECTIVE"|"PREVENTIVE")[] } });
-  const statuses = validValues(filters.status, ["OPEN","CLOSED","CANCELLED"] as const); if (statuses.length) and.push({ status: { in: statuses as ("OPEN"|"CLOSED"|"CANCELLED")[] } });
+  const requestedStatuses = validValues(filters.status, ["DRAFT","OPEN","CLOSED","CANCELLED"] as const);
+  const statuses = requestedStatuses.filter((value) => value !== "DRAFT") as ("OPEN"|"CLOSED"|"CANCELLED")[];
+  if (filters.status?.length) and.push({ status: { in: statuses } });
   const effectiveness = validValues(filters.effectiveness, ["CONFORMING","NONCONFORMING","PENDING"] as const); if (effectiveness.length) and.push({ effectivenessStatus: { in: effectiveness as ("CONFORMING"|"NONCONFORMING"|"PENDING")[] } });
   if (filters.origin?.length) and.push({ originType: { in: filters.origin } });
 
