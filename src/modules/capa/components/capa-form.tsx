@@ -100,6 +100,7 @@ export function CapaForm({
     defaults.plannedActions?.length ? defaults.plannedActions : [{ ...emptyAction }],
   );
   const issues = state.fieldIssues ?? {};
+  const isDraft = (formDefaults.status ?? (mode === "create" ? "DRAFT" : "OPEN")) === "DRAFT";
 
   const updateAction = (index: number, patch: Partial<CapaPlannedActionInput>) => {
     setActions((current) =>
@@ -240,14 +241,22 @@ export function CapaForm({
       <section className="form-section">
         <h2>4. Estado y cierre operativo</h2>
         <div className="form-grid">
-          <label className="field">
-            <span>Estado</span>
-            <select name="status" defaultValue={formDefaults.status ?? "OPEN"}>
-              <option value="OPEN">Abierta</option>
-              <option value="CLOSED">Cerrada</option>
-              <option value="CANCELLED">Cancelada</option>
-            </select>
-          </label>
+          {isDraft ? (
+            <label className="field">
+              <span>Estado</span>
+              <input type="hidden" name="status" value="DRAFT" />
+              <div className="readonly-field">Borrador</div>
+            </label>
+          ) : (
+            <label className="field">
+              <span>Estado</span>
+              <select name="status" defaultValue={formDefaults.status ?? "OPEN"}>
+                <option value="OPEN">Abierta</option>
+                <option value="CLOSED">Cerrada</option>
+                <option value="CANCELLED">Cancelada</option>
+              </select>
+            </label>
+          )}
           <Field label="Fecha cierre operativo" name="operationalClosedAt" type="date" defaultValue={formDefaults.operationalClosedAt} issues={issues.operationalClosedAt} />
           <TextArea label="Motivo de cancelación" name="cancellationReason" defaultValue={formDefaults.cancellationReason} issues={issues.cancellationReason} />
         </div>
@@ -302,11 +311,29 @@ export function CapaForm({
         </div>
       </section>
 
+      {isDraft ? (
+        <div className="form-errors draft-notice">
+          <strong>Borrador</strong>
+          <span>Puedes guardar el expediente incompleto. Los obligatorios se exigirán al abrir la CAPA.</span>
+        </div>
+      ) : null}
+
       <div className="form-footer">
         <Link className="button" href={capaId ? `/capa/${capaId}` : "/capa"}>Cancelar</Link>
-        <button type="submit" className="button primary" disabled={pending}>
-          {pending ? "Guardando…" : mode === "create" ? "Guardar CAPA" : "Guardar cambios"}
-        </button>
+        {isDraft ? (
+          <div className="version-submit-group">
+            <button type="submit" name="saveIntent" value="draft" className="button" formNoValidate disabled={pending}>
+              {pending ? "Guardando…" : "Guardar borrador"}
+            </button>
+            <button type="submit" name="saveIntent" value="open" className="button primary" disabled={pending}>
+              {pending ? "Guardando…" : "Abrir CAPA"}
+            </button>
+          </div>
+        ) : (
+          <button type="submit" className="button primary" disabled={pending}>
+            {pending ? "Guardando…" : "Guardar cambios"}
+          </button>
+        )}
       </div>
     </form>
   );
