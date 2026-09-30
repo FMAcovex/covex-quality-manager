@@ -444,5 +444,5 @@ Reglas:
 - En borrador, los identificadores de origen se conservan como datos pendientes y no se crean relaciones operativas.
 - `originType` y `originCode` se mantienen como compatibilidad histórica, no como fuente maestra del multiorigen.
 - Los campos históricos retirados de la interfaz no se eliminan ni se vacían durante una edición.
-- La evidencia de ejecución exigida por el flujo legacy para cerrar una CAPA no se relaja en este bloque.
+- La evidencia de ejecución exigida para cerrar una CAPA no se relaja: R1 ofrece una entrada mínima específica que persiste temporalmente en `CapaFollowup.evidenceReference`, sin crear un Seguimiento funcional ni una nueva `QmsRecordVersion`.
 - El PDF por versión y la generalización documental se aplazan al Bloque 2.
