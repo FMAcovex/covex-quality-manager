@@ -173,6 +173,36 @@ export function replaceWordRowWithCopies(
   );
 }
 
+function setVariableCellTextInRow(rowXml: string, cellIndex: number, text: string) {
+  return transformNth(
+    rowXml,
+    /<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g,
+    cellIndex,
+    (cell) => setVariableCellText(cell, text),
+  );
+}
+
+export function replaceWordRowWithVariableCopies(
+  documentXml: string,
+  tableIndex: number,
+  rowIndex: number,
+  rows: string[][],
+) {
+  return transformNth(documentXml, /<w:tbl(?:\s[^>]*)?>[\s\S]*?<\/w:tbl>/g, tableIndex, (table) =>
+    transformNth(table, /<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>/g, rowIndex, (templateRow) => {
+      if (!rows.length) return templateRow;
+      return rows
+        .map((values) =>
+          values.reduce(
+            (rowXml, value, cell) => setVariableCellTextInRow(rowXml, cell, value),
+            templateRow,
+          ),
+        )
+        .join("");
+    }),
+  );
+}
+
 export function appendWordCellText(documentXml: string, table: number, row: number, cell: number, text: string) {
   return transformWordCell(documentXml, table, row, cell, (xml) =>
     xml.replace("</w:tc>", `${paragraphXml(text)}</w:tc>`),
