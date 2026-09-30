@@ -1,7 +1,9 @@
-import { Prisma, QmsRelationType } from "@prisma/client";
+import { Prisma, QmsRecordType, QmsRelationType } from "@prisma/client";
 import {
+  canRelate,
   operationalRelationLabel,
   QmsRelationValidationError,
+  selectOperationalRelationTarget,
   validateQmsRelation,
 } from "@/lib/qms/relation-rules";
 
@@ -10,12 +12,33 @@ export type QmsRelationClient = Pick<
   "qmsRecord" | "qmsRelation"
 >;
 
+export type QmsRelationHistoryClient = Pick<
+  Prisma.TransactionClient,
+  "qmsRecord" | "qmsRelation" | "changeHistory"
+>;
+
 export type CreateQmsRelationInput = {
   sourceRecordId: string;
   targetRecordId: string;
   relationType?: QmsRelationType;
   createdByText?: string | null;
   notes?: string | null;
+};
+
+export type LinkOperationalRelationByCodeInput = {
+  currentRecordId: string;
+  currentType: QmsRecordType;
+  relatedType: QmsRecordType;
+  businessCode: string;
+  createdByText?: string | null;
+  notes?: string | null;
+};
+
+export type DeactivateOperationalRelationInput = {
+  currentRecordId: string;
+  relatedRecordId: string;
+  changedByText?: string | null;
+  reason: string;
 };
 
 const relationRecordSelect = {
@@ -46,6 +69,39 @@ async function getQmsRecord(
     );
   }
   return record;
+}
+
+function canonicalRelationEndpoints(
+  current: { id: string; recordType: QmsRecordType },
+  related: { id: string; recordType: QmsRecordType },
+) {
+  if (
+    canRelate(
+      current.recordType,
+      related.recordType,
+      QmsRelationType.GENERATES,
+    )
+  ) {
+    return {
+      sourceRecordId: current.id,
+      targetRecordId: related.id,
+    };
+  }
+  if (
+    canRelate(
+      related.recordType,
+      current.recordType,
+      QmsRelationType.GENERATES,
+    )
+  ) {
+    return {
+      sourceRecordId: related.id,
+      targetRecordId: current.id,
+    };
+  }
+  throw new QmsRelationValidationError(
+    `Relación no permitida entre ${current.recordType} y ${related.recordType}.`,
+  );
 }
 
 export async function createQmsRelation(
@@ -95,6 +151,59 @@ export async function createQmsRelation(
   });
 }
 
+export async function linkOperationalRelationByBusinessCode(
+  client: QmsRelationClient,
+  input: LinkOperationalRelationByCodeInput,
+) {
+  const businessCode = input.businessCode.trim();
+  if (!businessCode) {
+    throw new QmsRelationValidationError(
+      "Debe indicarse la codificación del expediente relacionado.",
+    );
+  }
+
+  const direct = canRelate(
+    input.currentType,
+    input.relatedType,
+    QmsRelationType.GENERATES,
+  );
+  const inverse = canRelate(
+    input.relatedType,
+    input.currentType,
+    QmsRelationType.GENERATES,
+  );
+  if (!direct && !inverse) {
+    throw new QmsRelationValidationError(
+      `Relación no permitida entre ${input.currentType} y ${input.relatedType}.`,
+    );
+  }
+
+  const matches = await client.qmsRecord.findMany({
+    where: {
+      businessCode,
+      recordType: input.relatedType,
+      id: { not: input.currentRecordId },
+    },
+    select: { id: true, recordType: true, businessCode: true },
+  });
+  const related = selectOperationalRelationTarget(input.currentType, matches);
+  const endpoints = direct
+    ? {
+        sourceRecordId: input.currentRecordId,
+        targetRecordId: related.id,
+      }
+    : {
+        sourceRecordId: related.id,
+        targetRecordId: input.currentRecordId,
+      };
+
+  return createQmsRelation(client, {
+    ...endpoints,
+    createdByText: input.createdByText,
+    notes: input.notes,
+  });
+}
+
 export function getOutgoingRelations(
   client: QmsRelationClient,
   sourceRecordId: string,
@@ -116,7 +225,6 @@ export function getIncomingRelations(
     orderBy: { createdAt: "asc" },
   });
 }
-
 
 export async function deactivateQmsRelation(
   client: QmsRelationClient,
@@ -148,4 +256,47 @@ export async function deactivateQmsRelation(
     where: { id: relation.id },
     data: { isActive: false },
   });
+}
+
+export async function deactivateOperationalRelation(
+  client: QmsRelationHistoryClient,
+  input: DeactivateOperationalRelationInput,
+) {
+  const [current, related] = await Promise.all([
+    client.qmsRecord.findUnique({
+      where: { id: input.currentRecordId },
+      select: { id: true, recordType: true },
+    }),
+    client.qmsRecord.findUnique({
+      where: { id: input.relatedRecordId },
+      select: { id: true, recordType: true },
+    }),
+  ]);
+
+  if (!current || !related) {
+    throw new QmsRelationValidationError(
+      "Uno de los expedientes relacionados ya no existe.",
+    );
+  }
+
+  const endpoints = canonicalRelationEndpoints(current, related);
+  const relation = await deactivateQmsRelation(client, endpoints);
+
+  await client.changeHistory.create({
+    data: {
+      qmsRecordId: current.id,
+      changedByText: input.changedByText,
+      fieldPath: "relations",
+      oldValue: {
+        sourceRecordId: endpoints.sourceRecordId,
+        targetRecordId: endpoints.targetRecordId,
+        relationType: QmsRelationType.GENERATES,
+      },
+      newValue: { active: false },
+      reason: input.reason,
+      source: "UI",
+    },
+  });
+
+  return relation;
 }

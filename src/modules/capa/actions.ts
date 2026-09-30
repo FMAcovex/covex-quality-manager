@@ -10,7 +10,11 @@ import {
   allowedIncomingRelationTypes,
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
-import { createQmsRelation, deactivateQmsRelation } from "@/lib/qms/relation-service";
+import {
+  createQmsRelation,
+  deactivateOperationalRelation,
+  linkOperationalRelationByBusinessCode,
+} from "@/lib/qms/relation-service";
 import {
   DeviationCapaPlanLinkError,
   getDeviationCapaPlanOrigin,
@@ -538,18 +542,11 @@ export async function addCapaRelationAction(
       return { error: "Una CAPA solo puede tener como origen una Desviación o una Reclamación." };
     }
 
-    const matches = await prisma.qmsRecord.findMany({
-      where: {
-        businessCode: code,
-        recordType: requestedType,
-        id: { not: capa.qmsRecordId },
-      },
-      select: { id: true, recordType: true, businessCode: true },
-    });
-    const origin = selectOperationalRelationTarget(QmsRecordType.CAPA, matches);
-    await createQmsRelation(prisma, {
-      sourceRecordId: origin.id,
-      targetRecordId: capa.qmsRecordId,
+    await linkOperationalRelationByBusinessCode(prisma, {
+      currentRecordId: capa.qmsRecordId,
+      currentType: QmsRecordType.CAPA,
+      relatedType: requestedType,
+      businessCode: code,
       createdByText: actor,
     });
 
@@ -579,23 +576,14 @@ export async function unlinkCapaOriginAction(
   });
   if (!capa) throw new Error("La CAPA no existe.");
 
-  await prisma.$transaction(async (tx) => {
-    await deactivateQmsRelation(tx, {
-      sourceRecordId: sourceQmsRecordId,
-      targetRecordId: capa.qmsRecordId,
-    });
-    await tx.changeHistory.create({
-      data: {
-        qmsRecordId: capa.qmsRecordId,
-        changedByText: actor,
-        fieldPath: "relations",
-        oldValue: jsonValue({ sourceRecordId: sourceQmsRecordId, relationType: "GENERATES" }),
-        newValue: jsonValue({ active: false }),
-        reason: "Desvinculación de expediente de origen",
-        source: "UI",
-      },
-    });
-  });
+  await prisma.$transaction((tx) =>
+    deactivateOperationalRelation(tx, {
+      currentRecordId: capa.qmsRecordId,
+      relatedRecordId: sourceQmsRecordId,
+      changedByText: actor,
+      reason: "Desvinculación de expediente de origen",
+    }),
+  );
 
   revalidatePath("/deviations");
   revalidatePath("/complaints");
