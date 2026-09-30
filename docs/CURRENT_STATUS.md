@@ -641,3 +641,22 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - se registra historial operativo de la desvinculación en el expediente desde el que se ejecuta;
 - pruebas del servicio común cubren desvinculación, consulta en ambos sentidos y reactivación.
 
+## D6 — Prueba transversal final de Desviaciones
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI Y VALIDACIÓN MANUAL FINAL**.
+
+La prueba transversal cubre:
+- orden y presencia de los bloques del formulario aprobados;
+- guardado de Borrador incompleto sin bloqueo;
+- bloqueo de apertura cuando faltan obligatorios;
+- validación condicional de A. Origen;
+- sugerencia y reserva manual de codificación;
+- asignación automática del siguiente correlativo;
+- relación Desviación → CAPA;
+- desvinculación y revinculación sin borrar expedientes ni duplicar relaciones;
+- seguimiento del expediente;
+- versionado V00 → V01 y congelación de la versión histórica;
+- snapshot compatible con generación de Anexo III;
+- exclusión de Borradores de los indicadores operativos.
+
+D5 se ejecutará después de cerrar D6: primero se congela el comportamiento funcional de Desviaciones y después se extraen los patrones reutilizables para otros módulos con pruebas de regresión sobre esta base.
+
