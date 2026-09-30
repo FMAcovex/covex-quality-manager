@@ -238,9 +238,7 @@ export async function createCapaAction(
         "Informe inicial CAPA",
       );
 
-      if (v.status === "DRAFT") {
-        // Las relaciones operativas se consolidan al abrir la CAPA.
-      } else if (deviationOrigin) {
+      if (deviationOrigin) {
         await registerDeviationCapaPlan(tx, {
           planId: deviationOrigin.planId,
           capaQmsRecordId: qmsRecord.id,
