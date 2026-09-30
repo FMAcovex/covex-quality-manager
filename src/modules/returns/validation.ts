@@ -3,7 +3,7 @@ import type { ReturnProductInput } from "@/modules/returns/types";
 const typeSchema=z.enum(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"]);
 const productTypeSchema=z.enum(["API","INTERMEDIATE","MEDICINE","SUPPLEMENT","IMPORTED_PRODUCT","MEDICAL_DEVICE","COSMETIC","OTHER"]);
 const decisionSchema=z.enum(["PENDING","ACCEPTED","REJECTED"]);
-const statusSchema=z.enum(["OPEN","CLOSED"]);
+const statusSchema=z.enum(["DRAFT","OPEN","CLOSED"]);
 const triSchema=z.enum(["YES","NO","NA"]);
 const qualitySchema=z.enum(["COMPLETE","INCOMPLETE","REVIEW_REQUIRED"]);
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"&&v.trim()?v.trim():null;}
@@ -21,9 +21,10 @@ verifiedBy:typeof x.verifiedBy==="string"?x.verifiedBy:"",verifiedByDate:typeof 
 export function parseReturnForm(fd:FormData){
  const businessCode=text(fd,"businessCode"),departmentId=text(fd,"departmentId"),communicationDate=text(fd,"communicationDate"),
  createdByText=text(fd,"createdByText"),returnType=en(typeSchema,text(fd,"returnType")),customerEntity=text(fd,"customerEntity"),
- ps=products(text(fd,"productsJson")),decision=en(decisionSchema,text(fd,"decision"))??"PENDING",status=en(statusSchema,text(fd,"status"))??"OPEN";
+ ps=products(text(fd,"productsJson")),decision=en(decisionSchema,text(fd,"decision"))??"PENDING",status=en(statusSchema,text(fd,"status"))??"DRAFT";
  const errors:string[]=[];
 
+ if(status!=="DRAFT"){
  if(!departmentId)errors.push("El área/almacén es obligatorio.");
  if(!communicationDate)errors.push("La fecha de comunicación es obligatoria.");
  if(!createdByText)errors.push("Debe indicarse quién cumplimenta el expediente.");
@@ -31,6 +32,7 @@ export function parseReturnForm(fd:FormData){
  if(returnType==="OTHER"&&!text(fd,"otherReturnType"))errors.push("Debe especificarse el otro tipo de devolución.");
  if(!customerEntity)errors.push("Debe indicarse el cliente/entidad.");
  if(!ps.length)errors.push("Debe registrarse al menos un producto devuelto.");
+ }
  if(status==="CLOSED"){
    if(decision==="PENDING")errors.push("Una devolución cerrada requiere decisión Aceptada o Rechazada.");
    if(!text(fd,"closedAt"))errors.push("Una devolución cerrada requiere fecha de cierre.");
