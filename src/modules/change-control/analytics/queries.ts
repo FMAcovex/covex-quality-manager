@@ -18,6 +18,7 @@ export async function getChangeAnalytics(filters: ChangeAnalyticsFilters) {
     where: {
       includeInKpi: true,
       qmsRecord: { isActive: true },
+      finalStatus: { not: "DRAFT" },
       ...(filters.department ? { departmentId: filters.department } : {}),
       ...(filters.classification === "MAJOR" || filters.classification === "MINOR"
         ? { classification: filters.classification }
@@ -54,7 +55,9 @@ export async function getChangeAnalytics(filters: ChangeAnalyticsFilters) {
     }),
   ]);
 
-  const rows: ChangeAnalyticsRow[] = records.map((record) => {
+  const rows: ChangeAnalyticsRow[] = records
+    .filter((record) => record.finalStatus !== "DRAFT")
+    .map((record) => {
     const plannedDates = record.tasks
       .map((task) => task.plannedDate)
       .filter((value): value is Date => Boolean(value));
@@ -64,14 +67,14 @@ export async function getChangeAnalytics(filters: ChangeAnalyticsFilters) {
       requestDate: record.requestDate,
       executionDate: record.executionDate,
       effectiveClosedAt: record.effectiveClosedAt,
-      finalStatus: record.finalStatus,
+      finalStatus: record.finalStatus as "OPEN" | "CLOSED",
       classification: record.classification,
       executionStatus: record.executionStatus,
       effectivenessStatus: record.effectivenessStatus,
       departmentCode: record.departmentCodeSnapshot,
       plannedDates,
-    };
-  });
+      };
+    });
 
   const years = yearRows.map((row) => row.year).filter((value): value is number => value !== null);
   const selectedYear =
