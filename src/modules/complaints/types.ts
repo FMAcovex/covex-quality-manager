@@ -1,6 +1,8 @@
 export type ComplaintCapaPlanInput={id?:string;actionType:"CORRECTIVE"|"PREVENTIVE";description:string;plannedExecutionDate:string;responsible:string;businessCapaCode?:string};
 export type ComplaintDerivedActionInput={id?:string;actionType:string;businessCode:string;description:string;responsible:string;plannedExecutionDate:string;sortOrder?:number};
-export type ComplaintFormState = { error: string | null; fieldErrors?: string[] };
+export type ComplaintFormState = { error: string | null; fieldErrors?: string[] 
+  submittedValues?: Record<string, string | string[]>;
+  formRevision?: number;};
 
 export type ComplaintFormDefaults = {
   businessCode?: string;
