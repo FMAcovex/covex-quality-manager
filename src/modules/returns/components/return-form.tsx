@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
+import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import { useActionState,useState } from "react";
 import type { DepartmentOption,ReturnFormDefaults,ReturnFormState,ReturnProductInput } from "@/modules/returns/types";
 const initial:ReturnFormState={error:null};
@@ -12,14 +13,16 @@ function Tri({label,name,defaultValue}:{label:string;name:string;defaultValue?:s
 
 export function ReturnForm({mode,action,departments,defaults={},returnId,fromComplaintId}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string;fromComplaintId?:string}){
  const [state,formAction,pending]=useActionState(action,initial);const formDefaults=submittedDefaults(defaults,state.submittedValues);const [products,setProducts]=useState(defaults.products?.length?defaults.products:[{...emptyProduct}]);
+ const [departmentId,setDepartmentId]=useState(formDefaults.departmentId??"");
+ const [communicationDate,setCommunicationDate]=useState(formDefaults.communicationDate??"");
  const patch=(i:number,p:Partial<ReturnProductInput>)=>setProducts(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  return <form key={state.formRevision??0} action={formAction} className="form-stack">
   <input type="hidden" name="productsJson" value={JSON.stringify(products)}/>{fromComplaintId?<input type="hidden" name="fromComplaintId" value={fromComplaintId}/>:null}
   {state.error?<div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length?<ul>{state.fieldErrors.map(x=><li key={x}>{x}</li>)}</ul>:null}</div>:null}
   <section className="form-section"><h2>1. Datos generales de la devolución</h2><div className="form-grid">
-   <Field label="N.º devolución" name="businessCode" defaultValue={formDefaults.businessCode} required/>
-   <label className="field"><span>Almacén / área *</span><select name="departmentId" defaultValue={formDefaults.departmentId??""} required><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
-   <Field label="Fecha comunicación" name="communicationDate" type="date" defaultValue={formDefaults.communicationDate} required/>
+   <ControlledBusinessCodeField recordType="RETURN" label="N.º devolución" initialValue={formDefaults.businessCode} mode={mode} yearSource={communicationDate} departmentId={departmentId}/>
+   <label className="field"><span>Almacén / área *</span><select name="departmentId" value={departmentId} onChange={e=>setDepartmentId(e.target.value)} required><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
+   <label className="field"><span>Fecha comunicación *</span><input name="communicationDate" type="date" value={communicationDate} onChange={e=>setCommunicationDate(e.target.value)} required/></label>
    <Field label="Fecha recepción" name="receivedAt" type="date" defaultValue={formDefaults.receivedAt}/>
    <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required/>
    {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText}/>:null}
