@@ -58,9 +58,12 @@ function validDate(value: string | null) {
 
 export function parseCapaForm(formData: FormData, options: { allowHistoricalIncomplete?: boolean } = {}) {
   const intent = (enumValue(saveIntent, text(formData, "saveIntent")) ?? "UPDATE_CURRENT") as CapaSaveIntent;
+  const submittedStatus = enumValue(status, text(formData, "status")) ?? "OPEN";
   const recordStatus = intent === "SAVE_DRAFT"
     ? "DRAFT"
-    : (enumValue(status, text(formData, "status")) ?? "OPEN");
+    : submittedStatus === "DRAFT"
+      ? "OPEN"
+      : submittedStatus;
   const businessCode = text(formData, "businessCode");
   const departmentId = text(formData, "departmentId");
   const openedAt = text(formData, "openedAt");
