@@ -770,3 +770,16 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
 - filtro y contador específico de Borradores;
 - origen desde Reclamación preservado como pendiente hasta la apertura;
 - pruebas unitarias específicas D5.4D.
+
+
+## D5.5 — Filtros multiselección transversales
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
+
+- componente reutilizable de filtro multiselección;
+- parámetros repetidos en URL;
+- multiselección transversal en los cinco listados QMS;
+- Año y Departamento/Área multiseleccionables;
+- estados/tipos/clasificaciones/eficacia/origen/ejecución/decisión multiseleccionables según módulo;
+- filtros administrativos y filtros lógicos exclusivos permanecen simples;
+- exportación simple conserva las selecciones múltiples;
+- pruebas unitarias de helpers de query.
