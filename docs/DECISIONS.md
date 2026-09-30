@@ -429,3 +429,20 @@ Cobertura:
 - convivencia con los smoke existentes de código, relaciones, versionado, documentos y PostgreSQL.
 
 La aceptación de D5 depende del smoke `d5-6:smoke` y del conjunto acumulado de CI, no de una nueva lógica paralela.
+
+
+## D-056 — R1 CAPA: separar seguimiento funcional y seguimiento de la acción
+La revisión R1 de CAPA adopta dos conceptos independientes:
+
+- **Seguimientos 00/01/02… del expediente**: se representan exclusivamente mediante `QmsRecordVersion`. El registro inicial es Seguimiento 00; una edición ordinaria refresca la versión vigente y «Guardar como nuevo seguimiento» congela la vigente y crea la siguiente.
+- **Seguimiento de la acción**: contenido funcional de CAPA persistido en `CapaActionFollowup` con fecha, descripción y orden, más observaciones generales en `Capa.actionFollowupObservations`.
+
+Reglas:
+- `CapaFollowup` se conserva intacto como histórico/legacy; R1 Bloque 1 no realiza backfill ni borrado.
+- `Capa.nextFollowupDate` pasa a ser la fuente operativa del próximo seguimiento del expediente.
+- Los orígenes nuevos de CAPA se seleccionan entre expedientes reales y se materializan mediante relaciones QMS canónicas Desviación → CAPA y Reclamación → CAPA.
+- En borrador, los identificadores de origen se conservan como datos pendientes y no se crean relaciones operativas.
+- `originType` y `originCode` se mantienen como compatibilidad histórica, no como fuente maestra del multiorigen.
+- Los campos históricos retirados de la interfaz no se eliminan ni se vacían durante una edición.
+- La evidencia de ejecución exigida por el flujo legacy para cerrar una CAPA no se relaja en este bloque.
+- El PDF por versión y la generalización documental se aplazan al Bloque 2.
