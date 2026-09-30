@@ -28,7 +28,7 @@ export async function getCapaExportRows(filters: CapaExportFilters) {
   if (filters.origin?.length) {
     const relationTypes = filters.origin
       .map((value) => value === "Desviación" ? QmsRecordType.DEVIATION : value === "Reclamación" ? QmsRecordType.COMPLAINT : null)
-      .filter((value): value is QmsRecordType.DEVIATION | QmsRecordType.COMPLAINT => value !== null);
+      .filter((value): value is "DEVIATION" | "COMPLAINT" => value !== null);
     if (relationTypes.length) {
       and.push({
         qmsRecord: {
