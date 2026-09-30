@@ -173,16 +173,34 @@ export function DeviationForm({
   const issues = state.fieldIssues ?? {};
 
   useEffect(() => {
-    if (formDefaults.businessCode) return;
+    if (formDefaults.businessCode && formDefaults.status !== "DRAFT") {
+      setSuggestedCode("");
+      return;
+    }
+
     const departmentId = selectedDepartmentId;
+    const departmentCode = departments.find((item) => item.id === departmentId)?.code ?? "";
     const issueYear =
       /^\\d{4}-/.test(issueDateValue)
         ? Number(issueDateValue.slice(0, 4))
         : new Date().getFullYear();
+
     if (!departmentId) {
       setSuggestedCode("");
       return;
     }
+
+    if (
+      formDefaults.status === "DRAFT" &&
+      formDefaults.businessCode &&
+      departmentCode &&
+      formDefaults.businessCode.startsWith(`D/${departmentCode}/`) &&
+      formDefaults.businessCode.endsWith(`/${issueYear}`)
+    ) {
+      setSuggestedCode(formDefaults.businessCode);
+      return;
+    }
+
     const controller = new AbortController();
     fetch(`/api/deviations/code-suggestion?departmentId=${encodeURIComponent(departmentId)}&year=${issueYear}`, {
       signal: controller.signal,
@@ -198,7 +216,7 @@ export function DeviationForm({
         setSuggestedCode("");
       });
     return () => controller.abort();
-  }, [formDefaults.businessCode, selectedDepartmentId, issueDateValue]);
+  }, [departments, formDefaults.businessCode, formDefaults.status, selectedDepartmentId, issueDateValue]);
 
   function updateAction(index: number, patch: Partial<ImmediateActionInput>) {
     setActions((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
