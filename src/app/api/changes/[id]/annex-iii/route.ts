@@ -44,7 +44,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   type AnnexRecord = Parameters<typeof generateChangeAnnexIII>[0];
   const annexRecord: AnnexRecord = storedVersion
     ? (changeControlSnapshotToRecord(storedVersion.snapshot) as unknown as AnnexRecord)
-    : record;
+    : ({
+        ...record,
+        finalStatus: record.finalStatus as "OPEN" | "CLOSED",
+      } as AnnexRecord);
 
   try {
     const buffer = await generateChangeAnnexIII(annexRecord);
