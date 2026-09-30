@@ -13,6 +13,79 @@ function jsonValue(value: unknown): Prisma.InputJsonValue {
   return { value: value === undefined ? null : value } as Prisma.InputJsonValue;
 }
 
+
+export async function saveCapaExecutionEvidence(
+  id: string,
+  formData: FormData,
+): Promise<FollowupActionState> {
+  const capa = await prisma.capa.findUnique({
+    where: { id },
+    include: {
+      qmsRecord: true,
+      followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
+    },
+  });
+  if (!capa) return { error: "CAPA no encontrada." };
+  if (capa.status === "DRAFT") {
+    return { error: "La CAPA debe estar abierta antes de registrar evidencia de ejecución." };
+  }
+
+  const followupDate = String(formData.get("followupDate") ?? "").trim();
+  const completedByText = String(formData.get("completedByText") ?? "").trim();
+  const evidenceReference = String(formData.get("evidenceReference") ?? "").trim();
+  const observations = String(formData.get("observations") ?? "").trim();
+
+  if (!followupDate || !/^\d{4}-\d{2}-\d{2}$/.test(followupDate)) {
+    return { error: "Debe indicarse una fecha válida para la evidencia de ejecución." };
+  }
+  if (!completedByText) {
+    return { error: "Debe indicarse quién registra la evidencia de ejecución." };
+  }
+  if (!evidenceReference) {
+    return { error: "La evidencia / referencia de ejecución es obligatoria." };
+  }
+
+  const sequenceNumber =
+    Math.max(0, ...capa.followups.map((item) => item.sequenceNumber)) + 1;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const evidence = await tx.capaFollowup.create({
+        data: {
+          capaId: id,
+          sequenceNumber,
+          followupDate: new Date(followupDate),
+          completedByText,
+          reason: "Evidencia de ejecución",
+          description: "Registro de evidencia de ejecución",
+          observations: observations || null,
+          evidenceReference,
+          nextFollowupDate: null,
+        },
+      });
+
+      await tx.changeHistory.create({
+        data: {
+          qmsRecordId: capa.qmsRecordId,
+          changedByText: completedByText,
+          fieldPath: `executionEvidence[${evidence.id}]`,
+          newValue: jsonValue({
+            followupDate,
+            evidenceReference,
+            observations: observations || null,
+          }),
+          reason: "Evidencia de ejecución CAPA",
+          source: "UI",
+        },
+      });
+    });
+  } catch (error) {
+    return persistenceFormError(error, "la evidencia de ejecución de la CAPA");
+  }
+
+  return { success: "Evidencia de ejecución registrada correctamente." };
+}
+
 export async function saveCapaFollowup(
   id: string,
   formData: FormData,
