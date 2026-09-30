@@ -11,6 +11,7 @@ export async function getCapaAnalytics(filters:CapaAnalyticsFilters) {
     where:{
       includeInKpi:true,
       qmsRecord:{isActive:true},
+      status:{not:"DRAFT"},
       ...(filters.department?{departmentId:filters.department}:{}),
       ...(filters.type==="CORRECTIVE"||filters.type==="PREVENTIVE"?{actionType:filters.type}:{}),
       ...(filters.origin?{originType:filters.origin}:{}),
