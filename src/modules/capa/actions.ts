@@ -33,7 +33,7 @@ import {
   registerComplaintDirectOrigin,
 } from "@/modules/capa/complaint-origin";
 import { parseCapaForm } from "@/modules/capa/validation";
-import { saveCapaExecutionEvidence, saveCapaFollowup } from "@/modules/capa/followup-service";
+import { saveCapaFollowup } from "@/modules/capa/followup-service";
 import type { CapaFormState } from "@/modules/capa/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -73,6 +73,7 @@ function snapshot(v: ReturnType<typeof parseCapaForm>["values"]) {
     nextFollowupDate: v.nextFollowupDate,
     actionFollowupObservations: v.actionFollowupObservations,
     actionFollowups: v.actionFollowups,
+    operationalStatusDescription: v.operationalStatusDescription,
     origins: v.origins,
     status: v.status,
     cancellationReason: v.cancellationReason,
@@ -218,6 +219,7 @@ export async function createCapaAction(
           impactAssessment: v.impactAssessment,
           nextFollowupDate: toDate(v.nextFollowupDate),
           actionFollowupObservations: v.actionFollowupObservations,
+          operationalStatusDescription: v.operationalStatusDescription,
           operationalClosedAt: toDate(v.operationalClosedAt),
           status: v.status,
           cancellationReason: v.cancellationReason,
@@ -393,7 +395,7 @@ export async function updateCapaAction(
   });
   if (!existing) return preserveFormState(previous, formData, { error: "La CAPA ya no existe." });
 
-  const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: existing.status !== "DRAFT" });
+  const parsed = parseCapaForm(formData);
   if (parsed.errors.length) {
     return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
   }
@@ -413,19 +415,12 @@ export async function updateCapaAction(
     return preserveFormState(previous, formData, { error: "No se puede eliminar una causa raíz ya documentada." });
   }
 
-  if (existing.status !== "CLOSED" && v.status === "CLOSED") {
-    const transitionErrors: string[] = [];
-    if (!v.operationalClosedAt) transitionErrors.push("La transición a Cerrada requiere fecha de cierre operativo.");
-    if (!v.conclusion) transitionErrors.push("La transición a Cerrada requiere conclusión de cierre.");
-    const hasEvidence = existing.followups.some((item) => Boolean(item.evidenceReference?.trim()));
-    if (!hasEvidence) transitionErrors.push("La transición a Cerrada requiere una evidencia de ejecución referenciada en un seguimiento.");
-    if (transitionErrors.length) {
-      return preserveFormState(previous, formData, { error: "No se puede cerrar operativamente la CAPA.", fieldErrors: transitionErrors });
-    }
-  }
-
-  if (existing.status !== "CANCELLED" && v.status === "CANCELLED" && !v.cancellationReason) {
-    return preserveFormState(previous, formData, { error: "La transición a Cancelada requiere motivo de cancelación." });
+  if (existing.status !== "CLOSED" && v.status === "CLOSED" && !v.operationalClosedAt) {
+    return preserveFormState(previous, formData, {
+      error: "No se puede cerrar operativamente la CAPA.",
+      fieldErrors: ["La transición a Cerrada requiere fecha de cierre y ejecución."],
+      fieldIssues: { operationalClosedAt: ["La transición a Cerrada requiere fecha de cierre y ejecución."] },
+    });
   }
 
   const isNewEffectiveClosure =
@@ -470,6 +465,7 @@ export async function updateCapaAction(
     impactAssessment: existing.impactAssessment,
     nextFollowupDate: existing.nextFollowupDate?.toISOString().slice(0, 10) ?? null,
     actionFollowupObservations: existing.actionFollowupObservations,
+    operationalStatusDescription: existing.operationalStatusDescription,
     actionFollowups: existing.actionFollowups.map((item) => ({
       followupDate: item.followupDate?.toISOString().slice(0, 10) ?? "",
       description: item.description ?? "",
@@ -594,6 +590,7 @@ export async function updateCapaAction(
           impactAssessment: existing.impactAssessment,
           nextFollowupDate: toDate(v.nextFollowupDate),
           actionFollowupObservations: v.actionFollowupObservations,
+          operationalStatusDescription: v.operationalStatusDescription,
           operationalClosedAt: toDate(v.operationalClosedAt),
           status: v.status,
           cancellationReason: v.cancellationReason,
@@ -743,7 +740,6 @@ export async function updateCapaAction(
 
     revalidatePath("/capa");
     revalidatePath(`/capa/${id}`);
-    redirect(`/capa/${id}`);
   } catch (error) {
     if (error instanceof OperationalBusinessCodeError) {
       return preserveFormState(previous, formData, {
@@ -760,19 +756,8 @@ export async function updateCapaAction(
     }
     return preserveFormState(previous, formData, persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" }));
   }
-}
 
-export async function addCapaExecutionEvidenceAction(
-  id: string,
-  _state: FollowupActionState,
-  formData: FormData,
-): Promise<FollowupActionState> {
-  const result = await saveCapaExecutionEvidence(id, formData);
-  if (result.success) {
-    revalidatePath("/capa");
-    revalidatePath(`/capa/${id}`);
-  }
-  return result;
+  redirect(`/capa/${id}`);
 }
 
 export async function addCapaFollowupAction(
