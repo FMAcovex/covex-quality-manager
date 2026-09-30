@@ -391,3 +391,16 @@ Reglas:
 - Borrador no admite seguimientos, relaciones operativas nuevas, creación de CAPA/Devolución derivadas ni generación de Anexos III/IV;
 - Borrador queda excluido de KPI y exportaciones oficiales;
 - las reglas de cierre y eficacia se mantienen intactas al salir de Borrador.
+
+
+## D-053 — Estado Borrador transversal · Devoluciones
+Devoluciones incorpora `DRAFT` en `ReturnStatus` como estado previo al ciclo operativo.
+
+Reglas:
+- una nueva Devolución se inicia en Borrador;
+- el Borrador puede guardarse con campos incompletos y sin codificación;
+- al pasar a Abierta se exigen los campos operativos y se asigna/fija la codificación controlada;
+- una Devolución Abierta o Cerrada no puede volver a Borrador;
+- Borrador no admite seguimientos, relaciones operativas nuevas ni generación de Anexos III/IV/V;
+- Borrador queda excluido de KPI y exportaciones oficiales;
+- si el borrador nace desde una Reclamación, el origen se conserva como pendiente y la relación canónica Reclamación → Devolución solo se formaliza al abrir.
