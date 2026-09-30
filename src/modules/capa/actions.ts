@@ -288,7 +288,7 @@ export async function createCapaAction(
 
 export async function updateCapaAction(
   id: string,
-  _previous: CapaFormState,
+  previous: CapaFormState,
   formData: FormData,
 ): Promise<CapaFormState> {
   const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: true });
