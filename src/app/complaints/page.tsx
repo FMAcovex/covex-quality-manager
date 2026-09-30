@@ -8,16 +8,18 @@ import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/q
 import { complaintClassificationLabel,complaintEffectivenessLabel,complaintStatusLabel,complaintTypeLabel,formatDate } from "@/modules/complaints/domain";
 import { getComplaintList } from "@/modules/complaints/queries";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
+import { MultiSelectFilter } from "@/components/multi-select-filter";
+import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
 
 export const dynamic="force-dynamic";
-const p=(v:string|string[]|undefined)=>Array.isArray(v)?v[0]:v;
+const p=firstQueryValue;
 
 export default async function ComplaintsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  const q=await searchParams;
- const filters={q:p(q.q),administrative:p(q.administrative),year:p(q.year),department:p(q.department),type:p(q.type),status:p(q.status),classification:p(q.classification),effectiveness:p(q.effectiveness)};
+ const filters={q:p(q.q),administrative:p(q.administrative),year:queryList(q.year),department:queryList(q.department),type:queryList(q.type),status:queryList(q.status),classification:queryList(q.classification),effectiveness:queryList(q.effectiveness)};
  const {rows,departments,years,counters}=await getComplaintList(filters);const officialTemplateReady=await isActiveTemplateAssetReady(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_V);
- const exportParams=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>{if(v)exportParams.set(k,v)});
- const currentYear=filters.year??String(new Date().getFullYear());
+ const exportParams=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>appendFilterValues(exportParams,k,v));
+ const currentYear=filters.year[0]??String(new Date().getFullYear());
  return <section className="workspace">
   <div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Reclamaciones</h1><p>Registro, investigación, resolución, eficacia y cierre.</p></div>
    <div className="heading-actions"><Link href="/complaints/new" className="button primary">+ Nueva reclamación</Link><ColumnSelector tableId="complaint-list-table" storageKey="qms.columns.complaints" columns={[...complaintColumns]}/>
@@ -27,12 +29,12 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
   <div className="tabs"><Link className="tab active" href="/complaints">Expedientes</Link><Link className="tab muted" href="/complaints/indicators">Indicadores</Link></div>
   <form method="get" className="toolbar-form"><div className="filter-panel operational">
    <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative??""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-   <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year??""}><option value="">Todos</option>{years.map(y=><option key={y}>{y}</option>)}</select></label>
-   <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department??""}><option value="">Todos</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
-   <label className="filter-placeholder"><span>Tipo</span><select name="type" defaultValue={filters.type??""}><option value="">Todos</option><option value="CUSTOMER">De cliente</option><option value="PROVIDER">A proveedor</option></select></label>
-   <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification??""}><option value="">Todas</option><option value="CRITICAL">Crítica</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option><option value="NO_GMP_IMPACT">Sin impacto GMP</option></select></label>
-   <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status??""}><option value="">Todos</option><option value="DRAFT">Borrador</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
-   <label className="filter-placeholder"><span>Eficacia</span><select name="effectiveness" defaultValue={filters.effectiveness??""}><option value="">Todas</option><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Aceptable</option><option value="NOT_ACCEPTABLE">No aceptable</option><option value="NOT_REQUIRED">No requerida</option></select></label>
+   <MultiSelectFilter name="year" label="Año" selected={filters.year} options={years.map((y)=>({value:String(y),label:String(y)}))}/>
+   <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departments.map((d)=>({value:d.id,label:d.code}))}/>
+   <MultiSelectFilter name="type" label="Tipo" selected={filters.type} options={[{value:"CUSTOMER",label:"De cliente"},{value:"PROVIDER",label:"A proveedor"}]}/>
+   <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={[{value:"CRITICAL",label:"Crítica"},{value:"MAJOR",label:"Mayor"},{value:"MINOR",label:"Menor"},{value:"NO_GMP_IMPACT",label:"Sin impacto GMP"}]}/>
+   <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierta"},{value:"CLOSED",label:"Cerrada"}]}/>
+   <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"ACCEPTABLE",label:"Aceptable"},{value:"NOT_ACCEPTABLE",label:"No aceptable"},{value:"NOT_REQUIRED",label:"No requerida"}]}/>
    <div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/complaints">Limpiar</Link></div>
   </div><div className="search-row">
           <SearchAutocomplete
