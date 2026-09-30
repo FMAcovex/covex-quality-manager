@@ -21,7 +21,14 @@ export async function saveCapaFollowup(
   const capa = await prisma.capa.findUnique({
     where: { id },
     include: {
-      qmsRecord: true,
+      qmsRecord: {
+        include: {
+          targetRelations: {
+            where: { isActive: true, relationType: "GENERATES" },
+            include: { sourceRecord: true },
+          },
+        },
+      },
       plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
@@ -183,7 +190,14 @@ export async function saveCapaFollowup(
       const updatedForVersion = await tx.capa.findUniqueOrThrow({
         where: { id },
         include: {
-          qmsRecord: true,
+          qmsRecord: {
+            include: {
+              targetRelations: {
+                where: { isActive: true, relationType: "GENERATES" },
+                include: { sourceRecord: true },
+              },
+            },
+          },
           plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
