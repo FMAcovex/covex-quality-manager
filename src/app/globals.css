@@ -1540,3 +1540,16 @@ button[disabled] {
 .form-stack:not(.show-required-errors) .field:has(:is(input, select, textarea):required:invalid) {
   outline: none;
 }
+
+
+/* D3 — codificación automática */
+.readonly-field {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  font-weight: 600;
+}
