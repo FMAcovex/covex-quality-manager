@@ -87,7 +87,7 @@ export function parseCapaForm(
     fieldIssues[field] = [...(fieldIssues[field] ?? []), message];
   };
 
-  if (!businessCode) addIssue("businessCode", "La codificación AC/AP es obligatoria.");
+
   if (!departmentId) addIssue("departmentId", "El departamento responsable es obligatorio.");
   if (!openedAt) addIssue("openedAt", "La fecha de apertura es obligatoria.");
   else if (!validDate(openedAt)) addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");

@@ -23,7 +23,7 @@ export function parseReturnForm(fd:FormData){
  createdByText=text(fd,"createdByText"),returnType=en(typeSchema,text(fd,"returnType")),customerEntity=text(fd,"customerEntity"),
  ps=products(text(fd,"productsJson")),decision=en(decisionSchema,text(fd,"decision"))??"PENDING",status=en(statusSchema,text(fd,"status"))??"OPEN";
  const errors:string[]=[];
- if(!businessCode)errors.push("La codificación es obligatoria.");
+
  if(!departmentId)errors.push("El área/almacén es obligatorio.");
  if(!communicationDate)errors.push("La fecha de comunicación es obligatoria.");
  if(!createdByText)errors.push("Debe indicarse quién cumplimenta el expediente.");

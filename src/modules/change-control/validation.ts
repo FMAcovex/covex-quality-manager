@@ -76,7 +76,7 @@ export function parseChangeControlForm(formData: FormData) {
   const classValue = enumValue(classification, text(formData, "classification"));
 
   const errors: string[] = [];
-  if (!businessCode) errors.push("La codificación del Control de Cambio es obligatoria.");
+
   if (!departmentId) errors.push("El departamento/área solicitante es obligatorio.");
   if (!requestDate) errors.push("La fecha de solicitud es obligatoria.");
   if (!requesterName) errors.push("Debe identificarse el solicitante.");

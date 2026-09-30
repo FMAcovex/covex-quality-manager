@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
+import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import { useActionState, useState } from "react";
 import type {
   ChangeControlFormDefaults,
@@ -126,6 +127,8 @@ export function ChangeControlForm({
   const [tasks, setTasks] = useState<ChangeTaskInput[]>(
     defaults.tasks?.length ? defaults.tasks : [{ ...emptyTask }],
   );
+  const [departmentId, setDepartmentId] = useState(formDefaults.departmentId ?? "");
+  const [requestDate, setRequestDate] = useState(formDefaults.requestDate ?? "");
 
   const updateTask = (index: number, patch: Partial<ChangeTaskInput>) => {
     setTasks((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -150,11 +153,21 @@ export function ChangeControlForm({
           Identificación, alcance, solicitante, descripción, justificación y aceptación de la solicitud.
         </p>
         <div className="form-grid">
-          <Field label="N.º Control de Cambio" name="businessCode" defaultValue={formDefaults.businessCode} required />
-          <Field label="Fecha de solicitud" name="requestDate" type="date" defaultValue={formDefaults.requestDate} required />
+          <ControlledBusinessCodeField
+            recordType="CHANGE_CONTROL"
+            label="N.º Control de Cambio"
+            initialValue={formDefaults.businessCode}
+            mode={mode}
+            yearSource={requestDate}
+            departmentId={departmentId}
+          />
+          <label className="field">
+            <span>Fecha de solicitud *</span>
+            <input name="requestDate" type="date" value={requestDate} onChange={(event) => setRequestDate(event.target.value)} required />
+          </label>
           <label className="field span-2">
             <span>Departamento / Área solicitante *</span>
-            <select name="departmentId" defaultValue={formDefaults.departmentId ?? ""} required>
+            <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required>
               <option value="">Seleccionar…</option>
               {departments.map((item) => (
                 <option key={item.id} value={item.id}>{item.code} — {item.name}</option>

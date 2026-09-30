@@ -21,6 +21,12 @@ describe("parseCapaForm",()=>{
   it("allows an open CAPA with planned action",()=>{
     expect(parseCapaForm(base()).errors).toEqual([]);
   });
+  it("allows business code to be empty before server-side assignment",()=>{
+    const f=base();f.set("businessCode","");
+    const parsed=parseCapaForm(f);
+    expect(parsed.errors).not.toContain("La codificación AC/AP es obligatoria.");
+    expect(parsed.values.businessCode).toBeNull();
+  });
   it("requires operational closure date and conclusion when closed",()=>{
     const f=base();f.set("status","CLOSED");
     const errors=parseCapaForm(f).errors;

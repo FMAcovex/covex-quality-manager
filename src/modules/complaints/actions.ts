@@ -13,6 +13,10 @@ import {
   deactivateOperationalRelation,
   linkOperationalRelationByBusinessCode,
 } from "@/lib/qms/relation-service";
+import {
+  assignOperationalBusinessCode,
+  OperationalBusinessCodeError,
+} from "@/lib/qms/business-code";
 import { parseComplaintForm } from "@/modules/complaints/validation";
 import type { ComplaintFormState } from "@/modules/complaints/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -84,7 +88,15 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
    getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_V",ref)
   ]);
   const created=await prisma.$transaction(async tx=>{
-   const qr=await tx.qmsRecord.create({data:{recordType:"COMPLAINT",businessCode:v.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
+   const openingYear=v.openedAt?new Date(v.openedAt).getFullYear():new Date().getFullYear();
+   const businessCode=await assignOperationalBusinessCode(tx,{
+    recordType:QmsRecordType.COMPLAINT,
+    year:openingYear,
+    complaintType:v.complaintType,
+    requestedCode:v.businessCode
+   });
+   v.businessCode=businessCode;
+   const qr=await tx.qmsRecord.create({data:{recordType:"COMPLAINT",businessCode,year:openingYear}});
    const rec=await tx.complaint.create({data:{qmsRecordId:qr.id,...complaintData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vlist?.id}});
    await replaceCapaPlans(tx,rec.id,v.capaPlans);
    await replaceDerivedActions(tx,rec.id,v.derivedActions);
@@ -93,7 +105,12 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
    return rec;
   });
   createdId=created.id;
- }catch(e){return preserveFormState(previous,fd,persistenceFormError(e,"la reclamación"));}
+ }catch(e){
+  if(e instanceof OperationalBusinessCodeError){
+   return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:[e.message]});
+  }
+  return preserveFormState(previous,fd,persistenceFormError(e,"la reclamación"));
+ }
  revalidatePath("/complaints");redirect(`/complaints/${createdId}`);
 }
 
@@ -101,10 +118,11 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values;
  const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
+ v.businessCode=existing.qmsRecord.businessCode;
  const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
  try{
  await prisma.$transaction(async tx=>{
-  await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode:v.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
+  await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode:existing.qmsRecord.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
   await tx.complaint.update({where:{id},data:complaintData(v,department,existing)});
   await replaceCapaPlans(tx,id,v.capaPlans);
   await replaceDerivedActions(tx,id,v.derivedActions);

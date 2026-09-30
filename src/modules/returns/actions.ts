@@ -11,6 +11,10 @@ import {
   deactivateOperationalRelation,
   linkOperationalRelationByBusinessCode,
 } from "@/lib/qms/relation-service";
+import {
+  assignOperationalBusinessCode,
+  OperationalBusinessCodeError,
+} from "@/lib/qms/business-code";
 import { parseReturnForm } from "@/modules/returns/validation";
 import {
   ComplaintReturnLinkError,
@@ -76,7 +80,15 @@ export async function createReturnAction(previous:ReturnFormState,fd:FormData):P
    const canonicalValues=complaintOrigin
     ?{...v,returnType:"COMPLAINT" as const,relatedDocument:complaintOrigin.complaintBusinessCode}
     :v;
-   const qr=await tx.qmsRecord.create({data:{recordType:"RETURN",businessCode:v.businessCode,year:v.communicationDate?new Date(v.communicationDate).getFullYear():null}});
+   const communicationYear=v.communicationDate?new Date(v.communicationDate).getFullYear():new Date().getFullYear();
+   const businessCode=await assignOperationalBusinessCode(tx,{
+    recordType:QmsRecordType.RETURN,
+    year:communicationYear,
+    departmentCode:department.code,
+    requestedCode:v.businessCode
+   });
+   v.businessCode=businessCode;
+   const qr=await tx.qmsRecord.create({data:{recordType:"RETURN",businessCode,year:communicationYear}});
    const rec=await tx.returnRecord.create({data:{qmsRecordId:qr.id,...recordData(canonicalValues,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vdecl?.id,annexVITemplateVersionId:vi?.id}});
    await replaceProducts(tx,rec.id,v.products);
    await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,customerEntity:v.customerEntity}),reason:"Alta de devolución",source:"UI"}});
@@ -92,6 +104,9 @@ export async function createReturnAction(previous:ReturnFormState,fd:FormData):P
   });
   createdId=created.id;
  }catch(e){
+  if(e instanceof OperationalBusinessCodeError){
+   return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:[e.message]});
+  }
   if(e instanceof ComplaintReturnLinkError){
    return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:[e.message]});
   }
@@ -102,10 +117,11 @@ export async function createReturnAction(previous:ReturnFormState,fd:FormData):P
 export async function updateReturnAction(id:string,previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
  const parsed=parseReturnForm(fd);if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors});
  const v=parsed.values,existing=await prisma.returnRecord.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return preserveFormState(previous,fd,{error:"La devolución ya no existe."});
+ v.businessCode=existing.qmsRecord.businessCode;
  const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return preserveFormState(previous,fd,{error:"El área seleccionada no existe."});
  try{
  await prisma.$transaction(async tx=>{
-  await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode:v.businessCode,year:v.communicationDate?new Date(v.communicationDate).getFullYear():null}});
+  await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode:existing.qmsRecord.businessCode,year:v.communicationDate?new Date(v.communicationDate).getFullYear():null}});
   await tx.returnRecord.update({where:{id},data:recordData(v,department,existing)});await replaceProducts(tx,id,v.products);
   await tx.changeHistory.create({data:{qmsRecordId:existing.qmsRecordId,changedByText:parsed.actor,fieldPath:"__edit__",oldValue:j({updatedAt:existing.updatedAt}),newValue:j({businessCode:v.businessCode,status:v.status}),reason:v.changeReason,source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,existing.qmsRecordId,snapshotJson(serializeReturnVersion(snap)),parsed.actor,v.changeReason);
