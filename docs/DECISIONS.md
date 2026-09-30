@@ -365,3 +365,16 @@ Reglas:
 - Borrador no admite seguimientos, relaciones operativas nuevas ni generación de Anexo III;
 - Borrador queda excluido de KPI, vencimientos y exportaciones oficiales;
 - si el borrador nace desde una propuesta de Desviación/Reclamación, el origen se conserva como pendiente y solo se formaliza al abrir la CAPA.
+
+
+## D-051 — Estado Borrador transversal · Control de Cambios
+Control de Cambios incorpora `DRAFT` dentro de `ChangeFinalStatus` como estado previo al ciclo operativo.
+
+Reglas:
+- un nuevo Control de Cambio se inicia en Borrador;
+- el Borrador puede guardarse con campos incompletos y sin codificación;
+- al pasar a Abierto se aplican los campos obligatorios de solicitud y se asigna/fija la codificación controlada;
+- un Control de Cambio Abierto o Cerrado no puede volver a Borrador;
+- las fases propias del módulo (solicitud, Dictamen, ejecución, eficacia y cierre) se mantienen sin redefinir;
+- Borrador no admite seguimientos, relaciones operativas nuevas ni generación de Anexos III, IV o V;
+- Borrador queda excluido de KPI y exportaciones operativas/oficiales.
