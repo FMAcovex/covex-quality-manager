@@ -16,6 +16,7 @@ export async function getCapaExportRows(filters: CapaExportFilters) {
   const and: Prisma.CapaWhereInput[] = [];
   if (filters.administrative === "ANNULLED") and.push({ qmsRecord: { isActive: false } });
   else if (filters.administrative !== "ALL") and.push({ qmsRecord: { isActive: true } });
+  and.push({ status: { not: "DRAFT" } });
   if (filters.year && /^\d{4}$/.test(filters.year)) {
     and.push({ qmsRecord: { year: Number(filters.year) } });
   }
