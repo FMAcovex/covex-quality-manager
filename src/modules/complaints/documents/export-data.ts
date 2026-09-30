@@ -16,7 +16,8 @@ export async function getComplaintExportRows(filters:ComplaintExportFilters){
  if(filters.year&&/^\d{4}$/.test(filters.year))and.push({qmsRecord:{year:Number(filters.year)}});
  if(filters.department)and.push({departmentId:filters.department});
  if(filters.type==="PROVIDER"||filters.type==="CUSTOMER")and.push({complaintType:filters.type});
- if(filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
+ if(filters.status==="DRAFT"||filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
+ else and.push({status:{not:"DRAFT"}});
  if(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"].includes(filters.classification??""))and.push({classification:filters.classification as "CRITICAL"|"MAJOR"|"MINOR"|"NO_GMP_IMPACT"});
  if(["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"].includes(filters.effectiveness??""))and.push({effectivenessStatus:filters.effectiveness as "PENDING"|"ACCEPTABLE"|"NOT_ACCEPTABLE"|"NOT_REQUIRED"});
  return prisma.complaint.findMany({where:and.length?{AND:and}:{},include:{qmsRecord:true,capaPlans:{orderBy:{createdAt:"asc"}},followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}]}},orderBy:[{openedAt:"asc"},{createdAt:"asc"}]});
