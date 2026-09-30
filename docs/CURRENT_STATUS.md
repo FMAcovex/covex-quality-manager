@@ -696,3 +696,16 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - soporta navegación por teclado y selección con ratón;
 - cambiar el tipo relacionado actualiza las sugerencias;
 - el backend sigue siendo la autoridad final para validar y persistir la relación.
+
+
+## D5.3 — Codificación sugerida/controlada transversal
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
+
+- reutiliza el patrón seguro ya validado en Desviaciones;
+- añade sugerencia dinámica en altas de CAPA, Control de Cambio, Reclamación y Devolución;
+- permite aceptar sugerencia, introducir un código manual válido o dejarlo vacío para asignación automática al guardar;
+- asignación definitiva protegida por bloqueo transaccional PostgreSQL;
+- evita duplicados incluyendo codificaciones históricas anuladas;
+- la codificación queda bloqueada en edición;
+- los códigos históricos existentes no se reformatean;
+- smoke PostgreSQL `d5-3:smoke` incorporado a CI.
