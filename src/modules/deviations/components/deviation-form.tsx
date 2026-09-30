@@ -239,12 +239,15 @@ export function DeviationForm({
               value={businessCode}
               onChange={(e) => setBusinessCode(e.target.value)}
               placeholder={suggestedCode || "Selecciona departamento para ver la sugerencia"}
+              readOnly={Boolean(formDefaults.businessCode) && formDefaults.status !== "DRAFT"}
               aria-invalid={issues.businessCode?.length ? true : undefined}
             />
             <small className="muted-note">
-              {suggestedCode
-                ? <>Sugerencia correlativa: <button type="button" className="link-button-inline" onClick={() => setBusinessCode(suggestedCode)}>{suggestedCode}</button></>
-                : "Formato: D/XX-NN/ZZZ/YYYY."}
+              {formDefaults.businessCode && formDefaults.status !== "DRAFT"
+                ? "La codificación queda fijada una vez abierta la desviación."
+                : suggestedCode
+                  ? <>Sugerencia correlativa: <button type="button" className="link-button-inline" onClick={() => setBusinessCode(suggestedCode)}>{suggestedCode}</button></>
+                  : "Formato: D/XX-NN/ZZZ/YYYY."}
             </small>
             <FieldIssue messages={issues.businessCode} />
           </label>
