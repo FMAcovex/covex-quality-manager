@@ -118,9 +118,6 @@ export async function createCapaAction(
   const v = parsed.values;
   let capaId: string;
   try {
-    const duplicate = await prisma.qmsRecord.findUnique({ where: { recordType_businessCode: { recordType: QmsRecordType.CAPA, businessCode: v.businessCode! } } });
-    if (duplicate) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["Ya existe una CAPA con esa codificación."], fieldIssues: { businessCode: ["Ya existe una CAPA con esa codificación."] } });
-
     const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
     if (!department) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
 
@@ -162,11 +159,21 @@ export async function createCapaAction(
               }
             : v;
 
+      const openingYear = v.openedAt ? new Date(v.openedAt).getFullYear() : new Date().getFullYear();
+      const businessCode = await assignOperationalBusinessCode(tx, {
+        recordType: QmsRecordType.CAPA,
+        year: openingYear,
+        departmentCode: department.code,
+        actionType: v.actionType,
+        requestedCode: v.businessCode,
+      });
+      v.businessCode = businessCode;
+
       const qmsRecord = await tx.qmsRecord.create({
         data: {
           recordType: QmsRecordType.CAPA,
-          businessCode: v.businessCode,
-          year: v.openedAt ? new Date(v.openedAt).getFullYear() : null,
+          businessCode,
+          year: openingYear,
         },
       });
 
@@ -272,6 +279,13 @@ export async function createCapaAction(
     });
     capaId = capa.id;
   } catch (error) {
+    if (error instanceof OperationalBusinessCodeError) {
+      return preserveFormState(previous, formData, {
+        error: "No se puede guardar la CAPA.",
+        fieldErrors: [error.message],
+        fieldIssues: { businessCode: [error.message] },
+      });
+    }
     if (
       error instanceof DeviationCapaPlanLinkError ||
       error instanceof ComplaintCapaLinkError
@@ -313,6 +327,7 @@ export async function updateCapaAction(
   if (!existing) return preserveFormState(previous, formData, { error: "La CAPA ya no existe." });
 
   const v = parsed.values;
+  v.businessCode = existing.qmsRecord.businessCode;
 
   if (existing.rootCause && !v.rootCause) {
     return preserveFormState(previous, formData, { error: "No se puede eliminar una causa raíz ya documentada." });
@@ -412,7 +427,7 @@ export async function updateCapaAction(
       await tx.qmsRecord.update({
         where: { id: existing.qmsRecordId },
         data: {
-          businessCode: v.businessCode,
+          businessCode: existing.qmsRecord.businessCode,
           year: v.openedAt ? new Date(v.openedAt).getFullYear() : null,
         },
       });
