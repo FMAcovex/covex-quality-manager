@@ -4,7 +4,7 @@ import type { ComplaintDerivedActionInput } from "@/modules/complaints/types";
 const typeSchema=z.enum(["PROVIDER","CUSTOMER"]);
 const classificationSchema=z.enum(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"]);
 const resultSchema=z.enum(["PROCEDENT","NOT_PROCEDENT","INCONCLUSIVE","NOT_ATTRIBUTABLE_TO_COVEX"]);
-const statusSchema=z.enum(["OPEN","CLOSED"]);
+const statusSchema=z.enum(["DRAFT","OPEN","CLOSED"]);
 const efficacySchema=z.enum(["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"]);
 const qualitySchema=z.enum(["COMPLETE","INCOMPLETE","REVIEW_REQUIRED"]);
 const triSchema=z.enum(["YES","NO","NA"]);
@@ -55,7 +55,7 @@ export function parseComplaintForm(fd:FormData){
   const businessCode=text(fd,"businessCode"),departmentId=text(fd,"departmentId"),openedAt=text(fd,"openedAt"),
     createdByText=text(fd,"createdByText"),partyName=text(fd,"partyName"),description=text(fd,"description"),
     complaintType=enumValue(typeSchema,text(fd,"complaintType"));
-  const status=enumValue(statusSchema,text(fd,"status"))??"OPEN";
+  const status=enumValue(statusSchema,text(fd,"status"))??"DRAFT";
   const classification=enumValue(classificationSchema,text(fd,"classification"));
   const effectivenessStatus=enumValue(efficacySchema,text(fd,"effectivenessStatus"))??"PENDING";
   const capaPlans=parseCapaPlans(text(fd,"capaPlansJson"));
@@ -63,12 +63,14 @@ export function parseComplaintForm(fd:FormData){
   const resolutionActions=fd.getAll("resolutionActions").map(String).map(v=>enumValue(resolutionSchema,v)).filter((v):v is z.infer<typeof resolutionSchema>=>Boolean(v));
   const errors:string[]=[];
 
+  if(status!=="DRAFT"){
   if(!departmentId)errors.push("El departamento es obligatorio.");
   if(!openedAt)errors.push("La fecha de apertura es obligatoria.");
   if(!createdByText)errors.push("Debe indicarse quién cumplimenta el expediente.");
   if(!complaintType)errors.push("Debe seleccionarse el tipo de reclamación.");
   if(!partyName)errors.push("Debe indicarse el cliente/proveedor.");
   if(!description)errors.push("La descripción de la reclamación es obligatoria.");
+  }
   if(status==="CLOSED"){
     if(!text(fd,"closedAt"))errors.push("Una reclamación cerrada requiere fecha de cierre.");
     if(!text(fd,"closeConclusion")&&!text(fd,"conclusion"))errors.push("Una reclamación cerrada requiere conclusión.");

@@ -378,3 +378,16 @@ Reglas:
 - las fases propias del módulo (solicitud, Dictamen, ejecución, eficacia y cierre) se mantienen sin redefinir;
 - Borrador no admite seguimientos, relaciones operativas nuevas ni generación de Anexos III, IV o V;
 - Borrador queda excluido de KPI y exportaciones operativas/oficiales.
+
+
+## D-052 — Estado Borrador transversal · Reclamaciones
+Reclamaciones incorpora `DRAFT` en `ComplaintStatus` como estado previo al ciclo operativo.
+
+Reglas:
+- una nueva Reclamación se inicia en Borrador;
+- el Borrador puede guardarse con campos incompletos y sin codificación;
+- al pasar a Abierta se exigen los campos de identificación operativa y se asigna/fija la codificación controlada;
+- una Reclamación Abierta o Cerrada no puede volver a Borrador;
+- Borrador no admite seguimientos, relaciones operativas nuevas, creación de CAPA/Devolución derivadas ni generación de Anexos III/IV;
+- Borrador queda excluido de KPI y exportaciones oficiales;
+- las reglas de cierre y eficacia se mantienen intactas al salir de Borrador.

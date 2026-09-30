@@ -739,3 +739,18 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
 - Borradores excluidos de KPI y exportaciones;
 - filtro y contador específico de Borradores en listado;
 - pruebas unitarias específicas D5.4B.
+
+
+## D5.4C — Borrador transversal · Reclamaciones
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
+
+- `ComplaintStatus` incorpora `DRAFT`;
+- alta inicial en Borrador;
+- guardado incompleto permitido;
+- validación completa al pasar a Abierta;
+- codificación asignada/fijada al abrir;
+- prohibido volver a Borrador desde estados operativos;
+- seguimientos, relaciones, CAPA/Devoluciones derivadas y Anexos III/IV bloqueados mientras está en Borrador;
+- Borradores excluidos de KPI y exportaciones;
+- filtro y contador específico de Borradores;
+- pruebas unitarias específicas D5.4C.

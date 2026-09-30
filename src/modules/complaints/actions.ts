@@ -31,11 +31,11 @@ async function getSnapshot(tx:Prisma.TransactionClient,id:string){
 }
 
 type ExistingComplaintSnapshot={departmentId:string|null;departmentCodeSnapshot:string|null;departmentNameSnapshot:string|null};
-function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],department:{id:string;code:string;name:string},existing?:ExistingComplaintSnapshot){
+function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],department:{id:string;code:string;name:string}|null,existing?:ExistingComplaintSnapshot){
  return {
-  departmentId:department.id,
-  departmentCodeSnapshot:existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code,
-  departmentNameSnapshot:existing?.departmentId===department.id?(existing.departmentNameSnapshot??department.name):department.name,
+  departmentId:department?.id??null,
+  departmentCodeSnapshot:department?(existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code):null,
+  departmentNameSnapshot:department?(existing?.departmentId===department.id?(existing.departmentNameSnapshot??department.name):department.name):null,
   openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),receptionDate:d(v.receptionDate),detectedBy:v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType!,
   sourceTypes:v.sourceTypes,sourceOther:v.sourceOther,scopeTypes:v.scopeTypes,scopeOther:v.scopeOther,affectedObjectTypes:v.affectedObjectTypes,affectedObjectOther:v.affectedObjectOther,
   categoryTypes:v.categoryTypes,categoryOther:v.categoryOther,partyName:v.partyName,contact:v.contact,affectedScope:v.affectedScope,reference:v.reference,lotReference:v.lotReference,quantity:v.quantity,
@@ -79,7 +79,8 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values; let createdId:string;
  try{
-  const department=await prisma.department.findUnique({where:{id:v.departmentId!}}); if(!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
+  const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
+  if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
   const ref=d(v.openedAt)??new Date();
   const [form,iii,iv,vlist]=await Promise.all([
    getApplicableFormVersion(QmsRecordType.COMPLAINT,ref),
@@ -88,19 +89,26 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
    getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_V",ref)
   ]);
   const created=await prisma.$transaction(async tx=>{
-   const openingYear=v.openedAt?new Date(v.openedAt).getFullYear():new Date().getFullYear();
-   const businessCode=await assignOperationalBusinessCode(tx,{
-    recordType:QmsRecordType.COMPLAINT,
-    year:openingYear,
-    complaintType:v.complaintType,
-    requestedCode:v.businessCode
-   });
+   const openingYear=v.openedAt?new Date(v.openedAt).getFullYear():null;
+   let businessCode=v.businessCode;
+   if(openingYear&&(v.status!=="DRAFT"||businessCode)){
+    businessCode=await assignOperationalBusinessCode(tx,{
+     recordType:QmsRecordType.COMPLAINT,
+     year:openingYear,
+     complaintType:v.complaintType,
+     requestedCode:businessCode
+    });
+   }else if(v.status!=="DRAFT"){
+    throw new OperationalBusinessCodeError("INVALID_FORMAT","Para abrir la reclamación debe estar informada la fecha de apertura.");
+   }else{
+    businessCode=null;
+   }
    v.businessCode=businessCode;
    const qr=await tx.qmsRecord.create({data:{recordType:"COMPLAINT",businessCode,year:openingYear}});
    const rec=await tx.complaint.create({data:{qmsRecordId:qr.id,...complaintData(v,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vlist?.id}});
    await replaceCapaPlans(tx,rec.id,v.capaPlans);
    await replaceDerivedActions(tx,rec.id,v.derivedActions);
-   await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,description:v.description}),reason:"Alta de reclamación",source:"UI"}});
+   await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,description:v.description}),reason:v.status==="DRAFT"?"Borrador inicial de reclamación":"Alta de reclamación",source:"UI"}});
    const snap=await getSnapshot(tx,rec.id); await ensureInitialVersion(tx,qr.id,snapshotJson(serializeComplaintVersion(snap)),parsed.actor);
    return rec;
   });
@@ -118,11 +126,26 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values;
  const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
- v.businessCode=existing.qmsRecord.businessCode;
- const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
+ const requestedBusinessCode=v.businessCode;
+ v.businessCode=existing.qmsRecord.businessCode??requestedBusinessCode;
+ if(existing.status!=="DRAFT"&&v.status==="DRAFT"){
+  return preserveFormState(previous,fd,{error:"No se puede volver a borrador una reclamación ya operativa.",fieldErrors:["Una reclamación abierta o cerrada no puede volver al estado Borrador."]});
+ }
+ const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
+ if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
  try{
  await prisma.$transaction(async tx=>{
-  await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode:existing.qmsRecord.businessCode,year:v.openedAt?new Date(v.openedAt).getFullYear():null}});
+  const openingYear=v.openedAt?new Date(v.openedAt).getFullYear():null;
+  let businessCode=existing.qmsRecord.businessCode;
+  if(existing.status==="DRAFT"&&openingYear){
+   if(!businessCode&&(v.status!=="DRAFT"||requestedBusinessCode)){
+    businessCode=await assignOperationalBusinessCode(tx,{recordType:QmsRecordType.COMPLAINT,year:openingYear,complaintType:v.complaintType,requestedCode:requestedBusinessCode,excludeQmsRecordId:existing.qmsRecordId});
+   }else if(businessCode&&requestedBusinessCode&&requestedBusinessCode!==businessCode){
+    businessCode=await assignOperationalBusinessCode(tx,{recordType:QmsRecordType.COMPLAINT,year:openingYear,complaintType:v.complaintType,requestedCode:requestedBusinessCode,excludeQmsRecordId:existing.qmsRecordId});
+   }
+  }
+  v.businessCode=businessCode;
+  await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode,year:openingYear}});
   await tx.complaint.update({where:{id},data:complaintData(v,department,existing)});
   await replaceCapaPlans(tx,id,v.capaPlans);
   await replaceDerivedActions(tx,id,v.derivedActions);
@@ -130,12 +153,16 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,existing.qmsRecordId,snapshotJson(serializeComplaintVersion(snap)),parsed.actor,v.changeReason);
  });
 
- }catch(e){return preserveFormState(previous,fd,persistenceFormError(e,"la reclamación"));}
+ }catch(e){
+  if(e instanceof OperationalBusinessCodeError)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:[e.message]});
+  return preserveFormState(previous,fd,persistenceFormError(e,"la reclamación"));
+}
  revalidatePath("/complaints");revalidatePath(`/complaints/${id}`);redirect(`/complaints/${id}`);
 }
 
 export async function addComplaintFollowupAction(id:string,_state:FollowupActionState,fd:FormData):Promise<FollowupActionState>{
  const rec=await prisma.complaint.findUnique({where:{id}});if(!rec)return{error:"Reclamación no encontrada."};
+ if(rec.status==="DRAFT")return{error:"La reclamación debe estar abierta antes de registrar seguimientos."};
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
  if(!followupDate||!completedByText||!comment)return{error:"Fecha, responsable y comentario son obligatorios."};
  try{
@@ -180,8 +207,9 @@ export async function addComplaintRelationAction(
  fd:FormData
 ):Promise<RelationActionState>{
  try{
-  const rec=await prisma.complaint.findUnique({where:{id},select:{qmsRecordId:true}});
+  const rec=await prisma.complaint.findUnique({where:{id},select:{qmsRecordId:true,status:true}});
   if(!rec)return{error:"Reclamación no encontrada."};
+  if(rec.status==="DRAFT")return{error:"La reclamación debe estar abierta antes de vincular expedientes derivados."};
 
   const code=String(fd.get("businessCode")??"").trim();
   const actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo").trim();

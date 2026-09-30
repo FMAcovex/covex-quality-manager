@@ -8,6 +8,7 @@ export async function getComplaintExportRows(filters:ComplaintExportFilters){
  const and:Prisma.ComplaintWhereInput[]=[];
  if(filters.administrative==="ANNULLED")and.push({qmsRecord:{isActive:false}});
  else if(filters.administrative!=="ALL")and.push({qmsRecord:{isActive:true}});
+ and.push({status:{not:"DRAFT"}});
  if(filters.q)and.push({OR:[
   {qmsRecord:{businessCode:{contains:filters.q,mode:"insensitive"}}},{partyName:{contains:filters.q,mode:"insensitive"}},
   {reference:{contains:filters.q,mode:"insensitive"}},{lotReference:{contains:filters.q,mode:"insensitive"}},{description:{contains:filters.q,mode:"insensitive"}},

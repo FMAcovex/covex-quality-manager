@@ -161,6 +161,7 @@ enum ComplaintInvestigationResult {
 }
 
 enum ComplaintStatus {
+  DRAFT
   OPEN
   CLOSED
 }
