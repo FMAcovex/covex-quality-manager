@@ -2,10 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { QmsRecordType, QmsRelationType } from "@prisma/client";
 import {
   createQmsRelation,
+  deactivateOperationalRelation,
   deactivateQmsRelation,
   getIncomingRelations,
   getOutgoingRelations,
-  type QmsRelationClient,
+  linkOperationalRelationByBusinessCode,
+  type QmsRelationHistoryClient,
 } from "@/lib/qms/relation-service";
 
 type StoredRecord = {
@@ -46,6 +48,23 @@ function createMemoryClient(records: StoredRecord[]) {
       findUnique: vi.fn(
         async ({ where }: { where: { id: string } }) =>
           recordMap.get(where.id) ?? null,
+      ),
+      findMany: vi.fn(
+        async ({
+          where,
+        }: {
+          where: {
+            businessCode?: string;
+            recordType?: QmsRecordType;
+            id?: { not?: string };
+          };
+        }) =>
+          records.filter(
+            (record) =>
+              (!where.businessCode || record.businessCode === where.businessCode) &&
+              (!where.recordType || record.recordType === where.recordType) &&
+              (!where.id?.not || record.id !== where.id.not),
+          ),
       ),
     },
     qmsRelation: {
@@ -117,7 +136,10 @@ function createMemoryClient(records: StoredRecord[]) {
             })),
       ),
     },
-  } as unknown as QmsRelationClient;
+    changeHistory: {
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => data),
+    },
+  } as unknown as QmsRelationHistoryClient;
 
   return { client, relations };
 }
@@ -213,6 +235,64 @@ describe("Hito 10.8C3-B1: servicio común de relaciones QMS", () => {
       }),
     ).rejects.toThrow(/consigo mismo/);
   });
+  it("vincula por código desde cualquiera de los extremos respetando la dirección canónica", async () => {
+    const { client, relations } = createMemoryClient(records);
+
+    await linkOperationalRelationByBusinessCode(client, {
+      currentRecordId: "capa-qms",
+      currentType: QmsRecordType.CAPA,
+      relatedType: QmsRecordType.DEVIATION,
+      businessCode: "D/1",
+      createdByText: "QA",
+    });
+    await linkOperationalRelationByBusinessCode(client, {
+      currentRecordId: "return-qms",
+      currentType: QmsRecordType.RETURN,
+      relatedType: QmsRecordType.COMPLAINT,
+      businessCode: "R/1",
+      createdByText: "QA",
+    });
+
+    expect(relations).toHaveLength(2);
+    expect(relations[0]).toMatchObject({
+      sourceRecordId: "deviation-qms",
+      targetRecordId: "capa-qms",
+    });
+    expect(relations[1]).toMatchObject({
+      sourceRecordId: "complaint-qms",
+      targetRecordId: "return-qms",
+    });
+  });
+
+  it("desvincula transversalmente desde el extremo actual y permite reactivar la misma fila", async () => {
+    const { client, relations } = createMemoryClient(records);
+    await createQmsRelation(client, {
+      sourceRecordId: "complaint-qms",
+      targetRecordId: "return-qms",
+      createdByText: "QA",
+    });
+
+    await deactivateOperationalRelation(client, {
+      currentRecordId: "return-qms",
+      relatedRecordId: "complaint-qms",
+      changedByText: "QA",
+      reason: "Prueba D5.2",
+    });
+
+    expect(relations).toHaveLength(1);
+    expect(relations[0].isActive).toBe(false);
+
+    await linkOperationalRelationByBusinessCode(client, {
+      currentRecordId: "return-qms",
+      currentType: QmsRecordType.RETURN,
+      relatedType: QmsRecordType.COMPLAINT,
+      businessCode: "R/1",
+      createdByText: "QA",
+    });
+    expect(relations).toHaveLength(1);
+    expect(relations[0].isActive).toBe(true);
+  });
+
   it("desactiva una relación sin eliminar los expedientes y desaparece en ambos sentidos", async () => {
     const { client, relations } = createMemoryClient(records);
     await createQmsRelation(client, {
