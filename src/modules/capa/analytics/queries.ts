@@ -29,13 +29,16 @@ export async function getCapaAnalytics(filters:CapaAnalyticsFilters) {
     prisma.qmsRecord.findMany({where:{recordType:"CAPA",year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}}),
     prisma.historicalImportBatch.findMany({where:{appliedAt:{not:null}},select:{recordType:true,years:true}}),
   ]);
-  const rows:CapaAnalyticsRow[]=records.map((r)=>({
-    openingYear:r.qmsRecord.year??r.openedAt?.getUTCFullYear()??null,
-    openedAt:r.openedAt,operationalClosedAt:r.operationalClosedAt,effectiveClosedAt:r.effectiveClosedAt,
-    status:r.status,actionType:r.actionType,effectivenessStatus:r.effectivenessStatus,
-    departmentCode:r.departmentCodeSnapshot,originType:r.originType,
-    plannedDates:r.plannedActions.map((a)=>a.plannedExecutionDate).filter((d):d is Date=>Boolean(d)),
-  }));
+  const rows:CapaAnalyticsRow[]=records
+    .filter((r)=>r.status!=="DRAFT")
+    .map((r)=>({
+      openingYear:r.qmsRecord.year??r.openedAt?.getUTCFullYear()??null,
+      openedAt:r.openedAt,operationalClosedAt:r.operationalClosedAt,effectiveClosedAt:r.effectiveClosedAt,
+      status:r.status as "OPEN"|"CLOSED"|"CANCELLED",
+      actionType:r.actionType,effectivenessStatus:r.effectivenessStatus,
+      departmentCode:r.departmentCodeSnapshot,originType:r.originType,
+      plannedDates:r.plannedActions.map((a)=>a.plannedExecutionDate).filter((d):d is Date=>Boolean(d)),
+    }));
   const years=yearRows.map((r)=>r.year).filter((y):y is number=>y!==null);
   const selected=filters.year&&/^\d{4}$/.test(filters.year)?Number(filters.year):years[0]??new Date().getFullYear();
   const covered=new Set<number>([
