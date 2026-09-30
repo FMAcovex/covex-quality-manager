@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma, QmsRecordType } from "@prisma/client";
+import { Prisma, QmsRecordType, RecordVersionKind } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -14,6 +14,7 @@ import {
   createQmsRelation,
   deactivateOperationalRelation,
   linkOperationalRelationByBusinessCode,
+  syncOperationalOriginRelations,
 } from "@/lib/qms/relation-service";
 import {
   assignOperationalBusinessCode,
@@ -43,6 +44,7 @@ import {
 import {
   ensureInitialVersion,
   refreshCurrentVersion,
+  startNextVersion,
   serializeCapaVersion,
   snapshotJson,
 } from "@/lib/qms/versioning";
@@ -68,6 +70,10 @@ function snapshot(v: ReturnType<typeof parseCapaForm>["values"]) {
     defectDescription: v.defectDescription,
     rootCause: v.rootCause,
     impactAssessment: v.impactAssessment,
+    nextFollowupDate: v.nextFollowupDate,
+    actionFollowupObservations: v.actionFollowupObservations,
+    actionFollowups: v.actionFollowups,
+    origins: v.origins,
     status: v.status,
     cancellationReason: v.cancellationReason,
     operationalClosedAt: v.operationalClosedAt,
@@ -260,6 +266,7 @@ export async function createCapaAction(
         include: {
           qmsRecord: true,
           plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
           formVersion: true,
           annexIIITemplateVersion: true,
@@ -601,6 +608,7 @@ export async function updateCapaAction(
         include: {
           qmsRecord: true,
           plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
           formVersion: true,
           annexIIITemplateVersion: true,
