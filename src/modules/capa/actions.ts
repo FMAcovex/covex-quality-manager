@@ -33,7 +33,7 @@ import {
   registerComplaintDirectOrigin,
 } from "@/modules/capa/complaint-origin";
 import { parseCapaForm } from "@/modules/capa/validation";
-import { saveCapaFollowup } from "@/modules/capa/followup-service";
+import { saveCapaExecutionEvidence, saveCapaFollowup } from "@/modules/capa/followup-service";
 import type { CapaFormState } from "@/modules/capa/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -760,6 +760,19 @@ export async function updateCapaAction(
     }
     return preserveFormState(previous, formData, persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" }));
   }
+}
+
+export async function addCapaExecutionEvidenceAction(
+  id: string,
+  _state: FollowupActionState,
+  formData: FormData,
+): Promise<FollowupActionState> {
+  const result = await saveCapaExecutionEvidence(id, formData);
+  if (result.success) {
+    revalidatePath("/capa");
+    revalidatePath(`/capa/${id}`);
+  }
+  return result;
 }
 
 export async function addCapaFollowupAction(
