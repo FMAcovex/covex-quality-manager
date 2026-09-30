@@ -109,7 +109,7 @@ export default async function ChangeControlDetailPage({
             <span className={`badge ${record.effectivenessStatus === "ACCEPTABLE" ? "closed" : record.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : record.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>
               Eficacia {effectivenessStatusLabel(record.effectivenessStatus)}
             </span>
-            <span className={`badge ${record.finalStatus === "CLOSED" ? "closed" : "open"}`}>
+            <span className={`badge ${record.finalStatus === "CLOSED" ? "closed" : record.finalStatus === "DRAFT" ? "neutral" : "open"}`}>
               {finalStatusLabel(record.finalStatus)}
             </span>
             {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
@@ -125,6 +125,12 @@ export default async function ChangeControlDetailPage({
           ) : null}
         </div>
       </div>
+
+      {record.finalStatus === "DRAFT" ? (
+        <div className="analytics-note">
+          <strong>Borrador:</strong> este expediente todavía no es un Control de Cambio operativo. Completa los campos obligatorios y cambia el estado a Abierto para iniciar su ciclo formal.
+        </div>
+      ) : null}
 
       <QmsAdministrativeStatus
         qmsRecordId={record.qmsRecord.id}
@@ -211,7 +217,9 @@ export default async function ChangeControlDetailPage({
       ) : null}
 
       {activeTab === "followups" ? (
-        <>
+        record.finalStatus === "DRAFT" ? (
+          <div className="empty-panel">Los seguimientos estarán disponibles cuando el Control de Cambio pase a estado Abierto.</div>
+        ) : <>
           <div className="card">
             <div className="section-title-row">
               <div>
@@ -303,7 +311,9 @@ export default async function ChangeControlDetailPage({
       ) : null}
 
       {activeTab === "documents" ? (
-        <div className="card">
+        record.finalStatus === "DRAFT" ? (
+          <div className="empty-panel">Los documentos oficiales estarán disponibles cuando el Control de Cambio pase a estado Abierto.</div>
+        ) : <div className="card">
           <h2>Documentos del expediente</h2>
           <p className="muted-note">Solicitud (Anexo III), Dictamen (Anexo IV), Seguimientos (Anexo V) y listado maestro anual (Anexo VII) son familias documentales independientes.</p>
           <div className="document-grid">
@@ -374,7 +384,9 @@ export default async function ChangeControlDetailPage({
       ) : null}
 
       {activeTab === "relations" ? (
-        <div className="card">
+        record.finalStatus === "DRAFT" ? (
+          <div className="empty-panel">Las relaciones operativas estarán disponibles cuando el Control de Cambio pase a estado Abierto.</div>
+        ) : <div className="card">
           <h2>Expedientes relacionados</h2>
           {relations.length ? (
             <div className="relation-list">
