@@ -7,6 +7,7 @@ import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 import {
   capaSnapshotToAnnexRecord,
+  capaSnapshotVersionFollowupDate,
   recordVersionTemplateId,
   versionLabel,
 } from "@/lib/qms/versioning";
@@ -44,9 +45,20 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   }
 
   type AnnexRecord = Parameters<typeof generateCapaAnnexIII>[0];
-  const annexRecord: AnnexRecord = storedVersion
-    ? (capaSnapshotToAnnexRecord(storedVersion.snapshot) as unknown as AnnexRecord)
+  const snapshotRecord = storedVersion
+    ? capaSnapshotToAnnexRecord(storedVersion.snapshot)
     : capa;
+  const annexRecord: AnnexRecord = {
+    ...(snapshotRecord as unknown as AnnexRecord),
+    recordVersionSequenceNumber: storedVersion?.sequenceNumber ?? 0,
+    recordVersionReason: storedVersion?.reason ?? null,
+    versionFollowupDate: storedVersion
+      ? capaSnapshotVersionFollowupDate(
+          storedVersion.snapshot,
+          storedVersion.sequenceNumber,
+        )
+      : capa.openedAt,
+  };
 
   try {
     const buffer = await generateCapaAnnexIII(annexRecord);
