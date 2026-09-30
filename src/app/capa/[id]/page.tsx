@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addCapaExecutionEvidenceAction, addCapaRelationAction, unlinkCapaOriginAction } from "@/modules/capa/actions";
+import { addCapaRelationAction, unlinkCapaOriginAction } from "@/modules/capa/actions";
 import {
   capaStatusLabel,
   capaTypeLabel,
@@ -12,7 +12,6 @@ import { recordVersionSummary } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
-import { CapaExecutionEvidenceForm } from "@/modules/capa/components/capa-execution-evidence-form";
 
 export const dynamic = "force-dynamic";
 
@@ -59,9 +58,6 @@ export default async function CapaDetailPage({
     )
     .map((item) => item.sourceRecord);
 
-  const executionEvidence = capa.followups.filter((item) =>
-    Boolean(item.evidenceReference?.trim()),
-  );
 
   return (
     <section className="workspace">
@@ -210,56 +206,39 @@ export default async function CapaDetailPage({
             </div>
           ) : null}
 
-          <div style={{ marginTop: 24 }}>
-            <h3>Evidencia de ejecución</h3>
-            <p className="muted-note">
-              La evidencia de ejecución se registra de forma independiente y no crea un nuevo Seguimiento 00/01/02 del expediente.
-            </p>
-            {executionEvidence.length ? (
-              <div className="table-scroll">
-                <table className="records-table compact-table">
-                  <thead><tr><th>Fecha</th><th>Registrado por</th><th>Evidencia / referencia</th><th>Observaciones</th></tr></thead>
-                  <tbody>
-                    {executionEvidence.map((item) => (
-                      <tr key={item.id}>
-                        <td>{formatDate(item.followupDate)}</td>
-                        <td>{item.completedByText}</td>
-                        <td className="table-cell-wrap">{item.evidenceReference}</td>
-                        <td className="table-cell-wrap">{item.observations ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : <div className="empty-panel">No hay evidencia de ejecución registrada.</div>}
-
-            {capa.status === "DRAFT" ? (
-              <div className="empty-panel">La evidencia de ejecución podrá registrarse cuando la CAPA esté abierta.</div>
-            ) : (
-              <CapaExecutionEvidenceForm
-                action={addCapaExecutionEvidenceAction.bind(null, id)}
-                defaultActor={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
-              />
-            )}
-          </div>
         </div>
       ) : null}
 
       {activeTab === "state" ? (
         <div className="card">
           <h2>Estado y eficacia</h2>
-          <dl className="info-grid">
-            <div className="info-item"><dt>Estado CAPA</dt><dd>{capaStatusLabel(capa.status)}</dd></div>
-            <div className="info-item"><dt>Próximo seguimiento</dt><dd>{formatDate(capa.nextFollowupDate)}</dd></div>
-            <div className="info-item"><dt>Fecha de cierre y ejecución</dt><dd>{formatDate(capa.operationalClosedAt)}</dd></div>
-            <div className="info-item"><dt>Estado de eficacia</dt><dd>{effectivenessLabel(capa.effectivenessStatus)}</dd></div>
-            <div className="info-item"><dt>Fecha de verificación final</dt><dd>{formatDate(capa.effectiveClosedAt)}</dd></div>
-            <div className="info-item full"><dt>Conclusión / cierre</dt><dd className="prose-value">{capa.conclusion ?? "—"}</dd></div>
-            <div className="info-item full"><dt>Evaluación de la eficacia</dt><dd className="prose-value">{capa.effectivenessAssessment ?? "—"}</dd></div>
-            {capa.status === "CANCELLED" ? (
-              <div className="info-item full"><dt>Motivo de cancelación</dt><dd className="prose-value">{capa.cancellationReason ?? "—"}</dd></div>
-            ) : null}
-          </dl>
+          <div className="state-efficacy-grid">
+            <section className="state-efficacy-panel">
+              <h3>Estado operativo</h3>
+              <dl className="info-grid">
+                <div className="info-item"><dt>Estado CAPA</dt><dd>{capaStatusLabel(capa.status)}</dd></div>
+                <div className="info-item"><dt>Fecha de cierre y ejecución</dt><dd>{formatDate(capa.operationalClosedAt)}</dd></div>
+                <div className="info-item full"><dt>Estado</dt><dd className="prose-value">{capa.operationalStatusDescription ?? capa.cancellationReason ?? "—"}</dd></div>
+              </dl>
+            </section>
+
+            <section className="state-efficacy-panel">
+              <h3>Evaluación de la eficacia</h3>
+              <dl className="info-grid">
+                <div className="info-item"><dt>Verificación de la eficacia</dt><dd>{effectivenessLabel(capa.effectivenessStatus)}</dd></div>
+                <div className="info-item"><dt>Fecha de verificación final</dt><dd>{formatDate(capa.effectiveClosedAt)}</dd></div>
+                <div className="info-item full"><dt>Evaluación</dt><dd className="prose-value">{capa.effectivenessAssessment ?? "—"}</dd></div>
+              </dl>
+            </section>
+          </div>
+
+          <section className="state-efficacy-panel" style={{ marginTop: 14 }}>
+            <h3>Conclusión</h3>
+            <dl className="info-grid">
+              <div className="info-item full"><dt>Conclusión / cierre</dt><dd className="prose-value">{capa.conclusion ?? "—"}</dd></div>
+              <div className="info-item"><dt>Fecha de próximo seguimiento</dt><dd>{formatDate(capa.nextFollowupDate)}</dd></div>
+            </dl>
+          </section>
         </div>
       ) : null}
 
@@ -394,7 +373,7 @@ export default async function CapaDetailPage({
           {capa.qmsRecord.history.length ? (
             <div className="timeline">
               {capa.qmsRecord.history.map((item) => (
-                <div className="timeline-item" key={item.id}>
+                <div className="timeline-item history-entry" key={item.id}>
                   <header>
                     <strong>{formatDate(item.changedAt)}</strong>
                     <span>{item.changedByText ?? "Sistema"}</span>
