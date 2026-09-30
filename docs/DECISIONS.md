@@ -415,3 +415,17 @@ Reglas:
 - Los filtros especiales con lógica exclusiva (por ejemplo Con/Sin CAPA, medidas adoptadas, plazo o seguimiento) permanecen como selección única.
 - Los valores seleccionados se serializan como parámetros repetidos y el backend aplica semántica OR dentro de cada filtro mediante `IN`, manteniendo AND entre filtros distintos.
 - Las exportaciones simples con filtros actuales conservan todos los valores seleccionados.
+
+
+## D-055 — Cierre D5 mediante regresión transversal acumulativa
+D5 se cierra con una regresión transversal única que no añade reglas de negocio nuevas.
+
+Cobertura:
+- validación Borrador → operativo en Desviaciones, CAPA, Control de Cambios, Reclamaciones y Devoluciones;
+- mantenimiento de codificación controlada;
+- contratos de relaciones QMS ya aprobados;
+- bloqueo documental en Borrador;
+- filtros multiselección y parámetros repetidos;
+- convivencia con los smoke existentes de código, relaciones, versionado, documentos y PostgreSQL.
+
+La aceptación de D5 depende del smoke `d5-6:smoke` y del conjunto acumulado de CI, no de una nueva lógica paralela.

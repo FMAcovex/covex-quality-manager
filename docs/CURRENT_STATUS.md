@@ -783,3 +783,16 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
 - filtros administrativos y filtros lógicos exclusivos permanecen simples;
 - exportación simple conserva las selecciones múltiples;
 - pruebas unitarias de helpers de query.
+
+
+## D5.6 — Regresión transversal final
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
+
+- nuevo smoke `pnpm d5-6:smoke`;
+- valida Borrador → operativo en los cinco módulos;
+- comprueba contratos transversales de codificación;
+- comprueba presencia de reglas de relaciones QMS;
+- comprueba bloqueo de documentos oficiales en Borrador;
+- comprueba integración de filtros multiselección;
+- se ejecuta junto a los smoke PostgreSQL, códigos, relaciones, versionado y documentos ya existentes;
+- sin cambios Prisma ni nuevas reglas funcionales.
