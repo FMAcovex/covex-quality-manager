@@ -123,7 +123,6 @@ export function parseDeviationForm(formData: FormData) {
     fieldIssues[field] = [...(fieldIssues[field] ?? []), message];
   };
 
-  if (!businessCode) addIssue("businessCode", "La codificación de la desviación es obligatoria.");
   if (!departmentId) addIssue("departmentId", "El departamento es obligatorio.");
   if (!issueDate) addIssue("issueDate", "La fecha de apertura es obligatoria.");
   else if (!validDate(issueDate)) addIssue("issueDate", "La fecha de apertura no tiene un formato válido.", true);

@@ -11,7 +11,6 @@ describe("Hito 10.8C3-A form validation", () => {
     form.set("capaPlansJson", "[]");
 
     const parsed = parseDeviationForm(form);
-    expect(parsed.fieldIssues.businessCode).toBeDefined();
     expect(parsed.fieldIssues.departmentId).toBeDefined();
     expect(parsed.fieldIssues.issueDate).toBeDefined();
     expect(parsed.fieldIssues.eventDateTime).toBeDefined();

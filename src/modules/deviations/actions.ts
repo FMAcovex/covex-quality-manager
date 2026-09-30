@@ -9,6 +9,10 @@ import {
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
 import { createQmsRelation } from "@/lib/qms/relation-service";
+import {
+  assignDeviationBusinessCode,
+  DeviationBusinessCodeError,
+} from "@/lib/qms/business-code";
 import { parseDeviationForm } from "@/modules/deviations/validation";
 import {
   deviationSaveMode,
@@ -82,15 +86,6 @@ export async function createDeviationAction(
   const v = parsed.values;
   let deviationId: string;
   try {
-    if (v.businessCode) {
-      const duplicate = await prisma.qmsRecord.findUnique({
-        where: { recordType_businessCode: { recordType: QmsRecordType.DEVIATION, businessCode: v.businessCode } },
-      });
-      if (duplicate) {
-        return formError(previous, formData, "No se puede guardar el expediente.", ["Ya existe una desviación con esa codificación."], { businessCode: ["Ya existe una desviación con esa codificación."] });
-      }
-    }
-
     const department = v.departmentId
       ? await prisma.department.findUnique({ where: { id: v.departmentId } })
       : null;
@@ -109,11 +104,27 @@ export async function createDeviationAction(
     ]);
 
     const deviation = await prisma.$transaction(async (tx) => {
+      const openingYear = v.issueDate ? new Date(v.issueDate).getFullYear() : null;
+      let businessCode = v.businessCode;
+      if (department && openingYear && (v.status !== "DRAFT" || businessCode)) {
+        businessCode = await assignDeviationBusinessCode(tx, {
+          departmentCode: department.code,
+          year: openingYear,
+          requestedCode: businessCode,
+        });
+      } else if (v.status !== "DRAFT") {
+        throw new DeviationBusinessCodeError(
+          "INVALID_FORMAT",
+          "Para abrir la desviación deben estar informados departamento y fecha de apertura.",
+        );
+      }
+      v.businessCode = businessCode;
+
       const qmsRecord = await tx.qmsRecord.create({
         data: {
           recordType: QmsRecordType.DEVIATION,
-          businessCode: v.businessCode,
-          year: v.issueDate ? new Date(v.issueDate).getFullYear() : null,
+          businessCode,
+          year: openingYear,
         },
       });
 
@@ -231,6 +242,15 @@ export async function createDeviationAction(
     });
     deviationId = deviation.id;
   } catch (error) {
+    if (error instanceof DeviationBusinessCodeError) {
+      return formError(
+        previous,
+        formData,
+        "No se puede guardar la desviación.",
+        [error.message],
+        { businessCode: [error.message] },
+      );
+    }
     return {
       ...persistenceFormError(error, "la desviación", { duplicateField: "businessCode" }),
       submittedValues: submittedValues(formData),
@@ -280,6 +300,8 @@ export async function updateDeviationAction(
   if (!existing) return formError(previous, formData, "La desviación ya no existe.");
 
   const v = parsed.values;
+  const requestedBusinessCode = v.businessCode;
+  v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
   if (existing.status !== "DRAFT" && v.status === "DRAFT") {
     return formError(
       previous,
@@ -402,11 +424,54 @@ export async function updateDeviationAction(
         versionKind ? "Estado anterior a la nueva versión" : undefined,
       );
 
+      const openingYear = v.issueDate ? new Date(v.issueDate).getFullYear() : null;
+      let businessCode = existing.qmsRecord.businessCode;
+      if (existing.status === "DRAFT" && department && openingYear) {
+        if (!businessCode && requestedBusinessCode) {
+          businessCode = await assignDeviationBusinessCode(tx, {
+            departmentCode: department.code,
+            year: openingYear,
+            requestedCode: requestedBusinessCode,
+            excludeQmsRecordId: existing.qmsRecordId,
+          });
+        } else if (!businessCode && v.status === "OPEN") {
+          businessCode = await assignDeviationBusinessCode(tx, {
+            departmentCode: department.code,
+            year: openingYear,
+            requestedCode: null,
+            excludeQmsRecordId: existing.qmsRecordId,
+          });
+        } else if (businessCode && requestedBusinessCode && requestedBusinessCode !== businessCode) {
+          businessCode = await assignDeviationBusinessCode(tx, {
+            departmentCode: department.code,
+            year: openingYear,
+            requestedCode: requestedBusinessCode,
+            excludeQmsRecordId: existing.qmsRecordId,
+          });
+        }
+        v.businessCode = businessCode;
+        if (businessCode !== existing.qmsRecord.businessCode) {
+          await tx.changeHistory.create({
+            data: {
+              qmsRecordId: existing.qmsRecordId,
+              changedByText: parsed.actor,
+              fieldPath: "businessCode",
+              oldValue: jsonValue(existing.qmsRecord.businessCode),
+              newValue: jsonValue(businessCode),
+              reason: v.status === "OPEN"
+                ? "Asignación/confirmación de codificación al abrir la desviación"
+                : "Actualización de codificación en borrador",
+              source: "SYSTEM",
+            },
+          });
+        }
+      }
+
       await tx.qmsRecord.update({
         where: { id: existing.qmsRecordId },
         data: {
-          businessCode: v.businessCode,
-          year: v.issueDate ? new Date(v.issueDate).getFullYear() : null,
+          businessCode,
+          year: openingYear,
         },
       });
 
@@ -569,6 +634,15 @@ export async function updateDeviationAction(
     });
 
   } catch (error) {
+    if (error instanceof DeviationBusinessCodeError) {
+      return formError(
+        previous,
+        formData,
+        "No se puede guardar la desviación.",
+        [error.message],
+        { businessCode: [error.message] },
+      );
+    }
     return {
       ...persistenceFormError(error, "la desviación", { duplicateField: "businessCode" }),
       submittedValues: submittedValues(formData),

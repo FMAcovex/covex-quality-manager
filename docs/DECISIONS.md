@@ -280,3 +280,17 @@ Reglas:
 - el Anexo III no se genera mientras el expediente esté en Borrador;
 - el código de negocio puede permanecer vacío durante el borrador; la asignación automática definitiva se resolverá en D3 al abrir el expediente.
 
+## D-045 — Codificación sugerida y controlada de Desviaciones
+La codificación de una Desviación puede introducirse manualmente durante el alta/borrador o aceptarse desde una sugerencia correlativa calculada por la aplicación.
+
+Reglas:
+- formato `D/XX-NN/ZZZ/YYYY`, usando código de departamento, correlativo de tres cifras y año de apertura;
+- al seleccionar departamento y año, la interfaz propone el siguiente correlativo disponible;
+- la sugerencia no impide escribir manualmente otra codificación válida;
+- un borrador sin código no consume numeración; si el usuario guarda el borrador con un código, esa codificación queda reservada por el expediente;
+- al abrir un borrador sin código, la aplicación asigna el siguiente correlativo disponible;
+- la confirmación del código se realiza dentro de la misma transacción que guarda/abre el expediente;
+- un bloqueo transaccional PostgreSQL serializa la asignación por departamento y año para evitar duplicados concurrentes;
+- la validación considera tanto `businessCode` como `annulledBusinessCode`, evitando reutilizar una codificación histórica anulada;
+- una vez abierta la desviación, el código queda fijado y no se modifica en ediciones o versiones posteriores;
+- la lógica se centraliza en `src/lib/qms/business-code.ts` para futura reutilización controlada.

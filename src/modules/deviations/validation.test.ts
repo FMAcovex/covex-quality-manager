@@ -3,7 +3,6 @@ import { parseDeviationForm } from "@/modules/deviations/validation";
 
 function baseForm() {
   const form = new FormData();
-  form.set("businessCode", "D/GC-00/001/2026");
   form.set("departmentId", "department-1");
   form.set("issueDate", "2026-09-27");
   form.set("eventDateTime", "2026-09-27T10:30");
@@ -124,10 +123,10 @@ describe("parseDeviationForm", () => {
     const parsed = parseDeviationForm(form);
     expect(parsed.errors).toEqual([]);
     expect(parsed.values.status).toBe("DRAFT");
-    expect(parsed.fieldIssues.businessCode).toBeDefined();
     expect(parsed.fieldIssues.departmentId).toBeDefined();
     expect(parsed.fieldIssues.whatHappened).toBeDefined();
     expect(parsed.fieldIssues.rootCause).toBeDefined();
+    expect(parsed.fieldIssues.businessCode).toBeUndefined();
   });
 
   it("exige los obligatorios al intentar abrir un borrador", () => {
@@ -137,7 +136,6 @@ describe("parseDeviationForm", () => {
     const parsed = parseDeviationForm(form);
     expect(parsed.values.status).toBe("OPEN");
     expect(parsed.errors.length).toBeGreaterThan(0);
-    expect(parsed.fieldIssues.businessCode).toBeDefined();
   });
 
 });

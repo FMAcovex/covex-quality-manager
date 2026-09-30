@@ -1,7 +1,7 @@
 "use client";
 import { deviationVersionLabel } from "@/modules/deviations/version-mode";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import type {
   CapaPlanInput,
@@ -165,8 +165,58 @@ export function DeviationForm({
   const [capas, setCapas] = useState<CapaPlanInput[]>(formDefaults.capaPlans ?? []);
   const [origin, setOrigin] = useState<OriginType>(() => inferOrigin(formDefaults));
   const [recordStatus, setRecordStatus] = useState<"DRAFT" | "OPEN" | "CLOSED">(formDefaults.status ?? (mode === "create" ? "DRAFT" : "OPEN"));
+  const [businessCode, setBusinessCode] = useState(formDefaults.businessCode ?? "");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(formDefaults.departmentId ?? "");
+  const [issueDateValue, setIssueDateValue] = useState(formDefaults.issueDate ?? "");
+  const [suggestedCode, setSuggestedCode] = useState("");
   const [openingAttempted, setOpeningAttempted] = useState(false);
   const issues = state.fieldIssues ?? {};
+
+  useEffect(() => {
+    if (formDefaults.businessCode && formDefaults.status !== "DRAFT") {
+      setSuggestedCode("");
+      return;
+    }
+
+    const departmentId = selectedDepartmentId;
+    const departmentCode = departments.find((item) => item.id === departmentId)?.code ?? "";
+    const issueYear =
+      /^\\d{4}-/.test(issueDateValue)
+        ? Number(issueDateValue.slice(0, 4))
+        : new Date().getFullYear();
+
+    if (!departmentId) {
+      setSuggestedCode("");
+      return;
+    }
+
+    if (
+      formDefaults.status === "DRAFT" &&
+      formDefaults.businessCode &&
+      departmentCode &&
+      formDefaults.businessCode.startsWith(`D/${departmentCode}/`) &&
+      formDefaults.businessCode.endsWith(`/${issueYear}`)
+    ) {
+      setSuggestedCode(formDefaults.businessCode);
+      return;
+    }
+
+    const controller = new AbortController();
+    fetch(`/api/deviations/code-suggestion?departmentId=${encodeURIComponent(departmentId)}&year=${issueYear}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "No se ha podido calcular la sugerencia.");
+        setSuggestedCode(data.suggestion || "");
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setSuggestedCode("");
+      });
+    return () => controller.abort();
+  }, [departments, formDefaults.businessCode, formDefaults.status, selectedDepartmentId, issueDateValue]);
 
   function updateAction(index: number, patch: Partial<ImmediateActionInput>) {
     setActions((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -200,10 +250,34 @@ export function DeviationForm({
         <h2>Identificación</h2>
         <p className="section-help">Datos que identifican el expediente y su registro inicial.</p>
         <div className="form-grid">
-          <Field label="Codificación" name="businessCode" defaultValue={formDefaults.businessCode} required issues={issues.businessCode} />
+          <label className={`field ${issues.businessCode?.length ? "has-error" : ""}`}>
+            <span>Codificación</span>
+            <input
+              name="businessCode"
+              value={businessCode}
+              onChange={(e) => setBusinessCode(e.target.value)}
+              placeholder={suggestedCode || "Selecciona departamento para ver la sugerencia"}
+              readOnly={Boolean(formDefaults.businessCode) && formDefaults.status !== "DRAFT"}
+              aria-invalid={issues.businessCode?.length ? true : undefined}
+            />
+            <small className="muted-note">
+              {formDefaults.businessCode && formDefaults.status !== "DRAFT"
+                ? "La codificación queda fijada una vez abierta la desviación."
+                : suggestedCode
+                  ? <>Sugerencia correlativa: <button type="button" className="link-button-inline" onClick={() => setBusinessCode(suggestedCode)}>{suggestedCode}</button></>
+                  : "Formato: D/XX-NN/ZZZ/YYYY."}
+            </small>
+            <FieldIssue messages={issues.businessCode} />
+          </label>
           <label className={`field ${issues.departmentId?.length ? "has-error" : ""}`}>
             <span>Departamento *</span>
-            <select name="departmentId" defaultValue={formDefaults.departmentId ?? ""} required aria-invalid={issues.departmentId?.length ? true : undefined}>
+            <select
+              name="departmentId"
+              value={selectedDepartmentId}
+              onChange={(e) => setSelectedDepartmentId(e.target.value)}
+              required
+              aria-invalid={issues.departmentId?.length ? true : undefined}
+            >
               <option value="">Seleccionar…</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.id}>
@@ -213,7 +287,18 @@ export function DeviationForm({
             </select>
             <FieldIssue messages={issues.departmentId} />
           </label>
-          <Field label="Fecha apertura" name="issueDate" type="date" defaultValue={formDefaults.issueDate} required issues={issues.issueDate} />
+          <label className={`field ${issues.issueDate?.length ? "has-error" : ""}`}>
+            <span>Fecha apertura *</span>
+            <input
+              name="issueDate"
+              type="date"
+              value={issueDateValue}
+              onChange={(e) => setIssueDateValue(e.target.value)}
+              required
+              aria-invalid={issues.issueDate?.length ? true : undefined}
+            />
+            <FieldIssue messages={issues.issueDate} />
+          </label>
           <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={formDefaults.eventDateTime} required issues={issues.eventDateTime} />
           <Field label="Detectado por" name="detectedBy" defaultValue={formDefaults.detectedBy} required issues={issues.detectedBy} />
           <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required issues={issues.createdByText} />
