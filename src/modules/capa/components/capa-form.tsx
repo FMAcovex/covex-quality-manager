@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
+import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import type {
   CapaFormDefaults,
   CapaFormState,
@@ -99,6 +100,11 @@ export function CapaForm({
   const [actions, setActions] = useState<CapaPlannedActionInput[]>(
     defaults.plannedActions?.length ? defaults.plannedActions : [{ ...emptyAction }],
   );
+  const [actionType, setActionType] = useState<"CORRECTIVE" | "PREVENTIVE">(
+    (formDefaults.actionType as "CORRECTIVE" | "PREVENTIVE" | undefined) ?? "CORRECTIVE",
+  );
+  const [departmentId, setDepartmentId] = useState(formDefaults.departmentId ?? "");
+  const [openedAt, setOpenedAt] = useState(formDefaults.openedAt ?? "");
   const issues = state.fieldIssues ?? {};
 
   const updateAction = (index: number, patch: Partial<CapaPlannedActionInput>) => {
@@ -135,17 +141,25 @@ export function CapaForm({
           La CAPA debe mantener trazabilidad con el documento que la origina.
         </p>
         <div className="form-grid">
-          <Field label="Codificación AC/AP" name="businessCode" defaultValue={formDefaults.businessCode} required issues={issues.businessCode} />
+          <ControlledBusinessCodeField
+            recordType="CAPA"
+            label="Codificación AC/AP"
+            initialValue={formDefaults.businessCode}
+            mode={mode}
+            yearSource={openedAt}
+            departmentId={departmentId}
+            actionType={actionType}
+          />
           <label className="field">
             <span>Tipo *</span>
-            <select name="actionType" defaultValue={formDefaults.actionType ?? "CORRECTIVE"}>
+            <select name="actionType" value={actionType} onChange={(event) => setActionType(event.target.value as "CORRECTIVE" | "PREVENTIVE")}>
               <option value="CORRECTIVE">Correctiva</option>
               <option value="PREVENTIVE">Preventiva</option>
             </select>
           </label>
           <label className={`field ${issues.departmentId?.length ? "has-error" : ""}`}>
             <span>Departamento responsable *</span>
-            <select name="departmentId" defaultValue={formDefaults.departmentId ?? ""} required aria-invalid={issues.departmentId?.length ? true : undefined}>
+            <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required aria-invalid={issues.departmentId?.length ? true : undefined}>
               <option value="">Seleccionar…</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.id}>
@@ -155,7 +169,11 @@ export function CapaForm({
             </select>
             <FieldIssue messages={issues.departmentId} />
           </label>
-          <Field label="Fecha apertura" name="openedAt" type="date" defaultValue={formDefaults.openedAt} required issues={issues.openedAt} />
+          <label className={`field ${issues.openedAt?.length ? "has-error" : ""}`}>
+            <span>Fecha apertura *</span>
+            <input name="openedAt" type="date" value={openedAt} onChange={(event) => setOpenedAt(event.target.value)} required aria-invalid={issues.openedAt?.length ? true : undefined} />
+            <FieldIssue messages={issues.openedAt} />
+          </label>
           <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required issues={issues.createdByText} />
           {mode === "edit" ? (
             <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText} />
