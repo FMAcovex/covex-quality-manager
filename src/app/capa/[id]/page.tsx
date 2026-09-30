@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addCapaFollowupAction, addCapaRelationAction, unlinkCapaOriginAction } from "@/modules/capa/actions";
+import { addCapaRelationAction, unlinkCapaOriginAction } from "@/modules/capa/actions";
 import {
   capaStatusLabel,
   capaTypeLabel,
@@ -8,27 +8,19 @@ import {
   formatDate,
 } from "@/modules/capa/domain";
 import { getCapaDetail } from "@/modules/capa/queries";
-import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
-import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
-import { CapaFollowupForm } from "@/modules/capa/components/capa-followup-form";
-import {
-  nextCapaFollowupSequence,
-  resolveCapaFollowupVersion,
-} from "@/modules/capa/followup-version-ui";
+import { recordVersionSummary } from "@/lib/qms/versioning";
+import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
-
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
-import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
 const tabs = [
   ["summary", "Resumen"],
-  ["actions", "Acciones"],
-  ["followups", "Seguimientos"],
-  ["effectiveness", "Eficacia"],
+  ["action-followups", "Seguimiento de la acción"],
+  ["state", "Estado y eficacia"],
   ["relations", "Relaciones"],
-  ["versions", "Versiones"],
+  ["versions", "Seguimientos"],
   ["documents", "Documentos"],
   ["history", "Historial"],
 ] as const;
@@ -37,6 +29,10 @@ function originRelationLabel(recordType: string) {
   if (recordType === "DEVIATION") return "Desviación de origen";
   if (recordType === "COMPLAINT") return "Reclamación de origen";
   return "Expediente de origen";
+}
+
+function followupLabel(sequenceNumber: number) {
+  return `Seguimiento ${String(sequenceNumber).padStart(2, "0")}`;
 }
 
 export default async function CapaDetailPage({
@@ -53,8 +49,6 @@ export default async function CapaDetailPage({
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
-  const nextFollowupSequence = nextCapaFollowupSequence(capa.followups);
-
   const origins = capa.qmsRecord.targetRelations
     .filter(
       (item) =>
@@ -63,7 +57,6 @@ export default async function CapaDetailPage({
           item.sourceRecord.recordType === "COMPLAINT"),
     )
     .map((item) => item.sourceRecord);
-  const primaryOrigin = origins.length === 1 ? origins[0] : null;
 
   return (
     <section className="workspace">
@@ -77,7 +70,7 @@ export default async function CapaDetailPage({
               {capaStatusLabel(capa.status)}
             </span>
             <span className="badge neutral">{capa.departmentCodeSnapshot ?? "Sin departamento"}</span>
-            {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
+            {currentVersion ? <span className="badge neutral">{followupLabel(currentVersion.sequenceNumber)}</span> : null}
             {capa.dataQualityStatus !== "COMPLETE" ? (
               <span className="badge warning">
                 {capa.dataQualityStatus === "INCOMPLETE" ? "Dato incompleto" : "Revisar dato"}
@@ -89,19 +82,14 @@ export default async function CapaDetailPage({
           </p>
         </div>
         <div className="record-actions">
-          <Link className="button primary" href={`/capa/${id}/edit`}>Editar</Link>
-          {capa.status !== "DRAFT" ? (
-            <>
-              <Link className="button" href={`/capa/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
-              <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a>
-            </>
-          ) : null}
+          <Link className="button primary" href={`/capa/${id}/edit`}>Editar / nuevo seguimiento</Link>
+          {capa.status !== "DRAFT" ? <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a> : null}
         </div>
       </div>
 
       {capa.status === "DRAFT" ? (
         <div className="analytics-note">
-          <strong>Borrador:</strong> este expediente todavía no es una CAPA operativa. Completa los campos obligatorios y cambia el estado a Abierta para iniciar su ciclo de seguimiento.
+          <strong>Borrador:</strong> este expediente todavía no es una CAPA operativa. Completa los campos obligatorios y pulsa Guardar CAPA para iniciar su ciclo operativo.
         </div>
       ) : null}
 
@@ -117,11 +105,7 @@ export default async function CapaDetailPage({
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (
-          <Link
-            key={key}
-            className={activeTab === key ? "active" : ""}
-            href={`/capa/${id}?tab=${key}`}
-          >
+          <Link key={key} className={activeTab === key ? "active" : ""} href={`/capa/${id}?tab=${key}`}>
             {label}
           </Link>
         ))}
@@ -132,34 +116,17 @@ export default async function CapaDetailPage({
           <div className="card">
             <h2>Resumen del expediente</h2>
             <dl className="info-grid">
-              <div className="info-item"><dt>Tipo</dt><dd>{capaTypeLabel(capa.actionType)}</dd></div>
+              <div className="info-item"><dt>Tipo CAPA</dt><dd>{capaTypeLabel(capa.actionType)}</dd></div>
               <div className="info-item"><dt>Departamento</dt><dd>{capa.departmentCodeSnapshot ?? "—"} · {capa.departmentNameSnapshot ?? ""}</dd></div>
-              <div className="info-item"><dt>Origen</dt><dd>{capa.originType ?? "—"}</dd></div>
-              <div className="info-item">
-                <dt>Código origen</dt>
-                <dd>
-                  {primaryOrigin ? (
-                    <Link href={qmsRecordHref(primaryOrigin.recordType, primaryOrigin.id)}>
-                      {capa.originCode ?? qmsRecordDisplayCode(primaryOrigin, qmsRecordTypeLabel(primaryOrigin.recordType))}{!primaryOrigin.isActive ? " · Anulado" : ""}
-                    </Link>
-                  ) : (
-                    capa.originCode ?? "—"
-                  )}
-                </dd>
-              </div>
-              <div className="info-item full"><dt>Aplica a</dt><dd>{capa.applicableTo ?? "—"}</dd></div>
+              <div className="info-item full"><dt>Materia / material / producto / sistema / equipo</dt><dd>{capa.applicableTo ?? "—"}</dd></div>
               <div className="info-item full"><dt>Descripción breve del defecto</dt><dd className="prose-value">{capa.defectDescription ?? "—"}</dd></div>
-              <div className="info-item wide"><dt>Causa raíz</dt><dd className="prose-value">{capa.rootCause ?? "—"}</dd></div>
-              <div className="info-item wide"><dt>Impacto</dt><dd className="prose-value">{capa.impactAssessment ?? "—"}</dd></div>
-              <div className="info-item"><dt>Estado</dt><dd>{capaStatusLabel(capa.status)}</dd></div>
-              <div className="info-item"><dt>Cierre operativo</dt><dd>{formatDate(capa.operationalClosedAt)}</dd></div>
-              <div className="info-item"><dt>Eficacia</dt><dd>{effectivenessLabel(capa.effectivenessStatus)}</dd></div>
-              <div className="info-item"><dt>Cierre efectivo</dt><dd>{formatDate(capa.effectiveClosedAt)}</dd></div>
+              <div className="info-item full"><dt>Causa raíz</dt><dd className="prose-value">{capa.rootCause ?? "—"}</dd></div>
               <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value">{capa.internalObservations ?? "—"}</dd></div>
             </dl>
           </div>
+
           <div className="card">
-            <h2>Expediente de origen</h2>
+            <h2>Expediente / origen</h2>
             {origins.length ? (
               <div className="relation-list">
                 {origins.map((record) => (
@@ -173,161 +140,86 @@ export default async function CapaDetailPage({
                 ))}
               </div>
             ) : (
-              <div className="empty-panel">No hay una Desviación o Reclamación de origen vinculada.</div>
+              <div className="empty-panel">
+                {capa.status === "DRAFT"
+                  ? "Los orígenes seleccionados en borrador se activarán al abrir la CAPA."
+                  : "No hay una Desviación o Reclamación de origen vinculada."}
+              </div>
             )}
+          </div>
+
+          <div className="card">
+            <h2>Acciones propuestas</h2>
+            {capa.plannedActions.length ? (
+              <div className="table-scroll">
+                <table className="records-table compact-table">
+                  <thead>
+                    <tr><th>#</th><th>Descripción</th><th>Responsable</th><th>Fecha prevista</th><th>Impacto</th></tr>
+                  </thead>
+                  <tbody>
+                    {capa.plannedActions.map((item, index) => (
+                      <tr key={item.id}>
+                        <td>{String(index + 1).padStart(2, "0")}</td>
+                        <td className="table-cell-wrap">{item.description}</td>
+                        <td>{item.responsible ?? "—"}</td>
+                        <td>{formatDate(item.plannedExecutionDate)}</td>
+                        <td className="table-cell-wrap">{item.impact ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <div className="empty-panel">No hay acciones propuestas registradas.</div>}
           </div>
         </>
       ) : null}
 
-      {activeTab === "actions" ? (
+      {activeTab === "action-followups" ? (
         <div className="card">
-          <h2>Acciones propuestas</h2>
-          <div className="table-scroll">
-            <table className="records-table compact-table">
-              <thead>
-                <tr><th>#</th><th>Descripción</th><th>Responsable</th><th>Fecha prevista</th><th>Impacto</th></tr>
-              </thead>
-              <tbody>
-                {capa.plannedActions.map((item, index) => (
-                  <tr key={item.id}>
-                    <td>{index + 1}</td>
-                    <td className="table-cell-wrap">{item.description}</td>
-                    <td>{item.responsible ?? "—"}</td>
-                    <td>{formatDate(item.plannedExecutionDate)}</td>
-                    <td className="table-cell-wrap">{item.impact ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="section-title-row">
+            <div>
+              <h2>Seguimiento de la acción</h2>
+              <p className="muted-note">Contenido operativo de la CAPA. Estas filas no son Seguimientos 00/01/02 del expediente.</p>
+            </div>
           </div>
+          {capa.actionFollowups.length ? (
+            <div className="table-scroll">
+              <table className="records-table compact-table">
+                <thead><tr><th>#</th><th>Fecha</th><th>Descripción</th></tr></thead>
+                <tbody>
+                  {capa.actionFollowups.map((item, index) => (
+                    <tr key={item.id}>
+                      <td>{String(index + 1).padStart(2, "0")}</td>
+                      <td>{formatDate(item.followupDate)}</td>
+                      <td className="table-cell-wrap">{item.description ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <div className="empty-panel">No hay seguimientos de acción registrados.</div>}
+          {capa.actionFollowupObservations ? (
+            <div className="info-item full" style={{ marginTop: 16 }}>
+              <dt>Observaciones</dt>
+              <dd className="prose-value">{capa.actionFollowupObservations}</dd>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
-      {activeTab === "followups" ? (
-        capa.status === "DRAFT" ? (
-          <div className="empty-panel">Los seguimientos estarán disponibles cuando la CAPA pase a estado Abierta.</div>
-        ) : <>
-          <div className="card">
-            <div className="section-title-row">
-              <div>
-                <h2>Histórico de seguimientos</h2>
-                <p className="muted-note">
-                  V00 es el informe inicial. Cada seguimiento conserva el estado completo de la CAPA en V01, V02, V03…
-                </p>
-              </div>
-              <span className="badge neutral">
-                Actual {currentVersion ? versionLabel(currentVersion.sequenceNumber) : "V00"}
-              </span>
-            </div>
-            {capa.followups.length ? (
-              <div className="timeline">
-                {capa.followups.map((item) => {
-                  const version = resolveCapaFollowupVersion(
-                    capa.qmsRecord.versions,
-                    item,
-                  );
-                  const summary = version
-                    ? recordVersionSummary("CAPA", version.snapshot)
-                    : null;
-                  const sequence = version?.sequenceNumber ?? item.sequenceNumber;
-
-                  return (
-                    <article className="timeline-item" key={item.id}>
-                      <div className="timeline-marker">
-                        {String(item.sequenceNumber).padStart(2, "0")}
-                      </div>
-                      <div>
-                        <header>
-                          <strong>
-                            Seguimiento {String(item.sequenceNumber).padStart(2, "0")}
-                            {version ? ` · ${versionLabel(sequence)}` : ""}
-                          </strong>
-                          <span>{formatDate(item.followupDate)} · {item.completedByText}</span>
-                          {summary ? (
-                            <>
-                              <span className={`badge ${summary.status === "OPEN" ? "open" : summary.status === "CLOSED" ? "closed" : "neutral"}`}>
-                                {capaStatusLabel(String(summary.status ?? "OPEN"))}
-                              </span>
-                              <span className="badge neutral">
-                                Eficacia {effectivenessLabel(String(summary.effectivenessStatus ?? "PENDING"))}
-                              </span>
-                            </>
-                          ) : null}
-                          {version ? (
-                            <span className="badge neutral">
-                              {version.frozenAt ? "Histórica" : "Vigente"}
-                            </span>
-                          ) : null}
-                        </header>
-                        {item.reason ? <p><strong>Motivo:</strong> {item.reason}</p> : null}
-                        <p><strong>Actuación / resultado:</strong> {item.description}</p>
-                        {item.evidenceReference ? (
-                          <p><strong>Evidencia de ejecución:</strong> {item.evidenceReference}</p>
-                        ) : null}
-                        {item.observations ? (
-                          <p><strong>Observaciones:</strong> {item.observations}</p>
-                        ) : null}
-                        <p className="muted-note">
-                          Próximo seguimiento: {formatDate(item.nextFollowupDate)}
-                          {summary ? ` · Cierre operativo: ${formatDate(summary.closedAt)} · Cierre efectivo: ${formatDate(summary.effectiveClosedAt)}` : ""}
-                        </p>
-                        {version ? (
-                          <div className="document-actions">
-                            <a
-                              className="button small"
-                              href={`/api/capa/${id}/annex-iii?version=${sequence}`}
-                            >
-                              Descargar Anexo III {versionLabel(sequence)}
-                            </a>
-                          </div>
-                        ) : null}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="empty-panel">
-                Todavía no hay seguimientos. El informe inicial corresponde a V00.
-              </div>
-            )}
-          </div>
-
-          <div className="card" id="new-followup">
-            <h2>Añadir seguimiento</h2>
-            <CapaFollowupForm
-              action={addCapaFollowupAction.bind(null, id)}
-              defaultActor={capa.createdByText ?? ""}
-              nextSequenceNumber={nextFollowupSequence}
-              defaults={{
-                status: capa.status,
-                operationalClosedAt: capa.operationalClosedAt?.toISOString().slice(0, 10) ?? "",
-                cancellationReason: capa.cancellationReason ?? "",
-                conclusion: capa.conclusion ?? "",
-                effectivenessStatus: capa.effectivenessStatus,
-                effectivenessCriteria: capa.effectivenessCriteria ?? "",
-                effectivenessAssessment: capa.effectivenessAssessment ?? "",
-                effectivenessEvidence: capa.effectivenessEvidence ?? "",
-                effectiveClosedAt: capa.effectiveClosedAt?.toISOString().slice(0, 10) ?? "",
-              }}
-            />
-          </div>
-        </>
-      ) : null}
-
-      {activeTab === "effectiveness" ? (
+      {activeTab === "state" ? (
         <div className="card">
-          <h2>Eficacia y cierre</h2>
+          <h2>Estado y eficacia</h2>
           <dl className="info-grid">
-            <div className="info-item"><dt>Estado eficacia</dt><dd>{effectivenessLabel(capa.effectivenessStatus)}</dd></div>
-            <div className="info-item"><dt>Fecha cierre operativo</dt><dd>{formatDate(capa.operationalClosedAt)}</dd></div>
-            <div className="info-item"><dt>Fecha verificación final</dt><dd>{formatDate(capa.effectiveClosedAt)}</dd></div>
-            <div className="info-item full"><dt>Criterio de eficacia</dt><dd className="prose-value">{capa.effectivenessCriteria ?? "—"}</dd></div>
-            <div className="info-item full"><dt>Valoración</dt><dd className="prose-value">{capa.effectivenessAssessment ?? "—"}</dd></div>
-            <div className="info-item full"><dt>Evidencia</dt><dd className="prose-value">{capa.effectivenessEvidence ?? "—"}</dd></div>
+            <div className="info-item"><dt>Estado CAPA</dt><dd>{capaStatusLabel(capa.status)}</dd></div>
+            <div className="info-item"><dt>Próximo seguimiento</dt><dd>{formatDate(capa.nextFollowupDate)}</dd></div>
+            <div className="info-item"><dt>Fecha de cierre y ejecución</dt><dd>{formatDate(capa.operationalClosedAt)}</dd></div>
+            <div className="info-item"><dt>Estado de eficacia</dt><dd>{effectivenessLabel(capa.effectivenessStatus)}</dd></div>
+            <div className="info-item"><dt>Fecha de verificación final</dt><dd>{formatDate(capa.effectiveClosedAt)}</dd></div>
             <div className="info-item full"><dt>Conclusión / cierre</dt><dd className="prose-value">{capa.conclusion ?? "—"}</dd></div>
+            <div className="info-item full"><dt>Evaluación de la eficacia</dt><dd className="prose-value">{capa.effectivenessAssessment ?? "—"}</dd></div>
             {capa.status === "CANCELLED" ? (
-              <div className="info-item full"><dt>Motivo cancelación</dt><dd className="prose-value">{capa.cancellationReason ?? "—"}</dd></div>
+              <div className="info-item full"><dt>Motivo de cancelación</dt><dd className="prose-value">{capa.cancellationReason ?? "—"}</dd></div>
             ) : null}
           </dl>
         </div>
@@ -335,7 +227,7 @@ export default async function CapaDetailPage({
 
       {activeTab === "relations" ? (
         <div className="card">
-          <h2>Origen de la CAPA</h2>
+          <h2>Orígenes de la CAPA</h2>
           {origins.length ? (
             <div className="relation-list">
               {origins.map((record) => (
@@ -344,7 +236,7 @@ export default async function CapaDetailPage({
                   <Link href={qmsRecordHref(record.recordType, record.id)}>
                     <strong>{qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))}{!record.isActive ? " · Anulado" : ""}</strong>
                   </Link>
-                  <small>Vista inversa de la relación QMS.</small>
+                  <small>Relación QMS canónica.</small>
                   <form action={unlinkCapaOriginAction.bind(null, id, record.id)}>
                     <input type="hidden" name="actor" value={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
                     <button className="button danger small" type="submit">Desvincular</button>
@@ -352,17 +244,15 @@ export default async function CapaDetailPage({
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="empty-panel">No hay una Desviación o Reclamación de origen vinculada.</div>
-          )}
+          ) : <div className="empty-panel">No hay orígenes operativos vinculados.</div>}
           {capa.status === "DRAFT" ? (
-            <div className="empty-panel">Las relaciones operativas se habilitan al abrir la CAPA.</div>
+            <div className="empty-panel">Las relaciones operativas se activan al abrir la CAPA.</div>
           ) : (
             <OperationalRelationForm
               action={addCapaRelationAction.bind(null, id)}
-              title="Vincular expediente de origen"
+              title="Vincular otro expediente de origen"
               codeLabel="Codificación de origen"
-              codePlaceholder="D/GC-00/001/2026"
+              codePlaceholder="Buscar expediente"
               buttonLabel="Vincular origen"
               defaultActor={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
               targetOptions={[
@@ -380,48 +270,35 @@ export default async function CapaDetailPage({
         <div className="card">
           <div className="section-title-row">
             <div>
-              <h2>Versiones y seguimientos</h2>
+              <h2>Seguimientos del expediente</h2>
               <p className="muted-note">
-                V00 corresponde al informe inicial. Cada seguimiento posterior genera V01, V02, V03… y conserva el estado completo de ese momento.
+                Seguimiento 00 corresponde al registro inicial. Guardar CAPA actualiza el seguimiento vigente; Guardar como nuevo seguimiento crea 01, 02, 03…
               </p>
             </div>
-            {currentVersion ? <span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span> : null}
+            {currentVersion ? <span className="badge neutral">Actual {followupLabel(currentVersion.sequenceNumber)}</span> : null}
           </div>
           {capa.qmsRecord.versions.length ? (
             <div className="timeline">
               {capa.qmsRecord.versions.map((item) => {
                 const summary = recordVersionSummary("CAPA", item.snapshot);
-                const kind =
-                  item.kind === "FOLLOWUP"
-                    ? `Seguimiento ${String(item.sequenceNumber).padStart(2, "0")}`
-                    : item.kind === "HISTORICAL_STATE"
-                      ? "Baseline histórico"
-                      : "Informe inicial";
                 return (
                   <article className="timeline-item" key={item.id}>
                     <div className="timeline-marker">{String(item.sequenceNumber).padStart(2, "0")}</div>
                     <div>
                       <header>
-                        <strong>{versionLabel(item.sequenceNumber)} · {kind}</strong>
+                        <strong>{followupLabel(item.sequenceNumber)}</strong>
                         <span className={`badge ${summary.status === "OPEN" ? "open" : summary.status === "CLOSED" ? "closed" : "neutral"}`}>
                           {capaStatusLabel(String(summary.status ?? "OPEN"))}
                         </span>
                         <span className="badge neutral">Eficacia {effectivenessLabel(String(summary.effectivenessStatus ?? "PENDING"))}</span>
-                        {item.frozenAt ? <span className="badge neutral">Histórica</span> : <span className="badge neutral">Vigente</span>}
+                        {item.frozenAt ? <span className="badge neutral">Histórico</span> : <span className="badge neutral">Vigente</span>}
                       </header>
-                      <p>
-                        Cierre operativo: {formatDate(summary.closedAt)} · Próximo seguimiento: {formatDate(summary.nextFollowupDate)}
-                      </p>
-                      <p>
-                        Cierre efectivo: {formatDate(summary.effectiveClosedAt)}
-                        {item.reason ? ` · ${item.reason}` : ""}
-                      </p>
-                      <small className="muted-note">
-                        Registrada {formatDate(item.createdAt)} · {item.createdByText ?? "Sistema"}
-                      </small>
+                      <p>Próximo seguimiento: {formatDate(summary.nextFollowupDate)} · Cierre y ejecución: {formatDate(summary.closedAt)}</p>
+                      <p>Verificación final: {formatDate(summary.effectiveClosedAt)}{item.reason ? ` · Motivo: ${item.reason}` : ""}</p>
+                      <small className="muted-note">Registrado {formatDate(item.createdAt)} · {item.createdByText ?? "Sistema"}</small>
                       <div className="document-actions">
                         <a className="button small" href={`/api/capa/${id}/annex-iii?version=${item.sequenceNumber}`}>
-                          Descargar Anexo III {versionLabel(item.sequenceNumber)}
+                          Descargar Anexo III · {followupLabel(item.sequenceNumber)}
                         </a>
                       </div>
                     </div>
@@ -429,11 +306,7 @@ export default async function CapaDetailPage({
                 );
               })}
             </div>
-          ) : (
-            <div className="empty-panel">
-              Este expediente todavía no tiene snapshot persistido. Los históricos anteriores al Hito 6.1 no se reconstruyen artificialmente.
-            </div>
-          )}
+          ) : <div className="empty-panel">Este expediente todavía no tiene snapshot persistido.</div>}
         </div>
       ) : null}
 
@@ -479,7 +352,7 @@ export default async function CapaDetailPage({
       {activeTab === "history" ? (
         <div className="card">
           <h2>Historial interno de modificaciones</h2>
-          <p className="muted-note">Historial operativo de V1. No constituye un audit trail GMP validado.</p>
+          <p className="muted-note">Historial administrativo de cambios. Los Seguimientos 00/01/02 del expediente se consultan en su pestaña propia.</p>
           {capa.qmsRecord.history.length ? (
             <div className="timeline">
               {capa.qmsRecord.history.map((item) => (
@@ -493,9 +366,7 @@ export default async function CapaDetailPage({
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="empty-panel">Sin modificaciones registradas.</div>
-          )}
+          ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
         </div>
       ) : null}
     </section>
