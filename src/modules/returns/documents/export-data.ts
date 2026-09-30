@@ -15,7 +15,8 @@ export async function getReturnExportRows(filters:ReturnExportFilters){
  if(filters.year&&/^\d{4}$/.test(filters.year))and.push({qmsRecord:{year:Number(filters.year)}});
  if(filters.department)and.push({departmentId:filters.department});
  if(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"].includes(filters.type??""))and.push({returnType:filters.type as "COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER"});
- if(filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
+ if(filters.status==="DRAFT"||filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
+ else and.push({status:{not:"DRAFT"}});
  if(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??""))and.push({decision:filters.decision as "PENDING"|"ACCEPTED"|"REJECTED"});
  return prisma.returnRecord.findMany({where:and.length?{AND:and}:{},include:{qmsRecord:true,products:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}]}},orderBy:[{communicationDate:"asc"},{createdAt:"asc"}]});
 }
