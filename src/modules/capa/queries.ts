@@ -1,16 +1,17 @@
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { validValues, validYears } from "@/lib/qms/list-filters";
 
 export type CapaListFilters = {
   q?: string;
   administrative?: string;
-  year?: string;
-  department?: string;
-  type?: string;
-  status?: string;
-  effectiveness?: string;
-  origin?: string;
+  year?: string[];
+  department?: string[];
+  type?: string[];
+  status?: string[];
+  effectiveness?: string[];
+  origin?: string[];
   followup?: string;
 };
 
@@ -37,22 +38,16 @@ export async function getCapaList(filters: CapaListFilters) {
       ],
     });
   }
-  if (filters.year && /^\d{4}$/.test(filters.year)) {
-    and.push({ qmsRecord: { year: Number(filters.year) } });
-  }
-  if (filters.department) and.push({ departmentId: filters.department });
-  if (filters.type === "CORRECTIVE" || filters.type === "PREVENTIVE") {
-    and.push({ actionType: filters.type });
-  }
-  if (["DRAFT", "OPEN", "CLOSED", "CANCELLED"].includes(filters.status ?? "")) {
-    and.push({ status: filters.status as "DRAFT" | "OPEN" | "CLOSED" | "CANCELLED" });
-  }
-  if (["CONFORMING", "NONCONFORMING", "PENDING", "NA"].includes(filters.effectiveness ?? "")) {
-    and.push({
-      effectivenessStatus: filters.effectiveness as "CONFORMING" | "NONCONFORMING" | "PENDING" | "NA",
-    });
-  }
-  if (filters.origin) and.push({ originType: filters.origin });
+  const yearsFilter = validYears(filters.year);
+  if (yearsFilter.length) and.push({ qmsRecord: { year: { in: yearsFilter } } });
+  if (filters.department?.length) and.push({ departmentId: { in: filters.department } });
+  const types = validValues(filters.type, ["CORRECTIVE", "PREVENTIVE"] as const);
+  if (types.length) and.push({ actionType: { in: types as ("CORRECTIVE" | "PREVENTIVE")[] } });
+  const statuses = validValues(filters.status, ["DRAFT", "OPEN", "CLOSED", "CANCELLED"] as const);
+  if (statuses.length) and.push({ status: { in: statuses as ("DRAFT" | "OPEN" | "CLOSED" | "CANCELLED")[] } });
+  const effectiveness = validValues(filters.effectiveness, ["CONFORMING", "NONCONFORMING", "PENDING", "NA"] as const);
+  if (effectiveness.length) and.push({ effectivenessStatus: { in: effectiveness as ("CONFORMING" | "NONCONFORMING" | "PENDING" | "NA")[] } });
+  if (filters.origin?.length) and.push({ originType: { in: filters.origin } });
 
   const where: Prisma.CapaWhereInput = and.length ? { AND: and } : {};
   const administrativeWhere: Prisma.CapaWhereInput =
