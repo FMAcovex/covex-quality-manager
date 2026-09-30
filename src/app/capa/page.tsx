@@ -152,6 +152,7 @@ export default async function CapaPage({
                       <input
                         type="checkbox"
                         data-reminder-record="true"
+                        disabled={row.status === "DRAFT"}
                         data-reminder-id={row.qmsRecord.id}
                         data-reminder-code={qmsRecordDisplayCode(row.qmsRecord)}
                         data-reminder-summary={actionDescription}
