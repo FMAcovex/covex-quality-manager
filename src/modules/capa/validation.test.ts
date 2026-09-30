@@ -14,11 +14,17 @@ function base() {
     businessCode: "D/GC-00/001/2026",
     year: 2026,
   }]));
+  f.set("applicableTo", "Sistema CAPA");
   f.set("defectDescription", "Defecto documentado");
   f.set("rootCause", "Causa raíz sustentada");
   f.set("status", "OPEN");
   f.set("saveIntent", "UPDATE_CURRENT");
   f.set("effectivenessStatus", "PENDING");
+  f.set("effectivenessAssessment", "Pendiente de verificar en el próximo seguimiento");
+  f.set("operationalStatusDescription", "Acción abierta y en curso");
+  f.set("conclusion", "Mantener abierta hasta completar las acciones previstas");
+  f.set("nextFollowupDate", "2026-10-30");
+  f.set("actionFollowupObservations", "Seguimiento documentado");
   f.set("plannedActionsJson", JSON.stringify([{
     description: "Acción concreta",
     responsible: "QA",
@@ -54,17 +60,39 @@ describe("parseCapaForm R1", () => {
     f.set("originsJson", "[]");
     const parsed = parseCapaForm(f);
     expect(parsed.values.status).toBe("OPEN");
-    expect(parsed.fieldIssues.departmentId).toBeDefined();
-    expect(parsed.fieldIssues.openedAt).toBeDefined();
-    expect(parsed.fieldIssues.createdByText).toBeDefined();
-    expect(parsed.fieldIssues.originsJson).toBeDefined();
-    expect(parsed.fieldIssues.defectDescription).toBeDefined();
-    expect(parsed.fieldIssues.rootCause).toBeDefined();
-    expect(parsed.fieldIssues.plannedActionsJson).toBeDefined();
+    for (const field of [
+      "departmentId",
+      "openedAt",
+      "createdByText",
+      "originsJson",
+      "applicableTo",
+      "defectDescription",
+      "rootCause",
+      "plannedActionsJson",
+      "actionFollowupObservations",
+      "effectivenessAssessment",
+      "operationalStatusDescription",
+      "conclusion",
+      "nextFollowupDate",
+    ]) {
+      expect(parsed.fieldIssues[field]).toBeDefined();
+    }
   });
 
-  it("allows an open CAPA with a real origin and planned action", () => {
+  it("allows an open CAPA when sections 1-7 are complete", () => {
     expect(parseCapaForm(base()).errors).toEqual([]);
+  });
+
+  it("requires materia material producto sistema equipo", () => {
+    const f = base();
+    f.set("applicableTo", "");
+    expect(parseCapaForm(f).fieldIssues.applicableTo).toBeDefined();
+  });
+
+  it("requires a fresh next follow-up date outside draft", () => {
+    const f = base();
+    f.set("nextFollowupDate", "");
+    expect(parseCapaForm(f).fieldIssues.nextFollowupDate).toBeDefined();
   });
 
   it("allows business code to be empty before server-side assignment", () => {
@@ -73,55 +101,52 @@ describe("parseCapaForm R1", () => {
     expect(parseCapaForm(f).values.businessCode).toBeNull();
   });
 
-  it("requires closure date and conclusion when closed", () => {
-    const f = base();
-    f.set("status", "CLOSED");
-    const errors = parseCapaForm(f).errors;
-    expect(errors).toContain("Una CAPA cerrada debe tener fecha de cierre y ejecución.");
-    expect(errors).toContain("Una CAPA cerrada debe tener conclusión de cierre.");
+  it("requires closure date only when operational status is closed", () => {
+    const open = base();
+    expect(parseCapaForm(open).fieldIssues.operationalClosedAt).toBeUndefined();
+
+    const closed = base();
+    closed.set("status", "CLOSED");
+    expect(parseCapaForm(closed).fieldIssues.operationalClosedAt).toBeDefined();
+
+    closed.set("operationalClosedAt", "2026-10-30");
+    expect(parseCapaForm(closed).fieldIssues.operationalClosedAt).toBeUndefined();
   });
 
-  it("requires reason when cancelled", () => {
-    const f = base();
-    f.set("status", "CANCELLED");
-    expect(parseCapaForm(f).errors).toContain("Una CAPA cancelada debe incluir el motivo de cancelación.");
+  it("requires final verification date only for conforming efficacy", () => {
+    const pending = base();
+    expect(parseCapaForm(pending).fieldIssues.effectiveClosedAt).toBeUndefined();
+
+    const nonconforming = base();
+    nonconforming.set("effectivenessStatus", "NONCONFORMING");
+    expect(parseCapaForm(nonconforming).fieldIssues.effectiveClosedAt).toBeUndefined();
+
+    const conforming = base();
+    conforming.set("effectivenessStatus", "CONFORMING");
+    expect(parseCapaForm(conforming).fieldIssues.effectiveClosedAt).toBeDefined();
+
+    conforming.set("effectiveClosedAt", "2026-11-10");
+    expect(parseCapaForm(conforming).fieldIssues.effectiveClosedAt).toBeUndefined();
   });
 
-  it("allows historical incomplete closed records to remain editable", () => {
-    const f = base();
-    f.set("status", "CLOSED");
-    f.set("rootCause", "");
-    f.set("operationalClosedAt", "2025-01-10");
-    const parsed = parseCapaForm(f, { allowHistoricalIncomplete: true });
-    expect(parsed.errors).not.toContain("La causa raíz es obligatoria.");
-    expect(parsed.errors).not.toContain("Una CAPA cerrada debe tener conclusión de cierre.");
-  });
+  it("validates action follow-up date and description as a pair", () => {
+    const invalidDate = base();
+    invalidDate.set("actionFollowupsJson", JSON.stringify([
+      { followupDate: "2026-99-40", description: "Revisión" },
+    ]));
+    expect(parseCapaForm(invalidDate).fieldIssues.actionFollowupsJson).toBeDefined();
 
-  it("requires final verification date when efficacy leaves pending", () => {
-    const f = base();
-    f.set("status", "CLOSED");
-    f.set("operationalClosedAt", "2026-10-10");
-    f.set("conclusion", "Ejecutada");
-    f.set("effectivenessStatus", "CONFORMING");
-    f.set("effectivenessAssessment", "Conforme");
-    expect(parseCapaForm(f).errors).toContain("La fecha de verificación final es obligatoria cuando la eficacia deja de estar Pendiente.");
-  });
+    const missingDescription = base();
+    missingDescription.set("actionFollowupsJson", JSON.stringify([
+      { followupDate: "2026-10-20", description: "" },
+    ]));
+    expect(parseCapaForm(missingDescription).fieldIssues.actionFollowupsJson).toBeDefined();
 
-  it("requires assessment for conforming final verification", () => {
-    const f = base();
-    f.set("status", "CLOSED");
-    f.set("operationalClosedAt", "2026-10-10");
-    f.set("conclusion", "Ejecutada");
-    f.set("effectivenessStatus", "CONFORMING");
-    f.set("effectiveClosedAt", "2026-11-10");
-    const errors = parseCapaForm(f).errors;
-    expect(errors).toContain("La eficacia Conforme requiere una evaluación documentada.");
-  });
-
-  it("validates optional action-followup dates", () => {
-    const f = base();
-    f.set("actionFollowupsJson", JSON.stringify([{ followupDate: "2026-99-40", description: "Revisión" }]));
-    expect(parseCapaForm(f).fieldIssues.actionFollowupsJson).toBeDefined();
+    const missingDate = base();
+    missingDate.set("actionFollowupsJson", JSON.stringify([
+      { followupDate: "", description: "Revisión" },
+    ]));
+    expect(parseCapaForm(missingDate).fieldIssues.actionFollowupsJson).toBeDefined();
   });
 
   it("requires a reason only when a new functional follow-up is created", () => {
