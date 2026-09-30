@@ -62,7 +62,7 @@ export function parseComplaintForm(fd:FormData){
   const derivedActions=parseDerivedActions(text(fd,"derivedActionsJson"));
   const resolutionActions=fd.getAll("resolutionActions").map(String).map(v=>enumValue(resolutionSchema,v)).filter((v):v is z.infer<typeof resolutionSchema>=>Boolean(v));
   const errors:string[]=[];
-  if(!businessCode)errors.push("La codificación es obligatoria.");
+
   if(!departmentId)errors.push("El departamento es obligatorio.");
   if(!openedAt)errors.push("La fecha de apertura es obligatoria.");
   if(!createdByText)errors.push("Debe indicarse quién cumplimenta el expediente.");
