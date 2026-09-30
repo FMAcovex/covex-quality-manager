@@ -321,3 +321,15 @@ Reglas:
 - las consultas de detalle muestran únicamente relaciones activas;
 - revincular los mismos expedientes reactiva la fila histórica existente mediante `upsert`, sin crear duplicados;
 - la matriz de relaciones no se amplía: Control de Cambios continúa fuera de las relaciones operativas de V1.
+
+
+## D-048 — Buscador dinámico al vincular expedientes
+Los formularios de relaciones operativas incorporan búsqueda dinámica por codificación.
+
+Reglas:
+- solo se sugieren expedientes activos;
+- solo se sugieren tipos compatibles con la matriz vigente de relaciones QMS;
+- el expediente actual y los ya vinculados activamente quedan excluidos;
+- al cambiar el tipo de expediente relacionado, las sugerencias se recalculan;
+- seleccionar una sugerencia rellena la codificación; la creación de la relación continúa validándose en servidor;
+- el buscador no amplía la matriz de relaciones ni sustituye las validaciones de D-018/D-047.

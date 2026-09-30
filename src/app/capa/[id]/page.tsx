@@ -354,6 +354,8 @@ export default async function CapaDetailPage({
               { value: "DEVIATION", label: "Desviación" },
               { value: "COMPLAINT", label: "Reclamación" },
             ]}
+            currentRecordId={capa.qmsRecord.id}
+            currentRecordType="CAPA"
           />
         </div>
       ) : null}

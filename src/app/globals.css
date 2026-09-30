@@ -1553,3 +1553,18 @@ button[disabled] {
   background: var(--surface-soft);
   font-weight: 600;
 }
+
+
+/* D5.2b — buscador dinámico al vincular expedientes */
+.relation-code-field {
+  min-width: 0;
+}
+.relation-autocomplete {
+  position: relative;
+}
+.relation-autocomplete > input {
+  width: 100%;
+}
+.relation-suggestions {
+  min-width: min(560px, 92vw);
+}

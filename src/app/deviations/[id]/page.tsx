@@ -428,6 +428,8 @@ export default async function DeviationDetailPage({
             buttonLabel="Vincular CAPA"
             defaultActor={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
             targetOptions={[{ value: "CAPA", label: "CAPA" }]}
+            currentRecordId={deviation.qmsRecord.id}
+            currentRecordType="DEVIATION"
           />
         </div>
       ) : null}

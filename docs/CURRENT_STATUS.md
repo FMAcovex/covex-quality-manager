@@ -683,3 +683,16 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - revincular reactiva la misma fila `QmsRelation` y no crea duplicados;
 - se conserva la dirección canónica Desviación → CAPA, Reclamación → CAPA y Reclamación → Devolución;
 - se añaden pruebas unitarias del ciclo vincular → desvincular → revincular desde extremos inversos.
+
+
+## D5.2b — Buscador dinámico al vincular expedientes
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
+
+- autocompletado reutilizable en el formulario común de relaciones;
+- aplicado a Desviaciones, CAPA, Reclamaciones y Devoluciones;
+- consulta dinámica por código mientras se escribe;
+- muestra únicamente expedientes activos del tipo compatible seleccionado;
+- excluye el expediente actual y relaciones ya activas;
+- soporta navegación por teclado y selección con ratón;
+- cambiar el tipo relacionado actualiza las sugerencias;
+- el backend sigue siendo la autoridad final para validar y persistir la relación.
