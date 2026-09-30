@@ -352,3 +352,16 @@ Reglas:
   - Reclamación de cliente: `R/C/ZZZ/YYYY`;
   - Reclamación a proveedor: `R/P/ZZZ/YYYY`;
   - Devolución: `DEV/<área-almacén>/ZZZ/YYYY`.
+
+
+## D-050 — Estado Borrador transversal · CAPA
+CAPA incorpora el estado `DRAFT` como estado administrativo previo al ciclo operativo.
+
+Reglas:
+- una CAPA nueva se inicia en Borrador;
+- el Borrador puede guardarse con campos incompletos y sin codificación;
+- al pasar a Abierta se aplican todas las validaciones obligatorias y se asigna/fija la codificación controlada;
+- una CAPA Abierta, Cerrada o Cancelada no puede volver a Borrador;
+- Borrador no admite seguimientos, relaciones operativas nuevas ni generación de Anexo III;
+- Borrador queda excluido de KPI, vencimientos y exportaciones oficiales;
+- si el borrador nace desde una propuesta de Desviación/Reclamación, el origen se conserva como pendiente y solo se formaliza al abrir la CAPA.
