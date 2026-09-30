@@ -306,3 +306,16 @@ Reglas:
 - las referencias históricas de propuestas CAPA ya registradas no se borran por esta operación;
 - una nueva vinculación entre los mismos expedientes reactiva la relación existente en lugar de crear un duplicado.
 
+## D-047 — Flujo Borrador transversal
+Los módulos Desviaciones, CAPA, Controles de Cambios, Reclamaciones y Devoluciones comparten el estado operativo `DRAFT` previo a la apertura.
+
+Reglas comunes:
+- un borrador puede guardarse con campos obligatorios pendientes;
+- los obligatorios se exigen al intentar pasar de Borrador a Abierto;
+- una vez abierto, cerrado o cancelado el expediente no vuelve a Borrador;
+- los borradores se muestran y filtran de forma diferenciada, pero no cuentan como expedientes operativos abiertos;
+- quedan fuera de indicadores, vencimientos, seguimientos, recordatorios y exportaciones oficiales por defecto;
+- no se generan documentos oficiales individuales mientras el expediente permanezca en Borrador;
+- la edición del borrador permite completar el expediente y abrirlo posteriormente;
+- la conservación de datos tras un error de guardado es común a todos los formularios.
+
