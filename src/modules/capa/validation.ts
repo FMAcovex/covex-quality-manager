@@ -1,8 +1,9 @@
 import { z } from "zod";
 import type { CapaPlannedActionInput } from "@/modules/capa/types";
+import { requestedWorkflowStatus } from "@/lib/forms/draft-workflow";
 
 const actionType = z.enum(["CORRECTIVE", "PREVENTIVE"]);
-const status = z.enum(["OPEN", "CLOSED", "CANCELLED"]);
+const status = z.enum(["DRAFT", "OPEN", "CLOSED", "CANCELLED"]);
 const effectiveness = z.enum(["CONFORMING", "NONCONFORMING", "PENDING", "NA"]);
 const dataQuality = z.enum(["COMPLETE", "INCOMPLETE", "REVIEW_REQUIRED"]);
 
@@ -67,7 +68,9 @@ export function parseCapaForm(
   const originCode = text(formData, "originCode");
   const defectDescription = text(formData, "defectDescription");
   const rootCause = text(formData, "rootCause");
-  const recordStatus = enumValue(status, text(formData, "status")) ?? "OPEN";
+  const storedStatus = enumValue(status, text(formData, "status")) ?? "OPEN";
+  const recordStatus = requestedWorkflowStatus(formData, storedStatus);
+  const draftMode = recordStatus === "DRAFT";
   const effectivenessStatus =
     enumValue(effectiveness, text(formData, "effectivenessStatus")) ?? "PENDING";
   const plannedActions = parseArray<CapaPlannedActionInput>(
@@ -82,15 +85,15 @@ export function parseCapaForm(
 
   const errors: string[] = [];
   const fieldIssues: Record<string, string[]> = {};
-  const addIssue = (field: string, message: string) => {
-    errors.push(message);
+  const addIssue = (field: string, message: string, blocking = !draftMode) => {
+    if (blocking) errors.push(message);
     fieldIssues[field] = [...(fieldIssues[field] ?? []), message];
   };
 
   if (!businessCode) addIssue("businessCode", "La codificación AC/AP es obligatoria.");
   if (!departmentId) addIssue("departmentId", "El departamento responsable es obligatorio.");
   if (!openedAt) addIssue("openedAt", "La fecha de apertura es obligatoria.");
-  else if (!validDate(openedAt)) addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");
+  else if (!validDate(openedAt)) addIssue("openedAt", "La fecha de apertura no tiene un formato válido.", true);
   if (!createdByText) addIssue("createdByText", "Debe indicarse quién cumplimenta el registro.");
   if (!originType) addIssue("originType", "Debe indicarse el origen de la CAPA.");
   if (!defectDescription) addIssue("defectDescription", "La descripción breve del defecto es obligatoria.");
@@ -102,15 +105,16 @@ export function parseCapaForm(
       addIssue(
         "plannedActionsJson",
         `La fecha prevista de la acción ${index + 1} no tiene un formato válido.`,
+        true,
       );
     }
   });
 
   if (operationalClosedAt && !validDate(operationalClosedAt)) {
-    addIssue("operationalClosedAt", "La fecha de cierre operativo no tiene un formato válido.");
+    addIssue("operationalClosedAt", "La fecha de cierre operativo no tiene un formato válido.", true);
   }
   if (effectiveClosedAt && !validDate(effectiveClosedAt)) {
-    addIssue("effectiveClosedAt", "La fecha de cierre efectivo no tiene un formato válido.");
+    addIssue("effectiveClosedAt", "La fecha de cierre efectivo no tiene un formato válido.", true);
   }
 
   if (recordStatus === "CLOSED" && !options.allowHistoricalIncomplete) {
