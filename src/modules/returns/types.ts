@@ -1,4 +1,9 @@
-export type ReturnFormState={error:string|null;fieldErrors?:string[]};
+export type ReturnFormState={
+  error:string|null;
+  fieldErrors?:string[];
+  submittedValues?:Record<string,string|string[]>;
+  formRevision?:number;
+};
 export type ReturnProductInput={
   id?:string; departmentId:string; productType:"API"|"INTERMEDIATE"|"MEDICINE"|"SUPPLEMENT"|"IMPORTED_PRODUCT"|"MEDICAL_DEVICE"|"COSMETIC"|"OTHER";
   otherProductType:string; productNameCode:string; format:string; lot:string; expiryReanalysis:string; quantity:string; unit:string;
