@@ -62,6 +62,7 @@ jobs:
           pnpm c3:smoke
           pnpm d3:smoke
           pnpm d6:smoke
+          pnpm d5-3:smoke
           pnpm hito10:smoke
       - name: Quality checks
         run: pnpm quality
