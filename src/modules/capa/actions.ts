@@ -216,6 +216,8 @@ export async function createCapaAction(
           defectDescription: v.defectDescription,
           rootCause: v.rootCause,
           impactAssessment: v.impactAssessment,
+          nextFollowupDate: toDate(v.nextFollowupDate),
+          actionFollowupObservations: v.actionFollowupObservations,
           operationalClosedAt: toDate(v.operationalClosedAt),
           status: v.status,
           cancellationReason: v.cancellationReason,
@@ -237,6 +239,7 @@ export async function createCapaAction(
                   complaintPlanId: complaintPlanOrigin?.planId ?? null,
                   complaintId: v.fromComplaintId ?? null,
                 },
+                pendingOriginIds: v.origins.map((item) => item.id),
               }
             : undefined,
           plannedActions: {
@@ -245,6 +248,13 @@ export async function createCapaAction(
               responsible: item.responsible || null,
               plannedExecutionDate: toDate(item.plannedExecutionDate),
               impact: item.impact || null,
+              sortOrder: index,
+            })),
+          },
+          actionFollowups: {
+            create: v.actionFollowups.map((item, index) => ({
+              followupDate: toDate(item.followupDate),
+              description: item.description || null,
               sortOrder: index,
             })),
           },
@@ -305,13 +315,25 @@ export async function createCapaAction(
           capaQmsRecordId: qmsRecord.id,
           actor: parsed.actor,
         });
-      } else {
+      } else if (!v.origins.length) {
         await relatePrimaryOrigin(
           tx,
           qmsRecord.id,
           canonicalValues.originCode,
           parsed.actor,
         );
+      }
+
+      const selectedOriginIds = new Set(v.origins.map((item) => item.id));
+      if (deviationOrigin?.deviationQmsRecordId) selectedOriginIds.add(deviationOrigin.deviationQmsRecordId);
+      if (complaintPlanOrigin?.complaintQmsRecordId) selectedOriginIds.add(complaintPlanOrigin.complaintQmsRecordId);
+      if (complaintDirectOrigin?.complaintQmsRecordId) selectedOriginIds.add(complaintDirectOrigin.complaintQmsRecordId);
+      if (selectedOriginIds.size) {
+        await syncOperationalOriginRelations(tx, {
+          capaRecordId: qmsRecord.id,
+          originRecordIds: [...selectedOriginIds],
+          changedByText: parsed.actor,
+        });
       }
       return created;
     });
