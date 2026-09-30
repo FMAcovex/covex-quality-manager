@@ -8,7 +8,7 @@ export default async function EditComplaintPage({params}:{params:Promise<{id:str
  const {id}=await params;const [r,l]=await Promise.all([getComplaintDetail(id),getComplaintLookups()]);if(!r)notFound();
  const defaults={
   businessCode:r.qmsRecord.businessCode??undefined,departmentId:r.departmentId??undefined,openedAt:r.openedAt?.toISOString().slice(0,10),detectionDate:r.detectionDate?.toISOString().slice(0,10),
-  receptionDate:r.receptionDate?.toISOString().slice(0,10),detectedBy:r.detectedBy??undefined,createdByText:r.createdByText??undefined,complaintType:r.complaintType,
+  receptionDate:r.receptionDate?.toISOString().slice(0,10),detectedBy:r.detectedBy??undefined,createdByText:r.createdByText??undefined,complaintType:r.complaintType??undefined,
   sourceTypes:r.sourceTypes,sourceOther:r.sourceOther??undefined,scopeTypes:r.scopeTypes,scopeOther:r.scopeOther??undefined,
   affectedObjectTypes:r.affectedObjectTypes,affectedObjectOther:r.affectedObjectOther??undefined,categoryTypes:r.categoryTypes,categoryOther:r.categoryOther??undefined,
   partyName:r.partyName??undefined,contact:r.contact??undefined,
