@@ -18,8 +18,9 @@ describe("Hito 10.8C3-A form validation", () => {
     expect(parsed.fieldIssues.createdByText).toBeDefined();
   });
 
-  it("maps CAPA validation messages to concrete fields while allowing server-assigned business code", () => {
+  it("maps operational CAPA validation messages to concrete fields while allowing server-assigned business code", () => {
     const form = new FormData();
+    form.set("status", "OPEN");
     form.set("openedAt", "2099-02-31");
     form.set("plannedActionsJson", "[]");
 
