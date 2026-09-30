@@ -142,7 +142,12 @@ export async function GET(request: Request) {
         a.businessCode.localeCompare(b.businessCode, "es"),
     )
     .slice(0, 8)
-    .map(({ score: _score, ...suggestion }) => suggestion);
+    .map(({ id, recordType, businessCode, year }) => ({
+      id,
+      recordType,
+      businessCode,
+      year,
+    }));
 
   return NextResponse.json({ suggestions });
 }
