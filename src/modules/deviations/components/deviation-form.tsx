@@ -48,6 +48,73 @@ function inferOrigin(defaults: DeviationFormDefaults): OriginType {
   return "";
 }
 
+function draftMissingIssues(defaults: DeviationFormDefaults, origin: OriginType) {
+  const result: Record<string, string[]> = {};
+  const pending = (field: keyof DeviationFormDefaults, message = "Pendiente para abrir la desviación.") => {
+    const value = defaults[field];
+    const empty = Array.isArray(value) ? value.length === 0 : value === undefined || value === null || String(value).trim() === "";
+    if (empty) result[String(field)] = [message];
+  };
+
+  [
+    "businessCode",
+    "departmentId",
+    "issueDate",
+    "eventDateTime",
+    "detectedBy",
+    "createdByText",
+    "materialProcessAffected",
+    "affectedDocumentation",
+    "whatHappened",
+    "whoInvolved",
+    "whenHappened",
+    "whereHappened",
+    "howHappened",
+    "investigation",
+    "investigationConclusive",
+    "investigationMethods",
+    "rootCause",
+    "recurrentRootCause",
+    "recurrenceDetails",
+    "classification",
+    "validationImpact",
+    "registrationImpact",
+    "stabilityImpact",
+    "otherProcessesImpact",
+    "otherProcessesImpactDetails",
+    "affectsFinishedProduct",
+    "capaRequired",
+    "conclusion",
+    "disposition",
+    "dispositionQuantity",
+    "clientNotification",
+    "dispositionComments",
+    "dataQualityStatus",
+  ].forEach((field) => pending(field as keyof DeviationFormDefaults));
+
+  if (origin === "FINISHED_PRODUCT_SYSTEM") {
+    pending("finishedProductSystem");
+    pending("productLot");
+    pending("lotSize");
+    pending("affectedQuantity");
+  } else if (origin === "CLIENT") {
+    pending("client");
+  } else if (origin === "RAW_PACKAGING_MATERIAL") {
+    pending("rawOrPackagingMaterial");
+    pending("materialLot");
+    pending("materialAffectedQuantity");
+  } else if (origin === "SUPPLIER") {
+    pending("supplier");
+    pending("supplierLot");
+  } else if (origin === "EQUIPMENT_LINE") {
+    pending("affectedEquipmentLine");
+  } else if (origin === "OTHER") {
+    pending("otherOrigin");
+  }
+
+  return result;
+}
+
 function FieldIssue({ messages }: { messages?: string[] }) {
   if (!messages?.length) return null;
   return <small className="field-error">{messages[0]}</small>;
@@ -165,7 +232,8 @@ export function DeviationForm({
   const [capas, setCapas] = useState<CapaPlanInput[]>(formDefaults.capaPlans ?? []);
   const [origin, setOrigin] = useState<OriginType>(() => inferOrigin(formDefaults));
   const [recordStatus, setRecordStatus] = useState<"DRAFT" | "OPEN" | "CLOSED">(formDefaults.status ?? (mode === "create" ? "DRAFT" : "OPEN"));
-  const issues = state.fieldIssues ?? {};
+  const draftIssues = recordStatus === "DRAFT" ? draftMissingIssues(formDefaults, origin) : {};
+  const issues = { ...draftIssues, ...(state.fieldIssues ?? {}) };
 
   function updateAction(index: number, patch: Partial<ImmediateActionInput>) {
     setActions((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -180,6 +248,13 @@ export function DeviationForm({
       <input type="hidden" name="immediateActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)} />
       <input type="hidden" name="processEquipmentSystem" value={formDefaults.processEquipmentSystem ?? ""} />
+
+      {recordStatus === "DRAFT" ? (
+        <div className="form-errors draft-notice">
+          <strong>Borrador</strong>
+          <span>Puedes guardar el expediente incompleto. Los campos pendientes para poder abrir la desviación aparecen marcados en rojo.</span>
+        </div>
+      ) : null}
 
       {state.error ? (
         <div className="form-errors">
