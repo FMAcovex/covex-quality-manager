@@ -162,6 +162,7 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
 
 export async function addComplaintFollowupAction(id:string,_state:FollowupActionState,fd:FormData):Promise<FollowupActionState>{
  const rec=await prisma.complaint.findUnique({where:{id}});if(!rec)return{error:"Reclamación no encontrada."};
+ if(rec.status==="DRAFT")return{error:"La reclamación debe estar abierta antes de registrar seguimientos."};
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
  if(!followupDate||!completedByText||!comment)return{error:"Fecha, responsable y comentario son obligatorios."};
  try{
@@ -206,8 +207,9 @@ export async function addComplaintRelationAction(
  fd:FormData
 ):Promise<RelationActionState>{
  try{
-  const rec=await prisma.complaint.findUnique({where:{id},select:{qmsRecordId:true}});
+  const rec=await prisma.complaint.findUnique({where:{id},select:{qmsRecordId:true,status:true}});
   if(!rec)return{error:"Reclamación no encontrada."};
+  if(rec.status==="DRAFT")return{error:"La reclamación debe estar abierta antes de vincular expedientes derivados."};
 
   const code=String(fd.get("businessCode")??"").trim();
   const actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo").trim();
