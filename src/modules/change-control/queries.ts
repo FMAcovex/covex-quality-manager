@@ -45,7 +45,7 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
   if (["PENDING", "ACCEPTABLE", "NOT_ACCEPTABLE", "NOT_APPLICABLE"].includes(filters.effectiveness ?? "")) {
     and.push({ effectivenessStatus: filters.effectiveness as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE" });
   }
-  if (filters.status === "OPEN" || filters.status === "CLOSED") {
+  if (filters.status === "DRAFT" || filters.status === "OPEN" || filters.status === "CLOSED") {
     and.push({ finalStatus: filters.status });
   }
 
@@ -56,7 +56,7 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
       : filters.administrative === "ALL"
         ? {}
         : { qmsRecord: { isActive: true } };
-  const [rows, departments, years, total, open, executedPendingEfficacy, overdue] =
+  const [rows, departments, years, total, drafts, open, executedPendingEfficacy, overdue] =
     await Promise.all([
       prisma.changeControl.findMany({
         where,
@@ -81,7 +81,8 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
         distinct: ["year"],
         orderBy: { year: "desc" },
       }),
-      prisma.changeControl.count({ where: administrativeWhere }),
+      prisma.changeControl.count({ where: { AND: [administrativeWhere, { finalStatus: { not: "DRAFT" } }] } }),
+      prisma.changeControl.count({ where: { AND: [administrativeWhere, { finalStatus: "DRAFT" }] } }),
       prisma.changeControl.count({ where: { AND: [administrativeWhere, { finalStatus: "OPEN" }] } }),
       prisma.changeControl.count({
         where: { AND: [administrativeWhere, { executionStatus: "EXECUTED", effectivenessStatus: "PENDING", finalStatus: "OPEN" }] },
@@ -105,6 +106,7 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
     years: years.map((row) => row.year).filter((value): value is number => value !== null),
     counters: {
       total,
+      drafts,
       open,
       executedPendingEfficacy,
       overdue: overdue.filter((row) => {
