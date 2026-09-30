@@ -122,8 +122,12 @@ export async function createCapaAction(
   const v = parsed.values;
   let capaId: string;
   try {
-    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
+    const department = v.departmentId
+      ? await prisma.department.findUnique({ where: { id: v.departmentId } })
+      : null;
+    if (v.status !== "DRAFT" && !department) {
+      return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
+    }
 
     const referenceDate = toDate(v.openedAt) ?? new Date();
     const [formVersion, templateVersion] = await Promise.all([
@@ -163,14 +167,24 @@ export async function createCapaAction(
               }
             : v;
 
-      const openingYear = v.openedAt ? new Date(v.openedAt).getFullYear() : new Date().getFullYear();
-      const businessCode = await assignOperationalBusinessCode(tx, {
-        recordType: QmsRecordType.CAPA,
-        year: openingYear,
-        departmentCode: department.code,
-        actionType: v.actionType,
-        requestedCode: v.businessCode,
-      });
+      const openingYear = v.openedAt ? new Date(v.openedAt).getFullYear() : null;
+      let businessCode = v.businessCode;
+      if (department && openingYear && (v.status !== "DRAFT" || businessCode)) {
+        businessCode = await assignOperationalBusinessCode(tx, {
+          recordType: QmsRecordType.CAPA,
+          year: openingYear,
+          departmentCode: department.code,
+          actionType: v.actionType,
+          requestedCode: businessCode,
+        });
+      } else if (v.status !== "DRAFT") {
+        throw new OperationalBusinessCodeError(
+          "INVALID_FORMAT",
+          "Para abrir la CAPA deben estar informados departamento y fecha de apertura.",
+        );
+      } else {
+        businessCode = null;
+      }
       v.businessCode = businessCode;
 
       const qmsRecord = await tx.qmsRecord.create({
@@ -185,9 +199,9 @@ export async function createCapaAction(
         data: {
           qmsRecordId: qmsRecord.id,
           actionType: v.actionType,
-          departmentId: department.id,
-          departmentCodeSnapshot: department.code,
-          departmentNameSnapshot: department.name,
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department?.code ?? null,
+          departmentNameSnapshot: department?.name ?? null,
           openedAt: toDate(v.openedAt),
           createdByText: v.createdByText,
           originType: canonicalValues.originType,
@@ -210,6 +224,15 @@ export async function createCapaAction(
           dataQualityStatus: v.dataQualityStatus,
           formVersionId: formVersion?.id,
           annexIIITemplateVersionId: templateVersion?.id,
+          extraData: v.status === "DRAFT"
+            ? {
+                pendingOrigin: {
+                  deviationPlanId: deviationOrigin?.planId ?? null,
+                  complaintPlanId: complaintPlanOrigin?.planId ?? null,
+                  complaintId: v.fromComplaintId ?? null,
+                },
+              }
+            : undefined,
           plannedActions: {
             create: v.plannedActions.map((item, index) => ({
               description: item.description,
@@ -248,8 +271,12 @@ export async function createCapaAction(
         snapshotJson(serializeCapaVersion(versionRecord)),
         parsed.actor,
         "UI",
-        "Informe inicial CAPA",
+        v.status === "DRAFT" ? "Borrador inicial CAPA" : "Informe inicial CAPA",
       );
+
+      if (v.status === "DRAFT") {
+        return created;
+      }
 
       if (deviationOrigin) {
         await registerDeviationCapaPlan(tx, {
@@ -313,11 +340,6 @@ export async function updateCapaAction(
   previous: CapaFormState,
   formData: FormData,
 ): Promise<CapaFormState> {
-  const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: true });
-  if (parsed.errors.length) {
-    return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues };
-  }
-
   const existing = await prisma.capa.findUnique({
     where: { id },
     include: {
@@ -330,10 +352,23 @@ export async function updateCapaAction(
   });
   if (!existing) return preserveFormState(previous, formData, { error: "La CAPA ya no existe." });
 
-  const v = parsed.values;
-  v.businessCode = existing.qmsRecord.businessCode;
+  const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: existing.status !== "DRAFT" });
+  if (parsed.errors.length) {
+    return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
+  }
 
-  if (existing.rootCause && !v.rootCause) {
+  const v = parsed.values;
+  const requestedBusinessCode = v.businessCode;
+  v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
+  if (existing.status !== "DRAFT" && v.status === "DRAFT") {
+    return preserveFormState(previous, formData, {
+      error: "No se puede volver a borrador una CAPA ya operativa.",
+      fieldErrors: ["Una CAPA abierta, cerrada o cancelada no puede volver al estado Borrador."],
+      fieldIssues: { status: ["Una CAPA abierta, cerrada o cancelada no puede volver al estado Borrador."] },
+    });
+  }
+
+  if (existing.rootCause && !v.rootCause && v.status !== "DRAFT") {
     return preserveFormState(previous, formData, { error: "No se puede eliminar una causa raíz ya documentada." });
   }
 
@@ -363,8 +398,12 @@ export async function updateCapaAction(
       return preserveFormState(previous, formData, { error: "No se puede registrar el cierre efectivo.", fieldErrors: transitionErrors });
     }
   }
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } };
+  const department = v.departmentId
+    ? await prisma.department.findUnique({ where: { id: v.departmentId } })
+    : null;
+  if (v.status !== "DRAFT" && !department) {
+    return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
+  }
 
   const oldSnapshot = {
     businessCode: existing.qmsRecord.businessCode,
@@ -428,26 +467,53 @@ export async function updateCapaAction(
         });
       }
 
+      const openingYear = v.openedAt ? new Date(v.openedAt).getFullYear() : null;
+      let businessCode = existing.qmsRecord.businessCode;
+      if (existing.status === "DRAFT" && department && openingYear) {
+        if (!businessCode && (v.status !== "DRAFT" || requestedBusinessCode)) {
+          businessCode = await assignOperationalBusinessCode(tx, {
+            recordType: QmsRecordType.CAPA,
+            year: openingYear,
+            departmentCode: department.code,
+            actionType: v.actionType,
+            requestedCode: requestedBusinessCode,
+            excludeQmsRecordId: existing.qmsRecordId,
+          });
+        } else if (businessCode && requestedBusinessCode && requestedBusinessCode !== businessCode) {
+          businessCode = await assignOperationalBusinessCode(tx, {
+            recordType: QmsRecordType.CAPA,
+            year: openingYear,
+            departmentCode: department.code,
+            actionType: v.actionType,
+            requestedCode: requestedBusinessCode,
+            excludeQmsRecordId: existing.qmsRecordId,
+          });
+        }
+      }
+      v.businessCode = businessCode;
+
       await tx.qmsRecord.update({
         where: { id: existing.qmsRecordId },
         data: {
-          businessCode: existing.qmsRecord.businessCode,
-          year: v.openedAt ? new Date(v.openedAt).getFullYear() : null,
+          businessCode,
+          year: openingYear,
         },
       });
       await tx.capa.update({
         where: { id },
         data: {
           actionType: v.actionType,
-          departmentId: department.id,
-          departmentCodeSnapshot:
-            existing.departmentId === department.id
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentCodeSnapshot ?? department.code
-              : department.code,
-          departmentNameSnapshot:
-            existing.departmentId === department.id
+              : department.code
+            : null,
+          departmentNameSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentNameSnapshot ?? department.name
-              : department.name,
+              : department.name
+            : null,
           openedAt: toDate(v.openedAt),
           createdByText: v.createdByText,
           originType: v.originType,
