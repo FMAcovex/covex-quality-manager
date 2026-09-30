@@ -162,6 +162,7 @@ export default async function ChangeControlPage({
                       <input
                         type="checkbox"
                         data-reminder-record="true"
+                        disabled={row.finalStatus === "DRAFT"}
                         data-reminder-id={row.qmsRecord.id}
                         data-reminder-code={qmsRecordDisplayCode(row.qmsRecord)}
                         data-reminder-summary={row.description ?? "Sin descripción"}
