@@ -11,6 +11,7 @@ export function ControlledBusinessCodeField({
   departmentId,
   actionType,
   complaintType,
+  locked,
 }: {
   recordType: "CAPA" | "CHANGE_CONTROL" | "COMPLAINT" | "RETURN";
   name?: string;
@@ -21,14 +22,16 @@ export function ControlledBusinessCodeField({
   departmentId?: string;
   actionType?: "CORRECTIVE" | "PREVENTIVE" | null;
   complaintType?: "CUSTOMER" | "PROVIDER" | null;
+  locked?: boolean;
 }) {
   const [value, setValue] = useState(initialValue ?? "");
   const [suggestion, setSuggestion] = useState("");
   const [format, setFormat] = useState("");
   const [error, setError] = useState("");
+  const isLocked = locked ?? mode === "edit";
 
   useEffect(() => {
-    if (mode === "edit") {
+    if (isLocked) {
       setSuggestion("");
       setError("");
       return;
@@ -90,7 +93,7 @@ export function ControlledBusinessCodeField({
         setError(cause instanceof Error ? cause.message : "No se ha podido calcular la sugerencia.");
       });
     return () => controller.abort();
-  }, [actionType, complaintType, departmentId, mode, recordType, yearSource]);
+  }, [actionType, complaintType, departmentId, isLocked, recordType, yearSource]);
 
   return (
     <label className="field">
@@ -99,16 +102,16 @@ export function ControlledBusinessCodeField({
         name={name}
         value={value}
         onChange={(event) => setValue(event.target.value)}
-        readOnly={mode === "edit"}
+        readOnly={isLocked}
         placeholder={
-          mode === "edit"
+          isLocked
             ? undefined
             : suggestion || format || "Se asignará automáticamente al guardar"
         }
       />
       <small className="muted-note">
-        {mode === "edit"
-          ? "La codificación queda fijada tras crear el expediente."
+        {isLocked
+          ? "La codificación queda fijada al salir de Borrador."
           : suggestion
             ? <>Sugerencia correlativa: <button type="button" className="link-button-inline" onClick={() => setValue(suggestion)}>{suggestion}</button>. Si se deja vacío, se asignará automáticamente al guardar.</>
             : error

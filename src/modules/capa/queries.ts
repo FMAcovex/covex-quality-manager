@@ -44,8 +44,8 @@ export async function getCapaList(filters: CapaListFilters) {
   if (filters.type === "CORRECTIVE" || filters.type === "PREVENTIVE") {
     and.push({ actionType: filters.type });
   }
-  if (["OPEN", "CLOSED", "CANCELLED"].includes(filters.status ?? "")) {
-    and.push({ status: filters.status as "OPEN" | "CLOSED" | "CANCELLED" });
+  if (["DRAFT", "OPEN", "CLOSED", "CANCELLED"].includes(filters.status ?? "")) {
+    and.push({ status: filters.status as "DRAFT" | "OPEN" | "CLOSED" | "CANCELLED" });
   }
   if (["CONFORMING", "NONCONFORMING", "PENDING", "NA"].includes(filters.effectiveness ?? "")) {
     and.push({
@@ -63,7 +63,7 @@ export async function getCapaList(filters: CapaListFilters) {
         : { qmsRecord: { isActive: true } };
   const now = new Date();
 
-  const [rows, departments, years, origins, total, open, pendingEfficacy, overdueFollowups] =
+  const [rows, departments, years, origins, total, drafts, open, pendingEfficacy, overdueFollowups] =
     await Promise.all([
       prisma.capa.findMany({
         where,
@@ -94,7 +94,8 @@ export async function getCapaList(filters: CapaListFilters) {
         distinct: ["originType"],
         orderBy: { originType: "asc" },
       }),
-      prisma.capa.count({ where: administrativeWhere }),
+      prisma.capa.count({ where: { AND: [administrativeWhere, { status: { not: "DRAFT" } }] } }),
+      prisma.capa.count({ where: { AND: [administrativeWhere, { status: "DRAFT" }] } }),
       prisma.capa.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
       prisma.capa.count({
         where: {
@@ -130,6 +131,7 @@ export async function getCapaList(filters: CapaListFilters) {
     origins: origins.map((row) => row.originType).filter((value): value is string => Boolean(value)),
     counters: {
       total,
+      drafts,
       open,
       pendingEfficacy,
       overdueFollowups: overdueFollowups.filter((row) => {

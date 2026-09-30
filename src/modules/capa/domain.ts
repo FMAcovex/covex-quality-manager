@@ -3,6 +3,7 @@ export function capaTypeLabel(value: string) {
 }
 
 export function capaStatusLabel(value: string) {
+  if (value === "DRAFT") return "Borrador";
   if (value === "CLOSED") return "Cerrada";
   if (value === "CANCELLED") return "Cancelada";
   return "Abierta";

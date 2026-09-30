@@ -709,3 +709,18 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - la codificación queda bloqueada en edición;
 - los códigos históricos existentes no se reformatean;
 - smoke PostgreSQL `d5-3:smoke` incorporado a CI.
+
+
+## D5.4A — Borrador transversal · CAPA
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
+
+- nuevo estado CAPA `DRAFT`;
+- alta inicial en Borrador;
+- guardado incompleto permitido;
+- validación completa al pasar a Abierta;
+- codificación asignada/fijada al abrir;
+- prohibido volver a Borrador desde estados operativos;
+- seguimientos, relaciones nuevas y Anexo III bloqueados mientras está en Borrador;
+- Borradores excluidos de KPI y exportaciones;
+- contador y filtro específico de Borradores en listado;
+- origen procedente de propuesta se conserva pendiente y se formaliza al abrir.

@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { CapaPlannedActionInput } from "@/modules/capa/types";
 
 const actionType = z.enum(["CORRECTIVE", "PREVENTIVE"]);
-const status = z.enum(["OPEN", "CLOSED", "CANCELLED"]);
+const status = z.enum(["DRAFT", "OPEN", "CLOSED", "CANCELLED"]);
 const effectiveness = z.enum(["CONFORMING", "NONCONFORMING", "PENDING", "NA"]);
 const dataQuality = z.enum(["COMPLETE", "INCOMPLETE", "REVIEW_REQUIRED"]);
 
@@ -67,7 +67,7 @@ export function parseCapaForm(
   const originCode = text(formData, "originCode");
   const defectDescription = text(formData, "defectDescription");
   const rootCause = text(formData, "rootCause");
-  const recordStatus = enumValue(status, text(formData, "status")) ?? "OPEN";
+  const recordStatus = enumValue(status, text(formData, "status")) ?? "DRAFT";
   const effectivenessStatus =
     enumValue(effectiveness, text(formData, "effectivenessStatus")) ?? "PENDING";
   const plannedActions = parseArray<CapaPlannedActionInput>(
@@ -88,14 +88,18 @@ export function parseCapaForm(
   };
 
 
-  if (!departmentId) addIssue("departmentId", "El departamento responsable es obligatorio.");
-  if (!openedAt) addIssue("openedAt", "La fecha de apertura es obligatoria.");
-  else if (!validDate(openedAt)) addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");
-  if (!createdByText) addIssue("createdByText", "Debe indicarse quién cumplimenta el registro.");
-  if (!originType) addIssue("originType", "Debe indicarse el origen de la CAPA.");
-  if (!defectDescription) addIssue("defectDescription", "La descripción breve del defecto es obligatoria.");
-  if (!rootCause && !options.allowHistoricalIncomplete) addIssue("rootCause", "La causa raíz es obligatoria.");
-  if (!plannedActions.length) addIssue("plannedActionsJson", "Debe existir al menos una acción propuesta.");
+  if (recordStatus !== "DRAFT") {
+    if (!departmentId) addIssue("departmentId", "El departamento responsable es obligatorio.");
+    if (!openedAt) addIssue("openedAt", "La fecha de apertura es obligatoria.");
+    else if (!validDate(openedAt)) addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");
+    if (!createdByText) addIssue("createdByText", "Debe indicarse quién cumplimenta el registro.");
+    if (!originType) addIssue("originType", "Debe indicarse el origen de la CAPA.");
+    if (!defectDescription) addIssue("defectDescription", "La descripción breve del defecto es obligatoria.");
+    if (!rootCause && !options.allowHistoricalIncomplete) addIssue("rootCause", "La causa raíz es obligatoria.");
+    if (!plannedActions.length) addIssue("plannedActionsJson", "Debe existir al menos una acción propuesta.");
+  } else {
+    if (openedAt && !validDate(openedAt)) addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");
+  }
 
   plannedActions.forEach((action, index) => {
     if (action.plannedExecutionDate && !validDate(action.plannedExecutionDate)) {

@@ -26,7 +26,7 @@ export type CapaFormDefaults = {
   defectDescription?: string;
   rootCause?: string;
   impactAssessment?: string;
-  status?: "OPEN" | "CLOSED" | "CANCELLED";
+  status?: "DRAFT" | "OPEN" | "CLOSED" | "CANCELLED";
   cancellationReason?: string;
   operationalClosedAt?: string;
   effectivenessStatus?: "CONFORMING" | "NONCONFORMING" | "PENDING" | "NA";

@@ -28,6 +28,9 @@ export async function saveCapaFollowup(
     },
   });
   if (!capa) return { error: "CAPA no encontrada." };
+  if (capa.status === "DRAFT") {
+    return { error: "La CAPA debe estar abierta antes de registrar seguimientos." };
+  }
 
   const dateOnly = (value: Date | null) =>
     value ? value.toISOString().slice(0, 10) : null;

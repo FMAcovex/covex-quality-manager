@@ -200,6 +200,7 @@ async function main() {
   assert.ok(invalidDeviationParsed.fieldIssues.issueDate?.length);
 
   const invalidCapa = new FormData();
+  invalidCapa.set("status", "OPEN");
   invalidCapa.set("openedAt", "2099-02-31");
   invalidCapa.set("plannedActionsJson", "[]");
   const invalidCapaParsed = parseCapaForm(invalidCapa);
