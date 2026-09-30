@@ -405,6 +405,12 @@ export async function updateCapaAction(
     return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
   }
 
+  const pendingOrigin =
+    existing.status === "DRAFT" && existing.extraData && typeof existing.extraData === "object" && !Array.isArray(existing.extraData)
+      ? (existing.extraData as { pendingOrigin?: { deviationPlanId?: string | null; complaintPlanId?: string | null; complaintId?: string | null } }).pendingOrigin
+      : undefined;
+  const becomingOperational = existing.status === "DRAFT" && v.status !== "DRAFT";
+
   const oldSnapshot = {
     businessCode: existing.qmsRecord.businessCode,
     actionType: existing.actionType,
@@ -534,6 +540,7 @@ export async function updateCapaAction(
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
+          extraData: becomingOperational ? Prisma.DbNull : existing.extraData ?? undefined,
           plannedActions: {
             deleteMany: {},
             create: v.plannedActions.map((item, index) => ({
@@ -560,7 +567,34 @@ export async function updateCapaAction(
           },
         });
       }
-      await relatePrimaryOrigin(tx, existing.qmsRecordId, v.originCode, parsed.actor);
+      if (becomingOperational) {
+        if (pendingOrigin?.deviationPlanId) {
+          await registerDeviationCapaPlan(tx, {
+            planId: pendingOrigin.deviationPlanId,
+            capaQmsRecordId: existing.qmsRecordId,
+            capaBusinessCode: businessCode!,
+            actor: parsed.actor,
+          });
+        } else if (pendingOrigin?.complaintPlanId) {
+          await registerComplaintCapaPlan(tx, {
+            planId: pendingOrigin.complaintPlanId,
+            capaQmsRecordId: existing.qmsRecordId,
+            capaBusinessCode: businessCode!,
+            actor: parsed.actor,
+          });
+        } else if (pendingOrigin?.complaintId) {
+          const complaintOrigin = await getComplaintDirectOrigin(tx, pendingOrigin.complaintId);
+          await registerComplaintDirectOrigin(tx, {
+            complaintQmsRecordId: complaintOrigin.complaintQmsRecordId,
+            capaQmsRecordId: existing.qmsRecordId,
+            actor: parsed.actor,
+          });
+        } else {
+          await relatePrimaryOrigin(tx, existing.qmsRecordId, v.originCode, parsed.actor);
+        }
+      } else if (v.status !== "DRAFT") {
+        await relatePrimaryOrigin(tx, existing.qmsRecordId, v.originCode, parsed.actor);
+      }
 
       const updatedForVersion = await tx.capa.findUniqueOrThrow({
         where: { id },
@@ -585,6 +619,19 @@ export async function updateCapaAction(
     revalidatePath(`/capa/${id}`);
     redirect(`/capa/${id}`);
   } catch (error) {
+    if (error instanceof OperationalBusinessCodeError) {
+      return preserveFormState(previous, formData, {
+        error: "No se puede guardar la CAPA.",
+        fieldErrors: [error.message],
+        fieldIssues: { businessCode: [error.message] },
+      });
+    }
+    if (error instanceof DeviationCapaPlanLinkError || error instanceof ComplaintCapaLinkError) {
+      return preserveFormState(previous, formData, {
+        error: "No se puede abrir la CAPA.",
+        fieldErrors: [error.message],
+      });
+    }
     return preserveFormState(previous, formData, persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" }));
   }
 }
@@ -610,9 +657,12 @@ export async function addCapaRelationAction(
   try {
     const capa = await prisma.capa.findUnique({
       where: { id },
-      select: { qmsRecordId: true, createdByText: true },
+      select: { qmsRecordId: true, createdByText: true, status: true },
     });
     if (!capa) return { error: "CAPA no encontrada." };
+    if (capa.status === "DRAFT") {
+      return { error: "La CAPA debe estar abierta antes de vincular expedientes de origen." };
+    }
 
     const code = String(formData.get("businessCode") ?? "").trim();
     const requestedType = String(formData.get("recordType") ?? "").trim() as QmsRecordType;
