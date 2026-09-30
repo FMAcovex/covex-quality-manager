@@ -77,6 +77,7 @@ async function loadDemoRecords() {
     include: {
       qmsRecord: true,
       plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ followupDate: "desc" }, { sequenceNumber: "desc" }] },
       formVersion: true,
       annexIIITemplateVersion: true,
