@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { submittedDefaults } from "@/lib/forms/preserved-state";
 import { useActionState,useState } from "react";
 import type { ComplaintCapaPlanInput,ComplaintDerivedActionInput,ComplaintFormDefaults,ComplaintFormState,DepartmentOption } from "@/modules/complaints/types";
 
@@ -21,7 +22,7 @@ function Tri({label,name,defaultValue}:{label:string;name:string;defaultValue?:s
  return <label className="field"><span>{label}</span><select name={name} defaultValue={defaultValue??""}><option value="">No informado</option><option value="YES">Sí</option><option value="NO">No</option><option value="NA">N/A</option></select></label>;
 }
 function Checks({label,name,options,defaults=[]}:{label:string;name:string;options:readonly (readonly [string,string])[];defaults?:string[]}) {
- return <div className="field full"><span>{label}</span><div className="checkbox-group">{options.map(([v,l])=><label key={v}><input type="checkbox" name={name} value={v} defaultChecked={defaults.includes(v)}/>{l}</label>)}</div></div>;
+ return <div className="field full"><span>{label}</span><div className="checkbox-group">{options.map(([v,l])=><label key={v}><input type="checkbox" name={name} value={v} defaultChecked={formDefaults.includes(v)}/>{l}</label>)}</div></div>;
 }
 
 const sourceOptions=[["CUSTOMER","Cliente"],["DISTRIBUTOR","Distribuidor"],["MAH","Titular / MAH"],["CONSUMER","Consumidor / usuario"],["AUTHORITY","Autoridad / entidad sanitaria"],["SUPPLIER","Proveedor"],["CARRIER","Transportista / operador logístico"],["SUBCONTRACTOR","Subcontrata"],["INTERNAL","Detección interna"],["RECALL","Retirada"],["OTHER","Otro"]] as const;
@@ -33,11 +34,12 @@ const resolutionOptions=[["RETURN","Devolución"],["CORRECTIVE_ACTION","Acc. cor
 
 export function ComplaintForm({mode,action,departments,defaults={},complaintId}:{mode:"create"|"edit";action:(s:ComplaintFormState,fd:FormData)=>Promise<ComplaintFormState>;departments:DepartmentOption[];defaults?:ComplaintFormDefaults;complaintId?:string}) {
  const [state,formAction,pending]=useActionState(action,initial);
+ const formDefaults=submittedDefaults(defaults,state.submittedValues);
  const [capas,setCapas]=useState<ComplaintCapaPlanInput[]>(defaults.capaPlans??[]);
  const [derived,setDerived]=useState<ComplaintDerivedActionInput[]>(defaults.derivedActions??[]);
  const patchCapa=(i:number,p:Partial<ComplaintCapaPlanInput>)=>setCapas(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  const patchDerived=(i:number,p:Partial<ComplaintDerivedActionInput>)=>setDerived(x=>x.map((v,n)=>n===i?{...v,...p}:v));
- return <form action={formAction} className="form-stack">
+ return <form key={state.formRevision??0} action={formAction} className="form-stack">
   <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)}/>
   <input type="hidden" name="derivedActionsJson" value={JSON.stringify(derived)}/>
   {state.error?<div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length?<ul>{state.fieldErrors.map(x=><li key={x}>{x}</li>)}</ul>:null}</div>:null}
@@ -46,78 +48,78 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    <h2>Parte I · 1. Registro e identificación</h2>
    <p className="section-help">Estructura del Anexo III de GC-00/027/03.</p>
    <div className="form-grid">
-    <Field label="N.º reclamación" name="businessCode" defaultValue={defaults.businessCode} required/>
-    <label className="field"><span>Departamento *</span><select name="departmentId" defaultValue={defaults.departmentId??""} required><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
-    <Field label="Fecha apertura" name="openedAt" type="date" defaultValue={defaults.openedAt} required/>
-    <Field label="Fecha detección" name="detectionDate" type="date" defaultValue={defaults.detectionDate}/>
-    <Field label="Fecha recepción" name="receptionDate" type="date" defaultValue={defaults.receptionDate}/>
-    <Field label="Detectado por" name="detectedBy" defaultValue={defaults.detectedBy}/>
-    <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required/>
-    {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={defaults.createdByText}/>:null}
-    <label className="field"><span>Tipo *</span><select name="complaintType" defaultValue={defaults.complaintType??""} required><option value="">Seleccionar…</option><option value="PROVIDER">A proveedor / subcontrata</option><option value="CUSTOMER">De cliente / agente externo</option></select></label>
-    <Field label="Cliente / Proveedor" name="partyName" defaultValue={defaults.partyName} required span="span-2"/>
-    <Field label="Contacto (nombre, teléfono, mail)" name="contact" defaultValue={defaults.contact} span="span-2"/>
-    <Checks label="Origen / fuente de detección" name="sourceTypes" options={sourceOptions} defaults={defaults.sourceTypes}/>
-    <Field label="Otro origen · especificar" name="sourceOther" defaultValue={defaults.sourceOther} span="span-2"/>
-    <Checks label="Ámbito" name="scopeTypes" options={scopeOptions} defaults={defaults.scopeTypes}/>
-    <Field label="Otro ámbito · especificar" name="scopeOther" defaultValue={defaults.scopeOther} span="span-2"/>
-    <Checks label="Objeto afectado" name="affectedObjectTypes" options={objectOptions} defaults={defaults.affectedObjectTypes}/>
-    <Field label="Otro objeto · especificar" name="affectedObjectOther" defaultValue={defaults.affectedObjectOther} span="span-2"/>
-    <Field label="Referencia material / servicio / equipo" name="reference" defaultValue={defaults.reference} span="span-2"/>
-    <Field label="Lote / referencia" name="lotReference" defaultValue={defaults.lotReference}/>
-    <Field label="Cantidad" name="quantity" defaultValue={defaults.quantity}/>
-    <Field label="Caducidad / reanálisis" name="expiryReanalysis" defaultValue={defaults.expiryReanalysis}/>
-    <Field label="Pedido / albarán / certificado" name="purchaseDeliveryReference" defaultValue={defaults.purchaseDeliveryReference} span="span-2"/>
-    <TextArea label="Descripción de la reclamación *" name="description" defaultValue={defaults.description}/>
-    <Checks label="Categoría / motivo" name="categoryTypes" options={categoryOptions} defaults={defaults.categoryTypes}/>
-    <Field label="Otra categoría · especificar" name="categoryOther" defaultValue={defaults.categoryOther} span="span-2"/>
-    <Bool label="¿Reclamación recurrente?" name="recurrent" defaultValue={defaults.recurrent}/>
-    <Field label="Referencia recurrencia" name="recurrenceReference" defaultValue={defaults.recurrenceReference} span="span-2"/>
-    <TextArea label="Evidencias / documentación adjunta" name="attachedDocumentation" defaultValue={defaults.attachedDocumentation}/>
-    <Field label="Emitido por" name="emittedBy" defaultValue={defaults.emittedBy}/>
-    <Field label="Validado por Garantía de Calidad" name="qaValidatedBy" defaultValue={defaults.qaValidatedBy} span="span-2"/>
+    <Field label="N.º reclamación" name="businessCode" defaultValue={formDefaults.businessCode} required/>
+    <label className="field"><span>Departamento *</span><select name="departmentId" defaultValue={formDefaults.departmentId??""} required><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
+    <Field label="Fecha apertura" name="openedAt" type="date" defaultValue={formDefaults.openedAt} required/>
+    <Field label="Fecha detección" name="detectionDate" type="date" defaultValue={formDefaults.detectionDate}/>
+    <Field label="Fecha recepción" name="receptionDate" type="date" defaultValue={formDefaults.receptionDate}/>
+    <Field label="Detectado por" name="detectedBy" defaultValue={formDefaults.detectedBy}/>
+    <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required/>
+    {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText}/>:null}
+    <label className="field"><span>Tipo *</span><select name="complaintType" defaultValue={formDefaults.complaintType??""} required><option value="">Seleccionar…</option><option value="PROVIDER">A proveedor / subcontrata</option><option value="CUSTOMER">De cliente / agente externo</option></select></label>
+    <Field label="Cliente / Proveedor" name="partyName" defaultValue={formDefaults.partyName} required span="span-2"/>
+    <Field label="Contacto (nombre, teléfono, mail)" name="contact" defaultValue={formDefaults.contact} span="span-2"/>
+    <Checks label="Origen / fuente de detección" name="sourceTypes" options={sourceOptions} defaults={formDefaults.sourceTypes}/>
+    <Field label="Otro origen · especificar" name="sourceOther" defaultValue={formDefaults.sourceOther} span="span-2"/>
+    <Checks label="Ámbito" name="scopeTypes" options={scopeOptions} defaults={formDefaults.scopeTypes}/>
+    <Field label="Otro ámbito · especificar" name="scopeOther" defaultValue={formDefaults.scopeOther} span="span-2"/>
+    <Checks label="Objeto afectado" name="affectedObjectTypes" options={objectOptions} defaults={formDefaults.affectedObjectTypes}/>
+    <Field label="Otro objeto · especificar" name="affectedObjectOther" defaultValue={formDefaults.affectedObjectOther} span="span-2"/>
+    <Field label="Referencia material / servicio / equipo" name="reference" defaultValue={formDefaults.reference} span="span-2"/>
+    <Field label="Lote / referencia" name="lotReference" defaultValue={formDefaults.lotReference}/>
+    <Field label="Cantidad" name="quantity" defaultValue={formDefaults.quantity}/>
+    <Field label="Caducidad / reanálisis" name="expiryReanalysis" defaultValue={formDefaults.expiryReanalysis}/>
+    <Field label="Pedido / albarán / certificado" name="purchaseDeliveryReference" defaultValue={formDefaults.purchaseDeliveryReference} span="span-2"/>
+    <TextArea label="Descripción de la reclamación *" name="description" defaultValue={formDefaults.description}/>
+    <Checks label="Categoría / motivo" name="categoryTypes" options={categoryOptions} defaults={formDefaults.categoryTypes}/>
+    <Field label="Otra categoría · especificar" name="categoryOther" defaultValue={formDefaults.categoryOther} span="span-2"/>
+    <Bool label="¿Reclamación recurrente?" name="recurrent" defaultValue={formDefaults.recurrent}/>
+    <Field label="Referencia recurrencia" name="recurrenceReference" defaultValue={formDefaults.recurrenceReference} span="span-2"/>
+    <TextArea label="Evidencias / documentación adjunta" name="attachedDocumentation" defaultValue={formDefaults.attachedDocumentation}/>
+    <Field label="Emitido por" name="emittedBy" defaultValue={formDefaults.emittedBy}/>
+    <Field label="Validado por Garantía de Calidad" name="qaValidatedBy" defaultValue={formDefaults.qaValidatedBy} span="span-2"/>
    </div>
   </section>
 
   <section className="form-section">
    <h2>Parte I · 2. Evaluación inicial, investigación e impacto</h2>
    <div className="form-grid">
-    <Tri label="Impacto calidad / GMP" name="impactQualityGmp" defaultValue={defaults.impactQualityGmp}/>
-    <Tri label="Impacto seguridad / eficacia / paciente" name="impactSafetyEfficacy" defaultValue={defaults.impactSafetyEfficacy}/>
-    <Tri label="Impacto regulatorio" name="impactRegulatory" defaultValue={defaults.impactRegulatory}/>
-    <Tri label="Impacto medio ambiente" name="impactEnvironment" defaultValue={defaults.impactEnvironment}/>
-    <Tri label="Otros lotes/productos/clientes similares" name="impactOtherSimilar" defaultValue={defaults.impactOtherSimilar}/>
-    <Checks label="Medidas inmediatas / contención" name="containmentActions" options={containmentOptions} defaults={defaults.containmentActions}/>
-    <Field label="Otra medida de contención" name="containmentOther" defaultValue={defaults.containmentOther} span="span-2"/>
-    <TextArea label="Justificación del riesgo, alcance y medidas" name="riskJustification" defaultValue={defaults.riskJustification} help="Incluir estado, responsable, fecha y referencia cuando aplique."/>
-    <TextArea label="Investigación, evidencias y alcance" name="investigation" defaultValue={defaults.investigation}/>
-    <TextArea label="Conclusión del impacto" name="impactAssessment" defaultValue={defaults.impactAssessment}/>
-    <label className="field"><span>Resultado</span><select name="investigationResult" defaultValue={defaults.investigationResult??""}><option value="">Pendiente</option><option value="PROCEDENT">Procedente</option><option value="NOT_PROCEDENT">No procedente</option><option value="INCONCLUSIVE">No concluyente</option><option value="NOT_ATTRIBUTABLE_TO_COVEX">No atribuible a COVEX</option></select></label>
-    <TextArea label="Causa raíz y evidencias que la sustentan" name="rootCause" defaultValue={defaults.rootCause}/>
+    <Tri label="Impacto calidad / GMP" name="impactQualityGmp" defaultValue={formDefaults.impactQualityGmp}/>
+    <Tri label="Impacto seguridad / eficacia / paciente" name="impactSafetyEfficacy" defaultValue={formDefaults.impactSafetyEfficacy}/>
+    <Tri label="Impacto regulatorio" name="impactRegulatory" defaultValue={formDefaults.impactRegulatory}/>
+    <Tri label="Impacto medio ambiente" name="impactEnvironment" defaultValue={formDefaults.impactEnvironment}/>
+    <Tri label="Otros lotes/productos/clientes similares" name="impactOtherSimilar" defaultValue={formDefaults.impactOtherSimilar}/>
+    <Checks label="Medidas inmediatas / contención" name="containmentActions" options={containmentOptions} defaults={formDefaults.containmentActions}/>
+    <Field label="Otra medida de contención" name="containmentOther" defaultValue={formDefaults.containmentOther} span="span-2"/>
+    <TextArea label="Justificación del riesgo, alcance y medidas" name="riskJustification" defaultValue={formDefaults.riskJustification} help="Incluir estado, responsable, fecha y referencia cuando aplique."/>
+    <TextArea label="Investigación, evidencias y alcance" name="investigation" defaultValue={formDefaults.investigation}/>
+    <TextArea label="Conclusión del impacto" name="impactAssessment" defaultValue={formDefaults.impactAssessment}/>
+    <label className="field"><span>Resultado</span><select name="investigationResult" defaultValue={formDefaults.investigationResult??""}><option value="">Pendiente</option><option value="PROCEDENT">Procedente</option><option value="NOT_PROCEDENT">No procedente</option><option value="INCONCLUSIVE">No concluyente</option><option value="NOT_ATTRIBUTABLE_TO_COVEX">No atribuible a COVEX</option></select></label>
+    <TextArea label="Causa raíz y evidencias que la sustentan" name="rootCause" defaultValue={formDefaults.rootCause}/>
    </div>
   </section>
 
   <section className="form-section">
    <h2>Parte I · 3. Clasificación y evaluación regulatoria</h2>
    <div className="form-grid">
-    <label className="field"><span>Clasificación</span><select name="classification" defaultValue={defaults.classification??""}><option value="">Pendiente</option><option value="CRITICAL">Crítica</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option><option value="NO_GMP_IMPACT">Sin impacto GMP</option></select></label>
-    <Tri label="¿Puede requerir retirada?" name="potentialRecall" defaultValue={defaults.potentialRecall}/>
-    <Tri label="¿Activar GC-00/029 Retirada?" name="recallProcedureRequired" defaultValue={defaults.recallProcedureRequired}/>
-    <Tri label="¿Notificación a autoridad sanitaria?" name="authorityNotificationRequired" defaultValue={defaults.authorityNotificationRequired}/>
-    <Tri label="¿Comunicación a titular / cliente responsable?" name="responsiblePartyCommunicationRequired" defaultValue={defaults.responsiblePartyCommunicationRequired}/>
-    <TextArea label="Justificación evaluación regulatoria" name="regulatoryJustification" defaultValue={defaults.regulatoryJustification}/>
-    <Field label="Fecha evaluación inicial" name="initialEvaluationDate" type="date" defaultValue={defaults.initialEvaluationDate}/>
-    <Field label="Fecha conclusión inicial" name="initialConclusionDate" type="date" defaultValue={defaults.initialConclusionDate}/>
+    <label className="field"><span>Clasificación</span><select name="classification" defaultValue={formDefaults.classification??""}><option value="">Pendiente</option><option value="CRITICAL">Crítica</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option><option value="NO_GMP_IMPACT">Sin impacto GMP</option></select></label>
+    <Tri label="¿Puede requerir retirada?" name="potentialRecall" defaultValue={formDefaults.potentialRecall}/>
+    <Tri label="¿Activar GC-00/029 Retirada?" name="recallProcedureRequired" defaultValue={formDefaults.recallProcedureRequired}/>
+    <Tri label="¿Notificación a autoridad sanitaria?" name="authorityNotificationRequired" defaultValue={formDefaults.authorityNotificationRequired}/>
+    <Tri label="¿Comunicación a titular / cliente responsable?" name="responsiblePartyCommunicationRequired" defaultValue={formDefaults.responsiblePartyCommunicationRequired}/>
+    <TextArea label="Justificación evaluación regulatoria" name="regulatoryJustification" defaultValue={formDefaults.regulatoryJustification}/>
+    <Field label="Fecha evaluación inicial" name="initialEvaluationDate" type="date" defaultValue={formDefaults.initialEvaluationDate}/>
+    <Field label="Fecha conclusión inicial" name="initialConclusionDate" type="date" defaultValue={formDefaults.initialConclusionDate}/>
    </div>
   </section>
 
   <section className="form-section">
    <h2>Parte I · 4. Líneas de actuación y acciones derivadas</h2>
    <div className="form-grid">
-    <TextArea label="Líneas de actuación y resolución" name="resolutionLines" defaultValue={defaults.resolutionLines}/>
-    <Checks label="Implicación de la resolución" name="resolutionActions" options={resolutionOptions} defaults={defaults.resolutionActions}/>
-    <TextArea label="Acción inmediata · detalle" name="immediateActionDetails" defaultValue={defaults.immediateActionDetails}/>
-    <TextArea label="Otros · detalle" name="otherResolutionDetails" defaultValue={defaults.otherResolutionDetails}/>
+    <TextArea label="Líneas de actuación y resolución" name="resolutionLines" defaultValue={formDefaults.resolutionLines}/>
+    <Checks label="Implicación de la resolución" name="resolutionActions" options={resolutionOptions} defaults={formDefaults.resolutionActions}/>
+    <TextArea label="Acción inmediata · detalle" name="immediateActionDetails" defaultValue={formDefaults.immediateActionDetails}/>
+    <TextArea label="Otros · detalle" name="otherResolutionDetails" defaultValue={formDefaults.otherResolutionDetails}/>
    </div>
    <h3>Acciones y registros vinculados</h3>
    <div className="dynamic-list">
@@ -149,42 +151,42 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
   <section className="form-section">
    <h2>Parte I · 5. Comunicación y conclusión</h2>
    <div className="form-grid">
-    <Field label="Fecha comunicación" name="communicationDate" type="date" defaultValue={defaults.communicationDate}/>
-    <Field label="Medio" name="communicationMedium" defaultValue={defaults.communicationMedium}/>
-    <Field label="Emisor / destinatario" name="communicationParties" defaultValue={defaults.communicationParties} span="span-2"/>
-    <TextArea label="Resumen de lo comunicado o solicitado" name="communicationSummary" defaultValue={defaults.communicationSummary}/>
-    <TextArea label="Comunicación externa · observaciones internas" name="externalCommunication" defaultValue={defaults.externalCommunication}/>
-    <Bool label="¿Continúa en Parte II?" name="partIIRequired" defaultValue={defaults.partIIRequired}/>
-    <TextArea label="Conclusión, pendientes y justificación" name="conclusion" defaultValue={defaults.conclusion}/>
-    <Bool label="¿Verificación de eficacia necesaria?" name="effectivenessRequired" defaultValue={defaults.effectivenessRequired}/>
-    <Field label="Aprobaciones Parte I" name="approvalNames" defaultValue={defaults.approvalNames} span="span-2"/>
+    <Field label="Fecha comunicación" name="communicationDate" type="date" defaultValue={formDefaults.communicationDate}/>
+    <Field label="Medio" name="communicationMedium" defaultValue={formDefaults.communicationMedium}/>
+    <Field label="Emisor / destinatario" name="communicationParties" defaultValue={formDefaults.communicationParties} span="span-2"/>
+    <TextArea label="Resumen de lo comunicado o solicitado" name="communicationSummary" defaultValue={formDefaults.communicationSummary}/>
+    <TextArea label="Comunicación externa · observaciones internas" name="externalCommunication" defaultValue={formDefaults.externalCommunication}/>
+    <Bool label="¿Continúa en Parte II?" name="partIIRequired" defaultValue={formDefaults.partIIRequired}/>
+    <TextArea label="Conclusión, pendientes y justificación" name="conclusion" defaultValue={formDefaults.conclusion}/>
+    <Bool label="¿Verificación de eficacia necesaria?" name="effectivenessRequired" defaultValue={formDefaults.effectivenessRequired}/>
+    <Field label="Aprobaciones Parte I" name="approvalNames" defaultValue={formDefaults.approvalNames} span="span-2"/>
    </div>
   </section>
 
   <section className="form-section">
    <h2>Parte II · Seguimiento y cierre</h2>
    <div className="form-grid">
-    <Field label="Fecha respuesta" name="responseDate" type="date" defaultValue={defaults.responseDate}/>
-    <Field label="Medio de respuesta" name="responseMedium" defaultValue={defaults.responseMedium}/>
-    <TextArea label="Resumen de respuesta / compromisos" name="responseSummary" defaultValue={defaults.responseSummary}/>
-    <Bool label="¿Respuesta suficiente?" name="responseSufficient" defaultValue={defaults.responseSufficient}/>
-    <label className="field"><span>Verificación de eficacia</span><select name="effectivenessStatus" defaultValue={defaults.effectivenessStatus??"PENDING"}><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Conforme</option><option value="NOT_ACCEPTABLE">No conforme</option><option value="NOT_REQUIRED">N/A</option></select></label>
-    <TextArea label="Valoración de eficacia" name="effectivenessAssessment" defaultValue={defaults.effectivenessAssessment}/>
-    <label className="field"><span>Estado de las acciones</span><select name="closeActionStatus" defaultValue={defaults.closeActionStatus??""}><option value="">No informado</option><option value="COMPLETED">Completadas</option><option value="LINKED">Vinculadas a seguimiento independiente</option><option value="PENDING">Pendientes</option></select></label>
-    <Field label="Referencias / responsable de seguimiento" name="closeActionReferences" defaultValue={defaults.closeActionReferences} span="span-2"/>
-    <TextArea label="Conclusión de cierre" name="closeConclusion" defaultValue={defaults.closeConclusion}/>
-    <Field label="Aprobaciones seguimiento / cierre" name="closeApprovalNames" defaultValue={defaults.closeApprovalNames} span="span-2"/>
-    <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={defaults.closedAt}/>
-    <label className="field"><span>Estado final</span><select name="status" defaultValue={defaults.status??"OPEN"}><option value="OPEN">Abierta / en seguimiento</option><option value="CLOSED">Cerrada</option></select></label>
+    <Field label="Fecha respuesta" name="responseDate" type="date" defaultValue={formDefaults.responseDate}/>
+    <Field label="Medio de respuesta" name="responseMedium" defaultValue={formDefaults.responseMedium}/>
+    <TextArea label="Resumen de respuesta / compromisos" name="responseSummary" defaultValue={formDefaults.responseSummary}/>
+    <Bool label="¿Respuesta suficiente?" name="responseSufficient" defaultValue={formDefaults.responseSufficient}/>
+    <label className="field"><span>Verificación de eficacia</span><select name="effectivenessStatus" defaultValue={formDefaults.effectivenessStatus??"PENDING"}><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Conforme</option><option value="NOT_ACCEPTABLE">No conforme</option><option value="NOT_REQUIRED">N/A</option></select></label>
+    <TextArea label="Valoración de eficacia" name="effectivenessAssessment" defaultValue={formDefaults.effectivenessAssessment}/>
+    <label className="field"><span>Estado de las acciones</span><select name="closeActionStatus" defaultValue={formDefaults.closeActionStatus??""}><option value="">No informado</option><option value="COMPLETED">Completadas</option><option value="LINKED">Vinculadas a seguimiento independiente</option><option value="PENDING">Pendientes</option></select></label>
+    <Field label="Referencias / responsable de seguimiento" name="closeActionReferences" defaultValue={formDefaults.closeActionReferences} span="span-2"/>
+    <TextArea label="Conclusión de cierre" name="closeConclusion" defaultValue={formDefaults.closeConclusion}/>
+    <Field label="Aprobaciones seguimiento / cierre" name="closeApprovalNames" defaultValue={formDefaults.closeApprovalNames} span="span-2"/>
+    <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={formDefaults.closedAt}/>
+    <label className="field"><span>Estado final</span><select name="status" defaultValue={formDefaults.status??"OPEN"}><option value="OPEN">Abierta / en seguimiento</option><option value="CLOSED">Cerrada</option></select></label>
    </div>
   </section>
 
   <section className="form-section">
    <h2>Control interno</h2>
    <div className="form-grid">
-    <TextArea label="Observaciones internas" name="internalObservations" defaultValue={defaults.internalObservations}/>
-    <label className="field"><span>Documento firmado disponible</span><select name="signedDocumentAvailable" defaultValue={defaults.signedDocumentAvailable??""}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>
-    <label className="field"><span>Control del dato</span><select name="dataQualityStatus" defaultValue={defaults.dataQualityStatus??"REVIEW_REQUIRED"}><option value="COMPLETE">Completo</option><option value="INCOMPLETE">Incompleto</option><option value="REVIEW_REQUIRED">Pendiente revisar</option></select></label>
+    <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations}/>
+    <label className="field"><span>Documento firmado disponible</span><select name="signedDocumentAvailable" defaultValue={formDefaults.signedDocumentAvailable??""}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>
+    <label className="field"><span>Control del dato</span><select name="dataQualityStatus" defaultValue={formDefaults.dataQualityStatus??"REVIEW_REQUIRED"}><option value="COMPLETE">Completo</option><option value="INCOMPLETE">Incompleto</option><option value="REVIEW_REQUIRED">Pendiente revisar</option></select></label>
     {mode==="edit"?<TextArea label="Motivo del cambio" name="changeReason"/>:null}
    </div>
   </section>
