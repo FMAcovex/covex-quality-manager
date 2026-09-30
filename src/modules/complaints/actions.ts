@@ -8,11 +8,11 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
+import { allowedOutgoingRelationTypes } from "@/lib/qms/relation-rules";
 import {
-  allowedOutgoingRelationTypes,
-  selectOperationalRelationTarget,
-} from "@/lib/qms/relation-rules";
-import { createQmsRelation } from "@/lib/qms/relation-service";
+  deactivateOperationalRelation,
+  linkOperationalRelationByBusinessCode,
+} from "@/lib/qms/relation-service";
 import { parseComplaintForm } from "@/modules/complaints/validation";
 import type { ComplaintFormState } from "@/modules/complaints/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -131,6 +131,31 @@ await prisma.$transaction(async tx=>{
  revalidatePath(`/complaints/${id}`);return{success:"Seguimiento guardado correctamente."};
 }
 
+
+export async function unlinkComplaintRelationAction(
+ id:string,
+ relatedQmsRecordId:string,
+ fd:FormData
+){
+ const actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo").trim();
+ const rec=await prisma.complaint.findUnique({where:{id},select:{qmsRecordId:true}});
+ if(!rec)throw new Error("La reclamación no existe.");
+
+ await prisma.$transaction((tx)=>
+  deactivateOperationalRelation(tx,{
+   currentRecordId:rec.qmsRecordId,
+   relatedRecordId:relatedQmsRecordId,
+   changedByText:actor,
+   reason:"Desvinculación de expediente derivado"
+  })
+ );
+
+ revalidatePath("/complaints");
+ revalidatePath("/capa");
+ revalidatePath("/returns");
+ revalidatePath(`/complaints/${id}`);
+}
+
 export async function addComplaintRelationAction(
  id:string,
  _state:RelationActionState,
@@ -150,14 +175,11 @@ export async function addComplaintRelationAction(
    return{error:"Una reclamación solo puede vincularse operativamente con CAPA o Devoluciones."};
   }
 
-  const matches=await prisma.qmsRecord.findMany({
-   where:{businessCode:code,recordType:requestedType,id:{not:rec.qmsRecordId}},
-   select:{id:true,recordType:true,businessCode:true}
-  });
-  const target=selectOperationalRelationTarget(QmsRecordType.COMPLAINT,matches);
-  await createQmsRelation(prisma,{
-   sourceRecordId:rec.qmsRecordId,
-   targetRecordId:target.id,
+  await linkOperationalRelationByBusinessCode(prisma,{
+   currentRecordId:rec.qmsRecordId,
+   currentType:QmsRecordType.COMPLAINT,
+   relatedType:requestedType,
+   businessCode:code,
    createdByText:actor
   });
   revalidatePath("/complaints");revalidatePath("/capa");revalidatePath("/returns");revalidatePath(`/complaints/${id}`);
