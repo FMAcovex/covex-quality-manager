@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { QmsRecordType, QmsRelationType } from "@prisma/client";
 import {
   createQmsRelation,
+  deactivateQmsRelation,
   getIncomingRelations,
   getOutgoingRelations,
   type QmsRelationClient,
@@ -67,6 +68,21 @@ function createMemoryClient(records: StoredRecord[]) {
           createdAt: new Date("2026-09-29T00:00:00Z"),
         };
         relations.push(relation);
+        return relation;
+      }),
+      findUnique: vi.fn(async ({ where }: { where: { sourceRecordId_targetRecordId_relationType: { sourceRecordId: string; targetRecordId: string; relationType: QmsRelationType } } }) => {
+        const key = where.sourceRecordId_targetRecordId_relationType;
+        return relations.find(
+          (relation) =>
+            relation.sourceRecordId === key.sourceRecordId &&
+            relation.targetRecordId === key.targetRecordId &&
+            relation.relationType === key.relationType,
+        ) ?? null;
+      }),
+      update: vi.fn(async ({ where, data }: { where: { id: string }; data: { isActive: boolean } }) => {
+        const relation = relations.find((item) => item.id === where.id);
+        if (!relation) throw new Error("Relation not found");
+        relation.isActive = data.isActive;
         return relation;
       }),
       findMany: vi.fn(
@@ -197,4 +213,31 @@ describe("Hito 10.8C3-B1: servicio común de relaciones QMS", () => {
       }),
     ).rejects.toThrow(/consigo mismo/);
   });
+  it("desactiva una relación sin eliminar los expedientes y desaparece en ambos sentidos", async () => {
+    const { client, relations } = createMemoryClient(records);
+    await createQmsRelation(client, {
+      sourceRecordId: "deviation-qms",
+      targetRecordId: "capa-qms",
+      createdByText: "QA",
+    });
+
+    await deactivateQmsRelation(client, {
+      sourceRecordId: "deviation-qms",
+      targetRecordId: "capa-qms",
+    });
+
+    expect(relations).toHaveLength(1);
+    expect(relations[0].isActive).toBe(false);
+    expect(await getOutgoingRelations(client, "deviation-qms")).toHaveLength(0);
+    expect(await getIncomingRelations(client, "capa-qms")).toHaveLength(0);
+
+    await createQmsRelation(client, {
+      sourceRecordId: "deviation-qms",
+      targetRecordId: "capa-qms",
+      createdByText: "QA",
+    });
+    expect(relations).toHaveLength(1);
+    expect(relations[0].isActive).toBe(true);
+  });
+
 });

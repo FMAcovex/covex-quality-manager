@@ -116,3 +116,36 @@ export function getIncomingRelations(
     orderBy: { createdAt: "asc" },
   });
 }
+
+
+export async function deactivateQmsRelation(
+  client: QmsRelationClient,
+  input: {
+    sourceRecordId: string;
+    targetRecordId: string;
+    relationType?: QmsRelationType;
+  },
+) {
+  const relationType = input.relationType ?? QmsRelationType.GENERATES;
+  const relation = await client.qmsRelation.findUnique({
+    where: {
+      sourceRecordId_targetRecordId_relationType: {
+        sourceRecordId: input.sourceRecordId,
+        targetRecordId: input.targetRecordId,
+        relationType,
+      },
+    },
+    select: { id: true, isActive: true },
+  });
+
+  if (!relation) {
+    throw new QmsRelationValidationError("La relación QMS ya no existe.");
+  }
+
+  if (!relation.isActive) return relation;
+
+  return client.qmsRelation.update({
+    where: { id: relation.id },
+    data: { isActive: false },
+  });
+}

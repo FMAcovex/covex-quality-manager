@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addCapaFollowupAction, addCapaRelationAction } from "@/modules/capa/actions";
+import { addCapaFollowupAction, addCapaRelationAction, unlinkCapaOriginAction } from "@/modules/capa/actions";
 import {
   capaStatusLabel,
   capaTypeLabel,
@@ -333,6 +333,10 @@ export default async function CapaDetailPage({
                     <strong>{qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))}{!record.isActive ? " · Anulado" : ""}</strong>
                   </Link>
                   <small>Vista inversa de la relación QMS.</small>
+                  <form action={unlinkCapaOriginAction.bind(null, id, record.id)}>
+                    <input type="hidden" name="actor" value={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
+                    <button className="button danger small" type="submit">Desvincular</button>
+                  </form>
                 </div>
               ))}
             </div>

@@ -294,3 +294,15 @@ Reglas:
 - la validación considera tanto `businessCode` como `annulledBusinessCode`, evitando reutilizar una codificación histórica anulada;
 - una vez abierta la desviación, el código queda fijado y no se modifica en ediciones o versiones posteriores;
 - la lógica se centraliza en `src/lib/qms/business-code.ts` para futura reutilización controlada.
+
+## D-046 — Desvinculación Desviación ↔ CAPA
+La desvinculación entre una Desviación y una CAPA actúa exclusivamente sobre la relación QMS canónica `Desviación → CAPA`.
+
+Reglas:
+- nunca elimina ni anula la Desviación ni la CAPA;
+- no crea una relación inversa artificial;
+- la misma fila `QmsRelation` se desactiva mediante `isActive = false`, conservando trazabilidad técnica y permitiendo reactivación idempotente;
+- al desvincular, la relación deja de mostrarse tanto desde Desviaciones como desde CAPA porque ambas vistas consultan únicamente relaciones activas;
+- las referencias históricas de propuestas CAPA ya registradas no se borran por esta operación;
+- una nueva vinculación entre los mismos expedientes reactiva la relación existente en lugar de crear un duplicado.
+

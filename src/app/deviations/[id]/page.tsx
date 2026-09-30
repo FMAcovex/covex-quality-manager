@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addDeviationRelationAction } from "@/modules/deviations/actions";
+import { addDeviationRelationAction, unlinkDeviationCapaAction } from "@/modules/deviations/actions";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
@@ -412,6 +412,10 @@ export default async function DeviationDetailPage({
                     <strong>{record.businessCode ?? "CAPA"}</strong>
                   </Link>
                   <small>CAPA</small>
+                  <form action={unlinkDeviationCapaAction.bind(null, id, record.id)}>
+                    <input type="hidden" name="actor" value={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
+                    <button className="button danger small" type="submit">Desvincular</button>
+                  </form>
                 </div>
               ))}
             </div>
