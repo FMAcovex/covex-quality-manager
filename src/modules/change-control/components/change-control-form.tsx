@@ -126,6 +126,7 @@ export function ChangeControlForm({
   const [tasks, setTasks] = useState<ChangeTaskInput[]>(
     defaults.tasks?.length ? defaults.tasks : [{ ...emptyTask }],
   );
+  const isDraft = (formDefaults.finalStatus ?? (mode === "create" ? "DRAFT" : "OPEN")) === "DRAFT";
 
   const updateTask = (index: number, patch: Partial<ChangeTaskInput>) => {
     setTasks((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -134,6 +135,7 @@ export function ChangeControlForm({
   return (
     <form key={state.formRevision ?? 0} action={formAction} className="record-form">
       <input type="hidden" name="tasksJson" value={JSON.stringify(tasks)} />
+      <input type="hidden" name="finalStatus" value={formDefaults.finalStatus ?? (mode === "create" ? "DRAFT" : "OPEN")} />
 
       {state.error ? (
         <div className="form-errors">
@@ -331,6 +333,10 @@ export function ChangeControlForm({
           <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations} />
           <BooleanSelect label="Documento firmado disponible" name="signedDocumentAvailable" defaultValue={formDefaults.signedDocumentAvailable} />
           <label className="field">
+            <span>Estado del expediente</span>
+            <div className="readonly-field">{isDraft ? "Borrador" : formDefaults.finalStatus === "CLOSED" ? "Cerrado" : "Abierto"}</div>
+          </label>
+          <label className="field">
             <span>Control del dato</span>
             <select name="dataQualityStatus" defaultValue={formDefaults.dataQualityStatus ?? "REVIEW_REQUIRED"}>
               <option value="COMPLETE">Completo</option>
@@ -347,11 +353,29 @@ export function ChangeControlForm({
         </div>
       </section>
 
+      {isDraft ? (
+        <div className="form-errors draft-notice">
+          <strong>Borrador</strong>
+          <span>Puedes guardar el expediente incompleto. Los obligatorios se exigirán al abrir el Control de Cambio.</span>
+        </div>
+      ) : null}
+
       <div className="form-footer">
         <Link className="button" href={changeId ? `/changes/${changeId}` : "/changes"}>Cancelar</Link>
-        <button className="button primary" type="submit" disabled={pending}>
-          {pending ? "Guardando…" : mode === "create" ? "Guardar Control de Cambio" : "Guardar cambios"}
-        </button>
+        {isDraft ? (
+          <div className="version-submit-group">
+            <button className="button" type="submit" name="saveIntent" value="draft" formNoValidate disabled={pending}>
+              {pending ? "Guardando…" : "Guardar borrador"}
+            </button>
+            <button className="button primary" type="submit" name="saveIntent" value="open" disabled={pending}>
+              {pending ? "Guardando…" : "Abrir Control de Cambio"}
+            </button>
+          </div>
+        ) : (
+          <button className="button primary" type="submit" disabled={pending}>
+            {pending ? "Guardando…" : "Guardar cambios"}
+          </button>
+        )}
       </div>
     </form>
   );
