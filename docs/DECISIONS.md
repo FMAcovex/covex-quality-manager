@@ -306,3 +306,18 @@ Reglas:
 - las referencias históricas de propuestas CAPA ya registradas no se borran por esta operación;
 - una nueva vinculación entre los mismos expedientes reactiva la relación existente en lugar de crear un duplicado.
 
+
+
+## D-047 — Desvinculación transversal de relaciones operativas QMS
+El patrón de D-046 se reutiliza para las tres relaciones operativas autorizadas:
+- Desviación → CAPA;
+- Reclamación → CAPA;
+- Reclamación → Devolución.
+
+Reglas:
+- vincular desde cualquiera de los dos extremos siempre resuelve y persiste la única dirección canónica permitida;
+- desvincular nunca elimina ni anula expedientes y solo marca `QmsRelation.isActive = false`;
+- la operación se registra en el historial operativo del expediente desde el que se ejecuta;
+- las consultas de detalle muestran únicamente relaciones activas;
+- revincular los mismos expedientes reactiva la fila histórica existente mediante `upsert`, sin crear duplicados;
+- la matriz de relaciones no se amplía: Control de Cambios continúa fuera de las relaciones operativas de V1.
