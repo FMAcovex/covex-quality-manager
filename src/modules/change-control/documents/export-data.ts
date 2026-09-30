@@ -47,8 +47,10 @@ export async function getChangeControlExportRows(filters: ChangeControlExportFil
         | "NOT_APPLICABLE",
     });
   }
-  if (filters.status === "OPEN" || filters.status === "CLOSED") {
+  if (filters.status === "DRAFT" || filters.status === "OPEN" || filters.status === "CLOSED") {
     and.push({ finalStatus: filters.status });
+  } else {
+    and.push({ finalStatus: { not: "DRAFT" } });
   }
 
   return prisma.changeControl.findMany({
