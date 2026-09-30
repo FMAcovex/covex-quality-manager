@@ -125,6 +125,7 @@ enum ChangeEffectivenessStatus {
 }
 
 enum ChangeFinalStatus {
+  DRAFT
   OPEN
   CLOSED
 }
