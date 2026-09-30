@@ -670,3 +670,18 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - se añaden pruebas unitarias del mecanismo común;
 - Desviaciones mantiene el comportamiento ya validado y queda como referencia funcional del patrón.
 
+## D5.2 — Flujo Borrador transversal
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
+
+Se extiende a CAPA, Controles de Cambios, Reclamaciones y Devoluciones el patrón ya validado en Desviaciones:
+- alta inicial en Borrador;
+- guardado incompleto permitido;
+- botones Guardar borrador / Abrir expediente;
+- apertura bloqueada si faltan obligatorios;
+- sin retorno a Borrador una vez abierto;
+- contador y filtro específico de Borradores;
+- exclusión de indicadores, vencimientos, recordatorios y exportaciones oficiales;
+- bloqueo de documentos oficiales mientras el expediente esté en Borrador.
+
+También se centraliza la resolución del estado solicitado mediante `src/lib/forms/draft-workflow.ts`.
+
