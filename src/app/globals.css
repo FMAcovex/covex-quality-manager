@@ -386,13 +386,92 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .relation-list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .relation-card { display:grid; gap:4px; padding:12px; border:1px solid var(--border); border-radius:8px; background:#fbfcfe; }
 .relation-card span, .relation-card small { color:var(--muted); font-size:11px; }
+
+.form-footer-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:18px;
+  flex-wrap:wrap;
+}
+.capa-action-list { margin-top:12px; }
+.capa-action-card {
+  display:grid;
+  gap:12px;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:var(--surface-soft);
+}
+.capa-action-card.compact { padding:13px 14px; }
+.capa-action-card-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding-bottom:9px;
+  border-bottom:1px solid #e7edf4;
+}
+.capa-action-card-header strong {
+  color:var(--blue-dark);
+  font-size:13px;
+}
+.capa-action-grid {
+  display:grid;
+  grid-template-columns:minmax(260px,2fr) minmax(150px,1fr) minmax(150px,1fr) minmax(220px,1.5fr);
+  gap:12px;
+  align-items:start;
+}
+.capa-action-grid .field,
+.capa-followup-grid .field { align-content:start; }
+.capa-action-grid textarea { min-height:92px; }
+.capa-action-grid input { min-height:40px; }
+.capa-followup-grid {
+  display:grid;
+  grid-template-columns:minmax(150px,.7fr) minmax(320px,2.3fr);
+  gap:12px;
+  align-items:start;
+}
+.capa-followup-grid textarea { min-height:84px; }
+.capa-section-body { margin-top:16px; }
+.state-efficacy-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.state-efficacy-panel {
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:#fbfcfe;
+  padding:16px;
+}
+.state-efficacy-panel h3 {
+  margin:0 0 12px;
+  font-size:14px;
+  color:var(--blue-dark);
+}
+.history-entry {
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+.history-entry p,
+.history-entry code {
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
 @media (max-width: 1200px) {
   .capa-filters { grid-template-columns: repeat(4, 1fr); }
   .relation-list { grid-template-columns: 1fr 1fr; }
+  .capa-action-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @media (max-width: 760px) {
   .capa-full { grid-template-columns:1fr !important; }
   .relation-list { grid-template-columns:1fr; }
+  .capa-action-grid,
+  .capa-followup-grid,
+  .state-efficacy-grid { grid-template-columns:1fr; }
+  .form-footer-actions { width:100%; justify-content:flex-start; gap:12px; }
 }
 
 
