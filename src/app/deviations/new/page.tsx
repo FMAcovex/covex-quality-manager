@@ -14,7 +14,7 @@ export default async function NewDeviationPage() {
         <div>
           <p className="eyebrow">Desviaciones</p>
           <h1>Nueva desviación</h1>
-          <p>El expediente puede guardarse abierto y completarse a medida que avance la investigación.</p>
+          <p>Puedes guardar un borrador incompleto y abrir la desviación cuando estén cumplimentados los campos obligatorios.</p>
         </div>
         <Link className="button" href="/deviations">← Volver</Link>
       </div>
