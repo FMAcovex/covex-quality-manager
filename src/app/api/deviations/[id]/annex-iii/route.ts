@@ -20,6 +20,12 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   const deviation = await getDeviationDetail(id);
   if (!deviation) return NextResponse.json({ error: "Desviación no encontrada." }, { status: 404 });
+  if (deviation.status === "DRAFT") {
+    return NextResponse.json(
+      { error: "El Anexo III no se genera mientras la desviación esté en borrador." },
+      { status: 409 },
+    );
+  }
 
   const requestedVersion = new URL(request.url).searchParams.get("version");
   const sequenceNumber =
