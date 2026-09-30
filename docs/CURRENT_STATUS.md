@@ -616,14 +616,15 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - bloquea la generación de Anexo III en borrador;
 - deja preparado D3 para asignar la codificación oficial al pasar de Borrador a Abierta.
 
-## D3 — Codificación automática de Desviaciones
+## D3 — Codificación sugerida/controlada de Desviaciones
 Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 
-- los borradores no consumen código;
-- al abrir se genera `D/<departamento>/<correlativo 3 dígitos>/<año>`;
-- se elimina la edición manual del código;
+- la interfaz calcula y muestra la siguiente codificación sugerida según departamento y año;
+- el usuario puede aceptar la sugerencia o escribir manualmente otra codificación válida;
+- un borrador sin código no consume numeración;
+- si el borrador se guarda con código, dicho código queda reservado;
+- al abrir sin código, la aplicación asigna automáticamente el siguiente disponible;
 - la numeración es segura frente a concurrencia mediante bloqueo transaccional PostgreSQL;
-- el cálculo considera códigos activos y anulados para no reutilizar numeración histórica;
-- el código permanece inmutable después de la apertura;
-- se añaden pruebas unitarias y smoke PostgreSQL concurrente integrado en CI.
-
+- se comprueban códigos activos y anulados para impedir reutilización histórica;
+- una vez abierta la desviación, el código queda fijado;
+- se mantienen pruebas unitarias y smoke PostgreSQL concurrente integrado en CI.
