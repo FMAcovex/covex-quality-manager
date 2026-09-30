@@ -184,6 +184,7 @@ export async function saveCapaFollowup(
         include: {
           qmsRecord: true,
           plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
           formVersion: true,
           annexIIITemplateVersion: true,
