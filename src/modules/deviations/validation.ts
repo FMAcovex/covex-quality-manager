@@ -5,6 +5,14 @@ const triState = z.enum(["YES", "NO", "NA"]);
 const classification = z.enum(["CRITICAL", "MAJOR", "MINOR"]);
 const status = z.enum(["OPEN", "CLOSED"]);
 const dataQuality = z.enum(["COMPLETE", "INCOMPLETE", "REVIEW_REQUIRED"]);
+const originType = z.enum([
+  "FINISHED_PRODUCT_SYSTEM",
+  "CLIENT",
+  "RAW_PACKAGING_MATERIAL",
+  "SUPPLIER",
+  "EQUIPMENT_LINE",
+  "OTHER",
+]);
 
 const immediateActionSchema = z.object({
   description: z.string().trim().min(1),
@@ -79,6 +87,7 @@ export function parseDeviationForm(formData: FormData) {
   const howHappened = text(formData, "howHappened");
   const detectedBy = text(formData, "detectedBy");
   const materialProcessAffected = text(formData, "materialProcessAffected");
+  const selectedOrigin = enumValue(originType, text(formData, "provenance"));
   const createdByText = text(formData, "createdByText");
   const modifiedByText = text(formData, "modifiedByText");
   const statusRaw = text(formData, "status");
@@ -123,6 +132,45 @@ export function parseDeviationForm(formData: FormData) {
   if (!whereHappened) addIssue("whereHappened", "Debe indicarse dónde ocurrió.");
   if (!howHappened) addIssue("howHappened", "Debe indicarse cómo se detectó o cómo ocurrió.");
   if (!createdByText) addIssue("createdByText", "Debe indicarse quién cumplimenta el registro.");
+
+  const finishedProductSystem = text(formData, "finishedProductSystem");
+  const productLot = text(formData, "productLot");
+  const lotSize = text(formData, "lotSize");
+  const affectedQuantity = text(formData, "affectedQuantity");
+  const client = text(formData, "client");
+  const rawOrPackagingMaterial = text(formData, "rawOrPackagingMaterial");
+  const materialLot = text(formData, "materialLot");
+  const materialLotSize = text(formData, "materialLotSize");
+  const materialAffectedQuantity = text(formData, "materialAffectedQuantity");
+  const supplier = text(formData, "supplier");
+  const supplierLot = text(formData, "supplierLot");
+  const affectedEquipmentLine = text(formData, "affectedEquipmentLine");
+  const otherOrigin = text(formData, "otherOrigin");
+
+  if (selectedOrigin === "FINISHED_PRODUCT_SYSTEM") {
+    if (!finishedProductSystem) addIssue("finishedProductSystem", "Debe identificarse el producto terminado o sistema.");
+    if (!productLot) addIssue("productLot", "El nº de lote es obligatorio para este origen.");
+    if (!lotSize) addIssue("lotSize", "El tamaño de lote es obligatorio para este origen.");
+    if (!affectedQuantity) addIssue("affectedQuantity", "La cantidad afectada es obligatoria para este origen.");
+  }
+  if (selectedOrigin === "CLIENT" && !client) {
+    addIssue("client", "Debe identificarse el cliente.");
+  }
+  if (selectedOrigin === "RAW_PACKAGING_MATERIAL") {
+    if (!rawOrPackagingMaterial) addIssue("rawOrPackagingMaterial", "Debe identificarse la materia prima o material de acondicionamiento.");
+    if (!materialLot) addIssue("materialLot", "El nº de lote es obligatorio para este origen.");
+    if (!materialAffectedQuantity) addIssue("materialAffectedQuantity", "La cantidad afectada es obligatoria para este origen.");
+  }
+  if (selectedOrigin === "SUPPLIER") {
+    if (!supplier) addIssue("supplier", "Debe identificarse el proveedor.");
+    if (!supplierLot) addIssue("supplierLot", "El lote de proveedor es obligatorio.");
+  }
+  if (selectedOrigin === "EQUIPMENT_LINE" && !affectedEquipmentLine) {
+    addIssue("affectedEquipmentLine", "Debe identificarse el equipo o línea afectada.");
+  }
+  if (selectedOrigin === "OTHER" && !otherOrigin) {
+    addIssue("otherOrigin", "Debe especificarse el origen.");
+  }
 
   const affectedDocumentation = text(formData, "affectedDocumentation");
   const investigation = text(formData, "investigation");
@@ -213,22 +261,22 @@ export function parseDeviationForm(formData: FormData) {
       detectedBy,
       createdByText,
       materialProcessAffected,
-      provenance: text(formData, "provenance"),
+      provenance: selectedOrigin,
       affectedDocumentation,
       processEquipmentSystem: text(formData, "processEquipmentSystem"),
-      finishedProductSystem: text(formData, "finishedProductSystem"),
-      productLot: text(formData, "productLot"),
-      lotSize: text(formData, "lotSize"),
-      affectedQuantity: text(formData, "affectedQuantity"),
-      client: text(formData, "client"),
-      rawOrPackagingMaterial: text(formData, "rawOrPackagingMaterial"),
-      materialLot: text(formData, "materialLot"),
-      materialLotSize: text(formData, "materialLotSize"),
-      materialAffectedQuantity: text(formData, "materialAffectedQuantity"),
-      supplier: text(formData, "supplier"),
-      supplierLot: text(formData, "supplierLot"),
-      affectedEquipmentLine: text(formData, "affectedEquipmentLine"),
-      otherOrigin: text(formData, "otherOrigin"),
+      finishedProductSystem,
+      productLot,
+      lotSize,
+      affectedQuantity,
+      client,
+      rawOrPackagingMaterial,
+      materialLot,
+      materialLotSize,
+      materialAffectedQuantity,
+      supplier,
+      supplierLot,
+      affectedEquipmentLine,
+      otherOrigin,
       whatHappened,
       whoInvolved,
       whenHappened,

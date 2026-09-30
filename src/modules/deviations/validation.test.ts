@@ -94,4 +94,27 @@ describe("parseDeviationForm", () => {
     const parsed = parseDeviationForm(form);
     expect(parsed.fieldIssues.capaPlansJson).toBeUndefined();
   });
+
+  it("mantiene A. Origen opcional si no se selecciona ninguno", () => {
+    const parsed = parseDeviationForm(baseForm());
+    expect(parsed.fieldIssues.provenance).toBeUndefined();
+    expect(parsed.fieldIssues.finishedProductSystem).toBeUndefined();
+  });
+
+  it("exige solo los campos asociados al origen seleccionado", () => {
+    const form = baseForm();
+    form.set("provenance", "SUPPLIER");
+    const parsed = parseDeviationForm(form);
+    expect(parsed.fieldIssues.supplier).toBeDefined();
+    expect(parsed.fieldIssues.supplierLot).toBeDefined();
+    expect(parsed.fieldIssues.client).toBeUndefined();
+    expect(parsed.fieldIssues.finishedProductSystem).toBeUndefined();
+  });
+
+  it("Otros exige especificar el origen", () => {
+    const form = baseForm();
+    form.set("provenance", "OTHER");
+    const parsed = parseDeviationForm(form);
+    expect(parsed.fieldIssues.otherOrigin).toBeDefined();
+  });
 });
