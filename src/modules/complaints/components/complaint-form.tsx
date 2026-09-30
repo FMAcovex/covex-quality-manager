@@ -59,7 +59,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
     <Field label="Detectado por" name="detectedBy" defaultValue={formDefaults.detectedBy}/>
     <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required/>
     {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText}/>:null}
-    <label className="field"><span>Tipo *</span><select name="complaintType" defaultValue={formDefaults.complaintType??""} required><option value="">Seleccionar…</option><option value="PROVIDER">A proveedor / subcontrata</option><option value="CUSTOMER">De cliente / agente externo</option></select></label>
+    <label className="field"><span>Tipo *</span><select name="complaintType" value={complaintType} onChange={e=>setComplaintType(e.target.value as "CUSTOMER"|"PROVIDER")} required><option value="PROVIDER">A proveedor / subcontrata</option><option value="CUSTOMER">De cliente / agente externo</option></select></label>
     <Field label="Cliente / Proveedor" name="partyName" defaultValue={formDefaults.partyName} required span="span-2"/>
     <Field label="Contacto (nombre, teléfono, mail)" name="contact" defaultValue={formDefaults.contact} span="span-2"/>
     <Checks label="Origen / fuente de detección" name="sourceTypes" options={sourceOptions} defaults={formDefaults.sourceTypes}/>
