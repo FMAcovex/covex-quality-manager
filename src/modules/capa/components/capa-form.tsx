@@ -105,6 +105,10 @@ export function CapaForm({
   );
   const [departmentId, setDepartmentId] = useState(formDefaults.departmentId ?? "");
   const [openedAt, setOpenedAt] = useState(formDefaults.openedAt ?? "");
+  const [recordStatus, setRecordStatus] = useState<"DRAFT" | "OPEN" | "CLOSED" | "CANCELLED">(
+    formDefaults.status ?? (mode === "create" ? "DRAFT" : "OPEN"),
+  );
+  const draft = recordStatus === "DRAFT";
   const issues = state.fieldIssues ?? {};
 
   const updateAction = (index: number, patch: Partial<CapaPlannedActionInput>) => {
@@ -149,6 +153,7 @@ export function CapaForm({
             yearSource={openedAt}
             departmentId={departmentId}
             actionType={actionType}
+            locked={mode === "edit" && !draft}
           />
           <label className="field">
             <span>Tipo *</span>
@@ -158,8 +163,8 @@ export function CapaForm({
             </select>
           </label>
           <label className={`field ${issues.departmentId?.length ? "has-error" : ""}`}>
-            <span>Departamento responsable *</span>
-            <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required aria-invalid={issues.departmentId?.length ? true : undefined}>
+            <span>Departamento responsable{draft ? "" : " *"}</span>
+            <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required={!draft} aria-invalid={issues.departmentId?.length ? true : undefined}>
               <option value="">Seleccionar…</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.id}>
@@ -170,17 +175,17 @@ export function CapaForm({
             <FieldIssue messages={issues.departmentId} />
           </label>
           <label className={`field ${issues.openedAt?.length ? "has-error" : ""}`}>
-            <span>Fecha apertura *</span>
-            <input name="openedAt" type="date" value={openedAt} onChange={(event) => setOpenedAt(event.target.value)} required aria-invalid={issues.openedAt?.length ? true : undefined} />
+            <span>Fecha apertura{draft ? "" : " *"}</span>
+            <input name="openedAt" type="date" value={openedAt} onChange={(event) => setOpenedAt(event.target.value)} required={!draft} aria-invalid={issues.openedAt?.length ? true : undefined} />
             <FieldIssue messages={issues.openedAt} />
           </label>
-          <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required issues={issues.createdByText} />
+          <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required={!draft} issues={issues.createdByText} />
           {mode === "edit" ? (
             <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText} />
           ) : null}
           <label className={`field ${issues.originType?.length ? "has-error" : ""}`}>
-            <span>Origen *</span>
-            <select name="originType" defaultValue={formDefaults.originType ?? ""} required aria-invalid={issues.originType?.length ? true : undefined}>
+            <span>Origen{draft ? "" : " *"}</span>
+            <select name="originType" defaultValue={formDefaults.originType ?? ""} required={!draft} aria-invalid={issues.originType?.length ? true : undefined}>
               <option value="">Seleccionar…</option>
               <option value="Desviación">Desviación</option>
               <option value="Auditoría interna">Auditoría interna</option>
@@ -205,8 +210,8 @@ export function CapaForm({
           La descripción y la causa deben coincidir con el documento de origen cuando exista.
         </p>
         <div className="form-grid">
-          <TextArea label="Descripción breve del defecto" name="defectDescription" defaultValue={formDefaults.defectDescription} required issues={issues.defectDescription} />
-          <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} required={mode === "create"} issues={issues.rootCause} />
+          <TextArea label="Descripción breve del defecto" name="defectDescription" defaultValue={formDefaults.defectDescription} required={!draft} issues={issues.defectDescription} />
+          <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} required={!draft} issues={issues.rootCause} />
         </div>
       </section>
 
@@ -220,8 +225,8 @@ export function CapaForm({
           {actions.map((item, index) => (
             <div className="dynamic-row capa capa-full" key={index}>
               <label className="field">
-                <span>Descripción de la acción *</span>
-                <textarea required value={item.description} onChange={(e) => updateAction(index, { description: e.target.value })} />
+                <span>Descripción de la acción{draft ? "" : " *"}</span>
+                <textarea required={!draft} value={item.description} onChange={(e) => updateAction(index, { description: e.target.value })} />
               </label>
               <label className="field">
                 <span>Responsable</span>
@@ -260,7 +265,8 @@ export function CapaForm({
         <div className="form-grid">
           <label className="field">
             <span>Estado</span>
-            <select name="status" defaultValue={formDefaults.status ?? "OPEN"}>
+            <select name="status" value={recordStatus} onChange={(event) => setRecordStatus(event.target.value as "DRAFT" | "OPEN" | "CLOSED" | "CANCELLED")}>
+              {(mode === "create" || formDefaults.status === "DRAFT") ? <option value="DRAFT">Borrador</option> : null}
               <option value="OPEN">Abierta</option>
               <option value="CLOSED">Cerrada</option>
               <option value="CANCELLED">Cancelada</option>
@@ -323,7 +329,7 @@ export function CapaForm({
       <div className="form-footer">
         <Link className="button" href={capaId ? `/capa/${capaId}` : "/capa"}>Cancelar</Link>
         <button type="submit" className="button primary" disabled={pending}>
-          {pending ? "Guardando…" : mode === "create" ? "Guardar CAPA" : "Guardar cambios"}
+          {pending ? "Guardando…" : draft ? "Guardar borrador" : mode === "create" ? "Guardar CAPA" : "Guardar cambios"}
         </button>
       </div>
     </form>
