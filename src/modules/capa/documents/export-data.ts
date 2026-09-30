@@ -23,8 +23,10 @@ export async function getCapaExportRows(filters: CapaExportFilters) {
   if (filters.type === "CORRECTIVE" || filters.type === "PREVENTIVE") {
     and.push({ actionType: filters.type });
   }
-  if (["OPEN","CLOSED","CANCELLED"].includes(filters.status ?? "")) {
-    and.push({ status: filters.status as "OPEN"|"CLOSED"|"CANCELLED" });
+  if (["DRAFT","OPEN","CLOSED","CANCELLED"].includes(filters.status ?? "")) {
+    and.push({ status: filters.status as "DRAFT"|"OPEN"|"CLOSED"|"CANCELLED" });
+  } else {
+    and.push({ status: { not: "DRAFT" } });
   }
   if (["CONFORMING","NONCONFORMING","PENDING"].includes(filters.effectiveness ?? "")) {
     and.push({
