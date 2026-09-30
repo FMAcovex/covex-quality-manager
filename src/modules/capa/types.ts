@@ -4,7 +4,8 @@ export type CapaFormState = {
   fieldIssues?: Record<string, string[]>;
 
   submittedValues?: Record<string, string | string[]>;
-  formRevision?: number;};
+  formRevision?: number;
+};
 
 export type CapaPlannedActionInput = {
   description: string;
