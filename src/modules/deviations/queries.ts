@@ -43,7 +43,9 @@ export async function getDeviationList(filters: DeviationListFilters) {
     and.push({ qmsRecord: { year: Number(filters.year) } });
   }
   if (filters.department) and.push({ departmentId: filters.department });
-  if (filters.status === "OPEN" || filters.status === "CLOSED") and.push({ status: filters.status });
+  if (filters.status === "DRAFT" || filters.status === "OPEN" || filters.status === "CLOSED") {
+    and.push({ status: filters.status });
+  }
   if (["CRITICAL", "MAJOR", "MINOR"].includes(filters.classification ?? "")) {
     and.push({ classification: filters.classification as "CRITICAL" | "MAJOR" | "MINOR" });
   }
@@ -99,7 +101,7 @@ export async function getDeviationList(filters: DeviationListFilters) {
         ? {}
         : { qmsRecord: { isActive: true } };
 
-  const [rows, departments, yearRows, provenanceRows, total, open, overdue, followupDue] =
+  const [rows, departments, yearRows, provenanceRows, total, drafts, open, overdue, followupDue] =
     await Promise.all([
       prisma.deviation.findMany({
         where,
@@ -130,7 +132,8 @@ export async function getDeviationList(filters: DeviationListFilters) {
         distinct: ["provenance"],
         orderBy: { provenance: "asc" },
       }),
-      prisma.deviation.count({ where: administrativeWhere }),
+      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: { not: "DRAFT" } }] } }),
+      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "DRAFT" }] } }),
       prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
       prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN", deadlineStatus: "OUT_OF_TIME" }] } }),
       prisma.deviation.findMany({
@@ -154,6 +157,7 @@ export async function getDeviationList(filters: DeviationListFilters) {
       .filter((value): value is string => Boolean(value)),
     counters: {
       total,
+      drafts,
       open,
       overdue,
       followupDue: followupDue.filter((row) => {
