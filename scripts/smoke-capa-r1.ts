@@ -57,8 +57,10 @@ async function main() {
         departmentId: department.id,
         departmentCodeSnapshot: department.code,
         departmentNameSnapshot: department.name,
-        receivedAt: new Date("2098-01-01"),
+        openedAt: new Date("2098-01-01"),
         createdByText: actor,
+        complaintType: "CUSTOMER",
+        partyName: "Cliente R1",
         description: "Reclamación origen R1",
       },
     });
