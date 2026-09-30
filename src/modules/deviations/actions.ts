@@ -8,7 +8,7 @@ import { persistenceFormError } from "@/lib/forms/persistence-error";
 import {
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
-import { createQmsRelation } from "@/lib/qms/relation-service";
+import { createQmsRelation, deactivateQmsRelation } from "@/lib/qms/relation-service";
 import {
   assignDeviationBusinessCode,
   DeviationBusinessCodeError,
@@ -780,4 +780,43 @@ export async function addDeviationRelationAction(
   } catch (error) {
     return { error: error instanceof Error ? error.message : "No se ha podido vincular la CAPA." };
   }
+}
+
+
+export async function unlinkDeviationCapaAction(
+  deviationId: string,
+  capaQmsRecordId: string,
+  formData: FormData,
+) {
+  const actor = String(
+    formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo",
+  ).trim();
+
+  const deviation = await prisma.deviation.findUnique({
+    where: { id: deviationId },
+    select: { qmsRecordId: true },
+  });
+  if (!deviation) throw new Error("La desviación no existe.");
+
+  await prisma.$transaction(async (tx) => {
+    await deactivateQmsRelation(tx, {
+      sourceRecordId: deviation.qmsRecordId,
+      targetRecordId: capaQmsRecordId,
+    });
+    await tx.changeHistory.create({
+      data: {
+        qmsRecordId: deviation.qmsRecordId,
+        changedByText: actor,
+        fieldPath: "relations",
+        oldValue: jsonValue({ targetRecordId: capaQmsRecordId, relationType: "GENERATES" }),
+        newValue: jsonValue({ active: false }),
+        reason: "Desvinculación de CAPA",
+        source: "UI",
+      },
+    });
+  });
+
+  revalidatePath("/deviations");
+  revalidatePath("/capa");
+  revalidatePath(`/deviations/${deviationId}`);
 }
