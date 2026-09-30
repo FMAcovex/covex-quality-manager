@@ -222,9 +222,9 @@ export async function createCapaAction(
           status: v.status,
           cancellationReason: v.cancellationReason,
           effectivenessStatus: v.effectivenessStatus,
-          effectivenessCriteria: v.effectivenessCriteria,
+          effectivenessCriteria: existing.effectivenessCriteria,
           effectivenessAssessment: v.effectivenessAssessment,
-          effectivenessEvidence: v.effectivenessEvidence,
+          effectivenessEvidence: existing.effectivenessEvidence,
           effectiveClosedAt: toDate(v.effectiveClosedAt),
           conclusion: v.conclusion,
           internalObservations: v.internalObservations,
@@ -372,8 +372,16 @@ export async function updateCapaAction(
   const existing = await prisma.capa.findUnique({
     where: { id },
     include: {
-      qmsRecord: true,
+      qmsRecord: {
+        include: {
+          targetRelations: {
+            where: { isActive: true, relationType: "GENERATES" },
+            include: { sourceRecord: true },
+          },
+        },
+      },
       plannedActions: { orderBy: { sortOrder: "asc" } },
+      actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
       formVersion: true,
       annexIIITemplateVersion: true,
@@ -434,10 +442,14 @@ export async function updateCapaAction(
     return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
   }
 
-  const pendingOrigin =
+  const pendingData =
     existing.status === "DRAFT" && existing.extraData && typeof existing.extraData === "object" && !Array.isArray(existing.extraData)
-      ? (existing.extraData as { pendingOrigin?: { deviationPlanId?: string | null; complaintPlanId?: string | null; complaintId?: string | null } }).pendingOrigin
+      ? (existing.extraData as {
+          pendingOrigin?: { deviationPlanId?: string | null; complaintPlanId?: string | null; complaintId?: string | null };
+          pendingOriginIds?: string[];
+        })
       : undefined;
+  const pendingOrigin = pendingData?.pendingOrigin;
   const becomingOperational = existing.status === "DRAFT" && v.status !== "DRAFT";
 
   const oldSnapshot = {
@@ -452,6 +464,20 @@ export async function updateCapaAction(
     defectDescription: existing.defectDescription,
     rootCause: existing.rootCause,
     impactAssessment: existing.impactAssessment,
+    nextFollowupDate: existing.nextFollowupDate?.toISOString().slice(0, 10) ?? null,
+    actionFollowupObservations: existing.actionFollowupObservations,
+    actionFollowups: existing.actionFollowups.map((item) => ({
+      followupDate: item.followupDate?.toISOString().slice(0, 10) ?? "",
+      description: item.description ?? "",
+    })),
+    origins: existing.qmsRecord.targetRelations
+      .filter((item) => item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT")
+      .map((item) => ({
+        id: item.sourceRecord.id,
+        recordType: item.sourceRecord.recordType,
+        businessCode: item.sourceRecord.businessCode ?? "",
+        year: item.sourceRecord.year,
+      })),
     status: existing.status,
     cancellationReason: existing.cancellationReason,
     operationalClosedAt: existing.operationalClosedAt?.toISOString().slice(0, 10) ?? null,
@@ -556,7 +582,9 @@ export async function updateCapaAction(
           applicableTo: v.applicableTo,
           defectDescription: v.defectDescription,
           rootCause: v.rootCause,
-          impactAssessment: v.impactAssessment,
+          impactAssessment: existing.impactAssessment,
+          nextFollowupDate: toDate(v.nextFollowupDate),
+          actionFollowupObservations: v.actionFollowupObservations,
           operationalClosedAt: toDate(v.operationalClosedAt),
           status: v.status,
           cancellationReason: v.cancellationReason,
@@ -569,7 +597,16 @@ export async function updateCapaAction(
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
-          extraData: becomingOperational ? Prisma.DbNull : existing.extraData ?? undefined,
+          extraData: becomingOperational
+            ? Prisma.DbNull
+            : v.status === "DRAFT"
+              ? {
+                  ...((existing.extraData && typeof existing.extraData === "object" && !Array.isArray(existing.extraData))
+                    ? existing.extraData as Prisma.JsonObject
+                    : {}),
+                  pendingOriginIds: v.origins.map((item) => item.id),
+                }
+              : existing.extraData ?? undefined,
           plannedActions: {
             deleteMany: {},
             create: v.plannedActions.map((item, index) => ({
@@ -577,6 +614,14 @@ export async function updateCapaAction(
               responsible: item.responsible || null,
               plannedExecutionDate: toDate(item.plannedExecutionDate),
               impact: item.impact || null,
+              sortOrder: index,
+            })),
+          },
+          actionFollowups: {
+            deleteMany: {},
+            create: v.actionFollowups.map((item, index) => ({
+              followupDate: toDate(item.followupDate),
+              description: item.description || null,
               sortOrder: index,
             })),
           },
@@ -621,8 +666,38 @@ export async function updateCapaAction(
         } else {
           await relatePrimaryOrigin(tx, existing.qmsRecordId, v.originCode, parsed.actor);
         }
-      } else if (v.status !== "DRAFT") {
+      } else if (v.status !== "DRAFT" && !v.origins.length) {
         await relatePrimaryOrigin(tx, existing.qmsRecordId, v.originCode, parsed.actor);
+      }
+
+      if (v.status !== "DRAFT") {
+        const selectedOriginIds = new Set(v.origins.map((item) => item.id));
+        if (pendingOrigin?.deviationPlanId) {
+          const plan = await tx.deviationCapaPlan.findUnique({
+            where: { id: pendingOrigin.deviationPlanId },
+            select: { deviation: { select: { qmsRecordId: true } } },
+          });
+          if (plan) selectedOriginIds.add(plan.deviation.qmsRecordId);
+        }
+        if (pendingOrigin?.complaintPlanId) {
+          const plan = await tx.complaintCapaPlan.findUnique({
+            where: { id: pendingOrigin.complaintPlanId },
+            select: { complaint: { select: { qmsRecordId: true } } },
+          });
+          if (plan) selectedOriginIds.add(plan.complaint.qmsRecordId);
+        }
+        if (pendingOrigin?.complaintId) {
+          const complaint = await tx.complaint.findUnique({
+            where: { id: pendingOrigin.complaintId },
+            select: { qmsRecordId: true },
+          });
+          if (complaint) selectedOriginIds.add(complaint.qmsRecordId);
+        }
+        await syncOperationalOriginRelations(tx, {
+          capaRecordId: existing.qmsRecordId,
+          originRecordIds: [...selectedOriginIds],
+          changedByText: parsed.actor,
+        });
       }
 
       const updatedForVersion = await tx.capa.findUniqueOrThrow({
@@ -636,13 +711,25 @@ export async function updateCapaAction(
           annexIIITemplateVersion: true,
         },
       });
-      await refreshCurrentVersion(
-        tx,
-        existing.qmsRecordId,
-        snapshotJson(serializeCapaVersion(updatedForVersion)),
-        parsed.actor,
-        v.changeReason || null,
-      );
+      const versionSnapshot = snapshotJson(serializeCapaVersion(updatedForVersion));
+      if (v.saveIntent === "CREATE_FOLLOWUP_VERSION") {
+        await startNextVersion(
+          tx,
+          existing.qmsRecordId,
+          RecordVersionKind.FOLLOWUP,
+          versionSnapshot,
+          parsed.actor,
+          v.changeReason,
+        );
+      } else {
+        await refreshCurrentVersion(
+          tx,
+          existing.qmsRecordId,
+          versionSnapshot,
+          parsed.actor,
+          v.changeReason || null,
+        );
+      }
     });
 
     revalidatePath("/capa");
