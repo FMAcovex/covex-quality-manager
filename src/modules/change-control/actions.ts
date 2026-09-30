@@ -129,8 +129,8 @@ export async function createChangeControlAction(
   const v = parsed.values;
   let createdId: string;
   try {
-    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
+    const department = v.departmentId ? await prisma.department.findUnique({ where: { id: v.departmentId } }) : null;
+    if (v.finalStatus !== "DRAFT" && !department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
 
     const referenceDate = toDate(v.requestDate) ?? new Date();
     const [formVersion, annexIII, annexIV, annexV] = await Promise.all([
@@ -152,9 +152,9 @@ export async function createChangeControlAction(
       const change = await tx.changeControl.create({
         data: {
           qmsRecordId: qmsRecord.id,
-          departmentId: department.id,
-          departmentCodeSnapshot: department.code,
-          departmentNameSnapshot: department.name,
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department?.code ?? null,
+          departmentNameSnapshot: department?.name ?? null,
           requestDate: toDate(v.requestDate),
           requesterName: v.requesterName,
           requesterPosition: v.requesterPosition,
@@ -196,6 +196,7 @@ export async function createChangeControlAction(
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
+          finalStatus: v.finalStatus,
           formVersionId: formVersion?.id,
           annexIIITemplateVersionId: annexIII?.id,
           annexIVTemplateVersionId: annexIV?.id,
@@ -258,8 +259,11 @@ export async function updateChangeControlAction(
   if (!existing) return preserveFormState(previous, formData, { error: "El Control de Cambio ya no existe." });
 
   const v = parsed.values;
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
+  if (existing.finalStatus !== "DRAFT" && v.finalStatus === "DRAFT") {
+    return preserveFormState(previous, formData, { error: "Un Control de Cambio abierto o cerrado no puede volver a Borrador." });
+  }
+  const department = v.departmentId ? await prisma.department.findUnique({ where: { id: v.departmentId } }) : null;
+  if (v.finalStatus !== "DRAFT" && !department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
 
   if (existing.dictamenResult === "APPROVED") {
     const oldBaseline = existing.tasks
@@ -318,15 +322,17 @@ export async function updateChangeControlAction(
       await tx.changeControl.update({
         where: { id },
         data: {
-          departmentId: department.id,
-          departmentCodeSnapshot:
-            existing.departmentId === department.id
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentCodeSnapshot ?? department.code
-              : department.code,
-          departmentNameSnapshot:
-            existing.departmentId === department.id
+              : department.code
+            : null,
+          departmentNameSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentNameSnapshot ?? department.name
-              : department.name,
+              : department.name
+            : null,
           requestDate: toDate(v.requestDate),
           requesterName: v.requesterName,
           requesterPosition: v.requesterPosition,
@@ -368,6 +374,7 @@ export async function updateChangeControlAction(
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
+          finalStatus: v.finalStatus,
         },
       });
 
