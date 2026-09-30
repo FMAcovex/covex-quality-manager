@@ -13,8 +13,8 @@ const emptyDerived:ComplaintDerivedActionInput={actionType:"",businessCode:"",de
 function Field({label,name,defaultValue,type="text",required=false,span=""}:{label:string;name:string;defaultValue?:string;type?:string;required?:boolean;span?:string}) {
  return <label className={`field ${span}`}><span>{label}{required?" *":""}</span><input name={name} type={type} defaultValue={defaultValue??""} required={required}/></label>;
 }
-function TextArea({label,name,defaultValue,help}:{label:string;name:string;defaultValue?:string;help?:string}) {
- return <label className="field full"><span>{label}</span>{help?<small className="muted-note">{help}</small>:null}<textarea name={name} defaultValue={defaultValue??""}/></label>;
+function TextArea({label,name,defaultValue,help,required=false}:{label:string;name:string;defaultValue?:string;help?:string;required?:boolean}) {
+ return <label className="field full"><span>{label}{required?" *":""}</span>{help?<small className="muted-note">{help}</small>:null}<textarea name={name} defaultValue={defaultValue??""} required={required}/></label>;
 }
 function Bool({label,name,defaultValue}:{label:string;name:string;defaultValue?:string}) {
  return <label className="field"><span>{label}</span><select name={name} defaultValue={defaultValue??""}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>;
@@ -40,6 +40,9 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
  const [derived,setDerived]=useState<ComplaintDerivedActionInput[]>(defaults.derivedActions??[]);
  const [complaintType,setComplaintType]=useState<"CUSTOMER"|"PROVIDER">((formDefaults.complaintType as "CUSTOMER"|"PROVIDER"|undefined)??"CUSTOMER");
  const [openedAt,setOpenedAt]=useState(formDefaults.openedAt??"");
+ const [departmentId,setDepartmentId]=useState(formDefaults.departmentId??"");
+ const [recordStatus,setRecordStatus]=useState<"DRAFT"|"OPEN"|"CLOSED">(formDefaults.status??(mode==="create"?"DRAFT":"OPEN"));
+ const draft=recordStatus==="DRAFT";
  const patchCapa=(i:number,p:Partial<ComplaintCapaPlanInput>)=>setCapas(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  const patchDerived=(i:number,p:Partial<ComplaintDerivedActionInput>)=>setDerived(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  return <form key={state.formRevision??0} action={formAction} className="form-stack">
@@ -51,16 +54,16 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    <h2>Parte I · 1. Registro e identificación</h2>
    <p className="section-help">Estructura del Anexo III de GC-00/027/03.</p>
    <div className="form-grid">
-    <ControlledBusinessCodeField recordType="COMPLAINT" label="N.º reclamación" initialValue={formDefaults.businessCode} mode={mode} yearSource={openedAt} complaintType={complaintType}/>
-    <label className="field"><span>Departamento *</span><select name="departmentId" defaultValue={formDefaults.departmentId??""} required><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
-    <label className="field"><span>Fecha apertura *</span><input name="openedAt" type="date" value={openedAt} onChange={e=>setOpenedAt(e.target.value)} required/></label>
+    <ControlledBusinessCodeField recordType="COMPLAINT" label="N.º reclamación" initialValue={formDefaults.businessCode} mode={mode} yearSource={openedAt} complaintType={complaintType} locked={mode==="edit"&&!draft}/>
+    <label className="field"><span>Departamento{draft?"":" *"}</span><select name="departmentId" value={departmentId} onChange={e=>setDepartmentId(e.target.value)} required={!draft}><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
+    <label className="field"><span>Fecha apertura{draft?"":" *"}</span><input name="openedAt" type="date" value={openedAt} onChange={e=>setOpenedAt(e.target.value)} required={!draft}/></label>
     <Field label="Fecha detección" name="detectionDate" type="date" defaultValue={formDefaults.detectionDate}/>
     <Field label="Fecha recepción" name="receptionDate" type="date" defaultValue={formDefaults.receptionDate}/>
     <Field label="Detectado por" name="detectedBy" defaultValue={formDefaults.detectedBy}/>
-    <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required/>
+    <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required={!draft}/>
     {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText}/>:null}
     <label className="field"><span>Tipo *</span><select name="complaintType" value={complaintType} onChange={e=>setComplaintType(e.target.value as "CUSTOMER"|"PROVIDER")} required><option value="PROVIDER">A proveedor / subcontrata</option><option value="CUSTOMER">De cliente / agente externo</option></select></label>
-    <Field label="Cliente / Proveedor" name="partyName" defaultValue={formDefaults.partyName} required span="span-2"/>
+    <Field label="Cliente / Proveedor" name="partyName" defaultValue={formDefaults.partyName} required={!draft} span="span-2"/>
     <Field label="Contacto (nombre, teléfono, mail)" name="contact" defaultValue={formDefaults.contact} span="span-2"/>
     <Checks label="Origen / fuente de detección" name="sourceTypes" options={sourceOptions} defaults={formDefaults.sourceTypes}/>
     <Field label="Otro origen · especificar" name="sourceOther" defaultValue={formDefaults.sourceOther} span="span-2"/>
@@ -73,7 +76,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
     <Field label="Cantidad" name="quantity" defaultValue={formDefaults.quantity}/>
     <Field label="Caducidad / reanálisis" name="expiryReanalysis" defaultValue={formDefaults.expiryReanalysis}/>
     <Field label="Pedido / albarán / certificado" name="purchaseDeliveryReference" defaultValue={formDefaults.purchaseDeliveryReference} span="span-2"/>
-    <TextArea label="Descripción de la reclamación *" name="description" defaultValue={formDefaults.description}/>
+    <TextArea label="Descripción de la reclamación" name="description" defaultValue={formDefaults.description} required={!draft}/>
     <Checks label="Categoría / motivo" name="categoryTypes" options={categoryOptions} defaults={formDefaults.categoryTypes}/>
     <Field label="Otra categoría · especificar" name="categoryOther" defaultValue={formDefaults.categoryOther} span="span-2"/>
     <Bool label="¿Reclamación recurrente?" name="recurrent" defaultValue={formDefaults.recurrent}/>
@@ -180,7 +183,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
     <TextArea label="Conclusión de cierre" name="closeConclusion" defaultValue={formDefaults.closeConclusion}/>
     <Field label="Aprobaciones seguimiento / cierre" name="closeApprovalNames" defaultValue={formDefaults.closeApprovalNames} span="span-2"/>
     <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={formDefaults.closedAt}/>
-    <label className="field"><span>Estado final</span><select name="status" defaultValue={formDefaults.status??"OPEN"}><option value="OPEN">Abierta / en seguimiento</option><option value="CLOSED">Cerrada</option></select></label>
+    <label className="field"><span>Estado final</span><select name="status" value={recordStatus} onChange={e=>setRecordStatus(e.target.value as "DRAFT"|"OPEN"|"CLOSED")}>{(mode==="create"||formDefaults.status==="DRAFT")?<option value="DRAFT">Borrador</option>:null}<option value="OPEN">Abierta / en seguimiento</option><option value="CLOSED">Cerrada</option></select><small className="muted-note">{draft?"En borrador pueden quedar campos pendientes. Al abrir se validarán los obligatorios.":"Expediente en ciclo operativo."}</small></label>
    </div>
   </section>
 
@@ -194,6 +197,6 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    </div>
   </section>
 
-  <div className="form-footer"><Link className="button" href={complaintId?`/complaints/${complaintId}`:"/complaints"}>Cancelar</Link><button className="button primary" disabled={pending}>{pending?"Guardando…":mode==="create"?"Guardar reclamación":"Guardar cambios"}</button></div>
+  <div className="form-footer"><Link className="button" href={complaintId?`/complaints/${complaintId}`:"/complaints"}>Cancelar</Link><button className="button primary" disabled={pending}>{pending?"Guardando…":draft?"Guardar borrador":mode==="create"?"Guardar reclamación":"Guardar cambios"}</button></div>
  </form>;
 }
