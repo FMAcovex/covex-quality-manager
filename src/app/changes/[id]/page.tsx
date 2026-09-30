@@ -109,7 +109,7 @@ export default async function ChangeControlDetailPage({
             <span className={`badge ${record.effectivenessStatus === "ACCEPTABLE" ? "closed" : record.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : record.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>
               Eficacia {effectivenessStatusLabel(record.effectivenessStatus)}
             </span>
-            <span className={`badge ${record.finalStatus === "CLOSED" ? "closed" : "open"}`}>
+            <span className={`badge ${record.finalStatus === "DRAFT" ? "neutral" : record.finalStatus === "CLOSED" ? "closed" : "open"}`}>
               {finalStatusLabel(record.finalStatus)}
             </span>
             {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
@@ -119,7 +119,7 @@ export default async function ChangeControlDetailPage({
           </p>
         </div>
         <div className="record-actions">
-          <Link className="button primary" href={`/changes/${id}/edit`}>Editar Solicitud / Dictamen</Link>
+          <Link className="button primary" href={`/changes/${id}/edit`}>{record.finalStatus === "DRAFT" ? "Editar borrador" : "Editar Solicitud / Dictamen"}</Link>
           {record.dictamenResult === "APPROVED" && record.finalStatus === "OPEN" ? (
             <Link className="button" href={`/changes/${id}?tab=followups#new-followup`}>+ Seguimiento</Link>
           ) : null}
