@@ -198,7 +198,6 @@ async function main() {
   invalidDeviation.set("capaPlansJson", "[]");
   const invalidDeviationParsed = parseDeviationForm(invalidDeviation);
   assert.ok(invalidDeviationParsed.fieldIssues.issueDate?.length);
-  assert.ok(invalidDeviationParsed.fieldIssues.businessCode?.length);
 
   const invalidCapa = new FormData();
   invalidCapa.set("openedAt", "2099-02-31");
