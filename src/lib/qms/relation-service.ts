@@ -41,6 +41,12 @@ export type DeactivateOperationalRelationInput = {
   reason: string;
 };
 
+export type SyncOperationalOriginRelationsInput = {
+  capaRecordId: string;
+  originRecordIds: string[];
+  changedByText?: string | null;
+};
+
 const relationRecordSelect = {
   id: true,
   recordType: true,
@@ -299,4 +305,75 @@ export async function deactivateOperationalRelation(
   });
 
   return relation;
+}
+
+
+export async function syncOperationalOriginRelations(
+  client: QmsRelationHistoryClient,
+  input: SyncOperationalOriginRelationsInput,
+) {
+  const uniqueOriginIds = [...new Set(input.originRecordIds.filter(Boolean))];
+  const capa = await getQmsRecord(client, input.capaRecordId, "destino");
+  if (capa.recordType !== QmsRecordType.CAPA) {
+    throw new QmsRelationValidationError("El expediente destino debe ser una CAPA.");
+  }
+
+  const origins = uniqueOriginIds.length
+    ? await client.qmsRecord.findMany({
+        where: { id: { in: uniqueOriginIds } },
+        select: relationRecordSelect,
+      })
+    : [];
+  if (origins.length !== uniqueOriginIds.length) {
+    throw new QmsRelationValidationError("Uno o varios expedientes de origen ya no existen.");
+  }
+
+  for (const origin of origins) {
+    if (!origin.isActive) {
+      throw new QmsRelationValidationError("Un expediente de origen anulado no puede vincularse a una CAPA.");
+    }
+    if (origin.recordType !== QmsRecordType.DEVIATION && origin.recordType !== QmsRecordType.COMPLAINT) {
+      throw new QmsRelationValidationError("Una CAPA solo puede tener como origen una Desviación o una Reclamación.");
+    }
+    await createQmsRelation(client, {
+      sourceRecordId: origin.id,
+      targetRecordId: capa.id,
+      createdByText: input.changedByText,
+    });
+  }
+
+  const activeIncoming = await client.qmsRelation.findMany({
+    where: {
+      targetRecordId: capa.id,
+      relationType: QmsRelationType.GENERATES,
+      isActive: true,
+      sourceRecord: {
+        recordType: { in: [QmsRecordType.DEVIATION, QmsRecordType.COMPLAINT] },
+      },
+    },
+    select: { id: true, sourceRecordId: true },
+  });
+
+  const selected = new Set(uniqueOriginIds);
+  for (const relation of activeIncoming) {
+    if (!selected.has(relation.sourceRecordId)) {
+      await client.qmsRelation.update({
+        where: { id: relation.id },
+        data: { isActive: false },
+      });
+    }
+  }
+
+  return client.qmsRelation.findMany({
+    where: {
+      targetRecordId: capa.id,
+      relationType: QmsRelationType.GENERATES,
+      isActive: true,
+      sourceRecord: {
+        recordType: { in: [QmsRecordType.DEVIATION, QmsRecordType.COMPLAINT] },
+      },
+    },
+    include: { sourceRecord: true },
+    orderBy: { createdAt: "asc" },
+  });
 }
