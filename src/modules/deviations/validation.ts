@@ -3,7 +3,7 @@ import type { CapaPlanInput, ImmediateActionInput } from "@/modules/deviations/t
 
 const triState = z.enum(["YES", "NO", "NA"]);
 const classification = z.enum(["CRITICAL", "MAJOR", "MINOR"]);
-const status = z.enum(["OPEN", "CLOSED"]);
+const status = z.enum(["DRAFT", "OPEN", "CLOSED"]);
 const dataQuality = z.enum(["COMPLETE", "INCOMPLETE", "REVIEW_REQUIRED"]);
 const originType = z.enum([
   "FINISHED_PRODUCT_SYSTEM",
@@ -90,8 +90,15 @@ export function parseDeviationForm(formData: FormData) {
   const selectedOrigin = enumValue(originType, text(formData, "provenance"));
   const createdByText = text(formData, "createdByText");
   const modifiedByText = text(formData, "modifiedByText");
+  const saveIntent = text(formData, "saveIntent");
   const statusRaw = text(formData, "status");
-  const recordStatus = enumValue(status, statusRaw) ?? "OPEN";
+  const recordStatus =
+    saveIntent === "draft"
+      ? "DRAFT"
+      : saveIntent === "open"
+        ? "OPEN"
+        : enumValue(status, statusRaw) ?? "OPEN";
+  const draftMode = recordStatus === "DRAFT";
   const dataQualityRaw = text(formData, "dataQualityStatus");
   const dataQualityStatus = enumValue(dataQuality, dataQualityRaw) ?? "REVIEW_REQUIRED";
 
@@ -111,17 +118,17 @@ export function parseDeviationForm(formData: FormData) {
 
   const errors: string[] = [];
   const fieldIssues: Record<string, string[]> = {};
-  const addIssue = (field: string, message: string) => {
-    errors.push(message);
+  const addIssue = (field: string, message: string, blocking = !draftMode) => {
+    if (blocking) errors.push(message);
     fieldIssues[field] = [...(fieldIssues[field] ?? []), message];
   };
 
   if (!businessCode) addIssue("businessCode", "La codificación de la desviación es obligatoria.");
   if (!departmentId) addIssue("departmentId", "El departamento es obligatorio.");
   if (!issueDate) addIssue("issueDate", "La fecha de apertura es obligatoria.");
-  else if (!validDate(issueDate)) addIssue("issueDate", "La fecha de apertura no tiene un formato válido.");
+  else if (!validDate(issueDate)) addIssue("issueDate", "La fecha de apertura no tiene un formato válido.", true);
   if (eventDateTime && !validDateTime(eventDateTime)) {
-    addIssue("eventDateTime", "La fecha/hora del evento no tiene un formato válido.");
+    addIssue("eventDateTime", "La fecha/hora del evento no tiene un formato válido.", true);
   }
   if (!eventDateTime) addIssue("eventDateTime", "La fecha/hora del evento es obligatoria.");
   if (!detectedBy) addIssue("detectedBy", "Debe indicarse quién detectó la desviación.");
@@ -211,11 +218,11 @@ export function parseDeviationForm(formData: FormData) {
   if (!dispositionQuantity) addIssue("dispositionQuantity", "La cantidad es obligatoria.");
   if (!clientNotification) addIssue("clientNotification", "Debe indicarse si procede notificación al cliente.");
   if (!dispositionComments) addIssue("dispositionComments", "Los comentarios de disposición son obligatorios.");
-  if (!statusRaw) addIssue("status", "El estado del expediente es obligatorio.");
+  if (!statusRaw && !saveIntent) addIssue("status", "El estado del expediente es obligatorio.");
   if (!dataQualityRaw) addIssue("dataQualityStatus", "El control de estado es obligatorio.");
 
   if (closedAt && !validDate(closedAt)) {
-    addIssue("closedAt", "La fecha de cierre no tiene un formato válido.");
+    addIssue("closedAt", "La fecha de cierre no tiene un formato válido.", true);
   }
 
   immediateActions.forEach((action, index) => {
@@ -223,6 +230,7 @@ export function parseDeviationForm(formData: FormData) {
       addIssue(
         "immediateActionsJson",
         `La fecha de la acción inmediata ${index + 1} no tiene un formato válido.`,
+        true,
       );
     }
   });
@@ -231,6 +239,7 @@ export function parseDeviationForm(formData: FormData) {
       addIssue(
         "capaPlansJson",
         `La fecha prevista de la propuesta CAPA ${index + 1} no tiene un formato válido.`,
+        true,
       );
     }
   });
