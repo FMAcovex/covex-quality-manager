@@ -220,6 +220,7 @@ enum ReturnDecision {
 }
 
 enum ReturnStatus {
+  DRAFT
   OPEN
   CLOSED
 }
