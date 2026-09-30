@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
+import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import { useActionState,useState } from "react";
 import type { ComplaintCapaPlanInput,ComplaintDerivedActionInput,ComplaintFormDefaults,ComplaintFormState,DepartmentOption } from "@/modules/complaints/types";
 
@@ -37,6 +38,8 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
  const formDefaults=submittedDefaults(defaults,state.submittedValues);
  const [capas,setCapas]=useState<ComplaintCapaPlanInput[]>(defaults.capaPlans??[]);
  const [derived,setDerived]=useState<ComplaintDerivedActionInput[]>(defaults.derivedActions??[]);
+ const [complaintType,setComplaintType]=useState<"CUSTOMER"|"PROVIDER">((formDefaults.complaintType as "CUSTOMER"|"PROVIDER"|undefined)??"CUSTOMER");
+ const [openedAt,setOpenedAt]=useState(formDefaults.openedAt??"");
  const patchCapa=(i:number,p:Partial<ComplaintCapaPlanInput>)=>setCapas(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  const patchDerived=(i:number,p:Partial<ComplaintDerivedActionInput>)=>setDerived(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  return <form key={state.formRevision??0} action={formAction} className="form-stack">
@@ -48,9 +51,9 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    <h2>Parte I · 1. Registro e identificación</h2>
    <p className="section-help">Estructura del Anexo III de GC-00/027/03.</p>
    <div className="form-grid">
-    <Field label="N.º reclamación" name="businessCode" defaultValue={formDefaults.businessCode} required/>
+    <ControlledBusinessCodeField recordType="COMPLAINT" label="N.º reclamación" initialValue={formDefaults.businessCode} mode={mode} yearSource={openedAt} complaintType={complaintType}/>
     <label className="field"><span>Departamento *</span><select name="departmentId" defaultValue={formDefaults.departmentId??""} required><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
-    <Field label="Fecha apertura" name="openedAt" type="date" defaultValue={formDefaults.openedAt} required/>
+    <label className="field"><span>Fecha apertura *</span><input name="openedAt" type="date" value={openedAt} onChange={e=>setOpenedAt(e.target.value)} required/></label>
     <Field label="Fecha detección" name="detectionDate" type="date" defaultValue={formDefaults.detectionDate}/>
     <Field label="Fecha recepción" name="receptionDate" type="date" defaultValue={formDefaults.receptionDate}/>
     <Field label="Detectado por" name="detectedBy" defaultValue={formDefaults.detectedBy}/>
