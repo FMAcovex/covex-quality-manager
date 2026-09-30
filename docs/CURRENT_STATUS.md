@@ -660,3 +660,13 @@ La prueba transversal cubre:
 
 D5 se ejecutará después de cerrar D6: primero se congela el comportamiento funcional de Desviaciones y después se extraen los patrones reutilizables para otros módulos con pruebas de regresión sobre esta base.
 
+## D5.1 — Conservación transversal de formularios tras error
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
+
+- se centraliza la serialización de los valores enviados y la revisión del formulario en `src/lib/forms/preserved-state.ts`;
+- CAPA, Controles de Cambios, Reclamaciones y Devoluciones conservan los valores introducidos cuando falla una validación funcional o la persistencia;
+- los formularios reutilizan los valores enviados al volver a renderizarse tras el error;
+- las listas dinámicas controladas en React se mantienen sin reconstruirse desde cero;
+- se añaden pruebas unitarias del mecanismo común;
+- Desviaciones mantiene el comportamiento ya validado y queda como referencia funcional del patrón.
+
