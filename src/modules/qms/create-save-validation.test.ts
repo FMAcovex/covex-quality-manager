@@ -28,7 +28,7 @@ describe("Hito 10.8C3-A form validation", () => {
     expect(parsed.fieldIssues.departmentId).toBeDefined();
     expect(parsed.fieldIssues.openedAt).toBeDefined();
     expect(parsed.fieldIssues.createdByText).toBeDefined();
-    expect(parsed.fieldIssues.originType).toBeDefined();
+    expect(parsed.fieldIssues.originsJson).toBeDefined();
     expect(parsed.fieldIssues.defectDescription).toBeDefined();
     expect(parsed.fieldIssues.rootCause).toBeDefined();
     expect(parsed.fieldIssues.plannedActionsJson).toBeDefined();
