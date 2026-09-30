@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
+import { preserveFormState } from "@/lib/forms/preserved-state";
 import {
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
@@ -57,11 +58,11 @@ async function replaceProducts(tx:Prisma.TransactionClient,id:string,products:Re
    receptionObservations:p.receptionObservations||null,receivedBy:p.receivedBy||null,receivedByDate:d(p.receivedByDate),verifiedBy:p.verifiedBy||null,verifiedByDate:d(p.verifiedByDate),sortOrder:i}});
  }
 }
-export async function createReturnAction(_s:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
- const parsed=parseReturnForm(fd);if(parsed.errors.length)return{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors};
+export async function createReturnAction(previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
+ const parsed=parseReturnForm(fd);if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors});
  const v=parsed.values;let createdId:string;
  try{
-  const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return{error:"El área seleccionada no existe."};
+  const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return preserveFormState(previous,fd,{error:"El área seleccionada no existe."});
   const ref=d(v.communicationDate)??new Date();
   const [form,iii,iv,vdecl,vi]=await Promise.all([
    getApplicableFormVersion(QmsRecordType.RETURN,ref),getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_III",ref),
@@ -92,22 +93,25 @@ export async function createReturnAction(_s:ReturnFormState,fd:FormData):Promise
   createdId=created.id;
  }catch(e){
   if(e instanceof ComplaintReturnLinkError){
-   return{error:"No se puede guardar la devolución.",fieldErrors:[e.message]};
+   return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:[e.message]});
   }
-  return persistenceFormError(e,"la devolución");
+  return preserveFormState(previous,fd,persistenceFormError(e,"la devolución"));
  }
  revalidatePath("/returns");revalidatePath("/complaints");redirect(`/returns/${createdId}`);
 }
-export async function updateReturnAction(id:string,_s:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
- const parsed=parseReturnForm(fd);if(parsed.errors.length)return{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors};
- const v=parsed.values,existing=await prisma.returnRecord.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return{error:"La devolución ya no existe."};
- const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return{error:"El área seleccionada no existe."};
+export async function updateReturnAction(id:string,previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
+ const parsed=parseReturnForm(fd);if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors});
+ const v=parsed.values,existing=await prisma.returnRecord.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return preserveFormState(previous,fd,{error:"La devolución ya no existe."});
+ const department=await prisma.department.findUnique({where:{id:v.departmentId!}});if(!department)return preserveFormState(previous,fd,{error:"El área seleccionada no existe."});
+ try{
  await prisma.$transaction(async tx=>{
   await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode:v.businessCode,year:v.communicationDate?new Date(v.communicationDate).getFullYear():null}});
   await tx.returnRecord.update({where:{id},data:recordData(v,department,existing)});await replaceProducts(tx,id,v.products);
   await tx.changeHistory.create({data:{qmsRecordId:existing.qmsRecordId,changedByText:parsed.actor,fieldPath:"__edit__",oldValue:j({updatedAt:existing.updatedAt}),newValue:j({businessCode:v.businessCode,status:v.status}),reason:v.changeReason,source:"UI"}});
   const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,existing.qmsRecordId,snapshotJson(serializeReturnVersion(snap)),parsed.actor,v.changeReason);
  });
+
+ }catch(e){return preserveFormState(previous,fd,persistenceFormError(e,"la devolución"));}
  revalidatePath("/returns");revalidatePath(`/returns/${id}`);redirect(`/returns/${id}`);
 }
 export async function addReturnFollowupAction(id:string,_state:FollowupActionState,fd:FormData):Promise<FollowupActionState>{
