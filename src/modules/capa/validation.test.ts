@@ -149,15 +149,27 @@ describe("parseCapaForm R1", () => {
     expect(parseCapaForm(missingDate).fieldIssues.actionFollowupsJson).toBeDefined();
   });
 
-  it("requires a reason only when a new functional follow-up is created", () => {
+  it("requires date and reason only when a new functional follow-up is created", () => {
     const ordinary = base();
+    expect(parseCapaForm(ordinary).fieldIssues.versionFollowupDate).toBeUndefined();
     expect(parseCapaForm(ordinary).fieldIssues.changeReason).toBeUndefined();
 
     const versioned = base();
     versioned.set("saveIntent", "CREATE_FOLLOWUP_VERSION");
+    expect(parseCapaForm(versioned).fieldIssues.versionFollowupDate).toBeDefined();
     expect(parseCapaForm(versioned).fieldIssues.changeReason).toBeDefined();
 
+    versioned.set("versionFollowupDate", "2026-10-01");
     versioned.set("changeReason", "Actualización de seguimiento");
+    expect(parseCapaForm(versioned).fieldIssues.versionFollowupDate).toBeUndefined();
     expect(parseCapaForm(versioned).fieldIssues.changeReason).toBeUndefined();
+  });
+
+  it("rejects an invalid follow-up version date", () => {
+    const versioned = base();
+    versioned.set("saveIntent", "CREATE_FOLLOWUP_VERSION");
+    versioned.set("versionFollowupDate", "2026-99-40");
+    versioned.set("changeReason", "Actualización de seguimiento");
+    expect(parseCapaForm(versioned).fieldIssues.versionFollowupDate).toBeDefined();
   });
 });
