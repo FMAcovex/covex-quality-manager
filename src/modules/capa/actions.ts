@@ -9,7 +9,7 @@ import {
   allowedIncomingRelationTypes,
   selectOperationalRelationTarget,
 } from "@/lib/qms/relation-rules";
-import { createQmsRelation } from "@/lib/qms/relation-service";
+import { createQmsRelation, deactivateQmsRelation } from "@/lib/qms/relation-service";
 import {
   DeviationCapaPlanLinkError,
   getDeviationCapaPlanOrigin,
@@ -560,4 +560,44 @@ export async function addCapaRelationAction(
   } catch (error) {
     return { error: error instanceof Error ? error.message : "No se ha podido vincular el origen." };
   }
+}
+
+
+export async function unlinkCapaOriginAction(
+  capaId: string,
+  sourceQmsRecordId: string,
+  formData: FormData,
+) {
+  const actor = String(
+    formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo",
+  ).trim();
+
+  const capa = await prisma.capa.findUnique({
+    where: { id: capaId },
+    select: { qmsRecordId: true },
+  });
+  if (!capa) throw new Error("La CAPA no existe.");
+
+  await prisma.$transaction(async (tx) => {
+    await deactivateQmsRelation(tx, {
+      sourceRecordId: sourceQmsRecordId,
+      targetRecordId: capa.qmsRecordId,
+    });
+    await tx.changeHistory.create({
+      data: {
+        qmsRecordId: capa.qmsRecordId,
+        changedByText: actor,
+        fieldPath: "relations",
+        oldValue: jsonValue({ sourceRecordId: sourceQmsRecordId, relationType: "GENERATES" }),
+        newValue: jsonValue({ active: false }),
+        reason: "Desvinculación de expediente de origen",
+        source: "UI",
+      },
+    });
+  });
+
+  revalidatePath("/deviations");
+  revalidatePath("/complaints");
+  revalidatePath("/capa");
+  revalidatePath(`/capa/${capaId}`);
 }
