@@ -15,7 +15,13 @@ type DeviationVersionSource = Prisma.DeviationGetPayload<{
 
 type CapaVersionSource = Prisma.CapaGetPayload<{
   include: {
-    qmsRecord: true;
+    qmsRecord: {
+      include: {
+        targetRelations: {
+          include: { sourceRecord: true };
+        };
+      };
+    };
     plannedActions: true;
     actionFollowups: true;
     followups: true;
@@ -169,7 +175,23 @@ export function serializeDeviationVersion(record: DeviationVersionSource) {
   };
 }
 
-export function serializeCapaVersion(record: CapaVersionSource) {
+export function serializeCapaVersion(
+  record: CapaVersionSource,
+  metadata: { versionFollowupDate?: Date | null } = {},
+) {
+  const origins = record.qmsRecord.targetRelations
+    .filter(
+      (relation) =>
+        relation.isActive &&
+        relation.relationType === "GENERATES" &&
+        (relation.sourceRecord.recordType === "DEVIATION" ||
+          relation.sourceRecord.recordType === "COMPLAINT"),
+    )
+    .map((relation) => ({
+      recordType: relation.sourceRecord.recordType,
+      businessCode: relation.sourceRecord.businessCode ?? null,
+    }));
+
   return {
     recordType: "CAPA",
     businessCode: record.qmsRecord.businessCode ?? null,
@@ -180,9 +202,11 @@ export function serializeCapaVersion(record: CapaVersionSource) {
       departmentCodeSnapshot: record.departmentCodeSnapshot ?? null,
       departmentNameSnapshot: record.departmentNameSnapshot ?? null,
       openedAt: iso(record.openedAt),
+      versionFollowupDate: iso(metadata.versionFollowupDate),
       createdByText: record.createdByText ?? null,
       originType: record.originType ?? null,
       originCode: record.originCode ?? null,
+      origins,
       applicableTo: record.applicableTo ?? null,
       defectDescription: record.defectDescription ?? null,
       rootCause: record.rootCause ?? null,
@@ -586,12 +610,25 @@ export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
     ...d,
     qmsRecord: { businessCode: root.businessCode ?? null },
     openedAt: dateValue(d.openedAt),
+    versionFollowupDate: dateValue(d.versionFollowupDate),
     nextFollowupDate: dateValue(d.nextFollowupDate),
     operationalClosedAt: dateValue(d.operationalClosedAt),
     effectiveClosedAt: dateValue(d.effectiveClosedAt),
+    origins: objectArray(d.origins).length
+      ? objectArray(d.origins).map((item) => ({
+          recordType: stringValue(item.recordType),
+          businessCode: stringValue(item.businessCode),
+        }))
+      : d.originType && d.originCode
+        ? [{ recordType: stringValue(d.originType), businessCode: stringValue(d.originCode) }]
+        : [],
     plannedActions: objectArray(d.plannedActions).map((item) => ({
       ...item,
       plannedExecutionDate: dateValue(item.plannedExecutionDate),
+    })),
+    actionFollowups: objectArray(d.actionFollowups).map((item) => ({
+      ...item,
+      followupDate: dateValue(item.followupDate),
     })),
     followups: objectArray(d.followups)
       .map((item) => ({
@@ -608,6 +645,21 @@ export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
       ? { versionCode: d.anexoIIITemplateVersionCode }
       : null,
   };
+}
+
+export function capaSnapshotVersionFollowupDate(
+  snapshot: Prisma.JsonValue,
+  sequenceNumber: number,
+) {
+  const root = objectValue(snapshot);
+  const d = objectValue(root.capa);
+  const direct = dateValue(d.versionFollowupDate);
+  if (direct) return direct;
+  if (sequenceNumber === 0) return dateValue(d.openedAt);
+  const legacy = objectArray(d.followups).find(
+    (item) => Number(item.sequenceNumber ?? -1) === sequenceNumber,
+  );
+  return legacy ? dateValue(legacy.followupDate) : null;
 }
 
 export function recordVersionSummary(
