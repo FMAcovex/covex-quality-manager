@@ -117,4 +117,27 @@ describe("parseDeviationForm", () => {
     const parsed = parseDeviationForm(form);
     expect(parsed.fieldIssues.otherOrigin).toBeDefined();
   });
+  it("permite guardar un borrador incompleto y conserva los campos pendientes como avisos", () => {
+    const form = new FormData();
+    form.set("saveIntent", "draft");
+    form.set("status", "DRAFT");
+    const parsed = parseDeviationForm(form);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.values.status).toBe("DRAFT");
+    expect(parsed.fieldIssues.businessCode).toBeDefined();
+    expect(parsed.fieldIssues.departmentId).toBeDefined();
+    expect(parsed.fieldIssues.whatHappened).toBeDefined();
+    expect(parsed.fieldIssues.rootCause).toBeDefined();
+  });
+
+  it("exige los obligatorios al intentar abrir un borrador", () => {
+    const form = new FormData();
+    form.set("saveIntent", "open");
+    form.set("status", "DRAFT");
+    const parsed = parseDeviationForm(form);
+    expect(parsed.values.status).toBe("OPEN");
+    expect(parsed.errors.length).toBeGreaterThan(0);
+    expect(parsed.fieldIssues.businessCode).toBeDefined();
+  });
+
 });

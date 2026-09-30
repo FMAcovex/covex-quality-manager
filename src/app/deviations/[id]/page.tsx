@@ -43,12 +43,16 @@ function classificationLabel(value: string | null) {
 
 function provenanceLabel(value: string | null) {
   const labels: Record<string, string> = {
+    FINISHED_PRODUCT_SYSTEM: "Producto terminado / Sistema",
+    CLIENT: "Cliente",
+    RAW_PACKAGING_MATERIAL: "Materia prima / Material de acondicionamiento",
+    SUPPLIER: "Proveedor",
+    EQUIPMENT_LINE: "Equipo / Línea afectada",
+    OTHER: "Otros",
     DOCUMENTATION: "Documentación",
     PROCESS: "Proceso",
     EQUIPMENT: "Equipo",
     MATERIAL: "Material",
-    SUPPLIER: "Proveedor",
-    OTHER: "Otro",
   };
   return value ? labels[value] ?? value : "—";
 }
@@ -125,7 +129,7 @@ export default async function DeviationDetailPage({
           <p className="eyebrow"><Link href="/deviations">← Desviaciones</Link></p>
           <div className="record-title-line">
             <h1>{code}</h1>
-            <span className={`badge ${deviation.status === "OPEN" ? "open" : "closed"}`}>{deviation.status === "OPEN" ? "Abierta" : "Cerrada"}</span>
+            <span className={`badge ${deviation.status === "DRAFT" ? "neutral" : deviation.status === "OPEN" ? "open" : "closed"}`}>{deviation.status === "DRAFT" ? "Borrador" : deviation.status === "OPEN" ? "Abierta" : "Cerrada"}</span>
             {deviation.classification ? <span className={`badge ${deviation.classification.toLowerCase()}`}>{classificationLabel(deviation.classification)}</span> : null}
             <span className="badge neutral">{deviation.departmentCodeSnapshot ?? deviation.department?.code ?? "Sin departamento"}</span>
             {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
@@ -133,8 +137,10 @@ export default async function DeviationDetailPage({
           <p className="muted-note">Apertura {formatDate(deviation.issueDate)} · Cumplimentado por {text(deviation.createdByText)}</p>
         </div>
         <div className="record-actions">
-          <Link className="button primary" href={`/deviations/${id}/edit`}>Editar/nueva versión</Link>
-          <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>
+          <Link className="button primary" href={`/deviations/${id}/edit`}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link>
+          {deviation.status === "DRAFT"
+            ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
+            : <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>}
         </div>
       </div>
 
@@ -449,8 +455,8 @@ export default async function DeviationDetailPage({
                   <article className="timeline-item record-version-item" key={item.id}>
                     <header className="record-version-header">
                       <strong>{versionLabel(item.sequenceNumber)} · {kind}</strong>
-                      <span className={`badge ${summary.status === "OPEN" ? "open" : "closed"}`}>
-                        {summary.status === "OPEN" ? "Abierta" : "Cerrada"}
+                      <span className={`badge ${summary.status === "DRAFT" ? "neutral" : summary.status === "OPEN" ? "open" : "closed"}`}>
+                        {summary.status === "DRAFT" ? "Borrador" : summary.status === "OPEN" ? "Abierta" : "Cerrada"}
                       </span>
                       {item.frozenAt ? <span className="badge neutral">Histórica</span> : <span className="badge neutral">Vigente</span>}
                     </header>

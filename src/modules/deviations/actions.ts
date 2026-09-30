@@ -82,11 +82,21 @@ export async function createDeviationAction(
   const v = parsed.values;
   let deviationId: string;
   try {
-    const duplicate = await prisma.qmsRecord.findUnique({ where: { recordType_businessCode: { recordType: QmsRecordType.DEVIATION, businessCode: v.businessCode! } } });
-    if (duplicate) return formError(previous, formData, "No se puede guardar el expediente.", ["Ya existe una desviación con esa codificación."], { businessCode: ["Ya existe una desviación con esa codificación."] });
+    if (v.businessCode) {
+      const duplicate = await prisma.qmsRecord.findUnique({
+        where: { recordType_businessCode: { recordType: QmsRecordType.DEVIATION, businessCode: v.businessCode } },
+      });
+      if (duplicate) {
+        return formError(previous, formData, "No se puede guardar el expediente.", ["Ya existe una desviación con esa codificación."], { businessCode: ["Ya existe una desviación con esa codificación."] });
+      }
+    }
 
-    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return formError(previous, formData, "No se puede guardar el expediente.", ["El departamento seleccionado no existe."], { departmentId: ["El departamento seleccionado no existe."] });
+    const department = v.departmentId
+      ? await prisma.department.findUnique({ where: { id: v.departmentId } })
+      : null;
+    if (v.status !== "DRAFT" && !department) {
+      return formError(previous, formData, "No se puede guardar el expediente.", ["El departamento seleccionado no existe."], { departmentId: ["El departamento seleccionado no existe."] });
+    }
 
     const referenceDate = toDate(v.issueDate) ?? new Date();
     const [formVersion, templateVersion] = await Promise.all([
@@ -110,9 +120,9 @@ export async function createDeviationAction(
       const created = await tx.deviation.create({
         data: {
           qmsRecordId: qmsRecord.id,
-          departmentId: department.id,
-          departmentCodeSnapshot: department.code,
-          departmentNameSnapshot: department.name,
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department?.code ?? null,
+          departmentNameSnapshot: department?.name ?? null,
           issueDate: toDate(v.issueDate),
           eventDateTime: toDate(v.eventDateTime),
           detectedBy: v.detectedBy,
@@ -214,7 +224,7 @@ export async function createDeviationAction(
         snapshotJson(serializeDeviationVersion(versionRecord)),
         parsed.actor,
         "UI",
-        "Emisión inicial de la desviación",
+        v.status === "DRAFT" ? "Borrador inicial de la desviación" : "Emisión inicial de la desviación",
       );
 
       return created;
@@ -270,13 +280,26 @@ export async function updateDeviationAction(
   if (!existing) return formError(previous, formData, "La desviación ya no existe.");
 
   const v = parsed.values;
+  if (existing.status !== "DRAFT" && v.status === "DRAFT") {
+    return formError(
+      previous,
+      formData,
+      "No se puede volver a borrador una desviación ya abierta.",
+      ["Una desviación abierta o cerrada no puede volver al estado Borrador."],
+      { status: ["Una desviación abierta o cerrada no puede volver al estado Borrador."] },
+    );
+  }
   const reopening = existing.status === "CLOSED" && v.status === "OPEN";
   const versionKind = deviationVersionKind({ saveMode, reopening });
   if (reopening) {
     v.closedAt = null;
   }
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return formError(previous, formData, "No se puede guardar el expediente.", ["El departamento seleccionado no existe."], { departmentId: ["El departamento seleccionado no existe."] });
+  const department = v.departmentId
+    ? await prisma.department.findUnique({ where: { id: v.departmentId } })
+    : null;
+  if (v.status !== "DRAFT" && !department) {
+    return formError(previous, formData, "No se puede guardar el expediente.", ["El departamento seleccionado no existe."], { departmentId: ["El departamento seleccionado no existe."] });
+  }
 
   const oldSnapshot = {
     businessCode: existing.qmsRecord.businessCode,
@@ -390,15 +413,17 @@ export async function updateDeviationAction(
       await tx.deviation.update({
         where: { id },
         data: {
-          departmentId: department.id,
-          departmentCodeSnapshot:
-            existing.departmentId === department.id
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentCodeSnapshot ?? department.code
-              : department.code,
-          departmentNameSnapshot:
-            existing.departmentId === department.id
+              : department.code
+            : null,
+          departmentNameSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentNameSnapshot ?? department.name
-              : department.name,
+              : department.name
+            : null,
           issueDate: toDate(v.issueDate),
           eventDateTime: toDate(v.eventDateTime),
           detectedBy: v.detectedBy,

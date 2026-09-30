@@ -2,7 +2,7 @@ export type AnalyticsRow = {
   openingYear: number | null;
   issueDate: Date | null;
   closedAt: Date | null;
-  status: "OPEN" | "CLOSED";
+  status: "DRAFT" | "OPEN" | "CLOSED";
   classification: "CRITICAL" | "MAJOR" | "MINOR" | null;
   recurrentRootCause: "YES" | "NO" | "NA" | null;
   affectsFinishedProduct: "YES" | "NO" | "NA" | null;
@@ -136,8 +136,9 @@ export function buildYearMetrics(
   year: number,
   dataAvailable = true,
 ): YearMetrics {
-  const opened = rows.filter((row) => row.openingYear === year);
-  const closed = rows.filter((row) => yearOf(row.closedAt) === year && closingDays(row) !== null);
+  const operationalRows = rows.filter((row) => row.status !== "DRAFT");
+  const opened = operationalRows.filter((row) => row.openingYear === year);
+  const closed = operationalRows.filter((row) => yearOf(row.closedAt) === year && closingDays(row) !== null);
   const closingValues = closed
     .map((row) => closingDays(row))
     .filter((value): value is number => value !== null);

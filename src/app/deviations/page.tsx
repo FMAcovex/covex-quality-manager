@@ -90,7 +90,7 @@ export default async function DeviationsPage({
           <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
           <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year ?? ""}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
           <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
-          <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
+          <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="DRAFT">Borrador</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
           <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification ?? ""}><option value="">Todas</option><option value="CRITICAL">Crítica</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option></select></label>
           <label className="filter-placeholder"><span>Procedencia</span><select name="provenance" defaultValue={filters.provenance ?? ""}><option value="">Todas</option>{provenances.map((value)=><option key={value} value={value}>{value}</option>)}</select></label>
           <label className="filter-placeholder"><span>Medidas</span><select name="measures" defaultValue={filters.measures ?? ""}><option value="">Todas</option><option value="none">Ninguna</option><option value="immediate">Correctiva inmediata</option><option value="capa">CAPA</option><option value="both">Inmediata + CAPA</option></select></label>
@@ -107,7 +107,7 @@ export default async function DeviationsPage({
               href: `/deviations/${row.id}`,
               code: row.qmsRecord.businessCode ?? "Sin código",
               title: row.whatHappened ?? row.materialProcessAffected ?? "Sin descripción",
-              meta: [row.departmentCodeSnapshot ?? row.department?.code, row.status === "OPEN" ? "Abierta" : "Cerrada"].filter(Boolean).join(" · "),
+              meta: [row.departmentCodeSnapshot ?? row.department?.code, row.status === "DRAFT" ? "Borrador" : row.status === "OPEN" ? "Abierta" : "Cerrada"].filter(Boolean).join(" · "),
               searchText: [
                 row.qmsRecord.businessCode,
                 row.materialProcessAffected,
@@ -125,6 +125,7 @@ export default async function DeviationsPage({
 
       <div className="status-strip">
         <div><strong>{counters.total}</strong><span>Desviaciones</span></div>
+        <div><strong>{counters.drafts}</strong><span>Borradores</span></div>
         <div><strong>{counters.open}</strong><span>Abiertas</span></div>
         <div><strong>{counters.overdue}</strong><span>Fuera de plazo</span></div>
         <div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div>
@@ -148,7 +149,7 @@ export default async function DeviationsPage({
                       data-reminder-id={row.qmsRecord.id}
                       data-reminder-code={qmsRecordDisplayCode(row.qmsRecord)}
                       data-reminder-summary={row.whatHappened ?? row.materialProcessAffected ?? "Sin descripción"}
-                      data-reminder-status={row.status === "OPEN" ? "Abierta" : "Cerrada"}
+                      data-reminder-status={row.status === "DRAFT" ? "Borrador" : row.status === "OPEN" ? "Abierta" : "Cerrada"}
                       data-reminder-meta={row.departmentCodeSnapshot ?? row.department?.code ?? ""}
                       data-reminder-href={`/deviations/${row.id}`}
                       aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "desviación"}`}
@@ -164,7 +165,7 @@ export default async function DeviationsPage({
                   <td data-column-key="rootCause" className="table-cell-wrap">{row.rootCause ?? "—"}</td>
                   <td data-column-key="opening">{formatDate(row.issueDate)}</td>
                   <td data-column-key="closing">{formatDate(row.closedAt)}</td>
-                  <td data-column-key="status"><span className={`badge ${row.status === "OPEN" ? "open" : "closed"}`}>{row.status === "OPEN" ? "Abierta" : "Cerrada"}</span></td>
+                  <td data-column-key="status"><span className={`badge ${row.status === "DRAFT" ? "neutral" : row.status === "OPEN" ? "open" : "closed"}`}>{row.status === "DRAFT" ? "Borrador" : row.status === "OPEN" ? "Abierta" : "Cerrada"}</span></td>
                   <td data-column-key="deadline">{deadlineLabel(row.deadlineStatus)}</td>
                   <td data-column-key="measures">{measuresLabel(row)}</td>
                   <td data-column-key="capa" className="table-cell-wrap">{row.capaPlans.length ? row.capaPlans.map((plan)=>plan.description).join(" · ") : "—"}</td>

@@ -18,7 +18,11 @@ export function buildDeviationWhere(filters: DeviationListFilters): Prisma.Devia
   ]});
   if (filters.year && /^\d{4}$/.test(filters.year)) and.push({ qmsRecord: { year: Number(filters.year) } });
   if (filters.department) and.push({ departmentId: filters.department });
-  if (filters.status === "OPEN" || filters.status === "CLOSED") and.push({ status: filters.status });
+  if (filters.status === "DRAFT" || filters.status === "OPEN" || filters.status === "CLOSED") {
+    and.push({ status: filters.status });
+  } else {
+    and.push({ status: { not: "DRAFT" } });
+  }
   if (["CRITICAL","MAJOR","MINOR"].includes(filters.classification ?? "")) and.push({ classification: filters.classification as "CRITICAL"|"MAJOR"|"MINOR" });
   if (filters.provenance) and.push({ provenance: filters.provenance });
   if (["NOT_EVALUATED","IN_TIME","OUT_OF_TIME","NA"].includes(filters.deadline ?? "")) and.push({ deadlineStatus: filters.deadline as "NOT_EVALUATED"|"IN_TIME"|"OUT_OF_TIME"|"NA" });

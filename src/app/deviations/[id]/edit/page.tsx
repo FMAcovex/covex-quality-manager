@@ -33,8 +33,8 @@ export default async function EditDeviationPage({
       <div className="page-heading">
         <div>
           <p className="eyebrow">Desviaciones</p>
-          <h1>Editar {deviation.qmsRecord.businessCode ?? "desviación"}</h1>
-          <p>Edita la versión vigente o genera el siguiente seguimiento como una versión completa del expediente.</p>
+          <h1>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar"} {deviation.qmsRecord.businessCode ?? "desviación"}</h1>
+          <p>{deviation.status === "DRAFT" ? "Completa los campos pendientes y abre la desviación cuando esté lista." : "Edita la versión vigente o genera el siguiente seguimiento como una versión completa del expediente."}</p>
         </div>
         <Link className="button" href={`/deviations/${id}`}>← Volver al expediente</Link>
       </div>
