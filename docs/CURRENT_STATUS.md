@@ -628,3 +628,16 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - se comprueban códigos activos y anulados para impedir reutilización histórica;
 - una vez abierta la desviación, el código queda fijado;
 - se mantienen pruebas unitarias y smoke PostgreSQL concurrente integrado en CI.
+
+## D4 — Desvinculación Desviación ↔ CAPA
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
+
+- botón Desvincular disponible desde la pestaña Relaciones de Desviaciones;
+- botón Desvincular disponible desde la vista inversa de CAPA;
+- la operación solo desactiva la `QmsRelation` canónica;
+- no elimina ni modifica el expediente CAPA;
+- ambas vistas dejan de mostrar la relación inmediatamente;
+- la relación puede reactivarse mediante el flujo normal de vinculación sin crear duplicados;
+- se registra historial operativo de la desvinculación en el expediente desde el que se ejecuta;
+- pruebas del servicio común cubren desvinculación, consulta en ambos sentidos y reactivación.
+
