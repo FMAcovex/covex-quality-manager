@@ -17,7 +17,11 @@ export type DeviationAnalyticsFilters = {
 };
 
 function filterWhere(filters: DeviationAnalyticsFilters): Prisma.DeviationWhereInput {
-  const and: Prisma.DeviationWhereInput[] = [{ includeInKpi: true }, { qmsRecord: { isActive: true } }];
+  const and: Prisma.DeviationWhereInput[] = [
+    { includeInKpi: true },
+    { qmsRecord: { isActive: true } },
+    { status: { not: "DRAFT" } },
+  ];
 
   if (filters.department) and.push({ departmentId: filters.department });
   if (["CRITICAL", "MAJOR", "MINOR"].includes(filters.classification ?? "")) {
