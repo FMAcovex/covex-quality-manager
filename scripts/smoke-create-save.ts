@@ -104,12 +104,18 @@ async function main() {
     businessCode: deviationCode,
     year: 2099,
   }]));
+  capaForm.set("applicableTo", "Sistema CAPA de prueba");
   capaForm.set("defectDescription", "Defecto ficticio para probar la creación CAPA.");
   capaForm.set("rootCause", "Causa ficticia sustentada.");
   capaForm.set("status", "OPEN");
   capaForm.set("saveIntent", "UPDATE_CURRENT");
   capaForm.set("actionFollowupsJson", "[]");
+  capaForm.set("actionFollowupObservations", "Seguimiento inicial documentado.");
   capaForm.set("effectivenessStatus", "PENDING");
+  capaForm.set("effectivenessAssessment", "Pendiente de evaluación en el próximo seguimiento.");
+  capaForm.set("operationalStatusDescription", "Acción abierta y en curso.");
+  capaForm.set("conclusion", "Mantener abierta hasta completar las acciones.");
+  capaForm.set("nextFollowupDate", "2099-04-02");
   capaForm.set("dataQualityStatus", "REVIEW_REQUIRED");
   capaForm.set(
     "plannedActionsJson",
@@ -144,10 +150,16 @@ async function main() {
       createdByText: parsedCapa.values.createdByText,
       originType: parsedCapa.values.originType,
       originCode: parsedCapa.values.originCode,
+      applicableTo: parsedCapa.values.applicableTo,
       defectDescription: parsedCapa.values.defectDescription,
       rootCause: parsedCapa.values.rootCause,
+      actionFollowupObservations: parsedCapa.values.actionFollowupObservations,
+      operationalStatusDescription: parsedCapa.values.operationalStatusDescription,
+      nextFollowupDate: parsedCapa.values.nextFollowupDate ? new Date(parsedCapa.values.nextFollowupDate) : null,
+      conclusion: parsedCapa.values.conclusion,
       status: parsedCapa.values.status,
       effectivenessStatus: parsedCapa.values.effectivenessStatus,
+      effectivenessAssessment: parsedCapa.values.effectivenessAssessment,
       dataQualityStatus: parsedCapa.values.dataQualityStatus,
       plannedActions: {
         create: parsedCapa.values.plannedActions.map((item, index) => ({
