@@ -8,12 +8,12 @@ export async function GET(request: Request) {
   const filters = {
     q: url.searchParams.get("q") ?? undefined,
     administrative: url.searchParams.get("administrative") ?? undefined,
-    year: url.searchParams.get("year") ?? undefined,
-    department: url.searchParams.get("department") ?? undefined,
-    classification: url.searchParams.get("classification") ?? undefined,
-    execution: url.searchParams.get("execution") ?? undefined,
-    effectiveness: url.searchParams.get("effectiveness") ?? undefined,
-    status: url.searchParams.get("status") ?? undefined,
+    year: url.searchParams.getAll("year"),
+    department: url.searchParams.getAll("department"),
+    classification: url.searchParams.getAll("classification"),
+    execution: url.searchParams.getAll("execution"),
+    effectiveness: url.searchParams.getAll("effectiveness"),
+    status: url.searchParams.getAll("status"),
   };
   const rows = await getChangeControlExportRows(filters);
   const buffer = generateChangeSimpleList(rows);

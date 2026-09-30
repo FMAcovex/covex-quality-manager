@@ -1,15 +1,16 @@
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { validValues, validYears } from "@/lib/qms/list-filters";
 
 export type DeviationListFilters = {
   q?: string;
   administrative?: string;
-  year?: string;
-  department?: string;
-  status?: string;
-  classification?: string;
-  provenance?: string;
+  year?: string[];
+  department?: string[];
+  status?: string[];
+  classification?: string[];
+  provenance?: string[];
   measures?: string;
   capa?: string;
   deadline?: string;
@@ -39,17 +40,14 @@ export async function getDeviationList(filters: DeviationListFilters) {
     });
   }
 
-  if (filters.year && /^\d{4}$/.test(filters.year)) {
-    and.push({ qmsRecord: { year: Number(filters.year) } });
-  }
-  if (filters.department) and.push({ departmentId: filters.department });
-  if (filters.status === "DRAFT" || filters.status === "OPEN" || filters.status === "CLOSED") {
-    and.push({ status: filters.status });
-  }
-  if (["CRITICAL", "MAJOR", "MINOR"].includes(filters.classification ?? "")) {
-    and.push({ classification: filters.classification as "CRITICAL" | "MAJOR" | "MINOR" });
-  }
-  if (filters.provenance) and.push({ provenance: filters.provenance });
+  const years = validYears(filters.year);
+  if (years.length) and.push({ qmsRecord: { year: { in: years } } });
+  if (filters.department?.length) and.push({ departmentId: { in: filters.department } });
+  const statuses = validValues(filters.status, ["DRAFT", "OPEN", "CLOSED"] as const);
+  if (statuses.length) and.push({ status: { in: statuses as ("DRAFT" | "OPEN" | "CLOSED")[] } });
+  const classifications = validValues(filters.classification, ["CRITICAL", "MAJOR", "MINOR"] as const);
+  if (classifications.length) and.push({ classification: { in: classifications as ("CRITICAL" | "MAJOR" | "MINOR")[] } });
+  if (filters.provenance?.length) and.push({ provenance: { in: filters.provenance } });
   if (["NOT_EVALUATED", "IN_TIME", "OUT_OF_TIME", "NA"].includes(filters.deadline ?? "")) {
     and.push({ deadlineStatus: filters.deadline as "NOT_EVALUATED" | "IN_TIME" | "OUT_OF_TIME" | "NA" });
   }

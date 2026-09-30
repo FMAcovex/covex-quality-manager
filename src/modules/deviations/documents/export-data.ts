@@ -2,6 +2,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { DeviationListFilters } from "@/modules/deviations/queries";
+import { validValues, validYears } from "@/lib/qms/list-filters";
 
 export function buildDeviationWhere(filters: DeviationListFilters): Prisma.DeviationWhereInput {
   const and: Prisma.DeviationWhereInput[] = [];
@@ -16,15 +17,15 @@ export function buildDeviationWhere(filters: DeviationListFilters): Prisma.Devia
     { internalObservations: { contains: filters.q, mode: "insensitive" } },
     { capaPlans: { some: { description: { contains: filters.q, mode: "insensitive" } } } },
   ]});
-  if (filters.year && /^\d{4}$/.test(filters.year)) and.push({ qmsRecord: { year: Number(filters.year) } });
-  if (filters.department) and.push({ departmentId: filters.department });
-  if (filters.status === "DRAFT" || filters.status === "OPEN" || filters.status === "CLOSED") {
-    and.push({ status: filters.status });
-  } else {
-    and.push({ status: { not: "DRAFT" } });
-  }
-  if (["CRITICAL","MAJOR","MINOR"].includes(filters.classification ?? "")) and.push({ classification: filters.classification as "CRITICAL"|"MAJOR"|"MINOR" });
-  if (filters.provenance) and.push({ provenance: filters.provenance });
+  const years = validYears(filters.year); if (years.length) and.push({ qmsRecord: { year: { in: years } } });
+  if (filters.department?.length) and.push({ departmentId: { in: filters.department } });
+  const requestedStatuses = validValues(filters.status, ["DRAFT","OPEN","CLOSED"] as const);
+  const statuses = requestedStatuses.filter((value) => value !== "DRAFT") as ("OPEN"|"CLOSED")[];
+  if (filters.status?.length) and.push({ status: { in: statuses } });
+  else and.push({ status: { not: "DRAFT" } });
+  const classifications = validValues(filters.classification, ["CRITICAL","MAJOR","MINOR"] as const);
+  if (classifications.length) and.push({ classification: { in: classifications as ("CRITICAL"|"MAJOR"|"MINOR")[] } });
+  if (filters.provenance?.length) and.push({ provenance: { in: filters.provenance } });
   if (["NOT_EVALUATED","IN_TIME","OUT_OF_TIME","NA"].includes(filters.deadline ?? "")) and.push({ deadlineStatus: filters.deadline as "NOT_EVALUATED"|"IN_TIME"|"OUT_OF_TIME"|"NA" });
   if (filters.capa === "yes") and.push({ capaPlans: { some: {} } });
   if (filters.capa === "no") and.push({ capaPlans: { none: {} } });

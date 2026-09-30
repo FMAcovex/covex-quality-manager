@@ -1,8 +1,9 @@
 import "server-only";
 import { Prisma,QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { validValues, validYears } from "@/lib/qms/list-filters";
 
-export type ReturnListFilters={q?:string;administrative?:string;year?:string;department?:string;type?:string;status?:string;decision?:string};
+export type ReturnListFilters={q?:string;administrative?:string;year?:string[];department?:string[];type?:string[];status?:string[];decision?:string[]};
 
 export async function getReturnList(filters:ReturnListFilters){
  const and:Prisma.ReturnRecordWhereInput[]=[];
@@ -15,11 +16,11 @@ export async function getReturnList(filters:ReturnListFilters){
   {reasonObservations:{contains:filters.q,mode:"insensitive"}},{finalDestination:{contains:filters.q,mode:"insensitive"}},
   {products:{some:{OR:[{productNameCode:{contains:filters.q,mode:"insensitive"}},{lot:{contains:filters.q,mode:"insensitive"}}]}}}
  ]});
- if(filters.year&&/^\d{4}$/.test(filters.year))and.push({qmsRecord:{year:Number(filters.year)}});
- if(filters.department)and.push({departmentId:filters.department});
- if(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"].includes(filters.type??""))and.push({returnType:filters.type as "COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER"});
- if(filters.status==="DRAFT"||filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
- if(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??""))and.push({decision:filters.decision as "PENDING"|"ACCEPTED"|"REJECTED"});
+ const yearsFilter=validYears(filters.year);if(yearsFilter.length)and.push({qmsRecord:{year:{in:yearsFilter}}});
+ if(filters.department?.length)and.push({departmentId:{in:filters.department}});
+ const types=validValues(filters.type,["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"] as const);if(types.length)and.push({returnType:{in:types as ("COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER")[]}});
+ const statuses=validValues(filters.status,["DRAFT","OPEN","CLOSED"] as const);if(statuses.length)and.push({status:{in:statuses as ("DRAFT"|"OPEN"|"CLOSED")[]}});
+ const decisions=validValues(filters.decision,["PENDING","ACCEPTED","REJECTED"] as const);if(decisions.length)and.push({decision:{in:decisions as ("PENDING"|"ACCEPTED"|"REJECTED")[]}});
  const where:Prisma.ReturnRecordWhereInput=and.length?{AND:and}:{};
  const administrativeWhere:Prisma.ReturnRecordWhereInput=filters.administrative==="ANNULLED"?{qmsRecord:{isActive:false}}:filters.administrative==="ALL"?{}:{qmsRecord:{isActive:true}};
  const [rows,departments,years,total,drafts,open,pending,followupDue]=await Promise.all([

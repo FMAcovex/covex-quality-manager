@@ -13,7 +13,7 @@ export async function GET(request:Request) {
   if(!Number.isInteger(year)||year<2000||year>2100) {
     return NextResponse.json({error:"Selecciona un año válido."},{status:400});
   }
-  const rows=await getCapaExportRows({year:String(year)});
+  const rows=await getCapaExportRows({year:[String(year)]});
   const template=await prisma.templateVersion.findFirst({
     where:{
       module:"CAPA",

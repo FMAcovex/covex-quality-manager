@@ -14,12 +14,12 @@ import {
 import { getChangeControlList } from "@/modules/change-control/queries";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
+import { MultiSelectFilter } from "@/components/multi-select-filter";
+import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
 
 export const dynamic = "force-dynamic";
 
-function param(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
+const param = firstQueryValue;
 
 export default async function ChangeControlPage({
   searchParams,
@@ -30,21 +30,18 @@ export default async function ChangeControlPage({
   const filters = {
     q: param(query.q),
     administrative: param(query.administrative),
-    year: param(query.year),
-    department: param(query.department),
-    classification: param(query.classification),
-    execution: param(query.execution),
-    effectiveness: param(query.effectiveness),
-    status: param(query.status),
+    year: queryList(query.year),
+    department: queryList(query.department),
+    classification: queryList(query.classification),
+    execution: queryList(query.execution),
+    effectiveness: queryList(query.effectiveness),
+    status: queryList(query.status),
   };
   const { rows, departments, years, counters } = await getChangeControlList(filters);
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.CHANGE_CONTROL, DocumentType.CHANGE_ANNEX_VII);
-  const exportYear = filters.year && /^\d{4}$/.test(filters.year)
-    ? filters.year
-    : String(new Date().getFullYear());
-  const simpleParams = new URLSearchParams(
-    Object.entries(filters).filter(([, value]) => Boolean(value)) as Array<[string, string]>,
-  );
+  const exportYear = filters.year[0] ?? String(new Date().getFullYear());
+  const simpleParams = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => appendFilterValues(simpleParams, key, value));
 
   return (
     <section className="workspace">
@@ -85,12 +82,12 @@ export default async function ChangeControlPage({
       <form method="get" className="toolbar-form">
         <div className="filter-panel operational change-filters">
           <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-          <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year ?? ""}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
-          <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
-          <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification ?? ""}><option value="">Todas</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option></select></label>
-          <label className="filter-placeholder"><span>Ejecución</span><select name="execution" defaultValue={filters.execution ?? ""}><option value="">Todas</option><option value="NOT_EXECUTED">No ejecutado</option><option value="EXECUTED">Ejecutado</option></select></label>
-          <label className="filter-placeholder"><span>Eficacia</span><select name="effectiveness" defaultValue={filters.effectiveness ?? ""}><option value="">Todas</option><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Aceptable</option><option value="NOT_ACCEPTABLE">No aceptable</option><option value="NOT_APPLICABLE">No aplica</option></select></label>
-          <label className="filter-placeholder"><span>Estado final</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="DRAFT">Borrador</option><option value="OPEN">Abierto</option><option value="CLOSED">Cerrado</option></select></label>
+          <MultiSelectFilter name="year" label="Año" selected={filters.year} options={years.map((year)=>({value:String(year),label:String(year)}))} />
+          <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departments.map((d)=>({value:d.id,label:d.code}))} />
+          <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={[{value:"MAJOR",label:"Mayor"},{value:"MINOR",label:"Menor"}]} />
+          <MultiSelectFilter name="execution" label="Ejecución" selected={filters.execution} options={[{value:"NOT_EXECUTED",label:"No ejecutado"},{value:"EXECUTED",label:"Ejecutado"}]} />
+          <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"ACCEPTABLE",label:"Aceptable"},{value:"NOT_ACCEPTABLE",label:"No aceptable"},{value:"NOT_APPLICABLE",label:"No aplica"}]} />
+          <MultiSelectFilter name="status" label="Estado final" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierto"},{value:"CLOSED",label:"Cerrado"}]} />
           <div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/changes">Limpiar</Link></div>
         </div>
         <div className="search-row">

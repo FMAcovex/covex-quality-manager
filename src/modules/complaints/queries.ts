@@ -1,9 +1,10 @@
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { validValues, validYears } from "@/lib/qms/list-filters";
 
 export type ComplaintListFilters={
-  q?:string;administrative?:string;year?:string;department?:string;type?:string;status?:string;classification?:string;effectiveness?:string;
+  q?:string;administrative?:string;year?:string[];department?:string[];type?:string[];status?:string[];classification?:string[];effectiveness?:string[];
 };
 
 export async function getComplaintList(filters:ComplaintListFilters){
@@ -18,14 +19,12 @@ export async function getComplaintList(filters:ComplaintListFilters){
   {rootCause:{contains:filters.q,mode:"insensitive"}},{internalObservations:{contains:filters.q,mode:"insensitive"}},
   {capaPlans:{some:{description:{contains:filters.q,mode:"insensitive"}}}}
  ]});
- if(filters.year&&/^\d{4}$/.test(filters.year))and.push({qmsRecord:{year:Number(filters.year)}});
- if(filters.department)and.push({departmentId:filters.department});
- if(filters.type==="PROVIDER"||filters.type==="CUSTOMER")and.push({complaintType:filters.type});
- if(filters.status==="DRAFT"||filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
- if(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"].includes(filters.classification??""))
-   and.push({classification:filters.classification as "CRITICAL"|"MAJOR"|"MINOR"|"NO_GMP_IMPACT"});
- if(["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"].includes(filters.effectiveness??""))
-   and.push({effectivenessStatus:filters.effectiveness as "PENDING"|"ACCEPTABLE"|"NOT_ACCEPTABLE"|"NOT_REQUIRED"});
+ const yearsFilter=validYears(filters.year);if(yearsFilter.length)and.push({qmsRecord:{year:{in:yearsFilter}}});
+ if(filters.department?.length)and.push({departmentId:{in:filters.department}});
+ const types=validValues(filters.type,["PROVIDER","CUSTOMER"] as const);if(types.length)and.push({complaintType:{in:types as ("PROVIDER"|"CUSTOMER")[]}});
+ const statuses=validValues(filters.status,["DRAFT","OPEN","CLOSED"] as const);if(statuses.length)and.push({status:{in:statuses as ("DRAFT"|"OPEN"|"CLOSED")[]}});
+ const classifications=validValues(filters.classification,["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"] as const);if(classifications.length)and.push({classification:{in:classifications as ("CRITICAL"|"MAJOR"|"MINOR"|"NO_GMP_IMPACT")[]}});
+ const effectiveness=validValues(filters.effectiveness,["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"] as const);if(effectiveness.length)and.push({effectivenessStatus:{in:effectiveness as ("PENDING"|"ACCEPTABLE"|"NOT_ACCEPTABLE"|"NOT_REQUIRED")[]}});
  const where:Prisma.ComplaintWhereInput=and.length?{AND:and}:{};
  const administrativeWhere:Prisma.ComplaintWhereInput=filters.administrative==="ANNULLED"?{qmsRecord:{isActive:false}}:filters.administrative==="ALL"?{}:{qmsRecord:{isActive:true}};
  const [rows,departments,years,total,drafts,open,pendingEfficacy,followupDue]=await Promise.all([

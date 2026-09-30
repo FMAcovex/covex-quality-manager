@@ -8,12 +8,12 @@ import { ColumnSelector } from "@/components/column-selector";
 import { deviationColumns } from "@/modules/deviations/column-config";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
+import { MultiSelectFilter } from "@/components/multi-select-filter";
+import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
 
 export const dynamic = "force-dynamic";
 
-function param(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
+const param = firstQueryValue;
 
 export default async function DeviationsPage({
   searchParams,
@@ -24,11 +24,11 @@ export default async function DeviationsPage({
   const filters = {
     q: param(query.q),
     administrative: param(query.administrative),
-    year: param(query.year),
-    department: param(query.department),
-    status: param(query.status),
-    classification: param(query.classification),
-    provenance: param(query.provenance),
+    year: queryList(query.year),
+    department: queryList(query.department),
+    status: queryList(query.status),
+    classification: queryList(query.classification),
+    provenance: queryList(query.provenance),
     measures: param(query.measures),
     capa: param(query.capa),
     deadline: param(query.deadline),
@@ -36,10 +36,8 @@ export default async function DeviationsPage({
 
   const { rows, departments, years, provenances, counters } = await getDeviationList(filters);
   const exportParams = new URLSearchParams();
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) exportParams.set(key, value);
-  });
-  const currentYear = filters.year ?? String(new Date().getFullYear());
+  Object.entries(filters).forEach(([key, value]) => appendFilterValues(exportParams, key, value));
+  const currentYear = filters.year[0] ?? String(new Date().getFullYear());
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_V);
 
   return (
@@ -88,11 +86,11 @@ export default async function DeviationsPage({
       <form method="get" className="toolbar-form">
         <div className="filter-panel operational">
           <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-          <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year ?? ""}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
-          <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
-          <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="DRAFT">Borrador</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
-          <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification ?? ""}><option value="">Todas</option><option value="CRITICAL">Crítica</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option></select></label>
-          <label className="filter-placeholder"><span>Procedencia</span><select name="provenance" defaultValue={filters.provenance ?? ""}><option value="">Todas</option>{provenances.map((value)=><option key={value} value={value}>{value}</option>)}</select></label>
+          <MultiSelectFilter name="year" label="Año" selected={filters.year} options={years.map((year)=>({value:String(year),label:String(year)}))} />
+          <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departments.map((d)=>({value:d.id,label:d.code}))} />
+          <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierta"},{value:"CLOSED",label:"Cerrada"}]} />
+          <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={[{value:"CRITICAL",label:"Crítica"},{value:"MAJOR",label:"Mayor"},{value:"MINOR",label:"Menor"}]} />
+          <MultiSelectFilter name="provenance" label="Procedencia" selected={filters.provenance} options={provenances.map((value)=>({value,label:value}))} />
           <label className="filter-placeholder"><span>Medidas</span><select name="measures" defaultValue={filters.measures ?? ""}><option value="">Todas</option><option value="none">Ninguna</option><option value="immediate">Correctiva inmediata</option><option value="capa">CAPA</option><option value="both">Inmediata + CAPA</option></select></label>
           <label className="filter-placeholder"><span>CAPA</span><select name="capa" defaultValue={filters.capa ?? ""}><option value="">Todas</option><option value="yes">Con CAPA</option><option value="no">Sin CAPA</option></select></label>
           <label className="filter-placeholder"><span>En plazo</span><select name="deadline" defaultValue={filters.deadline ?? ""}><option value="">Todos</option><option value="IN_TIME">Sí</option><option value="OUT_OF_TIME">No</option><option value="NOT_EVALUATED">No evaluado</option><option value="NA">N/A</option></select></label>

@@ -13,12 +13,12 @@ import { ColumnSelector } from "@/components/column-selector";
 import { capaColumns } from "@/modules/capa/column-config";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
+import { MultiSelectFilter } from "@/components/multi-select-filter";
+import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
 
 export const dynamic = "force-dynamic";
 
-function param(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
+const param = firstQueryValue;
 
 export default async function CapaPage({
   searchParams,
@@ -29,12 +29,12 @@ export default async function CapaPage({
   const filters = {
     q: param(query.q),
     administrative: param(query.administrative),
-    year: param(query.year),
-    department: param(query.department),
-    type: param(query.type),
-    status: param(query.status),
-    effectiveness: param(query.effectiveness),
-    origin: param(query.origin),
+    year: queryList(query.year),
+    department: queryList(query.department),
+    type: queryList(query.type),
+    status: queryList(query.status),
+    effectiveness: queryList(query.effectiveness),
+    origin: queryList(query.origin),
     followup: param(query.followup),
   };
   const { rows, departments, years, origins, counters } = await getCapaList(filters);
@@ -42,7 +42,7 @@ export default async function CapaPage({
 
   const exportParams = new URLSearchParams();
   Object.entries(filters).forEach(([key,value]) => {
-    if(value && key !== "q" && key !== "followup") exportParams.set(key,value);
+    if(key !== "q" && key !== "followup") appendFilterValues(exportParams,key,value);
   });
 
 
@@ -62,7 +62,7 @@ export default async function CapaPage({
             <div className="export-popover">
               <strong>Exportaciones CAPA</strong>
               <form action="/api/capa/export/annex-iv" method="get" className="export-year-form">
-                <label><span>Anexo IV oficial</span><select name="year" defaultValue={filters.year ?? String(new Date().getFullYear())}>
+                <label><span>Anexo IV oficial</span><select name="year" defaultValue={filters.year[0] ?? String(new Date().getFullYear())}>
                   {Array.from(new Set([Number(filters.year ?? new Date().getFullYear()),...years])).filter(Number.isInteger).sort((a,b)=>b-a).map((year)=><option key={year} value={year}>{year}</option>)}
                 </select></label>
                 {officialTemplateReady ? <button className="button small" type="submit">Descargar</button> : <><button className="button small" type="button" disabled>Descargar</button><span className="template-missing-note">Plantilla oficial pendiente de cargar.</span></>}
@@ -82,12 +82,12 @@ export default async function CapaPage({
       <form method="get" className="toolbar-form">
         <div className="filter-panel operational capa-filters">
           <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-          <label className="filter-placeholder"><span>Año</span><select name="year" defaultValue={filters.year ?? ""}><option value="">Todos</option>{years.map((year)=><option key={year} value={year}>{year}</option>)}</select></label>
-          <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department ?? ""}><option value="">Todos</option>{departments.map((d)=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
-          <label className="filter-placeholder"><span>Tipo</span><select name="type" defaultValue={filters.type ?? ""}><option value="">Todas</option><option value="CORRECTIVE">Correctiva</option><option value="PREVENTIVE">Preventiva</option></select></label>
-          <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="DRAFT">Borrador</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option><option value="CANCELLED">Cancelada</option></select></label>
-          <label className="filter-placeholder"><span>Eficacia</span><select name="effectiveness" defaultValue={filters.effectiveness ?? ""}><option value="">Todas</option><option value="PENDING">Pendiente</option><option value="CONFORMING">Conforme</option><option value="NONCONFORMING">No conforme</option><option value="NA">N/A histórico</option></select></label>
-          <label className="filter-placeholder"><span>Origen</span><select name="origin" defaultValue={filters.origin ?? ""}><option value="">Todos</option>{origins.map((value)=><option key={value} value={value}>{value}</option>)}</select></label>
+          <MultiSelectFilter name="year" label="Año" selected={filters.year} options={years.map((year)=>({value:String(year),label:String(year)}))} />
+          <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departments.map((d)=>({value:d.id,label:d.code}))} />
+          <MultiSelectFilter name="type" label="Tipo" selected={filters.type} options={[{value:"CORRECTIVE",label:"Correctiva"},{value:"PREVENTIVE",label:"Preventiva"}]} />
+          <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierta"},{value:"CLOSED",label:"Cerrada"},{value:"CANCELLED",label:"Cancelada"}]} />
+          <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"CONFORMING",label:"Conforme"},{value:"NONCONFORMING",label:"No conforme"},{value:"NA",label:"N/A histórico"}]} />
+          <MultiSelectFilter name="origin" label="Origen" selected={filters.origin} options={origins.map((value)=>({value,label:value}))} />
           <label className="filter-placeholder"><span>Seguimiento</span><select name="followup" defaultValue={filters.followup ?? ""}><option value="">Todos</option><option value="due">Vencido</option><option value="scheduled">Programado</option><option value="none">Sin próxima fecha</option></select></label>
           <div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/capa">Limpiar</Link></div>
         </div>

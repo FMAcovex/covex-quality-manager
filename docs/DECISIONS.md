@@ -404,3 +404,14 @@ Reglas:
 - Borrador no admite seguimientos, relaciones operativas nuevas ni generación de Anexos III/IV/V;
 - Borrador queda excluido de KPI y exportaciones oficiales;
 - si el borrador nace desde una Reclamación, el origen se conserva como pendiente y la relación canónica Reclamación → Devolución solo se formaliza al abrir.
+
+
+## D-054 — Filtros multiselección transversales en listados QMS
+Los listados de Desviaciones, CAPA, Controles de Cambios, Reclamaciones y Devoluciones admiten selección múltiple en los filtros combinables.
+
+Reglas:
+- Estado administrativo permanece como filtro único por ser mutuamente excluyente (Activos / Anulados / Todos).
+- Se permite multiselección en Año, Departamento/Área y categorías operativas propias de cada módulo (estado, tipo, clasificación, eficacia, origen, ejecución o decisión, según aplique).
+- Los filtros especiales con lógica exclusiva (por ejemplo Con/Sin CAPA, medidas adoptadas, plazo o seguimiento) permanecen como selección única.
+- Los valores seleccionados se serializan como parámetros repetidos y el backend aplica semántica OR dentro de cada filtro mediante `IN`, manteniendo AND entre filtros distintos.
+- Las exportaciones simples con filtros actuales conservan todos los valores seleccionados.
