@@ -385,7 +385,12 @@ async function main() {
   assert.ok(versions[0].frozenAt);
   assert.equal(versions[1].frozenAt, null);
 
-  const annexRecord = deviationSnapshotToAnnexRecord(versions[1].snapshot);
+  const annexRecord = deviationSnapshotToAnnexRecord(versions[1].snapshot) as unknown as {
+    qmsRecord: { businessCode: string | null };
+    classification: string | null;
+    capaPlans: unknown[];
+    followups: unknown[];
+  };
   assert.equal(annexRecord.qmsRecord.businessCode, autoCode);
   assert.equal(annexRecord.classification, "MINOR");
   assert.equal(annexRecord.capaPlans.length, 1);
