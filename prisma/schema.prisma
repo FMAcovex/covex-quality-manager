@@ -846,7 +846,7 @@ model Complaint {
   detectionDate              DateTime?                    @db.Date
   detectedBy                 String?
   createdByText              String?
-  complaintType              ComplaintType
+  complaintType              ComplaintType?
   receptionDate              DateTime?                    @db.Date
   sourceTypes                String[]                      @default([])
   sourceOther                String?
@@ -1010,7 +1010,7 @@ model ReturnRecord {
   communicationDate               DateTime?      @db.Date
   receivedAt                      DateTime?      @db.Date
   createdByText                   String?
-  returnType                      ReturnType
+  returnType                      ReturnType?
   otherReturnType                 String?
   customerEntity                  String?
   country                         String?
