@@ -35,7 +35,9 @@ export async function getChangeControlExportRows(filters: ChangeControlExportFil
   const classifications = validValues(filters.classification, ["MAJOR","MINOR"] as const); if (classifications.length) and.push({ classification: { in: classifications as ("MAJOR"|"MINOR")[] } });
   const execution = validValues(filters.execution, ["EXECUTED","NOT_EXECUTED"] as const); if (execution.length) and.push({ executionStatus: { in: execution as ("EXECUTED"|"NOT_EXECUTED")[] } });
   const effectiveness = validValues(filters.effectiveness, ["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_APPLICABLE"] as const); if (effectiveness.length) and.push({ effectivenessStatus: { in: effectiveness as ("PENDING"|"ACCEPTABLE"|"NOT_ACCEPTABLE"|"NOT_APPLICABLE")[] } });
-  const statuses = validValues(filters.status, ["OPEN","CLOSED"] as const); if (statuses.length) and.push({ finalStatus: { in: statuses as ("OPEN"|"CLOSED")[] } });
+  const requestedStatuses = validValues(filters.status, ["DRAFT","OPEN","CLOSED"] as const);
+  const statuses = requestedStatuses.filter((value) => value !== "DRAFT") as ("OPEN"|"CLOSED")[];
+  if (filters.status?.length) and.push({ finalStatus: { in: statuses } });
 
   return prisma.changeControl.findMany({
     where: and.length ? { AND: and } : {},
