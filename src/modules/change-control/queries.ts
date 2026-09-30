@@ -1,16 +1,17 @@
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { validValues, validYears } from "@/lib/qms/list-filters";
 
 export type ChangeControlListFilters = {
   q?: string;
   administrative?: string;
-  year?: string;
-  department?: string;
-  classification?: string;
-  execution?: string;
-  effectiveness?: string;
-  status?: string;
+  year?: string[];
+  department?: string[];
+  classification?: string[];
+  execution?: string[];
+  effectiveness?: string[];
+  status?: string[];
 };
 
 export async function getChangeControlList(filters: ChangeControlListFilters) {
@@ -32,22 +33,17 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
       ],
     });
   }
-  if (filters.year && /^\d{4}$/.test(filters.year)) {
-    and.push({ qmsRecord: { year: Number(filters.year) } });
-  }
-  if (filters.department) and.push({ departmentId: filters.department });
-  if (filters.classification === "MAJOR" || filters.classification === "MINOR") {
-    and.push({ classification: filters.classification });
-  }
-  if (filters.execution === "EXECUTED" || filters.execution === "NOT_EXECUTED") {
-    and.push({ executionStatus: filters.execution });
-  }
-  if (["PENDING", "ACCEPTABLE", "NOT_ACCEPTABLE", "NOT_APPLICABLE"].includes(filters.effectiveness ?? "")) {
-    and.push({ effectivenessStatus: filters.effectiveness as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE" });
-  }
-  if (filters.status === "DRAFT" || filters.status === "OPEN" || filters.status === "CLOSED") {
-    and.push({ finalStatus: filters.status });
-  }
+  const yearsFilter = validYears(filters.year);
+  if (yearsFilter.length) and.push({ qmsRecord: { year: { in: yearsFilter } } });
+  if (filters.department?.length) and.push({ departmentId: { in: filters.department } });
+  const classifications = validValues(filters.classification, ["MAJOR", "MINOR"] as const);
+  if (classifications.length) and.push({ classification: { in: classifications as ("MAJOR" | "MINOR")[] } });
+  const execution = validValues(filters.execution, ["EXECUTED", "NOT_EXECUTED"] as const);
+  if (execution.length) and.push({ executionStatus: { in: execution as ("EXECUTED" | "NOT_EXECUTED")[] } });
+  const effectiveness = validValues(filters.effectiveness, ["PENDING", "ACCEPTABLE", "NOT_ACCEPTABLE", "NOT_APPLICABLE"] as const);
+  if (effectiveness.length) and.push({ effectivenessStatus: { in: effectiveness as ("PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE")[] } });
+  const statuses = validValues(filters.status, ["DRAFT", "OPEN", "CLOSED"] as const);
+  if (statuses.length) and.push({ finalStatus: { in: statuses as ("DRAFT" | "OPEN" | "CLOSED")[] } });
 
   const where: Prisma.ChangeControlWhereInput = and.length ? { AND: and } : {};
   const administrativeWhere: Prisma.ChangeControlWhereInput =
