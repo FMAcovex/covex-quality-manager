@@ -114,11 +114,13 @@ export async function createCapaAction(
   const v = parsed.values;
   let capaId: string;
   try {
-    const duplicate = await prisma.qmsRecord.findUnique({ where: { recordType_businessCode: { recordType: QmsRecordType.CAPA, businessCode: v.businessCode! } } });
-    if (duplicate) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["Ya existe una CAPA con esa codificación."], fieldIssues: { businessCode: ["Ya existe una CAPA con esa codificación."] } });
+    if (v.businessCode) {
+      const duplicate = await prisma.qmsRecord.findUnique({ where: { recordType_businessCode: { recordType: QmsRecordType.CAPA, businessCode: v.businessCode } } });
+      if (duplicate) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["Ya existe una CAPA con esa codificación."], fieldIssues: { businessCode: ["Ya existe una CAPA con esa codificación."] } });
+    }
 
-    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
+    const department = v.departmentId ? await prisma.department.findUnique({ where: { id: v.departmentId } }) : null;
+    if (v.status !== "DRAFT" && !department) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
 
     const referenceDate = toDate(v.openedAt) ?? new Date();
     const [formVersion, templateVersion] = await Promise.all([
@@ -170,9 +172,9 @@ export async function createCapaAction(
         data: {
           qmsRecordId: qmsRecord.id,
           actionType: v.actionType,
-          departmentId: department.id,
-          departmentCodeSnapshot: department.code,
-          departmentNameSnapshot: department.name,
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department?.code ?? null,
+          departmentNameSnapshot: department?.name ?? null,
           openedAt: toDate(v.openedAt),
           createdByText: v.createdByText,
           originType: canonicalValues.originType,
@@ -236,7 +238,9 @@ export async function createCapaAction(
         "Informe inicial CAPA",
       );
 
-      if (deviationOrigin) {
+      if (v.status === "DRAFT") {
+        // Las relaciones operativas se consolidan al abrir la CAPA.
+      } else if (deviationOrigin) {
         await registerDeviationCapaPlan(tx, {
           planId: deviationOrigin.planId,
           capaQmsRecordId: qmsRecord.id,
@@ -291,7 +295,12 @@ export async function updateCapaAction(
   previous: CapaFormState,
   formData: FormData,
 ): Promise<CapaFormState> {
-  const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: true });
+  const requestedStatus = String(formData.get("saveIntent") ?? "") === "open"
+    ? "OPEN"
+    : String(formData.get("saveIntent") ?? "") === "draft"
+      ? "DRAFT"
+      : String(formData.get("status") ?? "");
+  const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: requestedStatus !== "OPEN" });
   if (parsed.errors.length) {
     return { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues };
   }
@@ -310,7 +319,11 @@ export async function updateCapaAction(
 
   const v = parsed.values;
 
-  if (existing.rootCause && !v.rootCause) {
+  if (existing.status !== "DRAFT" && v.status === "DRAFT") {
+    return preserveFormState(previous, formData, { error: "Una CAPA abierta, cerrada o cancelada no puede volver a Borrador." });
+  }
+
+  if (existing.rootCause && !v.rootCause && v.status !== "DRAFT") {
     return preserveFormState(previous, formData, { error: "No se puede eliminar una causa raíz ya documentada." });
   }
 
@@ -340,8 +353,8 @@ export async function updateCapaAction(
       return preserveFormState(previous, formData, { error: "No se puede registrar el cierre efectivo.", fieldErrors: transitionErrors });
     }
   }
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } };
+  const department = v.departmentId ? await prisma.department.findUnique({ where: { id: v.departmentId } }) : null;
+  if (v.status !== "DRAFT" && !department) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
 
   const oldSnapshot = {
     businessCode: existing.qmsRecord.businessCode,
@@ -416,15 +429,17 @@ export async function updateCapaAction(
         where: { id },
         data: {
           actionType: v.actionType,
-          departmentId: department.id,
-          departmentCodeSnapshot:
-            existing.departmentId === department.id
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentCodeSnapshot ?? department.code
-              : department.code,
-          departmentNameSnapshot:
-            existing.departmentId === department.id
+              : department.code
+            : null,
+          departmentNameSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentNameSnapshot ?? department.name
-              : department.name,
+              : department.name
+            : null,
           openedAt: toDate(v.openedAt),
           createdByText: v.createdByText,
           originType: v.originType,
