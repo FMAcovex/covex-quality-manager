@@ -601,3 +601,18 @@ Estado: **IMPLEMENTADA EN RAMA; PENDIENTE DE VALIDACIÓN FINAL**.
 - bloqueo de nuevas relaciones con anulados;
 - reactivación condicionada a que el código original continúe libre;
 - exportaciones e indicadores excluyen anulados por defecto.
+
+## D2.3 — Estado Borrador de Desviaciones
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
+
+- se añade `DRAFT` a Desviaciones;
+- permite guardar expedientes incompletos sin perder el contenido;
+- muestra en rojo los campos pendientes necesarios para abrir;
+- incorpora acciones `Guardar borrador` y `Abrir desviación`;
+- la apertura exige validación completa;
+- no permite volver a Borrador una vez abierta/cerrada;
+- separa Borradores de Abiertas en el listado y contadores;
+- excluye borradores de indicadores, vencimientos/seguimientos y exportaciones por defecto;
+- bloquea la generación de Anexo III en borrador;
+- deja preparado D3 para asignar la codificación oficial al pasar de Borrador a Abierta.
+
