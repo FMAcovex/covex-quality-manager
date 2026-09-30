@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { submittedDefaults } from "@/lib/forms/preserved-state";
 import type {
   CapaFormDefaults,
   CapaFormState,
@@ -94,6 +95,7 @@ export function CapaForm({
   fromComplaintId?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
+  const formDefaults = submittedDefaults(defaults, state.submittedValues);
   const [actions, setActions] = useState<CapaPlannedActionInput[]>(
     defaults.plannedActions?.length ? defaults.plannedActions : [{ ...emptyAction }],
   );
@@ -106,7 +108,7 @@ export function CapaForm({
   };
 
   return (
-    <form action={formAction} className="record-form">
+    <form key={state.formRevision ?? 0} action={formAction} className="record-form">
       <input type="hidden" name="plannedActionsJson" value={JSON.stringify(actions)} />
       {fromDeviationPlanId ? (
         <input type="hidden" name="fromDeviationPlanId" value={fromDeviationPlanId} />
@@ -133,17 +135,17 @@ export function CapaForm({
           La CAPA debe mantener trazabilidad con el documento que la origina.
         </p>
         <div className="form-grid">
-          <Field label="Codificación AC/AP" name="businessCode" defaultValue={defaults.businessCode} required issues={issues.businessCode} />
+          <Field label="Codificación AC/AP" name="businessCode" defaultValue={formDefaults.businessCode} required issues={issues.businessCode} />
           <label className="field">
             <span>Tipo *</span>
-            <select name="actionType" defaultValue={defaults.actionType ?? "CORRECTIVE"}>
+            <select name="actionType" defaultValue={formDefaults.actionType ?? "CORRECTIVE"}>
               <option value="CORRECTIVE">Correctiva</option>
               <option value="PREVENTIVE">Preventiva</option>
             </select>
           </label>
           <label className={`field ${issues.departmentId?.length ? "has-error" : ""}`}>
             <span>Departamento responsable *</span>
-            <select name="departmentId" defaultValue={defaults.departmentId ?? ""} required aria-invalid={issues.departmentId?.length ? true : undefined}>
+            <select name="departmentId" defaultValue={formDefaults.departmentId ?? ""} required aria-invalid={issues.departmentId?.length ? true : undefined}>
               <option value="">Seleccionar…</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.id}>
@@ -153,14 +155,14 @@ export function CapaForm({
             </select>
             <FieldIssue messages={issues.departmentId} />
           </label>
-          <Field label="Fecha apertura" name="openedAt" type="date" defaultValue={defaults.openedAt} required issues={issues.openedAt} />
-          <Field label="Cumplimentado por" name="createdByText" defaultValue={defaults.createdByText} required issues={issues.createdByText} />
+          <Field label="Fecha apertura" name="openedAt" type="date" defaultValue={formDefaults.openedAt} required issues={issues.openedAt} />
+          <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required issues={issues.createdByText} />
           {mode === "edit" ? (
-            <Field label="Modificado por" name="modifiedByText" defaultValue={defaults.createdByText} />
+            <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText} />
           ) : null}
           <label className={`field ${issues.originType?.length ? "has-error" : ""}`}>
             <span>Origen *</span>
-            <select name="originType" defaultValue={defaults.originType ?? ""} required aria-invalid={issues.originType?.length ? true : undefined}>
+            <select name="originType" defaultValue={formDefaults.originType ?? ""} required aria-invalid={issues.originType?.length ? true : undefined}>
               <option value="">Seleccionar…</option>
               <option value="Desviación">Desviación</option>
               <option value="Auditoría interna">Auditoría interna</option>
@@ -174,8 +176,8 @@ export function CapaForm({
             </select>
             <FieldIssue messages={issues.originType} />
           </label>
-          <Field label="Codificación de origen" name="originCode" defaultValue={defaults.originCode} span="span-2" />
-          <Field label="Materia/material/producto/sistema/equipo" name="applicableTo" defaultValue={defaults.applicableTo} span="span-3" />
+          <Field label="Codificación de origen" name="originCode" defaultValue={formDefaults.originCode} span="span-2" />
+          <Field label="Materia/material/producto/sistema/equipo" name="applicableTo" defaultValue={formDefaults.applicableTo} span="span-3" />
         </div>
       </section>
 
@@ -185,8 +187,8 @@ export function CapaForm({
           La descripción y la causa deben coincidir con el documento de origen cuando exista.
         </p>
         <div className="form-grid">
-          <TextArea label="Descripción breve del defecto" name="defectDescription" defaultValue={defaults.defectDescription} required issues={issues.defectDescription} />
-          <TextArea label="Causa raíz" name="rootCause" defaultValue={defaults.rootCause} required={mode === "create"} issues={issues.rootCause} />
+          <TextArea label="Descripción breve del defecto" name="defectDescription" defaultValue={formDefaults.defectDescription} required issues={issues.defectDescription} />
+          <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} required={mode === "create"} issues={issues.rootCause} />
         </div>
       </section>
 
@@ -231,7 +233,7 @@ export function CapaForm({
           </div>
         </div>
         <div className="form-grid" style={{ marginTop: 14 }}>
-          <TextArea label="Evaluación general de impacto" name="impactAssessment" defaultValue={defaults.impactAssessment} />
+          <TextArea label="Evaluación general de impacto" name="impactAssessment" defaultValue={formDefaults.impactAssessment} />
         </div>
       </section>
 
@@ -240,14 +242,14 @@ export function CapaForm({
         <div className="form-grid">
           <label className="field">
             <span>Estado</span>
-            <select name="status" defaultValue={defaults.status ?? "OPEN"}>
+            <select name="status" defaultValue={formDefaults.status ?? "OPEN"}>
               <option value="OPEN">Abierta</option>
               <option value="CLOSED">Cerrada</option>
               <option value="CANCELLED">Cancelada</option>
             </select>
           </label>
-          <Field label="Fecha cierre operativo" name="operationalClosedAt" type="date" defaultValue={defaults.operationalClosedAt} issues={issues.operationalClosedAt} />
-          <TextArea label="Motivo de cancelación" name="cancellationReason" defaultValue={defaults.cancellationReason} issues={issues.cancellationReason} />
+          <Field label="Fecha cierre operativo" name="operationalClosedAt" type="date" defaultValue={formDefaults.operationalClosedAt} issues={issues.operationalClosedAt} />
+          <TextArea label="Motivo de cancelación" name="cancellationReason" defaultValue={formDefaults.cancellationReason} issues={issues.cancellationReason} />
         </div>
       </section>
 
@@ -259,28 +261,28 @@ export function CapaForm({
         <div className="form-grid">
           <label className="field">
             <span>Verificación de eficacia</span>
-            <select name="effectivenessStatus" defaultValue={defaults.effectivenessStatus ?? "PENDING"}>
+            <select name="effectivenessStatus" defaultValue={formDefaults.effectivenessStatus ?? "PENDING"}>
               <option value="PENDING">Pendiente</option>
               <option value="CONFORMING">Conforme</option>
               <option value="NONCONFORMING">No conforme</option>
-              <option value="NA" disabled={mode === "create" || defaults.effectivenessStatus !== "NA"}>N/A (solo histórico)</option>
+              <option value="NA" disabled={mode === "create" || formDefaults.effectivenessStatus !== "NA"}>N/A (solo histórico)</option>
             </select>
           </label>
-          <Field label="Fecha cierre efectivo / verificación final" name="effectiveClosedAt" type="date" defaultValue={defaults.effectiveClosedAt} issues={issues.effectiveClosedAt} />
-          <TextArea label="Criterio de eficacia" name="effectivenessCriteria" defaultValue={defaults.effectivenessCriteria} />
-          <TextArea label="Valoración de la eficacia" name="effectivenessAssessment" defaultValue={defaults.effectivenessAssessment} issues={issues.effectivenessAssessment} />
-          <TextArea label="Evidencia revisada" name="effectivenessEvidence" defaultValue={defaults.effectivenessEvidence} />
+          <Field label="Fecha cierre efectivo / verificación final" name="effectiveClosedAt" type="date" defaultValue={formDefaults.effectiveClosedAt} issues={issues.effectiveClosedAt} />
+          <TextArea label="Criterio de eficacia" name="effectivenessCriteria" defaultValue={formDefaults.effectivenessCriteria} />
+          <TextArea label="Valoración de la eficacia" name="effectivenessAssessment" defaultValue={formDefaults.effectivenessAssessment} issues={issues.effectivenessAssessment} />
+          <TextArea label="Evidencia revisada" name="effectivenessEvidence" defaultValue={formDefaults.effectivenessEvidence} />
         </div>
       </section>
 
       <section className="form-section">
         <h2>6. Conclusión y control documental</h2>
         <div className="form-grid">
-          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={defaults.conclusion} issues={issues.conclusion} />
-          <TextArea label="Observaciones internas" name="internalObservations" defaultValue={defaults.internalObservations} />
+          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={formDefaults.conclusion} issues={issues.conclusion} />
+          <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations} />
           <label className="field">
             <span>Documento firmado disponible</span>
-            <select name="signedDocumentAvailable" defaultValue={defaults.signedDocumentAvailable ?? ""}>
+            <select name="signedDocumentAvailable" defaultValue={formDefaults.signedDocumentAvailable ?? ""}>
               <option value="">No informado</option>
               <option value="true">Sí</option>
               <option value="false">No</option>
@@ -288,7 +290,7 @@ export function CapaForm({
           </label>
           <label className="field">
             <span>Control del dato</span>
-            <select name="dataQualityStatus" defaultValue={defaults.dataQualityStatus ?? "REVIEW_REQUIRED"}>
+            <select name="dataQualityStatus" defaultValue={formDefaults.dataQualityStatus ?? "REVIEW_REQUIRED"}>
               <option value="COMPLETE">Completo</option>
               <option value="INCOMPLETE">Incompleto</option>
               <option value="REVIEW_REQUIRED">Pendiente de revisar</option>
