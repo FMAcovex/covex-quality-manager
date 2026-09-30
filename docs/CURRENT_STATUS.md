@@ -812,5 +812,5 @@ Estado: **IMPLEMENTADO EN PR; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
 - pestaña Versiones renombrada conceptualmente a Seguimientos;
 - listado actualizado con próximo seguimiento, cierre/ejecución y verificación final;
 - campos históricos ocultos en la nueva UX se conservan;
-- regla existente de evidencia de ejecución para cierre mantenida;
+- regla existente de evidencia de ejecución para cierre mantenida, con entrada mínima específica que no crea Seguimiento 01/02 ni `QmsRecordVersion`;
 - PDFs por versión, Anexo III multiorigen completo y componente documental transversal quedan para Bloque 2.
