@@ -19,8 +19,10 @@ export function buildDeviationWhere(filters: DeviationListFilters): Prisma.Devia
   ]});
   const years = validYears(filters.year); if (years.length) and.push({ qmsRecord: { year: { in: years } } });
   if (filters.department?.length) and.push({ departmentId: { in: filters.department } });
-  const statuses = validValues(filters.status, ["OPEN","CLOSED"] as const);
-  if (statuses.length) and.push({ status: { in: statuses as ("OPEN"|"CLOSED")[] } }); else and.push({ status: { not: "DRAFT" } });
+  const requestedStatuses = validValues(filters.status, ["DRAFT","OPEN","CLOSED"] as const);
+  const statuses = requestedStatuses.filter((value) => value !== "DRAFT") as ("OPEN"|"CLOSED")[];
+  if (filters.status?.length) and.push({ status: { in: statuses } });
+  else and.push({ status: { not: "DRAFT" } });
   const classifications = validValues(filters.classification, ["CRITICAL","MAJOR","MINOR"] as const);
   if (classifications.length) and.push({ classification: { in: classifications as ("CRITICAL"|"MAJOR"|"MINOR")[] } });
   if (filters.provenance?.length) and.push({ provenance: { in: filters.provenance } });
