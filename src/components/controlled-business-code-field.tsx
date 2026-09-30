@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { QmsRecordType } from "@prisma/client";
-
 export function ControlledBusinessCodeField({
   recordType,
   name = "businessCode",
