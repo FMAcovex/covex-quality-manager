@@ -8,7 +8,7 @@ import {
 const prisma = new PrismaClient();
 
 async function createWithAssignedCode(input: {
-  recordType: QmsRecordType.CAPA | QmsRecordType.CHANGE_CONTROL | QmsRecordType.COMPLAINT | QmsRecordType.RETURN;
+  recordType: QmsRecordType;
   year: number;
   departmentCode?: string;
   actionType?: "CORRECTIVE" | "PREVENTIVE";
