@@ -189,6 +189,7 @@ export function serializeCapaVersion(record: CapaVersionSource) {
       impactAssessment: record.impactAssessment ?? null,
       nextFollowupDate: iso(record.nextFollowupDate),
       actionFollowupObservations: record.actionFollowupObservations ?? null,
+      operationalStatusDescription: record.operationalStatusDescription ?? null,
       operationalClosedAt: iso(record.operationalClosedAt),
       status: record.status,
       cancellationReason: record.cancellationReason ?? null,
