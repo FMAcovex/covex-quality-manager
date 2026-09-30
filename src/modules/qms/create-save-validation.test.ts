@@ -18,13 +18,12 @@ describe("Hito 10.8C3-A form validation", () => {
     expect(parsed.fieldIssues.createdByText).toBeDefined();
   });
 
-  it("maps CAPA validation messages to concrete fields", () => {
+  it("maps CAPA validation messages to concrete fields while allowing server-assigned business code", () => {
     const form = new FormData();
     form.set("openedAt", "2099-02-31");
     form.set("plannedActionsJson", "[]");
 
     const parsed = parseCapaForm(form);
-    expect(parsed.fieldIssues.businessCode).toBeDefined();
     expect(parsed.fieldIssues.departmentId).toBeDefined();
     expect(parsed.fieldIssues.openedAt).toBeDefined();
     expect(parsed.fieldIssues.createdByText).toBeDefined();
