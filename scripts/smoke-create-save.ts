@@ -98,9 +98,17 @@ async function main() {
   capaForm.set("createdByText", "CI C3-A");
   capaForm.set("originType", "Desviación");
   capaForm.set("originCode", deviationCode);
+  capaForm.set("originsJson", JSON.stringify([{
+    id: deviationRecord.id,
+    recordType: "DEVIATION",
+    businessCode: deviationCode,
+    year: 2099,
+  }]));
   capaForm.set("defectDescription", "Defecto ficticio para probar la creación CAPA.");
   capaForm.set("rootCause", "Causa ficticia sustentada.");
   capaForm.set("status", "OPEN");
+  capaForm.set("saveIntent", "UPDATE_CURRENT");
+  capaForm.set("actionFollowupsJson", "[]");
   capaForm.set("effectivenessStatus", "PENDING");
   capaForm.set("dataQualityStatus", "REVIEW_REQUIRED");
   capaForm.set(
