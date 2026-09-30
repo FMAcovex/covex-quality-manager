@@ -153,7 +153,7 @@ export async function createCapaAction(
         !deviationOrigin && !complaintPlanOrigin && v.fromComplaintId
           ? await getComplaintDirectOrigin(tx, v.fromComplaintId)
           : null;
-      const canonicalValues: ReturnType<typeof parseCapaForm>["values"] = deviationOrigin
+      const canonicalValues = deviationOrigin
         ? {
             ...v,
             originType: "Desviación",
@@ -266,7 +266,11 @@ export async function createCapaAction(
           qmsRecordId: qmsRecord.id,
           changedByText: parsed.actor,
           fieldPath: "__created__",
-          newValue: jsonValue(snapshot(canonicalValues)),
+          newValue: jsonValue({
+            ...snapshot(v),
+            originType: canonicalValues.originType,
+            originCode: canonicalValues.originCode,
+          }),
           source: "UI",
         },
       });
