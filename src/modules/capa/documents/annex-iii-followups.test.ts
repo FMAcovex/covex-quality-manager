@@ -17,7 +17,8 @@ vi.mock("@/modules/capa/documents/templates", async () => {
       if (row === 6) return "<w:tr>" + checkbox("☐ AUDITORIA") + checkbox("☐ INSPECCIÓN") + "</w:tr>";
       if (row === 7) return "<w:tr>" + checkbox("☐ DESVIACIÓN") + checkbox("☐ RECHAZOS") + "</w:tr>";
       if (row === 8) return "<w:tr>" + checkbox("☐ RECLAMACIÓN") + checkbox("☐ OTROS") + "</w:tr>";
-      const cells = row === 1 ? 2 : row === 2 || row === 3 ? 4 : row === 17 ? 4 : 1;
+      if (row === 1) return "<w:tr>" + checkbox("☐ Correctiva") + checkbox("☐ Preventiva") + "</w:tr>";
+      const cells = row === 2 || row === 3 ? 4 : row === 17 ? 4 : 1;
       return "<w:tr>" + Array.from({ length: cells }, () => plain()).join("") + "</w:tr>";
     }).join("") +
     "</w:tbl>";
