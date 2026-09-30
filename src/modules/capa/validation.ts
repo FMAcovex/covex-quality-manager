@@ -81,7 +81,9 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
   const operationalClosedAt = text(formData, "operationalClosedAt");
   const effectiveClosedAt = text(formData, "effectiveClosedAt");
   const cancellationReason = text(formData, "cancellationReason");
+  const operationalStatusDescription = text(formData, "operationalStatusDescription");
   const conclusion = text(formData, "conclusion");
+  const actionFollowupObservations = text(formData, "actionFollowupObservations");
   const effectivenessAssessment = text(formData, "effectivenessAssessment");
   const changeReason = text(formData, "changeReason");
 
@@ -100,9 +102,15 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
     if (!origins.length && !text(formData, "fromDeviationPlanId") && !text(formData, "fromComplaintPlanId") && !text(formData, "fromComplaintId")) {
       addIssue("originsJson", "Debe indicarse al menos un expediente de origen.");
     }
+    if (!text(formData, "applicableTo")) addIssue("applicableTo", "Materia / material / producto / sistema / equipo es obligatorio.");
     if (!defectDescription) addIssue("defectDescription", "La descripción breve del defecto es obligatoria.");
     if (!rootCause && !options.allowHistoricalIncomplete) addIssue("rootCause", "La causa raíz es obligatoria.");
     if (!plannedActions.length) addIssue("plannedActionsJson", "Debe existir al menos una acción propuesta.");
+    if (!actionFollowupObservations) addIssue("actionFollowupObservations", "Las observaciones del seguimiento de la acción son obligatorias.");
+    if (!effectivenessAssessment) addIssue("effectivenessAssessment", "La evaluación de la eficacia es obligatoria.");
+    if (!operationalStatusDescription) addIssue("operationalStatusDescription", "El estado operativo debe describirse.");
+    if (!conclusion) addIssue("conclusion", "La conclusión es obligatoria.");
+    if (!nextFollowupDate) addIssue("nextFollowupDate", "La fecha de próximo seguimiento es obligatoria.");
   } else if (openedAt && !validDate(openedAt)) {
     addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");
   }
@@ -112,6 +120,8 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
   });
   actionFollowups.forEach((item, index) => {
     if (item.followupDate && !validDate(item.followupDate)) addIssue("actionFollowupsJson", `La fecha del seguimiento de acción ${index + 1} no tiene un formato válido.`);
+    if (item.followupDate && !item.description) addIssue("actionFollowupsJson", `La descripción del seguimiento de acción ${index + 1} es obligatoria cuando se registra una fecha.`);
+    if (item.description && !item.followupDate) addIssue("actionFollowupsJson", `La fecha del seguimiento de acción ${index + 1} es obligatoria cuando se registra una descripción.`);
   });
   for (const [field, value, message] of [
     ["nextFollowupDate", nextFollowupDate, "La fecha de próximo seguimiento no tiene un formato válido."],
@@ -119,17 +129,11 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
     ["effectiveClosedAt", effectiveClosedAt, "La fecha de verificación final no tiene un formato válido."],
   ] as const) if (value && !validDate(value)) addIssue(field, message);
 
-  if (recordStatus === "CLOSED" && !options.allowHistoricalIncomplete) {
-    if (!operationalClosedAt) addIssue("operationalClosedAt", "Una CAPA cerrada debe tener fecha de cierre y ejecución.");
-    if (!conclusion) addIssue("conclusion", "Una CAPA cerrada debe tener conclusión de cierre.");
+  if (recordStatus === "CLOSED" && !options.allowHistoricalIncomplete && !operationalClosedAt) {
+    addIssue("operationalClosedAt", "Una CAPA cerrada debe tener fecha de cierre y ejecución.");
   }
-  if (recordStatus === "CANCELLED" && !cancellationReason && !options.allowHistoricalIncomplete) addIssue("cancellationReason", "Una CAPA cancelada debe incluir el motivo de cancelación.");
-  if (effectivenessStatus !== "PENDING" && !effectiveClosedAt && !options.allowHistoricalIncomplete) {
-    addIssue("effectiveClosedAt", "La fecha de verificación final es obligatoria cuando la eficacia deja de estar Pendiente.");
-  }
-  if (effectiveClosedAt && !options.allowHistoricalIncomplete) {
-    if (recordStatus !== "CLOSED") addIssue("status", "La verificación final solo puede registrarse cuando la CAPA está cerrada operativamente.");
-    if (effectivenessStatus === "CONFORMING" && !effectivenessAssessment) addIssue("effectivenessAssessment", "La eficacia Conforme requiere una evaluación documentada.");
+  if (effectivenessStatus === "CONFORMING" && !options.allowHistoricalIncomplete && !effectiveClosedAt) {
+    addIssue("effectiveClosedAt", "La eficacia Conforme requiere fecha de verificación final.");
   }
   if (intent === "CREATE_FOLLOWUP_VERSION" && !changeReason) addIssue("changeReason", "El motivo del nuevo seguimiento es obligatorio.");
 
@@ -149,9 +153,10 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
       defectDescription, rootCause,
       impactAssessment: text(formData, "impactAssessment"),
       nextFollowupDate,
-      actionFollowupObservations: text(formData, "actionFollowupObservations"),
+      actionFollowupObservations,
       actionFollowups,
       status: recordStatus,
+      operationalStatusDescription,
       cancellationReason, operationalClosedAt,
       effectivenessStatus,
       effectivenessCriteria: text(formData, "effectivenessCriteria"),
