@@ -619,6 +619,9 @@ model Capa {
   defectDescription         String?
   rootCause                 String?
   impactAssessment          String?
+  nextFollowupDate          DateTime?               @db.Date
+  actionFollowupObservations String?
+  operationalStatusDescription String?
   operationalClosedAt       DateTime?               @db.Date
   status                    CapaStatus              @default(OPEN)
   cancellationReason        String?
@@ -641,6 +644,7 @@ model Capa {
   createdAt                 DateTime                @default(now())
   updatedAt                 DateTime                @updatedAt
   plannedActions            CapaPlannedAction[]
+  actionFollowups           CapaActionFollowup[]
   followups                 CapaFollowup[]
 
   @@index([departmentId])
@@ -648,6 +652,7 @@ model Capa {
   @@index([status])
   @@index([effectivenessStatus])
   @@index([openedAt])
+  @@index([nextFollowupDate])
   @@index([operationalClosedAt])
   @@index([effectiveClosedAt])
   @@index([includeInKpi])
@@ -667,6 +672,20 @@ model CapaPlannedAction {
 
   @@index([capaId, sortOrder])
   @@index([plannedExecutionDate])
+}
+
+model CapaActionFollowup {
+  id           String   @id @default(uuid())
+  capaId       String
+  capa         Capa     @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  followupDate DateTime? @db.Date
+  description  String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([capaId, sortOrder])
+  @@index([followupDate])
 }
 
 model CapaFollowup {

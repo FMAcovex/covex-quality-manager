@@ -1,5 +1,5 @@
 import "server-only";
-import { Prisma } from "@prisma/client";
+import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 
@@ -25,13 +25,31 @@ export async function getCapaExportRows(filters: CapaExportFilters) {
   const statuses = requestedStatuses.filter((value) => value !== "DRAFT") as ("OPEN"|"CLOSED"|"CANCELLED")[];
   if (filters.status?.length) and.push({ status: { in: statuses } });
   const effectiveness = validValues(filters.effectiveness, ["CONFORMING","NONCONFORMING","PENDING"] as const); if (effectiveness.length) and.push({ effectivenessStatus: { in: effectiveness as ("CONFORMING"|"NONCONFORMING"|"PENDING")[] } });
-  if (filters.origin?.length) and.push({ originType: { in: filters.origin } });
+  if (filters.origin?.length) {
+    const relationTypes = filters.origin
+      .map((value) => value === "Desviación" ? QmsRecordType.DEVIATION : value === "Reclamación" ? QmsRecordType.COMPLAINT : null)
+      .filter((value): value is "DEVIATION" | "COMPLAINT" => value !== null);
+    if (relationTypes.length) {
+      and.push({
+        qmsRecord: {
+          targetRelations: {
+            some: {
+              isActive: true,
+              relationType: "GENERATES",
+              sourceRecord: { recordType: { in: relationTypes } },
+            },
+          },
+        },
+      });
+    }
+  }
 
   return prisma.capa.findMany({
     where: and.length ? { AND: and } : {},
     include: {
       qmsRecord: true,
       plannedActions: { orderBy: [{ sortOrder:"asc" },{ createdAt:"asc" }] },
+      actionFollowups: { orderBy: [{ sortOrder:"asc" },{ createdAt:"asc" }] },
       followups: { orderBy: [{ followupDate:"desc" },{ sequenceNumber:"desc" }] },
     },
     orderBy: [{ openedAt:"asc" },{ createdAt:"asc" }],

@@ -27,9 +27,9 @@ export async function GET(request: Request) {
   const relatedType = asRecordType(url.searchParams.get("relatedType"));
   const query = url.searchParams.get("q")?.trim() || "";
 
-  if (!currentRecordId || !currentType || !relatedType) {
+  if (!currentType || !relatedType) {
     return NextResponse.json(
-      { error: "Expediente actual y tipos de relación válidos son obligatorios." },
+      { error: "Los tipos de relación válidos son obligatorios." },
       { status: 400 },
     );
   }
@@ -55,52 +55,46 @@ export async function GET(request: Request) {
     return NextResponse.json({ suggestions: [] });
   }
 
-  const current = await prisma.qmsRecord.findUnique({
-    where: { id: currentRecordId },
-    select: { id: true, recordType: true, isActive: true },
-  });
-  if (!current || current.recordType !== currentType) {
-    return NextResponse.json(
-      { error: "El expediente actual no existe o no coincide con el tipo indicado." },
-      { status: 404 },
+  let alreadyLinkedIds: string[] = [];
+  if (currentRecordId) {
+    const current = await prisma.qmsRecord.findUnique({
+      where: { id: currentRecordId },
+      select: { id: true, recordType: true, isActive: true },
+    });
+    if (!current || current.recordType !== currentType) {
+      return NextResponse.json(
+        { error: "El expediente actual no existe o no coincide con el tipo indicado." },
+        { status: 404 },
+      );
+    }
+    if (!current.isActive) {
+      return NextResponse.json(
+        { error: "Un expediente anulado no puede crear nuevas relaciones." },
+        { status: 409 },
+      );
+    }
+
+    const activeRelations = direct
+      ? await prisma.qmsRelation.findMany({
+          where: { sourceRecordId: currentRecordId, relationType: QmsRelationType.GENERATES, isActive: true },
+          select: { sourceRecordId: true, targetRecordId: true },
+        })
+      : await prisma.qmsRelation.findMany({
+          where: { targetRecordId: currentRecordId, relationType: QmsRelationType.GENERATES, isActive: true },
+          select: { sourceRecordId: true, targetRecordId: true },
+        });
+    alreadyLinkedIds = activeRelations.map((relation) =>
+      direct ? relation.targetRecordId : relation.sourceRecordId,
     );
   }
-  if (!current.isActive) {
-    return NextResponse.json(
-      { error: "Un expediente anulado no puede crear nuevas relaciones." },
-      { status: 409 },
-    );
-  }
-
-  const activeRelations = direct
-    ? await prisma.qmsRelation.findMany({
-        where: {
-          sourceRecordId: currentRecordId,
-          relationType: QmsRelationType.GENERATES,
-          isActive: true,
-        },
-        select: { sourceRecordId: true, targetRecordId: true },
-      })
-    : await prisma.qmsRelation.findMany({
-        where: {
-          targetRecordId: currentRecordId,
-          relationType: QmsRelationType.GENERATES,
-          isActive: true,
-        },
-        select: { sourceRecordId: true, targetRecordId: true },
-      });
-
-  const alreadyLinkedIds = activeRelations.map((relation) =>
-    direct ? relation.targetRecordId : relation.sourceRecordId,
-  );
 
   const records = await prisma.qmsRecord.findMany({
     where: {
       recordType: relatedType,
       isActive: true,
-      id: {
-        notIn: [currentRecordId, ...alreadyLinkedIds],
-      },
+      id: currentRecordId
+        ? { notIn: [currentRecordId, ...alreadyLinkedIds] }
+        : { notIn: alreadyLinkedIds },
       businessCode: {
         not: null,
         contains: query,

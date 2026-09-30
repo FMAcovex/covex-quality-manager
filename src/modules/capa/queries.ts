@@ -35,6 +35,8 @@ export async function getCapaList(filters: CapaListFilters) {
         { rootCause: { contains: filters.q, mode: "insensitive" } },
         { internalObservations: { contains: filters.q, mode: "insensitive" } },
         { plannedActions: { some: { description: { contains: filters.q, mode: "insensitive" } } } },
+        { actionFollowups: { some: { description: { contains: filters.q, mode: "insensitive" } } } },
+        { qmsRecord: { targetRelations: { some: { isActive: true, sourceRecord: { businessCode: { contains: filters.q, mode: "insensitive" } } } } } },
       ],
     });
   }
@@ -47,7 +49,24 @@ export async function getCapaList(filters: CapaListFilters) {
   if (statuses.length) and.push({ status: { in: statuses as ("DRAFT" | "OPEN" | "CLOSED" | "CANCELLED")[] } });
   const effectiveness = validValues(filters.effectiveness, ["CONFORMING", "NONCONFORMING", "PENDING", "NA"] as const);
   if (effectiveness.length) and.push({ effectivenessStatus: { in: effectiveness as ("CONFORMING" | "NONCONFORMING" | "PENDING" | "NA")[] } });
-  if (filters.origin?.length) and.push({ originType: { in: filters.origin } });
+  if (filters.origin?.length) {
+    const relationTypes = filters.origin
+      .map((value) => value === "Desviación" ? QmsRecordType.DEVIATION : value === "Reclamación" ? QmsRecordType.COMPLAINT : null)
+      .filter((value): value is "DEVIATION" | "COMPLAINT" => value !== null);
+    if (relationTypes.length) {
+      and.push({
+        qmsRecord: {
+          targetRelations: {
+            some: {
+              isActive: true,
+              relationType: "GENERATES",
+              sourceRecord: { recordType: { in: relationTypes } },
+            },
+          },
+        },
+      });
+    }
+  }
 
   const where: Prisma.CapaWhereInput = and.length ? { AND: and } : {};
   const administrativeWhere: Prisma.CapaWhereInput =
@@ -67,10 +86,12 @@ export async function getCapaList(filters: CapaListFilters) {
             include: {
               sourceRelations: { where: { isActive: true }, include: { targetRecord: true } },
               targetRelations: { where: { isActive: true }, include: { sourceRecord: true } },
+              versions: { orderBy: { sequenceNumber: "desc" }, take: 1 },
             },
           },
           department: true,
           plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ followupDate: "desc" }, { sequenceNumber: "desc" }] },
         },
         orderBy: [{ status: "asc" }, { openedAt: "desc" }, { createdAt: "desc" }],
@@ -83,12 +104,7 @@ export async function getCapaList(filters: CapaListFilters) {
         distinct: ["year"],
         orderBy: { year: "desc" },
       }),
-      prisma.capa.findMany({
-        where: { originType: { not: null } },
-        select: { originType: true },
-        distinct: ["originType"],
-        orderBy: { originType: "asc" },
-      }),
+      Promise.resolve([{ originType: "Desviación" }, { originType: "Reclamación" }]),
       prisma.capa.count({ where: { AND: [administrativeWhere, { status: { not: "DRAFT" } }] } }),
       prisma.capa.count({ where: { AND: [administrativeWhere, { status: "DRAFT" }] } }),
       prisma.capa.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
@@ -102,20 +118,14 @@ export async function getCapaList(filters: CapaListFilters) {
       }),
       prisma.capa.findMany({
         where: { AND: [administrativeWhere, { status: "OPEN" }] },
-        select: {
-          followups: {
-            orderBy: [{ followupDate: "desc" }, { sequenceNumber: "desc" }],
-            take: 1,
-            select: { nextFollowupDate: true },
-          },
-        },
+        select: { nextFollowupDate: true },
       }),
     ]);
 
   return {
     rows: rows.filter((row) => {
       if (!filters.followup) return true;
-      const next = row.followups[0]?.nextFollowupDate;
+      const next = row.nextFollowupDate;
       if (filters.followup === "due") return Boolean(next && next <= now);
       if (filters.followup === "scheduled") return Boolean(next && next > now);
       if (filters.followup === "none") return !next;
@@ -130,8 +140,7 @@ export async function getCapaList(filters: CapaListFilters) {
       open,
       pendingEfficacy,
       overdueFollowups: overdueFollowups.filter((row) => {
-        const next = row.followups[0]?.nextFollowupDate;
-        return Boolean(next && next <= now);
+        return Boolean(row.nextFollowupDate && row.nextFollowupDate <= now);
       }).length,
     },
   };
@@ -159,6 +168,7 @@ export async function getCapaDetail(id: string) {
       },
       department: true,
       plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ followupDate: "desc" }, { sequenceNumber: "desc" }] },
       formVersion: true,
       annexIIITemplateVersion: true,
@@ -218,5 +228,19 @@ export async function getComplaintPrefill(complaintId: string) {
       qmsRecord: true,
       department: true,
     },
+  });
+}
+
+
+export async function getCapaOriginRecords(ids: string[]) {
+  if (!ids.length) return [];
+  return prisma.qmsRecord.findMany({
+    where: {
+      id: { in: ids },
+      isActive: true,
+      recordType: { in: [QmsRecordType.DEVIATION, QmsRecordType.COMPLAINT] },
+    },
+    select: { id: true, recordType: true, businessCode: true, year: true },
+    orderBy: { businessCode: "asc" },
   });
 }

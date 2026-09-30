@@ -28,11 +28,12 @@ describe("Anexo III CAPA con dos seguimientos", () => {
       openedAt: new Date("2097-01-01"),
       originType: null, originCode: null, applicableTo: null,
       defectDescription: "C3 MARCA V00", rootCause: "Causa ficticia",
-      status: "CLOSED", cancellationReason: null,
+      status: "CLOSED", operationalStatusDescription: "Acción completada", cancellationReason: null,
       effectivenessStatus: "CONFORMING", effectivenessCriteria: "Sin recurrencia",
       effectivenessAssessment: "Conforme", effectivenessEvidence: "EV-C3-EF",
       operationalClosedAt: new Date("2097-02-10"),
       effectiveClosedAt: new Date("2097-02-10"), conclusion: "Acción implantada",
+      nextFollowupDate: new Date("2097-03-01"),
       plannedActions: [{ description: "Acción C3", responsible: "QA", plannedExecutionDate: null, impact: null }],
       followups: [
         { sequenceNumber: 2, followupDate: new Date("2097-02-10"), reason: "Cierre",

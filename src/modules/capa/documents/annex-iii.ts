@@ -22,6 +22,7 @@ type CapaAnnexRecord = {
   defectDescription: string | null;
   rootCause: string | null;
   status: string;
+  operationalStatusDescription: string | null;
   cancellationReason: string | null;
   effectivenessStatus: string;
   effectivenessCriteria: string | null;
@@ -30,6 +31,7 @@ type CapaAnnexRecord = {
   operationalClosedAt: Date | null;
   effectiveClosedAt: Date | null;
   conclusion: string | null;
+  nextFollowupDate: Date | null;
   plannedActions: Array<{
     description: string;
     responsible: string | null;
@@ -143,7 +145,7 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
   xml = setWordSdtCheckbox(xml, 1, 6, 0, record.status === "OPEN");
   xml = setWordSdtCheckbox(xml, 1, 6, 1, record.status === "CLOSED");
   xml = setWordSdtCheckbox(xml, 1, 6, 2, record.status === "CANCELLED");
-  xml = setWordCellText(xml, 1, 7, 0, record.cancellationReason ?? "");
+  xml = setWordCellText(xml, 1, 7, 0, record.operationalStatusDescription ?? record.cancellationReason ?? "");
 
   xml = setWordSdtCheckbox(xml, 1, 9, 0, record.effectivenessStatus === "CONFORMING");
   xml = setWordSdtCheckbox(xml, 1, 9, 1, record.effectivenessStatus === "NONCONFORMING");
@@ -161,8 +163,7 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
   );
   xml = setWordCellText(xml, 1, 12, 0, record.conclusion ?? "");
 
-  const next = latest?.nextFollowupDate ?? null;
-  xml = setWordCellText(xml, 1, 13, 1, date(next));
+  xml = setWordCellText(xml, 1, 13, 1, date(record.nextFollowupDate));
   xml = setWordCellText(xml, 1, 14, 1, date(record.operationalClosedAt));
   xml = setWordCellText(xml, 1, 15, 1, date(record.effectiveClosedAt));
 

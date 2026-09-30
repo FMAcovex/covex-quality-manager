@@ -13,6 +13,7 @@ function jsonValue(value: unknown): Prisma.InputJsonValue {
   return { value: value === undefined ? null : value } as Prisma.InputJsonValue;
 }
 
+
 export async function saveCapaFollowup(
   id: string,
   formData: FormData,
@@ -22,6 +23,7 @@ export async function saveCapaFollowup(
     include: {
       qmsRecord: true,
       plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
       formVersion: true,
       annexIIITemplateVersion: true,
@@ -128,6 +130,7 @@ export async function saveCapaFollowup(
         where: { id },
         data: {
           status: v.status,
+          nextFollowupDate: toDate(v.nextFollowupDate),
           operationalClosedAt: toDate(v.operationalClosedAt),
           cancellationReason: v.cancellationReason,
           conclusion: v.conclusion,
@@ -182,6 +185,7 @@ export async function saveCapaFollowup(
         include: {
           qmsRecord: true,
           plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
           formVersion: true,
           annexIIITemplateVersion: true,

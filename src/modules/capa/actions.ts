@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma, QmsRecordType } from "@prisma/client";
+import { Prisma, QmsRecordType, RecordVersionKind } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -14,6 +14,7 @@ import {
   createQmsRelation,
   deactivateOperationalRelation,
   linkOperationalRelationByBusinessCode,
+  syncOperationalOriginRelations,
 } from "@/lib/qms/relation-service";
 import {
   assignOperationalBusinessCode,
@@ -43,6 +44,7 @@ import {
 import {
   ensureInitialVersion,
   refreshCurrentVersion,
+  startNextVersion,
   serializeCapaVersion,
   snapshotJson,
 } from "@/lib/qms/versioning";
@@ -68,6 +70,11 @@ function snapshot(v: ReturnType<typeof parseCapaForm>["values"]) {
     defectDescription: v.defectDescription,
     rootCause: v.rootCause,
     impactAssessment: v.impactAssessment,
+    nextFollowupDate: v.nextFollowupDate,
+    actionFollowupObservations: v.actionFollowupObservations,
+    actionFollowups: v.actionFollowups,
+    operationalStatusDescription: v.operationalStatusDescription,
+    origins: v.origins,
     status: v.status,
     cancellationReason: v.cancellationReason,
     operationalClosedAt: v.operationalClosedAt,
@@ -210,6 +217,9 @@ export async function createCapaAction(
           defectDescription: v.defectDescription,
           rootCause: v.rootCause,
           impactAssessment: v.impactAssessment,
+          nextFollowupDate: toDate(v.nextFollowupDate),
+          actionFollowupObservations: v.actionFollowupObservations,
+          operationalStatusDescription: v.operationalStatusDescription,
           operationalClosedAt: toDate(v.operationalClosedAt),
           status: v.status,
           cancellationReason: v.cancellationReason,
@@ -231,6 +241,7 @@ export async function createCapaAction(
                   complaintPlanId: complaintPlanOrigin?.planId ?? null,
                   complaintId: v.fromComplaintId ?? null,
                 },
+                pendingOriginIds: v.origins.map((item) => item.id),
               }
             : undefined,
           plannedActions: {
@@ -242,6 +253,13 @@ export async function createCapaAction(
               sortOrder: index,
             })),
           },
+          actionFollowups: {
+            create: v.actionFollowups.map((item, index) => ({
+              followupDate: toDate(item.followupDate),
+              description: item.description || null,
+              sortOrder: index,
+            })),
+          },
         },
       });
 
@@ -250,7 +268,11 @@ export async function createCapaAction(
           qmsRecordId: qmsRecord.id,
           changedByText: parsed.actor,
           fieldPath: "__created__",
-          newValue: jsonValue(snapshot(canonicalValues)),
+          newValue: jsonValue({
+            ...snapshot(v),
+            originType: canonicalValues.originType,
+            originCode: canonicalValues.originCode,
+          }),
           source: "UI",
         },
       });
@@ -260,6 +282,7 @@ export async function createCapaAction(
         include: {
           qmsRecord: true,
           plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
           formVersion: true,
           annexIIITemplateVersion: true,
@@ -298,13 +321,25 @@ export async function createCapaAction(
           capaQmsRecordId: qmsRecord.id,
           actor: parsed.actor,
         });
-      } else {
+      } else if (!v.origins.length) {
         await relatePrimaryOrigin(
           tx,
           qmsRecord.id,
           canonicalValues.originCode,
           parsed.actor,
         );
+      }
+
+      const selectedOriginIds = new Set(v.origins.map((item) => item.id));
+      if (deviationOrigin?.deviationQmsRecordId) selectedOriginIds.add(deviationOrigin.deviationQmsRecordId);
+      if (complaintPlanOrigin?.complaintQmsRecordId) selectedOriginIds.add(complaintPlanOrigin.complaintQmsRecordId);
+      if (complaintDirectOrigin?.complaintQmsRecordId) selectedOriginIds.add(complaintDirectOrigin.complaintQmsRecordId);
+      if (selectedOriginIds.size) {
+        await syncOperationalOriginRelations(tx, {
+          capaRecordId: qmsRecord.id,
+          originRecordIds: [...selectedOriginIds],
+          changedByText: parsed.actor,
+        });
       }
       return created;
     });
@@ -343,8 +378,16 @@ export async function updateCapaAction(
   const existing = await prisma.capa.findUnique({
     where: { id },
     include: {
-      qmsRecord: true,
+      qmsRecord: {
+        include: {
+          targetRelations: {
+            where: { isActive: true, relationType: "GENERATES" },
+            include: { sourceRecord: true },
+          },
+        },
+      },
       plannedActions: { orderBy: { sortOrder: "asc" } },
+      actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
       formVersion: true,
       annexIIITemplateVersion: true,
@@ -352,7 +395,7 @@ export async function updateCapaAction(
   });
   if (!existing) return preserveFormState(previous, formData, { error: "La CAPA ya no existe." });
 
-  const parsed = parseCapaForm(formData, { allowHistoricalIncomplete: existing.status !== "DRAFT" });
+  const parsed = parseCapaForm(formData);
   if (parsed.errors.length) {
     return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
   }
@@ -372,19 +415,12 @@ export async function updateCapaAction(
     return preserveFormState(previous, formData, { error: "No se puede eliminar una causa raíz ya documentada." });
   }
 
-  if (existing.status !== "CLOSED" && v.status === "CLOSED") {
-    const transitionErrors: string[] = [];
-    if (!v.operationalClosedAt) transitionErrors.push("La transición a Cerrada requiere fecha de cierre operativo.");
-    if (!v.conclusion) transitionErrors.push("La transición a Cerrada requiere conclusión de cierre.");
-    const hasEvidence = existing.followups.some((item) => Boolean(item.evidenceReference?.trim()));
-    if (!hasEvidence) transitionErrors.push("La transición a Cerrada requiere una evidencia de ejecución referenciada en un seguimiento.");
-    if (transitionErrors.length) {
-      return preserveFormState(previous, formData, { error: "No se puede cerrar operativamente la CAPA.", fieldErrors: transitionErrors });
-    }
-  }
-
-  if (existing.status !== "CANCELLED" && v.status === "CANCELLED" && !v.cancellationReason) {
-    return preserveFormState(previous, formData, { error: "La transición a Cancelada requiere motivo de cancelación." });
+  if (existing.status !== "CLOSED" && v.status === "CLOSED" && !v.operationalClosedAt) {
+    return preserveFormState(previous, formData, {
+      error: "No se puede cerrar operativamente la CAPA.",
+      fieldErrors: ["La transición a Cerrada requiere fecha de cierre y ejecución."],
+      fieldIssues: { operationalClosedAt: ["La transición a Cerrada requiere fecha de cierre y ejecución."] },
+    });
   }
 
   const isNewEffectiveClosure =
@@ -405,10 +441,14 @@ export async function updateCapaAction(
     return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
   }
 
-  const pendingOrigin =
+  const pendingData =
     existing.status === "DRAFT" && existing.extraData && typeof existing.extraData === "object" && !Array.isArray(existing.extraData)
-      ? (existing.extraData as { pendingOrigin?: { deviationPlanId?: string | null; complaintPlanId?: string | null; complaintId?: string | null } }).pendingOrigin
+      ? (existing.extraData as {
+          pendingOrigin?: { deviationPlanId?: string | null; complaintPlanId?: string | null; complaintId?: string | null };
+          pendingOriginIds?: string[];
+        })
       : undefined;
+  const pendingOrigin = pendingData?.pendingOrigin;
   const becomingOperational = existing.status === "DRAFT" && v.status !== "DRAFT";
 
   const oldSnapshot = {
@@ -423,6 +463,21 @@ export async function updateCapaAction(
     defectDescription: existing.defectDescription,
     rootCause: existing.rootCause,
     impactAssessment: existing.impactAssessment,
+    nextFollowupDate: existing.nextFollowupDate?.toISOString().slice(0, 10) ?? null,
+    actionFollowupObservations: existing.actionFollowupObservations,
+    operationalStatusDescription: existing.operationalStatusDescription,
+    actionFollowups: existing.actionFollowups.map((item) => ({
+      followupDate: item.followupDate?.toISOString().slice(0, 10) ?? "",
+      description: item.description ?? "",
+    })),
+    origins: existing.qmsRecord.targetRelations
+      .filter((item) => item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT")
+      .map((item) => ({
+        id: item.sourceRecord.id,
+        recordType: item.sourceRecord.recordType,
+        businessCode: item.sourceRecord.businessCode ?? "",
+        year: item.sourceRecord.year,
+      })),
     status: existing.status,
     cancellationReason: existing.cancellationReason,
     operationalClosedAt: existing.operationalClosedAt?.toISOString().slice(0, 10) ?? null,
@@ -443,7 +498,12 @@ export async function updateCapaAction(
     })),
   };
 
-  const newSnapshot = snapshot(v);
+  const newSnapshot = {
+    ...snapshot(v),
+    impactAssessment: existing.impactAssessment,
+    effectivenessCriteria: existing.effectivenessCriteria,
+    effectivenessEvidence: existing.effectivenessEvidence,
+  };
   const changed = Object.entries(newSnapshot).filter(([key, value]) => {
     return JSON.stringify((oldSnapshot as Record<string, unknown>)[key] ?? null) !==
       JSON.stringify(value ?? null);
@@ -527,20 +587,32 @@ export async function updateCapaAction(
           applicableTo: v.applicableTo,
           defectDescription: v.defectDescription,
           rootCause: v.rootCause,
-          impactAssessment: v.impactAssessment,
+          impactAssessment: existing.impactAssessment,
+          nextFollowupDate: toDate(v.nextFollowupDate),
+          actionFollowupObservations: v.actionFollowupObservations,
+          operationalStatusDescription: v.operationalStatusDescription,
           operationalClosedAt: toDate(v.operationalClosedAt),
           status: v.status,
           cancellationReason: v.cancellationReason,
           effectivenessStatus: v.effectivenessStatus,
-          effectivenessCriteria: v.effectivenessCriteria,
+          effectivenessCriteria: existing.effectivenessCriteria,
           effectivenessAssessment: v.effectivenessAssessment,
-          effectivenessEvidence: v.effectivenessEvidence,
+          effectivenessEvidence: existing.effectivenessEvidence,
           effectiveClosedAt: toDate(v.effectiveClosedAt),
           conclusion: v.conclusion,
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
-          extraData: becomingOperational ? Prisma.DbNull : existing.extraData ?? undefined,
+          extraData: becomingOperational
+            ? Prisma.DbNull
+            : v.status === "DRAFT"
+              ? {
+                  ...((existing.extraData && typeof existing.extraData === "object" && !Array.isArray(existing.extraData))
+                    ? existing.extraData as Prisma.JsonObject
+                    : {}),
+                  pendingOriginIds: v.origins.map((item) => item.id),
+                }
+              : existing.extraData ?? undefined,
           plannedActions: {
             deleteMany: {},
             create: v.plannedActions.map((item, index) => ({
@@ -548,6 +620,14 @@ export async function updateCapaAction(
               responsible: item.responsible || null,
               plannedExecutionDate: toDate(item.plannedExecutionDate),
               impact: item.impact || null,
+              sortOrder: index,
+            })),
+          },
+          actionFollowups: {
+            deleteMany: {},
+            create: v.actionFollowups.map((item, index) => ({
+              followupDate: toDate(item.followupDate),
+              description: item.description || null,
               sortOrder: index,
             })),
           },
@@ -592,8 +672,38 @@ export async function updateCapaAction(
         } else {
           await relatePrimaryOrigin(tx, existing.qmsRecordId, v.originCode, parsed.actor);
         }
-      } else if (v.status !== "DRAFT") {
+      } else if (v.status !== "DRAFT" && !v.origins.length) {
         await relatePrimaryOrigin(tx, existing.qmsRecordId, v.originCode, parsed.actor);
+      }
+
+      if (v.status !== "DRAFT") {
+        const selectedOriginIds = new Set(v.origins.map((item) => item.id));
+        if (pendingOrigin?.deviationPlanId) {
+          const plan = await tx.deviationCapaPlan.findUnique({
+            where: { id: pendingOrigin.deviationPlanId },
+            select: { deviation: { select: { qmsRecordId: true } } },
+          });
+          if (plan) selectedOriginIds.add(plan.deviation.qmsRecordId);
+        }
+        if (pendingOrigin?.complaintPlanId) {
+          const plan = await tx.complaintCapaPlan.findUnique({
+            where: { id: pendingOrigin.complaintPlanId },
+            select: { complaint: { select: { qmsRecordId: true } } },
+          });
+          if (plan) selectedOriginIds.add(plan.complaint.qmsRecordId);
+        }
+        if (pendingOrigin?.complaintId) {
+          const complaint = await tx.complaint.findUnique({
+            where: { id: pendingOrigin.complaintId },
+            select: { qmsRecordId: true },
+          });
+          if (complaint) selectedOriginIds.add(complaint.qmsRecordId);
+        }
+        await syncOperationalOriginRelations(tx, {
+          capaRecordId: existing.qmsRecordId,
+          originRecordIds: [...selectedOriginIds],
+          changedByText: parsed.actor,
+        });
       }
 
       const updatedForVersion = await tx.capa.findUniqueOrThrow({
@@ -601,23 +711,35 @@ export async function updateCapaAction(
         include: {
           qmsRecord: true,
           plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+          actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
           followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
           formVersion: true,
           annexIIITemplateVersion: true,
         },
       });
-      await refreshCurrentVersion(
-        tx,
-        existing.qmsRecordId,
-        snapshotJson(serializeCapaVersion(updatedForVersion)),
-        parsed.actor,
-        v.changeReason || null,
-      );
+      const versionSnapshot = snapshotJson(serializeCapaVersion(updatedForVersion));
+      if (v.saveIntent === "CREATE_FOLLOWUP_VERSION") {
+        await startNextVersion(
+          tx,
+          existing.qmsRecordId,
+          RecordVersionKind.FOLLOWUP,
+          versionSnapshot,
+          parsed.actor,
+          v.changeReason,
+        );
+      } else {
+        await refreshCurrentVersion(
+          tx,
+          existing.qmsRecordId,
+          versionSnapshot,
+          parsed.actor,
+          v.changeReason || null,
+        );
+      }
     });
 
     revalidatePath("/capa");
     revalidatePath(`/capa/${id}`);
-    redirect(`/capa/${id}`);
   } catch (error) {
     if (error instanceof OperationalBusinessCodeError) {
       return preserveFormState(previous, formData, {
@@ -634,6 +756,8 @@ export async function updateCapaAction(
     }
     return preserveFormState(previous, formData, persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" }));
   }
+
+  redirect(`/capa/${id}`);
 }
 
 export async function addCapaFollowupAction(

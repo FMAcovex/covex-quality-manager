@@ -796,3 +796,21 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
 - comprueba integración de filtros multiselección;
 - se ejecuta junto a los smoke PostgreSQL, códigos, relaciones, versionado y documentos ya existentes;
 - sin cambios Prisma ni nuevas reglas funcionales.
+
+
+## R1 — CAPA · Bloque 1 funcional + UX
+Estado: **IMPLEMENTADO EN PR; PENDIENTE DE CI ACTUALIZADA Y VALIDACIÓN MANUAL**.
+
+- rama: `feature/r1-capa-functional-ux`;
+- separación entre Seguimientos funcionales (`QmsRecordVersion`) y Seguimiento de la acción;
+- nuevo `CapaActionFollowup` sin backfill destructivo de `CapaFollowup`;
+- formularios Nueva/Editar alineados con siete apartados: Identificación/origen, Defecto/causa raíz, Acción propuesta, Seguimiento de la acción, Evaluación de eficacia, Estado operativo y Conclusión;
+- Guardar borrador / Guardar CAPA / Guardar como nuevo seguimiento;
+- multiorigen Desviación/Reclamación con `QmsRelation` canónica;
+- próxima fecha persistida en `Capa.nextFollowupDate`;
+- detalle reorganizado y Acciones integradas en Resumen;
+- pestaña Versiones renombrada conceptualmente a Seguimientos;
+- listado actualizado con próximo seguimiento, cierre/ejecución y verificación final;
+- campos históricos ocultos en la nueva UX se conservan;
+- retirada la captura independiente de evidencia de ejecución; Seguimiento de la acción queda alineado con Anexo III (Fecha, Descripción y Observaciones);
+- PDFs por versión, Anexo III multiorigen completo y componente documental transversal quedan para Bloque 2.

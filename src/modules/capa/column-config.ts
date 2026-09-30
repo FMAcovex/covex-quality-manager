@@ -9,11 +9,11 @@ export const capaColumns = [
   { key: "opening", label: "Apertura", index: 7 },
   { key: "planned", label: "Fecha prevista", index: 8 },
   { key: "status", label: "Estado", index: 9 },
-  { key: "operationalClose", label: "Cierre operativo", index: 10 },
+  { key: "operationalClose", label: "Cierre y ejecución", index: 10 },
   { key: "effectiveness", label: "Eficacia", index: 11 },
   { key: "latestFollowup", label: "Último seguimiento", index: 12 },
   { key: "nextFollowup", label: "Próximo seguimiento", index: 13 },
-  { key: "effectiveClose", label: "Cierre efectivo", index: 14 },
+  { key: "effectiveClose", label: "Verificación final", index: 14 },
   { key: "related", label: "Relacionados", index: 15 },
   { key: "observations", label: "Observaciones", index: 16 },
 ] as const;

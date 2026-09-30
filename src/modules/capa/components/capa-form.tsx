@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
+import { CapaOriginSelector } from "@/modules/capa/components/capa-origin-selector";
 import type {
+  CapaActionFollowupInput,
   CapaFormDefaults,
   CapaFormState,
+  CapaOriginInput,
   CapaPlannedActionInput,
 } from "@/modules/capa/types";
 
@@ -18,6 +21,10 @@ const emptyAction: CapaPlannedActionInput = {
   responsible: "",
   plannedExecutionDate: "",
   impact: "",
+};
+const emptyActionFollowup: CapaActionFollowupInput = {
+  followupDate: "",
+  description: "",
 };
 
 function FieldIssue({ messages }: { messages?: string[] }) {
@@ -33,6 +40,7 @@ function Field({
   required = false,
   span = "",
   issues,
+  help,
 }: {
   label: string;
   name: string;
@@ -41,11 +49,19 @@ function Field({
   required?: boolean;
   span?: string;
   issues?: string[];
+  help?: string;
 }) {
   return (
     <label className={`field ${span} ${issues?.length ? "has-error" : ""}`}>
       <span>{label}{required ? " *" : ""}</span>
-      <input name={name} type={type} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
+      {help ? <small className="muted-note">{help}</small> : null}
+      <input
+        name={name}
+        type={type}
+        defaultValue={defaultValue ?? ""}
+        required={required}
+        aria-invalid={issues?.length ? true : undefined}
+      />
       <FieldIssue messages={issues} />
     </label>
   );
@@ -58,6 +74,7 @@ function TextArea({
   help,
   required = false,
   issues,
+  span = "span-3",
 }: {
   label: string;
   name: string;
@@ -65,15 +82,31 @@ function TextArea({
   help?: string;
   required?: boolean;
   issues?: string[];
+  span?: string;
 }) {
   return (
-    <label className={`field span-3 ${issues?.length ? "has-error" : ""}`}>
+    <label className={`field ${span} ${issues?.length ? "has-error" : ""}`}>
       <span>{label}{required ? " *" : ""}</span>
       {help ? <small className="muted-note">{help}</small> : null}
-      <textarea name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
+      <textarea
+        name={name}
+        defaultValue={defaultValue ?? ""}
+        required={required}
+        aria-invalid={issues?.length ? true : undefined}
+      />
       <FieldIssue messages={issues} />
     </label>
   );
+}
+
+function parseSubmittedArray<T>(raw: string | string[] | undefined, fallback: T[]) {
+  if (typeof raw !== "string") return fallback;
+  try {
+    const value = JSON.parse(raw);
+    return Array.isArray(value) ? value as T[] : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function CapaForm({
@@ -82,6 +115,7 @@ export function CapaForm({
   departments,
   defaults = {},
   capaId,
+  qmsRecordId,
   fromDeviationPlanId,
   fromComplaintPlanId,
   fromComplaintId,
@@ -91,15 +125,21 @@ export function CapaForm({
   departments: Department[];
   defaults?: CapaFormDefaults;
   capaId?: string;
+  qmsRecordId?: string;
   fromDeviationPlanId?: string;
   fromComplaintPlanId?: string;
   fromComplaintId?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const formDefaults = submittedDefaults(defaults, state.submittedValues);
+
   const [actions, setActions] = useState<CapaPlannedActionInput[]>(
     defaults.plannedActions?.length ? defaults.plannedActions : [{ ...emptyAction }],
   );
+  const [actionFollowups, setActionFollowups] = useState<CapaActionFollowupInput[]>(
+    defaults.actionFollowups ?? [],
+  );
+  const [origins, setOrigins] = useState<CapaOriginInput[]>(defaults.origins ?? []);
   const [actionType, setActionType] = useState<"CORRECTIVE" | "PREVENTIVE">(
     (formDefaults.actionType as "CORRECTIVE" | "PREVENTIVE" | undefined) ?? "CORRECTIVE",
   );
@@ -108,27 +148,78 @@ export function CapaForm({
   const [recordStatus, setRecordStatus] = useState<"DRAFT" | "OPEN" | "CLOSED" | "CANCELLED">(
     formDefaults.status ?? (mode === "create" ? "DRAFT" : "OPEN"),
   );
+  const [effectivenessStatus, setEffectivenessStatus] = useState<
+    "CONFORMING" | "NONCONFORMING" | "PENDING" | "NA"
+  >(formDefaults.effectivenessStatus ?? "PENDING");
+  const [nextFollowupDate, setNextFollowupDate] = useState(formDefaults.nextFollowupDate ?? "");
+
   const draft = recordStatus === "DRAFT";
+  const draftExisting = mode === "edit" && defaults.status === "DRAFT";
   const issues = state.fieldIssues ?? {};
 
+  useEffect(() => {
+    if (!state.submittedValues) return;
+    setActions(parseSubmittedArray(state.submittedValues.plannedActionsJson, actions));
+    setActionFollowups(parseSubmittedArray(state.submittedValues.actionFollowupsJson, actionFollowups));
+    setOrigins(parseSubmittedArray(state.submittedValues.originsJson, origins));
+    if (typeof state.submittedValues.actionType === "string") {
+      setActionType(state.submittedValues.actionType as "CORRECTIVE" | "PREVENTIVE");
+    }
+    if (typeof state.submittedValues.departmentId === "string") {
+      setDepartmentId(state.submittedValues.departmentId);
+    }
+    if (typeof state.submittedValues.openedAt === "string") {
+      setOpenedAt(state.submittedValues.openedAt);
+    }
+    if (typeof state.submittedValues.status === "string") {
+      setRecordStatus(state.submittedValues.status as typeof recordStatus);
+    }
+    if (typeof state.submittedValues.effectivenessStatus === "string") {
+      setEffectivenessStatus(state.submittedValues.effectivenessStatus as typeof effectivenessStatus);
+    }
+    if (typeof state.submittedValues.nextFollowupDate === "string") {
+      setNextFollowupDate(state.submittedValues.nextFollowupDate);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.formRevision]);
+
+  useEffect(() => {
+    if (!state.formRevision || !Object.keys(issues).length) return;
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(
+        '.record-form [aria-invalid="true"], .record-form [data-error-anchor="true"]',
+      );
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement
+      ) {
+        target.focus({ preventScroll: true });
+      }
+    });
+  }, [state.formRevision, issues]);
+
   const updateAction = (index: number, patch: Partial<CapaPlannedActionInput>) => {
-    setActions((current) =>
-      current.map((item, i) => (i === index ? { ...item, ...patch } : item)),
+    setActions((current) => current.map((item, i) => i === index ? { ...item, ...patch } : item));
+  };
+
+  const updateActionFollowup = (index: number, patch: Partial<CapaActionFollowupInput>) => {
+    setActionFollowups((current) =>
+      current.map((item, i) => i === index ? { ...item, ...patch } : item),
     );
   };
 
   return (
     <form key={state.formRevision ?? 0} action={formAction} className="record-form">
       <input type="hidden" name="plannedActionsJson" value={JSON.stringify(actions)} />
-      {fromDeviationPlanId ? (
-        <input type="hidden" name="fromDeviationPlanId" value={fromDeviationPlanId} />
-      ) : null}
-      {fromComplaintPlanId ? (
-        <input type="hidden" name="fromComplaintPlanId" value={fromComplaintPlanId} />
-      ) : null}
-      {fromComplaintId ? (
-        <input type="hidden" name="fromComplaintId" value={fromComplaintId} />
-      ) : null}
+      <input type="hidden" name="actionFollowupsJson" value={JSON.stringify(actionFollowups)} />
+      <input type="hidden" name="originsJson" value={JSON.stringify(origins)} />
+      <input type="hidden" name="cancellationReason" value={formDefaults.cancellationReason ?? ""} />
+      {fromDeviationPlanId ? <input type="hidden" name="fromDeviationPlanId" value={fromDeviationPlanId} /> : null}
+      {fromComplaintPlanId ? <input type="hidden" name="fromComplaintPlanId" value={fromComplaintPlanId} /> : null}
+      {fromComplaintId ? <input type="hidden" name="fromComplaintId" value={fromComplaintId} /> : null}
 
       {state.error ? (
         <div className="form-errors">
@@ -141,30 +232,42 @@ export function CapaForm({
 
       <section className="form-section">
         <h2>1. Identificación y origen</h2>
-        <p className="section-help">
-          La CAPA debe mantener trazabilidad con el documento que la origina.
-        </p>
+        <p className="section-help">La CAPA debe mantener trazabilidad con todos los expedientes que la originan.</p>
         <div className="form-grid">
-          <ControlledBusinessCodeField
-            recordType="CAPA"
-            label="Codificación AC/AP"
-            initialValue={formDefaults.businessCode}
-            mode={mode}
-            yearSource={openedAt}
-            departmentId={departmentId}
-            actionType={actionType}
-            locked={mode === "edit" && !draft}
-          />
           <label className="field">
-            <span>Tipo *</span>
-            <select name="actionType" value={actionType} onChange={(event) => setActionType(event.target.value as "CORRECTIVE" | "PREVENTIVE")}>
+            <span>Tipo CAPA *</span>
+            <select
+              name="actionType"
+              value={actionType}
+              onChange={(event) => setActionType(event.target.value as "CORRECTIVE" | "PREVENTIVE")}
+            >
               <option value="CORRECTIVE">Correctiva</option>
               <option value="PREVENTIVE">Preventiva</option>
             </select>
           </label>
+
+          <div className="field span-2">
+            <ControlledBusinessCodeField
+              recordType="CAPA"
+              label="Codificación AC/AP"
+              initialValue={formDefaults.businessCode}
+              mode={mode}
+              yearSource={openedAt}
+              departmentId={departmentId}
+              actionType={actionType}
+              locked={mode === "edit" && !draftExisting}
+            />
+          </div>
+
           <label className={`field ${issues.departmentId?.length ? "has-error" : ""}`}>
             <span>Departamento responsable{draft ? "" : " *"}</span>
-            <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required={!draft} aria-invalid={issues.departmentId?.length ? true : undefined}>
+            <select
+              name="departmentId"
+              value={departmentId}
+              onChange={(event) => setDepartmentId(event.target.value)}
+              required={!draft}
+              aria-invalid={issues.departmentId?.length ? true : undefined}
+            >
               <option value="">Seleccionar…</option>
               {departments.map((department) => (
                 <option key={department.id} value={department.id}>
@@ -174,163 +277,411 @@ export function CapaForm({
             </select>
             <FieldIssue messages={issues.departmentId} />
           </label>
+
           <label className={`field ${issues.openedAt?.length ? "has-error" : ""}`}>
             <span>Fecha apertura{draft ? "" : " *"}</span>
-            <input name="openedAt" type="date" value={openedAt} onChange={(event) => setOpenedAt(event.target.value)} required={!draft} aria-invalid={issues.openedAt?.length ? true : undefined} />
+            <input
+              name="openedAt"
+              type="date"
+              value={openedAt}
+              onChange={(event) => setOpenedAt(event.target.value)}
+              required={!draft}
+              aria-invalid={issues.openedAt?.length ? true : undefined}
+            />
             <FieldIssue messages={issues.openedAt} />
           </label>
-          <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required={!draft} issues={issues.createdByText} />
+
+          <Field
+            label="Cumplimentado por"
+            name="createdByText"
+            defaultValue={formDefaults.createdByText}
+            required={!draft}
+            issues={issues.createdByText}
+          />
           {mode === "edit" ? (
-            <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText} />
+            <Field
+              label="Modificado por"
+              name="modifiedByText"
+              defaultValue={formDefaults.createdByText}
+            />
           ) : null}
-          <label className={`field ${issues.originType?.length ? "has-error" : ""}`}>
-            <span>Origen{draft ? "" : " *"}</span>
-            <select name="originType" defaultValue={formDefaults.originType ?? ""} required={!draft} aria-invalid={issues.originType?.length ? true : undefined}>
-              <option value="">Seleccionar…</option>
-              <option value="Desviación">Desviación</option>
-              <option value="Auditoría interna">Auditoría interna</option>
-              <option value="Auditoría externa">Auditoría externa</option>
-              <option value="Inspección">Inspección</option>
-              <option value="Reclamación">Reclamación</option>
-              <option value="Devolución">Devolución</option>
-              <option value="Fuera de especificación">Fuera de especificación</option>
-              <option value="PQR">PQR</option>
-              <option value="Otros">Otros</option>
-            </select>
-            <FieldIssue messages={issues.originType} />
-          </label>
-          <Field label="Codificación de origen" name="originCode" defaultValue={formDefaults.originCode} span="span-2" />
-          <Field label="Materia/material/producto/sistema/equipo" name="applicableTo" defaultValue={formDefaults.applicableTo} span="span-3" />
+
+          <CapaOriginSelector
+            value={origins}
+            onChange={setOrigins}
+            currentRecordId={qmsRecordId}
+          />
+          {issues.originsJson?.length ? (
+            <div className="field-error-block span-3" data-error-anchor="true">
+              <FieldIssue messages={issues.originsJson} />
+            </div>
+          ) : null}
         </div>
       </section>
 
       <section className="form-section">
         <h2>2. Defecto y causa raíz</h2>
-        <p className="section-help">
-          La descripción y la causa deben coincidir con el documento de origen cuando exista.
-        </p>
         <div className="form-grid">
-          <TextArea label="Descripción breve del defecto" name="defectDescription" defaultValue={formDefaults.defectDescription} required={!draft} issues={issues.defectDescription} />
-          <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} required={!draft} issues={issues.rootCause} />
+          <Field
+            label="Materia / material / producto / sistema / equipo"
+            name="applicableTo"
+            defaultValue={formDefaults.applicableTo}
+            span="span-3"
+            required={!draft}
+            issues={issues.applicableTo}
+          />
+          <TextArea
+            label="Descripción breve del defecto"
+            name="defectDescription"
+            defaultValue={formDefaults.defectDescription}
+            required={!draft}
+            issues={issues.defectDescription}
+          />
+          <TextArea
+            label="Causa raíz"
+            name="rootCause"
+            defaultValue={formDefaults.rootCause}
+            required={!draft}
+            issues={issues.rootCause}
+          />
         </div>
       </section>
 
       <section className="form-section">
         <h2>3. Acción propuesta</h2>
-        <p className="section-help">
-          Cada acción debe derivar de la causa raíz, ser verificable y tener responsable y fecha cuando aplique.
-        </p>
-        {issues.plannedActionsJson?.length ? <div className="field-error-block"><FieldIssue messages={issues.plannedActionsJson} /></div> : null}
-        <div className="dynamic-list">
+        <p className="section-help">Define las acciones propuestas con responsable y fecha prevista cuando corresponda.</p>
+        {issues.plannedActionsJson?.length ? (
+          <div className="field-error-block" data-error-anchor="true">
+            <FieldIssue messages={issues.plannedActionsJson} />
+          </div>
+        ) : null}
+
+        <div className="dynamic-list capa-action-list">
           {actions.map((item, index) => (
-            <div className="dynamic-row capa capa-full" key={index}>
-              <label className="field">
-                <span>Descripción de la acción{draft ? "" : " *"}</span>
-                <textarea required={!draft} value={item.description} onChange={(e) => updateAction(index, { description: e.target.value })} />
-              </label>
-              <label className="field">
-                <span>Responsable</span>
-                <input value={item.responsible} onChange={(e) => updateAction(index, { responsible: e.target.value })} />
-              </label>
-              <label className="field">
-                <span>Fecha prevista</span>
-                <input type="date" value={item.plannedExecutionDate} onChange={(e) => updateAction(index, { plannedExecutionDate: e.target.value })} />
-              </label>
-              <label className="field">
-                <span>Impacto sobre otras áreas / registro</span>
-                <textarea value={item.impact} onChange={(e) => updateAction(index, { impact: e.target.value })} />
-              </label>
-              <button
-                type="button"
-                className="button danger small"
-                onClick={() => setActions((current) => current.filter((_, i) => i !== index))}
-              >
-                Quitar
-              </button>
+            <div className="capa-action-card" key={index}>
+              <div className="capa-action-card-header">
+                <strong>Acción {String(index + 1).padStart(2, "0")}</strong>
+                <button
+                  type="button"
+                  className="button danger small"
+                  onClick={() => setActions((current) => current.filter((_, i) => i !== index))}
+                >
+                  Quitar
+                </button>
+              </div>
+              <div className="capa-action-grid">
+                <label className="field capa-action-description">
+                  <span>Descripción{draft ? "" : " *"}</span>
+                  <textarea
+                    required={!draft}
+                    value={item.description}
+                    onChange={(event) => updateAction(index, { description: event.target.value })}
+                  />
+                </label>
+                <label className="field">
+                  <span>Responsable</span>
+                  <input
+                    value={item.responsible}
+                    onChange={(event) => updateAction(index, { responsible: event.target.value })}
+                  />
+                </label>
+                <label className="field">
+                  <span>Fecha prevista</span>
+                  <input
+                    type="date"
+                    value={item.plannedExecutionDate}
+                    onChange={(event) => updateAction(index, { plannedExecutionDate: event.target.value })}
+                  />
+                </label>
+                <label className="field capa-action-impact">
+                  <span>Impacto sobre otras áreas / registro</span>
+                  <textarea
+                    value={item.impact}
+                    onChange={(event) => updateAction(index, { impact: event.target.value })}
+                  />
+                </label>
+              </div>
             </div>
           ))}
           <div>
-            <button type="button" className="button small" onClick={() => setActions((current) => [...current, { ...emptyAction }])}>
+            <button
+              type="button"
+              className="button small"
+              onClick={() => setActions((current) => [...current, { ...emptyAction }])}
+            >
               + Añadir acción propuesta
             </button>
           </div>
         </div>
-        <div className="form-grid" style={{ marginTop: 14 }}>
-          <TextArea label="Evaluación general de impacto" name="impactAssessment" defaultValue={formDefaults.impactAssessment} />
+      </section>
+
+      <section className="form-section">
+        <h2>4. Seguimiento de la acción</h2>
+        <p className="section-help">
+          Estas actuaciones forman parte del contenido del expediente y de su snapshot; no son los Seguimientos 00/01/02.
+        </p>
+        {issues.actionFollowupsJson?.length ? (
+          <div className="field-error-block" data-error-anchor="true">
+            <FieldIssue messages={issues.actionFollowupsJson} />
+          </div>
+        ) : null}
+
+        <div className="dynamic-list capa-action-list">
+          {actionFollowups.map((item, index) => (
+            <div className="capa-action-card compact" key={index}>
+              <div className="capa-action-card-header">
+                <strong>Seguimiento de acción {String(index + 1).padStart(2, "0")}</strong>
+                <button
+                  type="button"
+                  className="button danger small"
+                  onClick={() =>
+                    setActionFollowups((current) => current.filter((_, i) => i !== index))
+                  }
+                >
+                  Quitar
+                </button>
+              </div>
+              <div className="capa-followup-grid">
+                <label className="field">
+                  <span>Fecha</span>
+                  <input
+                    type="date"
+                    value={item.followupDate}
+                    onChange={(event) =>
+                      updateActionFollowup(index, { followupDate: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>Descripción</span>
+                  <textarea
+                    value={item.description}
+                    onChange={(event) =>
+                      updateActionFollowup(index, { description: event.target.value })
+                    }
+                  />
+                </label>
+              </div>
+            </div>
+          ))}
+          <div>
+            <button
+              type="button"
+              className="button small"
+              onClick={() =>
+                setActionFollowups((current) => [...current, { ...emptyActionFollowup }])
+              }
+            >
+              + Añadir seguimiento
+            </button>
+          </div>
+        </div>
+
+        <div className="form-grid capa-section-body">
+          <TextArea
+            label="Observaciones"
+            name="actionFollowupObservations"
+            defaultValue={formDefaults.actionFollowupObservations}
+            required={!draft}
+            issues={issues.actionFollowupObservations}
+          />
         </div>
       </section>
 
       <section className="form-section">
-        <h2>4. Estado y cierre operativo</h2>
+        <h2>5. Evaluación de la eficacia</h2>
         <div className="form-grid">
           <label className="field">
-            <span>Estado</span>
-            <select name="status" value={recordStatus} onChange={(event) => setRecordStatus(event.target.value as "DRAFT" | "OPEN" | "CLOSED" | "CANCELLED")}>
-              {(mode === "create" || formDefaults.status === "DRAFT") ? <option value="DRAFT">Borrador</option> : null}
+            <span>Verificación de la eficacia *</span>
+            <select
+              name="effectivenessStatus"
+              value={effectivenessStatus}
+              onChange={(event) =>
+                setEffectivenessStatus(event.target.value as typeof effectivenessStatus)
+              }
+            >
+              <option value="PENDING">Pendiente</option>
+              <option value="CONFORMING">Conforme</option>
+              <option value="NONCONFORMING">No conforme</option>
+              <option
+                value="NA"
+                disabled={mode === "create" || defaults.effectivenessStatus !== "NA"}
+              >
+                N/A (solo histórico)
+              </option>
+            </select>
+          </label>
+
+          <Field
+            label="Fecha de verificación final"
+            name="effectiveClosedAt"
+            type="date"
+            defaultValue={formDefaults.effectiveClosedAt}
+            required={!draft && effectivenessStatus === "CONFORMING"}
+            issues={issues.effectiveClosedAt}
+          />
+
+          <TextArea
+            label="Evaluación de la eficacia"
+            name="effectivenessAssessment"
+            defaultValue={formDefaults.effectivenessAssessment}
+            required={!draft}
+            issues={issues.effectivenessAssessment}
+          />
+        </div>
+      </section>
+
+      <section className="form-section">
+        <h2>6. Estado operativo</h2>
+        <div className="form-grid">
+          <label className="field">
+            <span>Estado *</span>
+            <select
+              name="status"
+              value={recordStatus}
+              onChange={(event) => setRecordStatus(event.target.value as typeof recordStatus)}
+            >
+              {(mode === "create" || draftExisting) ? <option value="DRAFT">Borrador</option> : null}
               <option value="OPEN">Abierta</option>
               <option value="CLOSED">Cerrada</option>
               <option value="CANCELLED">Cancelada</option>
             </select>
           </label>
-          <Field label="Fecha cierre operativo" name="operationalClosedAt" type="date" defaultValue={formDefaults.operationalClosedAt} issues={issues.operationalClosedAt} />
-          <TextArea label="Motivo de cancelación" name="cancellationReason" defaultValue={formDefaults.cancellationReason} issues={issues.cancellationReason} />
+
+          <Field
+            label="Fecha de cierre y ejecución"
+            name="operationalClosedAt"
+            type="date"
+            defaultValue={formDefaults.operationalClosedAt}
+            required={!draft && recordStatus === "CLOSED"}
+            issues={issues.operationalClosedAt}
+          />
+
+          <TextArea
+            label="Estado"
+            name="operationalStatusDescription"
+            defaultValue={formDefaults.operationalStatusDescription}
+            required={!draft}
+            issues={issues.operationalStatusDescription}
+            help="Describe la situación operativa de la acción (en curso, completada o cancelada y su justificación cuando proceda)."
+          />
         </div>
       </section>
 
       <section className="form-section">
-        <h2>5. Verificación de eficacia</h2>
-        <p className="section-help">
-          La implantación y la eficacia son conceptos distintos. El cierre efectivo solo procede con eficacia conforme.
-        </p>
+        <h2>7. Conclusión</h2>
         <div className="form-grid">
-          <label className="field">
-            <span>Verificación de eficacia</span>
-            <select name="effectivenessStatus" defaultValue={formDefaults.effectivenessStatus ?? "PENDING"}>
-              <option value="PENDING">Pendiente</option>
-              <option value="CONFORMING">Conforme</option>
-              <option value="NONCONFORMING">No conforme</option>
-              <option value="NA" disabled={mode === "create" || formDefaults.effectivenessStatus !== "NA"}>N/A (solo histórico)</option>
-            </select>
+          <TextArea
+            label="Conclusión / cierre"
+            name="conclusion"
+            defaultValue={formDefaults.conclusion}
+            required={!draft}
+            issues={issues.conclusion}
+          />
+
+          <label className={`field span-2 ${issues.nextFollowupDate?.length ? "has-error" : ""}`}>
+            <span>Fecha de próximo seguimiento{draft ? "" : " *"}</span>
+            <small className="muted-note">
+              En edición se solicita una nueva fecha para evitar reutilizar automáticamente la del seguimiento anterior.
+            </small>
+            <input
+              name="nextFollowupDate"
+              type="date"
+              value={nextFollowupDate}
+              onChange={(event) => setNextFollowupDate(event.target.value)}
+              required={!draft}
+              aria-invalid={issues.nextFollowupDate?.length ? true : undefined}
+            />
+            <FieldIssue messages={issues.nextFollowupDate} />
           </label>
-          <Field label="Fecha cierre efectivo / verificación final" name="effectiveClosedAt" type="date" defaultValue={formDefaults.effectiveClosedAt} issues={issues.effectiveClosedAt} />
-          <TextArea label="Criterio de eficacia" name="effectivenessCriteria" defaultValue={formDefaults.effectivenessCriteria} />
-          <TextArea label="Valoración de la eficacia" name="effectivenessAssessment" defaultValue={formDefaults.effectivenessAssessment} issues={issues.effectivenessAssessment} />
-          <TextArea label="Evidencia revisada" name="effectivenessEvidence" defaultValue={formDefaults.effectivenessEvidence} />
         </div>
       </section>
 
       <section className="form-section">
-        <h2>6. Conclusión y control documental</h2>
+        <h2>Control interno</h2>
         <div className="form-grid">
-          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={formDefaults.conclusion} issues={issues.conclusion} />
-          <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations} />
+          <TextArea
+            label="Observaciones internas"
+            name="internalObservations"
+            defaultValue={formDefaults.internalObservations}
+          />
+
           <label className="field">
             <span>Documento firmado disponible</span>
-            <select name="signedDocumentAvailable" defaultValue={formDefaults.signedDocumentAvailable ?? ""}>
+            <select
+              name="signedDocumentAvailable"
+              defaultValue={formDefaults.signedDocumentAvailable ?? ""}
+            >
               <option value="">No informado</option>
               <option value="true">Sí</option>
               <option value="false">No</option>
             </select>
           </label>
+
           <label className="field">
             <span>Control del dato</span>
-            <select name="dataQualityStatus" defaultValue={formDefaults.dataQualityStatus ?? "REVIEW_REQUIRED"}>
+            <select
+              name="dataQualityStatus"
+              defaultValue={formDefaults.dataQualityStatus ?? "REVIEW_REQUIRED"}
+            >
               <option value="COMPLETE">Completo</option>
               <option value="INCOMPLETE">Incompleto</option>
               <option value="REVIEW_REQUIRED">Pendiente de revisar</option>
             </select>
           </label>
+
           {mode === "edit" ? (
-            <TextArea label="Motivo del cambio (opcional V1)" name="changeReason" />
+            <TextArea
+              label="Motivo del nuevo seguimiento"
+              name="changeReason"
+              help="Obligatorio únicamente al pulsar Guardar como nuevo seguimiento."
+              issues={issues.changeReason}
+            />
           ) : null}
         </div>
       </section>
 
       <div className="form-footer">
-        <Link className="button" href={capaId ? `/capa/${capaId}` : "/capa"}>Cancelar</Link>
-        <button type="submit" className="button primary" disabled={pending}>
-          {pending ? "Guardando…" : draft ? "Guardar borrador" : mode === "create" ? "Guardar CAPA" : "Guardar cambios"}
-        </button>
+        <Link className="button" href={capaId ? `/capa/${capaId}` : "/capa"}>
+          Cancelar
+        </Link>
+
+        <div className="form-footer-actions">
+          {(mode === "create" || draftExisting) ? (
+            <button
+              type="submit"
+              name="saveIntent"
+              value="SAVE_DRAFT"
+              className="button"
+              formNoValidate
+              disabled={pending}
+            >
+              {pending ? "Guardando…" : "Guardar borrador"}
+            </button>
+          ) : null}
+
+          <button
+            type="submit"
+            name="saveIntent"
+            value="UPDATE_CURRENT"
+            className="button primary"
+            disabled={pending}
+          >
+            {pending ? "Guardando…" : "Guardar CAPA"}
+          </button>
+
+          {mode === "edit" && !draftExisting ? (
+            <button
+              type="submit"
+              name="saveIntent"
+              value="CREATE_FOLLOWUP_VERSION"
+              className="button"
+              disabled={pending}
+            >
+              {pending ? "Guardando…" : "Guardar como nuevo seguimiento"}
+            </button>
+          ) : null}
+        </div>
       </div>
     </form>
   );
