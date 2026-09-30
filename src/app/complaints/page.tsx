@@ -31,7 +31,7 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
    <label className="filter-placeholder"><span>Departamento</span><select name="department" defaultValue={filters.department??""}><option value="">Todos</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code}</option>)}</select></label>
    <label className="filter-placeholder"><span>Tipo</span><select name="type" defaultValue={filters.type??""}><option value="">Todos</option><option value="CUSTOMER">De cliente</option><option value="PROVIDER">A proveedor</option></select></label>
    <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification??""}><option value="">Todas</option><option value="CRITICAL">Crítica</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option><option value="NO_GMP_IMPACT">Sin impacto GMP</option></select></label>
-   <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status??""}><option value="">Todos</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
+   <label className="filter-placeholder"><span>Estado</span><select name="status" defaultValue={filters.status??""}><option value="">Todos</option><option value="DRAFT">Borrador</option><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
    <label className="filter-placeholder"><span>Eficacia</span><select name="effectiveness" defaultValue={filters.effectiveness??""}><option value="">Todas</option><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Aceptable</option><option value="NOT_ACCEPTABLE">No aceptable</option><option value="NOT_REQUIRED">No requerida</option></select></label>
    <div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/complaints">Limpiar</Link></div>
   </div><div className="search-row">
@@ -43,7 +43,7 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
               href: `/complaints/${row.id}`,
               code: row.qmsRecord.businessCode ?? "Sin código",
               title: row.description ?? row.partyName ?? "Sin descripción",
-              meta: [row.departmentCodeSnapshot, row.status === "OPEN" ? "Abierta" : "Cerrada"].filter(Boolean).join(" · "),
+              meta: [row.departmentCodeSnapshot, complaintStatusLabel(row.status)].filter(Boolean).join(" · "),
               searchText: [
                 row.qmsRecord.businessCode,
                 row.partyName,
@@ -58,7 +58,7 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
           />
           <button className="button" type="submit">Buscar</button>
         </div></form>
-  <div className="status-strip"><div><strong>{counters.total}</strong><span>Reclamaciones</span></div><div><strong>{counters.open}</strong><span>Abiertas</span></div><div><strong>{counters.pendingEfficacy}</strong><span>Eficacia pendiente</span></div><div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div></div>
+  <div className="status-strip"><div><strong>{counters.total}</strong><span>Reclamaciones</span></div><div><strong>{counters.drafts}</strong><span>Borradores</span></div><div><strong>{counters.open}</strong><span>Abiertas</span></div><div><strong>{counters.pendingEfficacy}</strong><span>Eficacia pendiente</span></div><div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div></div>
   <ManualReminderToolbar tableId="complaint-list-table" moduleLabel="Reclamaciones" />
   <div className="table-card"><div className="table-scroll"><table id="complaint-list-table"><thead><tr><th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las reclamaciones visibles" /></th>{complaintColumns.map(c=><th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>
    {rows.length?rows.map(r=><tr key={r.id}>
@@ -68,7 +68,7 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
     <td data-column-key="type">{complaintTypeLabel(r.complaintType)}</td><td data-column-key="opening">{formatDate(r.openedAt)}</td><td data-column-key="party">{r.partyName??"—"}</td>
     <td data-column-key="product" className="table-cell-wrap">{r.reference??r.affectedScope??"—"}</td><td data-column-key="lot">{r.lotReference??"—"}</td>
     <td data-column-key="classification"><span className={`badge ${r.classification?.toLowerCase()??"neutral"}`}>{complaintClassificationLabel(r.classification)}</span></td>
-    <td data-column-key="status"><span className={`badge ${r.status==="OPEN"?"open":"closed"}`}>{complaintStatusLabel(r.status)}</span></td>
+    <td data-column-key="status"><span className={`badge ${r.status==="DRAFT"?"neutral":r.status==="OPEN"?"open":"closed"}`}>{complaintStatusLabel(r.status)}</span></td>
     <td data-column-key="effectiveness">{complaintEffectivenessLabel(r.effectivenessStatus)}</td><td data-column-key="closing">{formatDate(r.closedAt)}</td>
     <td data-column-key="capa" className="table-cell-wrap">{[r.internalObservations,...r.capaPlans.map(x=>x.businessCapaCode||x.description)].filter(Boolean).join(" · ")||"—"}</td>
     <td data-column-key="related"><div className="relation-chips">
