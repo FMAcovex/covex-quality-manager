@@ -14,6 +14,10 @@ import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
 import { createQmsRelation } from "@/lib/qms/relation-service";
+import {
+  assignOperationalBusinessCode,
+  OperationalBusinessCodeError,
+} from "@/lib/qms/business-code";
 import { parseChangeControlForm } from "@/modules/change-control/validation";
 import type {
   ChangeControlFormState,
@@ -141,11 +145,20 @@ export async function createChangeControlAction(
     ]);
 
     const created = await prisma.$transaction(async (tx) => {
+      const requestYear = v.requestDate ? new Date(v.requestDate).getFullYear() : new Date().getFullYear();
+      const businessCode = await assignOperationalBusinessCode(tx, {
+        recordType: QmsRecordType.CHANGE_CONTROL,
+        year: requestYear,
+        departmentCode: department.code,
+        requestedCode: v.businessCode,
+      });
+      v.businessCode = businessCode;
+
       const qmsRecord = await tx.qmsRecord.create({
         data: {
           recordType: QmsRecordType.CHANGE_CONTROL,
-          businessCode: v.businessCode,
-          year: v.requestDate ? new Date(v.requestDate).getFullYear() : null,
+          businessCode,
+          year: requestYear,
         },
       });
 
@@ -223,6 +236,12 @@ export async function createChangeControlAction(
     });
     createdId = created.id;
   } catch (error) {
+    if (error instanceof OperationalBusinessCodeError) {
+      return preserveFormState(previous, formData, {
+        error: "No se puede guardar el Control de Cambio.",
+        fieldErrors: [error.message],
+      });
+    }
     return preserveFormState(previous, formData, persistenceFormError(error, "el Control de Cambio"));
   }
 
@@ -258,6 +277,7 @@ export async function updateChangeControlAction(
   if (!existing) return preserveFormState(previous, formData, { error: "El Control de Cambio ya no existe." });
 
   const v = parsed.values;
+  v.businessCode = existing.qmsRecord.businessCode;
   const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
   if (!department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
 
@@ -310,7 +330,7 @@ export async function updateChangeControlAction(
       await tx.qmsRecord.update({
         where: { id: existing.qmsRecordId },
         data: {
-          businessCode: v.businessCode,
+          businessCode: existing.qmsRecord.businessCode,
           year: v.requestDate ? new Date(v.requestDate).getFullYear() : null,
         },
       });
