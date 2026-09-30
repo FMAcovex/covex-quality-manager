@@ -242,14 +242,14 @@ export async function createCapaAction(
         await registerDeviationCapaPlan(tx, {
           planId: deviationOrigin.planId,
           capaQmsRecordId: qmsRecord.id,
-          capaBusinessCode: v.businessCode!,
+          capaBusinessCode: v.businessCode,
           actor: parsed.actor,
         });
       } else if (complaintPlanOrigin) {
         await registerComplaintCapaPlan(tx, {
           planId: complaintPlanOrigin.planId,
           capaQmsRecordId: qmsRecord.id,
-          capaBusinessCode: v.businessCode!,
+          capaBusinessCode: v.businessCode,
           actor: parsed.actor,
         });
       } else if (complaintDirectOrigin) {
