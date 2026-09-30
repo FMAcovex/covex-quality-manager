@@ -621,6 +621,7 @@ model Capa {
   impactAssessment          String?
   nextFollowupDate          DateTime?               @db.Date
   actionFollowupObservations String?
+  operationalStatusDescription String?
   operationalClosedAt       DateTime?               @db.Date
   status                    CapaStatus              @default(OPEN)
   cancellationReason        String?
