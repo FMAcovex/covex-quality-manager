@@ -108,7 +108,14 @@ export async function saveCapaFollowup(
             qmsRecordId: capa.qmsRecordId,
             sequenceNumber: historicalSequence,
             kind: historicalSequence === 0 ? "INITIAL" : "HISTORICAL_STATE",
-            snapshot: snapshotJson(serializeCapaVersion(capa)),
+            snapshot: snapshotJson(
+              serializeCapaVersion(capa, {
+                versionFollowupDate:
+                  historicalSequence === 0
+                    ? capa.openedAt
+                    : capa.followups.find((item) => item.sequenceNumber === historicalSequence)?.followupDate ?? null,
+              }),
+            ),
             reason:
               historicalSequence === 0
                 ? "Informe inicial CAPA"
@@ -209,7 +216,11 @@ export async function saveCapaFollowup(
         tx,
         capa.qmsRecordId,
         "FOLLOWUP",
-        snapshotJson(serializeCapaVersion(updatedForVersion)),
+        snapshotJson(
+          serializeCapaVersion(updatedForVersion, {
+            versionFollowupDate: new Date(v.followupDate),
+          }),
+        ),
         v.completedByText,
         v.reason || `Seguimiento CAPA ${String(sequenceNumber).padStart(2, "0")}`,
         followup.id,
