@@ -17,6 +17,7 @@ type CapaVersionSource = Prisma.CapaGetPayload<{
   include: {
     qmsRecord: true;
     plannedActions: true;
+    actionFollowups: true;
     followups: true;
     formVersion: true;
     annexIIITemplateVersion: true;
@@ -186,6 +187,8 @@ export function serializeCapaVersion(record: CapaVersionSource) {
       defectDescription: record.defectDescription ?? null,
       rootCause: record.rootCause ?? null,
       impactAssessment: record.impactAssessment ?? null,
+      nextFollowupDate: iso(record.nextFollowupDate),
+      actionFollowupObservations: record.actionFollowupObservations ?? null,
       operationalClosedAt: iso(record.operationalClosedAt),
       status: record.status,
       cancellationReason: record.cancellationReason ?? null,
@@ -209,6 +212,12 @@ export function serializeCapaVersion(record: CapaVersionSource) {
         responsible: item.responsible ?? null,
         plannedExecutionDate: iso(item.plannedExecutionDate),
         impact: item.impact ?? null,
+        sortOrder: item.sortOrder,
+      })),
+      actionFollowups: record.actionFollowups.map((item) => ({
+        id: item.id,
+        followupDate: iso(item.followupDate),
+        description: item.description ?? null,
         sortOrder: item.sortOrder,
       })),
       followups: record.followups.map((item) => ({
@@ -623,7 +632,7 @@ export function recordVersionSummary(
       closedAt: stringValue(d.operationalClosedAt),
       effectivenessStatus: stringValue(d.effectivenessStatus),
       effectiveClosedAt: stringValue(d.effectiveClosedAt),
-      nextFollowupDate: stringValue(latest?.nextFollowupDate),
+      nextFollowupDate: stringValue(d.nextFollowupDate) ?? stringValue(latest?.nextFollowupDate),
     };
   }
   const d = objectValue(root.changeControl);
