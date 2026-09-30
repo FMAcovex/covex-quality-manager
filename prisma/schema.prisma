@@ -72,6 +72,7 @@ enum CapaProposalStatus {
 }
 
 enum CapaStatus {
+  DRAFT
   OPEN
   CLOSED
   CANCELLED
