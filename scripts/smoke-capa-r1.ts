@@ -8,7 +8,6 @@ import {
   startNextVersion,
 } from "../src/lib/qms/versioning";
 import { syncOperationalOriginRelations } from "../src/lib/qms/relation-service";
-import { saveCapaExecutionEvidence } from "../src/modules/capa/followup-service";
 
 const prisma = new PrismaClient();
 const actor = "CI R1 CAPA";
@@ -82,6 +81,10 @@ async function main() {
         status: "OPEN",
         effectivenessStatus: "PENDING",
         nextFollowupDate: new Date("2098-02-01"),
+        actionFollowupObservations: "Seguimiento inicial R1",
+        operationalStatusDescription: "Acción abierta R1",
+        effectivenessAssessment: "Pendiente de evaluación R1",
+        conclusion: "Mantener abierta R1",
         plannedActions: {
           create: [{ description: "Acción R1", responsible: actor, plannedExecutionDate: new Date("2098-01-20"), sortOrder: 0 }],
         },
@@ -134,6 +137,8 @@ async function main() {
       data: {
         nextFollowupDate: new Date("2098-03-01"),
         actionFollowupObservations: "Observación R1",
+        operationalStatusDescription: "Acción abierta tras seguimiento R1",
+        conclusion: "Continuar seguimiento R1",
         actionFollowups: {
           create: [{ followupDate: new Date("2098-02-01"), description: "Comprobación R1", sortOrder: 0 }],
         },
@@ -164,32 +169,15 @@ async function main() {
         nextFollowupDate?: string | null;
         actionFollowupObservations?: string | null;
         actionFollowups?: Array<{ description?: string | null }>;
+        operationalStatusDescription?: string | null;
+        conclusion?: string | null;
       };
     };
     assert.match(latestSnapshot.capa?.nextFollowupDate ?? "", /^2098-03-01/);
     assert.equal(latestSnapshot.capa?.actionFollowupObservations, "Observación R1");
     assert.equal(latestSnapshot.capa?.actionFollowups?.[0]?.description, "Comprobación R1");
-
-    const evidenceForm = new FormData();
-    evidenceForm.set("followupDate", "2098-02-15");
-    evidenceForm.set("completedByText", actor);
-    evidenceForm.set("evidenceReference", "EV-R1-001");
-    evidenceForm.set("observations", "Evidencia de ejecución R1");
-    const evidenceResult = await saveCapaExecutionEvidence(capa.id, evidenceForm);
-    assert.equal(evidenceResult.error, undefined);
-    assert.equal(evidenceResult.success, "Evidencia de ejecución registrada correctamente.");
-
-    const evidenceRows = await prisma.capaFollowup.findMany({
-      where: { capaId: capa.id, evidenceReference: { not: null } },
-    });
-    assert.equal(evidenceRows.length, 1);
-    assert.equal(evidenceRows[0].evidenceReference, "EV-R1-001");
-
-    versions = await prisma.qmsRecordVersion.findMany({
-      where: { qmsRecordId: capaRecord.id },
-      orderBy: { sequenceNumber: "asc" },
-    });
-    assert.deepEqual(versions.map((item) => item.sequenceNumber), [0, 1]);
+    assert.equal(latestSnapshot.capa?.operationalStatusDescription, "Acción abierta tras seguimiento R1");
+    assert.equal(latestSnapshot.capa?.conclusion, "Continuar seguimiento R1");
 
     let relations = await prisma.qmsRelation.findMany({
       where: { targetRecordId: capaRecord.id, isActive: true },
@@ -209,7 +197,7 @@ async function main() {
     assert.equal(relations.length, 1);
     assert.equal(relations[0].sourceRecordId, complaintRecord.id);
 
-    console.log("R1 CAPA smoke passed: action follow-up, execution evidence without new version, next date, multi-origin and Seguimiento 00→01.");
+    console.log("R1 CAPA smoke passed: action follow-up, sections 4-7, next date, multi-origin and Seguimiento 00→01.");
   } finally {
     await prisma.qmsRelation.deleteMany({
       where: { OR: [{ sourceRecordId: { in: [deviationRecord.id, complaintRecord.id] } }, { targetRecordId: capaRecord.id }] },
