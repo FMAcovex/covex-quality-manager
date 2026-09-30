@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { PrismaClient, QmsRecordType, RecordVersionKind } from "@prisma/client";
 import {
+  capaSnapshotVersionFollowupDate,
   ensureInitialVersion,
   refreshCurrentVersion,
   serializeCapaVersion,
@@ -193,6 +194,20 @@ async function main() {
     assert.equal(latestSnapshot.capa?.actionFollowups?.[0]?.description, "Comprobación R1");
     assert.equal(latestSnapshot.capa?.operationalStatusDescription, "Acción abierta tras seguimiento R1");
     assert.equal(latestSnapshot.capa?.conclusion, "Continuar seguimiento R1");
+    assert.equal(
+      capaSnapshotVersionFollowupDate(versions[0].snapshot, 0)?.toISOString().slice(0, 10),
+      "2098-01-02",
+    );
+    assert.equal(
+      capaSnapshotVersionFollowupDate(versions[1].snapshot, 1)?.toISOString().slice(0, 10),
+      "2098-02-01",
+    );
+    assert.deepEqual(
+      (latestSnapshot.capa as { origins?: Array<{ businessCode?: string | null }> })?.origins
+        ?.map((item) => item.businessCode)
+        .sort(),
+      [complaintRecord.businessCode, deviationRecord.businessCode].sort(),
+    );
 
     let relations = await prisma.qmsRelation.findMany({
       where: { targetRecordId: capaRecord.id, isActive: true },
