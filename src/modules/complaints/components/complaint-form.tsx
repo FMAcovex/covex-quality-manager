@@ -37,6 +37,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
  const formDefaults=submittedDefaults(defaults,state.submittedValues);
  const [capas,setCapas]=useState<ComplaintCapaPlanInput[]>(defaults.capaPlans??[]);
  const [derived,setDerived]=useState<ComplaintDerivedActionInput[]>(defaults.derivedActions??[]);
+ const isDraft=(formDefaults.status??(mode==="create"?"DRAFT":"OPEN"))==="DRAFT";
  const patchCapa=(i:number,p:Partial<ComplaintCapaPlanInput>)=>setCapas(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  const patchDerived=(i:number,p:Partial<ComplaintDerivedActionInput>)=>setDerived(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  return <form key={state.formRevision??0} action={formAction} className="form-stack">
@@ -177,7 +178,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
     <TextArea label="Conclusión de cierre" name="closeConclusion" defaultValue={formDefaults.closeConclusion}/>
     <Field label="Aprobaciones seguimiento / cierre" name="closeApprovalNames" defaultValue={formDefaults.closeApprovalNames} span="span-2"/>
     <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={formDefaults.closedAt}/>
-    <label className="field"><span>Estado final</span><select name="status" defaultValue={formDefaults.status??"OPEN"}><option value="OPEN">Abierta / en seguimiento</option><option value="CLOSED">Cerrada</option></select></label>
+    {isDraft?<label className="field"><span>Estado final</span><input type="hidden" name="status" value="DRAFT"/><div className="readonly-field">Borrador</div></label>:<label className="field"><span>Estado final</span><select name="status" defaultValue={formDefaults.status??"OPEN"}><option value="OPEN">Abierta / en seguimiento</option><option value="CLOSED">Cerrada</option></select></label>}
    </div>
   </section>
 
@@ -191,6 +192,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    </div>
   </section>
 
-  <div className="form-footer"><Link className="button" href={complaintId?`/complaints/${complaintId}`:"/complaints"}>Cancelar</Link><button className="button primary" disabled={pending}>{pending?"Guardando…":mode==="create"?"Guardar reclamación":"Guardar cambios"}</button></div>
+  {isDraft?<div className="form-errors draft-notice"><strong>Borrador</strong><span>Puedes guardar el expediente incompleto. Los obligatorios se exigirán al abrir la reclamación.</span></div>:null}
+  <div className="form-footer"><Link className="button" href={complaintId?`/complaints/${complaintId}`:"/complaints"}>Cancelar</Link>{isDraft?<div className="version-submit-group"><button className="button" type="submit" name="saveIntent" value="draft" formNoValidate disabled={pending}>{pending?"Guardando…":"Guardar borrador"}</button><button className="button primary" type="submit" name="saveIntent" value="open" disabled={pending}>{pending?"Guardando…":"Abrir reclamación"}</button></div>:<button className="button primary" disabled={pending}>{pending?"Guardando…":"Guardar cambios"}</button>}</div>
  </form>;
 }
