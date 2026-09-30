@@ -213,7 +213,7 @@ export default async function CapaDetailPage({
           <div style={{ marginTop: 24 }}>
             <h3>Evidencia de ejecución</h3>
             <p className="muted-note">
-              La evidencia de ejecución se conserva en el histórico legacy de CAPA y no crea un nuevo Seguimiento 00/01/02.
+              La evidencia de ejecución se registra de forma independiente y no crea un nuevo Seguimiento 00/01/02 del expediente.
             </p>
             {executionEvidence.length ? (
               <div className="table-scroll">
