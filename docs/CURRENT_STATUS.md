@@ -754,3 +754,19 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
 - Borradores excluidos de KPI y exportaciones;
 - filtro y contador específico de Borradores;
 - pruebas unitarias específicas D5.4C.
+
+
+## D5.4D — Borrador transversal · Devoluciones
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
+
+- `ReturnStatus` incorpora `DRAFT`;
+- alta inicial en Borrador;
+- guardado incompleto permitido;
+- validación completa al pasar a Abierta;
+- codificación asignada/fijada al abrir;
+- prohibido volver a Borrador desde estados operativos;
+- seguimientos, relaciones y Anexos III/IV/V bloqueados mientras está en Borrador;
+- Borradores excluidos de KPI y exportaciones;
+- filtro y contador específico de Borradores;
+- origen desde Reclamación preservado como pendiente hasta la apertura;
+- pruebas unitarias específicas D5.4D.

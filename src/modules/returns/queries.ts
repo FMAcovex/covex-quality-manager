@@ -18,18 +18,18 @@ export async function getReturnList(filters:ReturnListFilters){
  if(filters.year&&/^\d{4}$/.test(filters.year))and.push({qmsRecord:{year:Number(filters.year)}});
  if(filters.department)and.push({departmentId:filters.department});
  if(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"].includes(filters.type??""))and.push({returnType:filters.type as "COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER"});
- if(filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
+ if(filters.status==="DRAFT"||filters.status==="OPEN"||filters.status==="CLOSED")and.push({status:filters.status});
  if(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??""))and.push({decision:filters.decision as "PENDING"|"ACCEPTED"|"REJECTED"});
  const where:Prisma.ReturnRecordWhereInput=and.length?{AND:and}:{};
  const administrativeWhere:Prisma.ReturnRecordWhereInput=filters.administrative==="ANNULLED"?{qmsRecord:{isActive:false}}:filters.administrative==="ALL"?{}:{qmsRecord:{isActive:true}};
- const [rows,departments,years,total,open,pending,followupDue]=await Promise.all([
+ const [rows,departments,years,total,drafts,open,pending,followupDue]=await Promise.all([
   prisma.returnRecord.findMany({where,include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}}}},department:true,products:{orderBy:{sortOrder:"asc"}},followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}},orderBy:[{status:"asc"},{communicationDate:"desc"},{createdAt:"desc"}],take:300}),
   prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
   prisma.qmsRecord.findMany({where:{recordType:QmsRecordType.RETURN,year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}}),
-  prisma.returnRecord.count({where:administrativeWhere}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:"OPEN"}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{decision:"PENDING"}]}}),
+  prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:{not:"DRAFT"}}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:"DRAFT"}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:"OPEN"}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:{not:"DRAFT"},decision:"PENDING"}]}}),
   prisma.returnRecord.findMany({where:{AND:[administrativeWhere,{status:"OPEN"}]},select:{followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1,select:{nextFollowupDate:true}}}})
  ]);
- return {rows,departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{total,open,pending,followupDue:followupDue.filter(r=>r.followups[0]?.nextFollowupDate&&r.followups[0].nextFollowupDate<=new Date()).length}};
+ return {rows,departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{total,drafts,open,pending,followupDue:followupDue.filter(r=>r.followups[0]?.nextFollowupDate&&r.followups[0].nextFollowupDate<=new Date()).length}};
 }
 
 export async function getReturnDetail(id:string){

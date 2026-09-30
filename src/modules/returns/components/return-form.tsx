@@ -15,20 +15,22 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
  const [state,formAction,pending]=useActionState(action,initial);const formDefaults=submittedDefaults(defaults,state.submittedValues);const [products,setProducts]=useState(defaults.products?.length?defaults.products:[{...emptyProduct}]);
  const [departmentId,setDepartmentId]=useState(formDefaults.departmentId??"");
  const [communicationDate,setCommunicationDate]=useState(formDefaults.communicationDate??"");
+ const [recordStatus,setRecordStatus]=useState<"DRAFT"|"OPEN"|"CLOSED">(formDefaults.status??(mode==="create"?"DRAFT":"OPEN"));
+ const draft=recordStatus==="DRAFT";
  const patch=(i:number,p:Partial<ReturnProductInput>)=>setProducts(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  return <form key={state.formRevision??0} action={formAction} className="form-stack">
   <input type="hidden" name="productsJson" value={JSON.stringify(products)}/>{fromComplaintId?<input type="hidden" name="fromComplaintId" value={fromComplaintId}/>:null}
   {state.error?<div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length?<ul>{state.fieldErrors.map(x=><li key={x}>{x}</li>)}</ul>:null}</div>:null}
   <section className="form-section"><h2>1. Datos generales de la devolución</h2><div className="form-grid">
-   <ControlledBusinessCodeField recordType="RETURN" label="N.º devolución" initialValue={formDefaults.businessCode} mode={mode} yearSource={communicationDate} departmentId={departmentId}/>
-   <label className="field"><span>Almacén / área *</span><select name="departmentId" value={departmentId} onChange={e=>setDepartmentId(e.target.value)} required><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
-   <label className="field"><span>Fecha comunicación *</span><input name="communicationDate" type="date" value={communicationDate} onChange={e=>setCommunicationDate(e.target.value)} required/></label>
+   <ControlledBusinessCodeField recordType="RETURN" label="N.º devolución" initialValue={formDefaults.businessCode} mode={mode} yearSource={communicationDate} departmentId={departmentId} locked={mode==="edit"&&!draft}/>
+   <label className="field"><span>Almacén / área{draft?"":" *"}</span><select name="departmentId" value={departmentId} onChange={e=>setDepartmentId(e.target.value)} required={!draft}><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
+   <label className="field"><span>Fecha comunicación{draft?"":" *"}</span><input name="communicationDate" type="date" value={communicationDate} onChange={e=>setCommunicationDate(e.target.value)} required={!draft}/></label>
    <Field label="Fecha recepción" name="receivedAt" type="date" defaultValue={formDefaults.receivedAt}/>
-   <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required/>
+   <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required={!draft}/>
    {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText}/>:null}
-   {fromComplaintId?<><input type="hidden" name="returnType" value="COMPLAINT"/><label className="field"><span>Tipo *</span><select value="COMPLAINT" disabled><option value="COMPLAINT">Reclamación</option></select><small className="muted-note">Fijado por la Reclamación de origen.</small></label></>:<label className="field"><span>Tipo *</span><select name="returnType" defaultValue={formDefaults.returnType??""} required><option value="">Seleccionar…</option><option value="COMMERCIAL">Comercial</option><option value="COMPLAINT">Reclamación</option><option value="RECALL">Retirada</option><option value="EXPIRY">Caducidad</option><option value="TRANSPORT">Transporte</option><option value="OTHER">Otra</option></select></label>}
+   {fromComplaintId?<><input type="hidden" name="returnType" value="COMPLAINT"/><label className="field"><span>Tipo *</span><select value="COMPLAINT" disabled><option value="COMPLAINT">Reclamación</option></select><small className="muted-note">Fijado por la Reclamación de origen.</small></label></>:<label className="field"><span>Tipo{draft?"":" *"}</span><select name="returnType" defaultValue={formDefaults.returnType??""} required={!draft}><option value="">Seleccionar…</option><option value="COMMERCIAL">Comercial</option><option value="COMPLAINT">Reclamación</option><option value="RECALL">Retirada</option><option value="EXPIRY">Caducidad</option><option value="TRANSPORT">Transporte</option><option value="OTHER">Otra</option></select></label>}
    <Field label="Otra · especificar" name="otherReturnType" defaultValue={formDefaults.otherReturnType}/>
-   <Field label="Cliente / entidad" name="customerEntity" defaultValue={formDefaults.customerEntity} required span="span-2"/>
+   <Field label="Cliente / entidad" name="customerEntity" defaultValue={formDefaults.customerEntity} required={!draft} span="span-2"/>
    <Field label="País" name="country" defaultValue={formDefaults.country}/>
    <Field label="Dirección" name="address" defaultValue={formDefaults.address} span="span-2"/>
    {fromComplaintId?<><input type="hidden" name="relatedDocument" value={formDefaults.relatedDocument??""}/><label className="field span-2"><span>Documento relacionado</span><input value={formDefaults.relatedDocument??""} readOnly/><small className="muted-note">Código de la Reclamación de origen.</small></label></>:<Field label="Documento relacionado" name="relatedDocument" defaultValue={formDefaults.relatedDocument} span="span-2"/>}
@@ -102,7 +104,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
    <Field label="Certificado destrucción" name="destructionCertificate" defaultValue={formDefaults.destructionCertificate} span="span-2"/>
    <Tri label="Trazabilidad actualizada" name="traceabilityUpdated" defaultValue={formDefaults.traceabilityUpdated}/>
    <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={formDefaults.closedAt}/>
-   <label className="field"><span>Estado</span><select name="status" defaultValue={formDefaults.status??"OPEN"}><option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select></label>
+   <label className="field"><span>Estado</span><select name="status" value={recordStatus} onChange={e=>setRecordStatus(e.target.value as "DRAFT"|"OPEN"|"CLOSED")}>{(mode==="create"||formDefaults.status==="DRAFT")?<option value="DRAFT">Borrador</option>:null}<option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select><small className="muted-note">{draft?"En borrador pueden quedar campos pendientes. Al abrir se validarán los obligatorios.":"Expediente en ciclo operativo."}</small></label>
   </div></section>
 
   <section className="form-section"><h2>8. Control interno</h2><div className="form-grid">
@@ -112,6 +114,6 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
    {mode==="edit"?<TextArea label="Motivo del cambio" name="changeReason"/>:null}
   </div></section>
 
-  <div className="form-footer"><Link className="button" href={returnId?`/returns/${returnId}`:"/returns"}>Cancelar</Link><button className="button primary" disabled={pending}>{pending?"Guardando…":mode==="create"?"Guardar devolución":"Guardar cambios"}</button></div>
+  <div className="form-footer"><Link className="button" href={returnId?`/returns/${returnId}`:"/returns"}>Cancelar</Link><button className="button primary" disabled={pending}>{pending?"Guardando…":draft?"Guardar borrador":mode==="create"?"Guardar devolución":"Guardar cambios"}</button></div>
  </form>;
 }
