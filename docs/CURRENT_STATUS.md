@@ -796,3 +796,28 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE CI**.
 - comprueba integración de filtros multiselección;
 - se ejecuta junto a los smoke PostgreSQL, códigos, relaciones, versionado y documentos ya existentes;
 - sin cambios Prisma ni nuevas reglas funcionales.
+
+
+## Fase previa a Auditorías — Revisión individual de módulos
+Estado: **PLANIFICADA**.
+
+Tras cerrar D5 transversal, no se inicia todavía Auditorías. Se añade una fase de revisión individual centrada en maquetación del expediente y seguimientos.
+
+Secuencia fijada:
+1. CAPA.
+2. Controles de Cambios.
+3. Reclamaciones.
+4. Desviaciones.
+5. Regresión transversal final.
+6. Auditorías.
+
+Prioridades:
+- maquetación específica de cada expediente;
+- presentación y usabilidad de seguimientos;
+- acciones/tareas, responsables y fechas;
+- enlaces entre expediente, relaciones y versiones;
+- cierre/eficacia cuando aplique;
+- documentos y anexos afectados por la maquetación;
+- mantener las reglas transversales D5 ya validadas.
+
+Devoluciones no entra en esta revisión individual inicial, salvo comprobación de regresiones transversales o incidencias detectadas durante la fase.
