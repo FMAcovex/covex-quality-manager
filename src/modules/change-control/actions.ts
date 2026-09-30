@@ -87,6 +87,7 @@ function scalarSnapshot(v: ReturnType<typeof parseChangeControlForm>["values"]) 
     internalObservations: v.internalObservations,
     signedDocumentAvailable: v.signedDocumentAvailable,
     dataQualityStatus: v.dataQualityStatus,
+    finalStatus: v.finalStatus,
     tasks: v.tasks,
   };
 }
@@ -133,8 +134,12 @@ export async function createChangeControlAction(
   const v = parsed.values;
   let createdId: string;
   try {
-    const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-    if (!department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
+    const department = v.departmentId
+      ? await prisma.department.findUnique({ where: { id: v.departmentId } })
+      : null;
+    if (v.finalStatus !== "DRAFT" && !department) {
+      return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
+    }
 
     const referenceDate = toDate(v.requestDate) ?? new Date();
     const [formVersion, annexIII, annexIV, annexV] = await Promise.all([
@@ -145,13 +150,23 @@ export async function createChangeControlAction(
     ]);
 
     const created = await prisma.$transaction(async (tx) => {
-      const requestYear = v.requestDate ? new Date(v.requestDate).getFullYear() : new Date().getFullYear();
-      const businessCode = await assignOperationalBusinessCode(tx, {
-        recordType: QmsRecordType.CHANGE_CONTROL,
-        year: requestYear,
-        departmentCode: department.code,
-        requestedCode: v.businessCode,
-      });
+      const requestYear = v.requestDate ? new Date(v.requestDate).getFullYear() : null;
+      let businessCode = v.businessCode;
+      if (department && requestYear && (v.finalStatus !== "DRAFT" || businessCode)) {
+        businessCode = await assignOperationalBusinessCode(tx, {
+          recordType: QmsRecordType.CHANGE_CONTROL,
+          year: requestYear,
+          departmentCode: department.code,
+          requestedCode: businessCode,
+        });
+      } else if (v.finalStatus !== "DRAFT") {
+        throw new OperationalBusinessCodeError(
+          "INVALID_FORMAT",
+          "Para abrir el Control de Cambio deben estar informados departamento y fecha de solicitud.",
+        );
+      } else {
+        businessCode = null;
+      }
       v.businessCode = businessCode;
 
       const qmsRecord = await tx.qmsRecord.create({
@@ -165,9 +180,9 @@ export async function createChangeControlAction(
       const change = await tx.changeControl.create({
         data: {
           qmsRecordId: qmsRecord.id,
-          departmentId: department.id,
-          departmentCodeSnapshot: department.code,
-          departmentNameSnapshot: department.name,
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department?.code ?? null,
+          departmentNameSnapshot: department?.name ?? null,
           requestDate: toDate(v.requestDate),
           requesterName: v.requesterName,
           requesterPosition: v.requesterPosition,
@@ -209,6 +224,7 @@ export async function createChangeControlAction(
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
+          finalStatus: v.finalStatus,
           formVersionId: formVersion?.id,
           annexIIITemplateVersionId: annexIII?.id,
           annexIVTemplateVersionId: annexIV?.id,
@@ -227,7 +243,7 @@ export async function createChangeControlAction(
           changedByText: parsed.actor,
           fieldPath: "__created__",
           newValue: jsonValue(scalarSnapshot(v)),
-          reason: "Alta del Control de Cambio",
+          reason: v.finalStatus === "DRAFT" ? "Borrador inicial del Control de Cambio" : "Alta del Control de Cambio",
           source: "UI",
         },
       });
@@ -277,9 +293,20 @@ export async function updateChangeControlAction(
   if (!existing) return preserveFormState(previous, formData, { error: "El Control de Cambio ya no existe." });
 
   const v = parsed.values;
-  v.businessCode = existing.qmsRecord.businessCode;
-  const department = await prisma.department.findUnique({ where: { id: v.departmentId! } });
-  if (!department) return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
+  const requestedBusinessCode = v.businessCode;
+  v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
+  if (existing.finalStatus !== "DRAFT" && v.finalStatus === "DRAFT") {
+    return preserveFormState(previous, formData, {
+      error: "No se puede volver a borrador un Control de Cambio ya operativo.",
+      fieldErrors: ["Un Control de Cambio abierto o cerrado no puede volver al estado Borrador."],
+    });
+  }
+  const department = v.departmentId
+    ? await prisma.department.findUnique({ where: { id: v.departmentId } })
+    : null;
+  if (v.finalStatus !== "DRAFT" && !department) {
+    return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
+  }
 
   if (existing.dictamenResult === "APPROVED") {
     const oldBaseline = existing.tasks
@@ -327,26 +354,51 @@ export async function updateChangeControlAction(
 
   try {
     await prisma.$transaction(async (tx) => {
+      const requestYear = v.requestDate ? new Date(v.requestDate).getFullYear() : null;
+      let businessCode = existing.qmsRecord.businessCode;
+      if (existing.finalStatus === "DRAFT" && department && requestYear) {
+        if (!businessCode && (v.finalStatus !== "DRAFT" || requestedBusinessCode)) {
+          businessCode = await assignOperationalBusinessCode(tx, {
+            recordType: QmsRecordType.CHANGE_CONTROL,
+            year: requestYear,
+            departmentCode: department.code,
+            requestedCode: requestedBusinessCode,
+            excludeQmsRecordId: existing.qmsRecordId,
+          });
+        } else if (businessCode && requestedBusinessCode && requestedBusinessCode !== businessCode) {
+          businessCode = await assignOperationalBusinessCode(tx, {
+            recordType: QmsRecordType.CHANGE_CONTROL,
+            year: requestYear,
+            departmentCode: department.code,
+            requestedCode: requestedBusinessCode,
+            excludeQmsRecordId: existing.qmsRecordId,
+          });
+        }
+      }
+      v.businessCode = businessCode;
+
       await tx.qmsRecord.update({
         where: { id: existing.qmsRecordId },
         data: {
-          businessCode: existing.qmsRecord.businessCode,
-          year: v.requestDate ? new Date(v.requestDate).getFullYear() : null,
+          businessCode,
+          year: requestYear,
         },
       });
 
       await tx.changeControl.update({
         where: { id },
         data: {
-          departmentId: department.id,
-          departmentCodeSnapshot:
-            existing.departmentId === department.id
+          departmentId: department?.id ?? null,
+          departmentCodeSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentCodeSnapshot ?? department.code
-              : department.code,
-          departmentNameSnapshot:
-            existing.departmentId === department.id
+              : department.code
+            : null,
+          departmentNameSnapshot: department
+            ? existing.departmentId === department.id
               ? existing.departmentNameSnapshot ?? department.name
-              : department.name,
+              : department.name
+            : null,
           requestDate: toDate(v.requestDate),
           requesterName: v.requesterName,
           requesterPosition: v.requesterPosition,
@@ -388,6 +440,7 @@ export async function updateChangeControlAction(
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
+          finalStatus: v.finalStatus,
         },
       });
 
@@ -452,6 +505,12 @@ export async function updateChangeControlAction(
     revalidatePath(`/changes/${id}`);
     redirect(`/changes/${id}`);
   } catch (error) {
+    if (error instanceof OperationalBusinessCodeError) {
+      return preserveFormState(previous, formData, {
+        error: "No se puede guardar el Control de Cambio.",
+        fieldErrors: [error.message],
+      });
+    }
     if (error instanceof Error && error.message.includes("Unique constraint")) {
       return preserveFormState(previous, formData, { error: "Ya existe un Control de Cambio con esa codificación." });
     }
@@ -502,6 +561,9 @@ export async function addChangeControlFollowupAction(id: string, _state: Followu
     },
   });
   if (!change) return { error: "Control de Cambio no encontrado." };
+  if (change.finalStatus === "DRAFT") {
+    return { error: "El Control de Cambio debe estar abierto antes de registrar seguimientos." };
+  }
   if (change.dictamenResult !== "APPROVED") {
     return { error: "Solo se puede registrar seguimiento cuando el Dictamen está aprobado." };
   }
@@ -681,6 +743,9 @@ export async function addChangeControlRelationAction(id: string, formData: FormD
   const change = await prisma.changeControl.findUnique({ where: { id } });
   if (!change) {
     redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("Control de Cambio no encontrado.")}`);
+  }
+  if (change.finalStatus === "DRAFT") {
+    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("El Control de Cambio debe estar abierto antes de crear relaciones.")}`);
   }
   const businessCode = String(formData.get("businessCode") ?? "").trim();
   const relationType = String(formData.get("relationType") ?? "RELATED_TO");

@@ -20,6 +20,12 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const { id } = await context.params;
   const record = await getChangeControlDetail(id);
   if (!record) return NextResponse.json({ error: "Control de Cambio no encontrado." }, { status: 404 });
+  if (record.finalStatus === "DRAFT") {
+    return NextResponse.json(
+      { error: "Los documentos oficiales no se generan mientras el Control de Cambio esté en borrador." },
+      { status: 409 },
+    );
+  }
 
   const requestedVersion = new URL(request.url).searchParams.get("version");
   const sequenceNumber =
@@ -38,7 +44,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   type AnnexRecord = Parameters<typeof generateChangeAnnexIV>[0];
   const annexRecord: AnnexRecord = storedVersion
     ? (changeControlSnapshotToRecord(storedVersion.snapshot) as unknown as AnnexRecord)
-    : record;
+    : ({
+        ...record,
+        finalStatus: record.finalStatus as "OPEN" | "CLOSED",
+      } as AnnexRecord);
 
   try {
     const buffer = await generateChangeAnnexIV(annexRecord);

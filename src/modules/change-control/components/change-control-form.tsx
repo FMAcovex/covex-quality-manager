@@ -49,17 +49,19 @@ function TextArea({
   name,
   defaultValue,
   help,
+  required = false,
 }: {
   label: string;
   name: string;
   defaultValue?: string;
   help?: string;
+  required?: boolean;
 }) {
   return (
     <label className="field span-3">
-      <span>{label}</span>
+      <span>{label}{required ? " *" : ""}</span>
       {help ? <small className="muted-note">{help}</small> : null}
-      <textarea name={name} defaultValue={defaultValue ?? ""} />
+      <textarea name={name} defaultValue={defaultValue ?? ""} required={required} />
     </label>
   );
 }
@@ -129,6 +131,10 @@ export function ChangeControlForm({
   );
   const [departmentId, setDepartmentId] = useState(formDefaults.departmentId ?? "");
   const [requestDate, setRequestDate] = useState(formDefaults.requestDate ?? "");
+  const [recordStatus, setRecordStatus] = useState<"DRAFT" | "OPEN" | "CLOSED">(
+    formDefaults.finalStatus ?? (mode === "create" ? "DRAFT" : "OPEN"),
+  );
+  const draft = recordStatus === "DRAFT";
 
   const updateTask = (index: number, patch: Partial<ChangeTaskInput>) => {
     setTasks((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -160,14 +166,15 @@ export function ChangeControlForm({
             mode={mode}
             yearSource={requestDate}
             departmentId={departmentId}
+            locked={mode === "edit" && !draft}
           />
           <label className="field">
-            <span>Fecha de solicitud *</span>
-            <input name="requestDate" type="date" value={requestDate} onChange={(event) => setRequestDate(event.target.value)} required />
+            <span>Fecha de solicitud{draft ? "" : " *"}</span>
+            <input name="requestDate" type="date" value={requestDate} onChange={(event) => setRequestDate(event.target.value)} required={!draft} />
           </label>
           <label className="field span-2">
-            <span>Departamento / Área solicitante *</span>
-            <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required>
+            <span>Departamento / Área solicitante{draft ? "" : " *"}</span>
+            <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required={!draft}>
               <option value="">Seleccionar…</option>
               {departments.map((item) => (
                 <option key={item.id} value={item.id}>{item.code} — {item.name}</option>
@@ -176,7 +183,7 @@ export function ChangeControlForm({
           </label>
 
           <div className="field span-3">
-            <span>Alcance del cambio *</span>
+            <span>Alcance del cambio{draft ? "" : " *"}</span>
             <div className="checkbox-group">
               {Object.entries(scopeLabels).map(([key, label]) => (
                 <label key={key}>
@@ -192,10 +199,10 @@ export function ChangeControlForm({
             </div>
           </div>
           <Field label="Especificar Otros" name="otherScope" defaultValue={formDefaults.otherScope} />
-          <Field label="Nombre y apellidos del solicitante" name="requesterName" defaultValue={formDefaults.requesterName} required span="span-2" />
+          <Field label="Nombre y apellidos del solicitante" name="requesterName" defaultValue={formDefaults.requesterName} required={!draft} span="span-2" />
           <Field label="Puesto" name="requesterPosition" defaultValue={formDefaults.requesterPosition} span="span-2" />
-          <TextArea label="Descripción del cambio *" name="description" defaultValue={formDefaults.description} />
-          <TextArea label="Justificación del cambio *" name="justification" defaultValue={formDefaults.justification} />
+          <TextArea label="Descripción del cambio" name="description" defaultValue={formDefaults.description} required={!draft} />
+          <TextArea label="Justificación del cambio" name="justification" defaultValue={formDefaults.justification} required={!draft} />
           <TextArea label="Relación de documentos que se aportan" name="providedDocuments" defaultValue={formDefaults.providedDocuments} />
           <label className="field">
             <span>Solicitud</span>
@@ -341,6 +348,15 @@ export function ChangeControlForm({
       <section className="form-section">
         <h2>4. Control interno</h2>
         <div className="form-grid">
+          <label className="field">
+            <span>Estado del expediente</span>
+            <select name="finalStatus" value={recordStatus} onChange={(event) => setRecordStatus(event.target.value as "DRAFT" | "OPEN" | "CLOSED")}>
+              {(mode === "create" || formDefaults.finalStatus === "DRAFT") ? <option value="DRAFT">Borrador</option> : null}
+              <option value="OPEN">Abierto</option>
+              {formDefaults.finalStatus === "CLOSED" ? <option value="CLOSED">Cerrado</option> : null}
+            </select>
+            <small className="muted-note">{draft ? "En borrador pueden quedar campos pendientes. Al abrir se validarán los obligatorios." : "El expediente está en ciclo operativo."}</small>
+          </label>
           <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations} />
           <BooleanSelect label="Documento firmado disponible" name="signedDocumentAvailable" defaultValue={formDefaults.signedDocumentAvailable} />
           <label className="field">
@@ -363,7 +379,7 @@ export function ChangeControlForm({
       <div className="form-footer">
         <Link className="button" href={changeId ? `/changes/${changeId}` : "/changes"}>Cancelar</Link>
         <button className="button primary" type="submit" disabled={pending}>
-          {pending ? "Guardando…" : mode === "create" ? "Guardar Control de Cambio" : "Guardar cambios"}
+          {pending ? "Guardando…" : draft ? "Guardar borrador" : mode === "create" ? "Guardar Control de Cambio" : "Guardar cambios"}
         </button>
       </div>
     </form>

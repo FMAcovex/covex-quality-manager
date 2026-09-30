@@ -138,6 +138,9 @@ async function loadDemoRecords() {
   if (!deviation || !capa || !change || !complaint || !returnRecord) {
     throw new Error("Dataset DEMO incompleto. Ejecuta pnpm demo:seed antes de generar anexos.");
   }
+  if (change.finalStatus === "DRAFT") {
+    throw new Error("El Control de Cambio DEMO está en Borrador y no puede generar documentos oficiales.");
+  }
   if (!change.followups.length) {
     throw new Error("El Control de Cambio DEMO no tiene Seguimiento 00. Vuelve a ejecutar pnpm demo:seed.");
   }
@@ -145,7 +148,12 @@ async function loadDemoRecords() {
     throw new Error("La Devolución DEMO no tiene producto/lote.");
   }
 
-  return { deviation, capa, change, complaint, returnRecord };
+  const operationalChange = {
+    ...change,
+    finalStatus: change.finalStatus as "OPEN" | "CLOSED",
+  };
+
+  return { deviation, capa, change: operationalChange, complaint, returnRecord };
 }
 
 async function loadAnnualRows() {
@@ -165,7 +173,10 @@ async function loadAnnualRows() {
       orderBy: [{ openedAt: "asc" }, { createdAt: "asc" }],
     }),
     prisma.changeControl.findMany({
-      where: { qmsRecord: { year: YEAR, businessCode: { startsWith: "DEMO-" } } },
+      where: {
+        qmsRecord: { year: YEAR, businessCode: { startsWith: "DEMO-" } },
+        finalStatus: { not: "DRAFT" },
+      },
       include: {
         qmsRecord: true,
         tasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },

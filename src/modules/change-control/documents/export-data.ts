@@ -17,6 +17,7 @@ export async function getChangeControlExportRows(filters: ChangeControlExportFil
   const and: Prisma.ChangeControlWhereInput[] = [];
   if (filters.administrative === "ANNULLED") and.push({ qmsRecord: { isActive: false } });
   else if (filters.administrative !== "ALL") and.push({ qmsRecord: { isActive: true } });
+  and.push({ finalStatus: { not: "DRAFT" } });
   if (filters.q) {
     and.push({
       OR: [

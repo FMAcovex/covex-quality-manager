@@ -15,6 +15,7 @@ const classification = z.enum(["MAJOR", "MINOR"]);
 const dictamenResult = z.enum(["PENDING", "APPROVED", "REJECTED"]);
 const triState = z.enum(["YES", "NO", "NA"]);
 const dataQuality = z.enum(["COMPLETE", "INCOMPLETE", "REVIEW_REQUIRED"]);
+const finalStatus = z.enum(["DRAFT", "OPEN", "CLOSED"]);
 
 const taskSchema = z.object({
   id: z.string().optional(),
@@ -74,9 +75,11 @@ export function parseChangeControlForm(formData: FormData) {
   const decision = enumValue(requestDecision, text(formData, "requestDecision")) ?? "PENDING";
   const result = enumValue(dictamenResult, text(formData, "dictamenResult")) ?? "PENDING";
   const classValue = enumValue(classification, text(formData, "classification"));
+  const recordStatus = enumValue(finalStatus, text(formData, "finalStatus")) ?? "DRAFT";
 
   const errors: string[] = [];
 
+  if (recordStatus !== "DRAFT") {
   if (!departmentId) errors.push("El departamento/área solicitante es obligatorio.");
   if (!requestDate) errors.push("La fecha de solicitud es obligatoria.");
   if (!requesterName) errors.push("Debe identificarse el solicitante.");
@@ -86,10 +89,11 @@ export function parseChangeControlForm(formData: FormData) {
   if (scopeValues.includes("OTHER") && !text(formData, "otherScope")) {
     errors.push("Debe especificarse el alcance cuando se selecciona Otros.");
   }
-  if (decision === "ACCEPTED" && !text(formData, "requestDecisionDate")) {
+  }
+  if (recordStatus !== "DRAFT" && decision === "ACCEPTED" && !text(formData, "requestDecisionDate")) {
     errors.push("Una solicitud aceptada debe tener fecha de aceptación.");
   }
-  if (result === "APPROVED") {
+  if (recordStatus !== "DRAFT" && result === "APPROVED") {
     if (!classValue) errors.push("Un dictamen aprobado debe clasificar el cambio como Mayor o Menor.");
     if (!text(formData, "dictamenDate")) errors.push("Un dictamen aprobado debe tener fecha de aprobación.");
     if (!text(formData, "followupResponsible")) errors.push("Debe indicarse el responsable de seguimiento.");
@@ -144,6 +148,7 @@ export function parseChangeControlForm(formData: FormData) {
       signedDocumentAvailable: bool(formData, "signedDocumentAvailable"),
       dataQualityStatus:
         enumValue(dataQuality, text(formData, "dataQualityStatus")) ?? "REVIEW_REQUIRED",
+      finalStatus: recordStatus,
       tasks,
       changeReason: text(formData, "changeReason"),
     },

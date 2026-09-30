@@ -90,7 +90,7 @@ export default async function ChangeControlPage({
           <label className="filter-placeholder"><span>Clasificación</span><select name="classification" defaultValue={filters.classification ?? ""}><option value="">Todas</option><option value="MAJOR">Mayor</option><option value="MINOR">Menor</option></select></label>
           <label className="filter-placeholder"><span>Ejecución</span><select name="execution" defaultValue={filters.execution ?? ""}><option value="">Todas</option><option value="NOT_EXECUTED">No ejecutado</option><option value="EXECUTED">Ejecutado</option></select></label>
           <label className="filter-placeholder"><span>Eficacia</span><select name="effectiveness" defaultValue={filters.effectiveness ?? ""}><option value="">Todas</option><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Aceptable</option><option value="NOT_ACCEPTABLE">No aceptable</option><option value="NOT_APPLICABLE">No aplica</option></select></label>
-          <label className="filter-placeholder"><span>Estado final</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="OPEN">Abierto</option><option value="CLOSED">Cerrado</option></select></label>
+          <label className="filter-placeholder"><span>Estado final</span><select name="status" defaultValue={filters.status ?? ""}><option value="">Todos</option><option value="DRAFT">Borrador</option><option value="OPEN">Abierto</option><option value="CLOSED">Cerrado</option></select></label>
           <div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/changes">Limpiar</Link></div>
         </div>
         <div className="search-row">
@@ -102,7 +102,7 @@ export default async function ChangeControlPage({
               href: `/changes/${row.id}`,
               code: row.qmsRecord.businessCode ?? "Sin código",
               title: row.description ?? "Sin descripción",
-              meta: [row.departmentCodeSnapshot, row.finalStatus === "OPEN" ? "Abierto" : "Cerrado"].filter(Boolean).join(" · "),
+              meta: [row.departmentCodeSnapshot, finalStatusLabel(row.finalStatus)].filter(Boolean).join(" · "),
               searchText: [
                 row.qmsRecord.businessCode,
                 row.description,
@@ -118,7 +118,8 @@ export default async function ChangeControlPage({
       </form>
 
       <div className="summary-strip">
-        <div><span>Total</span><strong>{counters.total}</strong></div>
+        <div><span>Total operativos</span><strong>{counters.total}</strong></div>
+        <div><span>Borradores</span><strong>{counters.drafts}</strong></div>
         <div><span>Abiertos</span><strong>{counters.open}</strong></div>
         <div><span>Ejecutados · eficacia pendiente</span><strong>{counters.executedPendingEfficacy}</strong></div>
         <div><span>Seguimiento vencido</span><strong>{counters.overdue}</strong></div>

@@ -59,6 +59,7 @@ export default async function EditChangeControlPage({ params }: { params: Promis
     internalObservations: record.internalObservations ?? undefined,
     signedDocumentAvailable: boolValue(record.signedDocumentAvailable),
     dataQualityStatus: record.dataQualityStatus,
+    finalStatus: record.finalStatus,
     tasks: baselineTasks.map((item) => ({
       id: item.id,
       departmentId: item.departmentId ?? "",

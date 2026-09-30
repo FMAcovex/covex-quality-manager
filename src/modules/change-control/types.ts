@@ -58,6 +58,7 @@ export type ChangeControlFormDefaults = {
   internalObservations?: string;
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";
+  finalStatus?: "DRAFT" | "OPEN" | "CLOSED";
   tasks?: ChangeTaskInput[];
 };
 
