@@ -7,6 +7,7 @@ export async function getReturnExportRows(filters:ReturnExportFilters){
  const and:Prisma.ReturnRecordWhereInput[]=[];
  if(filters.administrative==="ANNULLED")and.push({qmsRecord:{isActive:false}});
  else if(filters.administrative!=="ALL")and.push({qmsRecord:{isActive:true}});
+ and.push({status:{not:"DRAFT"}});
  if(filters.q)and.push({OR:[
   {qmsRecord:{businessCode:{contains:filters.q,mode:"insensitive"}}},{customerEntity:{contains:filters.q,mode:"insensitive"}},
   {country:{contains:filters.q,mode:"insensitive"}},{reasonObservations:{contains:filters.q,mode:"insensitive"}},
