@@ -99,7 +99,7 @@ export function CapaForm({
   const [departmentId, setDepartmentId] = useState(formDefaults.departmentId ?? "");
   const [openedAt, setOpenedAt] = useState(formDefaults.openedAt ?? "");
   const [recordStatus, setRecordStatus] = useState<"DRAFT" | "OPEN" | "CLOSED" | "CANCELLED">(
-    formDefaults.status ?? "OPEN",
+    formDefaults.status ?? (mode === "create" ? "DRAFT" : "OPEN"),
   );
   const [effectivenessStatus, setEffectivenessStatus] = useState<"CONFORMING" | "NONCONFORMING" | "PENDING" | "NA">(
     formDefaults.effectivenessStatus ?? "PENDING",
@@ -240,7 +240,7 @@ export function CapaForm({
           <label className="field">
             <span>Estado</span>
             <select name="status" value={recordStatus} onChange={(event) => setRecordStatus(event.target.value as typeof recordStatus)}>
-              {draftExisting ? <option value="DRAFT">Borrador</option> : null}
+              {(mode === "create" || draftExisting) ? <option value="DRAFT">Borrador</option> : null}
               <option value="OPEN">Abierta</option>
               <option value="CLOSED">Cerrada</option>
               <option value="CANCELLED">Cancelada</option>
