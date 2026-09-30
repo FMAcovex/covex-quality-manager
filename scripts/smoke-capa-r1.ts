@@ -17,7 +17,14 @@ async function loadVersionSource(capaId: string) {
   return prisma.capa.findUniqueOrThrow({
     where: { id: capaId },
     include: {
-      qmsRecord: true,
+      qmsRecord: {
+        include: {
+          targetRelations: {
+            where: { isActive: true, relationType: "GENERATES" },
+            include: { sourceRecord: true },
+          },
+        },
+      },
       plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
