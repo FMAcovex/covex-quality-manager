@@ -56,6 +56,60 @@ export function setWordCellText(documentXml: string, table: number, row: number,
   return transformWordCell(documentXml, table, row, cell, (xml) => setCellText(xml, text));
 }
 
+function variableParagraphXml(text: string) {
+  return text
+    .split(/\r?\n/)
+    .map(
+      (part) =>
+        `<w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`,
+    )
+    .join("");
+}
+
+function variableCellFill(cellXml: string) {
+  return cellXml.match(/<w:shd\b[^>]*w:fill="([^"]+)"/)?.[1]?.toUpperCase() ?? null;
+}
+
+function assertVariableCell(cellXml: string) {
+  const fill = variableCellFill(cellXml);
+  if (fill && fill !== "FFFFFF" && fill !== "AUTO") {
+    throw new Error(`Refusing to write variable content into shaded Word cell (${fill}).`);
+  }
+}
+
+function setVariableCellText(cellXml: string, text: string) {
+  assertVariableCell(cellXml);
+  const tcPr = cellXml.match(/<w:tcPr[\s\S]*?<\/w:tcPr>/)?.[0] ?? "";
+  const open = cellXml.match(/^<w:tc(?:\s[^>]*)?>/)?.[0] ?? "<w:tc>";
+  return `${open}${tcPr}${variableParagraphXml(text)}</w:tc>`;
+}
+
+export function setWordVariableCellText(
+  documentXml: string,
+  table: number,
+  row: number,
+  cell: number,
+  text: string,
+) {
+  return transformWordCell(documentXml, table, row, cell, (xml) =>
+    setVariableCellText(xml, text),
+  );
+}
+
+export function appendWordVariableCellText(
+  documentXml: string,
+  table: number,
+  row: number,
+  cell: number,
+  text: string,
+) {
+  if (!text) return documentXml;
+  return transformWordCell(documentXml, table, row, cell, (xml) => {
+    assertVariableCell(xml);
+    return xml.replace("</w:tc>", `${variableParagraphXml(text)}</w:tc>`);
+  });
+}
+
 
 export function setWordSdtCheckbox(
   documentXml: string,
