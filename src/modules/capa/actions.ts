@@ -16,6 +16,10 @@ import {
   linkOperationalRelationByBusinessCode,
 } from "@/lib/qms/relation-service";
 import {
+  assignOperationalBusinessCode,
+  OperationalBusinessCodeError,
+} from "@/lib/qms/business-code";
+import {
   DeviationCapaPlanLinkError,
   getDeviationCapaPlanOrigin,
   registerDeviationCapaPlan,
