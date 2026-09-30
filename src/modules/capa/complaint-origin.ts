@@ -98,7 +98,7 @@ export async function registerComplaintCapaPlan(
   input: {
     planId: string;
     capaQmsRecordId: string;
-    capaBusinessCode: string;
+    capaBusinessCode: string | null;
     actor: string;
   },
 ) {
