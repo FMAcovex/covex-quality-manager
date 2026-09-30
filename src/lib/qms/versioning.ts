@@ -586,6 +586,7 @@ export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
     ...d,
     qmsRecord: { businessCode: root.businessCode ?? null },
     openedAt: dateValue(d.openedAt),
+    nextFollowupDate: dateValue(d.nextFollowupDate),
     operationalClosedAt: dateValue(d.operationalClosedAt),
     effectiveClosedAt: dateValue(d.effectiveClosedAt),
     plannedActions: objectArray(d.plannedActions).map((item) => ({
