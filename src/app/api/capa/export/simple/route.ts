@@ -7,12 +7,12 @@ export async function GET(request:Request) {
   const url=new URL(request.url);
   const filters={
     administrative:url.searchParams.get("administrative")??undefined,
-    year:url.searchParams.get("year")??undefined,
-    department:url.searchParams.get("department")??undefined,
-    type:url.searchParams.get("type")??undefined,
-    status:url.searchParams.get("status")??undefined,
-    effectiveness:url.searchParams.get("effectiveness")??undefined,
-    origin:url.searchParams.get("origin")??undefined,
+    year:url.searchParams.getAll("year"),
+    department:url.searchParams.getAll("department"),
+    type:url.searchParams.getAll("type"),
+    status:url.searchParams.getAll("status"),
+    effectiveness:url.searchParams.getAll("effectiveness"),
+    origin:url.searchParams.getAll("origin"),
   };
   const rows=await getCapaExportRows(filters);
   const buffer=generateCapaSimpleList(rows);
