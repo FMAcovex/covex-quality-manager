@@ -561,6 +561,9 @@ export async function addChangeControlFollowupAction(id: string, _state: Followu
     },
   });
   if (!change) return { error: "Control de Cambio no encontrado." };
+  if (change.finalStatus === "DRAFT") {
+    return { error: "El Control de Cambio debe estar abierto antes de registrar seguimientos." };
+  }
   if (change.dictamenResult !== "APPROVED") {
     return { error: "Solo se puede registrar seguimiento cuando el Dictamen está aprobado." };
   }
@@ -740,6 +743,9 @@ export async function addChangeControlRelationAction(id: string, formData: FormD
   const change = await prisma.changeControl.findUnique({ where: { id } });
   if (!change) {
     redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("Control de Cambio no encontrado.")}`);
+  }
+  if (change.finalStatus === "DRAFT") {
+    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("El Control de Cambio debe estar abierto antes de crear relaciones.")}`);
   }
   const businessCode = String(formData.get("businessCode") ?? "").trim();
   const relationType = String(formData.get("relationType") ?? "RELATED_TO");
