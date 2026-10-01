@@ -44,6 +44,7 @@ export function complaintOperationalSituation(record: {
   status: string;
   partIIRequired: boolean | null;
   conclusion?: string | null;
+  responseSummary?: string | null;
   effectivenessStatus: string;
 }): ComplaintOperationalSituation {
   if (record.status === "DRAFT") return "DRAFT";
@@ -52,6 +53,7 @@ export function complaintOperationalSituation(record: {
   if (record.partIIRequired === null) {
     return record.conclusion?.trim() ? "PART_II_DECISION_PENDING" : "PART_I";
   }
+  if (!record.responseSummary?.trim()) return "PART_II";
   if (record.effectivenessStatus === "NOT_ACCEPTABLE") return "EFFECTIVENESS_NONCONFORMING";
   if (record.effectivenessStatus === "PENDING") return "EFFECTIVENESS_PENDING";
   return "PART_II";
