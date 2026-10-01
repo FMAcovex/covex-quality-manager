@@ -37,7 +37,9 @@ function assertDraftAndOperationalValidation() {
   const changeOpen = parseChangeControlForm(emptyWith("finalStatus", "OPEN"));
   assert.ok(changeOpen.errors.length > 0);
 
-  const complaintDraft = parseComplaintForm(emptyWith("status", "DRAFT"));
+  const complaintDraftForm = emptyWith("status", "DRAFT");
+  complaintDraftForm.set("complaintType", "CUSTOMER");
+  const complaintDraft = parseComplaintForm(complaintDraftForm);
   assert.deepEqual(complaintDraft.errors, []);
   assert.equal(complaintDraft.values.status, "DRAFT");
   const complaintOpen = parseComplaintForm(emptyWith("status", "OPEN"));
