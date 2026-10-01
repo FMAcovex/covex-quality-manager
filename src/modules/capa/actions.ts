@@ -560,6 +560,7 @@ export async function updateCapaAction(
     impactAssessment: existing.impactAssessment,
     effectivenessCriteria: existing.effectivenessCriteria,
     effectivenessEvidence: existing.effectivenessEvidence,
+    signedDocumentAvailable: existing.signedDocumentAvailable,
   };
   const changed = Object.entries(newSnapshot).filter(([key, value]) => {
     return JSON.stringify((oldSnapshot as Record<string, unknown>)[key] ?? null) !==
@@ -665,7 +666,7 @@ export async function updateCapaAction(
           effectiveClosedAt: toDate(v.effectiveClosedAt),
           conclusion: v.conclusion,
           internalObservations: v.internalObservations,
-          signedDocumentAvailable: v.signedDocumentAvailable,
+          signedDocumentAvailable: existing.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
           extraData: becomingOperational
             ? Prisma.DbNull
