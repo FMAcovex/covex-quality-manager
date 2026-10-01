@@ -71,6 +71,7 @@ export type ComplaintFormDefaults = {
   partIIRequired?: "pending" | "true" | "false";
   hasDerivedActions?: "" | "true" | "false";
   nextFollowupDate?: string;
+  versionFollowupDate?: string;
   conclusion?: string;
   effectivenessRequired?: "" | "true" | "false";
   initialEvaluationDate?: string;
