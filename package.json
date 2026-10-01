@@ -53,7 +53,8 @@
     "r2b-documents:smoke": "tsx scripts/smoke-capa-r2b-documents.ts",
     "r3-capa:smoke": "tsx scripts/smoke-capa-r3.ts",
     "r3-complaints:smoke": "tsx scripts/smoke-complaints-r3.ts",
-    "r2-returns-documents:smoke": "tsx scripts/smoke-returns-r2-documents.ts"
+    "r2-returns-documents:smoke": "tsx scripts/smoke-returns-r2-documents.ts",
+    "r3-returns:smoke": "tsx scripts/smoke-returns-r3.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
