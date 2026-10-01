@@ -155,27 +155,88 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
  }
  const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
  if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
- try{
- await prisma.$transaction(async tx=>{
-  const openingYear=v.openedAt?new Date(v.openedAt).getFullYear():null;
-  let businessCode=existing.qmsRecord.businessCode;
-  if(existing.status==="DRAFT"&&openingYear){
-   if(!businessCode&&(v.status!=="DRAFT"||requestedBusinessCode)){
-    businessCode=await assignOperationalBusinessCode(tx,{recordType:QmsRecordType.COMPLAINT,year:openingYear,complaintType:v.complaintType,requestedCode:requestedBusinessCode,excludeQmsRecordId:existing.qmsRecordId});
-   }else if(businessCode&&requestedBusinessCode&&requestedBusinessCode!==businessCode){
-    businessCode=await assignOperationalBusinessCode(tx,{recordType:QmsRecordType.COMPLAINT,year:openingYear,complaintType:v.complaintType,requestedCode:requestedBusinessCode,excludeQmsRecordId:existing.qmsRecordId});
+  const reopening=existing.status==="CLOSED"&&v.status==="OPEN";
+  const versionKind=complaintVersionKind({saveMode,reopening});
+  try{
+  await prisma.$transaction(async tx=>{
+   const before=await getSnapshot(tx,id);
+   const latestBefore=await tx.qmsRecordVersion.findFirst({where:{qmsRecordId:existing.qmsRecordId},orderBy:{sequenceNumber:"desc"}});
+   if(!latestBefore){
+    await ensureInitialVersion(
+     tx,
+     existing.qmsRecordId,
+     snapshotJson(serializeComplaintVersion(before)),
+     parsed.actor,
+     "SYSTEM",
+     "Baseline histórico al activar versionado de Reclamaciones"
+    );
+   }else{
+    const currentVersionDate=complaintSnapshotVersionFollowupDate(latestBefore.snapshot,latestBefore.sequenceNumber);
+    await refreshCurrentVersion(
+     tx,
+     existing.qmsRecordId,
+     snapshotJson(serializeComplaintVersion(before,{versionFollowupDate:currentVersionDate})),
+     parsed.actor,
+     versionKind?"Estado anterior a la nueva versión":undefined
+    );
    }
-  }
-  v.businessCode=businessCode;
-  await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode,year:openingYear}});
-  await tx.complaint.update({where:{id},data:complaintData(v,department,existing)});
-  await replaceCapaPlans(tx,id,v.capaPlans);
-  await replaceDerivedActions(tx,id,v.derivedActions);
-  await tx.changeHistory.create({data:{qmsRecordId:existing.qmsRecordId,changedByText:parsed.actor,fieldPath:"__edit__",oldValue:j({updatedAt:existing.updatedAt}),newValue:j({businessCode:v.businessCode,status:v.status}),reason:v.changeReason,source:"UI"}});
-  const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,existing.qmsRecordId,snapshotJson(serializeComplaintVersion(snap)),parsed.actor,v.changeReason);
- });
 
- }catch(e){
+   const openingYear=v.openedAt?new Date(v.openedAt).getFullYear():null;
+   let businessCode=existing.qmsRecord.businessCode;
+   if(existing.status==="DRAFT"&&openingYear){
+    if(!businessCode&&(v.status!=="DRAFT"||requestedBusinessCode)){
+     businessCode=await assignOperationalBusinessCode(tx,{recordType:QmsRecordType.COMPLAINT,year:openingYear,complaintType:v.complaintType,requestedCode:requestedBusinessCode,excludeQmsRecordId:existing.qmsRecordId});
+    }else if(businessCode&&requestedBusinessCode&&requestedBusinessCode!==businessCode){
+     businessCode=await assignOperationalBusinessCode(tx,{recordType:QmsRecordType.COMPLAINT,year:openingYear,complaintType:v.complaintType,requestedCode:requestedBusinessCode,excludeQmsRecordId:existing.qmsRecordId});
+    }
+   }
+   v.businessCode=businessCode;
+   await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode,year:openingYear}});
+   await tx.complaint.update({where:{id},data:complaintData(v,department,existing)});
+   await replaceCapaPlans(tx,id,v.capaPlans);
+   await replaceDerivedActions(tx,id,v.derivedActions);
+   await tx.changeHistory.create({data:{
+    qmsRecordId:existing.qmsRecordId,
+    changedByText:parsed.actor,
+    fieldPath:"__edit__",
+    oldValue:j({updatedAt:existing.updatedAt}),
+    newValue:j({businessCode:v.businessCode,status:v.status}),
+    reason:versionReason||v.changeReason,
+    source:"UI"
+   }});
+
+   const snap=await getSnapshot(tx,id);
+   if(versionKind){
+    const newVersion=await startNextVersion(
+     tx,
+     existing.qmsRecordId,
+     versionKind,
+     snapshotJson(serializeComplaintVersion(snap,{versionFollowupDate:new Date(versionFollowupDate)})),
+     parsed.actor,
+     versionReason
+    );
+    await tx.changeHistory.create({data:{
+     qmsRecordId:existing.qmsRecordId,
+     changedByText:parsed.actor,
+     fieldPath:"__version__",
+     newValue:j({kind:versionKind,sequenceNumber:newVersion.sequenceNumber,versionFollowupDate}),
+     reason:versionReason,
+     source:"UI"
+    }});
+   }else{
+    const latest=await tx.qmsRecordVersion.findFirst({where:{qmsRecordId:existing.qmsRecordId},orderBy:{sequenceNumber:"desc"}});
+    const currentVersionDate=latest?complaintSnapshotVersionFollowupDate(latest.snapshot,latest.sequenceNumber):null;
+    await refreshCurrentVersion(
+     tx,
+     existing.qmsRecordId,
+     snapshotJson(serializeComplaintVersion(snap,{versionFollowupDate:currentVersionDate})),
+     parsed.actor,
+     versionReason||null
+    );
+   }
+  });
+
+  }catch(e){
   if(e instanceof OperationalBusinessCodeError)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:[e.message]});
   return preserveFormState(previous,fd,persistenceFormError(e,"la reclamación"));
 }
