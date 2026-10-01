@@ -138,7 +138,13 @@ export default async function ReturnDetailPage({params,searchParams}:{params:Pro
   </div>:null}
 
   {tab==="followups"?(r.status==="DRAFT"?<div className="empty-panel">Los seguimientos estarán disponibles cuando la devolución pase a estado Abierta.</div>:<>
-   <div className="card"><h2>Seguimientos</h2>{r.followups.length?<div className="timeline return-timeline">{r.followups.map(x=><div className="timeline-item return-timeline-item" key={x.id}><header><strong>{formatDate(x.followupDate)}</strong><span>{x.completedByText}</span></header><p>{x.comment}</p><div className="return-timeline-meta"><span><strong>Próximo:</strong> {formatDate(x.nextFollowupDate)}</span><span><strong>Evidencia:</strong> {txt(x.evidenceReference)}</span></div></div>)}</div>:<div className="empty-panel">Sin seguimientos.</div>}</div>
+   <div className="card"><h2>Seguimientos</h2>{r.followups.length?<div className="return-followup-list">{r.followups.map(x=><article className="return-followup-card" key={x.id}>
+    <div className="return-followup-field"><span>Fecha</span><strong>{formatDate(x.followupDate)}</strong></div>
+    <div className="return-followup-field"><span>Responsable</span><strong>{x.completedByText}</strong></div>
+    <div className="return-followup-field return-followup-comment"><span>Seguimiento</span><p>{x.comment}</p></div>
+    <div className="return-followup-field"><span>Próximo seguimiento</span><strong>{formatDate(x.nextFollowupDate)}</strong></div>
+    <div className="return-followup-field"><span>Evidencia</span><strong>{txt(x.evidenceReference)}</strong></div>
+   </article>)}</div>:<div className="empty-panel">Sin seguimientos.</div>}</div>
    {r.status==="OPEN"?<div className="card" id="new-followup"><h2>Nuevo seguimiento</h2><BasicFollowupForm action={addReturnFollowupAction.bind(null,id)} defaultActor={process.env.DEFAULT_ACTOR_NAME||"Usuario demo"} /></div>:null}
   </>):null}
 
