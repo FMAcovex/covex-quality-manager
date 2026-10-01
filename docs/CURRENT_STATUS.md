@@ -833,6 +833,7 @@ Estado: **IMPLEMENTADO EN RAMA `feature/capa-r2b-signed-documents`; PENDIENTE DE
 - bloqueo servidor de carga en CAPA Borrador;
 - validación de PDF, cabecera, tamaño y pertenencia de `recordVersionId`;
 - componente visual y servicio documental compartidos con Desviaciones;
+- smoke PostgreSQL `pnpm r2b-documents:smoke` integrado en CI y smoke existentes conservados;
 - pestaña Documentos de CAPA convertida en resumen documental;
 - sin migración Prisma, sin `CapaDocument`, sin firma electrónica y sin cambios a CC/Reclamaciones/Devoluciones.
 
