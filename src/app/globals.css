@@ -1685,3 +1685,72 @@ button[disabled] {
 .relation-suggestions {
   min-width: min(560px, 92vw);
 }
+
+
+/* Reclamaciones R1 — flujo funcional y Anexo III */
+.complaint-type-choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 18px;
+}
+.complaint-type-choice label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 3px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+.complaint-type-choice label.selected {
+  border-color: #9ebfe5;
+  box-shadow: 0 0 0 2px rgba(53,120,198,.08);
+  background: #f5f9ff;
+}
+.complaint-type-choice input { grid-row: 1 / span 2; }
+.complaint-type-choice strong { font-size: 13px; color: var(--text); }
+.complaint-type-choice small { color: var(--muted); }
+.complaint-reference-group {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fbfcfe;
+}
+.complaint-reference-group h3 { margin: 0 0 12px; font-size: 14px; }
+.complaint-evaluation-list {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 16px;
+}
+.complaint-evaluation-row {
+  grid-template-columns: minmax(260px, 1fr) minmax(140px, 220px);
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+.complaint-evaluation-row select { min-width: 0; }
+.complaint-derived-row { grid-template-columns: 1fr 1.2fr 2fr 1.2fr 1fr auto; }
+.complaint-actions-empty { margin-top: 14px; }
+.complaint-section-muted { border-style: dashed; }
+.complaint-filter-panel { grid-template-columns: repeat(5, minmax(120px, 1fr)) auto !important; }
+.complaint-status-strip { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.complaint-followup-overdue td { background: #fff8f6; }
+@media (max-width: 1200px) {
+  .complaint-filter-panel { grid-template-columns: repeat(3, minmax(120px, 1fr)) !important; }
+  .complaint-status-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .complaint-derived-row { grid-template-columns: 1fr 1fr 2fr; }
+}
+@media (max-width: 760px) {
+  .complaint-type-choice,
+  .complaint-filter-panel,
+  .complaint-status-strip,
+  .complaint-derived-row { grid-template-columns: 1fr !important; }
+  .complaint-evaluation-row { grid-template-columns: 1fr; }
+}
