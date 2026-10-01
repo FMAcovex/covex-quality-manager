@@ -59,6 +59,9 @@ export type ComplaintFormDefaults = {
   resolutionLines?: string;
   resolutionActions?: string[];
   immediateActionDetails?: string;
+  recallActionDetails?: string;
+  creditActionDetails?: string;
+  replacementActionDetails?: string;
   otherResolutionDetails?: string;
   externalCommunication?: string;
   communicationDate?: string;
