@@ -94,7 +94,7 @@ export async function getComplaintDetail(id:string){
     sourceRelations:{where:{isActive:true},include:{targetRecord:true}},
     targetRelations:{where:{isActive:true},include:{sourceRecord:true}},
     history:{orderBy:{changedAt:"desc"},take:100},
-    versions:{orderBy:{sequenceNumber:"asc"}},
+    versions:{orderBy:{sequenceNumber:"asc"},include:{documents:{orderBy:{uploadedAt:"desc"}}}},
     generatedDocuments:{orderBy:{generatedAt:"desc"}}
   }},
   department:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}]},
