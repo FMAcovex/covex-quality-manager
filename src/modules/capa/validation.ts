@@ -111,7 +111,12 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
     if (!effectivenessAssessment) addIssue("effectivenessAssessment", "La evaluación de la eficacia es obligatoria.");
     if (!operationalStatusDescription) addIssue("operationalStatusDescription", "El estado operativo debe describirse.");
     if (!conclusion) addIssue("conclusion", "La conclusión es obligatoria.");
-    if (!nextFollowupDate) addIssue("nextFollowupDate", "La fecha de próximo seguimiento es obligatoria.");
+    const closedWithResolvedEffectiveness =
+      recordStatus === "CLOSED" &&
+      (effectivenessStatus === "CONFORMING" || effectivenessStatus === "NONCONFORMING");
+    if (!closedWithResolvedEffectiveness && !nextFollowupDate) {
+      addIssue("nextFollowupDate", "La fecha de próximo seguimiento es obligatoria.");
+    }
   } else if (openedAt && !validDate(openedAt)) {
     addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");
   }
