@@ -24,6 +24,7 @@ import {
 import type { ReturnFormState } from "@/modules/returns/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
+import { isReturnDepartmentCode } from "@/modules/returns/departments";
 import { ensureInitialVersion,refreshCurrentVersion,serializeReturnVersion,snapshotJson } from "@/lib/qms/versioning";
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
@@ -67,7 +68,7 @@ export async function createReturnAction(previous:ReturnFormState,fd:FormData):P
  const v=parsed.values;let createdId:string;
  try{
   const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
-  if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El área seleccionada no existe."});
+  if(v.status!=="DRAFT"&&(!department||!isReturnDepartmentCode(department.code)))return preserveFormState(previous,fd,{error:"El área seleccionada no es válida para Devoluciones.",fieldErrors:["La codificación de Devoluciones está restringida a LG-00, LG-10, LG-20, LG-30 y LG-40."]});
   const ref=d(v.communicationDate)??new Date();
   const [form,iii,iv,vdecl,vi]=await Promise.all([
    getApplicableFormVersion(QmsRecordType.RETURN,ref),getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_III",ref),
@@ -133,7 +134,7 @@ export async function updateReturnAction(id:string,previous:ReturnFormState,fd:F
  v.businessCode=existing.qmsRecord.businessCode??requestedBusinessCode;
  if(existing.status!=="DRAFT"&&v.status==="DRAFT")return preserveFormState(previous,fd,{error:"No se puede volver a borrador una devolución ya operativa.",fieldErrors:["Una devolución abierta o cerrada no puede volver al estado Borrador."]});
  const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
- if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El área seleccionada no existe."});
+ if(v.status!=="DRAFT"&&(!department||!isReturnDepartmentCode(department.code)))return preserveFormState(previous,fd,{error:"El área seleccionada no es válida para Devoluciones.",fieldErrors:["La codificación de Devoluciones está restringida a LG-00, LG-10, LG-20, LG-30 y LG-40."]});
  try{
  await prisma.$transaction(async tx=>{
   const communicationYear=v.communicationDate?new Date(v.communicationDate).getFullYear():null;
