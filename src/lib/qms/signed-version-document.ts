@@ -185,7 +185,7 @@ export async function getSignedVersionDocumentBySequence(
     select: {
       sequenceNumber: true,
       documents: {
-        where: { kind },
+        where: { kind: RecordVersionDocumentKind.SIGNED_PDF },
         take: 1,
         select: { fileName: true, fileData: true },
       },
