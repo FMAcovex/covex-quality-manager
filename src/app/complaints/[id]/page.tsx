@@ -86,6 +86,15 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
      <div className="info-item"><dt>Próximo seguimiento</dt><dd>{r.status==="OPEN"?formatDate(r.nextFollowupDate):"—"}</dd></div>
      <div className="info-item"><dt>Fecha cierre</dt><dd>{formatDate(r.closedAt)}</dd></div>
      <div className="info-item"><dt>Acciones derivadas</dt><dd>{effectiveHasActions?"Sí":r.hasDerivedActions===false?"No":"Pendiente"}</dd></div>
+     <div className="complaint-reference-panel">
+      <div className="complaint-reference-heading"><span>Material / servicio / equipo afectado</span></div>
+      <dl className="complaint-reference-grid">
+       <div><dt>Referencia del material / servicio / equipo</dt><dd>{txt(r.reference)}</dd></div>
+       <div><dt>N.º lote</dt><dd>{txt(r.lotReference)}</dd></div>
+       <div><dt>Cantidad</dt><dd>{txt(r.quantity)}</dd></div>
+       <div><dt>Caducidad / reanálisis</dt><dd>{txt(r.expiryReanalysis)}</dd></div>
+      </dl>
+     </div>
      <div className="info-item full"><dt>Descripción</dt><dd className="prose-value">{txt(r.description)}</dd></div>
      <div className="info-item full"><dt>Conclusión Parte I</dt><dd className="prose-value">{txt(r.conclusion)}</dd></div>
      {r.closeConclusion?<div className="info-item full"><dt>Conclusión de cierre</dt><dd className="prose-value">{r.closeConclusion}</dd></div>:null}

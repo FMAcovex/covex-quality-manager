@@ -1922,3 +1922,44 @@ button[disabled] {
   .return-signed-document .inline-form { grid-template-columns: 1fr; }
   .return-signed-document .inline-form .full { grid-column: auto; }
 }
+
+
+/* Complaints summary affected reference */
+.complaint-reference-panel {
+  grid-column: 1 / -1;
+  border: 1px solid #c9dff6;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 14px;
+}
+.complaint-reference-heading {
+  margin-bottom: 10px;
+  font-weight: 750;
+  color: var(--blue-dark);
+}
+.complaint-reference-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(140px, 1fr));
+  gap: 12px;
+}
+.complaint-reference-grid div { min-width: 0; }
+.complaint-reference-grid dt {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 4px;
+}
+.complaint-reference-grid dd {
+  margin: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  font-weight: 650;
+}
+@media (max-width: 900px) {
+  .complaint-reference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .complaint-reference-grid { grid-template-columns: 1fr; }
+}
