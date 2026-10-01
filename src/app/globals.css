@@ -1754,3 +1754,63 @@ button[disabled] {
   .complaint-derived-row { grid-template-columns: 1fr !important; }
   .complaint-evaluation-row { grid-template-columns: 1fr; }
 }
+
+
+/* Reclamaciones R1 · ajustes visuales de formulario */
+.checkbox-group input[type="checkbox"],
+.complaint-action-options input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 16px;
+  accent-color: var(--blue);
+}
+.checkbox-group label,
+.complaint-action-options label {
+  min-height: 28px;
+  align-items: center;
+}
+.complaint-action-options {
+  gap: 10px 18px;
+}
+.form-section > .eyebrow {
+  display: inline-flex;
+  margin: 0 7px 8px 0;
+  vertical-align: middle;
+}
+.form-section > .eyebrow + h2 {
+  display: inline-block;
+  margin: 0 0 8px;
+  vertical-align: middle;
+}
+.complaint-action-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fbfcfe;
+}
+.complaint-action-panel h3 { margin-top: 0; }
+.complaint-action-texts {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.action-kind {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  font-size: 13px;
+  color: var(--text);
+}
+.dynamic-row.capa {
+  grid-template-columns: .8fr 2fr 1fr 1fr 1.25fr auto;
+}
+@media (max-width: 1200px) {
+  .dynamic-row.capa { grid-template-columns: 1fr 2fr 1fr; }
+}
+@media (max-width: 760px) {
+  .dynamic-row.capa { grid-template-columns: 1fr; }
+}
