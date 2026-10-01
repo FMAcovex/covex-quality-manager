@@ -41,6 +41,14 @@ export function complaintClassificationMarks(value:string|null){
 }
 
 const resolutionLabels:Record<string,string>={
+ RETURN:"DEVOLUCIÓN",
+ CORRECTIVE_ACTION:"ACC. CORRECTORA",
+ PREVENTIVE_ACTION:"ACC. PREVENTIVA",
+ IMMEDIATE_ACTION:"ACC. INMEDIATA",
+ RECALL:"RETIRADA DEL MERCADO",
+ CREDIT:"ABONO",
+ REPLACEMENT:"REPOSICIÓN",
+ OTHER:"OTROS",
  REJECT:"RECHAZO",
  REPROCESS:"REPROCESO",
  DISPOSE:"ELIMINACIÓN",
@@ -124,7 +132,23 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
  xml=setWordCellTextBalanced(xml,1,45,1,tri(r.authorityNotificationRequired));xml=setWordCellTextBalanced(xml,1,46,1,tri(r.responsiblePartyCommunicationRequired));
  xml=setWordCellTextBalanced(xml,1,47,1,text(r.regulatoryJustification));xml=setWordCellTextBalanced(xml,1,50,0,text(r.resolutionLines));
  {const [left,right]=complaintResolutionCells(r);xml=setWordCellTextBalanced(xml,1,52,0,left);xml=setWordCellTextBalanced(xml,1,52,1,right);}
- xml=replaceWordRowWithCopies(xml,1,55,r.derivedActions.length?r.derivedActions.map(x=>[[x.actionType,x.businessCode].filter(Boolean).join(" / "),text(x.description),text(x.responsible),date(x.plannedExecutionDate)]):[["","","",""]]);
+ {
+  const linkedActionRows=[
+   ...r.capaPlans.map(x=>[
+    [x.actionType==="CORRECTIVE"?"ACC. CORRECTORA":"ACC. PREVENTIVA",x.businessCapaCode].filter(Boolean).join(" / "),
+    x.description,
+    text(x.responsible),
+    date(x.plannedExecutionDate)
+   ]),
+   ...r.derivedActions.filter(x=>x.actionType==="RETURN").map(x=>[
+    [resolutionLabels[x.actionType]??x.actionType,x.businessCode].filter(Boolean).join(" / "),
+    text(x.description),
+    text(x.responsible),
+    date(x.plannedExecutionDate)
+   ])
+  ];
+  xml=replaceWordRowWithCopies(xml,1,55,linkedActionRows.length?linkedActionRows:[["","","",""]]);
+ }
  xml=setWordCellTextBalanced(xml,1,57,1,[date(r.communicationDate),text(r.communicationMedium)].filter(Boolean).join(" / "));xml=setWordCellTextBalanced(xml,1,57,3,text(r.communicationParties));
  xml=setWordCellTextBalanced(xml,1,59,0,text(r.communicationSummary||r.externalCommunication));
  xml=setWordCellTextBalanced(xml,1,61,0,`${box(r.partIIRequired===true,"Continúa en Parte II")}   ${box(r.partIIRequired===false,"Cierre en Parte I, sin seguimiento adicional")}`);
