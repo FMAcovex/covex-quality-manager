@@ -130,7 +130,10 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
 export async function updateComplaintAction(id:string,previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values;
- const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:true}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
+ const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}}}}}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
+ if(v.hasDerivedActions===false&&existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="CAPA"||x.targetRecord.recordType==="RETURN")){
+  return preserveFormState(previous,fd,{error:"No se puede indicar que no existen acciones derivadas mientras haya CAPA o Devoluciones vinculadas.",fieldErrors:["Desvincula primero los expedientes derivados o mantén «Sí» en acciones derivadas."]});
+ }
  const requestedBusinessCode=v.businessCode;
  v.businessCode=existing.qmsRecord.businessCode??requestedBusinessCode;
  if(existing.status!=="DRAFT"&&v.status==="DRAFT"){
@@ -226,12 +229,15 @@ export async function addComplaintRelationAction(
    return{error:"Una reclamación solo puede vincularse operativamente con CAPA o Devoluciones."};
   }
 
-  await linkOperationalRelationByBusinessCode(prisma,{
-   currentRecordId:rec.qmsRecordId,
-   currentType:QmsRecordType.COMPLAINT,
-   relatedType:requestedType,
-   businessCode:code,
-   createdByText:actor
+  await prisma.$transaction(async tx=>{
+   await linkOperationalRelationByBusinessCode(tx,{
+    currentRecordId:rec.qmsRecordId,
+    currentType:QmsRecordType.COMPLAINT,
+    relatedType:requestedType,
+    businessCode:code,
+    createdByText:actor
+   });
+   await tx.complaint.update({where:{id},data:{hasDerivedActions:true}});
   });
   revalidatePath("/complaints");revalidatePath("/capa");revalidatePath("/returns");revalidatePath(`/complaints/${id}`);
   return{error:null,success:requestedType===QmsRecordType.CAPA?"CAPA vinculada correctamente.":"Devolución vinculada correctamente."};
