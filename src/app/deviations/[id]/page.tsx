@@ -11,7 +11,7 @@ import {
 } from "@/modules/capa/proposal-ui";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { uploadDeviationSignedPdfAction } from "@/modules/deviations/signed-document-actions";
-import { SignedVersionDocumentForm } from "@/modules/deviations/components/signed-version-document-form";
+import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
