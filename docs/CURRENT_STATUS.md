@@ -844,7 +844,7 @@ Estado: **IMPLEMENTADO EN RAMA `feature/capa-r3-final-regression`; PENDIENTE DE 
 - smoke PostgreSQL transversal `pnpm r3-capa:smoke`;
 - cubre Borrador → Abierta → Seguimiento 01 → Seguimiento 02 → Cerrada;
 - comprueba V00/V01/V02, congelación histórica, `sourceEntityId`, motivo, fecha y metadata;
-- genera Anexo III por cada versión mediante la ruta real y verifica contenido histórico, orígenes congelados, `CapaActionFollowup` y `GeneratedDocument.recordVersionId`;
+- genera Anexo III por cada versión con el generador productivo y una plantilla temporal controlada en PostgreSQL; verifica contenido histórico, orígenes congelados, `CapaActionFollowup` y `GeneratedDocument.recordVersionId`;
 - comprueba PDF firmado independiente por versión, descarga, sustitución con motivo, historial, pertenencia de versión, cabecera y tamaño;
 - comprueba relaciones canónicas multiorigen sin inversas artificiales y conservación del histórico al cambiar relaciones vigentes;
 - mantiene `CapaFollowup` sin backfill ni modificación destructiva;
