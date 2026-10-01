@@ -11,6 +11,9 @@ describe("Reclamaciones Anexo III v03", () => {
     const [left,right]=complaintResolutionCells({
       resolutionActions:["RETURN","REJECT","OPEN_CAPA"],
       immediateActionDetails:null,
+      recallActionDetails:null,
+      creditActionDetails:null,
+      replacementActionDetails:null,
       otherResolutionDetails:"Seguimiento adicional",
     });
     expect(left).toContain("☒ DEVOLUCIÓN:");
@@ -18,5 +21,20 @@ describe("Reclamaciones Anexo III v03", () => {
     expect(right).toContain("RECHAZO");
     expect(right).toContain("ABRIR CAPA");
     expect(right).toContain("Seguimiento adicional");
+  });
+
+  it("coloca el texto de cada acción no vinculable debajo de su opción", () => {
+    const [,right]=complaintResolutionCells({
+      resolutionActions:["RECALL","CREDIT","REPLACEMENT","OTHER"],
+      immediateActionDetails:null,
+      recallActionDetails:"Retirada lote A",
+      creditActionDetails:"Abono de 10 unidades",
+      replacementActionDetails:"Reposición del material",
+      otherResolutionDetails:"Acción adicional",
+    });
+    expect(right).toContain("RETIRADA DEL MERCADO:\nRetirada lote A");
+    expect(right).toContain("ABONO:\nAbono de 10 unidades");
+    expect(right).toContain("REPOSICIÓN:\nReposición del material");
+    expect(right).toContain("OTROS (especificar):\nAcción adicional");
   });
 });
