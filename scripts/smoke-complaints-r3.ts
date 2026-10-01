@@ -325,16 +325,50 @@ async function main() {
       "R3 Reclamaciones smoke passed: V00/V01 congeladas, Parte II/cierre, CAPA+Devolución canónicas, snapshots históricos y PDF firmado por versión.",
     );
   } finally {
+    const recordIds = [complaintQms.id, capaQms.id, returnQms.id];
+    const versions = await prisma.qmsRecordVersion.findMany({
+      where: { qmsRecordId: { in: recordIds } },
+      select: { id: true },
+    });
+    const versionIds = versions.map((version) => version.id);
+
     await prisma.qmsRelation.deleteMany({
       where: {
         OR: [
-          { sourceRecordId: { in: [complaintQms.id, capaQms.id, returnQms.id] } },
-          { targetRecordId: { in: [complaintQms.id, capaQms.id, returnQms.id] } },
+          { sourceRecordId: { in: recordIds } },
+          { targetRecordId: { in: recordIds } },
         ],
       },
     });
+    if (versionIds.length) {
+      await prisma.recordVersionDocument.deleteMany({
+        where: { recordVersionId: { in: versionIds } },
+      });
+      await prisma.generatedDocument.deleteMany({
+        where: { recordVersionId: { in: versionIds } },
+      });
+    }
+    await prisma.changeHistory.deleteMany({
+      where: { qmsRecordId: { in: recordIds } },
+    });
+    await prisma.generatedDocument.deleteMany({
+      where: { qmsRecordId: { in: recordIds } },
+    });
+    await prisma.qmsRecordVersion.deleteMany({
+      where: { qmsRecordId: { in: recordIds } },
+    });
+
+    await prisma.complaint.deleteMany({
+      where: { qmsRecordId: complaintQms.id },
+    });
+    await prisma.capa.deleteMany({
+      where: { qmsRecordId: capaQms.id },
+    });
+    await prisma.returnRecord.deleteMany({
+      where: { qmsRecordId: returnQms.id },
+    });
     await prisma.qmsRecord.deleteMany({
-      where: { id: { in: [complaintQms.id, capaQms.id, returnQms.id] } },
+      where: { id: { in: recordIds } },
     });
   }
 }
