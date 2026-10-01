@@ -65,7 +65,9 @@ export type ComplaintFormDefaults = {
   communicationMedium?: string;
   communicationParties?: string;
   communicationSummary?: string;
-  partIIRequired?: "" | "true" | "false";
+  partIIRequired?: "pending" | "true" | "false";
+  hasDerivedActions?: "" | "true" | "false";
+  nextFollowupDate?: string;
   conclusion?: string;
   effectivenessRequired?: "" | "true" | "false";
   initialEvaluationDate?: string;
