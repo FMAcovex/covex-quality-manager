@@ -624,18 +624,6 @@ export function CapaForm({
           />
 
           <label className="field">
-            <span>Documento firmado disponible</span>
-            <select
-              name="signedDocumentAvailable"
-              defaultValue={formDefaults.signedDocumentAvailable ?? ""}
-            >
-              <option value="">No informado</option>
-              <option value="true">Sí</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-
-          <label className="field">
             <span>Control del dato</span>
             <select
               name="dataQualityStatus"
