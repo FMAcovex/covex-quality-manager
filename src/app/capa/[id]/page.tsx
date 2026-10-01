@@ -424,9 +424,11 @@ export default async function CapaDetailPage({
               <h3>Generaciones registradas</h3>
               <div className="timeline">
                 {capa.qmsRecord.generatedDocuments.map((item) => (
-                  <div className="timeline-item" key={item.id}>
-                    <strong>{item.documentType}</strong>
-                    <small className="muted-note"> · {formatDate(item.generatedAt)} · {item.generatedByText ?? "Usuario no informado"}</small>
+                  <div className="timeline-item document-generation-item" key={item.id}>
+                    <strong className="document-generation-type">{item.documentType}</strong>
+                    <small className="muted-note document-generation-meta">
+                      Generado {formatDate(item.generatedAt)} · {item.generatedByText ?? "Usuario no informado"}
+                    </small>
                   </div>
                 ))}
               </div>
