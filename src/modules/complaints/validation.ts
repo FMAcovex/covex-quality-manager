@@ -132,6 +132,7 @@ export function parseComplaintForm(fd:FormData){
 
   if(partIIRequired===true&&status!=="DRAFT"){
     if(!text(fd,"responseDate"))errors.push("La Parte II requiere fecha de respuesta.");
+    if(!text(fd,"responseMedium"))errors.push("La Parte II requiere medio de respuesta.");
     if(!text(fd,"responseSummary"))errors.push("La Parte II requiere resumen de la respuesta/compromisos.");
     if(bool(fd,"responseSufficient")===null)errors.push("Debe indicarse si la respuesta es suficiente.");
     if(effectivenessStatus!=="NOT_REQUIRED"&&!text(fd,"effectivenessAssessment"))errors.push("Debe documentarse la valoración de eficacia.");
