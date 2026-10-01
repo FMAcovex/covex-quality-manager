@@ -30,15 +30,20 @@ async function getSnapshot(tx:Prisma.TransactionClient,id:string){
  return tx.complaint.findUniqueOrThrow({where:{id},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"asc"},{createdAt:"asc"}]},capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:true}},derivedActions:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true}});
 }
 
-type ExistingComplaintSnapshot={departmentId:string|null;departmentCodeSnapshot:string|null;departmentNameSnapshot:string|null};
+type ExistingComplaintSnapshot={
+ departmentId:string|null;departmentCodeSnapshot:string|null;departmentNameSnapshot:string|null;
+ detectedBy:string|null;affectedScope:string|null;externalCommunication:string|null;effectivenessRequired:boolean|null;
+ initialEvaluationDate:Date|null;initialConclusionDate:Date|null;approvalNames:string|null;closeApprovalNames:string|null;
+ signedDocumentAvailable:boolean|null;
+};
 function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],department:{id:string;code:string;name:string}|null,existing?:ExistingComplaintSnapshot){
  return {
   departmentId:department?.id??null,
   departmentCodeSnapshot:department?(existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code):null,
   departmentNameSnapshot:department?(existing?.departmentId===department.id?(existing.departmentNameSnapshot??department.name):department.name):null,
-  openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),receptionDate:d(v.receptionDate),detectedBy:v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType!,
+  openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),receptionDate:d(v.receptionDate),detectedBy:existing?.detectedBy??v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType!,
   sourceTypes:v.sourceTypes,sourceOther:v.sourceOther,scopeTypes:v.scopeTypes,scopeOther:v.scopeOther,affectedObjectTypes:v.affectedObjectTypes,affectedObjectOther:v.affectedObjectOther,
-  categoryTypes:v.categoryTypes,categoryOther:v.categoryOther,partyName:v.partyName,contact:v.contact,affectedScope:v.affectedScope,reference:v.reference,lotReference:v.lotReference,quantity:v.quantity,
+  categoryTypes:v.categoryTypes,categoryOther:v.categoryOther,partyName:v.partyName,contact:v.contact,affectedScope:existing?.affectedScope??v.affectedScope,reference:v.reference,lotReference:v.lotReference,quantity:v.quantity,
   expiryReanalysis:v.expiryReanalysis,purchaseDeliveryReference:v.purchaseDeliveryReference,description:v.description,recurrent:v.recurrent,
   recurrenceReference:v.recurrenceReference,attachedDocumentation:v.attachedDocumentation,emittedBy:v.emittedBy,qaValidatedBy:v.qaValidatedBy,
   investigation:v.investigation,impactAssessment:v.impactAssessment,impactQualityGmp:v.impactQualityGmp,impactSafetyEfficacy:v.impactSafetyEfficacy,
@@ -46,14 +51,14 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   containmentOther:v.containmentOther,riskJustification:v.riskJustification,investigationResult:v.investigationResult,rootCause:v.rootCause,classification:v.classification,
   potentialRecall:v.potentialRecall,recallProcedureRequired:v.recallProcedureRequired,authorityNotificationRequired:v.authorityNotificationRequired,
   responsiblePartyCommunicationRequired:v.responsiblePartyCommunicationRequired,regulatoryJustification:v.regulatoryJustification,
-  resolutionLines:v.resolutionLines,resolutionActions:v.resolutionActions,immediateActionDetails:v.immediateActionDetails,otherResolutionDetails:v.otherResolutionDetails,
-  externalCommunication:v.externalCommunication,communicationDate:d(v.communicationDate),communicationMedium:v.communicationMedium,communicationParties:v.communicationParties,
-  communicationSummary:v.communicationSummary,partIIRequired:v.partIIRequired,conclusion:v.conclusion,effectivenessRequired:v.effectivenessRequired,initialEvaluationDate:d(v.initialEvaluationDate),
-  initialConclusionDate:d(v.initialConclusionDate),responseDate:d(v.responseDate),responseMedium:v.responseMedium,responseSummary:v.responseSummary,responseSufficient:v.responseSufficient,
+  resolutionLines:v.resolutionLines,resolutionActions:v.resolutionActions,hasDerivedActions:v.hasDerivedActions,nextFollowupDate:v.status==="CLOSED"?null:d(v.nextFollowupDate),immediateActionDetails:v.immediateActionDetails,otherResolutionDetails:v.otherResolutionDetails,
+  externalCommunication:existing?.externalCommunication??v.externalCommunication,communicationDate:d(v.communicationDate),communicationMedium:v.communicationMedium,communicationParties:v.communicationParties,
+  communicationSummary:v.communicationSummary,partIIRequired:v.partIIRequired,conclusion:v.conclusion,effectivenessRequired:existing?.effectivenessRequired??v.effectivenessRequired,initialEvaluationDate:existing?.initialEvaluationDate??d(v.initialEvaluationDate),
+  initialConclusionDate:existing?.initialConclusionDate??d(v.initialConclusionDate),responseDate:d(v.responseDate),responseMedium:v.responseMedium,responseSummary:v.responseSummary,responseSufficient:v.responseSufficient,
   effectivenessStatus:v.effectivenessStatus,effectivenessAssessment:v.effectivenessAssessment,closeActionStatus:v.closeActionStatus,closeActionReferences:v.closeActionReferences,
-  closeConclusion:v.closeConclusion,approvalNames:v.approvalNames,
-  closeApprovalNames:v.closeApprovalNames,closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,
-  signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
+  closeConclusion:v.closeConclusion,approvalNames:existing?.approvalNames??v.approvalNames,
+  closeApprovalNames:existing?.closeApprovalNames??v.closeApprovalNames,closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,
+  signedDocumentAvailable:existing?.signedDocumentAvailable??v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
  };
 }
 
