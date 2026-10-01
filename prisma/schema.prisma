@@ -910,6 +910,9 @@ model Complaint {
   resolutionLines            String?
   resolutionActions          ComplaintResolutionAction[] @default([])
   immediateActionDetails     String?
+  recallActionDetails        String?
+  creditActionDetails        String?
+  replacementActionDetails   String?
   otherResolutionDetails     String?
   externalCommunication      String?
   communicationDate          DateTime?                    @db.Date
