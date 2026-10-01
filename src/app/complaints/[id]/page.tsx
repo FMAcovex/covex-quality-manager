@@ -46,6 +46,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
  const followupState=complaintFollowupState(r);
  const currentVersion=r.qmsRecord.versions.at(-1)??null;
  const derived=r.qmsRecord.sourceRelations.filter(x=>x.relationType==="GENERATES"&&(x.targetRecord.recordType==="CAPA"||x.targetRecord.recordType==="RETURN")).map(x=>x.targetRecord);
+ const effectiveHasActions=r.hasDerivedActions===true||derived.length>0||r.capaPlans.length>0||r.derivedActions.length>0;
 
  return <section className="workspace">
   <div className="record-header"><div><p className="eyebrow"><Link href="/complaints">← Reclamaciones</Link></p><div className="record-title-line">
@@ -80,7 +81,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
      <div className="info-item"><dt>Eficacia</dt><dd>{complaintEffectivenessLabel(r.effectivenessStatus)}</dd></div>
      <div className="info-item"><dt>Próximo seguimiento</dt><dd>{r.status==="OPEN"?formatDate(r.nextFollowupDate):"—"}</dd></div>
      <div className="info-item"><dt>Fecha cierre</dt><dd>{formatDate(r.closedAt)}</dd></div>
-     <div className="info-item"><dt>Acciones derivadas</dt><dd>{r.hasDerivedActions===true?"Sí":r.hasDerivedActions===false?"No":"Pendiente"}</dd></div>
+     <div className="info-item"><dt>Acciones derivadas</dt><dd>{effectiveHasActions?"Sí":r.hasDerivedActions===false?"No":"Pendiente"}</dd></div>
      <div className="info-item full"><dt>Descripción</dt><dd className="prose-value">{txt(r.description)}</dd></div>
      <div className="info-item full"><dt>Conclusión Parte I</dt><dd className="prose-value">{txt(r.conclusion)}</dd></div>
      {r.closeConclusion?<div className="info-item full"><dt>Conclusión de cierre</dt><dd className="prose-value">{r.closeConclusion}</dd></div>:null}
@@ -118,8 +119,8 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    </dl></div>
    <div className="card"><h2>F) Líneas de actuación y resolución</h2><p className="prose-value">{txt(r.resolutionLines)}</p></div>
 
-   <div className="card"><h2>G) Acciones derivadas</h2><p><strong>¿Existen acciones?</strong> {r.hasDerivedActions===true?"Sí":r.hasDerivedActions===false?"No":"Pendiente"}</p>
-    {r.hasDerivedActions?<><p>{joinLabels(r.resolutionActions,resolutionLabels)}</p>
+   <div className="card"><h2>G) Acciones derivadas</h2><p><strong>¿Existen acciones?</strong> {effectiveHasActions?"Sí":r.hasDerivedActions===false?"No":"Pendiente"}</p>
+    {effectiveHasActions?<><p>{joinLabels(r.resolutionActions,resolutionLabels)}</p>
      {r.capaPlans.length?<><h3>CAPA propuestas / vinculadas</h3><div className="linked-record-grid">{r.capaPlans.map(x=>{const navigation=capaPlanNavigation(x);return <article className="linked-record-card" key={x.id}><div className="linked-record-main"><div className="linked-record-heading"><strong>{x.actionType==="CORRECTIVE"?"Correctora":"Preventiva"}</strong><span className="badge neutral">{capaProposalStatusLabel(x.proposalStatus)}</span></div><p>{x.description}</p><small>{txt(x.responsible)} · {formatDate(x.plannedExecutionDate)} · {x.businessCapaCode??"Pendiente de CAPA"}</small></div><div className="linked-record-action">{navigation.kind==="OPEN"?<Link className="button small" href={qmsRecordHref("CAPA",navigation.recordId)}>Abrir CAPA</Link>:navigation.kind==="CREATE"?<Link className="button small primary" href={`/capa/new?fromComplaintPlanId=${x.id}`}>Crear CAPA</Link>:null}</div></article>})}</div></>:null}
      {r.derivedActions.length?<><h3>Otras acciones / registros</h3><div className="table-scroll"><table><thead><tr><th>Tipo</th><th>Código</th><th>Acción / evidencia</th><th>Responsable</th><th>Fecha prevista</th></tr></thead><tbody>{r.derivedActions.map(x=><tr key={x.id}><td>{resolutionLabels[x.actionType]??x.actionType}</td><td>{txt(x.businessCode)}</td><td>{txt(x.description)}</td><td>{txt(x.responsible)}</td><td>{formatDate(x.plannedExecutionDate)}</td></tr>)}</tbody></table></div></>:null}
      {derived.length?<><h3>Relaciones QMS activas</h3><div className="relation-chips">{derived.map(x=><Link key={x.id} className="relation-chip" href={qmsRecordHref(x.recordType,x.id)}>{qmsRecordDisplayCode(x,qmsRecordTypeLabel(x.recordType))}</Link>)}</div></>:null}
