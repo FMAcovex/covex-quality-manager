@@ -46,8 +46,6 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
  const followupState=complaintFollowupState(r);
  const currentVersion=r.qmsRecord.versions.at(-1)??null;
  const derived=r.qmsRecord.sourceRelations.filter(x=>x.relationType==="GENERATES"&&(x.targetRecord.recordType==="CAPA"||x.targetRecord.recordType==="RETURN")).map(x=>x.targetRecord);
- const derivedReturns=derived.filter(x=>x.recordType==="RETURN");
- const derivedCapas=derived.filter(x=>x.recordType==="CAPA");
 
  return <section className="workspace">
   <div className="record-header"><div><p className="eyebrow"><Link href="/complaints">← Reclamaciones</Link></p><div className="record-title-line">
@@ -140,7 +138,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    </>}
   </div>:null}
 
-  {tab==="versions"?<div className="card"><div className="section-title-row"><div><h2>Versiones del expediente</h2><p className="muted-note">La versión inicial existente se muestra aquí. La creación explícita de V01/V02… se completa en el bloque documental de versionado.</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
+  {tab==="versions"?<div className="card"><div className="section-title-row"><div><h2>Versiones del expediente</h2><p className="muted-note">Las versiones del expediente se muestran de la más reciente a la más antigua.</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
    {r.qmsRecord.versions.length?<div className="timeline">{[...r.qmsRecord.versions].reverse().map(item=><article className="timeline-item record-version-item" key={item.id}><header><strong>{versionLabel(item.sequenceNumber)}</strong><span className="badge neutral">{item.frozenAt?"Histórica":"Vigente"}</span></header><small>Registrada {formatDate(item.createdAt)} · {item.createdByText??"Sistema"}</small>{item.reason?<p>Motivo: {item.reason}</p>:null}</article>)}</div>:<div className="empty-panel">Este expediente todavía no tiene snapshot persistido.</div>}
   </div>:null}
 
@@ -150,7 +148,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
   </div>):null}
 
   {tab==="documents"?(r.status==="DRAFT"?<div className="empty-panel">Los documentos oficiales estarán disponibles cuando la reclamación pase a estado Abierta.</div>:<div className="card"><h2>Documentos</h2><div className="document-grid">
-   <div className="document-block"><h3>Anexo III · Informe de reclamación</h3><p>La maquetación oficial v03 se mantiene. El versionado histórico del Anexo III se completa en R2.</p><div className="document-actions">{r.annexIIITemplateVersion?.id?<a className="button" href={`/api/settings/templates/${r.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a>:<span className="muted-note">Plantilla pendiente de cargar.</span>}<a className="button primary" href={`/api/complaints/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></div></div>
+   <div className="document-block"><h3>Anexo III · Informe de reclamación</h3><p>Plantilla oficial v03 y documento Word cumplimentado con los datos vigentes.</p><div className="document-actions">{r.annexIIITemplateVersion?.id?<a className="button" href={`/api/settings/templates/${r.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a>:<span className="muted-note">Plantilla pendiente de cargar.</span>}<a className="button primary" href={`/api/complaints/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></div></div>
    {r.annexIIITemplateVersion?.versionCode==="02"?<div className="document-block"><h3>Anexo IV · Respuesta · histórico v02</h3><p>Solo para expedientes vinculados a la revisión 02.</p><div className="document-actions">{r.annexIVTemplateVersion?.id?<a className="button" href={`/api/settings/templates/${r.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a>:null}<a className="button" href={`/api/complaints/${id}/annex-iv`}>Generar respuesta v02</a></div></div>:null}
    <div className="document-block"><h3>Anexo V · Listado de reclamaciones</h3><p>Listado oficial anual validado. Se genera desde la pantalla principal.</p><Link className="button" href="/complaints">Ir al listado y descargar Anexo V</Link></div>
   </div>
