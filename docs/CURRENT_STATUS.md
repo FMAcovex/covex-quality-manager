@@ -825,8 +825,9 @@ Estado: **COMPLETADO Y FUSIONADO EN `main` mediante PR #78**.
 - orden descendente de seguimientos, colores de eficacia y regla de próximo seguimiento cerrada según validación manual.
 
 ## R2B — CAPA · PDF firmado por seguimiento + componente documental transversal
-Estado: **IMPLEMENTADO EN RAMA `feature/capa-r2b-signed-documents`; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
+Estado: **COMPLETADO, VALIDADO Y FUSIONADO EN `main` mediante PR #79**.
 
+- `main` tras PR #79: `e757967d92284d2f84b451187d1b13e32e949d1e`;
 - PDF firmado independiente por Seguimiento 00/01/02… mediante `RecordVersionDocument`;
 - carga, descarga y sustitución desde la pestaña Seguimientos;
 - motivo obligatorio al sustituir y registro en historial operativo;
@@ -836,4 +837,17 @@ Estado: **IMPLEMENTADO EN RAMA `feature/capa-r2b-signed-documents`; PENDIENTE DE
 - smoke PostgreSQL `pnpm r2b-documents:smoke` integrado en CI y smoke existentes conservados;
 - pestaña Documentos de CAPA convertida en resumen documental;
 - sin migración Prisma, sin `CapaDocument`, sin firma electrónica y sin cambios a CC/Reclamaciones/Devoluciones.
+
+## R3 — CAPA · Regresión final
+Estado: **IMPLEMENTADO EN RAMA `feature/capa-r3-final-regression`; PENDIENTE DE VALIDACIÓN MANUAL**.
+
+- smoke PostgreSQL transversal `pnpm r3-capa:smoke`;
+- cubre Borrador → Abierta → Seguimiento 01 → Seguimiento 02 → Cerrada;
+- comprueba V00/V01/V02, congelación histórica, `sourceEntityId`, motivo, fecha y metadata;
+- genera Anexo III por cada versión con el generador productivo y una plantilla temporal controlada en PostgreSQL; verifica contenido histórico, orígenes congelados, `CapaActionFollowup` y `GeneratedDocument.recordVersionId`;
+- comprueba PDF firmado independiente por versión, descarga, sustitución con motivo, historial, pertenencia de versión, cabecera y tamaño;
+- comprueba relaciones canónicas multiorigen sin inversas artificiales y conservación del histórico al cambiar relaciones vigentes;
+- mantiene `CapaFollowup` sin backfill ni modificación destructiva;
+- mantiene los smoke existentes, incluido `pnpm d6:smoke` para regresión de Desviaciones;
+- no introduce reglas GMP nuevas, rediseños, cambios Prisma ni extensión documental a otros módulos.
 
