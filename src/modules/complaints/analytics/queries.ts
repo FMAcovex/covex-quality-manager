@@ -7,10 +7,45 @@ const pct=(a:number,b:number)=>b?Math.round(a/b*1000)/10:null;
 const days=(a:Date|null,b:Date|null)=>a&&b?Math.max(0,Math.round((b.getTime()-a.getTime())/86400000)):null;
 const median=(v:number[])=>{if(!v.length)return null;const x=[...v].sort((a,b)=>a-b),m=Math.floor(x.length/2);return x.length%2?x[m]:(x[m-1]+x[m])/2};
 function dist<T>(rows:T[],get:(x:T)=>string):Dist[]{const m=new Map<string,number>();rows.forEach(x=>{const k=get(x);m.set(k,(m.get(k)??0)+1)});return [...m].map(([label,count])=>({label,count,percentage:rows.length?Math.round(count/rows.length*1000)/10:0})).sort((a,b)=>b.count-a.count);}
+
 export async function getComplaintAnalytics(filters:ComplaintAnalyticsFilters){
- const rows=await prisma.complaint.findMany({where:{includeInKpi:true,qmsRecord:{isActive:true},status:{not:"DRAFT"},...(filters.department?{departmentId:filters.department}:{}),...(filters.type==="PROVIDER"||filters.type==="CUSTOMER"?{complaintType:filters.type}:{}),...(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"].includes(filters.classification??"")?{classification:filters.classification as "CRITICAL"|"MAJOR"|"MINOR"|"NO_GMP_IMPACT"}:{}),...(filters.status==="OPEN"||filters.status==="CLOSED"?{status:filters.status}:{})},select:{openedAt:true,closedAt:true,status:true,complaintType:true,classification:true,recurrent:true,effectivenessStatus:true,departmentCodeSnapshot:true,qmsRecord:{select:{year:true}}}});
- const [departments,yearsRaw]=await Promise.all([prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),prisma.qmsRecord.findMany({where:{recordType:"COMPLAINT",year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}})]);
- const years=yearsRaw.map(x=>x.year).filter((x):x is number=>x!==null);const selected=filters.year&&/^\d{4}$/.test(filters.year)?Number(filters.year):years[0]??new Date().getFullYear();
- const metric=(year:number)=>{const y=rows.filter(r=>(r.qmsRecord.year??r.openedAt?.getUTCFullYear())===year);const closure=y.map(r=>days(r.openedAt,r.closedAt)).filter((x):x is number=>x!==null);const recEval=y.filter(r=>r.recurrent!==null),rec=recEval.filter(r=>r.recurrent).length;return{year,dataAvailable:years.includes(year),total:y.length,open:y.filter(r=>r.status==="OPEN").length,customer:y.filter(r=>r.complaintType==="CUSTOMER").length,provider:y.filter(r=>r.complaintType==="PROVIDER").length,pendingEffectiveness:y.filter(r=>r.effectivenessStatus==="PENDING").length,recurrent:{count:rec,total:recEval.length,rate:pct(rec,recEval.length)},medianClosure:median(closure),types:dist(y,r=>r.complaintType==="CUSTOMER"?"De cliente":"A proveedor"),classifications:dist(y,r=>r.classification==="CRITICAL"?"Crítica":r.classification==="MAJOR"?"Mayor":r.classification==="MINOR"?"Menor":r.classification==="NO_GMP_IMPACT"?"Sin impacto GMP":"Sin clasificar"),departments:dist(y,r=>r.departmentCodeSnapshot??"Sin departamento")};};
+ const rows=await prisma.complaint.findMany({
+  where:{
+   includeInKpi:true,qmsRecord:{isActive:true},status:{not:"DRAFT"},
+   ...(filters.department?{departmentId:filters.department}:{}),
+   ...(filters.type==="PROVIDER"||filters.type==="CUSTOMER"?{complaintType:filters.type}:{}),
+   ...(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"].includes(filters.classification??"")?{classification:filters.classification as "CRITICAL"|"MAJOR"|"MINOR"|"NO_GMP_IMPACT"}:{}),
+   ...(filters.status==="OPEN"||filters.status==="CLOSED"?{status:filters.status}:{})
+  },
+  select:{
+   openedAt:true,closedAt:true,status:true,complaintType:true,classification:true,recurrent:true,effectivenessStatus:true,
+   partIIRequired:true,conclusion:true,responseSummary:true,nextFollowupDate:true,departmentCodeSnapshot:true,
+   qmsRecord:{select:{year:true}}
+  }
+ });
+ const [departments,yearsRaw]=await Promise.all([
+  prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
+  prisma.qmsRecord.findMany({where:{recordType:"COMPLAINT",year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}})
+ ]);
+ const years=yearsRaw.map(x=>x.year).filter((x):x is number=>x!==null);
+ const selected=filters.year&&/^\d{4}$/.test(filters.year)?Number(filters.year):years[0]??new Date().getFullYear();
+ const today=new Date();today.setHours(0,0,0,0);
+ const metric=(year:number)=>{
+  const y=rows.filter(r=>(r.qmsRecord.year??r.openedAt?.getUTCFullYear())===year);
+  const closure=y.map(r=>days(r.openedAt,r.closedAt)).filter((x):x is number=>x!==null);
+  const recEval=y.filter(r=>r.recurrent!==null),rec=recEval.filter(r=>r.recurrent).length;
+  const openRows=y.filter(r=>r.status==="OPEN");
+  return{
+   year,dataAvailable:years.includes(year),total:y.length,open:openRows.length,closed:y.filter(r=>r.status==="CLOSED").length,
+   customer:y.filter(r=>r.complaintType==="CUSTOMER").length,provider:y.filter(r=>r.complaintType==="PROVIDER").length,
+   pendingPartII:openRows.filter(r=>r.partIIRequired===null&&Boolean(r.conclusion?.trim())).length,
+   pendingEffectiveness:openRows.filter(r=>r.partIIRequired===true&&r.effectivenessStatus==="PENDING"&&Boolean(r.responseSummary?.trim())).length,
+   overdueFollowup:openRows.filter(r=>Boolean(r.nextFollowupDate&&r.nextFollowupDate<today)).length,
+   recurrent:{count:rec,total:recEval.length,rate:pct(rec,recEval.length)},medianClosure:median(closure),
+   types:dist(y,r=>r.complaintType==="CUSTOMER"?"De cliente":r.complaintType==="PROVIDER"?"A proveedor":"Sin indicar"),
+   classifications:dist(y,r=>r.classification==="CRITICAL"?"Crítica":r.classification==="MAJOR"?"Mayor":r.classification==="MINOR"?"Menor":r.classification==="NO_GMP_IMPACT"?"Sin impacto GMP":"Sin clasificar"),
+   departments:dist(y,r=>r.departmentCodeSnapshot??"Sin departamento")
+  };
+ };
  return{selectedYear:selected,current:metric(selected),previous:metric(selected-1),trend:Array.from({length:5},(_,i)=>metric(selected-4+i)),departments,years};
 }

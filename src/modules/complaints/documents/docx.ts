@@ -20,6 +20,7 @@ export type ComplaintDocumentRecord={
  containmentActions:string[];containmentOther:string|null;riskJustification:string|null;investigationResult:string|null;rootCause:string|null;classification:string|null;
  potentialRecall:string|null;recallProcedureRequired:string|null;authorityNotificationRequired:string|null;responsiblePartyCommunicationRequired:string|null;regulatoryJustification:string|null;
  resolutionLines:string|null;resolutionActions:string[];immediateActionDetails:string|null;
+ recallActionDetails:string|null;creditActionDetails:string|null;replacementActionDetails:string|null;
  otherResolutionDetails:string|null;externalCommunication:string|null;communicationDate:Date|null;communicationMedium:string|null;communicationParties:string|null;communicationSummary:string|null;
  partIIRequired:boolean|null;conclusion:string|null;effectivenessRequired:boolean|null;approvalNames:string|null;
  responseDate:Date|null;responseMedium:string|null;responseSummary:string|null;responseSufficient:boolean|null;effectivenessStatus:string;effectivenessAssessment:string|null;
@@ -40,6 +41,14 @@ export function complaintClassificationMarks(value:string|null){
 }
 
 const resolutionLabels:Record<string,string>={
+ RETURN:"DEVOLUCIÓN",
+ CORRECTIVE_ACTION:"ACC. CORRECTORA",
+ PREVENTIVE_ACTION:"ACC. PREVENTIVA",
+ IMMEDIATE_ACTION:"ACC. INMEDIATA",
+ RECALL:"RETIRADA DEL MERCADO",
+ CREDIT:"ABONO",
+ REPLACEMENT:"REPOSICIÓN",
+ OTHER:"OTROS",
  REJECT:"RECHAZO",
  REPROCESS:"REPROCESO",
  DISPOSE:"ELIMINACIÓN",
@@ -51,22 +60,23 @@ const resolutionLabels:Record<string,string>={
  OPEN_CHANGE:"ABRIR CAMBIO",
 };
 
-export function complaintResolutionCells(r:Pick<ComplaintDocumentRecord,"resolutionActions"|"immediateActionDetails"|"otherResolutionDetails">){
+export function complaintResolutionCells(r:Pick<ComplaintDocumentRecord,"resolutionActions"|"immediateActionDetails"|"recallActionDetails"|"creditActionDetails"|"replacementActionDetails"|"otherResolutionDetails">){
  const selected=new Set(r.resolutionActions);
  const explicit=new Set(["RETURN","CORRECTIVE_ACTION","PREVENTIVE_ACTION","IMMEDIATE_ACTION","RECALL","CREDIT","REPLACEMENT","OTHER"]);
  const extra=r.resolutionActions.filter(action=>!explicit.has(action)).map(action=>resolutionLabels[action]??action);
  const otherDetails=[...extra,text(r.otherResolutionDetails)].filter(Boolean).join(" · ");
+ const withDetail=(action:string,label:string,detail:string|null|undefined)=>box(selected.has(action),selected.has(action)&&text(detail)?`${label}\n${text(detail)}`:label);
  const left=[
   box(selected.has("RETURN"),"DEVOLUCIÓN:"),
   box(selected.has("CORRECTIVE_ACTION"),"ACC. CORRECTORA:"),
   box(selected.has("PREVENTIVE_ACTION"),"ACC. PREVENTIVA:"),
-  box(selected.has("IMMEDIATE_ACTION"),`ACC. INMEDIATA (especificar): ${text(r.immediateActionDetails)}`),
+  withDetail("IMMEDIATE_ACTION","ACC. INMEDIATA (especificar):",r.immediateActionDetails),
  ].join("\n");
  const right=[
-  box(selected.has("RECALL"),"RETIRADA DEL MERCADO:"),
-  box(selected.has("CREDIT"),"ABONO"),
-  box(selected.has("REPLACEMENT"),"REPOSICIÓN"),
-  box(selected.has("OTHER")||extra.length>0,`OTROS (especificar): ${otherDetails}`),
+  withDetail("RECALL","RETIRADA DEL MERCADO:",r.recallActionDetails),
+  withDetail("CREDIT","ABONO:",r.creditActionDetails),
+  withDetail("REPLACEMENT","REPOSICIÓN:",r.replacementActionDetails),
+  box(selected.has("OTHER")||extra.length>0,selected.has("OTHER")||extra.length>0?`OTROS (especificar):\n${otherDetails}`:"OTROS (especificar):"),
  ].join("\n");
  return [left,right] as const;
 }
@@ -122,7 +132,23 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
  xml=setWordCellTextBalanced(xml,1,45,1,tri(r.authorityNotificationRequired));xml=setWordCellTextBalanced(xml,1,46,1,tri(r.responsiblePartyCommunicationRequired));
  xml=setWordCellTextBalanced(xml,1,47,1,text(r.regulatoryJustification));xml=setWordCellTextBalanced(xml,1,50,0,text(r.resolutionLines));
  {const [left,right]=complaintResolutionCells(r);xml=setWordCellTextBalanced(xml,1,52,0,left);xml=setWordCellTextBalanced(xml,1,52,1,right);}
- xml=replaceWordRowWithCopies(xml,1,55,r.derivedActions.length?r.derivedActions.map(x=>[[x.actionType,x.businessCode].filter(Boolean).join(" / "),text(x.description),text(x.responsible),date(x.plannedExecutionDate)]):[["","","",""]]);
+ {
+  const linkedActionRows=[
+   ...r.capaPlans.map(x=>[
+    [x.actionType==="CORRECTIVE"?"ACC. CORRECTORA":"ACC. PREVENTIVA",x.businessCapaCode].filter(Boolean).join(" / "),
+    x.description,
+    text(x.responsible),
+    date(x.plannedExecutionDate)
+   ]),
+   ...r.derivedActions.filter(x=>x.actionType==="RETURN").map(x=>[
+    [resolutionLabels[x.actionType]??x.actionType,x.businessCode].filter(Boolean).join(" / "),
+    text(x.description),
+    text(x.responsible),
+    date(x.plannedExecutionDate)
+   ])
+  ];
+  xml=replaceWordRowWithCopies(xml,1,55,linkedActionRows.length?linkedActionRows:[["","","",""]]);
+ }
  xml=setWordCellTextBalanced(xml,1,57,1,[date(r.communicationDate),text(r.communicationMedium)].filter(Boolean).join(" / "));xml=setWordCellTextBalanced(xml,1,57,3,text(r.communicationParties));
  xml=setWordCellTextBalanced(xml,1,59,0,text(r.communicationSummary||r.externalCommunication));
  xml=setWordCellTextBalanced(xml,1,61,0,`${box(r.partIIRequired===true,"Continúa en Parte II")}   ${box(r.partIIRequired===false,"Cierre en Parte I, sin seguimiento adicional")}`);

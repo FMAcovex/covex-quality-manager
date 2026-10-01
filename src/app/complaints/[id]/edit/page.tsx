@@ -2,11 +2,13 @@ import { notFound } from "next/navigation";
 import { updateComplaintAction } from "@/modules/complaints/actions";
 import { ComplaintForm } from "@/modules/complaints/components/complaint-form";
 import { getComplaintDetail,getComplaintLookups } from "@/modules/complaints/queries";
+import type { ComplaintFormDefaults } from "@/modules/complaints/types";
 export const dynamic="force-dynamic";
 const b=(v:boolean|null):""|"true"|"false"=>v===true?"true":v===false?"false":"";
+const partII=(v:boolean|null):"pending"|"true"|"false"=>v===true?"true":v===false?"false":"pending";
 export default async function EditComplaintPage({params}:{params:Promise<{id:string}>}){
  const {id}=await params;const [r,l]=await Promise.all([getComplaintDetail(id),getComplaintLookups()]);if(!r)notFound();
- const defaults={
+ const defaults:ComplaintFormDefaults={
   businessCode:r.qmsRecord.businessCode??undefined,departmentId:r.departmentId??undefined,openedAt:r.openedAt?.toISOString().slice(0,10),detectionDate:r.detectionDate?.toISOString().slice(0,10),
   receptionDate:r.receptionDate?.toISOString().slice(0,10),detectedBy:r.detectedBy??undefined,createdByText:r.createdByText??undefined,complaintType:r.complaintType,
   sourceTypes:r.sourceTypes,sourceOther:r.sourceOther??undefined,scopeTypes:r.scopeTypes,scopeOther:r.scopeOther??undefined,
@@ -21,9 +23,14 @@ export default async function EditComplaintPage({params}:{params:Promise<{id:str
   investigationResult:r.investigationResult??undefined,rootCause:r.rootCause??undefined,classification:r.classification??undefined,
   potentialRecall:r.potentialRecall??"",recallProcedureRequired:r.recallProcedureRequired??"",authorityNotificationRequired:r.authorityNotificationRequired??"",
   responsiblePartyCommunicationRequired:r.responsiblePartyCommunicationRequired??"",regulatoryJustification:r.regulatoryJustification??undefined,
-  resolutionLines:r.resolutionLines??undefined,resolutionActions:r.resolutionActions,immediateActionDetails:r.immediateActionDetails??undefined,otherResolutionDetails:r.otherResolutionDetails??undefined,
+  resolutionLines:r.resolutionLines??undefined,resolutionActions:r.resolutionActions,
+   immediateActionDetails:r.immediateActionDetails??undefined,recallActionDetails:r.recallActionDetails??undefined,
+   creditActionDetails:r.creditActionDetails??undefined,replacementActionDetails:r.replacementActionDetails??undefined,
+   otherResolutionDetails:r.otherResolutionDetails??undefined,
   externalCommunication:r.externalCommunication??undefined,communicationDate:r.communicationDate?.toISOString().slice(0,10),communicationMedium:r.communicationMedium??undefined,
-  communicationParties:r.communicationParties??undefined,communicationSummary:r.communicationSummary??undefined,partIIRequired:b(r.partIIRequired),
+  communicationParties:r.communicationParties??undefined,communicationSummary:r.communicationSummary??undefined,partIIRequired:partII(r.partIIRequired),
+  hasDerivedActions:(r.hasDerivedActions===true||r.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="CAPA"||x.targetRecord.recordType==="RETURN")?"true":r.hasDerivedActions===false?"false":""),
+  nextFollowupDate:r.nextFollowupDate?.toISOString().slice(0,10),
   conclusion:r.conclusion??undefined,effectivenessRequired:b(r.effectivenessRequired),
   initialEvaluationDate:r.initialEvaluationDate?.toISOString().slice(0,10),initialConclusionDate:r.initialConclusionDate?.toISOString().slice(0,10),
   responseDate:r.responseDate?.toISOString().slice(0,10),responseMedium:r.responseMedium??undefined,responseSummary:r.responseSummary??undefined,responseSufficient:b(r.responseSufficient),

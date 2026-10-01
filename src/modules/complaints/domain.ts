@@ -3,9 +3,13 @@ export function formatDate(value: Date | string | null | undefined) {
   const date = value instanceof Date ? value : new Date(value);
   return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
 }
-export function complaintTypeLabel(value: string) {
-  return value === "PROVIDER" ? "A proveedor" : "De cliente";
+
+export function complaintTypeLabel(value: string | null | undefined) {
+  if (value === "PROVIDER") return "A proveedor";
+  if (value === "CUSTOMER") return "De cliente";
+  return "Sin indicar";
 }
+
 export function complaintClassificationLabel(value: string | null | undefined) {
   if (value === "CRITICAL") return "Crítica";
   if (value === "MAJOR") return "Mayor";
@@ -13,16 +17,79 @@ export function complaintClassificationLabel(value: string | null | undefined) {
   if (value === "NO_GMP_IMPACT") return "Sin impacto GMP";
   return "Sin clasificar";
 }
+
 export function complaintStatusLabel(value: string) {
   if (value === "DRAFT") return "Borrador";
   return value === "CLOSED" ? "Cerrada" : "Abierta";
 }
+
 export function complaintEffectivenessLabel(value: string) {
-  if (value === "ACCEPTABLE") return "Aceptable";
-  if (value === "NOT_ACCEPTABLE") return "No aceptable";
-  if (value === "NOT_REQUIRED") return "No requerida";
+  if (value === "ACCEPTABLE") return "Conforme";
+  if (value === "NOT_ACCEPTABLE") return "No conforme";
+  if (value === "NOT_REQUIRED") return "N/A";
   return "Pendiente";
 }
+
+export type ComplaintOperationalSituation =
+  | "DRAFT"
+  | "PART_I"
+  | "PART_II_DECISION_PENDING"
+  | "PART_I_CLOSURE_PENDING"
+  | "PART_II"
+  | "EFFECTIVENESS_PENDING"
+  | "EFFECTIVENESS_NONCONFORMING"
+  | "CLOSED";
+
+export function complaintOperationalSituation(record: {
+  status: string;
+  partIIRequired: boolean | null;
+  conclusion?: string | null;
+  responseSummary?: string | null;
+  effectivenessStatus: string;
+}): ComplaintOperationalSituation {
+  if (record.status === "DRAFT") return "DRAFT";
+  if (record.status === "CLOSED") return "CLOSED";
+  if (record.partIIRequired === false) return "PART_I_CLOSURE_PENDING";
+  if (record.partIIRequired === null) {
+    return record.conclusion?.trim() ? "PART_II_DECISION_PENDING" : "PART_I";
+  }
+  if (!record.responseSummary?.trim()) return "PART_II";
+  if (record.effectivenessStatus === "NOT_ACCEPTABLE") return "EFFECTIVENESS_NONCONFORMING";
+  if (record.effectivenessStatus === "PENDING") return "EFFECTIVENESS_PENDING";
+  return "PART_II";
+}
+
+export function complaintOperationalSituationLabel(value: ComplaintOperationalSituation) {
+  if (value === "DRAFT") return "Borrador";
+  if (value === "PART_I") return "Parte I en curso";
+  if (value === "PART_II_DECISION_PENDING") return "Pendiente decisión Parte II";
+  if (value === "PART_I_CLOSURE_PENDING") return "Pendiente cierre Parte I";
+  if (value === "PART_II") return "Parte II / seguimiento";
+  if (value === "EFFECTIVENESS_PENDING") return "Pendiente eficacia";
+  if (value === "EFFECTIVENESS_NONCONFORMING") return "Eficacia no conforme";
+  return "Cerrada";
+}
+
+export function complaintOperationalSituationTone(value: ComplaintOperationalSituation) {
+  if (value === "CLOSED") return "closed";
+  if (value === "EFFECTIVENESS_NONCONFORMING") return "nonconforming";
+  if (value === "PART_II_DECISION_PENDING" || value === "PART_I_CLOSURE_PENDING" || value === "EFFECTIVENESS_PENDING") return "warning";
+  if (value === "DRAFT") return "neutral";
+  return "open";
+}
+
+export function complaintFollowupState(record: {
+  status: string;
+  nextFollowupDate?: Date | string | null;
+}, now = new Date()) {
+  if (record.status !== "OPEN") return "NONE" as const;
+  if (!record.nextFollowupDate) return "MISSING" as const;
+  const due = record.nextFollowupDate instanceof Date ? record.nextFollowupDate : new Date(record.nextFollowupDate);
+  return due.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    ? "OVERDUE" as const
+    : "PENDING" as const;
+}
+
 export function investigationResultLabel(value: string | null | undefined) {
   if (value === "PROCEDENT") return "Procedente";
   if (value === "NOT_PROCEDENT") return "No procedente";
