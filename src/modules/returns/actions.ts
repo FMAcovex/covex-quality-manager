@@ -24,6 +24,7 @@ import {
 import type { ReturnFormState } from "@/modules/returns/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
+import { isReturnDepartmentCode } from "@/modules/returns/departments";
 import { ensureInitialVersion,refreshCurrentVersion,serializeReturnVersion,snapshotJson } from "@/lib/qms/versioning";
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
@@ -31,7 +32,20 @@ const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJson
 async function getSnapshot(tx:Prisma.TransactionClient,id:string){
  return tx.returnRecord.findUniqueOrThrow({where:{id},include:{qmsRecord:true,products:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},followups:{orderBy:[{followupDate:"asc"},{createdAt:"asc"}]},formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true,annexVITemplateVersion:true}});
 }
-type ExistingReturnSnapshot={departmentId:string|null;departmentCodeSnapshot:string|null;departmentNameSnapshot:string|null};
+type ExistingReturnSnapshot={
+ departmentId:string|null;
+ departmentCodeSnapshot:string|null;
+ departmentNameSnapshot:string|null;
+ customerDeclarationSignatoryName:string|null;
+ customerDeclarationSignatoryRole:string|null;
+ customerDeclarationSignedAt:Date|null;
+ customerDeclarationObservations:string|null;
+ decisionObservations:string|null;
+ qaApprovalName:string|null;
+ technicalApprovalName:string|null;
+ destructionManagedBy:string|null;
+ destructionCertificate:string|null;
+};
 function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{id:string;code:string;name:string}|null,existing?:ExistingReturnSnapshot){
  return {
   departmentId:department?.id??null,departmentCodeSnapshot:department?(existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code):null,
@@ -41,14 +55,14 @@ function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{i
   deliveryNote:v.deliveryNote,reasonObservations:v.reasonObservations,attachedDocumentation:v.attachedDocumentation,
   withinAcceptedReturnPeriod:v.withinAcceptedReturnPeriod,roomTemperatureWithinTenDays:v.roomTemperatureWithinTenDays,coldChainWithinFortyEightHours:v.coldChainWithinFortyEightHours,
   uniqueIdentifierActive:v.uniqueIdentifierActive,tamperEvidenceIntact:v.tamperEvidenceIntact,packagingIntegrityOk:v.packagingIntegrityOk,
-  customerDeclarationAvailable:v.customerDeclarationAvailable,customerDeclarationSignatoryName:v.customerDeclarationSignatoryName,
-  customerDeclarationSignatoryRole:v.customerDeclarationSignatoryRole,customerDeclarationSignedAt:d(v.customerDeclarationSignedAt),
-  customerDeclarationObservations:v.customerDeclarationObservations,storageTransportConditionsOk:v.storageTransportConditionsOk,noUseDamageContamination:v.noUseDamageContamination,
+  customerDeclarationAvailable:v.customerDeclarationAvailable,customerDeclarationSignatoryName:existing?.customerDeclarationSignatoryName??v.customerDeclarationSignatoryName,
+  customerDeclarationSignatoryRole:existing?.customerDeclarationSignatoryRole??v.customerDeclarationSignatoryRole,customerDeclarationSignedAt:existing?.customerDeclarationSignedAt??d(v.customerDeclarationSignedAt),
+  customerDeclarationObservations:existing?.customerDeclarationObservations??v.customerDeclarationObservations,storageTransportConditionsOk:v.storageTransportConditionsOk,noUseDamageContamination:v.noUseDamageContamination,
   noRecallAlertBlock:v.noRecallAlertBlock,expiryAcceptable:v.expiryAcceptable,qcAssessmentCompleted:v.qcAssessmentCompleted,storageTemperatureRecord:v.storageTemperatureRecord,
   returnTransportTempEvidence:v.returnTransportTempEvidence,transportPackagingSuitable:v.transportPackagingSuitable,receiptTemperatureAcceptable:v.receiptTemperatureAcceptable,
   temperatureExcursionEvaluated:v.temperatureExcursionEvaluated,coldChainReturnSystemValidated:v.coldChainReturnSystemValidated,decision:v.decision,
-  finalDestination:v.finalDestination,decisionObservations:v.decisionObservations,qaApprovalName:v.qaApprovalName,technicalApprovalName:v.technicalApprovalName,decisionDate:d(v.decisionDate),
-  destructionManagedBy:v.destructionManagedBy,destructionCertificate:v.destructionCertificate,traceabilityUpdated:v.traceabilityUpdated,
+  finalDestination:v.finalDestination,decisionObservations:existing?.decisionObservations??v.decisionObservations,qaApprovalName:existing?.qaApprovalName??v.qaApprovalName,technicalApprovalName:existing?.technicalApprovalName??v.technicalApprovalName,decisionDate:d(v.decisionDate),
+  destructionManagedBy:existing?.destructionManagedBy??v.destructionManagedBy,destructionCertificate:existing?.destructionCertificate??v.destructionCertificate,traceabilityUpdated:v.traceabilityUpdated,
   closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
  };
 }
@@ -67,7 +81,7 @@ export async function createReturnAction(previous:ReturnFormState,fd:FormData):P
  const v=parsed.values;let createdId:string;
  try{
   const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
-  if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El área seleccionada no existe."});
+  if((department&&!isReturnDepartmentCode(department.code))||(v.status!=="DRAFT"&&!department))return preserveFormState(previous,fd,{error:"El área seleccionada no es válida para Devoluciones.",fieldErrors:["La codificación de Devoluciones está restringida a LG-00, LG-10, LG-20, LG-30 y LG-40."]});
   const ref=d(v.communicationDate)??new Date();
   const [form,iii,iv,vdecl,vi]=await Promise.all([
    getApplicableFormVersion(QmsRecordType.RETURN,ref),getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_III",ref),
@@ -133,7 +147,7 @@ export async function updateReturnAction(id:string,previous:ReturnFormState,fd:F
  v.businessCode=existing.qmsRecord.businessCode??requestedBusinessCode;
  if(existing.status!=="DRAFT"&&v.status==="DRAFT")return preserveFormState(previous,fd,{error:"No se puede volver a borrador una devolución ya operativa.",fieldErrors:["Una devolución abierta o cerrada no puede volver al estado Borrador."]});
  const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
- if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El área seleccionada no existe."});
+ if((department&&!isReturnDepartmentCode(department.code))||(v.status!=="DRAFT"&&!department))return preserveFormState(previous,fd,{error:"El área seleccionada no es válida para Devoluciones.",fieldErrors:["La codificación de Devoluciones está restringida a LG-00, LG-10, LG-20, LG-30 y LG-40."]});
  try{
  await prisma.$transaction(async tx=>{
   const communicationYear=v.communicationDate?new Date(v.communicationDate).getFullYear():null;
