@@ -47,8 +47,6 @@ function form(fields: Record<string, string>) {
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-");
-}
 
 function pdfFile(name: string, body: string, validHeader = true) {
   const prefix = validHeader ? "%PDF-1.7" : "NOT-PDF";
