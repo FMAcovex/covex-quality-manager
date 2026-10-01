@@ -447,7 +447,7 @@ export default async function DeviationDetailPage({
           </div>
           {deviation.qmsRecord.versions.length ? (
             <div className="timeline">
-              {deviation.qmsRecord.versions.map((item) => {
+              {[...deviation.qmsRecord.versions].reverse().map((item) => {
                 const summary = recordVersionSummary("DEVIATION", item.snapshot);
                 const kind =
                   item.sequenceNumber === 0
