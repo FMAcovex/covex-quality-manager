@@ -1890,3 +1890,35 @@ button[disabled] {
   .return-check-grid-display { grid-template-columns: 1fr; }
   .return-form-grid .span-2 { grid-column: auto; }
 }
+
+
+/* R2 Devoluciones — documentos */
+.return-document-grid { align-items: stretch; }
+.return-document-block { display: flex; flex-direction: column; gap: 10px; }
+.return-document-block.featured { background: #fbfdff; border-color: #c9dff6; }
+.return-document-block .document-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.return-signed-document {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.return-signed-document > strong,
+.return-signed-document > small { overflow-wrap: anywhere; }
+.return-signed-document .inline-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(180px, .7fr);
+  gap: 10px;
+  align-items: end;
+}
+.return-signed-document .inline-form .full { grid-column: 1 / -1; }
+.document-generation-item { min-width: 0; }
+.document-generation-type,
+.document-generation-meta { overflow-wrap: anywhere; word-break: break-word; }
+
+@media (max-width: 760px) {
+  .return-signed-document .inline-form { grid-template-columns: 1fr; }
+  .return-signed-document .inline-form .full { grid-column: auto; }
+}
