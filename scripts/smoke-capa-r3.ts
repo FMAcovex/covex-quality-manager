@@ -45,10 +45,7 @@ function form(fields: Record<string, string>) {
 }
 
 function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^$\{\}()|[\]\\]/g, "\\function form(fields: Record<string, string>) {
-  const data = new FormData();
-  for (const [key, value] of Object.entries(fields)) data.set(key, value);
-  return data;
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 ");
 }
@@ -327,7 +324,7 @@ async function main() {
       });
     });
 
-    let source = await loadVersionSource(capa.id);
+    const source = await loadVersionSource(capa.id);
     await prisma.$transaction(async (tx) => {
       await ensureInitialVersion(
         tx,
@@ -390,7 +387,7 @@ async function main() {
     assert.equal(followup02.error, undefined, followup02.error);
     assert.match(followup02.success ?? "", /Seguimiento 02/);
 
-    let versionsBeforeOperationalChange = await prisma.qmsRecordVersion.findMany({
+    const versionsBeforeOperationalChange = await prisma.qmsRecordVersion.findMany({
       where: { qmsRecordId: capaRecord.id },
       orderBy: { sequenceNumber: "asc" },
     });
