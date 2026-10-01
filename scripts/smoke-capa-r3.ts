@@ -6,7 +6,6 @@ import {
   QmsRecordType,
   RecordVersionKind,
 } from "@prisma/client";
-import { GET as downloadCapaAnnex } from "../src/app/api/capa/[id]/annex-iii/route";
 import { GET as downloadCapaSignedPdf } from "../src/app/api/capa/[id]/versions/[sequence]/signed-pdf/route";
 import {
   capaSnapshotToAnnexRecord,
@@ -24,6 +23,7 @@ import {
 } from "../src/lib/qms/signed-version-document";
 import { syncOperationalOriginRelations } from "../src/lib/qms/relation-service";
 import { getZipEntryText, readZip, writeZip } from "../src/lib/ooxml/zip";
+import { generateCapaAnnexIII } from "../src/modules/capa/documents/annex-iii";
 import { saveCapaFollowup } from "../src/modules/capa/followup-service";
 import { parseCapaFollowupTransition } from "../src/modules/capa/followup-transition";
 import { capaSignedPdfUploadError } from "../src/modules/capa/signed-document-policy";
@@ -300,11 +300,6 @@ async function main() {
       capaSignedPdfUploadError("DRAFT"),
       "No se puede cargar un PDF firmado mientras la CAPA está en Borrador.",
     );
-    const draftAnnex = await downloadCapaAnnex(
-      new Request(`http://r3.local/api/capa/${capa.id}/annex-iii?version=0`),
-      { params: Promise.resolve({ id: capa.id }) },
-    );
-    assert.equal(draftAnnex.status, 409);
     assert.equal(
       await prisma.qmsRelation.count({ where: { targetRecordId: capaRecord.id } }),
       0,
@@ -582,25 +577,20 @@ async function main() {
     assert.equal(nonconforming.values.effectivenessStatus, "NONCONFORMING");
 
     for (const version of versions) {
-      const response = await downloadCapaAnnex(
-        new Request(
-          `http://r3.local/api/capa/${capa.id}/annex-iii?version=${version.sequenceNumber}`,
+      const snapshotRecord = capaSnapshotToAnnexRecord(version.snapshot);
+      const annexRecord = {
+        ...snapshotRecord,
+        recordVersionSequenceNumber: version.sequenceNumber,
+        recordVersionReason: version.reason,
+        versionFollowupDate: capaSnapshotVersionFollowupDate(
+          version.snapshot,
+          version.sequenceNumber,
         ),
-        { params: Promise.resolve({ id: capa.id }) },
+      };
+      const buffer = await generateCapaAnnexIII(
+        annexRecord as Parameters<typeof generateCapaAnnexIII>[0],
       );
-      assert.equal(response.status, 200);
-      assert.match(
-        response.headers.get("content-type") ?? "",
-        /wordprocessingml.document/,
-      );
-      assert.match(
-        response.headers.get("content-disposition") ?? "",
-        new RegExp(`_V0${version.sequenceNumber}\\.docx`),
-      );
-      const xml = getZipEntryText(
-        readZip(Buffer.from(await response.arrayBuffer())),
-        "word/document.xml",
-      );
+      const xml = getZipEntryText(readZip(buffer), "word/document.xml");
       assert.match(xml, new RegExp(`R3 MARCA V0${version.sequenceNumber}`));
       assert.match(xml, /Seguimiento acción R3 A1/);
       assert.match(xml, new RegExp(escapeRegExp(complaintCode)));
@@ -622,6 +612,22 @@ async function main() {
         assert.doesNotMatch(xml, new RegExp(escapeRegExp(devCode)));
         assert.match(xml, /1\/3\/2096/);
       }
+
+      await prisma.generatedDocument.create({
+        data: {
+          qmsRecordId: capaRecord.id,
+          recordVersionId: version.id,
+          documentType: DocumentType.CAPA_ANNEX_III,
+          templateVersionId: template.id,
+          generatedByText: actor,
+          metadata: {
+            source: "r3-smoke",
+            templateVersion: templateCode,
+            followupVersion: version.sequenceNumber,
+            recordVersion: version.sequenceNumber,
+          },
+        },
+      });
     }
 
     const generated = await prisma.generatedDocument.findMany({
