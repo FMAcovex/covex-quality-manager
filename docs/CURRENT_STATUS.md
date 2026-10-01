@@ -814,3 +814,25 @@ Estado: **COMPLETADO Y FUSIONADO EN `main` mediante PR #77; CI #409 verde y vali
 - campos históricos ocultos en la nueva UX se conservan;
 - retirada la captura independiente de evidencia de ejecución; Seguimiento de la acción queda alineado con Anexo III (Fecha, Descripción y Observaciones);
 - PDFs por versión, Anexo III multiorigen completo y componente documental transversal quedan para Bloque 2.
+
+## R2A — CAPA · Anexo III + metadata por seguimiento
+Estado: **COMPLETADO Y FUSIONADO EN `main` mediante PR #78**.
+
+- Seguimiento 00/01/02… persistido como `QmsRecordVersion`;
+- Anexo III descargable por versión histórica;
+- fecha/motivo propios por seguimiento y multiorigen congelado en snapshot;
+- `CapaActionFollowup` alimenta el apartado Seguimiento de la acción;
+- orden descendente de seguimientos, colores de eficacia y regla de próximo seguimiento cerrada según validación manual.
+
+## R2B — CAPA · PDF firmado por seguimiento + componente documental transversal
+Estado: **IMPLEMENTADO EN RAMA `feature/capa-r2b-signed-documents`; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
+
+- PDF firmado independiente por Seguimiento 00/01/02… mediante `RecordVersionDocument`;
+- carga, descarga y sustitución desde la pestaña Seguimientos;
+- motivo obligatorio al sustituir y registro en historial operativo;
+- bloqueo servidor de carga en CAPA Borrador;
+- validación de PDF, cabecera, tamaño y pertenencia de `recordVersionId`;
+- componente visual y servicio documental compartidos con Desviaciones;
+- pestaña Documentos de CAPA convertida en resumen documental;
+- sin migración Prisma, sin `CapaDocument`, sin firma electrónica y sin cambios a CC/Reclamaciones/Devoluciones.
+
