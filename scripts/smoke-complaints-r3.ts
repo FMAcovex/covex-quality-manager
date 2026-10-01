@@ -244,14 +244,14 @@ async function main() {
     assert.ok(versions[0].frozenAt);
     assert.equal(versions[1].frozenAt, null);
 
-    const v00 = complaintSnapshotToAnnexRecord(versions[0].snapshot) as {
+    const v00 = complaintSnapshotToAnnexRecord(versions[0].snapshot) as unknown as {
       description: string;
       status: string;
       nextFollowupDate: Date | null;
       capaPlans: Array<{ businessCapaCode?: string | null }>;
       derivedActions: Array<{ businessCode?: string | null }>;
     };
-    const v01 = complaintSnapshotToAnnexRecord(versions[1].snapshot) as typeof v00;
+    const v01 = complaintSnapshotToAnnexRecord(versions[1].snapshot) as unknown as typeof v00;
 
     assert.equal(v00.description, "R3 MARCA V00");
     assert.equal(v01.description, "R3 MARCA V01");
