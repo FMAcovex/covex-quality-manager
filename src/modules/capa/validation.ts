@@ -70,6 +70,7 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
   const businessCode = text(formData, "businessCode");
   const departmentId = text(formData, "departmentId");
   const openedAt = text(formData, "openedAt");
+  const versionFollowupDate = text(formData, "versionFollowupDate");
   const createdByText = text(formData, "createdByText");
   const origins = parseArray<CapaOriginInput>(text(formData, "originsJson"), originSchema);
   const defectDescription = text(formData, "defectDescription");
@@ -110,7 +111,12 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
     if (!effectivenessAssessment) addIssue("effectivenessAssessment", "La evaluación de la eficacia es obligatoria.");
     if (!operationalStatusDescription) addIssue("operationalStatusDescription", "El estado operativo debe describirse.");
     if (!conclusion) addIssue("conclusion", "La conclusión es obligatoria.");
-    if (!nextFollowupDate) addIssue("nextFollowupDate", "La fecha de próximo seguimiento es obligatoria.");
+    const closedWithResolvedEffectiveness =
+      recordStatus === "CLOSED" &&
+      (effectivenessStatus === "CONFORMING" || effectivenessStatus === "NONCONFORMING");
+    if (!closedWithResolvedEffectiveness && !nextFollowupDate) {
+      addIssue("nextFollowupDate", "La fecha de próximo seguimiento es obligatoria.");
+    }
   } else if (openedAt && !validDate(openedAt)) {
     addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");
   }
@@ -135,6 +141,12 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
   if (effectivenessStatus === "CONFORMING" && !options.allowHistoricalIncomplete && !effectiveClosedAt) {
     addIssue("effectiveClosedAt", "La eficacia Conforme requiere fecha de verificación final.");
   }
+  if (versionFollowupDate && !validDate(versionFollowupDate)) {
+    addIssue("versionFollowupDate", "La fecha del seguimiento no tiene un formato válido.");
+  }
+  if (intent === "CREATE_FOLLOWUP_VERSION" && !versionFollowupDate) {
+    addIssue("versionFollowupDate", "La fecha del seguimiento es obligatoria al crear un nuevo seguimiento.");
+  }
   if (intent === "CREATE_FOLLOWUP_VERSION" && !changeReason) addIssue("changeReason", "El motivo del nuevo seguimiento es obligatorio.");
 
   const firstOrigin = origins[0];
@@ -145,7 +157,7 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
       saveIntent: intent,
       businessCode,
       actionType: enumValue(actionType, text(formData, "actionType")) ?? "CORRECTIVE",
-      departmentId, openedAt, createdByText,
+      departmentId, openedAt, versionFollowupDate, createdByText,
       origins,
       originType: firstOrigin?.recordType === "DEVIATION" ? "Desviación" : firstOrigin?.recordType === "COMPLAINT" ? "Reclamación" : text(formData, "originType"),
       originCode: firstOrigin?.businessCode ?? text(formData, "originCode"),

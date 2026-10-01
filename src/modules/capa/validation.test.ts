@@ -95,6 +95,29 @@ describe("parseCapaForm R1", () => {
     expect(parseCapaForm(f).fieldIssues.nextFollowupDate).toBeDefined();
   });
 
+  it("does not require next follow-up when the CAPA is closed with resolved efficacy", () => {
+    for (const effectiveness of ["CONFORMING", "NONCONFORMING"] as const) {
+      const f = base();
+      f.set("status", "CLOSED");
+      f.set("operationalClosedAt", "2026-10-30");
+      f.set("effectivenessStatus", effectiveness);
+      f.set("nextFollowupDate", "");
+      if (effectiveness === "CONFORMING") {
+        f.set("effectiveClosedAt", "2026-11-10");
+      }
+      expect(parseCapaForm(f).fieldIssues.nextFollowupDate).toBeUndefined();
+    }
+  });
+
+  it("still requires next follow-up when the CAPA is closed with efficacy pending", () => {
+    const f = base();
+    f.set("status", "CLOSED");
+    f.set("operationalClosedAt", "2026-10-30");
+    f.set("effectivenessStatus", "PENDING");
+    f.set("nextFollowupDate", "");
+    expect(parseCapaForm(f).fieldIssues.nextFollowupDate).toBeDefined();
+  });
+
   it("allows business code to be empty before server-side assignment", () => {
     const f = base();
     f.set("businessCode", "");
@@ -149,15 +172,27 @@ describe("parseCapaForm R1", () => {
     expect(parseCapaForm(missingDate).fieldIssues.actionFollowupsJson).toBeDefined();
   });
 
-  it("requires a reason only when a new functional follow-up is created", () => {
+  it("requires date and reason only when a new functional follow-up is created", () => {
     const ordinary = base();
+    expect(parseCapaForm(ordinary).fieldIssues.versionFollowupDate).toBeUndefined();
     expect(parseCapaForm(ordinary).fieldIssues.changeReason).toBeUndefined();
 
     const versioned = base();
     versioned.set("saveIntent", "CREATE_FOLLOWUP_VERSION");
+    expect(parseCapaForm(versioned).fieldIssues.versionFollowupDate).toBeDefined();
     expect(parseCapaForm(versioned).fieldIssues.changeReason).toBeDefined();
 
+    versioned.set("versionFollowupDate", "2026-10-01");
     versioned.set("changeReason", "Actualización de seguimiento");
+    expect(parseCapaForm(versioned).fieldIssues.versionFollowupDate).toBeUndefined();
     expect(parseCapaForm(versioned).fieldIssues.changeReason).toBeUndefined();
+  });
+
+  it("rejects an invalid follow-up version date", () => {
+    const versioned = base();
+    versioned.set("saveIntent", "CREATE_FOLLOWUP_VERSION");
+    versioned.set("versionFollowupDate", "2026-99-40");
+    versioned.set("changeReason", "Actualización de seguimiento");
+    expect(parseCapaForm(versioned).fieldIssues.versionFollowupDate).toBeDefined();
   });
 });

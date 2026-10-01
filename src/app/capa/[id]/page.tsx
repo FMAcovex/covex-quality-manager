@@ -8,7 +8,7 @@ import {
   formatDate,
 } from "@/modules/capa/domain";
 import { getCapaDetail } from "@/modules/capa/queries";
-import { recordVersionSummary } from "@/lib/qms/versioning";
+import { capaSnapshotVersionFollowupDate, recordVersionSummary } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
@@ -296,8 +296,12 @@ export default async function CapaDetailPage({
           </div>
           {capa.qmsRecord.versions.length ? (
             <div className="timeline">
-              {capa.qmsRecord.versions.map((item) => {
+              {[...capa.qmsRecord.versions].reverse().map((item) => {
                 const summary = recordVersionSummary("CAPA", item.snapshot);
+                const followupDate = capaSnapshotVersionFollowupDate(
+                  item.snapshot,
+                  item.sequenceNumber,
+                );
                 return (
                   <article className="timeline-item" key={item.id}>
                     <div className="timeline-marker">{String(item.sequenceNumber).padStart(2, "0")}</div>
@@ -307,10 +311,20 @@ export default async function CapaDetailPage({
                         <span className={`badge ${summary.status === "OPEN" ? "open" : summary.status === "CLOSED" ? "closed" : "neutral"}`}>
                           {capaStatusLabel(String(summary.status ?? "OPEN"))}
                         </span>
-                        <span className="badge neutral">Eficacia {effectivenessLabel(String(summary.effectivenessStatus ?? "PENDING"))}</span>
+                        <span
+                          className={`badge ${
+                            summary.effectivenessStatus === "CONFORMING"
+                              ? "conforming"
+                              : summary.effectivenessStatus === "NONCONFORMING"
+                                ? "nonconforming"
+                                : "neutral"
+                          }`}
+                        >
+                          Eficacia {effectivenessLabel(String(summary.effectivenessStatus ?? "PENDING"))}
+                        </span>
                         {item.frozenAt ? <span className="badge neutral">Histórico</span> : <span className="badge neutral">Vigente</span>}
                       </header>
-                      <p>Próximo seguimiento: {formatDate(summary.nextFollowupDate)} · Cierre y ejecución: {formatDate(summary.closedAt)}</p>
+                      <p>Fecha del seguimiento: {formatDate(followupDate)} · Próximo seguimiento: {formatDate(summary.nextFollowupDate)} · Cierre y ejecución: {formatDate(summary.closedAt)}</p>
                       <p>Verificación final: {formatDate(summary.effectiveClosedAt)}{item.reason ? ` · Motivo: ${item.reason}` : ""}</p>
                       <small className="muted-note">Registrado {formatDate(item.createdAt)} · {item.createdByText ?? "Sistema"}</small>
                       <div className="document-actions">

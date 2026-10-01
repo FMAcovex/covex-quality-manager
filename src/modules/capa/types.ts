@@ -32,6 +32,7 @@ export type CapaFormDefaults = {
   actionType?: "CORRECTIVE" | "PREVENTIVE";
   departmentId?: string;
   openedAt?: string;
+  versionFollowupDate?: string;
   createdByText?: string;
   originType?: string;
   originCode?: string;

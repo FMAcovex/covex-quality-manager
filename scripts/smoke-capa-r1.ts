@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { PrismaClient, QmsRecordType, RecordVersionKind } from "@prisma/client";
 import {
+  capaSnapshotVersionFollowupDate,
   ensureInitialVersion,
   refreshCurrentVersion,
   serializeCapaVersion,
@@ -17,7 +18,14 @@ async function loadVersionSource(capaId: string) {
   return prisma.capa.findUniqueOrThrow({
     where: { id: capaId },
     include: {
-      qmsRecord: true,
+      qmsRecord: {
+        include: {
+          targetRelations: {
+            where: { isActive: true, relationType: "GENERATES" },
+            include: { sourceRecord: true },
+          },
+        },
+      },
       plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
@@ -104,7 +112,9 @@ async function main() {
       await ensureInitialVersion(
         tx,
         capaRecord.id,
-        snapshotJson(serializeCapaVersion(source)),
+        snapshotJson(
+          serializeCapaVersion(source, { versionFollowupDate: source.openedAt }),
+        ),
         actor,
         "UI",
         "Seguimiento 00 R1",
@@ -120,7 +130,9 @@ async function main() {
       await refreshCurrentVersion(
         tx,
         capaRecord.id,
-        snapshotJson(serializeCapaVersion(source)),
+        snapshotJson(
+          serializeCapaVersion(source, { versionFollowupDate: source.openedAt }),
+        ),
         actor,
         "Edición ordinaria",
       );
@@ -150,7 +162,11 @@ async function main() {
         tx,
         capaRecord.id,
         RecordVersionKind.FOLLOWUP,
-        snapshotJson(serializeCapaVersion(source)),
+        snapshotJson(
+          serializeCapaVersion(source, {
+            versionFollowupDate: new Date("2098-02-01"),
+          }),
+        ),
         actor,
         "Seguimiento funcional R1",
       );
@@ -178,6 +194,20 @@ async function main() {
     assert.equal(latestSnapshot.capa?.actionFollowups?.[0]?.description, "Comprobación R1");
     assert.equal(latestSnapshot.capa?.operationalStatusDescription, "Acción abierta tras seguimiento R1");
     assert.equal(latestSnapshot.capa?.conclusion, "Continuar seguimiento R1");
+    assert.equal(
+      capaSnapshotVersionFollowupDate(versions[0].snapshot, 0)?.toISOString().slice(0, 10),
+      "2098-01-02",
+    );
+    assert.equal(
+      capaSnapshotVersionFollowupDate(versions[1].snapshot, 1)?.toISOString().slice(0, 10),
+      "2098-02-01",
+    );
+    assert.deepEqual(
+      (latestSnapshot.capa as { origins?: Array<{ businessCode?: string | null }> })?.origins
+        ?.map((item) => item.businessCode)
+        .sort(),
+      [complaintRecord.businessCode, deviationRecord.businessCode].sort(),
+    );
 
     let relations = await prisma.qmsRelation.findMany({
       where: { targetRecordId: capaRecord.id, isActive: true },

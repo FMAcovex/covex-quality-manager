@@ -45,7 +45,14 @@ async function backfillCapas() {
   const rows = await prisma.capa.findMany({
     where: { qmsRecord: { versions: { none: {} } } },
     include: {
-      qmsRecord: true,
+      qmsRecord: {
+        include: {
+          targetRelations: {
+            where: { isActive: true, relationType: "GENERATES" },
+            include: { sourceRecord: true },
+          },
+        },
+      },
       plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
@@ -64,7 +71,14 @@ async function backfillCapas() {
         qmsRecordId: row.qmsRecordId,
         sequenceNumber,
         kind: "HISTORICAL_STATE",
-        snapshot: snapshotJson(serializeCapaVersion(row)),
+        snapshot: snapshotJson(
+          serializeCapaVersion(row, {
+            versionFollowupDate:
+              sequenceNumber === 0
+                ? row.openedAt
+                : row.followups.find((item) => item.sequenceNumber === sequenceNumber)?.followupDate ?? null,
+          }),
+        ),
         reason:
           "Baseline histórico al activar Hito 6.1; las versiones previas no se reconstruyen si no existía snapshot",
         createdByText: "Migración Hito 6.1",
