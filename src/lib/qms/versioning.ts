@@ -402,6 +402,7 @@ export function serializeComplaintVersion(record: ComplaintVersionSource) {
       externalCommunication: record.externalCommunication ?? null, communicationDate: iso(record.communicationDate),
       communicationMedium: record.communicationMedium ?? null, communicationParties: record.communicationParties ?? null,
       communicationSummary: record.communicationSummary ?? null, partIIRequired: record.partIIRequired ?? null,
+      hasDerivedActions: record.hasDerivedActions ?? null, nextFollowupDate: iso(record.nextFollowupDate),
       conclusion: record.conclusion ?? null, effectivenessRequired: record.effectivenessRequired ?? null, initialEvaluationDate: iso(record.initialEvaluationDate),
       initialConclusionDate: iso(record.initialConclusionDate), responseDate: iso(record.responseDate),
       responseMedium: record.responseMedium ?? null, responseSummary: record.responseSummary ?? null,
