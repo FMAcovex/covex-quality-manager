@@ -100,6 +100,34 @@ describe("parseComplaintForm · R1", () => {
     expect(parsed.errors).toContain("No puede cerrarse una reclamación con la decisión de Parte II pendiente.");
   });
 
+  it("exige el bloque correspondiente para cada acción derivada seleccionada", () => {
+    const form=validOperationalForm("OPEN");
+    form.set("hasDerivedActions","true");
+    form.append("resolutionActions","RECALL");
+    form.append("resolutionActions","CREDIT");
+
+    const parsed=parseComplaintForm(form);
+
+    expect(parsed.errors).toContain("La retirada del mercado debe especificarse.");
+    expect(parsed.errors).toContain("El abono debe especificarse.");
+
+    form.set("recallActionDetails","Retirada lote A");
+    form.set("creditActionDetails","Abono de material");
+    expect(parseComplaintForm(form).errors).toEqual([]);
+  });
+
+  it("exige una fila CAPA o devolución cuando se selecciona una acción vinculable", () => {
+    const form=validOperationalForm("OPEN");
+    form.set("hasDerivedActions","true");
+    form.append("resolutionActions","CORRECTIVE_ACTION");
+    form.append("resolutionActions","RETURN");
+
+    const parsed=parseComplaintForm(form);
+
+    expect(parsed.errors).toContain("La acción correctora requiere al menos una CAPA propuesta o vinculada.");
+    expect(parsed.errors).toContain("La devolución requiere al menos una devolución propuesta o vinculada.");
+  });
+
   it("exige contenido de Parte II cuando se decide continuar", () => {
     const form=validOperationalForm("OPEN");
     form.set("partIIRequired","true");
