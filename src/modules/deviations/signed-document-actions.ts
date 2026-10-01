@@ -22,7 +22,7 @@ export async function uploadDeviationSignedPdfAction(
     formData.get("file"),
     "Selecciona el PDF firmado de esta versión.",
   );
-  if (selected.error) {
+  if (!selected.file) {
     return { error: selected.error, success: null };
   }
 
