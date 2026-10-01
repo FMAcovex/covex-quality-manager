@@ -21,7 +21,11 @@ import { parseComplaintForm } from "@/modules/complaints/validation";
 import type { ComplaintFormState } from "@/modules/complaints/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import { getApplicableFormVersion,getApplicableTemplateVersion } from "@/modules/configuration/runtime";
-import { ensureInitialVersion,refreshCurrentVersion,snapshotJson,serializeComplaintVersion } from "@/lib/qms/versioning";
+import {
+ ensureInitialVersion,refreshCurrentVersion,snapshotJson,serializeComplaintVersion,startNextVersion,
+ complaintSnapshotVersionFollowupDate
+} from "@/lib/qms/versioning";
+import { complaintSaveMode,complaintVersionKind } from "@/modules/complaints/version-mode";
 
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
@@ -131,6 +135,15 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
 export async function updateComplaintAction(id:string,previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values;
+ const saveMode=complaintSaveMode(fd.get("saveMode"));
+ const versionReason=String(fd.get("changeReason")??"").trim();
+ const versionFollowupDate=String(fd.get("versionFollowupDate")??"").trim();
+ if(saveMode==="CREATE_VERSION"&&!versionReason){
+  return preserveFormState(previous,fd,{error:"No se puede generar la nueva versión.",fieldErrors:["Debe indicarse el motivo del seguimiento o de la nueva versión."]});
+ }
+ if(saveMode==="CREATE_VERSION"&&!versionFollowupDate){
+  return preserveFormState(previous,fd,{error:"No se puede generar la nueva versión.",fieldErrors:["Debe indicarse la fecha del seguimiento o de la nueva versión."]});
+ }
  const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}}}}}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
  if(v.hasDerivedActions===false&&existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="CAPA"||x.targetRecord.recordType==="RETURN")){
   return preserveFormState(previous,fd,{error:"No se puede indicar que no existen acciones derivadas mientras haya CAPA o Devoluciones vinculadas.",fieldErrors:["Desvincula primero los expedientes derivados o mantén «Sí» en acciones derivadas."]});
