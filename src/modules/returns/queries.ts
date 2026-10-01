@@ -44,7 +44,7 @@ export async function getReturnDetail(id:string){
 }
 export async function getReturnLookups(){
  const [departments,forms,templates]=await Promise.all([
-  prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
+  prisma.department.findMany({where:{isActive:true,code:{in:[...RETURN_DEPARTMENT_CODES]}},orderBy:{code:"asc"}}),
   prisma.formVersion.findMany({where:{module:"RETURN",isActive:true},orderBy:{effectiveFrom:"desc"}}),
   prisma.templateVersion.findMany({where:{module:"RETURN",isActive:true},orderBy:{effectiveFrom:"desc"}})
  ]);
