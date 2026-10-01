@@ -78,7 +78,8 @@ export async function getComplaintList(filters:ComplaintListFilters){
  const selectedFollowups=(filters.followup??[]).filter((x):x is typeof followupValues[number]=>followupValues.includes(x as typeof followupValues[number]));
  const rows=baseRows.filter(row=>{
    if(selectedSituations.length&&!selectedSituations.includes(complaintOperationalSituation(row)))return false;
-   if(selectedFollowups.length&&!selectedFollowups.includes(complaintFollowupState(row,today)))return false;
+   const followupState=complaintFollowupState(row,today);
+   if(selectedFollowups.length&&(followupState==="NONE"||!selectedFollowups.includes(followupState)))return false;
    return true;
  });
 
