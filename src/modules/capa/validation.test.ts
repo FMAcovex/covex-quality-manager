@@ -95,6 +95,29 @@ describe("parseCapaForm R1", () => {
     expect(parseCapaForm(f).fieldIssues.nextFollowupDate).toBeDefined();
   });
 
+  it("does not require next follow-up when the CAPA is closed with resolved efficacy", () => {
+    for (const effectiveness of ["CONFORMING", "NONCONFORMING"] as const) {
+      const f = base();
+      f.set("status", "CLOSED");
+      f.set("operationalClosedAt", "2026-10-30");
+      f.set("effectivenessStatus", effectiveness);
+      f.set("nextFollowupDate", "");
+      if (effectiveness === "CONFORMING") {
+        f.set("effectiveClosedAt", "2026-11-10");
+      }
+      expect(parseCapaForm(f).fieldIssues.nextFollowupDate).toBeUndefined();
+    }
+  });
+
+  it("still requires next follow-up when the CAPA is closed with efficacy pending", () => {
+    const f = base();
+    f.set("status", "CLOSED");
+    f.set("operationalClosedAt", "2026-10-30");
+    f.set("effectivenessStatus", "PENDING");
+    f.set("nextFollowupDate", "");
+    expect(parseCapaForm(f).fieldIssues.nextFollowupDate).toBeDefined();
+  });
+
   it("allows business code to be empty before server-side assignment", () => {
     const f = base();
     f.set("businessCode", "");
