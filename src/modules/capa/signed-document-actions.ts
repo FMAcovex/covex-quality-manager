@@ -33,7 +33,7 @@ export async function uploadCapaSignedPdfAction(
     formData.get("file"),
     "Selecciona el PDF firmado de este seguimiento.",
   );
-  if (selected.error) {
+  if (!selected.file) {
     return { error: selected.error, success: null };
   }
 
