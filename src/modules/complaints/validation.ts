@@ -61,17 +61,20 @@ export function parseComplaintForm(fd:FormData){
     complaintType=enumValue(typeSchema,text(fd,"complaintType"));
   const status=enumValue(statusSchema,text(fd,"saveStatus")??text(fd,"status"))??"DRAFT";
   const classification=enumValue(classificationSchema,text(fd,"classification"));
-  const effectivenessStatus=enumValue(efficacySchema,text(fd,"effectivenessStatus"))??"PENDING";
+  let effectivenessStatus=enumValue(efficacySchema,text(fd,"effectivenessStatus"))??"PENDING";
   const capaPlans=parseCapaPlans(text(fd,"capaPlansJson"));
   const derivedActions=parseDerivedActions(text(fd,"derivedActionsJson"));
   const resolutionActions=fd.getAll("resolutionActions").map(String).map(v=>enumValue(resolutionSchema,v)).filter((v):v is z.infer<typeof resolutionSchema>=>Boolean(v));
   const sourceTypes=list(fd,"sourceTypes"), scopeTypes=list(fd,"scopeTypes"), affectedObjectTypes=list(fd,"affectedObjectTypes"), categoryTypes=list(fd,"categoryTypes");
   const containmentActions=list(fd,"containmentActions");
   const partIIRequired=bool(fd,"partIIRequired");
+  if(partIIRequired===false)effectivenessStatus="NOT_REQUIRED";
+  if(partIIRequired===null)effectivenessStatus="PENDING";
   const hasDerivedActions=bool(fd,"hasDerivedActions");
   const nextFollowupDate=text(fd,"nextFollowupDate");
   const recurrent=bool(fd,"recurrent");
   const errors:string[]=[];
+  if(!complaintType)errors.push("Debe seleccionarse el tipo de reclamación.");
 
   if(status!=="DRAFT"){
     const requiredText:Array<[string|null,string]>=[
@@ -98,8 +101,7 @@ export function parseComplaintForm(fd:FormData){
       [text(fd,"conclusion"),"La conclusión de la Parte I es obligatoria."]
     ];
     requiredText.forEach(([value,message])=>{if(!value)errors.push(message);});
-    if(!complaintType)errors.push("Debe seleccionarse el tipo de reclamación.");
-    if(!sourceTypes.length)errors.push("Debe seleccionarse al menos un origen o fuente de detección.");
+        if(!sourceTypes.length)errors.push("Debe seleccionarse al menos un origen o fuente de detección.");
     if(!scopeTypes.length)errors.push("Debe seleccionarse al menos un ámbito.");
     if(!affectedObjectTypes.length)errors.push("Debe seleccionarse el objeto afectado.");
     if(!categoryTypes.length)errors.push("Debe seleccionarse al menos una categoría o motivo.");
