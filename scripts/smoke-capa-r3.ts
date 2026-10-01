@@ -155,6 +155,7 @@ async function main() {
   });
 
   const templateBytes = mockAnnexTemplate();
+  const templateData = Uint8Array.from(templateBytes);
   const template = await prisma.templateVersion.create({
     data: {
       module: QmsRecordType.CAPA,
@@ -163,8 +164,8 @@ async function main() {
       fileName: `R3_CAPA_${templateCode}.docx`,
       mimeType:
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      fileData: templateBytes,
-      fileSize: templateBytes.byteLength,
+      fileData: templateData,
+      fileSize: templateData.byteLength,
       checksum: createHash("sha256").update(templateBytes).digest("hex"),
       effectiveFrom: new Date(`${year}-01-01`),
       isActive: false,
