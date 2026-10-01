@@ -316,7 +316,7 @@ async function main() {
     assert.equal(replacement.error, null);
 
     const history = await prisma.changeHistory.findMany({
-      where: { qmsRecordId: complaintQms.id, fieldPath: "documents.signedPdf" },
+      where: { qmsRecordId: complaintQms.id, fieldPath: "__signed_document__" },
       orderBy: { changedAt: "asc" },
     });
     assert.equal(history.length, 2);
