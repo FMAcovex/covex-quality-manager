@@ -81,7 +81,7 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
        meta:[row.departmentCodeSnapshot,complaintStatusLabel(row.status),complaintOperationalSituationLabel(situation)].filter(Boolean).join(" · "),
        searchText:[row.qmsRecord.businessCode,row.partyName,row.reference,row.lotReference,row.description,row.rootCause,row.internalObservations,...row.capaPlans.map((plan)=>plan.description)].filter(Boolean).join(" ")
       };
-    }}
+    })}
    />
    <button className="button" type="submit">Buscar</button>
   </div></form>
