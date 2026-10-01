@@ -365,7 +365,10 @@ export function serializeChangeControlVersion(record: ChangeControlVersionSource
   };
 }
 
-export function serializeComplaintVersion(record: ComplaintVersionSource) {
+export function serializeComplaintVersion(
+  record: ComplaintVersionSource,
+  metadata: { versionFollowupDate?: Date | null } = {},
+) {
   return {
     recordType: "COMPLAINT",
     businessCode: record.qmsRecord.businessCode ?? null,
@@ -406,6 +409,7 @@ export function serializeComplaintVersion(record: ComplaintVersionSource) {
       externalCommunication: record.externalCommunication ?? null, communicationDate: iso(record.communicationDate),
       communicationMedium: record.communicationMedium ?? null, communicationParties: record.communicationParties ?? null,
       communicationSummary: record.communicationSummary ?? null, partIIRequired: record.partIIRequired ?? null,
+      versionFollowupDate: iso(metadata.versionFollowupDate),
       hasDerivedActions: record.hasDerivedActions ?? null, nextFollowupDate: iso(record.nextFollowupDate),
       conclusion: record.conclusion ?? null, effectivenessRequired: record.effectivenessRequired ?? null, initialEvaluationDate: iso(record.initialEvaluationDate),
       initialConclusionDate: iso(record.initialConclusionDate), responseDate: iso(record.responseDate),
@@ -608,6 +612,55 @@ export function deviationSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
   };
 }
 
+export function complaintSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
+  const root = objectValue(snapshot);
+  const d = objectValue(root.complaint);
+  return {
+    ...d,
+    qmsRecord: { businessCode: stringValue(root.businessCode) },
+    openedAt: dateValue(d.openedAt),
+    detectionDate: dateValue(d.detectionDate),
+    receptionDate: dateValue(d.receptionDate),
+    communicationDate: dateValue(d.communicationDate),
+    initialEvaluationDate: dateValue(d.initialEvaluationDate),
+    initialConclusionDate: dateValue(d.initialConclusionDate),
+    responseDate: dateValue(d.responseDate),
+    closedAt: dateValue(d.closedAt),
+    nextFollowupDate: dateValue(d.nextFollowupDate),
+    capaPlans: objectArray(d.capaPlans).map((item) => ({
+      ...item,
+      plannedExecutionDate: dateValue(item.plannedExecutionDate),
+      linkedCapaRecord: item.linkedCapaBusinessCode
+        ? { businessCode: item.linkedCapaBusinessCode }
+        : null,
+    })),
+    derivedActions: objectArray(d.derivedActions).map((item) => ({
+      ...item,
+      plannedExecutionDate: dateValue(item.plannedExecutionDate),
+    })),
+    followups: objectArray(d.followups).map((item) => ({
+      ...item,
+      followupDate: dateValue(item.followupDate),
+      nextFollowupDate: dateValue(item.nextFollowupDate),
+    })),
+    annexIIITemplateVersion: d.annexIIITemplateVersionCode
+      ? { versionCode: stringValue(d.annexIIITemplateVersionCode) ?? "" }
+      : null,
+  };
+}
+
+export function complaintSnapshotVersionFollowupDate(
+  snapshot: Prisma.JsonValue,
+  sequenceNumber: number,
+) {
+  const root = objectValue(snapshot);
+  const d = objectValue(root.complaint);
+  const direct = dateValue(d.versionFollowupDate);
+  if (direct) return direct;
+  if (sequenceNumber === 0) return dateValue(d.openedAt);
+  return null;
+}
+
 export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
   const root = objectValue(snapshot);
   const d = objectValue(root.capa);
@@ -668,7 +721,7 @@ export function capaSnapshotVersionFollowupDate(
 }
 
 export function recordVersionSummary(
-  recordType: "DEVIATION" | "CAPA" | "CHANGE_CONTROL",
+  recordType: "DEVIATION" | "CAPA" | "COMPLAINT" | "CHANGE_CONTROL",
   snapshot: Prisma.JsonValue,
 ) {
   const root = objectValue(snapshot);
@@ -680,6 +733,16 @@ export function recordVersionSummary(
       effectivenessStatus: null,
       effectiveClosedAt: null,
       nextFollowupDate: null,
+    };
+  }
+  if (recordType === "COMPLAINT") {
+    const d = objectValue(root.complaint);
+    return {
+      status: stringValue(d.status),
+      closedAt: stringValue(d.closedAt),
+      effectivenessStatus: stringValue(d.effectivenessStatus),
+      effectiveClosedAt: null,
+      nextFollowupDate: stringValue(d.nextFollowupDate),
     };
   }
   if (recordType === "CAPA") {
@@ -770,16 +833,17 @@ export function changeControlSnapshotTemplateId(
 }
 
 export function recordVersionTemplateId(
-  recordType: "DEVIATION" | "CAPA",
+  recordType: "DEVIATION" | "CAPA" | "COMPLAINT",
   snapshot: Prisma.JsonValue,
 ) {
   const root = objectValue(snapshot);
   const section = objectValue(
-    recordType === "DEVIATION" ? root.deviation : root.capa,
-  );
-  const value =
     recordType === "DEVIATION"
-      ? section.anexoIIITemplateVersionId
-      : section.anexoIIITemplateVersionId;
+      ? root.deviation
+      : recordType === "CAPA"
+        ? root.capa
+        : root.complaint,
+  );
+  const value = section.anexoIIITemplateVersionId;
   return typeof value === "string" ? value : null;
 }

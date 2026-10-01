@@ -18,7 +18,9 @@ import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/q
 import { capaPlanNavigation, capaProposalStatusLabel } from "@/modules/capa/proposal-ui";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
-import { versionLabel } from "@/lib/qms/versioning";
+import { complaintSnapshotVersionFollowupDate,recordVersionSummary,versionLabel } from "@/lib/qms/versioning";
+import { uploadComplaintSignedPdfAction } from "@/modules/complaints/signed-document-actions";
+import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 
 export const dynamic="force-dynamic";
 const tabs=[
@@ -45,6 +47,8 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
  const situation=complaintOperationalSituation(r);
  const followupState=complaintFollowupState(r);
  const currentVersion=r.qmsRecord.versions.at(-1)??null;
+ const currentSignedDocument=currentVersion?.documents.find(document=>document.kind==="SIGNED_PDF")??null;
+ const signedVersionCount=r.qmsRecord.versions.filter(version=>version.documents.some(document=>document.kind==="SIGNED_PDF")).length;
  const derived=r.qmsRecord.sourceRelations.filter(x=>x.relationType==="GENERATES"&&(x.targetRecord.recordType==="CAPA"||x.targetRecord.recordType==="RETURN")).map(x=>x.targetRecord);
  const effectiveHasActions=r.hasDerivedActions===true||derived.length>0||r.capaPlans.length>0||r.derivedActions.length>0;
 
@@ -146,8 +150,31 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    </>}
   </div>:null}
 
-  {tab==="versions"?<div className="card"><div className="section-title-row"><div><h2>Versiones del expediente</h2><p className="muted-note">Las versiones del expediente se muestran de la más reciente a la más antigua.</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
-   {r.qmsRecord.versions.length?<div className="timeline">{[...r.qmsRecord.versions].reverse().map(item=><article className="timeline-item record-version-item" key={item.id}><header><strong>{versionLabel(item.sequenceNumber)}</strong><span className="badge neutral">{item.frozenAt?"Histórica":"Vigente"}</span></header><small>Registrada {formatDate(item.createdAt)} · {item.createdByText??"Sistema"}</small>{item.reason?<p>Motivo: {item.reason}</p>:null}</article>)}</div>:<div className="empty-panel">Este expediente todavía no tiene snapshot persistido.</div>}
+  {tab==="versions"?<div className="card"><div className="section-title-row version-section-title-row"><div className="section-title-copy"><h2>Versiones del expediente</h2><p className="muted-note version-section-help">Guardar cambios mantiene la versión vigente. Guardar como nueva versión / seguimiento congela la anterior y crea la siguiente versión.</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
+   {r.qmsRecord.versions.length?<div className="timeline">{[...r.qmsRecord.versions].reverse().map(item=>{
+    const summary=recordVersionSummary("COMPLAINT",item.snapshot);
+    const versionDate=complaintSnapshotVersionFollowupDate(item.snapshot,item.sequenceNumber);
+    const signedDocument=item.documents.find(document=>document.kind==="SIGNED_PDF")??null;
+    const kind=item.sequenceNumber===0?"Versión inicial":item.kind==="REOPENING"?"Reapertura":item.kind==="HISTORICAL_STATE"?"Estado histórico":"Seguimiento / versión";
+    return <article className="timeline-item record-version-item" key={item.id}>
+     <header className="record-version-header"><strong>{versionLabel(item.sequenceNumber)} · {kind}</strong><span className={`badge ${summary.status==="DRAFT"?"neutral":summary.status==="OPEN"?"open":"closed"}`}>{summary.status==="DRAFT"?"Borrador":summary.status==="OPEN"?"Abierta":"Cerrada"}</span>{item.frozenAt?<span className="badge neutral">Histórica</span>:<span className="badge neutral">Vigente</span>}</header>
+     <div className="record-version-details">
+      <div className="record-version-detail"><span>Fecha seguimiento / versión</span><strong>{formatDate(versionDate)}</strong></div>
+      <div className="record-version-detail"><span>Próximo seguimiento</span><strong>{formatDate(summary.nextFollowupDate)}</strong></div>
+      <div className="record-version-detail"><span>Eficacia</span><strong>{complaintEffectivenessLabel(summary.effectivenessStatus??"PENDING")}</strong></div>
+      <div className="record-version-detail"><span>Motivo</span><strong>{item.reason??"—"}</strong></div>
+      <div className="record-version-detail"><span>Registrada</span><strong>{formatDate(item.createdAt)} · {item.createdByText??"Sistema"}</strong></div>
+     </div>
+     <div className="document-actions">
+      <a className="button small" href={`/api/complaints/${id}/annex-iii?version=${item.sequenceNumber}`}>Descargar Anexo III {versionLabel(item.sequenceNumber)}</a>
+      {signedDocument?<a className="button small" href={`/api/complaints/${id}/versions/${item.sequenceNumber}/signed-pdf`}>Descargar PDF firmado {versionLabel(item.sequenceNumber)}</a>:null}
+     </div>
+     <div className="version-signed-document"><strong>PDF firmado: {signedDocument?"Disponible":"No cargado"}</strong>
+      {signedDocument?<small className="muted-note">{signedDocument.fileName} · {Math.max(1,Math.round(signedDocument.fileSize/1024))} KB · cargado {formatDate(signedDocument.uploadedAt)} · {signedDocument.uploadedByText??"Usuario no informado"}</small>:<small className="muted-note">Carga aquí el documento firmado correspondiente exclusivamente a {versionLabel(item.sequenceNumber)}.</small>}
+      <SignedVersionDocumentForm action={uploadComplaintSignedPdfAction.bind(null,id,item.id)} defaultActor={r.createdByText??process.env.DEFAULT_ACTOR_NAME??"Usuario demo"} replace={Boolean(signedDocument)}/>
+     </div>
+    </article>
+   })}</div>:<div className="empty-panel">Este expediente todavía no tiene snapshot persistido.</div>}
   </div>:null}
 
   {tab==="relations"?(r.status==="DRAFT"?<div className="empty-panel">Las relaciones operativas estarán disponibles cuando la reclamación pase a estado Abierta.</div>:<div className="card"><div className="section-title-row"><div><h2>Relaciones QMS</h2><p className="section-help">Una reclamación puede generar CAPA y devoluciones. La relación canónica se conserva sin duplicar relaciones inversas.</p></div><div className="heading-actions"><Link className="button small" href={`/capa/new?fromComplaintId=${id}`}>Crear CAPA</Link><Link className="button small" href={`/returns/new?fromComplaintId=${id}`}>Crear devolución</Link></div></div>
@@ -155,12 +182,18 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    <OperationalRelationForm action={addComplaintRelationAction.bind(null,id)} title="Vincular expediente existente" codeLabel="Codificación" buttonLabel="Vincular expediente" defaultActor={process.env.DEFAULT_ACTOR_NAME||"Usuario demo"} targetOptions={[{value:"CAPA",label:"CAPA"},{value:"RETURN",label:"Devolución"}]} currentRecordId={r.qmsRecord.id} currentRecordType="COMPLAINT"/>
   </div>):null}
 
-  {tab==="documents"?(r.status==="DRAFT"?<div className="empty-panel">Los documentos oficiales estarán disponibles cuando la reclamación pase a estado Abierta.</div>:<div className="card"><h2>Documentos</h2><div className="document-grid">
+  {tab==="documents"?(r.status==="DRAFT"?<div className="empty-panel">Los documentos oficiales estarán disponibles cuando la reclamación pase a estado Abierta.</div>:<div className="card"><h2>Documentos</h2><dl className="info-grid documents-info-grid">
+   <div className="info-item"><dt>Versión formulario</dt><dd>{r.formVersion?.versionCode??"No asignada"}</dd></div>
+   <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{r.annexIIITemplateVersion?.versionCode??"No asignada"}</dd></div>
+   <div className="info-item"><dt>Versión vigente</dt><dd>{currentVersion?versionLabel(currentVersion.sequenceNumber):"Sin versión"}</dd></div>
+   <div className="info-item"><dt>PDF firmados</dt><dd>{signedVersionCount} de {r.qmsRecord.versions.length} versiones</dd></div>
+   <div className="info-item"><dt>PDF firmado versión vigente</dt><dd>{currentVersion?`${versionLabel(currentVersion.sequenceNumber)} · ${currentSignedDocument?"Disponible":"No cargado"}`:"Sin versión"}</dd></div>
+  </dl><p className="muted-note">La carga, descarga y sustitución de PDF firmado se gestiona por versión en la pestaña Versiones.</p><div className="document-grid">
    <div className="document-block"><h3>Anexo III · Informe de reclamación</h3><p>Plantilla oficial v03 y documento Word cumplimentado con los datos vigentes.</p><div className="document-actions">{r.annexIIITemplateVersion?.id?<a className="button" href={`/api/settings/templates/${r.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a>:<span className="muted-note">Plantilla pendiente de cargar.</span>}<a className="button primary" href={`/api/complaints/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></div></div>
    {r.annexIIITemplateVersion?.versionCode==="02"?<div className="document-block"><h3>Anexo IV · Respuesta · histórico v02</h3><p>Solo para expedientes vinculados a la revisión 02.</p><div className="document-actions">{r.annexIVTemplateVersion?.id?<a className="button" href={`/api/settings/templates/${r.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a>:null}<a className="button" href={`/api/complaints/${id}/annex-iv`}>Generar respuesta v02</a></div></div>:null}
    <div className="document-block"><h3>Anexo V · Listado de reclamaciones</h3><p>Listado oficial anual validado. Se genera desde la pantalla principal.</p><Link className="button" href="/complaints">Ir al listado y descargar Anexo V</Link></div>
   </div>
-  {r.qmsRecord.generatedDocuments.length?<><h3>Generaciones registradas</h3><div className="timeline">{r.qmsRecord.generatedDocuments.map(x=><div className="timeline-item document-generation-item" key={x.id}><strong className="document-generation-type">{x.documentType}</strong><small className="muted-note document-generation-meta">Generado {formatDate(x.generatedAt)} · {x.generatedByText??"Usuario no informado"}</small></div>)}</div></>:null}
+  {r.qmsRecord.generatedDocuments.length?<><h3>Generaciones registradas</h3><div className="timeline">{r.qmsRecord.generatedDocuments.map(x=>{const generatedVersion=r.qmsRecord.versions.find(v=>v.id===x.recordVersionId);return <div className="timeline-item document-generation-item" key={x.id}><strong className="document-generation-type">{x.documentType}{generatedVersion?` · ${versionLabel(generatedVersion.sequenceNumber)}`:""}</strong><small className="muted-note document-generation-meta">Generado {formatDate(x.generatedAt)} · {x.generatedByText??"Usuario no informado"}</small></div>})}</div></>:null}
   </div>):null}
 
   {tab==="history"?<div className="card"><h2>Historial interno de modificaciones</h2><p className="muted-note">Historial administrativo de cambios; no constituye un audit trail GMP validado.</p>{r.qmsRecord.history.length?<div className="timeline">{r.qmsRecord.history.map(x=><div className="timeline-item history-entry" key={x.id}><header className="history-entry-header"><strong>{formatDate(x.changedAt)}</strong><span>{x.changedByText??"Sistema"}</span><span className="badge neutral">{x.source}</span></header><p className="history-entry-detail"><strong>{x.fieldPath}</strong>{x.reason?<span> · Motivo: {x.reason}</span>:null}</p></div>)}</div>:<div className="empty-panel">Sin cambios registrados.</div>}</div>:null}

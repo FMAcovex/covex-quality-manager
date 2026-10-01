@@ -11,7 +11,7 @@ type Capa={actionType:string;description:string;plannedExecutionDate:Date|null;r
 type Derived={actionType:string;businessCode:string|null;description:string|null;responsible:string|null;plannedExecutionDate:Date|null};
 type Followup={followupDate:Date;comment:string;nextFollowupDate:Date|null;evidenceReference:string|null};
 export type ComplaintDocumentRecord={
- qmsRecord:{businessCode:string|null};openedAt:Date|null;detectionDate:Date|null;receptionDate:Date|null;detectedBy:string|null;complaintType:string;
+ qmsRecord:{businessCode:string|null};recordVersionLabel?:string|null;openedAt:Date|null;detectionDate:Date|null;receptionDate:Date|null;detectedBy:string|null;complaintType:string;
  sourceTypes:string[];sourceOther:string|null;scopeTypes:string[];scopeOther:string|null;affectedObjectTypes:string[];affectedObjectOther:string|null;
  categoryTypes:string[];categoryOther:string|null;partyName:string|null;contact:string|null;affectedScope:string|null;reference:string|null;lotReference:string|null;
  quantity:string|null;expiryReanalysis:string|null;description:string|null;recurrent:boolean|null;
@@ -22,7 +22,7 @@ export type ComplaintDocumentRecord={
  resolutionLines:string|null;resolutionActions:string[];immediateActionDetails:string|null;
  recallActionDetails:string|null;creditActionDetails:string|null;replacementActionDetails:string|null;
  otherResolutionDetails:string|null;externalCommunication:string|null;communicationDate:Date|null;communicationMedium:string|null;communicationParties:string|null;communicationSummary:string|null;
- partIIRequired:boolean|null;conclusion:string|null;effectivenessRequired:boolean|null;approvalNames:string|null;
+ partIIRequired:boolean|null;nextFollowupDate:Date|null;conclusion:string|null;effectivenessRequired:boolean|null;approvalNames:string|null;
  responseDate:Date|null;responseMedium:string|null;responseSummary:string|null;responseSufficient:boolean|null;effectivenessStatus:string;effectivenessAssessment:string|null;
  closeActionStatus:string|null;closeActionReferences:string|null;closeConclusion:string|null;closeApprovalNames:string|null;closedAt:Date|null;internalObservations:string|null;
  capaPlans:Capa[];derivedActions:Derived[];followups:Followup[];
@@ -105,7 +105,7 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
  const tri=(v:string|null,labelYes="Sí",labelNo="No")=>`${box(v==="YES",labelYes)}   ${box(v==="NO",labelNo)}   ${box(v==="NA","N/A")}`;
  xml=setWordCellTextBalanced(xml,0,1,1,text(r.qmsRecord.businessCode));
  xml=setWordCellTextBalanced(xml,0,1,3,date(r.openedAt));
- xml=setWordCellTextBalanced(xml,0,1,5,version);
+ xml=setWordCellTextBalanced(xml,0,1,5,text(r.recordVersionLabel) || "V00");
  xml=setWordCellTextBalanced(xml,1,1,1,date(r.detectionDate));xml=setWordCellTextBalanced(xml,1,1,3,date(r.receptionDate));
  xml=setWordCellTextBalanced(xml,1,2,1,box(r.complaintType==="PROVIDER","A PROVEEDOR / SUBCONTRATA"));
  xml=setWordCellTextBalanced(xml,1,2,2,box(r.complaintType==="CUSTOMER","DE CLIENTE / AGENTE EXTERNO"));
@@ -158,9 +158,10 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
  xml=setWordCellTextBalanced(xml,3,7,0,box(r.effectivenessStatus==="ACCEPTABLE","Conforme"));xml=setWordCellTextBalanced(xml,3,7,1,box(r.effectivenessStatus==="NOT_ACCEPTABLE","No conforme"));
  xml=setWordCellTextBalanced(xml,3,7,2,box(r.effectivenessStatus==="PENDING","Pendiente"));xml=setWordCellTextBalanced(xml,3,7,3,box(r.effectivenessStatus==="NOT_REQUIRED","N/A"));
  xml=setWordCellTextBalanced(xml,3,8,0,text(r.effectivenessAssessment));
- xml=setWordCellTextBalanced(xml,3,10,0,[r.closeActionStatus? `Estado de las acciones: ${r.closeActionStatus}`:"",text(r.closeActionReferences)].filter(Boolean).join("\n"));
+ const closeActionLabel=r.closeActionStatus==="COMPLETED"?"Completadas":r.closeActionStatus==="LINKED"?"Vinculadas a seguimiento independiente":r.closeActionStatus==="PENDING"?"Pendientes":"";
+ xml=setWordCellTextBalanced(xml,3,10,0,[closeActionLabel? `Estado de las acciones: ${closeActionLabel}`:"",text(r.closeActionReferences)].filter(Boolean).join("\n"));
  xml=setWordCellTextBalanced(xml,3,12,0,text(r.closeConclusion));xml=setWordCellTextBalanced(xml,3,13,1,`${box(Boolean(r.closedAt),"Cerrada")}   ${box(!r.closedAt,"Abierta / en seguimiento")}`);
- xml=setWordCellTextBalanced(xml,3,13,3,date(r.closedAt));xml=setWordCellTextBalanced(xml,3,14,1,date(r.followups[0]?.nextFollowupDate));
+ xml=setWordCellTextBalanced(xml,3,13,3,date(r.closedAt));xml=setWordCellTextBalanced(xml,3,14,1,date(r.nextFollowupDate));
  xml=setWordCellTextBalanced(xml,4,1,0,text(r.closeApprovalNames));
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
