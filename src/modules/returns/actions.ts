@@ -32,7 +32,20 @@ const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJson
 async function getSnapshot(tx:Prisma.TransactionClient,id:string){
  return tx.returnRecord.findUniqueOrThrow({where:{id},include:{qmsRecord:true,products:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},followups:{orderBy:[{followupDate:"asc"},{createdAt:"asc"}]},formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true,annexVITemplateVersion:true}});
 }
-type ExistingReturnSnapshot={departmentId:string|null;departmentCodeSnapshot:string|null;departmentNameSnapshot:string|null};
+type ExistingReturnSnapshot={
+ departmentId:string|null;
+ departmentCodeSnapshot:string|null;
+ departmentNameSnapshot:string|null;
+ customerDeclarationSignatoryName:string|null;
+ customerDeclarationSignatoryRole:string|null;
+ customerDeclarationSignedAt:Date|null;
+ customerDeclarationObservations:string|null;
+ decisionObservations:string|null;
+ qaApprovalName:string|null;
+ technicalApprovalName:string|null;
+ destructionManagedBy:string|null;
+ destructionCertificate:string|null;
+};
 function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{id:string;code:string;name:string}|null,existing?:ExistingReturnSnapshot){
  return {
   departmentId:department?.id??null,departmentCodeSnapshot:department?(existing?.departmentId===department.id?(existing.departmentCodeSnapshot??department.code):department.code):null,
@@ -42,14 +55,14 @@ function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{i
   deliveryNote:v.deliveryNote,reasonObservations:v.reasonObservations,attachedDocumentation:v.attachedDocumentation,
   withinAcceptedReturnPeriod:v.withinAcceptedReturnPeriod,roomTemperatureWithinTenDays:v.roomTemperatureWithinTenDays,coldChainWithinFortyEightHours:v.coldChainWithinFortyEightHours,
   uniqueIdentifierActive:v.uniqueIdentifierActive,tamperEvidenceIntact:v.tamperEvidenceIntact,packagingIntegrityOk:v.packagingIntegrityOk,
-  customerDeclarationAvailable:v.customerDeclarationAvailable,customerDeclarationSignatoryName:v.customerDeclarationSignatoryName,
-  customerDeclarationSignatoryRole:v.customerDeclarationSignatoryRole,customerDeclarationSignedAt:d(v.customerDeclarationSignedAt),
-  customerDeclarationObservations:v.customerDeclarationObservations,storageTransportConditionsOk:v.storageTransportConditionsOk,noUseDamageContamination:v.noUseDamageContamination,
+  customerDeclarationAvailable:v.customerDeclarationAvailable,customerDeclarationSignatoryName:existing?.customerDeclarationSignatoryName??v.customerDeclarationSignatoryName,
+  customerDeclarationSignatoryRole:existing?.customerDeclarationSignatoryRole??v.customerDeclarationSignatoryRole,customerDeclarationSignedAt:existing?.customerDeclarationSignedAt??d(v.customerDeclarationSignedAt),
+  customerDeclarationObservations:existing?.customerDeclarationObservations??v.customerDeclarationObservations,storageTransportConditionsOk:v.storageTransportConditionsOk,noUseDamageContamination:v.noUseDamageContamination,
   noRecallAlertBlock:v.noRecallAlertBlock,expiryAcceptable:v.expiryAcceptable,qcAssessmentCompleted:v.qcAssessmentCompleted,storageTemperatureRecord:v.storageTemperatureRecord,
   returnTransportTempEvidence:v.returnTransportTempEvidence,transportPackagingSuitable:v.transportPackagingSuitable,receiptTemperatureAcceptable:v.receiptTemperatureAcceptable,
   temperatureExcursionEvaluated:v.temperatureExcursionEvaluated,coldChainReturnSystemValidated:v.coldChainReturnSystemValidated,decision:v.decision,
-  finalDestination:v.finalDestination,decisionObservations:v.decisionObservations,qaApprovalName:v.qaApprovalName,technicalApprovalName:v.technicalApprovalName,decisionDate:d(v.decisionDate),
-  destructionManagedBy:v.destructionManagedBy,destructionCertificate:v.destructionCertificate,traceabilityUpdated:v.traceabilityUpdated,
+  finalDestination:v.finalDestination,decisionObservations:existing?.decisionObservations??v.decisionObservations,qaApprovalName:existing?.qaApprovalName??v.qaApprovalName,technicalApprovalName:existing?.technicalApprovalName??v.technicalApprovalName,decisionDate:d(v.decisionDate),
+  destructionManagedBy:existing?.destructionManagedBy??v.destructionManagedBy,destructionCertificate:existing?.destructionCertificate??v.destructionCertificate,traceabilityUpdated:v.traceabilityUpdated,
   closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
  };
 }
