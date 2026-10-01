@@ -4,6 +4,7 @@ import { ComplaintForm } from "@/modules/complaints/components/complaint-form";
 import { getComplaintDetail,getComplaintLookups } from "@/modules/complaints/queries";
 export const dynamic="force-dynamic";
 const b=(v:boolean|null):""|"true"|"false"=>v===true?"true":v===false?"false":"";
+const partII=(v:boolean|null):"pending"|"true"|"false"=>v===true?"true":v===false?"false":"pending";
 export default async function EditComplaintPage({params}:{params:Promise<{id:string}>}){
  const {id}=await params;const [r,l]=await Promise.all([getComplaintDetail(id),getComplaintLookups()]);if(!r)notFound();
  const defaults={
@@ -23,7 +24,8 @@ export default async function EditComplaintPage({params}:{params:Promise<{id:str
   responsiblePartyCommunicationRequired:r.responsiblePartyCommunicationRequired??"",regulatoryJustification:r.regulatoryJustification??undefined,
   resolutionLines:r.resolutionLines??undefined,resolutionActions:r.resolutionActions,immediateActionDetails:r.immediateActionDetails??undefined,otherResolutionDetails:r.otherResolutionDetails??undefined,
   externalCommunication:r.externalCommunication??undefined,communicationDate:r.communicationDate?.toISOString().slice(0,10),communicationMedium:r.communicationMedium??undefined,
-  communicationParties:r.communicationParties??undefined,communicationSummary:r.communicationSummary??undefined,partIIRequired:b(r.partIIRequired),
+  communicationParties:r.communicationParties??undefined,communicationSummary:r.communicationSummary??undefined,partIIRequired:partII(r.partIIRequired),
+  hasDerivedActions:b(r.hasDerivedActions),nextFollowupDate:r.nextFollowupDate?.toISOString().slice(0,10),
   conclusion:r.conclusion??undefined,effectivenessRequired:b(r.effectivenessRequired),
   initialEvaluationDate:r.initialEvaluationDate?.toISOString().slice(0,10),initialConclusionDate:r.initialConclusionDate?.toISOString().slice(0,10),
   responseDate:r.responseDate?.toISOString().slice(0,10),responseMedium:r.responseMedium??undefined,responseSummary:r.responseSummary??undefined,responseSufficient:b(r.responseSufficient),
