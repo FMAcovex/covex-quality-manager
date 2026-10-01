@@ -107,6 +107,7 @@ describe("parseComplaintForm · R1", () => {
     const parsed=parseComplaintForm(form);
 
     expect(parsed.errors).toContain("La Parte II requiere fecha de respuesta.");
+    expect(parsed.errors).toContain("La Parte II requiere medio de respuesta.");
     expect(parsed.errors).toContain("La Parte II requiere resumen de la respuesta/compromisos.");
     expect(parsed.errors).toContain("Debe indicarse si la respuesta es suficiente.");
   });
