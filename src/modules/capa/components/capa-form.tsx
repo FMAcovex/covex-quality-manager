@@ -155,6 +155,12 @@ export function CapaForm({
 
   const draft = recordStatus === "DRAFT";
   const draftExisting = mode === "edit" && defaults.status === "DRAFT";
+  const nextFollowupRequired =
+    !draft &&
+    !(
+      recordStatus === "CLOSED" &&
+      (effectivenessStatus === "CONFORMING" || effectivenessStatus === "NONCONFORMING")
+    );
   const issues = state.fieldIssues ?? {};
 
   useEffect(() => {
@@ -500,6 +506,43 @@ export function CapaForm({
       </section>
 
       <section className="form-section">
+        <h2>6. Estado operativo</h2>
+        <div className="form-grid">
+          <label className="field">
+            <span>Estado *</span>
+            <select
+              name="status"
+              value={recordStatus}
+              onChange={(event) => setRecordStatus(event.target.value as typeof recordStatus)}
+            >
+              {(mode === "create" || draftExisting) ? <option value="DRAFT">Borrador</option> : null}
+              <option value="OPEN">Abierta</option>
+              <option value="CLOSED">Cerrada</option>
+              <option value="CANCELLED">Cancelada</option>
+            </select>
+          </label>
+
+          <Field
+            label="Fecha de cierre y ejecución"
+            name="operationalClosedAt"
+            type="date"
+            defaultValue={formDefaults.operationalClosedAt}
+            required={!draft && recordStatus === "CLOSED"}
+            issues={issues.operationalClosedAt}
+          />
+
+          <TextArea
+            label="Estado"
+            name="operationalStatusDescription"
+            defaultValue={formDefaults.operationalStatusDescription}
+            required={!draft}
+            issues={issues.operationalStatusDescription}
+            help="Describe la situación operativa de la acción (en curso, completada o cancelada y su justificación cuando proceda)."
+          />
+        </div>
+      </section>
+
+      <section className="form-section">
         <h2>5. Evaluación de la eficacia</h2>
         <div className="form-grid">
           <label className="field">
@@ -543,43 +586,6 @@ export function CapaForm({
       </section>
 
       <section className="form-section">
-        <h2>6. Estado operativo</h2>
-        <div className="form-grid">
-          <label className="field">
-            <span>Estado *</span>
-            <select
-              name="status"
-              value={recordStatus}
-              onChange={(event) => setRecordStatus(event.target.value as typeof recordStatus)}
-            >
-              {(mode === "create" || draftExisting) ? <option value="DRAFT">Borrador</option> : null}
-              <option value="OPEN">Abierta</option>
-              <option value="CLOSED">Cerrada</option>
-              <option value="CANCELLED">Cancelada</option>
-            </select>
-          </label>
-
-          <Field
-            label="Fecha de cierre y ejecución"
-            name="operationalClosedAt"
-            type="date"
-            defaultValue={formDefaults.operationalClosedAt}
-            required={!draft && recordStatus === "CLOSED"}
-            issues={issues.operationalClosedAt}
-          />
-
-          <TextArea
-            label="Estado"
-            name="operationalStatusDescription"
-            defaultValue={formDefaults.operationalStatusDescription}
-            required={!draft}
-            issues={issues.operationalStatusDescription}
-            help="Describe la situación operativa de la acción (en curso, completada o cancelada y su justificación cuando proceda)."
-          />
-        </div>
-      </section>
-
-      <section className="form-section">
         <h2>7. Conclusión</h2>
         <div className="form-grid">
           <TextArea
@@ -591,7 +597,7 @@ export function CapaForm({
           />
 
           <label className={`field span-2 ${issues.nextFollowupDate?.length ? "has-error" : ""}`}>
-            <span>Fecha de próximo seguimiento{draft ? "" : " *"}</span>
+            <span>Fecha de próximo seguimiento{nextFollowupRequired ? " *" : ""}</span>
             <small className="muted-note">
               En edición se solicita una nueva fecha para evitar reutilizar automáticamente la del seguimiento anterior.
             </small>
@@ -600,7 +606,7 @@ export function CapaForm({
               type="date"
               value={nextFollowupDate}
               onChange={(event) => setNextFollowupDate(event.target.value)}
-              required={!draft}
+              required={nextFollowupRequired}
               aria-invalid={issues.nextFollowupDate?.length ? true : undefined}
             />
             <FieldIssue messages={issues.nextFollowupDate} />
