@@ -121,6 +121,20 @@ async function main() {
     });
     assert.equal(foreign.error, "foreign version");
 
+    const replacementWithoutReason = await storeSignedVersionPdf({
+      qmsRecordId: record.id,
+      recordVersionId: version01.id,
+      file: pdfFile("seguimiento-01-sin-motivo.pdf", "R2B replacement without reason"),
+      actor,
+      replacementReason: "",
+      ownershipError: "foreign version",
+      initialReason: (sequence) => `Carga R2B ${sequence}`,
+    });
+    assert.equal(
+      replacementWithoutReason.error,
+      "Para sustituir un PDF firmado debe indicarse el motivo.",
+    );
+
     const rejectedReplacement = await storeSignedVersionPdf({
       qmsRecordId: record.id,
       recordVersionId: version01.id,
