@@ -62,8 +62,14 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
  const patchCapa=(i:number,p:Partial<ComplaintCapaPlanInput>)=>setCapas(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  const patchDerived=(i:number,p:Partial<ComplaintDerivedActionInput>)=>setDerived(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  const actionSelected=(value:string)=>selectedActions.includes(value);
- const toggleAction=(value:string,checked:boolean)=>setSelectedActions(current=>checked?[...new Set([...current,value])]:current.filter(x=>x!==value));
  const addCapa=(actionType:"CORRECTIVE"|"PREVENTIVE")=>setCapas(x=>[...x,{...emptyCapa,actionType}]);
+ const toggleAction=(value:string,checked:boolean)=>{
+  setSelectedActions(current=>checked?[...new Set([...current,value])]:current.filter(x=>x!==value));
+  if(!checked)return;
+  if(value==="CORRECTIVE_ACTION"&&!capas.some(x=>x.actionType==="CORRECTIVE"))addCapa("CORRECTIVE");
+  if(value==="PREVENTIVE_ACTION"&&!capas.some(x=>x.actionType==="PREVENTIVE"))addCapa("PREVENTIVE");
+  if(value==="RETURN"&&!derived.some(x=>x.actionType==="RETURN"))setDerived(x=>[...x,{...emptyDerived,actionType:"RETURN"}]);
+ };
 
  return <form key={state.formRevision??0} action={formAction} className="form-stack">
   <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)}/>
