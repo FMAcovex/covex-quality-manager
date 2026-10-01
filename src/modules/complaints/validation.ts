@@ -119,7 +119,13 @@ export function parseComplaintForm(fd:FormData){
     if(hasDerivedActions===null)errors.push("Debe indicarse si existen acciones derivadas.");
     if(hasDerivedActions===true&&!resolutionActions.length)errors.push("Si existen acciones derivadas debe seleccionarse al menos una.");
     if(hasDerivedActions===false&&resolutionActions.length)errors.push("No pueden seleccionarse acciones derivadas si se ha indicado que no existen.");
+    if(resolutionActions.includes("CORRECTIVE_ACTION")&&!capaPlans.some(x=>x.actionType==="CORRECTIVE"))errors.push("La acción correctora requiere al menos una CAPA propuesta o vinculada.");
+    if(resolutionActions.includes("PREVENTIVE_ACTION")&&!capaPlans.some(x=>x.actionType==="PREVENTIVE"))errors.push("La acción preventiva requiere al menos una CAPA propuesta o vinculada.");
+    if(resolutionActions.includes("RETURN")&&!derivedActions.some(x=>x.actionType==="RETURN"))errors.push("La devolución requiere al menos una devolución propuesta o vinculada.");
     if(resolutionActions.includes("IMMEDIATE_ACTION")&&!text(fd,"immediateActionDetails"))errors.push("La acción inmediata debe especificarse.");
+    if(resolutionActions.includes("RECALL")&&!text(fd,"recallActionDetails"))errors.push("La retirada del mercado debe especificarse.");
+    if(resolutionActions.includes("CREDIT")&&!text(fd,"creditActionDetails"))errors.push("El abono debe especificarse.");
+    if(resolutionActions.includes("REPLACEMENT")&&!text(fd,"replacementActionDetails"))errors.push("La reposición debe especificarse.");
     if(resolutionActions.includes("OTHER")&&!text(fd,"otherResolutionDetails"))errors.push("La acción «Otros» debe especificarse.");
     if(status==="OPEN"&&!nextFollowupDate)errors.push("Una reclamación abierta requiere fecha de próximo seguimiento.");
   }
@@ -182,7 +188,10 @@ export function parseComplaintForm(fd:FormData){
     potentialRecall:tri(fd,"potentialRecall"),recallProcedureRequired:tri(fd,"recallProcedureRequired"),
     authorityNotificationRequired:tri(fd,"authorityNotificationRequired"),responsiblePartyCommunicationRequired:tri(fd,"responsiblePartyCommunicationRequired"),
     regulatoryJustification:text(fd,"regulatoryJustification"),
-    resolutionLines:text(fd,"resolutionLines"),resolutionActions,hasDerivedActions,immediateActionDetails:text(fd,"immediateActionDetails"),otherResolutionDetails:text(fd,"otherResolutionDetails"),
+    resolutionLines:text(fd,"resolutionLines"),resolutionActions,hasDerivedActions,
+    immediateActionDetails:text(fd,"immediateActionDetails"),recallActionDetails:text(fd,"recallActionDetails"),
+    creditActionDetails:text(fd,"creditActionDetails"),replacementActionDetails:text(fd,"replacementActionDetails"),
+    otherResolutionDetails:text(fd,"otherResolutionDetails"),
     externalCommunication:text(fd,"externalCommunication"),communicationDate:text(fd,"communicationDate"),communicationMedium:text(fd,"communicationMedium"),
     communicationParties:text(fd,"communicationParties"),communicationSummary:text(fd,"communicationSummary"),
     partIIRequired,nextFollowupDate,conclusion:text(fd,"conclusion"),effectivenessRequired:bool(fd,"effectivenessRequired"),
