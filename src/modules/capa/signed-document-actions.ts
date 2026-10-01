@@ -9,6 +9,7 @@ import {
   validateSignedPdfSelection,
 } from "@/lib/qms/signed-version-document";
 import type { SignedVersionDocumentState } from "@/lib/qms/signed-version-document-types";
+import { capaSignedPdfUploadError } from "@/modules/capa/signed-document-policy";
 
 export async function uploadCapaSignedPdfAction(
   capaId: string,
@@ -23,11 +24,9 @@ export async function uploadCapaSignedPdfAction(
   if (!capa) {
     return { error: "La CAPA no existe.", success: null };
   }
-  if (capa.status === "DRAFT") {
-    return {
-      error: "No se puede cargar un PDF firmado mientras la CAPA está en Borrador.",
-      success: null,
-    };
+  const statusError = capaSignedPdfUploadError(capa.status);
+  if (statusError) {
+    return { error: statusError, success: null };
   }
 
   const selected = validateSignedPdfSelection(
