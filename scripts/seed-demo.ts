@@ -398,6 +398,8 @@ async function main() {
       regulatoryJustification: "No aplica notificación regulatoria al tratarse de un caso ficticio sin impacto.",
       resolutionLines: "Registrar, vincular devolución DEMO y cerrar tras comprobar la recepción.",
       resolutionActions: ["RETURN"],
+      hasDerivedActions: true,
+      nextFollowupDate: new Date("2026-10-05"),
       communicationDate: new Date("2026-09-23"),
       communicationMedium: "Correo electrónico DEMO",
       communicationParties: "QA COVEX / Cliente ficticio",
@@ -497,7 +499,7 @@ async function main() {
   await prisma.complaintDerivedAction.create({
     data: {
       complaintId: complaint.id,
-      actionType: "DEVOLUCIÓN",
+      actionType: "RETURN",
       businessCode: "DEMO-DEVOL-001-2026",
       description: "Devolución de la muestra ficticia para completar la investigación.",
       responsible: "Usuario demo",
