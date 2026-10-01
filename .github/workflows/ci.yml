@@ -6,8 +6,8 @@ on:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -67,6 +67,7 @@ jobs:
           pnpm r1-capa:smoke
           pnpm r2b-documents:smoke
           pnpm r3-capa:smoke
+          pnpm r3-complaints:smoke
           pnpm hito10:smoke
       - name: Quality checks
         run: pnpm quality
