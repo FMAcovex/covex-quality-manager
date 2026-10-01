@@ -51,8 +51,6 @@ export default async function CapaDetailPage({
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
-  const currentSignedDocument =
-    currentVersion?.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
   const signedFollowupNumbers = capa.qmsRecord.versions
     .filter((version) => version.documents.some((document) => document.kind === "SIGNED_PDF"))
     .map((version) => version.sequenceNumber);
