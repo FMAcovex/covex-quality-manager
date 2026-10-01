@@ -1,3 +1,4 @@
+// CI retry marker: retrigger R3 complaints regression after queued runner
 import assert from "node:assert/strict";
 import { PrismaClient, QmsRecordType, RecordVersionKind } from "@prisma/client";
 import {
