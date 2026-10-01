@@ -262,12 +262,17 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
   <section className="form-section"><h2>Control interno</h2><p className="section-help">Este apartado no forma parte de la obligatoriedad documental del Anexo III.</p><div className="form-grid">
    <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations}/>
    <label className="field"><span>Control del dato</span><select name="dataQualityStatus" defaultValue={formDefaults.dataQualityStatus??"REVIEW_REQUIRED"}><option value="COMPLETE">Completo</option><option value="INCOMPLETE">Incompleto</option><option value="REVIEW_REQUIRED">Pendiente revisar</option></select></label>
-   {mode==="edit"?<TextArea label="Motivo del cambio" name="changeReason"/>:null}
+   {mode==="edit"?<>
+    <Field label="Fecha de seguimiento / nueva versión" name="versionFollowupDate" type="date" defaultValue={formDefaults.versionFollowupDate} help="Obligatoria solo al crear una nueva versión/seguimiento."/>
+    <TextArea label="Motivo del cambio / seguimiento" name="changeReason"/>
+   </>:null}
   </div></section>
 
   <div className="form-footer"><Link className="button" href={complaintId?`/complaints/${complaintId}`:"/complaints"}>Cancelar</Link><div className="heading-actions">
    {recordStatus==="DRAFT"?<button className="button" name="saveStatus" value="DRAFT" disabled={pending}>{pending?"Guardando…":"Guardar borrador"}</button>:null}
-   <button className="button primary" name="saveStatus" value={recordStatus==="DRAFT"?"OPEN":recordStatus} disabled={pending}>{pending?"Guardando…":mode==="create"?"Guardar reclamación":recordStatus==="DRAFT"?"Guardar y abrir reclamación":"Guardar cambios"}</button>
+   {mode==="edit"&&recordStatus!=="DRAFT"?<button className="button" name="saveMode" value="current" disabled={pending}>{pending?"Guardando…":"Guardar cambios"}</button>:null}
+   {mode==="edit"&&recordStatus!=="DRAFT"?<button className="button primary" name="saveMode" value="new-version" disabled={pending}>{pending?"Guardando…":"Guardar como nueva versión / seguimiento"}</button>:null}
+   {mode==="create"||recordStatus==="DRAFT"?<button className="button primary" name="saveStatus" value={recordStatus==="DRAFT"?"OPEN":recordStatus} disabled={pending}>{pending?"Guardando…":mode==="create"?"Guardar reclamación":"Guardar y abrir reclamación"}</button>:null}
   </div></div>
  </form>;
 }
