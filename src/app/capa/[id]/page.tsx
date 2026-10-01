@@ -12,6 +12,8 @@ import { capaSnapshotVersionFollowupDate, recordVersionSummary } from "@/lib/qms
 import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
+import { uploadCapaSignedPdfAction } from "@/modules/capa/signed-document-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +51,11 @@ export default async function CapaDetailPage({
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
+  const currentSignedDocument =
+    currentVersion?.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
+  const signedFollowupNumbers = capa.qmsRecord.versions
+    .filter((version) => version.documents.some((document) => document.kind === "SIGNED_PDF"))
+    .map((version) => version.sequenceNumber);
   const origins = capa.qmsRecord.targetRelations
     .filter(
       (item) =>
@@ -302,6 +309,8 @@ export default async function CapaDetailPage({
                   item.snapshot,
                   item.sequenceNumber,
                 );
+                const signedDocument =
+                  item.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
                 return (
                   <article className="timeline-item" key={item.id}>
                     <div className="timeline-marker">{String(item.sequenceNumber).padStart(2, "0")}</div>
@@ -328,9 +337,44 @@ export default async function CapaDetailPage({
                       <p>Verificación final: {formatDate(summary.effectiveClosedAt)}{item.reason ? ` · Motivo: ${item.reason}` : ""}</p>
                       <small className="muted-note">Registrado {formatDate(item.createdAt)} · {item.createdByText ?? "Sistema"}</small>
                       <div className="document-actions">
-                        <a className="button small" href={`/api/capa/${id}/annex-iii?version=${item.sequenceNumber}`}>
-                          Descargar Anexo III · {followupLabel(item.sequenceNumber)}
-                        </a>
+                        {capa.status === "DRAFT" ? (
+                          <span className="muted-note">El Anexo III estará disponible al abrir la CAPA.</span>
+                        ) : (
+                          <a className="button small" href={`/api/capa/${id}/annex-iii?version=${item.sequenceNumber}`}>
+                            Descargar Anexo III · {followupLabel(item.sequenceNumber)}
+                          </a>
+                        )}
+                        {signedDocument ? (
+                          <a
+                            className="button small"
+                            href={`/api/capa/${id}/versions/${item.sequenceNumber}/signed-pdf`}
+                          >
+                            Descargar PDF firmado · {followupLabel(item.sequenceNumber)}
+                          </a>
+                        ) : null}
+                      </div>
+                      <div className="version-signed-document">
+                        <strong>PDF firmado: {signedDocument ? "Disponible" : "No disponible"}</strong>
+                        {signedDocument ? (
+                          <small className="muted-note">
+                            {signedDocument.fileName} · {Math.max(1, Math.round(signedDocument.fileSize / 1024))} KB · cargado {formatDate(signedDocument.uploadedAt)} · {signedDocument.uploadedByText ?? "Usuario no informado"}
+                          </small>
+                        ) : (
+                          <small className="muted-note">
+                            Este PDF corresponde exclusivamente a {followupLabel(item.sequenceNumber)} y no se copia a seguimientos posteriores.
+                          </small>
+                        )}
+                        {capa.status === "DRAFT" ? (
+                          <small className="muted-note">
+                            La carga de PDF firmado se habilita cuando la CAPA deja de estar en Borrador.
+                          </small>
+                        ) : (
+                          <SignedVersionDocumentForm
+                            action={uploadCapaSignedPdfAction.bind(null, id, item.id)}
+                            defaultActor={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+                            replace={Boolean(signedDocument)}
+                          />
+                        )}
                       </div>
                     </div>
                   </article>
@@ -347,7 +391,20 @@ export default async function CapaDetailPage({
           <dl className="info-grid">
             <div className="info-item"><dt>Versión formulario</dt><dd>{capa.formVersion?.versionCode ?? "No asignada"}</dd></div>
             <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{capa.annexIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
-            <div className="info-item"><dt>Documento firmado</dt><dd>{capa.signedDocumentAvailable === true ? "Disponible" : capa.signedDocumentAvailable === false ? "No disponible" : "No informado"}</dd></div>
+            <div className="info-item">
+              <dt>PDF firmados por seguimiento</dt>
+              <dd>{capa.qmsRecord.versions.length ? `${signedFollowupNumbers.length} de ${capa.qmsRecord.versions.length} disponibles` : "Sin seguimientos"}</dd>
+            </div>
+            <div className="info-item full">
+              <dt>Seguimientos con PDF firmado</dt>
+              <dd>
+                {signedFollowupNumbers.length
+                  ? signedFollowupNumbers.map((sequence) => followupLabel(sequence)).join(", ")
+                  : "Ninguno"}
+                {" · "}
+                <Link href={`/capa/${id}?tab=versions`}>Gestionar en Seguimientos</Link>
+              </dd>
+            </div>
           </dl>
           <div className="document-grid">
             <div className="document-block">
