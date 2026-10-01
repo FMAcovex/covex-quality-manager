@@ -211,7 +211,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    {!partII?<div className="analytics-note">{partIIDecision==="pending"?"Parte II pendiente de decisión. Puedes guardar la reclamación abierta y continuar en un seguimiento posterior.":"Parte II no procede. La reclamación puede cerrarse en Parte I."}</div>:<>
     <h3>A) Respuesta del proveedor o al / del cliente</h3><div className="form-grid">
      <Field label="Fecha de respuesta" name="responseDate" type="date" defaultValue={formDefaults.responseDate} required={!draft}/>
-     <Field label="Medio de respuesta" name="responseMedium" defaultValue={formDefaults.responseMedium}/>
+     <Field label="Medio de respuesta" name="responseMedium" defaultValue={formDefaults.responseMedium} required={!draft}/>
      <TextArea label="Resumen de la respuesta, compromisos y valoración de suficiencia" name="responseSummary" defaultValue={formDefaults.responseSummary} required={!draft}/>
      <Bool label="¿Respuesta suficiente?" name="responseSufficient" defaultValue={formDefaults.responseSufficient} required={!draft}/>
     </div>
