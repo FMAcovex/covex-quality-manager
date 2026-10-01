@@ -70,8 +70,8 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    <div className="section-title-row"><div><p className="eyebrow">Parte I · Registro, investigación y análisis</p><h2>Identificación de la reclamación</h2></div><span className="badge neutral">GC-00/027/03</span></div>
    <p className="section-help">Selecciona primero si la reclamación es de cliente o a proveedor. Esta decisión determina su codificación R/C o R/P.</p>
    <div className="complaint-type-choice" role="group" aria-label="Tipo de reclamación">
-    <label className={complaintType==="CUSTOMER"?"selected":""}><input type="radio" name="complaintType" value="CUSTOMER" checked={complaintType==="CUSTOMER"} onChange={()=>setComplaintType("CUSTOMER")} required={!draft}/><strong>DE CLIENTE / AGENTE EXTERNO</strong><small>Codificación R/C</small></label>
-    <label className={complaintType==="PROVIDER"?"selected":""}><input type="radio" name="complaintType" value="PROVIDER" checked={complaintType==="PROVIDER"} onChange={()=>setComplaintType("PROVIDER")} required={!draft}/><strong>A PROVEEDOR / SUBCONTRATA</strong><small>Codificación R/P</small></label>
+    <label className={complaintType==="CUSTOMER"?"selected":""}><input type="radio" name="complaintType" value="CUSTOMER" checked={complaintType==="CUSTOMER"} onChange={()=>setComplaintType("CUSTOMER")} required/><strong>DE CLIENTE / AGENTE EXTERNO</strong><small>Codificación R/C</small></label>
+    <label className={complaintType==="PROVIDER"?"selected":""}><input type="radio" name="complaintType" value="PROVIDER" checked={complaintType==="PROVIDER"} onChange={()=>setComplaintType("PROVIDER")} required/><strong>A PROVEEDOR / SUBCONTRATA</strong><small>Codificación R/P</small></label>
    </div>
    <div className="form-grid">
     <ControlledBusinessCodeField recordType="COMPLAINT" label="N.º reclamación" initialValue={formDefaults.businessCode} mode={mode} yearSource={openedAt} complaintType={complaintType||undefined} locked={mode==="edit"&&!draft}/>
