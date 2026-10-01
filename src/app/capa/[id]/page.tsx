@@ -296,7 +296,7 @@ export default async function CapaDetailPage({
           </div>
           {capa.qmsRecord.versions.length ? (
             <div className="timeline">
-              {capa.qmsRecord.versions.map((item) => {
+              {[...capa.qmsRecord.versions].reverse().map((item) => {
                 const summary = recordVersionSummary("CAPA", item.snapshot);
                 const followupDate = capaSnapshotVersionFollowupDate(
                   item.snapshot,
@@ -311,7 +311,17 @@ export default async function CapaDetailPage({
                         <span className={`badge ${summary.status === "OPEN" ? "open" : summary.status === "CLOSED" ? "closed" : "neutral"}`}>
                           {capaStatusLabel(String(summary.status ?? "OPEN"))}
                         </span>
-                        <span className="badge neutral">Eficacia {effectivenessLabel(String(summary.effectivenessStatus ?? "PENDING"))}</span>
+                        <span
+                          className={`badge ${
+                            summary.effectivenessStatus === "CONFORMING"
+                              ? "conforming"
+                              : summary.effectivenessStatus === "NONCONFORMING"
+                                ? "nonconforming"
+                                : "neutral"
+                          }`}
+                        >
+                          Eficacia {effectivenessLabel(String(summary.effectivenessStatus ?? "PENDING"))}
+                        </span>
                         {item.frozenAt ? <span className="badge neutral">Histórico</span> : <span className="badge neutral">Vigente</span>}
                       </header>
                       <p>Fecha del seguimiento: {formatDate(followupDate)} · Próximo seguimiento: {formatDate(summary.nextFollowupDate)} · Cierre y ejecución: {formatDate(summary.closedAt)}</p>
