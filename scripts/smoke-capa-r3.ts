@@ -44,6 +44,15 @@ function form(fields: Record<string, string>) {
   return data;
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^$\{\}()|[\]\\]/g, "\\function form(fields: Record<string, string>) {
+  const data = new FormData();
+  for (const [key, value] of Object.entries(fields)) data.set(key, value);
+  return data;
+}
+");
+}
+
 function pdfFile(name: string, body: string, validHeader = true) {
   const prefix = validHeader ? "%PDF-1.7" : "NOT-PDF";
   const bytes = new TextEncoder().encode(`${prefix}\n${body}\n%%EOF`);
@@ -599,23 +608,23 @@ async function main() {
       );
       assert.match(xml, new RegExp(`R3 MARCA V0${version.sequenceNumber}`));
       assert.match(xml, /Seguimiento acción R3 A1/);
-      assert.match(xml, new RegExp(complaintCode.replace(/[.*+?^$\{\}()|[\]\\]/g, "\\$&")));
+      assert.match(xml, new RegExp(escapeRegExp(complaintCode)));
       if (version.sequenceNumber === 0) {
         assert.doesNotMatch(xml, /Cierre operativo R3/);
         assert.doesNotMatch(xml, /Seguimiento acción R3 A2/);
-        assert.match(xml, new RegExp(devCode.replace(/[.*+?^$\{\}()|[\]\\]/g, "\\$&")));
+        assert.match(xml, new RegExp(escapeRegExp(devCode)));
         assert.match(xml, /5\/1\/2096/);
       }
       if (version.sequenceNumber === 1) {
         assert.match(xml, /Cierre operativo R3/);
         assert.match(xml, /Seguimiento acción R3 A2/);
-        assert.match(xml, new RegExp(devCode.replace(/[.*+?^$\{\}()|[\]\\]/g, "\\$&")));
+        assert.match(xml, new RegExp(escapeRegExp(devCode)));
         assert.match(xml, /1\/2\/2096/);
       }
       if (version.sequenceNumber === 2) {
         assert.match(xml, /Verificación de eficacia R3/);
         assert.match(xml, /Seguimiento acción R3 A2/);
-        assert.doesNotMatch(xml, new RegExp(devCode.replace(/[.*+?^$\{\}()|[\]\\]/g, "\\$&")));
+        assert.doesNotMatch(xml, new RegExp(escapeRegExp(devCode)));
         assert.match(xml, /1\/3\/2096/);
       }
     }
