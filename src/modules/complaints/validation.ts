@@ -59,7 +59,7 @@ export function parseComplaintForm(fd:FormData){
   const businessCode=text(fd,"businessCode"),departmentId=text(fd,"departmentId"),openedAt=text(fd,"openedAt"),
     createdByText=text(fd,"createdByText"),partyName=text(fd,"partyName"),description=text(fd,"description"),
     complaintType=enumValue(typeSchema,text(fd,"complaintType"));
-  const status=enumValue(statusSchema,text(fd,"status"))??"DRAFT";
+  const status=enumValue(statusSchema,text(fd,"saveStatus")??text(fd,"status"))??"DRAFT";
   const classification=enumValue(classificationSchema,text(fd,"classification"));
   const effectivenessStatus=enumValue(efficacySchema,text(fd,"effectivenessStatus"))??"PENDING";
   const capaPlans=parseCapaPlans(text(fd,"capaPlansJson"));
