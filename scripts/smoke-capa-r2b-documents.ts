@@ -121,6 +121,29 @@ async function main() {
     });
     assert.equal(foreign.error, "foreign version");
 
+    const rejectedReplacement = await storeSignedVersionPdf({
+      qmsRecordId: record.id,
+      recordVersionId: version01.id,
+      file: pdfFile("seguimiento-01-sin-motivo.pdf", "R2B rejected replacement"),
+      actor,
+      replacementReason: "",
+      ownershipError: "foreign version",
+      initialReason: (sequence) => `Carga R2B ${sequence}`,
+    });
+    assert.equal(
+      rejectedReplacement.error,
+      "Para sustituir un PDF firmado debe indicarse el motivo.",
+    );
+    const beforeReplacement = await prisma.recordVersionDocument.findUniqueOrThrow({
+      where: {
+        recordVersionId_kind: {
+          recordVersionId: version01.id,
+          kind: "SIGNED_PDF",
+        },
+      },
+    });
+    assert.equal(beforeReplacement.fileName, "seguimiento-01.pdf");
+
     const replaced = await storeSignedVersionPdf({
       qmsRecordId: record.id,
       recordVersionId: version01.id,
