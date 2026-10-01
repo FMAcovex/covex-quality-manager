@@ -120,6 +120,17 @@ Reglas:
 
 Para datos anteriores al Hito 6.1 solo son descargables como versión histórica exacta aquellos estados para los que exista snapshot persistido; no se reconstruyen estados inexistentes.
 
+### PDF firmado de una versión funcional
+
+Cuando el usuario dispone de un PDF firmado manualmente, el binario se almacena en `RecordVersionDocument` y queda asociado a la `QmsRecordVersion` exacta.
+
+- Desviaciones mantiene la gestión por V00/V01/V02… ya existente.
+- CAPA gestiona el PDF desde Seguimiento 00/01/02…; la pestaña Documentos solo resume disponibilidad.
+- Cada seguimiento/versión es independiente: crear una nueva versión no hereda ni copia el PDF anterior.
+- Sustituir un PDF exige motivo y registra el documento anterior y el nuevo en el historial operativo.
+- No se implementa firma electrónica en V1.
+
+
 
 ## 7. Controles de Cambios · GC-00/003/03
 

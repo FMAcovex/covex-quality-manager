@@ -446,3 +446,16 @@ Reglas:
 - Los campos históricos retirados de la interfaz no se eliminan ni se vacían durante una edición.
 - R1 no crea una captura independiente de “evidencia de ejecución”. El apartado Seguimiento de la acción se limita a Fecha, Descripción y Observaciones conforme al Anexo III. `CapaFollowup` permanece solo como histórico/legacy, sin backfill ni nueva captura desde la UX R1; los documentos/PDF vinculados a versiones se resolverán en el Bloque 2.
 - El PDF por versión y la generalización documental se aplazan al Bloque 2.
+
+## D-057 — PDF firmado por versión funcional y reutilización documental
+Los PDF firmados manualmente de Desviaciones y CAPA se vinculan a la versión funcional exacta mediante `RecordVersionDocument` con `kind = SIGNED_PDF`.
+
+Reglas:
+- cada `QmsRecordVersion` puede tener su propio PDF firmado;
+- un PDF de una versión no se copia automáticamente al crear una versión posterior;
+- la sustitución de un PDF existente exige motivo y se registra en `ChangeHistory` como historial operativo;
+- la validación servidor comprueba extensión PDF, límite de 15 MB, cabecera `%PDF-` y pertenencia de la versión al expediente;
+- CAPA no admite carga de PDF firmado mientras esté en Borrador;
+- no se introduce firma electrónica ni una tabla documental específica por módulo;
+- el formulario y la lógica común de almacenamiento/descarga se reutilizan de forma conservadora entre Desviaciones y CAPA, manteniendo las rutas y comportamiento de Desviaciones.
+

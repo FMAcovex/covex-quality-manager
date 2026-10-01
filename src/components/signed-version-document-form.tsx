@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import type { SignedVersionDocumentState } from "@/modules/deviations/signed-document-actions";
+import type { SignedVersionDocumentState } from "@/lib/qms/signed-version-document-types";
 
 const initialState: SignedVersionDocumentState = { error: null, success: null };
 
