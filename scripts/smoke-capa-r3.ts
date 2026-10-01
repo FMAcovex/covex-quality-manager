@@ -466,7 +466,7 @@ async function main() {
     );
 
     const annexRecords = versions.map((item) =>
-      capaSnapshotToAnnexRecord(item.snapshot) as {
+      capaSnapshotToAnnexRecord(item.snapshot) as unknown as {
         status: string;
         effectivenessStatus: string;
         defectDescription: string;
