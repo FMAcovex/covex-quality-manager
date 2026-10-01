@@ -47,6 +47,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
  const formDefaults=submittedDefaults(defaults,state.submittedValues);
  const [capas,setCapas]=useState<ComplaintCapaPlanInput[]>(defaults.capaPlans??[]);
  const [derived,setDerived]=useState<ComplaintDerivedActionInput[]>(defaults.derivedActions??[]);
+ const [selectedActions,setSelectedActions]=useState<string[]>(formDefaults.resolutionActions??[]);
  const [complaintType,setComplaintType]=useState<""|"CUSTOMER"|"PROVIDER">((formDefaults.complaintType as "CUSTOMER"|"PROVIDER"|undefined)??"");
  const [openedAt,setOpenedAt]=useState(formDefaults.openedAt??"");
  const [departmentId,setDepartmentId]=useState(formDefaults.departmentId??"");
@@ -60,6 +61,9 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
  const productMaterial=useMemo(()=>formDefaults.affectedObjectTypes?.includes("PRODUCT_MATERIAL")??false,[formDefaults.affectedObjectTypes]);
  const patchCapa=(i:number,p:Partial<ComplaintCapaPlanInput>)=>setCapas(x=>x.map((v,n)=>n===i?{...v,...p}:v));
  const patchDerived=(i:number,p:Partial<ComplaintDerivedActionInput>)=>setDerived(x=>x.map((v,n)=>n===i?{...v,...p}:v));
+ const actionSelected=(value:string)=>selectedActions.includes(value);
+ const toggleAction=(value:string,checked:boolean)=>setSelectedActions(current=>checked?[...new Set([...current,value])]:current.filter(x=>x!==value));
+ const addCapa=(actionType:"CORRECTIVE"|"PREVENTIVE")=>setCapas(x=>[...x,{...emptyCapa,actionType}]);
 
  return <form key={state.formRevision??0} action={formAction} className="form-stack">
   <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)}/>
@@ -159,37 +163,54 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    <label className="field"><span>¿Existen acciones derivadas?{draft?"":" *"}</span><select name="hasDerivedActions" value={hasActions} onChange={e=>setHasActions(e.target.value as ""|"true"|"false")} required={!draft}><option value="">Pendiente</option><option value="true">Sí</option><option value="false">No</option></select></label>
   </div>
   {hasActions==="true"?<>
-   <Checks label="Acciones derivadas" name="resolutionActions" options={resolutionOptions} defaults={formDefaults.resolutionActions} required={!draft}/>
-   <div className="form-grid">
-    <TextArea label="Acción inmediata · especificar" name="immediateActionDetails" defaultValue={formDefaults.immediateActionDetails}/>
-    <TextArea label="Otros · especificar" name="otherResolutionDetails" defaultValue={formDefaults.otherResolutionDetails}/>
-   </div>
+   <div className="field full"><span>Acciones derivadas{draft?"":" *"}</span><div className="checkbox-group complaint-action-options">
+    {resolutionOptions.map(([value,label])=><label key={value}><input type="checkbox" name="resolutionActions" value={value} checked={actionSelected(value)} onChange={e=>toggleAction(value,e.target.checked)}/><span>{label}</span></label>)}
+   </div></div>
 
-   <h3>CAPA correctoras / preventivas propuestas o vinculadas</h3>
-   <p className="section-help">Puedes preparar la acción antes de crear o vincular la CAPA. Cuando exista relación QMS, el expediente se mostrará también en Relaciones.</p>
-   <div className="dynamic-list">
-    {capas.map((x,i)=><div className="dynamic-row capa" key={x.id??i}>
-      <label className="field"><span>Tipo</span><select value={x.actionType} onChange={e=>patchCapa(i,{actionType:e.target.value as ComplaintCapaPlanInput["actionType"]})}><option value="CORRECTIVE">Correctora</option><option value="PREVENTIVE">Preventiva</option></select></label>
-      <label className="field"><span>Descripción *</span><input value={x.description} onChange={e=>patchCapa(i,{description:e.target.value})}/></label>
-      <label className="field"><span>Fecha prevista *</span><input type="date" value={x.plannedExecutionDate} onChange={e=>patchCapa(i,{plannedExecutionDate:e.target.value})}/></label>
-      <label className="field"><span>Responsable *</span><input value={x.responsible} onChange={e=>patchCapa(i,{responsible:e.target.value})}/></label>
-      <label className="field"><span>Código CAPA</span><input value={x.businessCapaCode??""} onChange={e=>patchCapa(i,{businessCapaCode:e.target.value})} placeholder="Pendiente de crear/vincular"/></label>
-      <button className="button danger small" type="button" onClick={()=>setCapas(a=>a.filter((_,n)=>n!==i))}>Quitar</button>
-    </div>)}
-    <div><button className="button small" type="button" onClick={()=>setCapas(x=>[...x,{...emptyCapa}])}>+ Añadir CAPA</button></div>
-   </div>
+   {(actionSelected("CORRECTIVE_ACTION")||actionSelected("PREVENTIVE_ACTION"))?<div className="complaint-action-panel">
+    <h3>CAPA correctoras / preventivas propuestas o vinculadas</h3>
+    <p className="section-help">Se muestran porque has seleccionado una acción correctora y/o preventiva. Puedes dejar el código pendiente y crear la CAPA después.</p>
+    <div className="dynamic-list">
+     {capas.map((x,i)=>{
+      const visible=(x.actionType==="CORRECTIVE"&&actionSelected("CORRECTIVE_ACTION"))||(x.actionType==="PREVENTIVE"&&actionSelected("PREVENTIVE_ACTION"));
+      return visible?<div className="dynamic-row capa" key={x.id??i}>
+       <div className="field"><span>Tipo</span><strong className="action-kind">{x.actionType==="CORRECTIVE"?"Correctora":"Preventiva"}</strong></div>
+       <label className="field"><span>Descripción *</span><input value={x.description} onChange={e=>patchCapa(i,{description:e.target.value})}/></label>
+       <label className="field"><span>Fecha prevista *</span><input type="date" value={x.plannedExecutionDate} onChange={e=>patchCapa(i,{plannedExecutionDate:e.target.value})}/></label>
+       <label className="field"><span>Responsable *</span><input value={x.responsible} onChange={e=>patchCapa(i,{responsible:e.target.value})}/></label>
+       <label className="field"><span>Código CAPA</span><input value={x.businessCapaCode??""} onChange={e=>patchCapa(i,{businessCapaCode:e.target.value})} placeholder="Pendiente de crear/vincular"/></label>
+       <button className="button danger small" type="button" onClick={()=>setCapas(a=>a.filter((_,n)=>n!==i))}>Quitar</button>
+      </div>:null;
+     })}
+     <div className="heading-actions">
+      {actionSelected("CORRECTIVE_ACTION")?<button className="button small" type="button" onClick={()=>addCapa("CORRECTIVE")}>+ Añadir CAPA correctora</button>:null}
+      {actionSelected("PREVENTIVE_ACTION")?<button className="button small" type="button" onClick={()=>addCapa("PREVENTIVE")}>+ Añadir CAPA preventiva</button>:null}
+     </div>
+    </div>
+   </div>:null}
 
-   <h3>Devoluciones / otros registros derivados</h3>
-   <div className="dynamic-list">
-    {derived.map((x,i)=><div className="dynamic-row complaint-derived-row" key={x.id??i}>
-      <label className="field"><span>Tipo *</span><select value={x.actionType} onChange={e=>patchDerived(i,{actionType:e.target.value})}><option value="RETURN">Devolución</option><option value="IMMEDIATE_ACTION">Acción inmediata</option><option value="RECALL">Retirada</option><option value="CREDIT">Abono</option><option value="REPLACEMENT">Reposición</option><option value="OTHER">Otros</option></select></label>
-      <label className="field"><span>Código</span><input value={x.businessCode} onChange={e=>patchDerived(i,{businessCode:e.target.value})} placeholder="Pendiente de vincular"/></label>
-      <label className="field"><span>Acción / evidencia *</span><input value={x.description} onChange={e=>patchDerived(i,{description:e.target.value})}/></label>
+   {actionSelected("RETURN")?<div className="complaint-action-panel">
+    <h3>Devolución / devoluciones propuestas o vinculadas</h3>
+    <p className="section-help">Puedes registrar varias devoluciones. Si todavía no existe expediente, deja el código pendiente y podrás crearlo después.</p>
+    <div className="dynamic-list">
+     {derived.map((x,i)=>x.actionType==="RETURN"?<div className="dynamic-row complaint-derived-row" key={x.id??i}>
+      <div className="field"><span>Tipo</span><strong className="action-kind">Devolución</strong></div>
+      <label className="field"><span>Código devolución</span><input value={x.businessCode} onChange={e=>patchDerived(i,{businessCode:e.target.value})} placeholder="Pendiente de crear/vincular"/></label>
+      <label className="field"><span>Acción / detalle *</span><input value={x.description} onChange={e=>patchDerived(i,{description:e.target.value})}/></label>
       <label className="field"><span>Responsable *</span><input value={x.responsible} onChange={e=>patchDerived(i,{responsible:e.target.value})}/></label>
       <label className="field"><span>Fecha prevista *</span><input type="date" value={x.plannedExecutionDate} onChange={e=>patchDerived(i,{plannedExecutionDate:e.target.value})}/></label>
       <button className="button danger small" type="button" onClick={()=>setDerived(a=>a.filter((_,n)=>n!==i))}>Quitar</button>
-    </div>)}
-    <div><button className="button small" type="button" onClick={()=>setDerived(x=>[...x,{...emptyDerived}])}>+ Añadir acción / registro</button></div>
+     </div>:null)}
+     <div><button className="button small" type="button" onClick={()=>setDerived(x=>[...x,{...emptyDerived,actionType:"RETURN"}])}>+ Añadir devolución</button></div>
+    </div>
+   </div>:null}
+
+   <div className="complaint-action-texts">
+    {actionSelected("IMMEDIATE_ACTION")?<TextArea label="Acción inmediata · especificar" name="immediateActionDetails" defaultValue={formDefaults.immediateActionDetails} required={!draft}/>:null}
+    {actionSelected("RECALL")?<TextArea label="Retirada del mercado · especificar" name="recallActionDetails" defaultValue={formDefaults.recallActionDetails} required={!draft}/>:null}
+    {actionSelected("CREDIT")?<TextArea label="Abono · especificar" name="creditActionDetails" defaultValue={formDefaults.creditActionDetails} required={!draft}/>:null}
+    {actionSelected("REPLACEMENT")?<TextArea label="Reposición · especificar" name="replacementActionDetails" defaultValue={formDefaults.replacementActionDetails} required={!draft}/>:null}
+    {actionSelected("OTHER")?<TextArea label="Otros · especificar" name="otherResolutionDetails" defaultValue={formDefaults.otherResolutionDetails} required={!draft}/>:null}
    </div>
   </>:<div className="empty-panel complaint-actions-empty">No se requieren acciones derivadas. Este apartado no será obligatorio.</div>}
   </section>
