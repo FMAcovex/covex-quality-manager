@@ -589,7 +589,7 @@ async function main() {
         ),
       };
       const buffer = await generateCapaAnnexIII(
-        annexRecord as Parameters<typeof generateCapaAnnexIII>[0],
+        annexRecord as unknown as Parameters<typeof generateCapaAnnexIII>[0],
       );
       const xml = getZipEntryText(readZip(buffer), "word/document.xml");
       assert.match(xml, new RegExp(`R3 MARCA V0${version.sequenceNumber}`));
