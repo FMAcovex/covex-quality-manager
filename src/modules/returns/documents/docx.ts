@@ -23,6 +23,19 @@ const box=(on:boolean,label:string)=>`${on?"☒":"☐"} ${label}`;
 const typeLabel=(v:string,o:string|null)=>v==="COMMERCIAL"?"Comercial":v==="COMPLAINT"?"Reclamación":v==="RECALL"?"Retirada":v==="EXPIRY"?"Caducidad":v==="TRANSPORT"?"Transporte":o||"Otra";
 const productType=(v:string)=>({API:"API",INTERMEDIATE:"Intermedio",MEDICINE:"Medicamento",SUPPLEMENT:"Complemento alimenticio",IMPORTED_PRODUCT:"Producto importado",MEDICAL_DEVICE:"Producto sanitario",COSMETIC:"Cosmético",OTHER:"Otro"} as Record<string,string>)[v]??v;
 
+function keepOnlyFinalSectionProperties(xml:string){
+ const matches=[...xml.matchAll(/<w:sectPr\b[\s\S]*?<\/w:sectPr>/g)];
+ if(matches.length<=1)return xml;
+ let seen=0;
+ return xml.replace(/<w:sectPr\b[\s\S]*?<\/w:sectPr>/g,(match)=>{
+  seen+=1;
+  return seen===matches.length?match:"";
+ });
+}
+function forcePortraitSections(xml:string){
+ return xml.replace(/<w:pgSz\b[^>]*\/>/g,'<w:pgSz w:w="11906" w:h="16838"/>');
+}
+
 export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
  const version=r.annexIIITemplateVersion?.versionCode??"03";
  const entries=readZip(await loadReturnPntTemplate(version,DocumentType.RETURN_ANNEX_III));
@@ -55,6 +68,7 @@ export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Produ
  xml=setWordCellTextBalanced(xml,0,4,0,`CANTIDAD: ${[product.quantity,product.unit].filter(Boolean).join(" ")}\nPESO NETO: ${text(product.netWeight)}\nPESO BRUTO: ${text(product.grossWeight)}`);
  xml=setWordCellTextBalanced(xml,0,5,0,`OBSERVACIONES: ${text(product.receptionObservations)}`);
  xml=setWordCellTextBalanced(xml,0,6,0,`RECIBIDO POR: ${text(product.receivedBy)}\nFECHA: ${date(product.receivedByDate||r.receivedAt)}`);xml=setWordCellTextBalanced(xml,0,6,1,`VERIFICADO POR: ${text(product.verifiedBy)}\nFECHA: ${date(product.verifiedByDate||r.receivedAt)}`);
+ xml=forcePortraitSections(xml);
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 
@@ -69,6 +83,7 @@ export async function generateReturnAnnexV(r:ReturnDocumentRecord){
  xml=setWordCellTextBalanced(xml,4,0,1,[text(r.customerDeclarationSignatoryName),text(r.customerDeclarationSignatoryRole),date(r.customerDeclarationSignedAt)].filter(Boolean).join(" / "));
  xml=setWordCellTextBalanced(xml,5,0,1,text(r.qaApprovalName));
  xml=setWordCellTextBalanced(xml,5,1,1,text(r.technicalApprovalName));
+ xml=keepOnlyFinalSectionProperties(xml);
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 

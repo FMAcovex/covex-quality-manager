@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { RecordVersionDocumentKind } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 export const MAX_SIGNED_PDF_SIZE = 15 * 1024 * 1024;
@@ -56,6 +57,8 @@ export async function storeSignedVersionPdf({
   replacementReason,
   ownershipError,
   initialReason,
+  kind = RecordVersionDocumentKind.SIGNED_PDF,
+  historyFieldPath = "__signed_document__",
 }: {
   qmsRecordId: string;
   recordVersionId: string;
@@ -64,6 +67,8 @@ export async function storeSignedVersionPdf({
   replacementReason: string;
   ownershipError: string;
   initialReason: (sequenceNumber: number) => string;
+  kind?: RecordVersionDocumentKind;
+  historyFieldPath?: string;
 }): Promise<{ error: string; sequenceNumber: null } | { error: null; sequenceNumber: number }> {
   const version = await prisma.qmsRecordVersion.findFirst({
     where: { id: recordVersionId, qmsRecordId },
@@ -83,7 +88,7 @@ export async function storeSignedVersionPdf({
     where: {
       recordVersionId_kind: {
         recordVersionId,
-        kind: "SIGNED_PDF",
+        kind,
       },
     },
     select: {
@@ -108,7 +113,7 @@ export async function storeSignedVersionPdf({
       where: {
         recordVersionId_kind: {
           recordVersionId,
-          kind: "SIGNED_PDF",
+          kind,
         },
       },
       update: {
@@ -122,7 +127,7 @@ export async function storeSignedVersionPdf({
       },
       create: {
         recordVersionId,
-        kind: "SIGNED_PDF",
+        kind,
         fileName: file.name,
         mimeType: "application/pdf",
         fileData: bytes,
@@ -136,7 +141,7 @@ export async function storeSignedVersionPdf({
       data: {
         qmsRecordId,
         changedByText: actor,
-        fieldPath: "__signed_document__",
+        fieldPath: historyFieldPath,
         oldValue: existingDocument
           ? {
               recordVersionId,
@@ -180,7 +185,7 @@ export async function getSignedVersionDocumentBySequence(
     select: {
       sequenceNumber: true,
       documents: {
-        where: { kind: "SIGNED_PDF" },
+        where: { kind: RecordVersionDocumentKind.SIGNED_PDF },
         take: 1,
         select: { fileName: true, fileData: true },
       },
