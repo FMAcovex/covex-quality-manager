@@ -158,7 +158,8 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
  xml=setWordCellTextBalanced(xml,3,7,0,box(r.effectivenessStatus==="ACCEPTABLE","Conforme"));xml=setWordCellTextBalanced(xml,3,7,1,box(r.effectivenessStatus==="NOT_ACCEPTABLE","No conforme"));
  xml=setWordCellTextBalanced(xml,3,7,2,box(r.effectivenessStatus==="PENDING","Pendiente"));xml=setWordCellTextBalanced(xml,3,7,3,box(r.effectivenessStatus==="NOT_REQUIRED","N/A"));
  xml=setWordCellTextBalanced(xml,3,8,0,text(r.effectivenessAssessment));
- xml=setWordCellTextBalanced(xml,3,10,0,[r.closeActionStatus? `Estado de las acciones: ${r.closeActionStatus}`:"",text(r.closeActionReferences)].filter(Boolean).join("\n"));
+ const closeActionLabel=r.closeActionStatus==="COMPLETED"?"Completadas":r.closeActionStatus==="LINKED"?"Vinculadas a seguimiento independiente":r.closeActionStatus==="PENDING"?"Pendientes":"";
+ xml=setWordCellTextBalanced(xml,3,10,0,[closeActionLabel? `Estado de las acciones: ${closeActionLabel}`:"",text(r.closeActionReferences)].filter(Boolean).join("\n"));
  xml=setWordCellTextBalanced(xml,3,12,0,text(r.closeConclusion));xml=setWordCellTextBalanced(xml,3,13,1,`${box(Boolean(r.closedAt),"Cerrada")}   ${box(!r.closedAt,"Abierta / en seguimiento")}`);
  xml=setWordCellTextBalanced(xml,3,13,3,date(r.closedAt));xml=setWordCellTextBalanced(xml,3,14,1,date(r.nextFollowupDate));
  xml=setWordCellTextBalanced(xml,4,1,0,text(r.closeApprovalNames));
