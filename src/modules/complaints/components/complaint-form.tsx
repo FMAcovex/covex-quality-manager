@@ -239,8 +239,8 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
   </div></section>
 
   <div className="form-footer"><Link className="button" href={complaintId?`/complaints/${complaintId}`:"/complaints"}>Cancelar</Link><div className="heading-actions">
-   {mode==="create"&&recordStatus==="DRAFT"?<button className="button" name="saveStatus" value="DRAFT" disabled={pending}>{pending?"Guardando…":"Guardar borrador"}</button>:null}
-   <button className="button primary" name="saveStatus" value={recordStatus==="DRAFT"?"OPEN":recordStatus} disabled={pending}>{pending?"Guardando…":mode==="create"?"Guardar reclamación":"Guardar cambios"}</button>
+   {recordStatus==="DRAFT"?<button className="button" name="saveStatus" value="DRAFT" disabled={pending}>{pending?"Guardando…":"Guardar borrador"}</button>:null}
+   <button className="button primary" name="saveStatus" value={recordStatus==="DRAFT"?"OPEN":recordStatus} disabled={pending}>{pending?"Guardando…":mode==="create"?"Guardar reclamación":recordStatus==="DRAFT"?"Guardar y abrir reclamación":"Guardar cambios"}</button>
   </div></div>
  </form>;
 }
