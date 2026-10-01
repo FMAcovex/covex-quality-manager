@@ -917,6 +917,8 @@ model Complaint {
   communicationParties       String?
   communicationSummary       String?
   partIIRequired             Boolean?
+  hasDerivedActions          Boolean?
+  nextFollowupDate           DateTime?                    @db.Date
   conclusion                 String?
   effectivenessRequired      Boolean?
   initialEvaluationDate      DateTime?                    @db.Date
@@ -960,6 +962,7 @@ model Complaint {
   @@index([classification])
   @@index([status])
   @@index([effectivenessStatus])
+  @@index([nextFollowupDate])
   @@index([partyName])
   @@index([includeInKpi])
   @@index([closedAt])
