@@ -877,3 +877,16 @@ Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r1-core`; VALIDADO LOCAL
 - eventos de alto nivel en `ChangeHistory` para creación, aceptación y resolución;
 - smoke PostgreSQL `pnpm review-r1:smoke` integrado en CI;
 - sin cambios visuales en expedientes, sin bloqueo de cierre y sin cambios en reglas GMP, versionado, anexos o documentos.
+
+## R2B1 — Revisión/comentarios · Desviaciones
+Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r2b1-deviations`; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
+
+- reutiliza los componentes transversales de R2A sin crear una UI paralela;
+- añade Modo revisión y pestaña Revisión al detalle de Desviaciones;
+- incorpora targets estables para identificación, origen, descripción, investigación, causa raíz, recurrencia, impacto, acciones y conclusión/disposición;
+- acciones inmediatas y propuestas CAPA se revisan por UUID real mediante targets ITEM;
+- «Ir al campo» conserva pestaña, modo de revisión, hilo y anchor estable;
+- observaciones vinculadas a la versión funcional vigente cuando existe y soporte para históricos sin versión funcional;
+- smoke `pnpm review-r2b1:smoke` integrado en CI;
+- sin cambios funcionales en formularios, estados, reglas de cierre, relaciones, anexos, PDF o versionado.
+
