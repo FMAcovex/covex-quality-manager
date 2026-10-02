@@ -852,7 +852,7 @@ Estado: **IMPLEMENTADO EN RAMA `feature/capa-r3-final-regression`; PENDIENTE DE 
 - no introduce reglas GMP nuevas, rediseños, cambios Prisma ni extensión documental a otros módulos.
 
 ## R1 — Núcleo transversal de revisión/comentarios
-Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r1-core`; VALIDADO LOCALMENTE, PENDIENTE DE CI DEL PR**.
+Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r1-core`; VALIDADO LOCALMENTE Y EN CI DEL PR #89**.
 
 - enums `ReviewThreadStatus` y `ReviewTargetKind`;
 - modelos transversales `ReviewThread` y `ReviewMessage`, vinculados a `QmsRecord` y opcionalmente a `QmsRecordVersion`;
