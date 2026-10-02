@@ -1,4 +1,4 @@
-import { createReviewThread, ReviewThreadError } from "@/lib/qms/review/service";
+import { createReviewThread } from "@/lib/qms/review/service";
 import type { CreateReviewThreadInput } from "@/lib/qms/review/types";
 import { prisma } from "@/lib/db";
 
@@ -15,14 +15,9 @@ export async function createCurrentVersionReviewThread(
     orderBy: [{ sequenceNumber: "desc" }, { createdAt: "desc" }],
     select: { id: true },
   });
-  if (!currentVersion) {
-    throw new ReviewThreadError(
-      "INVALID_INPUT",
-      "El expediente no tiene una versión funcional vigente para revisar.",
-    );
-  }
+
   return createReviewThread({
     ...input,
-    recordVersionId: currentVersion.id,
+    recordVersionId: currentVersion?.id ?? null,
   });
 }
