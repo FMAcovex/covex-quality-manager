@@ -4,6 +4,7 @@ import {
   reviewTabHref,
   reviewTargetHref,
   reviewThreadCapabilities,
+  reviewVersionLabel,
 } from "@/lib/qms/review/ui-model";
 import { reviewTargetWithValue } from "@/lib/qms/review/targets/catalog";
 import { complaintReviewTargets } from "@/lib/qms/review/targets/complaints";
@@ -30,6 +31,12 @@ describe("modelo visual de revisión", () => {
     expect(reviewTargetHref("/complaints/abc", target, "thread-1")).toBe(
       "/complaints/abc?tab=part-i&review=1&thread=thread-1#review-complaint-root-cause",
     );
+  });
+
+  it("adapta la etiqueta de versión al vocabulario del módulo", () => {
+    expect(reviewVersionLabel(0)).toBe("V00");
+    expect(reviewVersionLabel(2, "FOLLOWUP")).toBe("Seguimiento 02");
+    expect(reviewVersionLabel(null, "FOLLOWUP")).toBe("Sin versión");
   });
 
   it("hace los hilos resueltos estrictamente de solo lectura", () => {
