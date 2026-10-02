@@ -6,7 +6,7 @@ import {
   reviewStatusLabel,
   reviewTargetHref,
   reviewThreadCapabilities,
-  reviewVersionLabel,
+  reviewThreadContextLabel,
   type ReviewThreadView,
 } from "@/lib/qms/review/ui-model";
 import {
@@ -42,7 +42,13 @@ export function ReviewThreadCard({
       <header>
         <div>
           <strong>{thread.fieldLabelSnapshot ?? target?.label ?? thread.fieldPath ?? "Expediente"}</strong>
-          <small>{thread.tabKey ?? "Expediente"} · {thread.sectionKey ?? "General"}{showVersionContext ? ` · ${reviewVersionLabel(thread.recordVersionSequence, versionLabelMode)}` : ""}</small>
+          <small>{reviewThreadContextLabel({
+            tabKey: thread.tabKey,
+            sectionKey: thread.sectionKey,
+            sequence: thread.recordVersionSequence,
+            versionLabelMode,
+            showVersionContext,
+          })}</small>
         </div>
         <span className={`badge review-${thread.status.toLowerCase()}`}>{reviewStatusLabel(thread.status)}</span>
       </header>
