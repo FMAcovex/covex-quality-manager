@@ -484,3 +484,16 @@ Reglas:
 - la observación se asocia en servidor a la versión funcional de mayor secuencia que esté vigente al crearla; una versión posterior no cambia esa asociación ni el snapshot;
 - los resueltos siguen visibles, pero solo `PENDING + ACCEPTED` forman el contador activo;
 - la revisión no escribe campos funcionales, no altera estados ni bloquea los flujos del expediente.
+
+## D-060 — R2B1: extensión de revisión a Desviaciones
+Desviaciones reutiliza sin duplicación la infraestructura visual transversal validada en R2A.
+
+Reglas:
+- el Modo revisión, la pestaña Revisión, el drawer, los contadores y «Ir al campo» utilizan los componentes comunes de `src/components/review`;
+- los targets estáticos de Desviaciones se declaran en un catálogo estable propio del módulo y conservan `tabKey`, `sectionKey`, `fieldPath` y `anchorId` independientes del texto visible;
+- las acciones inmediatas se identifican mediante `DeviationImmediateAction` + UUID real;
+- las propuestas CAPA se identifican mediante `DeviationCapaPlan` + UUID real;
+- una observación nueva se asocia a la versión funcional vigente cuando existe; los históricos sin snapshot funcional siguen siendo revisables con `recordVersionId = null`;
+- los snapshots de valor y versión permanecen inmutables aunque el expediente cree una versión posterior;
+- la capa de revisión no modifica formularios, reglas GMP, estados, cierres, relaciones, anexos, PDF ni versionado funcional de Desviaciones.
+
