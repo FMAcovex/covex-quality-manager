@@ -12,8 +12,9 @@ export const changeControlColumns = [
   { key: "effectiveness", label: "Eficacia", index: 10 },
   { key: "latestFollowup", label: "Último seguimiento", index: 11 },
   { key: "nextFollowup", label: "Próximo seguimiento", index: 12 },
-  { key: "finalStatus", label: "Estado final", index: 13 },
-  { key: "closureDate", label: "Fecha cierre", index: 14 },
-  { key: "related", label: "Relacionados", index: 15 },
-  { key: "observations", label: "Observaciones", index: 16 },
+  { key: "functionalStatus", label: "Estado funcional", index: 13 },
+  { key: "finalStatus", label: "Estado final", index: 14 },
+  { key: "closureDate", label: "Fecha cierre", index: 15 },
+  { key: "related", label: "Relacionados", index: 16 },
+  { key: "observations", label: "Observaciones", index: 17 },
 ] as const;

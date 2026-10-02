@@ -53,8 +53,8 @@ export type ChangeControlFormDefaults = {
   dictamenResult?: "PENDING" | "APPROVED" | "REJECTED";
   dictamenDate?: string;
   followupResponsible?: string;
+  nextFollowupDate?: string;
   dictamenObservations?: string;
-  approvalNames?: string;
   internalObservations?: string;
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";

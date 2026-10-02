@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { updateChangeControlAction } from "@/modules/change-control/actions";
 import { ChangeControlForm } from "@/modules/change-control/components/change-control-form";
 import { getChangeControlDetail, getChangeControlLookups } from "@/modules/change-control/queries";
+import { nextFollowupDateFromHistory } from "@/modules/change-control/domain";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export default async function EditChangeControlPage({ params }: { params: Promis
   if (!record) notFound();
 
   const baselineTasks = record.tasks.filter((item) => item.origin === "DICTAMEN");
+  const nextFollowupDate = nextFollowupDateFromHistory(record.followups);
   const defaults = {
     businessCode: record.qmsRecord.businessCode ?? undefined,
     departmentId: record.departmentId ?? undefined,
@@ -54,8 +56,10 @@ export default async function EditChangeControlPage({ params }: { params: Promis
     dictamenResult: record.dictamenResult,
     dictamenDate: record.dictamenDate?.toISOString().slice(0, 10),
     followupResponsible: record.followupResponsible ?? undefined,
+    nextFollowupDate: nextFollowupDate instanceof Date
+      ? nextFollowupDate.toISOString().slice(0, 10)
+      : nextFollowupDate?.slice(0, 10),
     dictamenObservations: record.dictamenObservations ?? undefined,
-    approvalNames: record.approvalNames ?? undefined,
     internalObservations: record.internalObservations ?? undefined,
     signedDocumentAvailable: boolValue(record.signedDocumentAvailable),
     dataQualityStatus: record.dataQualityStatus,

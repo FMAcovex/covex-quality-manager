@@ -21,8 +21,8 @@ const taskSchema = z.object({
   id: z.string().optional(),
   departmentId: z.string().trim().min(1),
   description: z.string().trim().min(1),
-  responsible: z.string().trim(),
-  plannedDate: z.string().trim(),
+  responsible: z.string().trim().min(1),
+  plannedDate: z.string().trim().min(1),
 });
 
 function text(formData: FormData, name: string) {
@@ -45,17 +45,26 @@ function enumValue<T extends z.ZodTypeAny>(schema: T, value: string | null) {
   return result.success ? result.data : null;
 }
 
-function parseTasks(raw: string | null): ChangeTaskInput[] {
-  if (!raw) return [];
+function parseTasks(raw: string | null) {
+  if (!raw) return { tasks: [] as ChangeTaskInput[], hasIncompleteTask: false };
   try {
     const value = JSON.parse(raw);
-    if (!Array.isArray(value)) return [];
-    return value
-      .map((item) => taskSchema.safeParse(item))
-      .filter((item): item is z.SafeParseSuccess<ChangeTaskInput> => item.success)
-      .map((item) => item.data);
+    if (!Array.isArray(value)) return { tasks: [] as ChangeTaskInput[], hasIncompleteTask: false };
+    const relevant = value.filter((item) => {
+      if (!item || typeof item !== "object") return false;
+      const candidate = item as Record<string, unknown>;
+      return [candidate.departmentId, candidate.description, candidate.responsible, candidate.plannedDate]
+        .some((field) => typeof field === "string" && field.trim());
+    });
+    const parsed = relevant.map((item) => taskSchema.safeParse(item));
+    return {
+      tasks: parsed
+        .filter((item): item is z.SafeParseSuccess<ChangeTaskInput> => item.success)
+        .map((item) => item.data),
+      hasIncompleteTask: parsed.some((item) => !item.success),
+    };
   } catch {
-    return [];
+    return { tasks: [] as ChangeTaskInput[], hasIncompleteTask: true };
   }
 }
 
@@ -71,7 +80,8 @@ export function parseChangeControlForm(formData: FormData) {
     .map(String)
     .map((value) => enumValue(scope, value))
     .filter((value): value is z.infer<typeof scope> => Boolean(value));
-  const tasks = parseTasks(text(formData, "tasksJson"));
+  const parsedTasks = parseTasks(text(formData, "tasksJson"));
+  const tasks = parsedTasks.tasks;
   const decision = enumValue(requestDecision, text(formData, "requestDecision")) ?? "PENDING";
   const result = enumValue(dictamenResult, text(formData, "dictamenResult")) ?? "PENDING";
   const classValue = enumValue(classification, text(formData, "classification"));
@@ -80,22 +90,48 @@ export function parseChangeControlForm(formData: FormData) {
   const errors: string[] = [];
 
   if (recordStatus !== "DRAFT") {
-  if (!departmentId) errors.push("El departamento/área solicitante es obligatorio.");
-  if (!requestDate) errors.push("La fecha de solicitud es obligatoria.");
-  if (!requesterName) errors.push("Debe identificarse el solicitante.");
-  if (!scopeValues.length) errors.push("Debe seleccionarse al menos un alcance.");
-  if (!description) errors.push("La descripción del cambio es obligatoria.");
-  if (!justification) errors.push("La justificación del cambio es obligatoria.");
-  if (scopeValues.includes("OTHER") && !text(formData, "otherScope")) {
-    errors.push("Debe especificarse el alcance cuando se selecciona Otros.");
+    if (!departmentId) errors.push("El departamento/área solicitante es obligatorio.");
+    if (!requestDate) errors.push("La fecha de solicitud es obligatoria.");
+    if (!requesterName) errors.push("Debe identificarse el solicitante.");
+    if (!text(formData, "requesterPosition")) errors.push("El puesto del solicitante es obligatorio.");
+    if (!scopeValues.length) errors.push("Debe seleccionarse al menos un alcance.");
+    if (!description) errors.push("La descripción del cambio es obligatoria.");
+    if (!justification) errors.push("La justificación del cambio es obligatoria.");
+    if (!text(formData, "providedDocuments")) errors.push("La relación de documentos aportados es obligatoria; indique No aplica cuando corresponda.");
+    if (!text(formData, "evaluation")) errors.push("La evaluación del cambio es obligatoria.");
+    if (!classValue) errors.push("La clasificación Mayor/Menor es obligatoria.");
+    if (!text(formData, "plannedImplementationDate")) errors.push("La fecha prevista de implementación es obligatoria.");
+    if (bool(formData, "committeeRequired") === null) errors.push("Debe responderse si se requiere Comité de cambios.");
+    if (bool(formData, "clientNotificationRequired") === null) errors.push("Debe responderse si se requiere informar al cliente.");
+    if (bool(formData, "authorityRequired") === null) errors.push("Debe responderse si interviene la autoridad sanitaria.");
+    if (!enumValue(triState, text(formData, "pqrRequired"))) errors.push("Debe responderse la implicación en PQR.");
+    if (!enumValue(triState, text(formData, "stabilityRequired"))) errors.push("Debe responderse la implicación en estabilidad.");
+    if (!enumValue(triState, text(formData, "additionalAnalysisRequired"))) errors.push("Debe responderse si se requieren análisis adicionales.");
+    if (!enumValue(triState, text(formData, "additionalValidationRequired"))) errors.push("Debe responderse si se requiere validación adicional.");
+    if (bool(formData, "otherImplicationRequired") === null) errors.push("Debe responderse si existen otras implicaciones.");
+    if (scopeValues.includes("OTHER") && !text(formData, "otherScope")) {
+      errors.push("Debe especificarse el alcance cuando se selecciona Otros.");
+    }
+    if (bool(formData, "committeeRequired") && !text(formData, "committeeDetails")) errors.push("Debe justificarse la intervención del Comité de cambios.");
+    if (bool(formData, "clientNotificationRequired") && !text(formData, "clientNotificationDetails")) errors.push("Debe detallarse la información al cliente.");
+    if (bool(formData, "authorityRequired") && !text(formData, "authorityDetails")) errors.push("Debe detallarse la intervención de la autoridad sanitaria.");
+    if (enumValue(triState, text(formData, "pqrRequired")) === "YES" && (!text(formData, "pqrProducts") || !text(formData, "pqrPeriod"))) errors.push("Cuando el cambio se refleja en PQR deben indicarse productos y periodo.");
+    if (enumValue(triState, text(formData, "stabilityRequired")) === "YES" && formData.get("stabilityAccelerated") !== "on" && formData.get("stabilityOngoing") !== "on") errors.push("Debe seleccionarse al menos un tipo de estabilidad.");
+    if (enumValue(triState, text(formData, "additionalAnalysisRequired")) === "YES" && !text(formData, "additionalAnalysisDetails")) errors.push("Deben especificarse los análisis adicionales.");
+    if (enumValue(triState, text(formData, "additionalValidationRequired")) === "YES" && !text(formData, "additionalValidationDetails")) errors.push("Debe detallarse la validación adicional.");
+    if (bool(formData, "otherImplicationRequired") && !text(formData, "otherImplicationDetails")) errors.push("Deben especificarse las otras implicaciones.");
+    if (parsedTasks.hasIncompleteTask) errors.push("Cada acción del Plan de ejecución debe indicar departamento, acción, responsable y fecha prevista.");
   }
+  if (recordStatus !== "DRAFT" && decision !== "PENDING") {
+    if (!text(formData, "requestDecisionResponsible")) errors.push("El responsable de dictamen es obligatorio cuando la solicitud se acepta o deniega.");
+    if (!text(formData, "requestDecisionRole")) errors.push("El cargo/función del responsable de dictamen es obligatorio.");
+    if (!text(formData, "requestDecisionDate")) errors.push("Una solicitud aceptada o denegada debe tener fecha de decisión.");
   }
-  if (recordStatus !== "DRAFT" && decision === "ACCEPTED" && !text(formData, "requestDecisionDate")) {
-    errors.push("Una solicitud aceptada debe tener fecha de aceptación.");
+  if (recordStatus !== "DRAFT" && result !== "PENDING") {
+    if (!text(formData, "dictamenDate")) errors.push("Un resultado de dictamen debe tener fecha.");
+    if (!text(formData, "dictamenObservations")) errors.push("Las observaciones del resultado del dictamen son obligatorias.");
   }
   if (recordStatus !== "DRAFT" && result === "APPROVED") {
-    if (!classValue) errors.push("Un dictamen aprobado debe clasificar el cambio como Mayor o Menor.");
-    if (!text(formData, "dictamenDate")) errors.push("Un dictamen aprobado debe tener fecha de aprobación.");
     if (!text(formData, "followupResponsible")) errors.push("Debe indicarse el responsable de seguimiento.");
     if (!tasks.length) errors.push("Un cambio aprobado debe tener al menos una acción en el plan de ejecución.");
   }
@@ -143,7 +179,6 @@ export function parseChangeControlForm(formData: FormData) {
       dictamenDate: text(formData, "dictamenDate"),
       followupResponsible: text(formData, "followupResponsible"),
       dictamenObservations: text(formData, "dictamenObservations"),
-      approvalNames: text(formData, "approvalNames"),
       internalObservations: text(formData, "internalObservations"),
       signedDocumentAvailable: bool(formData, "signedDocumentAvailable"),
       dataQualityStatus:

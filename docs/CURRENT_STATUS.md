@@ -916,3 +916,14 @@ Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r2b3-returns`; PENDIENTE
 - smoke `pnpm review-r2b3:smoke` integrado en CI;
 - sin cambios funcionales en estados, cierre, relaciones, anexos, PDF, productos ni seguimientos.
 
+## CC1 — Control de Cambios · Modelo funcional, estados y formulario
+Estado: **IMPLEMENTADO EN RAMA `feature/change-control-cc1-functional-model-form`; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
+
+- representación funcional derivada a partir de `ChangeFinalStatus`, `ChangeRequestDecision`, `ChangeDictamenResult`, ejecución y eficacia, sin crear una máquina de estados paralela;
+- estado funcional visible en cabecera y listado, manteniendo además el estado final existente;
+- clasificación Mayor/Menor y próximo seguimiento conservan sus fuentes actuales; la fecha se deriva del último `ChangeControlFollowup` y no se duplica;
+- formulario compartido de alta/edición reordenado como Solicitud, Dictamen, 2.a Implicación y requisitos, Plan de ejecución, Resultado del dictamen y Control interno;
+- obligatoriedad funcional aplicada al salir de Borrador, con Control interno opcional y guardado de borradores incompletos preservado;
+- `requestDecisionResponsible` se reutiliza con la denominación funcional «Responsable de dictamen»;
+- `approvalNames` deja de capturarse sin eliminar el campo ni sobrescribir datos históricos, anexos o snapshots;
+- sin cambios de schema Prisma, migraciones, seguimientos, documentos, Anexo V ni capa de revisión R2C.
