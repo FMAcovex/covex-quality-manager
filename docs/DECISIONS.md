@@ -466,6 +466,7 @@ Reglas:
 - el comentario inicial y todas las respuestas se conservan exclusivamente como `ReviewMessage`;
 - los estados son `PENDING`, `ACCEPTED` y `RESOLVED`, con transiciones `PENDING → ACCEPTED → RESOLVED` o `PENDING → RESOLVED`;
 - aceptar no resuelve y responder no cambia el estado;
+- un hilo `RESOLVED` queda cerrado: conserva todo su histórico pero no admite nuevas respuestas; una nueva observación se registra en un hilo nuevo;
 - no se implementa reapertura ni borrado de hilos o mensajes;
 - `fieldLabelSnapshot` y `valueSnapshot` conservan lo visto al crear la observación y no se sincronizan después con el expediente;
 - creación, aceptación y resolución se registran como eventos de alto nivel en `ChangeHistory`; las respuestas no se duplican allí;
