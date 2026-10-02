@@ -116,7 +116,6 @@ export function parseChangeControlForm(formData: FormData) {
     if (bool(formData, "clientNotificationRequired") && !text(formData, "clientNotificationDetails")) errors.push("Debe detallarse la información al cliente.");
     if (bool(formData, "authorityRequired") && !text(formData, "authorityDetails")) errors.push("Debe detallarse la intervención de la autoridad sanitaria.");
     if (enumValue(triState, text(formData, "pqrRequired")) === "YES" && (!text(formData, "pqrProducts") || !text(formData, "pqrPeriod"))) errors.push("Cuando el cambio se refleja en PQR deben indicarse productos y periodo.");
-    if (enumValue(triState, text(formData, "stabilityRequired")) === "YES" && formData.get("stabilityAccelerated") !== "on" && formData.get("stabilityOngoing") !== "on") errors.push("Debe seleccionarse al menos un tipo de estabilidad.");
     if (enumValue(triState, text(formData, "additionalAnalysisRequired")) === "YES" && !text(formData, "additionalAnalysisDetails")) errors.push("Deben especificarse los análisis adicionales.");
     if (enumValue(triState, text(formData, "additionalValidationRequired")) === "YES" && !text(formData, "additionalValidationDetails")) errors.push("Debe detallarse la validación adicional.");
     if (bool(formData, "otherImplicationRequired") && !text(formData, "otherImplicationDetails")) errors.push("Deben especificarse las otras implicaciones.");
@@ -132,11 +131,58 @@ export function parseChangeControlForm(formData: FormData) {
     if (!text(formData, "dictamenObservations")) errors.push("Las observaciones del resultado del dictamen son obligatorias.");
   }
   if (recordStatus !== "DRAFT" && result === "APPROVED") {
+    if (!text(formData, "nextFollowupDate")) errors.push("Debe indicarse la fecha del próximo seguimiento.");
     if (!text(formData, "followupResponsible")) errors.push("Debe indicarse el responsable de seguimiento.");
     if (!tasks.length) errors.push("Un cambio aprobado debe tener al menos una acción en el plan de ejecución.");
   }
 
+  const fieldIssues: Record<string, string[]> = {};
+  const bindIssue = (field: string, message: string) => {
+    if (errors.includes(message)) fieldIssues[field] = [...(fieldIssues[field] ?? []), message];
+  };
+  [
+    ["departmentId", "El departamento/área solicitante es obligatorio."],
+    ["requestDate", "La fecha de solicitud es obligatoria."],
+    ["requesterName", "Debe identificarse el solicitante."],
+    ["requesterPosition", "El puesto del solicitante es obligatorio."],
+    ["scope", "Debe seleccionarse al menos un alcance."],
+    ["description", "La descripción del cambio es obligatoria."],
+    ["justification", "La justificación del cambio es obligatoria."],
+    ["providedDocuments", "La relación de documentos aportados es obligatoria; indique No aplica cuando corresponda."],
+    ["evaluation", "La evaluación del cambio es obligatoria."],
+    ["classification", "La clasificación Mayor/Menor es obligatoria."],
+    ["plannedImplementationDate", "La fecha prevista de implementación es obligatoria."],
+    ["committeeRequired", "Debe responderse si se requiere Comité de cambios."],
+    ["clientNotificationRequired", "Debe responderse si se requiere informar al cliente."],
+    ["authorityRequired", "Debe responderse si interviene la autoridad sanitaria."],
+    ["pqrRequired", "Debe responderse la implicación en PQR."],
+    ["stabilityRequired", "Debe responderse la implicación en estabilidad."],
+    ["additionalAnalysisRequired", "Debe responderse si se requieren análisis adicionales."],
+    ["additionalValidationRequired", "Debe responderse si se requiere validación adicional."],
+    ["otherImplicationRequired", "Debe responderse si existen otras implicaciones."],
+    ["otherScope", "Debe especificarse el alcance cuando se selecciona Otros."],
+    ["committeeDetails", "Debe justificarse la intervención del Comité de cambios."],
+    ["clientNotificationDetails", "Debe detallarse la información al cliente."],
+    ["authorityDetails", "Debe detallarse la intervención de la autoridad sanitaria."],
+    ["pqrProducts", "Cuando el cambio se refleja en PQR deben indicarse productos y periodo."],
+    ["pqrPeriod", "Cuando el cambio se refleja en PQR deben indicarse productos y periodo."],
+    ["additionalAnalysisDetails", "Deben especificarse los análisis adicionales."],
+    ["additionalValidationDetails", "Debe detallarse la validación adicional."],
+    ["otherImplicationDetails", "Deben especificarse las otras implicaciones."],
+    ["tasks", "Cada acción del Plan de ejecución debe indicar departamento, acción, responsable y fecha prevista."],
+    ["requestDecisionResponsible", "El responsable de dictamen es obligatorio cuando la solicitud se acepta o deniega."],
+    ["requestDecisionRole", "El cargo/función del responsable de dictamen es obligatorio."],
+    ["requestDecisionDate", "Una solicitud aceptada o denegada debe tener fecha de decisión."],
+    ["dictamenDate", "Un resultado de dictamen debe tener fecha."],
+    ["dictamenObservations", "Las observaciones del resultado del dictamen son obligatorias."],
+    ["nextFollowupDate", "Debe indicarse la fecha del próximo seguimiento."],
+    ["followupResponsible", "Debe indicarse el responsable de seguimiento."],
+    ["tasks", "Un cambio aprobado debe tener al menos una acción en el plan de ejecución."],
+  ].forEach(([field, message]) => bindIssue(field, message));
+
   return {
+    errors,
+    fieldIssues,
     errors,
     actor: text(formData, "modifiedByText") ?? requesterName ?? "Usuario no informado",
     values: {
@@ -178,6 +224,7 @@ export function parseChangeControlForm(formData: FormData) {
       dictamenResult: result,
       dictamenDate: text(formData, "dictamenDate"),
       followupResponsible: text(formData, "followupResponsible"),
+      nextFollowupDate: text(formData, "nextFollowupDate"),
       dictamenObservations: text(formData, "dictamenObservations"),
       internalObservations: text(formData, "internalObservations"),
       signedDocumentAvailable: bool(formData, "signedDocumentAvailable"),
