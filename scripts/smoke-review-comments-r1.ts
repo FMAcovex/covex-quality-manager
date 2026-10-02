@@ -121,6 +121,15 @@ async function main() {
       ],
     );
 
+    await assert.rejects(
+      replyToReviewThread({
+        reviewThreadId: thread.id,
+        message: "No debe admitirse tras resolver.",
+        createdByText: "Autor R1",
+      }),
+      /resuelto está cerrado/i,
+    );
+
     const history = await prisma.changeHistory.findMany({
       where: {
         qmsRecordId: primaryRecord.id,
