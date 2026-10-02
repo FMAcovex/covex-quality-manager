@@ -48,6 +48,12 @@ const objectLabels:Record<string,string>={PRODUCT_MATERIAL:"Producto / material"
 const categoryLabels:Record<string,string>={PRODUCT_QUALITY:"Calidad del producto",SPECIFICATIONS_TESTING:"Especificaciones / análisis",PACKAGING:"Acondicionamiento / envase",LABELLING_DOCUMENTATION:"Etiquetado / documentación",QUANTITY_CONTENT:"Cantidad / contenido",TRANSPORT_STORAGE:"Transporte / almacenamiento",SERVICE_SUPPLY:"Servicio / suministro",EQUIPMENT_SYSTEM:"Equipo / sistema",ENVIRONMENT:"Medio ambiente",OTHER:"Otro"};
 const containmentLabels:Record<string,string>={QUARANTINE:"Bloqueo / cuarentena",SUSPEND_USE_DISTRIBUTION:"Suspender uso / distribución",NOTIFY_PARTIES:"Aviso a partes",NONE:"Ninguna",OTHER:"Otra"};
 
+function complaintFollowupLabel(sequenceNumber: number) {
+  return sequenceNumber === 0
+    ? "Seguimiento 00 · Apertura"
+    : `Seguimiento ${String(sequenceNumber).padStart(2, "0")}`;
+}
+
 export default async function ComplaintDetailPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string}>}){
  const {id}=await params;const {tab:raw,review,thread}=await searchParams;const tab=tabs.some(([k])=>k===raw)?raw!:"summary";
  const r=await getComplaintDetail(id);if(!r)notFound();
@@ -109,7 +115,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
   <nav className="record-tabs">{tabs.map(([k,l])=><Link key={k} className={tab===k?"active":""} href={reviewTabHref(basePath,k,reviewMode)}>{k==="review"?`${l} (${reviewActiveCount})`:l}</Link>)}</nav>
 
   {tab==="summary"?<>
-   <div className="card"><div className="section-title-row"><div><h2>Resumen del expediente</h2><p className="muted-note">Situación actual y próximos pasos de la reclamación.</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
+   <div className="card"><div className="section-title-row"><div><h2>Resumen del expediente</h2><p className="muted-note">Situación actual y próximos pasos de la reclamación.</p></div>{currentVersion?<span className="badge neutral">Actual {complaintFollowupLabel(currentVersion.sequenceNumber)}</span>:null}</div>
     <dl className="info-grid">
      <div className="info-item"><dt>Tipo</dt><dd>{complaintTypeLabel(r.complaintType)}</dd></div>
      <div className="info-item"><dt>Cliente / proveedor</dt><dd>{txt(r.partyName)}</dd></div>
@@ -192,14 +198,14 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    </>}
   </div>:null}
 
-  {tab==="versions"?<div className="card"><div className="section-title-row version-section-title-row"><div className="section-title-copy"><h2>Versiones del expediente</h2><p className="muted-note version-section-help">Guardar cambios mantiene la versión vigente. Guardar como nueva versión / seguimiento congela la anterior y crea la siguiente versión.</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
+  {tab==="versions"?<div className="card"><div className="section-title-row version-section-title-row"><div className="section-title-copy"><h2>Seguimientos del expediente</h2><p className="muted-note version-section-help">Seguimiento 00 corresponde a la apertura/registro inicial. El primer seguimiento posterior es 01; después 02, 03…</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
    {r.qmsRecord.versions.length?<div className="timeline">{[...r.qmsRecord.versions].reverse().map(item=>{
     const summary=recordVersionSummary("COMPLAINT",item.snapshot);
     const versionDate=complaintSnapshotVersionFollowupDate(item.snapshot,item.sequenceNumber);
     const signedDocument=item.documents.find(document=>document.kind==="SIGNED_PDF")??null;
     const kind=item.sequenceNumber===0?"Versión inicial":item.kind==="REOPENING"?"Reapertura":item.kind==="HISTORICAL_STATE"?"Estado histórico":"Seguimiento / versión";
     return <article className="timeline-item record-version-item" key={item.id}>
-     <header className="record-version-header"><strong>{versionLabel(item.sequenceNumber)} · {kind}</strong><span className={`badge ${summary.status==="DRAFT"?"neutral":summary.status==="OPEN"?"open":"closed"}`}>{summary.status==="DRAFT"?"Borrador":summary.status==="OPEN"?"Abierta":"Cerrada"}</span>{item.frozenAt?<span className="badge neutral">Histórica</span>:<span className="badge neutral">Vigente</span>}</header>
+     <header className="record-version-header"><strong>{complaintFollowupLabel(item.sequenceNumber)} · {kind}</strong><span className={`badge ${summary.status==="DRAFT"?"neutral":summary.status==="OPEN"?"open":"closed"}`}>{summary.status==="DRAFT"?"Borrador":summary.status==="OPEN"?"Abierta":"Cerrada"}</span>{item.frozenAt?<span className="badge neutral">Histórica</span>:<span className="badge neutral">Vigente</span>}</header>
      <div className="record-version-details">
       <div className="record-version-detail"><span>Fecha seguimiento / versión</span><strong>{formatDate(versionDate)}</strong></div>
       <div className="record-version-detail"><span>Próximo seguimiento</span><strong>{formatDate(summary.nextFollowupDate)}</strong></div>
