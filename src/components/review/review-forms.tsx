@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent } from "react";
 import {
   acceptReviewThreadAction,
+  createReviewThreadAction,
   replyToReviewThreadAction,
   resolveReviewThreadAction,
 } from "@/lib/qms/review/actions";
@@ -15,14 +16,19 @@ function ActionFeedback({ error }: { error: string | null }) {
 }
 
 export function ReviewCreateForm({ target }: { target: ReviewTargetInstance }) {
-  const { qmsRecordId, defaultActor, refresh } = useReviewWorkspace();
+  const {
+    qmsRecordId,
+    defaultActor,
+    refresh,
+    recordVersionAssociation,
+  } = useReviewWorkspace();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     startTransition(async () => {
-      const result = await createCurrentVersionReviewThreadAction({
+      const input = {
         qmsRecordId,
         targetKind: target.targetKind,
         tabKey: target.tabKey,
@@ -34,7 +40,11 @@ export function ReviewCreateForm({ target }: { target: ReviewTargetInstance }) {
         valueSnapshot: target.valueSnapshot,
         initialMessage: message,
         createdByText: defaultActor,
-      });
+      };
+      const result =
+        recordVersionAssociation === "NONE"
+          ? await createReviewThreadAction({ ...input, recordVersionId: null })
+          : await createCurrentVersionReviewThreadAction(input);
       setError(result.error);
       if (!result.error) {
         setMessage("");

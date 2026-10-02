@@ -4,6 +4,7 @@ import {
   reviewTabHref,
   reviewTargetHref,
   reviewThreadCapabilities,
+  reviewThreadContextLabel,
   reviewVersionLabel,
 } from "@/lib/qms/review/ui-model";
 import { reviewTargetWithValue } from "@/lib/qms/review/targets/catalog";
@@ -37,6 +38,25 @@ describe("modelo visual de revisión", () => {
     expect(reviewVersionLabel(0)).toBe("V00");
     expect(reviewVersionLabel(2, "FOLLOWUP")).toBe("Seguimiento 02");
     expect(reviewVersionLabel(null, "FOLLOWUP")).toBe("Sin versión");
+  });
+
+  it("oculta completamente el contexto de versión cuando el módulo no tiene versiones funcionales", () => {
+    expect(
+      reviewThreadContextLabel({
+        tabKey: "summary",
+        sectionKey: "general-data",
+        sequence: null,
+        showVersionContext: false,
+      }),
+    ).toBe("summary · general-data");
+    expect(
+      reviewThreadContextLabel({
+        tabKey: "summary",
+        sectionKey: "general-data",
+        sequence: 0,
+        showVersionContext: false,
+      }),
+    ).not.toContain("V00");
   });
 
   it("hace los hilos resueltos estrictamente de solo lectura", () => {

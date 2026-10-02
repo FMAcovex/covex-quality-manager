@@ -58,7 +58,8 @@
     "review-r1:smoke": "tsx scripts/smoke-review-comments-r1.ts",
     "review-r2a:smoke": "tsx scripts/smoke-review-comments-r2a.ts",
     "review-r2b1:smoke": "tsx scripts/smoke-review-comments-r2b1.ts",
-    "review-r2b2:smoke": "tsx scripts/smoke-review-comments-r2b2.ts"
+    "review-r2b2:smoke": "tsx scripts/smoke-review-comments-r2b2.ts",
+    "review-r2b3:smoke": "tsx scripts/smoke-review-comments-r2b3.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

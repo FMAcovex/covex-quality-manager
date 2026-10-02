@@ -510,3 +510,15 @@ Reglas:
 - el snapshot y la asociación al seguimiento permanecen inmutables aunque se cree un seguimiento posterior;
 - la capa de revisión no modifica reglas GMP, formularios, estados, cierres, eficacia, relaciones, anexos, PDF ni la lógica de versionado CAPA.
 
+## D-062 — R2B3: extensión de revisión a Devoluciones
+Devoluciones reutiliza la infraestructura transversal de revisión sin introducir versiones funcionales de usuario.
+
+Reglas:
+- Modo revisión, pestaña Revisión, drawer, contadores y «Ir al campo» reutilizan los componentes comunes;
+- los objetivos estáticos cubren datos generales, motivo/incidencias, documentación, decisión, destino final, trazabilidad, productos, comprobaciones, seguimientos y relación con la reclamación de origen;
+- los productos se identifican mediante `ReturnProduct` + UUID real;
+- los seguimientos se identifican mediante `ReturnFollowup` + UUID real;
+- las observaciones de Devoluciones se crean siempre con `recordVersionId = null`, aunque exista un `QmsRecordVersion` técnico para documentos/snapshots;
+- la UI de revisión de Devoluciones no muestra `V00/V01`, `Seguimiento 00/01` ni «Sin versión» porque el módulo mantiene un único expediente editable sin revisiones funcionales;
+- la capa de revisión no modifica estados, cierre, relaciones, productos, seguimientos, anexos, PDF ni reglas ya validadas de Devoluciones.
+

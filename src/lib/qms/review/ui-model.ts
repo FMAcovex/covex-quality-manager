@@ -106,6 +106,25 @@ export function reviewVersionLabel(
   return mode === "FOLLOWUP" ? `Seguimiento ${number}` : `V${number}`;
 }
 
+export function reviewThreadContextLabel({
+  tabKey,
+  sectionKey,
+  sequence,
+  versionLabelMode = "VERSION",
+  showVersionContext = true,
+}: {
+  tabKey: string | null;
+  sectionKey: string | null;
+  sequence: number | null;
+  versionLabelMode?: ReviewVersionLabelMode;
+  showVersionContext?: boolean;
+}) {
+  const base = `${tabKey ?? "Expediente"} · ${sectionKey ?? "General"}`;
+  return showVersionContext
+    ? `${base} · ${reviewVersionLabel(sequence, versionLabelMode)}`
+    : base;
+}
+
 export function reviewStatusLabel(status: ReviewThreadStatus) {
   if (status === "PENDING") return "Pendiente";
   if (status === "ACCEPTED") return "Aceptada";

@@ -903,3 +903,16 @@ Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r2b2-capa`; PENDIENTE DE
 - smoke `pnpm review-r2b2:smoke` integrado en CI;
 - sin cambios funcionales en estados, cierre, eficacia, relaciones, anexos, PDF ni versionado.
 
+## R2B3 — Revisión/comentarios · Devoluciones
+Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r2b3-returns`; PENDIENTE DE CI**.
+
+- reutiliza la UI transversal de R2A/R2B1/R2B2;
+- añade Modo revisión y pestaña Revisión al detalle de Devoluciones;
+- targets estables para datos generales, decisión/destino, productos, comprobaciones, seguimientos y reclamación de origen;
+- `ReturnProduct` y `ReturnFollowup` se revisan por UUID real mediante targets ITEM;
+- las observaciones se almacenan sin asociación a la versión técnica del expediente (`recordVersionId = null`);
+- la UI oculta completamente el concepto de versión funcional en Devoluciones;
+- «Ir al campo» conserva pestaña, modo, hilo y anchor estable;
+- smoke `pnpm review-r2b3:smoke` integrado en CI;
+- sin cambios funcionales en estados, cierre, relaciones, anexos, PDF, productos ni seguimientos.
+

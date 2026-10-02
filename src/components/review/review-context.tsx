@@ -18,12 +18,16 @@ import {
   type ReviewVersionLabelMode,
 } from "@/lib/qms/review/ui-model";
 
+export type ReviewRecordVersionAssociation = "CURRENT" | "NONE";
+
 type ReviewContextValue = {
   qmsRecordId: string;
   module: QmsRecordType;
   basePath: string;
   currentVersionLabel: string;
   versionLabelMode: ReviewVersionLabelMode;
+  showVersionContext: boolean;
+  recordVersionAssociation: ReviewRecordVersionAssociation;
   defaultActor: string;
   reviewMode: boolean;
   targets: ReviewTargetInstance[];
@@ -48,6 +52,8 @@ export function ReviewWorkspaceProvider({
   basePath,
   currentVersionLabel,
   versionLabelMode = "VERSION",
+  showVersionContext = true,
+  recordVersionAssociation = "CURRENT",
   defaultActor,
   reviewMode,
   targets,
@@ -60,6 +66,8 @@ export function ReviewWorkspaceProvider({
   basePath: string;
   currentVersionLabel: string;
   versionLabelMode?: ReviewVersionLabelMode;
+  showVersionContext?: boolean;
+  recordVersionAssociation?: ReviewRecordVersionAssociation;
   defaultActor: string;
   reviewMode: boolean;
   targets: ReviewTargetInstance[];
@@ -127,6 +135,8 @@ export function ReviewWorkspaceProvider({
       basePath,
       currentVersionLabel,
       versionLabelMode,
+      showVersionContext,
+      recordVersionAssociation,
       defaultActor,
       reviewMode,
       targets,
@@ -147,6 +157,8 @@ export function ReviewWorkspaceProvider({
       basePath,
       currentVersionLabel,
       versionLabelMode,
+      showVersionContext,
+      recordVersionAssociation,
       defaultActor,
       reviewMode,
       targets,
