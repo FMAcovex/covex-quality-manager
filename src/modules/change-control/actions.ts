@@ -128,7 +128,7 @@ export async function createChangeControlAction(
 ): Promise<ChangeControlFormState> {
   const parsed = parseChangeControlForm(formData);
   if (parsed.errors.length) {
-    return preserveFormState(previous, formData, { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors });
+    return preserveFormState(previous, formData, { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
   }
   const v = parsed.values;
   let createdId: string;
@@ -270,7 +270,7 @@ export async function updateChangeControlAction(
 ): Promise<ChangeControlFormState> {
   const parsed = parseChangeControlForm(formData);
   if (parsed.errors.length) {
-    return preserveFormState(previous, formData, { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors });
+    return preserveFormState(previous, formData, { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
   }
 
   const existing = await prisma.changeControl.findUnique({
