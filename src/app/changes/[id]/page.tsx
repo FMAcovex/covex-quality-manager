@@ -571,10 +571,10 @@ export default async function ChangeControlDetailPage({
           {record.qmsRecord.history.length ? (
             <div className="timeline">
               {record.qmsRecord.history.map((item) => (
-                <div className="timeline-item" key={item.id}>
+                <div className="timeline-item history-entry" key={item.id}>
                   <div>
-                    <header><strong>{formatDate(item.changedAt)}</strong><span>{item.changedByText ?? "Sistema"}</span><span className="badge neutral">{item.source}</span></header>
-                    <p><strong>{item.fieldPath}</strong>{item.reason ? ` · Motivo: ${item.reason}` : ""}</p>
+                    <header className="history-entry-header"><strong>{formatDate(item.changedAt)}</strong><span>{item.changedByText ?? "Sistema"}</span><span className="badge neutral">{item.source}</span></header>
+                    <p className="history-entry-detail"><strong>{item.fieldPath}</strong>{item.reason ? <span>{` · Motivo: ${item.reason}`}</span> : null}</p>
                   </div>
                 </div>
               ))}
