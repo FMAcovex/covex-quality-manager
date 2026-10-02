@@ -15,6 +15,27 @@ import { SignedVersionDocumentForm } from "@/components/signed-version-document-
 
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+import {
+  ReviewDrawer,
+  ReviewMarker,
+  ReviewModeToggle,
+  ReviewStatusSummary,
+  ReviewThreadList,
+  ReviewWorkspaceProvider,
+} from "@/components/review";
+import { getReviewThreadsForDisplay } from "@/lib/qms/review/ui-queries";
+import {
+  activeReviewCount,
+  reviewModeHref,
+  reviewTabHref,
+  reviewVersionLabel,
+} from "@/lib/qms/review/ui-model";
+import { reviewTargetWithValue } from "@/lib/qms/review/targets/catalog";
+import {
+  deviationCapaPlanReviewTarget,
+  deviationImmediateActionReviewTarget,
+  deviationReviewTargets,
+} from "@/lib/qms/review/targets/deviations";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +48,7 @@ const tabs = [
   ["relations", "Relaciones"],
   ["versions", "Versiones"],
   ["documents", "Documentos"],
+  ["review", "Revisión"],
   ["history", "Historial"],
 ] as const;
 
@@ -85,10 +107,10 @@ export default async function DeviationDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; review?: string; thread?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, review, thread } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const deviation = await getDeviationDetail(id);
   if (!deviation) notFound();
@@ -96,6 +118,13 @@ export default async function DeviationDetailPage({
   const code = qmsRecordDisplayCode(deviation.qmsRecord, "Sin codificación");
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
   const currentSignedDocument = currentVersion?.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
+  const reviewMode = review === "1";
+  const basePath = `/deviations/${id}`;
+  const reviewThreads = await getReviewThreadsForDisplay(deviation.qmsRecord.id);
+  const reviewActiveCount = activeReviewCount({
+    PENDING: reviewThreads.filter((item) => item.status === "PENDING").length,
+    ACCEPTED: reviewThreads.filter((item) => item.status === "ACCEPTED").length,
+  });
   const relatedCapas = deviation.qmsRecord.sourceRelations
     .filter(
       (relation) =>
@@ -122,8 +151,114 @@ export default async function DeviationDetailPage({
     { label: "Otro origen", value: deviation.otherOrigin },
   ].filter((item) => Boolean(item.value?.trim()));
 
+  const reviewTarget = {
+    materialProcessAffected: reviewTargetWithValue(
+      deviationReviewTargets.materialProcessAffected,
+      deviation.materialProcessAffected,
+    ),
+    classification: reviewTargetWithValue(
+      deviationReviewTargets.classification,
+      classificationLabel(deviation.classification),
+    ),
+    origin: reviewTargetWithValue(
+      deviationReviewTargets.origin,
+      originDetails.map((item) => `${item.label}: ${item.value}`),
+    ),
+    whatHappened: reviewTargetWithValue(
+      deviationReviewTargets.whatHappened,
+      deviation.whatHappened,
+    ),
+    whoInvolved: reviewTargetWithValue(
+      deviationReviewTargets.whoInvolved,
+      deviation.whoInvolved,
+    ),
+    whenHappened: reviewTargetWithValue(
+      deviationReviewTargets.whenHappened,
+      deviation.whenHappened,
+    ),
+    whereHappened: reviewTargetWithValue(
+      deviationReviewTargets.whereHappened,
+      deviation.whereHappened,
+    ),
+    howHappened: reviewTargetWithValue(
+      deviationReviewTargets.howHappened,
+      deviation.howHappened,
+    ),
+    investigation: reviewTargetWithValue(
+      deviationReviewTargets.investigation,
+      deviation.investigation,
+    ),
+    rootCause: reviewTargetWithValue(
+      deviationReviewTargets.rootCause,
+      deviation.rootCause,
+    ),
+    recurrenceDetails: reviewTargetWithValue(
+      deviationReviewTargets.recurrenceDetails,
+      deviation.recurrenceDetails,
+    ),
+    impactAssessment: reviewTargetWithValue(
+      deviationReviewTargets.impactAssessment,
+      [
+        `Validación: ${triStateLabel(deviation.validationImpact)}`,
+        `Registro: ${triStateLabel(deviation.registrationImpact)}`,
+        `Estabilidad: ${triStateLabel(deviation.stabilityImpact)}`,
+        `Producto terminado: ${triStateLabel(deviation.affectsFinishedProduct)}`,
+        `Otros procesos/productos: ${triStateLabel(deviation.otherProcessesImpact)}`,
+        `Detalle: ${text(deviation.otherProcessesImpactDetails)}`,
+      ],
+    ),
+    immediateActions: reviewTargetWithValue(
+      deviationReviewTargets.immediateActions,
+      deviation.immediateActions.map((item) => item.description),
+    ),
+    capaPlans: reviewTargetWithValue(
+      deviationReviewTargets.capaPlans,
+      deviation.capaPlans.map((item) => item.description),
+    ),
+    conclusion: reviewTargetWithValue(
+      deviationReviewTargets.conclusion,
+      deviation.conclusion,
+    ),
+    disposition: reviewTargetWithValue(
+      deviationReviewTargets.disposition,
+      deviation.disposition,
+    ),
+    dispositionComments: reviewTargetWithValue(
+      deviationReviewTargets.dispositionComments,
+      deviation.dispositionComments,
+    ),
+  };
+  const immediateActionReviewTargets = deviation.immediateActions.map((item) =>
+    deviationImmediateActionReviewTarget(item.id, item.description),
+  );
+  const capaPlanReviewTargets = deviation.capaPlans.map((item) =>
+    deviationCapaPlanReviewTarget(item.id, item.description),
+  );
+  const reviewTargets = [
+    ...Object.values(reviewTarget),
+    ...immediateActionReviewTargets,
+    ...capaPlanReviewTargets,
+  ];
+  const immediateActionTargetById = new Map(
+    immediateActionReviewTargets.map((target) => [target.targetEntityId!, target]),
+  );
+  const capaPlanTargetById = new Map(
+    capaPlanReviewTargets.map((target) => [target.targetEntityId!, target]),
+  );
+
   return (
-    <section className="workspace">
+    <ReviewWorkspaceProvider
+      qmsRecordId={deviation.qmsRecord.id}
+      module="DEVIATION"
+      basePath={basePath}
+      currentVersionLabel={reviewVersionLabel(currentVersion?.sequenceNumber ?? null)}
+      defaultActor={process.env.DEFAULT_ACTOR_NAME?.trim() || deviation.createdByText || "Usuario demo"}
+      reviewMode={reviewMode}
+      targets={reviewTargets}
+      threads={reviewThreads}
+      initialThreadId={thread}
+    >
+    <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
       <div className="record-header">
         <div>
           <p className="eyebrow"><Link href="/deviations">← Desviaciones</Link></p>
@@ -137,6 +272,7 @@ export default async function DeviationDetailPage({
           <p className="muted-note">Apertura {formatDate(deviation.issueDate)} · Cumplimentado por {text(deviation.createdByText)}</p>
         </div>
         <div className="record-actions">
+          <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, activeTab, reviewMode)} />
           <Link className="button primary" href={`/deviations/${id}/edit`}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link>
           {deviation.status === "DRAFT"
             ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
@@ -156,7 +292,9 @@ export default async function DeviationDetailPage({
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (
-          <Link key={key} className={activeTab === key ? "active" : ""} href={`/deviations/${id}?tab=${key}`}>{label}</Link>
+          <Link key={key} className={activeTab === key ? "active" : ""} href={reviewTabHref(basePath, key, reviewMode)}>
+            {key === "review" ? `${label} (${reviewActiveCount})` : label}
+          </Link>
         ))}
       </nav>
 
@@ -570,6 +708,22 @@ export default async function DeviationDetailPage({
         </div>
       ) : null}
 
+      {activeTab === "review" ? (
+        <div className="review-overview">
+          <div className="card">
+            <div className="section-title-row">
+              <div>
+                <h2>Revisión del expediente</h2>
+                <p className="muted-note">Observaciones vinculadas a objetivos estables y a la versión del expediente revisada cuando exista.</p>
+              </div>
+              <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, "review", reviewMode)} />
+            </div>
+            <ReviewStatusSummary />
+          </div>
+          <ReviewThreadList />
+        </div>
+      ) : null}
+
       {activeTab === "history" ? (
         <div className="card">
           <h2>Historial interno de modificaciones</h2>
@@ -594,5 +748,7 @@ export default async function DeviationDetailPage({
         </div>
       ) : null}
     </section>
+    <ReviewDrawer />
+    </ReviewWorkspaceProvider>
   );
 }
