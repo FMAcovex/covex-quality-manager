@@ -55,7 +55,9 @@ function originRelationLabel(recordType: string) {
 }
 
 function followupLabel(sequenceNumber: number) {
-  return `Seguimiento ${String(sequenceNumber).padStart(2, "0")}`;
+  return sequenceNumber === 0
+    ? "Seguimiento 00 · Apertura"
+    : `Seguimiento ${String(sequenceNumber).padStart(2, "0")}`;
 }
 
 export default async function CapaDetailPage({
@@ -432,7 +434,7 @@ export default async function CapaDetailPage({
             <div>
               <h2>Seguimientos del expediente</h2>
               <p className="muted-note">
-                Seguimiento 00 corresponde al registro inicial. Guardar CAPA actualiza el seguimiento vigente; Guardar como nuevo seguimiento crea 01, 02, 03…
+                Seguimiento 00 corresponde a la apertura/registro inicial de la CAPA. El primer seguimiento posterior es 01; después 02, 03…
               </p>
             </div>
             {currentVersion ? <span className="badge neutral">Actual {followupLabel(currentVersion.sequenceNumber)}</span> : null}
