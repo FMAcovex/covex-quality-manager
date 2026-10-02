@@ -314,7 +314,7 @@ export default async function DeviationDetailPage({
             </dl>
           </div>
 
-          {originDetails.length ? (
+          {originDetails.length || reviewMode ? (
             <div id={reviewTarget.origin.anchorId} className="card origin-card review-target">
               <div className="section-title-row">
                 <div>
@@ -399,10 +399,10 @@ export default async function DeviationDetailPage({
           </div>
           <dl className="description-detail-grid">
             <div id={reviewTarget.whatHappened.anchorId} className="info-item full review-target"><dt><span>Qué sucedió / qué debía haber sucedido</span><ReviewMarker target={reviewTarget.whatHappened} /></dt><dd className="prose-value">{text(deviation.whatHappened)}</dd></div>
-            {deviation.whoInvolved ? <div id={reviewTarget.whoInvolved.anchorId} className="info-item review-target"><dt><span>Quién estuvo implicado</span><ReviewMarker target={reviewTarget.whoInvolved} /></dt><dd className="prose-value">{deviation.whoInvolved}</dd></div> : null}
-            {deviation.whenHappened ? <div id={reviewTarget.whenHappened.anchorId} className="info-item review-target"><dt><span>Cuándo ocurrió</span><ReviewMarker target={reviewTarget.whenHappened} /></dt><dd className="prose-value">{deviation.whenHappened}</dd></div> : null}
-            {deviation.whereHappened ? <div id={reviewTarget.whereHappened.anchorId} className="info-item review-target"><dt><span>Dónde ocurrió</span><ReviewMarker target={reviewTarget.whereHappened} /></dt><dd className="prose-value">{deviation.whereHappened}</dd></div> : null}
-            {deviation.howHappened ? <div id={reviewTarget.howHappened.anchorId} className="info-item review-target"><dt><span>Cómo ocurrió / cómo se detectó</span><ReviewMarker target={reviewTarget.howHappened} /></dt><dd className="prose-value">{deviation.howHappened}</dd></div> : null}
+            {deviation.whoInvolved || reviewMode ? <div id={reviewTarget.whoInvolved.anchorId} className="info-item review-target"><dt><span>Quién estuvo implicado</span><ReviewMarker target={reviewTarget.whoInvolved} /></dt><dd className="prose-value">{text(deviation.whoInvolved)}</dd></div> : null}
+            {deviation.whenHappened || reviewMode ? <div id={reviewTarget.whenHappened.anchorId} className="info-item review-target"><dt><span>Cuándo ocurrió</span><ReviewMarker target={reviewTarget.whenHappened} /></dt><dd className="prose-value">{text(deviation.whenHappened)}</dd></div> : null}
+            {deviation.whereHappened || reviewMode ? <div id={reviewTarget.whereHappened.anchorId} className="info-item review-target"><dt><span>Dónde ocurrió</span><ReviewMarker target={reviewTarget.whereHappened} /></dt><dd className="prose-value">{text(deviation.whereHappened)}</dd></div> : null}
+            {deviation.howHappened || reviewMode ? <div id={reviewTarget.howHappened.anchorId} className="info-item review-target"><dt><span>Cómo ocurrió / cómo se detectó</span><ReviewMarker target={reviewTarget.howHappened} /></dt><dd className="prose-value">{text(deviation.howHappened)}</dd></div> : null}
           </dl>
         </div>
       ) : null}
