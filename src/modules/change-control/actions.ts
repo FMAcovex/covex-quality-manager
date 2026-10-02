@@ -122,6 +122,63 @@ async function taskCreateData(
   });
 }
 
+async function createOpeningFollowup00(
+  tx: Prisma.TransactionClient,
+  changeControlId: string,
+  qmsRecordId: string,
+  dictamenDate: string,
+  responsible: string,
+  nextFollowupDate: string,
+  actor: string,
+) {
+  const existing00 = await tx.changeControlFollowup.findUnique({
+    where: { changeControlId_sequenceNumber: { changeControlId, sequenceNumber: 0 } },
+  });
+  if (existing00) return existing00;
+
+  const tasks = await tx.changeControlTask.findMany({
+    where: { changeControlId },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+  const followup = await tx.changeControlFollowup.create({
+    data: {
+      changeControlId,
+      sequenceNumber: 0,
+      followupDate: new Date(dictamenDate),
+      responsible,
+      executionStatus: "NOT_EXECUTED",
+      effectivenessStatus: "PENDING",
+      closeChange: false,
+      nextFollowupDate: new Date(nextFollowupDate),
+    },
+  });
+  if (tasks.length) {
+    await tx.changeControlTaskState.createMany({
+      data: tasks.map((task) => ({
+        followupId: followup.id,
+        taskId: task.id,
+        status: "PENDING" as const,
+      })),
+    });
+  }
+  await tx.changeHistory.create({
+    data: {
+      qmsRecordId,
+      changedByText: actor,
+      fieldPath: "followups[0]",
+      newValue: jsonValue({
+        followupDate: dictamenDate,
+        responsible,
+        nextFollowupDate,
+        source: "DICTAMEN",
+      }),
+      reason: "Seguimiento 00 · apertura desde Dictamen aprobado",
+      source: "UI",
+    },
+  });
+  return followup;
+}
+
 export async function createChangeControlAction(
   previous: ChangeControlFormState,
   formData: FormData,
@@ -233,6 +290,50 @@ export async function createChangeControlAction(
       if (v.tasks.length) {
         const data = await taskCreateData(tx, v.tasks, change.id, "DICTAMEN", null);
         await tx.changeControlTask.createMany({ data });
+      }
+
+      if (
+        v.finalStatus !== "DRAFT" &&
+        v.dictamenResult === "APPROVED" &&
+        v.dictamenDate &&
+        v.followupResponsible &&
+        v.nextFollowupDate
+      ) {
+        const followup00 = await createOpeningFollowup00(
+          tx,
+          change.id,
+          qmsRecord.id,
+          v.dictamenDate,
+          v.followupResponsible,
+          v.nextFollowupDate,
+          parsed.actor,
+        );
+        const versionRecord = await tx.changeControl.findUniqueOrThrow({
+          where: { id: change.id },
+          include: {
+            qmsRecord: true,
+            tasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+            followups: {
+              orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }],
+              include: { taskStates: { orderBy: { createdAt: "asc" } } },
+            },
+            formVersion: true,
+            annexIIITemplateVersion: true,
+            annexIVTemplateVersion: true,
+            annexVTemplateVersion: true,
+          },
+        });
+        await startNextVersion(
+          tx,
+          qmsRecord.id,
+          "FOLLOWUP",
+          snapshotJson(serializeChangeControlVersion(versionRecord)),
+          parsed.actor,
+          "Seguimiento 00 · apertura desde Dictamen aprobado",
+          followup00.id,
+          "UI",
+          0,
+        );
       }
 
       await tx.changeHistory.create({
@@ -465,6 +566,72 @@ export async function updateChangeControlAction(
               source: "UI",
             },
           });
+        }
+      }
+
+      if (
+        existing.dictamenResult !== "APPROVED" &&
+        v.dictamenResult === "APPROVED" &&
+        existing.followups.length === 0 &&
+        v.dictamenDate &&
+        v.followupResponsible &&
+        v.nextFollowupDate
+      ) {
+        const followup00 = await createOpeningFollowup00(
+          tx,
+          id,
+          existing.qmsRecordId,
+          v.dictamenDate,
+          v.followupResponsible,
+          v.nextFollowupDate,
+          parsed.actor,
+        );
+        const openingVersionRecord = await tx.changeControl.findUniqueOrThrow({
+          where: { id },
+          include: {
+            qmsRecord: true,
+            tasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+            followups: {
+              orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }],
+              include: { taskStates: { orderBy: { createdAt: "asc" } } },
+            },
+            formVersion: true,
+            annexIIITemplateVersion: true,
+            annexIVTemplateVersion: true,
+            annexVTemplateVersion: true,
+          },
+        });
+        const stored00 = await tx.qmsRecordVersion.findUnique({
+          where: {
+            qmsRecordId_sequenceNumber: {
+              qmsRecordId: existing.qmsRecordId,
+              sequenceNumber: 0,
+            },
+          },
+        });
+        if (stored00) {
+          await tx.qmsRecordVersion.update({
+            where: { id: stored00.id },
+            data: {
+              kind: "FOLLOWUP",
+              sourceEntityId: followup00.id,
+              snapshot: snapshotJson(serializeChangeControlVersion(openingVersionRecord)),
+              reason: "Seguimiento 00 · apertura desde Dictamen aprobado",
+              createdByText: parsed.actor,
+            },
+          });
+        } else {
+          await startNextVersion(
+            tx,
+            existing.qmsRecordId,
+            "FOLLOWUP",
+            snapshotJson(serializeChangeControlVersion(openingVersionRecord)),
+            parsed.actor,
+            "Seguimiento 00 · apertura desde Dictamen aprobado",
+            followup00.id,
+            "UI",
+            0,
+          );
         }
       }
 
