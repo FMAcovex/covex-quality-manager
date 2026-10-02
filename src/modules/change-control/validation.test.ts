@@ -87,6 +87,7 @@ describe("parseChangeControlForm · CC1", () => {
     form.set("dictamenDate", "2026-10-02");
     form.set("dictamenObservations", "Dictamen favorable");
     form.set("followupResponsible", "Responsable seguimiento");
+    form.set("nextFollowupDate", "2026-11-15");
     form.set("tasksJson", JSON.stringify([{ departmentId: "department-1", description: "Implantar", responsible: "Técnico", plannedDate: "2026-10-30" }]));
 
     const parsed = parseChangeControlForm(form);
@@ -94,6 +95,15 @@ describe("parseChangeControlForm · CC1", () => {
     expect(parsed.errors).toEqual([]);
     expect(parsed.values.dictamenResult).toBe("APPROVED");
     expect(parsed.values.tasks).toHaveLength(1);
+  });
+
+  it("permite estabilidad Sí sin obligar tipo de estabilidad", () => {
+    const form = operationalBase();
+    form.set("stabilityRequired", "YES");
+
+    const parsed = parseChangeControlForm(form);
+
+    expect(parsed.errors).not.toContain("Debe seleccionarse al menos un tipo de estabilidad.");
   });
 
   it("rechaza acciones incompletas sin descartarlas silenciosamente", () => {

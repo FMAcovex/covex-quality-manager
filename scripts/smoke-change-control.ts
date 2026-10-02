@@ -218,12 +218,58 @@ async function main() {
       },
     });
 
+    const version01 = await prisma.qmsRecordVersion.findUniqueOrThrow({
+      where: {
+        qmsRecordId_sequenceNumber: {
+          qmsRecordId: qmsRecord.id,
+          sequenceNumber: 1,
+        },
+      },
+    });
+
+    await prisma.changeControlFollowup.update({
+      where: { id: followup01.id },
+      data: {
+        observations: "Seguimiento 01 corregido",
+        nextFollowupDate: new Date("2099-12-31"),
+      },
+    });
+
+    await prisma.recordVersionDocument.create({
+      data: {
+        recordVersionId: version01.id,
+        kind: "SIGNED_PDF",
+        fileName: "seguimiento-01-firmado.pdf",
+        fileData: Buffer.from("%PDF-1.4 smoke"),
+        fileSize: 14,
+        checksum: "smoke-checksum",
+        uploadedByText: "CI",
+      },
+    });
+
+    await prisma.generatedDocument.create({
+      data: {
+        qmsRecordId: qmsRecord.id,
+        recordVersionId: version01.id,
+        documentType: "CHANGE_ANNEX_V",
+        generatedByText: "CI",
+        metadata: { followupVersion: 1, source: "smoke" },
+      },
+    });
+
     const stored = await prisma.changeControl.findUniqueOrThrow({
       where: { id: change.id },
       include: {
         tasks: { include: { states: true } },
         followups: { orderBy: { sequenceNumber: "asc" }, include: { taskStates: true } },
-        qmsRecord: { include: { versions: { orderBy: { sequenceNumber: "asc" } } } },
+        qmsRecord: {
+          include: {
+            versions: {
+              orderBy: { sequenceNumber: "asc" },
+              include: { documents: true, generatedDocuments: true },
+            },
+          },
+        },
       },
     });
 
@@ -233,11 +279,15 @@ async function main() {
     assert.deepEqual(stored.followups.map((item) => item.sequenceNumber), [0, 1, 2]);
     assert.equal(stored.followups[1].executionStatus, "EXECUTED");
     assert.equal(stored.followups[1].effectivenessStatus, "PENDING");
+    assert.equal(stored.followups[1].observations, "Seguimiento 01 corregido");
+    assert.equal(stored.followups[1].nextFollowupDate?.toISOString().slice(0, 10), "2099-12-31");
     assert.equal(stored.followups[2].effectivenessStatus, "ACCEPTABLE");
     assert.equal(stored.finalStatus, "CLOSED");
     assert.equal(functionalStatusLabel(stored), "Cerrado");
     assert.equal(nextFollowupDateFromHistory(stored.followups), null);
     assert.deepEqual(stored.qmsRecord.versions.map((item) => item.sequenceNumber), [0, 1, 2]);
+    assert.equal(stored.qmsRecord.versions[1].documents[0]?.fileName, "seguimiento-01-firmado.pdf");
+    assert.equal(stored.qmsRecord.versions[1].generatedDocuments.length, 1);
 
     console.log("Change Control lifecycle PostgreSQL smoke test passed.");
   } finally {
@@ -258,6 +308,10 @@ async function main() {
         });
       }
     }
+    await prisma.generatedDocument.deleteMany({ where: { qmsRecordId: qmsRecord.id } });
+    await prisma.recordVersionDocument.deleteMany({
+      where: { recordVersion: { qmsRecordId: qmsRecord.id } },
+    });
     await prisma.qmsRecordVersion.deleteMany({ where: { qmsRecordId: qmsRecord.id } });
     await prisma.changeControl.deleteMany({ where: { qmsRecordId: qmsRecord.id } });
     await prisma.qmsRecord.delete({ where: { id: qmsRecord.id } });

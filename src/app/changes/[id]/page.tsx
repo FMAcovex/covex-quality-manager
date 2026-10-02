@@ -35,6 +35,8 @@ import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
+import { uploadChangeControlSignedPdfAction } from "@/modules/change-control/signed-document-actions";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
@@ -333,43 +335,75 @@ export default async function ChangeControlDetailPage({
             </div>
             {record.followups.length ? (
               <div className="timeline">
-                {record.followups.map((item) => (
-                  <article className="timeline-item" key={item.id}>
-                    <div className="timeline-marker">{String(item.sequenceNumber).padStart(2,"0")}</div>
-                    <div>
-                      <header>
-                        <strong>Seguimiento {String(item.sequenceNumber).padStart(2,"0")} · {formatDate(item.followupDate)}</strong>
-                        <span className={`badge ${item.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>{executionStatusLabel(item.executionStatus)}</span>
-                        <span className={`badge ${item.effectivenessStatus === "ACCEPTABLE" ? "closed" : item.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : item.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>{effectivenessStatusLabel(item.effectivenessStatus)}</span>
-                      </header>
-                      <p>Responsable: {item.responsible} · Próximo: {formatDate(item.nextFollowupDate)}</p>
-                      {item.remainOpenReason ? <p><strong>Motivo abierto:</strong> {item.remainOpenReason}</p> : null}
-                      {item.conclusion ? <p><strong>Conclusión:</strong> {item.conclusion}</p> : null}
-                      <div className="document-actions">
-                        <a className="button small" href={`/api/changes/${id}/annex-v?version=${item.sequenceNumber}`}>
-                          Descargar Anexo V · {String(item.sequenceNumber).padStart(2,"0")}
-                        </a>
+                {record.followups.map((item) => {
+                  const version = record.qmsRecord.versions.find((entry) => entry.sequenceNumber === item.sequenceNumber) ?? null;
+                  const signedDocument = version?.documents[0] ?? null;
+                  return (
+                    <article className="timeline-item" key={item.id}>
+                      <div className="timeline-marker">{String(item.sequenceNumber).padStart(2,"0")}</div>
+                      <div>
+                        <header>
+                          <strong>Seguimiento {String(item.sequenceNumber).padStart(2,"0")} · {formatDate(item.followupDate)}</strong>
+                          <span className={`badge ${item.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>{executionStatusLabel(item.executionStatus)}</span>
+                          <span className={`badge ${item.effectivenessStatus === "ACCEPTABLE" ? "closed" : item.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : item.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>{effectivenessStatusLabel(item.effectivenessStatus)}</span>
+                        </header>
+                        <p>Responsable: {item.responsible} · Próximo: {formatDate(item.nextFollowupDate)}</p>
+                        {item.remainOpenReason ? <p><strong>Motivo abierto:</strong> {item.remainOpenReason}</p> : null}
+                        {item.conclusion ? <p><strong>Conclusión:</strong> {item.conclusion}</p> : null}
+                        <div className="document-actions">
+                          <Link className="button small" href={`/changes/${id}/followups/${item.sequenceNumber}/edit`}>
+                            Editar seguimiento
+                          </Link>
+                          <a className="button small" href={`/api/changes/${id}/annex-v?version=${item.sequenceNumber}`}>
+                            Descargar Anexo V · {String(item.sequenceNumber).padStart(2,"0")}
+                          </a>
+                          {signedDocument ? (
+                            <a className="button small" href={`/api/changes/${id}/versions/${item.sequenceNumber}/signed-pdf`}>
+                              Descargar PDF firmado
+                            </a>
+                          ) : null}
+                        </div>
+                        {version ? (
+                          <div className="version-signed-document">
+                            <strong>{signedDocument ? "PDF firmado adjuntado" : "PDF firmado pendiente"}</strong>
+                            {signedDocument ? (
+                              <small className="muted-note">
+                                {signedDocument.fileName} · {Math.max(1, Math.round(signedDocument.fileSize / 1024))} KB
+                              </small>
+                            ) : (
+                              <small className="muted-note">La carga es documental; no se añade una nueva regla de cierre.</small>
+                            )}
+                            <details className="signed-pdf-details">
+                              <summary>{signedDocument ? "Sustituir PDF firmado" : "Adjuntar PDF firmado"}</summary>
+                              <SignedVersionDocumentForm
+                                action={uploadChangeControlSignedPdfAction.bind(null, id, version.id)}
+                                defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                                replace={Boolean(signedDocument)}
+                              />
+                            </details>
+                          </div>
+                        ) : null}
+                        <div className="table-scroll followup-state-table">
+                          <table className="records-table compact-table">
+                            <thead><tr><th>Origen</th><th>Departamento</th><th>Acción</th><th>Estado</th><th>Fecha real</th><th>Evidencia</th></tr></thead>
+                            <tbody>
+                              {item.taskStates.map((state) => (
+                                <tr key={state.id} className={state.task.origin === "FOLLOWUP" ? "followup-new-task" : ""}>
+                                  <td>{state.task.origin === "FOLLOWUP" ? <span className="badge new-task">NUEVA S{String(state.task.introducedInFollowup ?? 0).padStart(2,"0")}</span> : "DICTAMEN"}</td>
+                                  <td>{state.task.departmentCodeSnapshot ?? "—"}</td>
+                                  <td className="table-cell-wrap">{state.task.description}</td>
+                                  <td>{state.status === "COMPLETED" ? "Completada" : state.status === "NOT_APPLICABLE" ? "No aplica" : "Pendiente"}</td>
+                                  <td>{formatDate(state.actualDate)}</td>
+                                  <td className="table-cell-wrap">{state.evidenceComment ?? "—"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                      <div className="table-scroll followup-state-table">
-                        <table className="records-table compact-table">
-                          <thead><tr><th>Origen</th><th>Departamento</th><th>Acción</th><th>Estado</th><th>Fecha real</th><th>Evidencia</th></tr></thead>
-                          <tbody>
-                            {item.taskStates.map((state) => (
-                              <tr key={state.id} className={state.task.origin === "FOLLOWUP" ? "followup-new-task" : ""}>
-                                <td>{state.task.origin === "FOLLOWUP" ? <span className="badge new-task">NUEVA S{String(state.task.introducedInFollowup ?? 0).padStart(2,"0")}</span> : "DICTAMEN"}</td>
-                                <td>{state.task.departmentCodeSnapshot ?? "—"}</td>
-                                <td className="table-cell-wrap">{state.task.description}</td>
-                                <td>{state.status === "COMPLETED" ? "Completada" : state.status === "NOT_APPLICABLE" ? "No aplica" : "Pendiente"}</td>
-                                <td>{formatDate(state.actualDate)}</td>
-                                <td className="table-cell-wrap">{state.evidenceComment ?? "—"}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
             ) : (
               <div className="empty-panel">Todavía no se ha emitido el seguimiento 00.</div>
@@ -537,10 +571,10 @@ export default async function ChangeControlDetailPage({
           {record.qmsRecord.history.length ? (
             <div className="timeline">
               {record.qmsRecord.history.map((item) => (
-                <div className="timeline-item" key={item.id}>
+                <div className="timeline-item history-entry" key={item.id}>
                   <div>
-                    <header><strong>{formatDate(item.changedAt)}</strong><span>{item.changedByText ?? "Sistema"}</span><span className="badge neutral">{item.source}</span></header>
-                    <p><strong>{item.fieldPath}</strong>{item.reason ? ` · Motivo: ${item.reason}` : ""}</p>
+                    <header className="history-entry-header"><strong>{formatDate(item.changedAt)}</strong><span>{item.changedByText ?? "Sistema"}</span><span className="badge neutral">{item.source}</span></header>
+                    <p className="history-entry-detail"><strong>{item.fieldPath}</strong>{item.reason ? <span>{` · Motivo: ${item.reason}`}</span> : null}</p>
                   </div>
                 </div>
               ))}

@@ -45,8 +45,22 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   type AnnexRecord = Parameters<typeof generateChangeAnnexV>[0];
   const annexRecord = changeControlSnapshotToRecord(storedVersion.snapshot) as unknown as AnnexRecord;
+  const historicalTemplateId = changeControlSnapshotTemplateId(storedVersion.snapshot, "V");
 
   try {
+    if (historicalTemplateId) {
+      const historicalTemplate = await prisma.templateVersion.findUnique({
+        where: { id: historicalTemplateId },
+        select: { versionCode: true },
+      });
+      if (!historicalTemplate) {
+        throw new TemplateAssetError(
+          "La versión histórica del seguimiento referencia una plantilla de Anexo V que ya no está disponible.",
+        );
+      }
+      annexRecord.annexVTemplateVersion = { versionCode: historicalTemplate.versionCode };
+    }
+
     const buffer = await generateChangeAnnexV(annexRecord, sequenceNumber);
     await prisma.generatedDocument.create({
       data: {
