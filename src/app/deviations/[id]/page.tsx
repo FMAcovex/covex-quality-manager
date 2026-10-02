@@ -303,8 +303,8 @@ export default async function DeviationDetailPage({
           <div className="card deviation-summary-card">
             <h2>Resumen del expediente</h2>
             <dl className="info-grid compact-info-grid">
-              <div className="info-item"><dt>Material / proceso</dt><dd>{text(deviation.materialProcessAffected)}</dd></div>
-              <div className="info-item"><dt>Clasificación</dt><dd>{classificationLabel(deviation.classification)}</dd></div>
+              <div id={reviewTarget.materialProcessAffected.anchorId} className="info-item review-target"><dt><span>Material / proceso</span><ReviewMarker target={reviewTarget.materialProcessAffected} /></dt><dd>{text(deviation.materialProcessAffected)}</dd></div>
+              <div id={reviewTarget.classification.anchorId} className="info-item review-target"><dt><span>Clasificación</span><ReviewMarker target={reviewTarget.classification} /></dt><dd>{classificationLabel(deviation.classification)}</dd></div>
               <div className="info-item"><dt>En plazo</dt><dd>{deadlineLabel(deviation.deadlineStatus)}</dd></div>
               <div className="info-item"><dt>Fecha de cierre</dt><dd>{formatDate(deviation.closedAt)}</dd></div>
               <div className="info-item"><dt>Medidas adoptadas</dt><dd>{measuresLabel(deviation)}</dd></div>
@@ -315,10 +315,10 @@ export default async function DeviationDetailPage({
           </div>
 
           {originDetails.length ? (
-            <div className="card origin-card">
+            <div id={reviewTarget.origin.anchorId} className="card origin-card review-target">
               <div className="section-title-row">
                 <div>
-                  <h2>Origen</h2>
+                  <div className="review-target-heading"><h2>Origen</h2><ReviewMarker target={reviewTarget.origin} /></div>
                   <p className="section-help">Apartado A del Anexo III · se muestran únicamente los datos informados.</p>
                 </div>
               </div>
@@ -398,11 +398,11 @@ export default async function DeviationDetailPage({
             </div>
           </div>
           <dl className="description-detail-grid">
-            <div className="info-item full"><dt>Qué sucedió / qué debía haber sucedido</dt><dd className="prose-value">{text(deviation.whatHappened)}</dd></div>
-            {deviation.whoInvolved ? <div className="info-item"><dt>Quién estuvo implicado</dt><dd className="prose-value">{deviation.whoInvolved}</dd></div> : null}
-            {deviation.whenHappened ? <div className="info-item"><dt>Cuándo ocurrió</dt><dd className="prose-value">{deviation.whenHappened}</dd></div> : null}
-            {deviation.whereHappened ? <div className="info-item"><dt>Dónde ocurrió</dt><dd className="prose-value">{deviation.whereHappened}</dd></div> : null}
-            {deviation.howHappened ? <div className="info-item"><dt>Cómo ocurrió / cómo se detectó</dt><dd className="prose-value">{deviation.howHappened}</dd></div> : null}
+            <div id={reviewTarget.whatHappened.anchorId} className="info-item full review-target"><dt><span>Qué sucedió / qué debía haber sucedido</span><ReviewMarker target={reviewTarget.whatHappened} /></dt><dd className="prose-value">{text(deviation.whatHappened)}</dd></div>
+            {deviation.whoInvolved ? <div id={reviewTarget.whoInvolved.anchorId} className="info-item review-target"><dt><span>Quién estuvo implicado</span><ReviewMarker target={reviewTarget.whoInvolved} /></dt><dd className="prose-value">{deviation.whoInvolved}</dd></div> : null}
+            {deviation.whenHappened ? <div id={reviewTarget.whenHappened.anchorId} className="info-item review-target"><dt><span>Cuándo ocurrió</span><ReviewMarker target={reviewTarget.whenHappened} /></dt><dd className="prose-value">{deviation.whenHappened}</dd></div> : null}
+            {deviation.whereHappened ? <div id={reviewTarget.whereHappened.anchorId} className="info-item review-target"><dt><span>Dónde ocurrió</span><ReviewMarker target={reviewTarget.whereHappened} /></dt><dd className="prose-value">{deviation.whereHappened}</dd></div> : null}
+            {deviation.howHappened ? <div id={reviewTarget.howHappened.anchorId} className="info-item review-target"><dt><span>Cómo ocurrió / cómo se detectó</span><ReviewMarker target={reviewTarget.howHappened} /></dt><dd className="prose-value">{deviation.howHappened}</dd></div> : null}
           </dl>
         </div>
       ) : null}
@@ -412,21 +412,21 @@ export default async function DeviationDetailPage({
           <div className="card">
             <h2>Investigación</h2>
             <dl className="info-grid compact-info-grid">
-              <div className="info-item full"><dt>Investigación realizada</dt><dd className="prose-value">{text(deviation.investigation)}</dd></div>
+              <div id={reviewTarget.investigation.anchorId} className="info-item full review-target"><dt><span>Investigación realizada</span><ReviewMarker target={reviewTarget.investigation} /></dt><dd className="prose-value">{text(deviation.investigation)}</dd></div>
               <div className="info-item"><dt>Resultado</dt><dd>{investigationResultLabel(deviation.investigationConclusive)}</dd></div>
             </dl>
           </div>
           <div className="card root-cause-card">
             <h2>Causa raíz</h2>
             <dl className="info-grid compact-info-grid">
-              <div className="info-item full"><dt>Causa raíz establecida</dt><dd className="prose-value">{text(deviation.rootCause)}</dd></div>
+              <div id={reviewTarget.rootCause.anchorId} className="info-item full review-target"><dt><span>Causa raíz establecida</span><ReviewMarker target={reviewTarget.rootCause} /></dt><dd className="prose-value">{text(deviation.rootCause)}</dd></div>
               <div className="info-item"><dt>Metodología</dt><dd>{deviation.investigationMethods.length ? deviation.investigationMethods.map(investigationMethodLabel).join(", ") : "No informada"}</dd></div>
               <div className="info-item"><dt>Recurrencia</dt><dd>{triStateLabel(deviation.recurrentRootCause)}</dd></div>
-              <div className="info-item wide"><dt>Antecedentes / detalle</dt><dd className="prose-value">{text(deviation.recurrenceDetails)}</dd></div>
+              <div id={reviewTarget.recurrenceDetails.anchorId} className="info-item wide review-target"><dt><span>Antecedentes / detalle</span><ReviewMarker target={reviewTarget.recurrenceDetails} /></dt><dd className="prose-value">{text(deviation.recurrenceDetails)}</dd></div>
             </dl>
           </div>
-          <div className="card">
-            <h2>Evaluación de impacto</h2>
+          <div id={reviewTarget.impactAssessment.anchorId} className="card review-target">
+            <div className="review-target-heading"><h2>Evaluación de impacto</h2><ReviewMarker target={reviewTarget.impactAssessment} /></div>
             <dl className="info-grid">
               <div className="info-item"><dt>Validación</dt><dd>{triStateLabel(deviation.validationImpact)}</dd></div>
               <div className="info-item"><dt>Registro</dt><dd>{triStateLabel(deviation.registrationImpact)}</dd></div>
@@ -441,8 +441,8 @@ export default async function DeviationDetailPage({
 
       {activeTab === "actions" ? (
         <>
-          <div className="card">
-            <h2>Acciones inmediatas</h2>
+          <div id={reviewTarget.immediateActions.anchorId} className="card review-target">
+            <div className="review-target-heading"><h2>Acciones inmediatas</h2><ReviewMarker target={reviewTarget.immediateActions} /></div>
             {deviation.immediateActions.length ? (
               <div className="table-scroll">
                 <table className="action-overview-table immediate-action-table">
@@ -468,8 +468,8 @@ export default async function DeviationDetailPage({
               </div>
             ) : <div className="empty-panel">No se han registrado acciones inmediatas.</div>}
           </div>
-          <div className="card">
-            <h2>CAPA propuestas</h2>
+          <div id={reviewTarget.capaPlans.anchorId} className="card review-target">
+            <div className="review-target-heading"><h2>CAPA propuestas</h2><ReviewMarker target={reviewTarget.capaPlans} /></div>
             {deviation.capaPlans.length ? (
               <div className="table-scroll">
                 <table className="action-overview-table capa-action-table">
@@ -525,12 +525,12 @@ export default async function DeviationDetailPage({
         <div className="card">
           <h2>Conclusión y disposición</h2>
           <dl className="info-grid conclusion-grid">
-            <div className="info-item full"><dt>Conclusión / cierre</dt><dd className="prose-value">{text(deviation.conclusion)}</dd></div>
-            <div className="info-item"><dt>Disposición</dt><dd>{text(deviation.disposition)}</dd></div>
+            <div id={reviewTarget.conclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión / cierre</span><ReviewMarker target={reviewTarget.conclusion} /></dt><dd className="prose-value">{text(deviation.conclusion)}</dd></div>
+            <div id={reviewTarget.disposition.anchorId} className="info-item review-target"><dt><span>Disposición</span><ReviewMarker target={reviewTarget.disposition} /></dt><dd>{text(deviation.disposition)}</dd></div>
             <div className="info-item"><dt>Cantidad</dt><dd>{text(deviation.dispositionQuantity)}</dd></div>
             <div className="info-item"><dt>Notificación al cliente</dt><dd>{triStateLabel(deviation.clientNotification)}</dd></div>
             <div className="info-item"><dt>Fecha de cierre</dt><dd>{formatDate(deviation.closedAt)}</dd></div>
-            <div className="info-item full"><dt>Comentarios de disposición</dt><dd className="prose-value">{text(deviation.dispositionComments)}</dd></div>
+            <div id={reviewTarget.dispositionComments.anchorId} className="info-item full review-target"><dt><span>Comentarios de disposición</span><ReviewMarker target={reviewTarget.dispositionComments} /></dt><dd className="prose-value">{text(deviation.dispositionComments)}</dd></div>
           </dl>
         </div>
       ) : null}
