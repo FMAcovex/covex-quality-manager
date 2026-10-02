@@ -365,7 +365,7 @@ export default async function DeviationDetailPage({
                               <Link className="summary-link" href={qmsRecordHref("CAPA", navigation.recordId)}>{capaCode}</Link>
                             ) : capaCode}
                           </td>
-                          <td className="action-description-cell">{plan.description}</td>
+                          <td className="action-description-cell"><span>{plan.description}</span><ReviewMarker target={target} /></td>
                           <td>{formatDate(plan.plannedExecutionDate)}</td>
                           <td>{text(plan.responsible)}</td>
                           <td><span className="badge neutral">{capaProposalStatusLabel(plan.proposalStatus)}</span></td>
@@ -455,14 +455,17 @@ export default async function DeviationDetailPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {deviation.immediateActions.map((action, index) => (
-                      <tr key={action.id}>
-                        <td className="action-number-cell">{String(index + 1).padStart(2, "0")}</td>
-                        <td className="action-description-cell">{action.description}</td>
-                        <td>{text(action.executedBy)}</td>
-                        <td>{formatDate(action.executedAt)}</td>
-                      </tr>
-                    ))}
+                    {deviation.immediateActions.map((action, index) => {
+                      const target = immediateActionTargetById.get(action.id)!;
+                      return (
+                        <tr id={target.anchorId} className="review-target" key={action.id}>
+                          <td className="action-number-cell">{String(index + 1).padStart(2, "0")}</td>
+                          <td className="action-description-cell"><span>{action.description}</span><ReviewMarker target={target} /></td>
+                          <td>{text(action.executedBy)}</td>
+                          <td>{formatDate(action.executedAt)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -487,12 +490,13 @@ export default async function DeviationDetailPage({
                   <tbody>
                     {deviation.capaPlans.map((plan, index) => {
                       const navigation = capaPlanNavigation(plan);
+                      const target = capaPlanTargetById.get(plan.id)!;
                       const capaCode =
                         plan.businessCapaCode ??
                         plan.linkedCapaRecord?.businessCode ??
                         (plan.proposalStatus === "PROPOSED" ? "Pendiente" : "—");
                       return (
-                        <tr key={plan.id}>
+                        <tr id={target.anchorId} className="review-target" key={plan.id}>
                           <td className="action-number-cell">{String(index + 1).padStart(2, "0")}</td>
                           <td>
                             {navigation.kind === "OPEN" ? (
