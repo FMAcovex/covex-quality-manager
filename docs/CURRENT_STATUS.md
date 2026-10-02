@@ -917,7 +917,7 @@ Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r2b3-returns`; PENDIENTE
 - sin cambios funcionales en estados, cierre, relaciones, anexos, PDF, productos ni seguimientos.
 
 ## CC1 — Control de Cambios · Modelo funcional, estados y formulario
-Estado: **IMPLEMENTADO EN RAMA `feature/change-control-cc1-functional-model-form`; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
+Estado: **COMPLETADO Y FUSIONADO EN `main` mediante PR #94**.
 
 - representación funcional derivada a partir de `ChangeFinalStatus`, `ChangeRequestDecision`, `ChangeDictamenResult`, ejecución y eficacia, sin crear una máquina de estados paralela;
 - estado funcional visible en cabecera y listado, manteniendo además el estado final existente;
@@ -927,3 +927,14 @@ Estado: **IMPLEMENTADO EN RAMA `feature/change-control-cc1-functional-model-form
 - `requestDecisionResponsible` se reutiliza con la denominación funcional «Responsable de dictamen»;
 - `approvalNames` deja de capturarse sin eliminar el campo ni sobrescribir datos históricos, anexos o snapshots;
 - sin cambios de schema Prisma, migraciones, seguimientos, documentos, Anexo V ni capa de revisión R2C.
+
+## CC2 — Control de Cambios · Expediente, pestañas y UX
+Estado: **IMPLEMENTADO EN RAMA `feature/change-control-cc2-expedient-tabs-ux`; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
+
+- nueva pestaña inicial Información con descripción, departamento, clasificación, estado funcional y fechas de solicitud/implementación;
+- Solicitud reorganizada visualmente en datos del solicitante, descripción, justificación, documentos y decisión de aceptación/denegación;
+- Dictamen reorganizado en resultado/fecha, evaluación, implicación y requisitos, Plan de ejecución, seguimiento previsto, observaciones y Control interno separado;
+- requisitos presentados como pregunta, evaluación y respuesta/justificación, con fallback discreto para históricos incompletos;
+- Documentos agrupado en anexos generables, documentos por seguimiento y generaciones registradas, conservando las acciones existentes;
+- pestañas Seguimiento, Relaciones e Historial preservadas funcionalmente;
+- sin cambios Prisma, estados, validaciones, formularios, seguimientos, Anexo V, backend documental ni revisión R2C.

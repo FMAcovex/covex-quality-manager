@@ -14,9 +14,19 @@ import {
   formatDate,
   functionalStatusLabel,
   functionalStatusTone,
+  nextFollowupDateFromHistory,
   requestDecisionLabel,
   scopeLabels,
 } from "@/modules/change-control/domain";
+import {
+  changeControlDetailTabs,
+  changeControlDocumentUrls,
+  changeControlVersionDocumentUrls,
+  changeRequirementRows,
+  dictamenResultTone,
+  displayValue,
+  requestDecisionTone,
+} from "@/modules/change-control/detail-ui";
 import {
   getChangeControlDetail,
   getChangeControlLookups,
@@ -29,27 +39,11 @@ import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
-const tabs = [
-  ["request", "Solicitud"],
-  ["dictamen", "Dictamen"],
-  ["followups", "Seguimientos"],
-  ["documents", "Documentos"],
-  ["relations", "Relaciones"],
-  ["history", "Historial"],
-] as const;
-
 function relationLabel(type: string) {
   if (type === "GENERATES") return "Genera";
   if (type === "IMPLEMENTED_BY") return "Implantado por";
   if (type === "ASSOCIATED_WITH") return "Asociado";
   return "Relacionado";
-}
-
-function triState(value: string | null | undefined) {
-  if (value === "YES") return "Sí";
-  if (value === "NO") return "No";
-  if (value === "NA") return "No aplica";
-  return "—";
 }
 
 export default async function ChangeControlDetailPage({
@@ -61,7 +55,7 @@ export default async function ChangeControlDetailPage({
 }) {
   const { id } = await params;
   const { tab: rawTab, relationError } = await searchParams;
-  const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "request";
+  const activeTab = changeControlDetailTabs.some(([key]) => key === rawTab) ? rawTab! : "information";
   const [record, lookups] = await Promise.all([
     getChangeControlDetail(id),
     getChangeControlLookups(),
@@ -69,6 +63,13 @@ export default async function ChangeControlDetailPage({
   if (!record) notFound();
 
   const currentVersion = record.qmsRecord.versions.at(-1) ?? null;
+  const nextFollowupDate = nextFollowupDateFromHistory(record.followups);
+  const requirements = changeRequirementRows(record);
+  const documentUrls = changeControlDocumentUrls(id);
+  const department = [record.departmentCodeSnapshot, record.departmentNameSnapshot]
+    .filter(Boolean)
+    .join(" · ") || "—";
+  const scope = record.scope.map((item) => scopeLabels[item] ?? item).join(" · ") || "—";
   const relations = [
     ...record.qmsRecord.targetRelations.map((item) => ({
       direction: "Origen",
@@ -148,58 +149,130 @@ export default async function ChangeControlDetailPage({
       />
 
       <nav className="record-tabs">
-        {tabs.map(([key, label]) => (
+        {changeControlDetailTabs.map(([key, label]) => (
           <Link key={key} className={activeTab === key ? "active" : ""} href={`/changes/${id}?tab=${key}`}>
             {label}
           </Link>
         ))}
       </nav>
 
-      {activeTab === "request" ? (
-        <div className="card">
-          <h2>Solicitud de cambio · Anexo III</h2>
-          <dl className="info-grid">
-            <div className="info-item"><dt>N.º Control de Cambio</dt><dd>{record.qmsRecord.businessCode ?? "—"}</dd></div>
-            <div className="info-item"><dt>Fecha solicitud</dt><dd>{formatDate(record.requestDate)}</dd></div>
-            <div className="info-item"><dt>Departamento / Área</dt><dd>{record.departmentCodeSnapshot ?? "—"} · {record.departmentNameSnapshot ?? ""}</dd></div>
-            <div className="info-item"><dt>Solicitud</dt><dd>{requestDecisionLabel(record.requestDecision)}</dd></div>
-            <div className="info-item full"><dt>Alcance</dt><dd>{record.scope.map((item) => scopeLabels[item] ?? item).join(" · ") || "—"}{record.otherScope ? ` · ${record.otherScope}` : ""}</dd></div>
-            <div className="info-item"><dt>Solicitante</dt><dd>{record.requesterName ?? "—"}</dd></div>
-            <div className="info-item"><dt>Puesto</dt><dd>{record.requesterPosition ?? "—"}</dd></div>
-            <div className="info-item"><dt>Responsable de dictamen</dt><dd>{record.requestDecisionResponsible ?? "—"}</dd></div>
-            <div className="info-item"><dt>Fecha aceptación/denegación</dt><dd>{formatDate(record.requestDecisionDate)}</dd></div>
-            <div className="info-item full"><dt>Descripción del cambio</dt><dd className="prose-value">{record.description ?? "—"}</dd></div>
-            <div className="info-item full"><dt>Justificación</dt><dd className="prose-value">{record.justification ?? "—"}</dd></div>
-            <div className="info-item full"><dt>Documentos aportados</dt><dd className="prose-value">{record.providedDocuments ?? "—"}</dd></div>
+      {activeTab === "information" ? (
+        <div className="card change-overview-card">
+          <div className="section-title-row">
+            <div>
+              <p className="eyebrow">Resumen del expediente</p>
+              <h2>Información</h2>
+            </div>
+            <span className={`badge ${functionalStatusTone(record)}`}>{functionalStatusLabel(record)}</span>
+          </div>
+          <section className="change-overview-description">
+            <h3>Descripción del cambio</h3>
+            <p>{displayValue(record.description)}</p>
+          </section>
+          <dl className="change-overview-meta">
+            <div className="info-item"><dt>Código</dt><dd>{record.qmsRecord.businessCode ?? "—"}</dd></div>
+            <div className="info-item"><dt>Departamento</dt><dd>{department}</dd></div>
+            <div className="info-item"><dt>Clasificación</dt><dd><span className="badge neutral">{classificationLabel(record.classification)}</span></dd></div>
           </dl>
+          <dl className="change-date-pair">
+            <div>
+              <dt>Fecha de solicitud</dt>
+              <dd>{formatDate(record.requestDate)}</dd>
+            </div>
+            <div>
+              <dt>Fecha prevista de implementación</dt>
+              <dd>{formatDate(record.plannedImplementationDate)}</dd>
+            </div>
+          </dl>
+        </div>
+      ) : null}
+
+      {activeTab === "request" ? (
+        <div className="card change-detail-card">
+          <div className="section-title-row">
+            <div><p className="eyebrow">Anexo III</p><h2>Solicitud</h2></div>
+          </div>
+          <section className="change-detail-section">
+            <h3>Datos del solicitante</h3>
+            <dl className="info-grid">
+              <div className="info-item"><dt>Solicitante</dt><dd>{displayValue(record.requesterName)}</dd></div>
+              <div className="info-item"><dt>Cargo / puesto</dt><dd>{displayValue(record.requesterPosition)}</dd></div>
+              <div className="info-item"><dt>Departamento</dt><dd>{department}</dd></div>
+              <div className="info-item"><dt>Fecha de solicitud</dt><dd>{formatDate(record.requestDate)}</dd></div>
+              <div className="info-item full"><dt>Ámbito del cambio</dt><dd>{scope}{record.otherScope ? ` · ${record.otherScope}` : ""}</dd></div>
+            </dl>
+          </section>
+          <section className="change-prose-section">
+            <h3>Descripción del cambio</h3>
+            <p>{displayValue(record.description)}</p>
+          </section>
+          <section className="change-prose-section">
+            <h3>Justificación del cambio</h3>
+            <p>{displayValue(record.justification)}</p>
+          </section>
+          <section className="change-prose-section">
+            <h3>Documentos aportados</h3>
+            <p>{displayValue(record.providedDocuments)}</p>
+          </section>
+          <section className="change-decision-panel">
+            <div className="change-decision-heading">
+              <div><p className="eyebrow">Decisión</p><h3>Decisión de la solicitud</h3></div>
+              <span className={`badge ${requestDecisionTone(record.requestDecision)}`}>{requestDecisionLabel(record.requestDecision)}</span>
+            </div>
+            <dl className="info-grid">
+              <div className="info-item"><dt>Responsable de dictamen</dt><dd>{displayValue(record.requestDecisionResponsible)}</dd></div>
+              <div className="info-item"><dt>Cargo / función</dt><dd>{displayValue(record.requestDecisionRole)}</dd></div>
+              <div className="info-item"><dt>Fecha de aceptación/denegación</dt><dd>{formatDate(record.requestDecisionDate)}</dd></div>
+            </dl>
+          </section>
         </div>
       ) : null}
 
       {activeTab === "dictamen" ? (
         <>
-          <div className="card">
-            <div className="section-title-row">
-              <div><h2>Dictamen del cambio · Anexo IV</h2><p className="muted-note">El plan aprobado constituye la línea base del cambio.</p></div>
-              <span className={`badge ${record.dictamenResult === "APPROVED" ? "closed" : record.dictamenResult === "REJECTED" ? "major" : "warning"}`}>{dictamenResultLabel(record.dictamenResult)}</span>
+          <div className="card change-dictamen-result">
+            <div>
+              <p className="eyebrow">Anexo IV</p>
+              <h2>Resultado del dictamen</h2>
+              <span className={`badge ${dictamenResultTone(record.dictamenResult)}`}>{dictamenResultLabel(record.dictamenResult)}</span>
             </div>
-            <dl className="info-grid">
-              <div className="info-item full"><dt>Evaluación</dt><dd className="prose-value">{record.evaluation ?? "—"}</dd></div>
-              <div className="info-item"><dt>Clasificación</dt><dd>{classificationLabel(record.classification)}</dd></div>
-              <div className="info-item"><dt>Fecha prevista implantación</dt><dd>{formatDate(record.plannedImplementationDate)}</dd></div>
-              <div className="info-item"><dt>Fecha aprobación</dt><dd>{formatDate(record.dictamenDate)}</dd></div>
-              <div className="info-item"><dt>Responsable seguimiento</dt><dd>{record.followupResponsible ?? "—"}</dd></div>
-              <div className="info-item"><dt>Comité de cambios</dt><dd>{record.committeeRequired === null ? "—" : record.committeeRequired ? "Sí" : "No"}</dd></div>
-              <div className="info-item"><dt>Informar a cliente</dt><dd>{record.clientNotificationRequired === null ? "—" : record.clientNotificationRequired ? "Sí" : "No"}</dd></div>
-              <div className="info-item"><dt>Autoridad sanitaria</dt><dd>{record.authorityRequired === null ? "—" : record.authorityRequired ? "Sí" : "No"}</dd></div>
-              <div className="info-item"><dt>PQR</dt><dd>{triState(record.pqrRequired)}</dd></div>
-              <div className="info-item"><dt>Estabilidad</dt><dd>{triState(record.stabilityRequired)}</dd></div>
-              <div className="info-item"><dt>Análisis adicionales</dt><dd>{triState(record.additionalAnalysisRequired)}</dd></div>
-              <div className="info-item"><dt>Validación adicional</dt><dd>{triState(record.additionalValidationRequired)}</dd></div>
-              <div className="info-item full"><dt>Observaciones</dt><dd className="prose-value">{record.dictamenObservations ?? "—"}</dd></div>
+            <dl>
+              <div><dt>Fecha del dictamen</dt><dd>{formatDate(record.dictamenDate)}</dd></div>
+              <div><dt>Clasificación</dt><dd>{classificationLabel(record.classification)}</dd></div>
             </dl>
           </div>
+
+          <div className="card change-evaluation-card">
+            <h2>Evaluación del cambio</h2>
+            <p>{displayValue(record.evaluation)}</p>
+          </div>
+
           <div className="card">
+            <div className="section-title-row">
+              <div>
+                <h2>Implicación del cambio y requisitos</h2>
+                <p className="muted-note">Cada requisito conserva su evaluación y la respuesta o justificación asociada.</p>
+              </div>
+            </div>
+            <div className="change-requirements" role="table" aria-label="Implicación del cambio y requisitos">
+              <div className="change-requirement-header" role="row">
+                <strong role="columnheader">Requisito</strong>
+                <strong role="columnheader">Evaluación</strong>
+                <strong role="columnheader">Respuesta / justificación</strong>
+              </div>
+              {requirements.map((item) => (
+                <div className="change-requirement-row" role="row" key={item.question}>
+                  <div role="cell"><span className="change-mobile-label">Requisito</span><strong>{item.question}</strong></div>
+                  <div role="cell"><span className="change-mobile-label">Evaluación</span><span className="badge neutral">{item.evaluation}</span></div>
+                  <div role="cell"><span className="change-mobile-label">Respuesta / justificación</span><span>{item.detail}</span></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="card change-plan-card">
             <h2>Plan de ejecución aprobado</h2>
+            <p className="muted-note">El plan aprobado constituye la línea base del cambio.</p>
             <div className="table-scroll">
               <table className="records-table compact-table">
                 <thead><tr><th>Origen</th><th>Departamento</th><th>Acción / tarea</th><th>Responsable</th><th>Fecha prevista</th></tr></thead>
@@ -217,6 +290,31 @@ export default async function ChangeControlDetailPage({
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div className="card change-dictamen-closing">
+            <section>
+              <h2>Seguimiento previsto</h2>
+              <dl className="info-grid">
+                <div className="info-item wide"><dt>Responsable de seguimiento</dt><dd>{displayValue(record.followupResponsible)}</dd></div>
+                <div className="info-item wide"><dt>Fecha del próximo seguimiento</dt><dd>{nextFollowupDate ? formatDate(nextFollowupDate) : "Pendiente de establecer en el seguimiento"}</dd></div>
+              </dl>
+            </section>
+            <section className="change-prose-section">
+              <h2>Observaciones</h2>
+              <p>{displayValue(record.dictamenObservations)}</p>
+            </section>
+            <section className="change-internal-panel">
+              <div>
+                <p className="eyebrow">Gestión interna</p>
+                <h2>Control interno</h2>
+              </div>
+              <dl className="info-grid">
+                <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value">{displayValue(record.internalObservations)}</dd></div>
+                <div className="info-item"><dt>Documento firmado disponible</dt><dd>{record.signedDocumentAvailable === true ? "Sí" : record.signedDocumentAvailable === false ? "No" : "—"}</dd></div>
+                <div className="info-item"><dt>Control del dato</dt><dd>{record.dataQualityStatus === "COMPLETE" ? "Completo" : record.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Pendiente de revisar"}</dd></div>
+              </dl>
+            </section>
           </div>
         </>
       ) : null}
@@ -318,72 +416,88 @@ export default async function ChangeControlDetailPage({
       {activeTab === "documents" ? (
         record.finalStatus === "DRAFT" ? (
           <div className="empty-panel">Los documentos oficiales estarán disponibles cuando el Control de Cambio pase a estado Abierto.</div>
-        ) : <div className="card">
-          <h2>Documentos del expediente</h2>
-          <p className="muted-note">Solicitud (Anexo III), Dictamen (Anexo IV), Seguimientos (Anexo V) y listado maestro anual (Anexo VII) son familias documentales independientes.</p>
+        ) : <div className="card change-documents-card">
+          <div className="section-title-row">
+            <div>
+              <h2>Documentos del expediente</h2>
+              <p className="muted-note">Anexos generables, documentos por seguimiento y generaciones registradas.</p>
+            </div>
+          </div>
+          <h3 className="change-document-group-title">Anexos generables</h3>
           <div className="document-grid">
             <div className="document-block">
-              <h3>Anexo III · Solicitud</h3>
+              <div className="change-document-heading"><h3>Anexo III · Solicitud</h3><span className="badge neutral">{record.annexIIITemplateVersion?.versionCode ?? "Sin plantilla"}</span></div>
               <p>Plantilla oficial y solicitud cumplimentada del Control de Cambio.</p>
               <div className="document-actions">
                 {record.annexIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${record.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
-                <a className="button primary" href={`/api/changes/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+                <a className="button primary" href={documentUrls.annexIII}>Generar Anexo III</a>
               </div>
             </div>
             <div className="document-block">
-              <h3>Anexo IV · Dictamen</h3>
+              <div className="change-document-heading"><h3>Anexo IV · Dictamen</h3><span className="badge neutral">{record.annexIVTemplateVersion?.versionCode ?? "Sin plantilla"}</span></div>
               <p>Plantilla oficial y Dictamen cumplimentado.</p>
               <div className="document-actions">
                 {record.annexIVTemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${record.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
-                <a className="button primary" href={`/api/changes/${id}/annex-iv`}>Generar Anexo IV cumplimentado</a>
+                <a className="button primary" href={documentUrls.annexIV}>Generar Anexo IV</a>
               </div>
             </div>
             <div className="document-block">
-              <h3>Anexo V · Seguimiento</h3>
+              <div className="change-document-heading"><h3>Anexo V · Seguimiento</h3><span className="badge neutral">{record.annexVTemplateVersion?.versionCode ?? "Sin plantilla"}</span></div>
               <p>Cada seguimiento se genera con su versión histórica correspondiente.</p>
               <div className="document-actions">
                 {record.annexVTemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${record.annexVTemplateVersion.id}/download`}>Descargar plantilla oficial</a> : null}
-                {currentVersion ? <a className="button primary" href={`/api/changes/${id}/annex-v?version=${currentVersion.sequenceNumber}`}>Generar Anexo V · {versionLabel(currentVersion.sequenceNumber)}</a> : <span className="badge neutral">Disponible tras Seguimiento 00</span>}
+                {currentVersion ? <a className="button primary" href={changeControlVersionDocumentUrls(id, currentVersion.sequenceNumber).annexV}>Generar Anexo V · {versionLabel(currentVersion.sequenceNumber)}</a> : <span className="badge neutral">Disponible tras Seguimiento 00</span>}
               </div>
             </div>
             <div className="document-block">
-              <h3>Anexo VII · Listado maestro</h3>
+              <div className="change-document-heading"><h3>Anexo VII · Listado maestro</h3><span className="badge neutral">Anual</span></div>
               <p>Listado oficial anual de Controles de Cambios.</p>
-              <Link className="button" href="/changes">Ir al listado y descargar Anexo VII</Link>
+              <Link className="button" href={documentUrls.annexVII}>Ir al listado y descargar Anexo VII</Link>
             </div>
           </div>
           {record.qmsRecord.versions.length ? (
-            <div className="timeline">
-              {record.qmsRecord.versions.map((version) => (
-                <div className="timeline-item" key={version.id}>
-                  <div>
-                    <strong>{versionLabel(version.sequenceNumber)} · Seguimiento {String(version.sequenceNumber).padStart(2,"0")}</strong>
-                    <div className="document-actions">
-                      <a className="button small" href={`/api/changes/${id}/annex-v?version=${version.sequenceNumber}`}>
-                        Descargar Anexo V histórico
-                      </a>
-                      <a className="button small" href={`/api/changes/${id}/annex-iii?version=${version.sequenceNumber}`}>
-                        Solicitud en esta versión
-                      </a>
-                      <a className="button small" href={`/api/changes/${id}/annex-iv?version=${version.sequenceNumber}`}>
-                        Dictamen en esta versión
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <section className="change-document-group">
+              <h3>Documentos por seguimiento</h3>
+              <div className="record-version-list">
+                {record.qmsRecord.versions.map((version) => {
+                  const urls = changeControlVersionDocumentUrls(id, version.sequenceNumber);
+                  return (
+                    <article className="record-version-item" key={version.id}>
+                      <div className="record-version-header">
+                        <strong>{versionLabel(version.sequenceNumber)} · Seguimiento {String(version.sequenceNumber).padStart(2,"0")}</strong>
+                        <span className="badge neutral">{version.frozenAt ? "Histórica" : "Vigente"}</span>
+                      </div>
+                      <div className="document-actions">
+                        <a className="button small" href={urls.annexV}>
+                          Descargar Anexo V histórico
+                        </a>
+                        <a className="button small" href={urls.annexIII}>
+                          Solicitud en esta versión
+                        </a>
+                        <a className="button small" href={urls.annexIV}>
+                          Dictamen en esta versión
+                        </a>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
           ) : null}
           {record.qmsRecord.generatedDocuments.length ? (
-            <div className="timeline">
-              {record.qmsRecord.generatedDocuments.map((item) => (
-                <div className="timeline-item" key={item.id}>
-                  <div><strong>{item.documentType}</strong><small> · {formatDate(item.generatedAt)} · {item.generatedByText ?? "Usuario no informado"}</small></div>
-                </div>
-              ))}
-            </div>
+            <section className="change-document-group">
+              <h3>Generaciones registradas</h3>
+              <div className="timeline">
+                {record.qmsRecord.generatedDocuments.map((item) => (
+                  <div className="timeline-item document-generation-item" key={item.id}>
+                    <strong className="document-generation-type">{item.documentType}</strong>
+                    <small className="muted-note document-generation-meta">Generado {formatDate(item.generatedAt)} · {item.generatedByText ?? "Usuario no informado"}</small>
+                  </div>
+                ))}
+              </div>
+            </section>
           ) : (
-            <div className="empty-panel">Todavía no se han generado documentos desde la aplicación.</div>
+            <section className="change-document-group"><h3>Generaciones registradas</h3><div className="empty-panel">Todavía no se han generado documentos desde la aplicación.</div></section>
           )}
         </div>
       ) : null}
