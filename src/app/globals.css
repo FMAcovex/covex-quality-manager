@@ -2288,3 +2288,32 @@ button[disabled] {
     order: initial;
   }
 }
+
+
+/* CC3 — Seguimientos de Control de Cambios */
+.change-followup-primary {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fbfcfe;
+}
+.followup-close-grid {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+.signed-pdf-details {
+  margin-top: 6px;
+}
+.signed-pdf-details > summary {
+  cursor: pointer;
+  color: var(--blue-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+.signed-pdf-details[open] > summary {
+  margin-bottom: 8px;
+}
