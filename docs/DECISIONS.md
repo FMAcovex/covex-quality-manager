@@ -497,3 +497,16 @@ Reglas:
 - los snapshots de valor y versión permanecen inmutables aunque el expediente cree una versión posterior;
 - la capa de revisión no modifica formularios, reglas GMP, estados, cierres, relaciones, anexos, PDF ni versionado funcional de Desviaciones.
 
+## D-061 — R2B2: extensión de revisión a CAPA
+CAPA reutiliza la infraestructura transversal de revisión ya validada en Reclamaciones y Desviaciones, preservando su vocabulario funcional propio.
+
+Reglas:
+- Modo revisión, pestaña Revisión, drawer, contadores y «Ir al campo» reutilizan los componentes comunes;
+- los objetivos estáticos cubren identificación, origen, defecto, causa raíz, impacto, acciones propuestas, seguimiento de la acción, estado operativo, eficacia y conclusión;
+- las acciones propuestas se identifican mediante `CapaPlannedAction` + UUID real;
+- los seguimientos de acción se identifican mediante `CapaActionFollowup` + UUID real;
+- la versión funcional mostrada en revisión se denomina `Seguimiento 00/01/02...`, no `V00/V01/V02`, sin cambiar la persistencia en `QmsRecordVersion`;
+- una observación nueva se vincula al seguimiento funcional vigente cuando existe; históricos sin snapshot siguen siendo revisables con `recordVersionId = null`;
+- el snapshot y la asociación al seguimiento permanecen inmutables aunque se cree un seguimiento posterior;
+- la capa de revisión no modifica reglas GMP, formularios, estados, cierres, eficacia, relaciones, anexos, PDF ni la lógica de versionado CAPA.
+
