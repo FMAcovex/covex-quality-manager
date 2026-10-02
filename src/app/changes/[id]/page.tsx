@@ -373,11 +373,14 @@ export default async function ChangeControlDetailPage({
                             ) : (
                               <small className="muted-note">La carga es documental; no se añade una nueva regla de cierre.</small>
                             )}
-                            <SignedVersionDocumentForm
-                              action={uploadChangeControlSignedPdfAction.bind(null, id, version.id)}
-                              defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
-                              replace={Boolean(signedDocument)}
-                            />
+                            <details className="signed-pdf-details">
+                              <summary>{signedDocument ? "Sustituir PDF firmado" : "Adjuntar PDF firmado"}</summary>
+                              <SignedVersionDocumentForm
+                                action={uploadChangeControlSignedPdfAction.bind(null, id, version.id)}
+                                defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                                replace={Boolean(signedDocument)}
+                              />
+                            </details>
                           </div>
                         ) : null}
                         <div className="table-scroll followup-state-table">
