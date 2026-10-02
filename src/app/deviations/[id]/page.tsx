@@ -365,7 +365,7 @@ export default async function DeviationDetailPage({
                               <Link className="summary-link" href={qmsRecordHref("CAPA", navigation.recordId)}>{capaCode}</Link>
                             ) : capaCode}
                           </td>
-                          <td className="action-description-cell"><span>{plan.description}</span><ReviewMarker target={target} /></td>
+                          <td className="action-description-cell">{plan.description}</td>
                           <td>{formatDate(plan.plannedExecutionDate)}</td>
                           <td>{text(plan.responsible)}</td>
                           <td><span className="badge neutral">{capaProposalStatusLabel(plan.proposalStatus)}</span></td>
@@ -503,7 +503,7 @@ export default async function DeviationDetailPage({
                               <Link className="summary-link" href={qmsRecordHref("CAPA", navigation.recordId)}>{capaCode}</Link>
                             ) : capaCode}
                           </td>
-                          <td className="action-description-cell">{plan.description}</td>
+                          <td className="action-description-cell"><span>{plan.description}</span><ReviewMarker target={target} /></td>
                           <td>{formatDate(plan.plannedExecutionDate)}</td>
                           <td>{text(plan.responsible)}</td>
                           <td>{capaProposalStatusLabel(plan.proposalStatus)}</td>
