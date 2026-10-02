@@ -459,3 +459,15 @@ Reglas:
 - no se introduce firma electrónica ni una tabla documental específica por módulo;
 - el formulario y la lógica común de almacenamiento/descarga se reutilizan de forma conservadora entre Desviaciones y CAPA, manteniendo las rutas y comportamiento de Desviaciones.
 
+## D-058 — Núcleo transversal de revisión y comentarios
+Los hilos de revisión se vinculan a la identidad común `QmsRecord`, no a las entidades específicas de cada módulo. Pueden referenciar opcionalmente la `QmsRecordVersion` revisada y apuntar al expediente, una sección, un campo o un elemento dinámico mediante su tipo e identificador estable.
+
+Reglas:
+- el comentario inicial y todas las respuestas se conservan exclusivamente como `ReviewMessage`;
+- los estados son `PENDING`, `ACCEPTED` y `RESOLVED`, con transiciones `PENDING → ACCEPTED → RESOLVED` o `PENDING → RESOLVED`;
+- aceptar no resuelve y responder no cambia el estado;
+- no se implementa reapertura ni borrado de hilos o mensajes;
+- `fieldLabelSnapshot` y `valueSnapshot` conservan lo visto al crear la observación y no se sincronizan después con el expediente;
+- creación, aceptación y resolución se registran como eventos de alto nivel en `ChangeHistory`; las respuestas no se duplican allí;
+- los comentarios no modifican datos del expediente, no introducen reglas por estado GMP y no bloquean su cierre;
+- R1 no añade interfaz visual a las páginas de los módulos.

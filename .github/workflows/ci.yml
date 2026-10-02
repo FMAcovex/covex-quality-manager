@@ -70,6 +70,7 @@ jobs:
           pnpm r3-complaints:smoke
           pnpm r2-returns-documents:smoke
           pnpm r3-returns:smoke
+          pnpm review-r1:smoke
           pnpm hito10:smoke
       - name: Quality checks
         run: pnpm quality
