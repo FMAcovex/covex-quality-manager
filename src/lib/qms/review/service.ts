@@ -199,12 +199,18 @@ export async function replyToReviewThread(input: ReplyToReviewThreadInput) {
 
   const thread = await prisma.reviewThread.findUnique({
     where: { id: reviewThreadId },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (!thread) {
     throw new ReviewThreadError(
       "REVIEW_THREAD_NOT_FOUND",
       "El hilo de revisión no existe.",
+    );
+  }
+  if (thread.status === ReviewThreadStatus.RESOLVED) {
+    throw new ReviewThreadError(
+      "INVALID_STATUS_TRANSITION",
+      "Un hilo resuelto está cerrado y no admite nuevas respuestas.",
     );
   }
 
