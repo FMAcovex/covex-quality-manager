@@ -28,7 +28,13 @@ export function ReviewThreadCard({
   thread: ReviewThreadView;
   showGoToField?: boolean;
 }) {
-  const { basePath, targetForThread, openThread, versionLabelMode } = useReviewWorkspace();
+  const {
+    basePath,
+    targetForThread,
+    openThread,
+    versionLabelMode,
+    showVersionContext,
+  } = useReviewWorkspace();
   const target = targetForThread(thread);
   const capabilities = reviewThreadCapabilities(thread.status);
   return (
@@ -36,7 +42,7 @@ export function ReviewThreadCard({
       <header>
         <div>
           <strong>{thread.fieldLabelSnapshot ?? target?.label ?? thread.fieldPath ?? "Expediente"}</strong>
-          <small>{thread.tabKey ?? "Expediente"} · {thread.sectionKey ?? "General"} · {reviewVersionLabel(thread.recordVersionSequence, versionLabelMode)}</small>
+          <small>{thread.tabKey ?? "Expediente"} · {thread.sectionKey ?? "General"}{showVersionContext ? ` · ${reviewVersionLabel(thread.recordVersionSequence, versionLabelMode)}` : ""}</small>
         </div>
         <span className={`badge review-${thread.status.toLowerCase()}`}>{reviewStatusLabel(thread.status)}</span>
       </header>
