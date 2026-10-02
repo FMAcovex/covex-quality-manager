@@ -2317,3 +2317,39 @@ button[disabled] {
 .signed-pdf-details[open] > summary {
   margin-bottom: 8px;
 }
+
+
+/* CC3 — Dictamen 2.a: pregunta a la izquierda, respuesta a la derecha */
+.change-implication-list {
+  display: grid;
+  gap: 10px;
+}
+.change-implication-row {
+  display: grid;
+  grid-template-columns: minmax(240px, .8fr) minmax(0, 1.8fr);
+  gap: 14px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fbfcfe;
+}
+.change-implication-question,
+.change-implication-answer {
+  min-width: 0;
+}
+.change-implication-question .field,
+.change-implication-answer .field {
+  margin: 0;
+}
+.change-pqr-answer {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(160px, .8fr);
+  gap: 12px;
+}
+@media (max-width: 760px) {
+  .change-implication-row,
+  .change-pqr-answer {
+    grid-template-columns: 1fr;
+  }
+}
