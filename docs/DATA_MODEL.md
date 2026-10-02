@@ -454,3 +454,21 @@ Además de metadatos, una plantilla puede conservar:
 - checksum SHA-256.
 
 Los binarios no se cargan en consultas de administración salvo cuando el generador solicita expresamente una versión documental.
+
+## 19. Revisión transversal
+
+### ReviewThread
+Hilo persistente asociado directamente a `QmsRecord` y, opcionalmente, a la `QmsRecordVersion` sobre la que se realizó la revisión.
+
+El objetivo se identifica mediante:
+- `targetKind`: expediente, sección, campo o elemento dinámico;
+- `tabKey`, `sectionKey` y `fieldPath` para ubicación lógica;
+- `targetEntityType` y `targetEntityId` para elementos dinámicos con identidad estable;
+- `fieldLabelSnapshot` y `valueSnapshot` como fotografía inmutable de lo visto por el revisor.
+
+El estado conserva por separado creación, aceptación y resolución, con sus autores y fechas. `recordVersionId` puede ser nulo, en particular cuando el módulo no expone versiones funcionales al usuario.
+
+### ReviewMessage
+Conversación 1:N del hilo. El comentario inicial es el primer `ReviewMessage`; no se duplica dentro de `ReviewThread`. No existe borrado funcional ni Server Action de eliminación.
+
+Las operaciones transversales crean eventos ligeros en `ChangeHistory` para alta, aceptación y resolución. La conversación completa permanece en `ReviewMessage` y el historial sigue siendo operativo, no un audit trail GMP validado.

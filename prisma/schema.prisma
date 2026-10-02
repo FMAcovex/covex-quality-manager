@@ -322,6 +322,19 @@ enum AlertSeverity {
   CRITICAL
 }
 
+enum ReviewThreadStatus {
+  PENDING
+  ACCEPTED
+  RESOLVED
+}
+
+enum ReviewTargetKind {
+  RECORD
+  SECTION
+  FIELD
+  ITEM
+}
+
 model QmsRecord {
   id                 String              @id @default(uuid())
   recordType         QmsRecordType
@@ -343,6 +356,7 @@ model QmsRecord {
   targetRelations    QmsRelation[]       @relation("RelationTarget")
   history            ChangeHistory[]
   versions           QmsRecordVersion[]
+  reviewThreads      ReviewThread[]
   generatedDocuments GeneratedDocument[]
   reminders          ReminderLog[]
   linkedCapaPlans    DeviationCapaPlan[] @relation("LinkedCapaRecord")
@@ -1189,10 +1203,54 @@ model QmsRecordVersion {
   updatedAt          DateTime          @updatedAt
   generatedDocuments GeneratedDocument[]
   documents          RecordVersionDocument[]
+  reviewThreads      ReviewThread[]
 
   @@unique([qmsRecordId, sequenceNumber])
   @@index([qmsRecordId, frozenAt])
   @@index([kind])
+}
+
+model ReviewThread {
+  id                 String             @id @default(uuid())
+  qmsRecordId        String
+  qmsRecord          QmsRecord          @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  recordVersionId    String?
+  recordVersion      QmsRecordVersion?  @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  targetKind         ReviewTargetKind
+  tabKey             String?
+  sectionKey         String?
+  fieldPath          String?
+  targetEntityType   String?
+  targetEntityId     String?
+  fieldLabelSnapshot String?
+  valueSnapshot      Json?
+  status             ReviewThreadStatus @default(PENDING)
+  createdByText      String
+  createdAt          DateTime           @default(now())
+  acceptedByText     String?
+  acceptedAt         DateTime?
+  resolvedByText     String?
+  resolvedAt         DateTime?
+  resolutionNote     String?            @db.Text
+  updatedAt          DateTime           @updatedAt
+  messages           ReviewMessage[]
+
+  @@index([qmsRecordId, status])
+  @@index([recordVersionId])
+  @@index([qmsRecordId, targetKind, tabKey, sectionKey, fieldPath])
+  @@index([targetEntityType, targetEntityId])
+  @@index([createdAt])
+}
+
+model ReviewMessage {
+  id             String       @id @default(uuid())
+  reviewThreadId String
+  reviewThread   ReviewThread @relation(fields: [reviewThreadId], references: [id], onDelete: Restrict)
+  message        String       @db.Text
+  createdByText  String
+  createdAt      DateTime     @default(now())
+
+  @@index([reviewThreadId, createdAt])
 }
 
 model RecordVersionDocument {

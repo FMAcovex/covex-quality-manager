@@ -1,6 +1,6 @@
 # Estado actual
 
-Fecha: 2026-09-29.
+Fecha: 2026-10-02.
 
 ## Hitos completados
 - Hito 0 — Especificación y arquitectura.
@@ -851,3 +851,17 @@ Estado: **IMPLEMENTADO EN RAMA `feature/capa-r3-final-regression`; PENDIENTE DE 
 - mantiene los smoke existentes, incluido `pnpm d6:smoke` para regresión de Desviaciones;
 - no introduce reglas GMP nuevas, rediseños, cambios Prisma ni extensión documental a otros módulos.
 
+## R1 — Núcleo transversal de revisión/comentarios
+Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r1-core`; VALIDADO LOCALMENTE Y EN CI DEL PR #89**.
+
+- enums `ReviewThreadStatus` y `ReviewTargetKind`;
+- modelos transversales `ReviewThread` y `ReviewMessage`, vinculados a `QmsRecord` y opcionalmente a `QmsRecordVersion`;
+- objetivos de expediente, sección, campo y elemento dinámico con `targetEntityType` + `targetEntityId` estable;
+- snapshots deliberadamente inmutables de etiqueta y valor visto por el revisor;
+- servicio transaccional común para crear, responder, aceptar y resolver;
+- aceptación y resolución idempotentes, sin reapertura ni borrado;
+- consultas comunes con mensajes cronológicos, filtro por estado/versión, orden por estado y conteos;
+- Server Actions con errores controlados y actor textual existente;
+- eventos de alto nivel en `ChangeHistory` para creación, aceptación y resolución;
+- smoke PostgreSQL `pnpm review-r1:smoke` integrado en CI;
+- sin cambios visuales en expedientes, sin bloqueo de cierre y sin cambios en reglas GMP, versionado, anexos o documentos.
