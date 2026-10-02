@@ -95,8 +95,15 @@ export function reviewModeHref(
   return `${basePath}?${params.toString()}`;
 }
 
-export function reviewVersionLabel(sequence: number | null) {
-  return sequence === null ? "Sin versión" : `V${String(sequence).padStart(2, "0")}`;
+export type ReviewVersionLabelMode = "VERSION" | "FOLLOWUP";
+
+export function reviewVersionLabel(
+  sequence: number | null,
+  mode: ReviewVersionLabelMode = "VERSION",
+) {
+  if (sequence === null) return "Sin versión";
+  const number = String(sequence).padStart(2, "0");
+  return mode === "FOLLOWUP" ? `Seguimiento ${number}` : `V${number}`;
 }
 
 export function reviewStatusLabel(status: ReviewThreadStatus) {
