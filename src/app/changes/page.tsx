@@ -10,6 +10,9 @@ import {
   executionStatusLabel,
   finalStatusLabel,
   formatDate,
+  functionalStatusLabel,
+  functionalStatusTone,
+  nextFollowupDateFromHistory,
 } from "@/modules/change-control/domain";
 import { getChangeControlList } from "@/modules/change-control/queries";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
@@ -143,6 +146,7 @@ export default async function ChangeControlPage({
                 <th data-column-key="effectiveness">Eficacia</th>
                 <th data-column-key="latestFollowup">Último seguimiento</th>
                 <th data-column-key="nextFollowup">Próximo seguimiento</th>
+                <th data-column-key="functionalStatus">Estado funcional</th>
                 <th data-column-key="finalStatus">Estado final</th>
                 <th data-column-key="closureDate">Fecha cierre</th>
                 <th data-column-key="related">Relacionados</th>
@@ -181,7 +185,8 @@ export default async function ChangeControlPage({
                     <td data-column-key="executionDate">{formatDate(row.executionDate)}</td>
                     <td data-column-key="effectiveness"><span className={`badge ${row.effectivenessStatus === "ACCEPTABLE" ? "closed" : row.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : row.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>{effectivenessStatusLabel(row.effectivenessStatus)}</span></td>
                     <td data-column-key="latestFollowup">{latest ? `${String(latest.sequenceNumber).padStart(2,"0")} · ${formatDate(latest.followupDate)}` : "—"}</td>
-                    <td data-column-key="nextFollowup">{formatDate(latest?.nextFollowupDate)}</td>
+                    <td data-column-key="nextFollowup">{formatDate(nextFollowupDateFromHistory(row.followups))}</td>
+                    <td data-column-key="functionalStatus"><span className={`badge ${functionalStatusTone(row)}`}>{functionalStatusLabel(row)}</span></td>
                     <td data-column-key="finalStatus"><span className={`status-badge ${row.finalStatus.toLowerCase()}`}>{finalStatusLabel(row.finalStatus)}</span></td>
                     <td data-column-key="closureDate">{formatDate(row.effectiveClosedAt)}</td>
                     <td data-column-key="related"><div className="relation-chips">
@@ -192,7 +197,7 @@ export default async function ChangeControlPage({
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={18}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={19}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>

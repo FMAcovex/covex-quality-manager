@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import { PrismaClient, QmsRecordType } from "@prisma/client";
+import {
+  functionalStatusLabel,
+  nextFollowupDateFromHistory,
+} from "../src/modules/change-control/domain";
 
 const prisma = new PrismaClient();
 
@@ -231,6 +235,8 @@ async function main() {
     assert.equal(stored.followups[1].effectivenessStatus, "PENDING");
     assert.equal(stored.followups[2].effectivenessStatus, "ACCEPTABLE");
     assert.equal(stored.finalStatus, "CLOSED");
+    assert.equal(functionalStatusLabel(stored), "Cerrado");
+    assert.equal(nextFollowupDateFromHistory(stored.followups), null);
     assert.deepEqual(stored.qmsRecord.versions.map((item) => item.sequenceNumber), [0, 1, 2]);
 
     console.log("Change Control lifecycle PostgreSQL smoke test passed.");

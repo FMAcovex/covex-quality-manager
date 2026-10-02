@@ -12,6 +12,8 @@ import {
   executionStatusLabel,
   finalStatusLabel,
   formatDate,
+  functionalStatusLabel,
+  functionalStatusTone,
   requestDecisionLabel,
   scopeLabels,
 } from "@/modules/change-control/domain";
@@ -112,6 +114,9 @@ export default async function ChangeControlDetailPage({
             <span className={`badge ${record.finalStatus === "CLOSED" ? "closed" : record.finalStatus === "DRAFT" ? "neutral" : "open"}`}>
               {finalStatusLabel(record.finalStatus)}
             </span>
+            <span className={`badge ${functionalStatusTone(record)}`}>
+              {functionalStatusLabel(record)}
+            </span>
             {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
           </div>
           <p className="muted-note">
@@ -161,8 +166,8 @@ export default async function ChangeControlDetailPage({
             <div className="info-item full"><dt>Alcance</dt><dd>{record.scope.map((item) => scopeLabels[item] ?? item).join(" · ") || "—"}{record.otherScope ? ` · ${record.otherScope}` : ""}</dd></div>
             <div className="info-item"><dt>Solicitante</dt><dd>{record.requesterName ?? "—"}</dd></div>
             <div className="info-item"><dt>Puesto</dt><dd>{record.requesterPosition ?? "—"}</dd></div>
-            <div className="info-item"><dt>Responsable aceptación</dt><dd>{record.requestDecisionResponsible ?? "—"}</dd></div>
-            <div className="info-item"><dt>Fecha aceptación</dt><dd>{formatDate(record.requestDecisionDate)}</dd></div>
+            <div className="info-item"><dt>Responsable de dictamen</dt><dd>{record.requestDecisionResponsible ?? "—"}</dd></div>
+            <div className="info-item"><dt>Fecha aceptación/denegación</dt><dd>{formatDate(record.requestDecisionDate)}</dd></div>
             <div className="info-item full"><dt>Descripción del cambio</dt><dd className="prose-value">{record.description ?? "—"}</dd></div>
             <div className="info-item full"><dt>Justificación</dt><dd className="prose-value">{record.justification ?? "—"}</dd></div>
             <div className="info-item full"><dt>Documentos aportados</dt><dd className="prose-value">{record.providedDocuments ?? "—"}</dd></div>

@@ -655,6 +655,7 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .change-table { min-width: 2250px; }
 .change-table .long-cell { min-width: 300px; max-width: 440px; white-space: normal; }
 .change-task-row { grid-template-columns: 1fr 2.5fr 1.2fr 1fr auto; align-items: end; }
+.change-task-row .field textarea { min-height: 42px; }
 .followup-task-table { min-width: 1700px; margin-bottom: 10px; }
 .followup-task-table select,
 .followup-task-table input,

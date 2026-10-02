@@ -42,6 +42,47 @@ export function finalStatusLabel(value: string) {
   return value === "CLOSED" ? "Cerrado" : "Abierto";
 }
 
+export type ChangeControlFunctionalState = {
+  finalStatus: string;
+  requestDecision: string;
+  dictamenResult: string;
+  executionStatus: string;
+  effectivenessStatus: string;
+};
+
+export function functionalStatusLabel(record: ChangeControlFunctionalState) {
+  if (record.finalStatus === "DRAFT") return "Borrador";
+  if (record.finalStatus === "CLOSED") return "Cerrado";
+  if (record.requestDecision === "PENDING") return "Solicitud pendiente";
+  if (record.requestDecision === "DENIED") return "Solicitud denegada";
+  if (record.dictamenResult === "PENDING") return "Solicitud aceptada · Dictamen pendiente";
+  if (record.dictamenResult === "REJECTED") return "Dictamen rechazado";
+  if (record.executionStatus !== "EXECUTED") return "Dictamen aprobado · Ejecución pendiente";
+  if (record.effectivenessStatus === "PENDING") return "Ejecutado · Eficacia pendiente";
+  if (record.effectivenessStatus === "ACCEPTABLE") return "Ejecutado · Eficacia aceptable";
+  if (record.effectivenessStatus === "NOT_ACCEPTABLE") return "Ejecutado · Eficacia no aceptable";
+  return "Ejecutado · Eficacia no aplica";
+}
+
+export function functionalStatusTone(record: ChangeControlFunctionalState) {
+  if (record.finalStatus === "DRAFT") return "neutral";
+  if (record.finalStatus === "CLOSED") return "closed";
+  if (record.requestDecision === "DENIED" || record.dictamenResult === "REJECTED" || record.effectivenessStatus === "NOT_ACCEPTABLE") return "major";
+  if (record.effectivenessStatus === "ACCEPTABLE") return "closed";
+  if (record.effectivenessStatus === "NOT_APPLICABLE") return "neutral";
+  return "warning";
+}
+
+export function nextFollowupDateFromHistory<T extends {
+  sequenceNumber: number;
+  nextFollowupDate: Date | string | null;
+}>(followups: T[]) {
+  if (!followups.length) return null;
+  return followups.reduce((latest, item) =>
+    item.sequenceNumber > latest.sequenceNumber ? item : latest,
+  ).nextFollowupDate;
+}
+
 export const scopeLabels: Record<string, string> = {
   INSTALLATIONS: "Instalaciones",
   EQUIPMENT: "Equipos",

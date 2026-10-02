@@ -75,7 +75,7 @@ export async function generateChangeAnnexIII(record: ChangeDocumentRecord) {
     15,
     0,
     [
-      `Nombre y cargo del responsable que acepta la solicitud: ${text(record.requestDecisionResponsible)}`,
+      `Responsable de dictamen: ${text(record.requestDecisionResponsible)}`,
       record.requestDecisionRole ? `Cargo: ${record.requestDecisionRole}` : "",
       "Firma: __________________",
       `Fecha: ${date(record.requestDecisionDate)}`,

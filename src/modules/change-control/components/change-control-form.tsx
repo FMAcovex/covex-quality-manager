@@ -70,15 +70,17 @@ function BooleanSelect({
   label,
   name,
   defaultValue,
+  required = false,
 }: {
   label: string;
   name: string;
   defaultValue?: "" | "true" | "false";
+  required?: boolean;
 }) {
   return (
     <label className="field">
-      <span>{label}</span>
-      <select name={name} defaultValue={defaultValue ?? ""}>
+      <span>{label}{required ? " *" : ""}</span>
+      <select name={name} defaultValue={defaultValue ?? ""} required={required}>
         <option value="">No informado</option>
         <option value="true">Sí</option>
         <option value="false">No</option>
@@ -91,15 +93,17 @@ function TriStateSelect({
   label,
   name,
   defaultValue,
+  required = false,
 }: {
   label: string;
   name: string;
   defaultValue?: "YES" | "NO" | "NA";
+  required?: boolean;
 }) {
   return (
     <label className="field">
-      <span>{label}</span>
-      <select name={name} defaultValue={defaultValue ?? ""}>
+      <span>{label}{required ? " *" : ""}</span>
+      <select name={name} defaultValue={defaultValue ?? ""} required={required}>
         <option value="">No informado</option>
         <option value="YES">Sí</option>
         <option value="NO">No</option>
@@ -134,6 +138,7 @@ export function ChangeControlForm({
   const [recordStatus, setRecordStatus] = useState<"DRAFT" | "OPEN" | "CLOSED">(
     formDefaults.finalStatus ?? (mode === "create" ? "DRAFT" : "OPEN"),
   );
+  const [dictamenResult, setDictamenResult] = useState(formDefaults.dictamenResult ?? "PENDING");
   const draft = recordStatus === "DRAFT";
 
   const updateTask = (index: number, patch: Partial<ChangeTaskInput>) => {
@@ -200,10 +205,10 @@ export function ChangeControlForm({
           </div>
           <Field label="Especificar Otros" name="otherScope" defaultValue={formDefaults.otherScope} />
           <Field label="Nombre y apellidos del solicitante" name="requesterName" defaultValue={formDefaults.requesterName} required={!draft} span="span-2" />
-          <Field label="Puesto" name="requesterPosition" defaultValue={formDefaults.requesterPosition} span="span-2" />
+          <Field label="Puesto" name="requesterPosition" defaultValue={formDefaults.requesterPosition} required={!draft} span="span-2" />
           <TextArea label="Descripción del cambio" name="description" defaultValue={formDefaults.description} required={!draft} />
           <TextArea label="Justificación del cambio" name="justification" defaultValue={formDefaults.justification} required={!draft} />
-          <TextArea label="Relación de documentos que se aportan" name="providedDocuments" defaultValue={formDefaults.providedDocuments} />
+          <TextArea label="Relación de documentos que se aportan" name="providedDocuments" defaultValue={formDefaults.providedDocuments} required={!draft} help="Si no se aportan documentos, indique No aplica." />
           <label className="field">
             <span>Solicitud</span>
             <select name="requestDecision" defaultValue={formDefaults.requestDecision ?? "PENDING"}>
@@ -212,7 +217,7 @@ export function ChangeControlForm({
               <option value="DENIED">Denegada</option>
             </select>
           </label>
-          <Field label="Responsable que acepta/deniega" name="requestDecisionResponsible" defaultValue={formDefaults.requestDecisionResponsible} />
+          <Field label="Responsable de dictamen" name="requestDecisionResponsible" defaultValue={formDefaults.requestDecisionResponsible} />
           <Field label="Cargo / función" name="requestDecisionRole" defaultValue={formDefaults.requestDecisionRole} />
           <Field label="Fecha aceptación/denegación" name="requestDecisionDate" type="date" defaultValue={formDefaults.requestDecisionDate} />
         </div>
@@ -224,28 +229,43 @@ export function ChangeControlForm({
           El Dictamen aprobado constituye la línea base. Una vez aprobado, sus acciones quedan bloqueadas; las nuevas tareas se añaden desde los seguimientos.
         </p>
         <div className="form-grid">
-          <TextArea label="Evaluación del cambio" name="evaluation" defaultValue={formDefaults.evaluation} />
+          <TextArea label="Evaluación del cambio" name="evaluation" defaultValue={formDefaults.evaluation} required={!draft} />
           <label className="field">
-            <span>Clasificación</span>
-            <select name="classification" defaultValue={formDefaults.classification ?? ""}>
+            <span>Clasificación{draft ? "" : " *"}</span>
+            <select name="classification" defaultValue={formDefaults.classification ?? ""} required={!draft}>
               <option value="">Pendiente</option>
               <option value="MAJOR">Mayor</option>
               <option value="MINOR">Menor</option>
             </select>
           </label>
-          <Field label="Fecha prevista de implementación" name="plannedImplementationDate" type="date" defaultValue={formDefaults.plannedImplementationDate} />
-          <label className="field">
-            <span>Resultado del Dictamen</span>
-            <select name="dictamenResult" defaultValue={formDefaults.dictamenResult ?? "PENDING"}>
-              <option value="PENDING">Pendiente</option>
-              <option value="APPROVED">Aprobado</option>
-              <option value="REJECTED">Rechazado</option>
-            </select>
-          </label>
-          <Field label="Fecha del Dictamen / aprobación" name="dictamenDate" type="date" defaultValue={formDefaults.dictamenDate} />
-          <Field label="Responsable de seguimiento" name="followupResponsible" defaultValue={formDefaults.followupResponsible} span="span-2" />
-          <Field label="Aprobación · nombres/cargos" name="approvalNames" defaultValue={formDefaults.approvalNames} span="span-2" />
-          <TextArea label="Observaciones del Dictamen" name="dictamenObservations" defaultValue={formDefaults.dictamenObservations} />
+          <Field label="Fecha prevista de implementación" name="plannedImplementationDate" type="date" defaultValue={formDefaults.plannedImplementationDate} required={!draft} />
+        </div>
+
+        <h3>2.a Implicación del cambio y requisitos</h3>
+        <div className="form-grid">
+          <BooleanSelect label="¿Comité de cambios?" name="committeeRequired" defaultValue={formDefaults.committeeRequired} required={!draft} />
+          <Field label="Respuesta / justificación y personal implicado" name="committeeDetails" defaultValue={formDefaults.committeeDetails} span="span-2" />
+          <BooleanSelect label="¿Informar a cliente?" name="clientNotificationRequired" defaultValue={formDefaults.clientNotificationRequired} required={!draft} />
+          <Field label="Respuesta / justificación, fecha y evidencia cliente" name="clientNotificationDetails" defaultValue={formDefaults.clientNotificationDetails} span="span-2" />
+          <BooleanSelect label="¿Autoridad sanitaria?" name="authorityRequired" defaultValue={formDefaults.authorityRequired} required={!draft} />
+          <Field label="Respuesta / justificación sobre autoridad" name="authorityDetails" defaultValue={formDefaults.authorityDetails} span="span-2" />
+          <TriStateSelect label="¿Reflejar en PQR?" name="pqrRequired" defaultValue={formDefaults.pqrRequired} required={!draft} />
+          <Field label="Respuesta / producto(s) PQR" name="pqrProducts" defaultValue={formDefaults.pqrProducts} />
+          <Field label="Respuesta / periodo PQR" name="pqrPeriod" defaultValue={formDefaults.pqrPeriod} />
+          <TriStateSelect label="¿Lotes a estabilidad?" name="stabilityRequired" defaultValue={formDefaults.stabilityRequired} required={!draft} />
+          <div className="field span-2">
+            <span>Respuesta / tipo de estabilidad</span>
+            <div className="checkbox-group">
+              <label><input type="checkbox" name="stabilityAccelerated" defaultChecked={formDefaults.stabilityAccelerated} /> Acelerada</label>
+              <label><input type="checkbox" name="stabilityOngoing" defaultChecked={formDefaults.stabilityOngoing} /> En curso</label>
+            </div>
+          </div>
+          <TriStateSelect label="¿Análisis adicionales?" name="additionalAnalysisRequired" defaultValue={formDefaults.additionalAnalysisRequired} required={!draft} />
+          <Field label="Respuesta / justificación de análisis" name="additionalAnalysisDetails" defaultValue={formDefaults.additionalAnalysisDetails} span="span-2" />
+          <TriStateSelect label="¿Validación adicional?" name="additionalValidationRequired" defaultValue={formDefaults.additionalValidationRequired} required={!draft} />
+          <Field label="Respuesta / justificación de validación" name="additionalValidationDetails" defaultValue={formDefaults.additionalValidationDetails} span="span-2" />
+          <BooleanSelect label="¿Otras implicaciones?" name="otherImplicationRequired" defaultValue={formDefaults.otherImplicationRequired} required={!draft} />
+          <Field label="Respuesta / justificación de otras implicaciones" name="otherImplicationDetails" defaultValue={formDefaults.otherImplicationDetails} span="span-2" />
         </div>
 
         <h3>Plan de ejecución</h3>
@@ -262,6 +282,7 @@ export function ChangeControlForm({
                 <select
                   value={item.departmentId}
                   disabled={baselineLocked}
+                  required={!draft && dictamenResult === "APPROVED"}
                   onChange={(e) => updateTask(index, { departmentId: e.target.value })}
                 >
                   <option value="">Seleccionar…</option>
@@ -275,6 +296,7 @@ export function ChangeControlForm({
                 <textarea
                   value={item.description}
                   disabled={baselineLocked}
+                  required={!draft && dictamenResult === "APPROVED"}
                   onChange={(e) => updateTask(index, { description: e.target.value })}
                 />
               </label>
@@ -283,6 +305,7 @@ export function ChangeControlForm({
                 <input
                   value={item.responsible}
                   disabled={baselineLocked}
+                  required={!draft && dictamenResult === "APPROVED"}
                   onChange={(e) => updateTask(index, { responsible: e.target.value })}
                 />
               </label>
@@ -292,6 +315,7 @@ export function ChangeControlForm({
                   type="date"
                   value={item.plannedDate}
                   disabled={baselineLocked}
+                  required={!draft && dictamenResult === "APPROVED"}
                   onChange={(e) => updateTask(index, { plannedDate: e.target.value })}
                 />
               </label>
@@ -317,31 +341,25 @@ export function ChangeControlForm({
       </section>
 
       <section className="form-section">
-        <h2>3. Implicaciones y requisitos asociados</h2>
+        <h2>3. Resultado del dictamen</h2>
+        <p className="section-help">El próximo seguimiento se obtiene de la última versión formal registrada y no se duplica en el expediente.</p>
         <div className="form-grid">
-          <BooleanSelect label="¿Comité de cambios?" name="committeeRequired" defaultValue={formDefaults.committeeRequired} />
-          <Field label="Justificación / personal implicado" name="committeeDetails" defaultValue={formDefaults.committeeDetails} span="span-2" />
-          <BooleanSelect label="¿Informar a cliente?" name="clientNotificationRequired" defaultValue={formDefaults.clientNotificationRequired} />
-          <Field label="Detalle / fecha / evidencia cliente" name="clientNotificationDetails" defaultValue={formDefaults.clientNotificationDetails} span="span-2" />
-          <BooleanSelect label="¿Autoridad sanitaria?" name="authorityRequired" defaultValue={formDefaults.authorityRequired} />
-          <Field label="Detalle autoridad" name="authorityDetails" defaultValue={formDefaults.authorityDetails} span="span-2" />
-          <TriStateSelect label="¿Reflejar en PQR?" name="pqrRequired" defaultValue={formDefaults.pqrRequired} />
-          <Field label="Producto(s) PQR" name="pqrProducts" defaultValue={formDefaults.pqrProducts} />
-          <Field label="Periodo PQR" name="pqrPeriod" defaultValue={formDefaults.pqrPeriod} />
-          <TriStateSelect label="¿Lotes a estabilidad?" name="stabilityRequired" defaultValue={formDefaults.stabilityRequired} />
-          <div className="field span-2">
-            <span>Tipo de estabilidad</span>
-            <div className="checkbox-group">
-              <label><input type="checkbox" name="stabilityAccelerated" defaultChecked={formDefaults.stabilityAccelerated} /> Acelerada</label>
-              <label><input type="checkbox" name="stabilityOngoing" defaultChecked={formDefaults.stabilityOngoing} /> En curso</label>
-            </div>
-          </div>
-          <TriStateSelect label="¿Análisis adicionales?" name="additionalAnalysisRequired" defaultValue={formDefaults.additionalAnalysisRequired} />
-          <Field label="Especificar análisis" name="additionalAnalysisDetails" defaultValue={formDefaults.additionalAnalysisDetails} span="span-2" />
-          <TriStateSelect label="¿Validación adicional?" name="additionalValidationRequired" defaultValue={formDefaults.additionalValidationRequired} />
-          <Field label="Detalle validación" name="additionalValidationDetails" defaultValue={formDefaults.additionalValidationDetails} span="span-2" />
-          <BooleanSelect label="¿Otras implicaciones?" name="otherImplicationRequired" defaultValue={formDefaults.otherImplicationRequired} />
-          <Field label="Especificar otras implicaciones" name="otherImplicationDetails" defaultValue={formDefaults.otherImplicationDetails} span="span-2" />
+          <label className="field">
+            <span>Resultado del dictamen</span>
+            <select name="dictamenResult" value={dictamenResult} onChange={(event) => setDictamenResult(event.target.value as typeof dictamenResult)}>
+              <option value="PENDING">Pendiente</option>
+              <option value="APPROVED">Aprobado</option>
+              <option value="REJECTED">Rechazado</option>
+            </select>
+          </label>
+          <Field label="Fecha del dictamen" name="dictamenDate" type="date" defaultValue={formDefaults.dictamenDate} required={!draft && dictamenResult !== "PENDING"} />
+          <label className="field">
+            <span>Fecha del próximo seguimiento</span>
+            <input type="date" value={formDefaults.nextFollowupDate ?? ""} readOnly aria-readonly="true" />
+            <small className="muted-note">{formDefaults.nextFollowupDate ? "Derivada del último seguimiento registrado." : "Se informará al registrar el Seguimiento 00."}</small>
+          </label>
+          <Field label="Responsable de seguimiento" name="followupResponsible" defaultValue={formDefaults.followupResponsible} required={!draft && dictamenResult === "APPROVED"} span="span-2" />
+          <TextArea label="Observaciones" name="dictamenObservations" defaultValue={formDefaults.dictamenObservations} required={!draft && dictamenResult !== "PENDING"} />
         </div>
       </section>
 
