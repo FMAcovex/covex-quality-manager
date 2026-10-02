@@ -152,3 +152,11 @@ Reutilizar lenguaje visual del dashboard GMP ya definido:
 - tendencias 5 años.
 
 Debe consultar la misma BD que Expedientes.
+
+## Revisión transversal — piloto Reclamaciones
+
+La cabecera del expediente ofrece `Modo revisión`. Al activarlo mediante `?review=1`, los objetivos catalogados muestran un marcador discreto con `+ comentario` o con el total activo (`PENDING + ACCEPTED`). El parámetro se mantiene al cambiar de pestaña.
+
+El panel lateral común muestra el objetivo, pestaña/sección, versión funcional, snapshot, conversación, autores, fechas y estado. Permite las acciones definidas por el ciclo de vida; un hilo resuelto se presenta en solo lectura.
+
+La pestaña `Revisión (N)` agrupa Pendientes, Aceptados y Resueltos. `Ir al campo` abre la pestaña de origen, reactiva el modo de revisión, enfoca un anchor estable y abre el hilo seleccionado. R2A integra exclusivamente Reclamaciones sin modificar sus pestañas existentes ni sus reglas funcionales.

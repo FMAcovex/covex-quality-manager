@@ -21,11 +21,18 @@ import { QmsAdministrativeStatus } from "@/components/qms-administrative-status"
 import { complaintSnapshotVersionFollowupDate,recordVersionSummary,versionLabel } from "@/lib/qms/versioning";
 import { uploadComplaintSignedPdfAction } from "@/modules/complaints/signed-document-actions";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
+import {
+ ReviewDrawer,ReviewMarker,ReviewModeToggle,ReviewStatusSummary,ReviewThreadList,ReviewWorkspaceProvider
+} from "@/components/review";
+import { getReviewThreadsForDisplay } from "@/lib/qms/review/ui-queries";
+import { activeReviewCount,reviewModeHref,reviewTabHref,reviewVersionLabel } from "@/lib/qms/review/ui-model";
+import { reviewTargetWithValue } from "@/lib/qms/review/targets/catalog";
+import { complaintCapaPlanReviewTarget,complaintReviewTargets } from "@/lib/qms/review/targets/complaints";
 
 export const dynamic="force-dynamic";
 const tabs=[
  ["summary","Resumen"],["part-i","Parte I"],["part-ii","Parte II"],["versions","Versiones"],
- ["relations","Relaciones"],["documents","Documentos"],["history","Historial"]
+ ["relations","Relaciones"],["documents","Documentos"],["review","Revisión"],["history","Historial"]
 ] as const;
 const txt=(v:string|null|undefined)=>v||"—";
 const yesNo=(v:string|null|undefined)=>v==="YES"?"Sí":v==="NO"?"No":v==="NA"?"N/A":"—";
@@ -41,8 +48,8 @@ const objectLabels:Record<string,string>={PRODUCT_MATERIAL:"Producto / material"
 const categoryLabels:Record<string,string>={PRODUCT_QUALITY:"Calidad del producto",SPECIFICATIONS_TESTING:"Especificaciones / análisis",PACKAGING:"Acondicionamiento / envase",LABELLING_DOCUMENTATION:"Etiquetado / documentación",QUANTITY_CONTENT:"Cantidad / contenido",TRANSPORT_STORAGE:"Transporte / almacenamiento",SERVICE_SUPPLY:"Servicio / suministro",EQUIPMENT_SYSTEM:"Equipo / sistema",ENVIRONMENT:"Medio ambiente",OTHER:"Otro"};
 const containmentLabels:Record<string,string>={QUARANTINE:"Bloqueo / cuarentena",SUSPEND_USE_DISTRIBUTION:"Suspender uso / distribución",NOTIFY_PARTIES:"Aviso a partes",NONE:"Ninguna",OTHER:"Otra"};
 
-export default async function ComplaintDetailPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string}>}){
- const {id}=await params;const {tab:raw}=await searchParams;const tab=tabs.some(([k])=>k===raw)?raw!:"summary";
+export default async function ComplaintDetailPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string}>}){
+ const {id}=await params;const {tab:raw,review,thread}=await searchParams;const tab=tabs.some(([k])=>k===raw)?raw!:"summary";
  const r=await getComplaintDetail(id);if(!r)notFound();
  const situation=complaintOperationalSituation(r);
  const followupState=complaintFollowupState(r);
@@ -51,8 +58,34 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
  const signedVersionCount=r.qmsRecord.versions.filter(version=>version.documents.some(document=>document.kind==="SIGNED_PDF")).length;
  const derived=r.qmsRecord.sourceRelations.filter(x=>x.relationType==="GENERATES"&&(x.targetRecord.recordType==="CAPA"||x.targetRecord.recordType==="RETURN")).map(x=>x.targetRecord);
  const effectiveHasActions=r.hasDerivedActions===true||derived.length>0||r.capaPlans.length>0||r.derivedActions.length>0;
+ const reviewMode=review==="1";
+ const basePath=`/complaints/${id}`;
+ const reviewThreads=await getReviewThreadsForDisplay(r.qmsRecord.id);
+ const reviewActiveCount=activeReviewCount({
+  PENDING:reviewThreads.filter(item=>item.status==="PENDING").length,
+  ACCEPTED:reviewThreads.filter(item=>item.status==="ACCEPTED").length
+ });
+ const reviewTarget={
+  description:reviewTargetWithValue(complaintReviewTargets.description,r.description),
+  investigation:reviewTargetWithValue(complaintReviewTargets.investigation,r.investigation),
+  impactAssessment:reviewTargetWithValue(complaintReviewTargets.impactAssessment,r.impactAssessment),
+  rootCause:reviewTargetWithValue(complaintReviewTargets.rootCause,r.rootCause),
+  regulatoryJustification:reviewTargetWithValue(complaintReviewTargets.regulatoryJustification,r.regulatoryJustification),
+  resolutionLines:reviewTargetWithValue(complaintReviewTargets.resolutionLines,r.resolutionLines),
+  derivedActions:reviewTargetWithValue(complaintReviewTargets.derivedActions,{hasDerivedActions:effectiveHasActions,actionCount:r.capaPlans.length+r.derivedActions.length}),
+  communicationSummary:reviewTargetWithValue(complaintReviewTargets.communicationSummary,r.communicationSummary),
+  conclusion:reviewTargetWithValue(complaintReviewTargets.conclusion,r.conclusion),
+  responseSummary:reviewTargetWithValue(complaintReviewTargets.responseSummary,r.responseSummary),
+  effectivenessAssessment:reviewTargetWithValue(complaintReviewTargets.effectivenessAssessment,r.effectivenessAssessment),
+  closeConclusion:reviewTargetWithValue(complaintReviewTargets.closeConclusion,r.closeConclusion)
+ };
+ const staticReviewTargets=Object.values(reviewTarget);
+ const capaPlanReviewTargets=r.capaPlans.map(item=>complaintCapaPlanReviewTarget(item.id,item.description));
+ const reviewTargets=[...staticReviewTargets,...capaPlanReviewTargets];
+ const capaPlanTargetById=new Map(capaPlanReviewTargets.map(target=>[target.targetEntityId!,target]));
 
- return <section className="workspace">
+ return <ReviewWorkspaceProvider qmsRecordId={r.qmsRecord.id} module="COMPLAINT" basePath={basePath} currentVersionLabel={reviewVersionLabel(currentVersion?.sequenceNumber??null)} defaultActor={process.env.DEFAULT_ACTOR_NAME?.trim()||r.createdByText||"Usuario demo"} reviewMode={reviewMode} targets={reviewTargets} threads={reviewThreads} initialThreadId={thread}>
+ <section className={`workspace${reviewMode?" review-mode-active":""}`}>
   <div className="record-header"><div><p className="eyebrow"><Link href="/complaints">← Reclamaciones</Link></p><div className="record-title-line">
    <h1>{qmsRecordDisplayCode(r.qmsRecord)}</h1>
    <span className={`badge ${r.status==="DRAFT"?"neutral":r.status==="OPEN"?"open":"closed"}`}>{complaintStatusLabel(r.status)}</span>
@@ -61,7 +94,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    <span className="badge neutral">{complaintTypeLabel(r.complaintType)}</span>
    {currentVersion?<span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span>:null}
   </div><p className="muted-note">Apertura {formatDate(r.openedAt)} · {txt(r.partyName)}</p></div>
-  <div className="record-actions"><Link className="button primary" href={`/complaints/${id}/edit`}>Editar / nueva versión / seguimiento</Link></div></div>
+  <div className="record-actions"><ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath,tab,reviewMode)}/><Link className="button primary" href={`/complaints/${id}/edit`}>Editar / nueva versión / seguimiento</Link></div></div>
 
   {r.status==="DRAFT"?<div className="analytics-note"><strong>Borrador:</strong> todavía no es una reclamación operativa. Al abrirla se validarán todos los campos aplicables del Anexo III.</div>:null}
   {r.status==="OPEN"&&followupState==="OVERDUE"?<div className="form-errors"><strong>Seguimiento vencido:</strong> la fecha prevista era {formatDate(r.nextFollowupDate)}.</div>:null}
@@ -73,7 +106,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    annulledReason={r.qmsRecord.annulledReason} defaultActor={process.env.DEFAULT_ACTOR_NAME||"Usuario demo"}
   />
 
-  <nav className="record-tabs">{tabs.map(([k,l])=><Link key={k} className={tab===k?"active":""} href={`/complaints/${id}?tab=${k}`}>{l}</Link>)}</nav>
+  <nav className="record-tabs">{tabs.map(([k,l])=><Link key={k} className={tab===k?"active":""} href={reviewTabHref(basePath,k,reviewMode)}>{k==="review"?`${l} (${reviewActiveCount})`:l}</Link>)}</nav>
 
   {tab==="summary"?<>
    <div className="card"><div className="section-title-row"><div><h2>Resumen del expediente</h2><p className="muted-note">Situación actual y próximos pasos de la reclamación.</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
@@ -114,7 +147,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    </dl></div>
 
    <div className="card"><h2>A) Descripción de la reclamación</h2><dl className="info-grid">
-    <div className="info-item full"><dt>Descripción</dt><dd className="prose-value">{txt(r.description)}</dd></div><div className="info-item full"><dt>Categoría / motivo</dt><dd>{joinLabels(r.categoryTypes,categoryLabels)}</dd></div>
+    <div id={reviewTarget.description.anchorId} className="info-item full review-target"><dt><span>Descripción</span><ReviewMarker target={reviewTarget.description}/></dt><dd className="prose-value">{txt(r.description)}</dd></div><div className="info-item full"><dt>Categoría / motivo</dt><dd>{joinLabels(r.categoryTypes,categoryLabels)}</dd></div>
     <div className="info-item"><dt>Recurrente</dt><dd>{bool(r.recurrent)}</dd></div><div className="info-item"><dt>Referencia recurrencia</dt><dd>{txt(r.recurrenceReference)}</dd></div>
     <div className="info-item full"><dt>Evidencias / documentación</dt><dd className="prose-value">{txt(r.attachedDocumentation)}</dd></div><div className="info-item"><dt>Emitido por</dt><dd>{txt(r.emittedBy)}</dd></div><div className="info-item"><dt>Validado por GC</dt><dd>{txt(r.qaValidatedBy)}</dd></div>
    </dl></div>
@@ -122,19 +155,19 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    <div className="card"><h2>B) Evaluación inicial, investigación e impacto</h2><dl className="info-grid">
     <div className="info-item"><dt>Calidad / GMP</dt><dd>{yesNo(r.impactQualityGmp)}</dd></div><div className="info-item"><dt>Seguridad / eficacia</dt><dd>{yesNo(r.impactSafetyEfficacy)}</dd></div><div className="info-item"><dt>Regulatorio</dt><dd>{yesNo(r.impactRegulatory)}</dd></div><div className="info-item"><dt>Medio ambiente</dt><dd>{yesNo(r.impactEnvironment)}</dd></div>
     <div className="info-item"><dt>Otros lotes / clientes</dt><dd>{yesNo(r.impactOtherSimilar)}</dd></div><div className="info-item full"><dt>Medidas de contención</dt><dd>{joinLabels(r.containmentActions,containmentLabels)}</dd></div>
-    <div className="info-item full"><dt>Justificación de riesgo / alcance</dt><dd className="prose-value">{txt(r.riskJustification)}</dd></div><div className="info-item full"><dt>Investigación</dt><dd className="prose-value">{txt(r.investigation)}</dd></div><div className="info-item full"><dt>Conclusión del impacto</dt><dd className="prose-value">{txt(r.impactAssessment)}</dd></div><div className="info-item"><dt>Resultado</dt><dd>{investigationResultLabel(r.investigationResult)}</dd></div>
+    <div className="info-item full"><dt>Justificación de riesgo / alcance</dt><dd className="prose-value">{txt(r.riskJustification)}</dd></div><div id={reviewTarget.investigation.anchorId} className="info-item full review-target"><dt><span>Investigación</span><ReviewMarker target={reviewTarget.investigation}/></dt><dd className="prose-value">{txt(r.investigation)}</dd></div><div id={reviewTarget.impactAssessment.anchorId} className="info-item full review-target"><dt><span>Conclusión del impacto</span><ReviewMarker target={reviewTarget.impactAssessment}/></dt><dd className="prose-value">{txt(r.impactAssessment)}</dd></div><div className="info-item"><dt>Resultado</dt><dd>{investigationResultLabel(r.investigationResult)}</dd></div>
    </dl></div>
 
-   <div className="card"><h2>C) Análisis de causa raíz</h2><p className="prose-value">{txt(r.rootCause)}</p></div>
+   <div id={reviewTarget.rootCause.anchorId} className="card review-target"><div className="review-target-heading"><h2>C) Análisis de causa raíz</h2><ReviewMarker target={reviewTarget.rootCause}/></div><p className="prose-value">{txt(r.rootCause)}</p></div>
    <div className="card"><h2>D) Clasificación de la reclamación</h2><span className={`badge ${r.classification?.toLowerCase()??"neutral"}`}>{complaintClassificationLabel(r.classification)}</span></div>
    <div className="card"><h2>E) Evaluación regulatoria</h2><dl className="info-grid">
-    <div className="info-item"><dt>Puede requerir retirada</dt><dd>{yesNo(r.potentialRecall)}</dd></div><div className="info-item"><dt>Activar GC-00/029</dt><dd>{yesNo(r.recallProcedureRequired)}</dd></div><div className="info-item"><dt>Notificación autoridad</dt><dd>{yesNo(r.authorityNotificationRequired)}</dd></div><div className="info-item"><dt>Comunicación titular / cliente</dt><dd>{yesNo(r.responsiblePartyCommunicationRequired)}</dd></div><div className="info-item full"><dt>Justificación</dt><dd className="prose-value">{txt(r.regulatoryJustification)}</dd></div>
+    <div className="info-item"><dt>Puede requerir retirada</dt><dd>{yesNo(r.potentialRecall)}</dd></div><div className="info-item"><dt>Activar GC-00/029</dt><dd>{yesNo(r.recallProcedureRequired)}</dd></div><div className="info-item"><dt>Notificación autoridad</dt><dd>{yesNo(r.authorityNotificationRequired)}</dd></div><div className="info-item"><dt>Comunicación titular / cliente</dt><dd>{yesNo(r.responsiblePartyCommunicationRequired)}</dd></div><div id={reviewTarget.regulatoryJustification.anchorId} className="info-item full review-target"><dt><span>Justificación</span><ReviewMarker target={reviewTarget.regulatoryJustification}/></dt><dd className="prose-value">{txt(r.regulatoryJustification)}</dd></div>
    </dl></div>
-   <div className="card"><h2>F) Líneas de actuación y resolución</h2><p className="prose-value">{txt(r.resolutionLines)}</p></div>
+   <div id={reviewTarget.resolutionLines.anchorId} className="card review-target"><div className="review-target-heading"><h2>F) Líneas de actuación y resolución</h2><ReviewMarker target={reviewTarget.resolutionLines}/></div><p className="prose-value">{txt(r.resolutionLines)}</p></div>
 
-   <div className="card"><h2>G) Acciones derivadas</h2><p><strong>¿Existen acciones?</strong> {effectiveHasActions?"Sí":r.hasDerivedActions===false?"No":"Pendiente"}</p>
+   <div id={reviewTarget.derivedActions.anchorId} className="card review-target"><div className="review-target-heading"><h2>G) Acciones derivadas</h2><ReviewMarker target={reviewTarget.derivedActions}/></div><p><strong>¿Existen acciones?</strong> {effectiveHasActions?"Sí":r.hasDerivedActions===false?"No":"Pendiente"}</p>
     {effectiveHasActions?<><p>{joinLabels(r.resolutionActions,resolutionLabels)}</p>
-     {r.capaPlans.length?<><h3>CAPA propuestas / vinculadas</h3><div className="linked-record-grid">{r.capaPlans.map(x=>{const navigation=capaPlanNavigation(x);return <article className="linked-record-card" key={x.id}><div className="linked-record-main"><div className="linked-record-heading"><strong>{x.actionType==="CORRECTIVE"?"Correctora":"Preventiva"}</strong><span className="badge neutral">{capaProposalStatusLabel(x.proposalStatus)}</span></div><p>{x.description}</p><small>{txt(x.responsible)} · {formatDate(x.plannedExecutionDate)} · {x.businessCapaCode??"Pendiente de CAPA"}</small></div><div className="linked-record-action">{navigation.kind==="OPEN"?<Link className="button small" href={qmsRecordHref("CAPA",navigation.recordId)}>Abrir CAPA</Link>:navigation.kind==="CREATE"?<Link className="button small primary" href={`/capa/new?fromComplaintPlanId=${x.id}`}>Crear CAPA</Link>:null}</div></article>})}</div></>:null}
+     {r.capaPlans.length?<><h3>CAPA propuestas / vinculadas</h3><div className="linked-record-grid">{r.capaPlans.map(x=>{const navigation=capaPlanNavigation(x);const target=capaPlanTargetById.get(x.id)!;return <article id={target.anchorId} className="linked-record-card review-target" key={x.id}><div className="linked-record-main"><div className="linked-record-heading"><strong>{x.actionType==="CORRECTIVE"?"Correctora":"Preventiva"}</strong><span className="badge neutral">{capaProposalStatusLabel(x.proposalStatus)}</span><ReviewMarker target={target}/></div><p>{x.description}</p><small>{txt(x.responsible)} · {formatDate(x.plannedExecutionDate)} · {x.businessCapaCode??"Pendiente de CAPA"}</small></div><div className="linked-record-action">{navigation.kind==="OPEN"?<Link className="button small" href={qmsRecordHref("CAPA",navigation.recordId)}>Abrir CAPA</Link>:navigation.kind==="CREATE"?<Link className="button small primary" href={`/capa/new?fromComplaintPlanId=${x.id}`}>Crear CAPA</Link>:null}</div></article>})}</div></>:null}
      {r.derivedActions.some(x=>x.actionType==="RETURN")?<><h3>Devoluciones propuestas / vinculadas</h3><div className="table-scroll"><table><thead><tr><th>Código</th><th>Acción / detalle</th><th>Responsable</th><th>Fecha prevista</th><th>Acción</th></tr></thead><tbody>{r.derivedActions.filter(x=>x.actionType==="RETURN").map(x=>{const linked=derived.find(record=>record.recordType==="RETURN"&&record.businessCode===x.businessCode);return <tr key={x.id}><td>{txt(x.businessCode)}</td><td>{txt(x.description)}</td><td>{txt(x.responsible)}</td><td>{formatDate(x.plannedExecutionDate)}</td><td>{linked?<Link className="button small" href={qmsRecordHref("RETURN",linked.id)}>Abrir devolución</Link>:!x.businessCode?<Link className="button small primary" href={`/returns/new?fromComplaintId=${id}`}>Crear devolución</Link>:<span className="muted-note">Pendiente de vincular</span>}</td></tr>})}</tbody></table></div></>:null}
      {(r.immediateActionDetails||r.recallActionDetails||r.creditActionDetails||r.replacementActionDetails||r.otherResolutionDetails)?<><h3>Detalle de otras acciones</h3><dl className="info-grid">
       {r.immediateActionDetails?<div className="info-item wide"><dt>Acción inmediata</dt><dd className="prose-value">{r.immediateActionDetails}</dd></div>:null}
@@ -147,15 +180,15 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
     </>:<div className="empty-panel">No se han definido acciones derivadas.</div>}
    </div>
 
-   <div className="card"><h2>H) Comunicación</h2><dl className="info-grid"><div className="info-item"><dt>Fecha</dt><dd>{formatDate(r.communicationDate)}</dd></div><div className="info-item"><dt>Medio</dt><dd>{txt(r.communicationMedium)}</dd></div><div className="info-item"><dt>Emisor / destinatario</dt><dd>{txt(r.communicationParties)}</dd></div><div className="info-item full"><dt>Resumen</dt><dd className="prose-value">{txt(r.communicationSummary)}</dd></div></dl></div>
-   <div className="card"><h2>I) Conclusión Parte I y seguimiento</h2><dl className="info-grid"><div className="info-item"><dt>Decisión Parte II</dt><dd>{r.partIIRequired===true?"Continúa en Parte II":r.partIIRequired===false?"No procede · cierre en Parte I":"Pendiente de decisión / seguimiento"}</dd></div><div className="info-item"><dt>Próximo seguimiento</dt><dd>{r.status==="OPEN"?formatDate(r.nextFollowupDate):"—"}</dd></div><div className="info-item full"><dt>Conclusión / pendientes</dt><dd className="prose-value">{txt(r.conclusion)}</dd></div></dl></div>
+   <div className="card"><h2>H) Comunicación</h2><dl className="info-grid"><div className="info-item"><dt>Fecha</dt><dd>{formatDate(r.communicationDate)}</dd></div><div className="info-item"><dt>Medio</dt><dd>{txt(r.communicationMedium)}</dd></div><div className="info-item"><dt>Emisor / destinatario</dt><dd>{txt(r.communicationParties)}</dd></div><div id={reviewTarget.communicationSummary.anchorId} className="info-item full review-target"><dt><span>Resumen</span><ReviewMarker target={reviewTarget.communicationSummary}/></dt><dd className="prose-value">{txt(r.communicationSummary)}</dd></div></dl></div>
+   <div className="card"><h2>I) Conclusión Parte I y seguimiento</h2><dl className="info-grid"><div className="info-item"><dt>Decisión Parte II</dt><dd>{r.partIIRequired===true?"Continúa en Parte II":r.partIIRequired===false?"No procede · cierre en Parte I":"Pendiente de decisión / seguimiento"}</dd></div><div className="info-item"><dt>Próximo seguimiento</dt><dd>{r.status==="OPEN"?formatDate(r.nextFollowupDate):"—"}</dd></div><div id={reviewTarget.conclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión / pendientes</span><ReviewMarker target={reviewTarget.conclusion}/></dt><dd className="prose-value">{txt(r.conclusion)}</dd></div></dl></div>
   </>:null}
 
   {tab==="part-ii"?<div className="card"><h2>Parte II · Seguimiento y cierre</h2>
    {r.partIIRequired!==true?<div className="analytics-note">{r.partIIRequired===false?"Parte II no procede. El expediente puede cerrarse en Parte I.":"Parte II pendiente de decisión/seguimiento."}</div>:<>
-    <h3>A) Respuesta del proveedor o al / del cliente</h3><dl className="info-grid"><div className="info-item"><dt>Fecha respuesta</dt><dd>{formatDate(r.responseDate)}</dd></div><div className="info-item"><dt>Medio</dt><dd>{txt(r.responseMedium)}</dd></div><div className="info-item"><dt>Respuesta suficiente</dt><dd>{bool(r.responseSufficient)}</dd></div><div className="info-item full"><dt>Resumen / compromisos</dt><dd className="prose-value">{txt(r.responseSummary)}</dd></div></dl>
-    <h3>B) Verificación de eficacia</h3><dl className="info-grid"><div className="info-item"><dt>Resultado</dt><dd>{complaintEffectivenessLabel(r.effectivenessStatus)}</dd></div><div className="info-item full"><dt>Valoración</dt><dd className="prose-value">{txt(r.effectivenessAssessment)}</dd></div></dl>
-    <h3>C) Cierre</h3><dl className="info-grid"><div className="info-item"><dt>Estado acciones</dt><dd>{r.closeActionStatus==="COMPLETED"?"Completadas":r.closeActionStatus==="LINKED"?"Vinculadas a seguimiento independiente":r.closeActionStatus==="PENDING"?"Pendientes":"—"}</dd></div><div className="info-item"><dt>Referencias / responsable</dt><dd>{txt(r.closeActionReferences)}</dd></div><div className="info-item"><dt>Estado final</dt><dd>{complaintStatusLabel(r.status)}</dd></div><div className="info-item"><dt>Fecha cierre</dt><dd>{formatDate(r.closedAt)}</dd></div><div className="info-item full"><dt>Conclusión</dt><dd className="prose-value">{txt(r.closeConclusion)}</dd></div></dl>
+    <h3>A) Respuesta del proveedor o al / del cliente</h3><dl className="info-grid"><div className="info-item"><dt>Fecha respuesta</dt><dd>{formatDate(r.responseDate)}</dd></div><div className="info-item"><dt>Medio</dt><dd>{txt(r.responseMedium)}</dd></div><div className="info-item"><dt>Respuesta suficiente</dt><dd>{bool(r.responseSufficient)}</dd></div><div id={reviewTarget.responseSummary.anchorId} className="info-item full review-target"><dt><span>Resumen / compromisos</span><ReviewMarker target={reviewTarget.responseSummary}/></dt><dd className="prose-value">{txt(r.responseSummary)}</dd></div></dl>
+    <h3>B) Verificación de eficacia</h3><dl className="info-grid"><div className="info-item"><dt>Resultado</dt><dd>{complaintEffectivenessLabel(r.effectivenessStatus)}</dd></div><div id={reviewTarget.effectivenessAssessment.anchorId} className="info-item full review-target"><dt><span>Valoración</span><ReviewMarker target={reviewTarget.effectivenessAssessment}/></dt><dd className="prose-value">{txt(r.effectivenessAssessment)}</dd></div></dl>
+    <h3>C) Cierre</h3><dl className="info-grid"><div className="info-item"><dt>Estado acciones</dt><dd>{r.closeActionStatus==="COMPLETED"?"Completadas":r.closeActionStatus==="LINKED"?"Vinculadas a seguimiento independiente":r.closeActionStatus==="PENDING"?"Pendientes":"—"}</dd></div><div className="info-item"><dt>Referencias / responsable</dt><dd>{txt(r.closeActionReferences)}</dd></div><div className="info-item"><dt>Estado final</dt><dd>{complaintStatusLabel(r.status)}</dd></div><div className="info-item"><dt>Fecha cierre</dt><dd>{formatDate(r.closedAt)}</dd></div><div id={reviewTarget.closeConclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión</span><ReviewMarker target={reviewTarget.closeConclusion}/></dt><dd className="prose-value">{txt(r.closeConclusion)}</dd></div></dl>
    </>}
   </div>:null}
 
@@ -205,6 +238,13 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
   {r.qmsRecord.generatedDocuments.length?<><h3>Generaciones registradas</h3><div className="timeline">{r.qmsRecord.generatedDocuments.map(x=>{const generatedVersion=r.qmsRecord.versions.find(v=>v.id===x.recordVersionId);return <div className="timeline-item document-generation-item" key={x.id}><strong className="document-generation-type">{x.documentType}{generatedVersion?` · ${versionLabel(generatedVersion.sequenceNumber)}`:""}</strong><small className="muted-note document-generation-meta">Generado {formatDate(x.generatedAt)} · {x.generatedByText??"Usuario no informado"}</small></div>})}</div></>:null}
   </div>):null}
 
+  {tab==="review"?<div className="review-overview">
+   <div className="card"><div className="section-title-row"><div><h2>Revisión del expediente</h2><p className="muted-note">Comentarios asociados a objetivos estables y a la versión del expediente que estaba vigente al crearlos.</p></div><ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath,"review",reviewMode)}/></div><ReviewStatusSummary/></div>
+   <ReviewThreadList/>
+  </div>:null}
+
   {tab==="history"?<div className="card"><h2>Historial interno de modificaciones</h2><p className="muted-note">Historial administrativo de cambios; no constituye un audit trail GMP validado.</p>{r.qmsRecord.history.length?<div className="timeline">{r.qmsRecord.history.map(x=><div className="timeline-item history-entry" key={x.id}><header className="history-entry-header"><strong>{formatDate(x.changedAt)}</strong><span>{x.changedByText??"Sistema"}</span><span className="badge neutral">{x.source}</span></header><p className="history-entry-detail"><strong>{x.fieldPath}</strong>{x.reason?<span> · Motivo: {x.reason}</span>:null}</p></div>)}</div>:<div className="empty-panel">Sin cambios registrados.</div>}</div>:null}
- </section>;
+ </section>
+ <ReviewDrawer/>
+ </ReviewWorkspaceProvider>;
 }

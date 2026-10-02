@@ -55,7 +55,8 @@
     "r3-complaints:smoke": "tsx scripts/smoke-complaints-r3.ts",
     "r2-returns-documents:smoke": "tsx scripts/smoke-returns-r2-documents.ts",
     "r3-returns:smoke": "tsx scripts/smoke-returns-r3.ts",
-    "review-r1:smoke": "tsx scripts/smoke-review-comments-r1.ts"
+    "review-r1:smoke": "tsx scripts/smoke-review-comments-r1.ts",
+    "review-r2a:smoke": "tsx scripts/smoke-review-comments-r2a.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
