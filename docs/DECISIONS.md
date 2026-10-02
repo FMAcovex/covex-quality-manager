@@ -472,3 +472,15 @@ Reglas:
 - creación, aceptación y resolución se registran como eventos de alto nivel en `ChangeHistory`; las respuestas no se duplican allí;
 - los comentarios no modifican datos del expediente, no introducen reglas por estado GMP y no bloquean su cierre;
 - R1 no añade interfaz visual a las páginas de los módulos.
+
+## D-059 — R2A: infraestructura visual transversal y piloto en Reclamaciones
+La interfaz de revisión se compone de piezas comunes bajo `src/components/review` y de catálogos estables bajo `src/lib/qms/review/targets`. Reclamaciones es el único módulo integrado en R2A; el resto de módulos conserva su interfaz actual.
+
+Reglas:
+- la identidad de un objetivo se forma con claves estructurales (`module`, `targetKind`, `tabKey`, `sectionKey`, `fieldPath`) y, para elementos dinámicos, el tipo y el identificador real; el label visible nunca es identidad;
+- `anchorId` es estable, no depende de posiciones ni textos traducibles;
+- `?review=1` activa los marcadores y se conserva al navegar entre pestañas;
+- el acceso «Ir al campo» combina pestaña, modo de revisión, hilo y anchor estable;
+- la observación se asocia en servidor a la versión funcional de mayor secuencia que esté vigente al crearla; una versión posterior no cambia esa asociación ni el snapshot;
+- los resueltos siguen visibles, pero solo `PENDING + ACCEPTED` forman el contador activo;
+- la revisión no escribe campos funcionales, no altera estados ni bloquea los flujos del expediente.

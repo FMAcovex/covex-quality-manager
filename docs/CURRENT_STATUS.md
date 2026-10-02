@@ -2,6 +2,18 @@
 
 Fecha: 2026-10-02.
 
+## R2A — Revisión visual en Reclamaciones
+
+Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN DEL PR**.
+
+- catálogo estable de objetivos `FIELD`, `SECTION` e `ITEM` para Reclamaciones;
+- modo revisión persistente por URL;
+- marcadores y contador activo;
+- drawer, formularios, hilos y resumen reutilizables;
+- pestaña Revisión con navegación «Ir al campo»;
+- asociación de nuevas observaciones a la versión funcional vigente y conservación de snapshots históricos;
+- sin integración visual en Desviaciones, CAPA, Devoluciones ni Control de Cambios.
+
 ## Hitos completados
 - Hito 0 — Especificación y arquitectura.
 - Hito 1 — Núcleo técnico y base de datos.
