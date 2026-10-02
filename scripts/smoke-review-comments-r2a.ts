@@ -21,6 +21,28 @@ async function main() {
   });
 
   try {
+    const unversionedRecord = await prisma.qmsRecord.create({
+      data: { recordType: QmsRecordType.COMPLAINT, year: 2098 },
+    });
+    const unversionedTarget = reviewTargetWithValue(
+      complaintReviewTargets.rootCause,
+      "Causa sin versión",
+    );
+    const unversionedThread = await createCurrentVersionReviewThread({
+      qmsRecordId: unversionedRecord.id,
+      targetKind: unversionedTarget.targetKind,
+      tabKey: unversionedTarget.tabKey,
+      sectionKey: unversionedTarget.sectionKey,
+      fieldPath: unversionedTarget.fieldPath,
+      targetEntityType: unversionedTarget.targetEntityType,
+      targetEntityId: unversionedTarget.targetEntityId,
+      fieldLabelSnapshot: unversionedTarget.label,
+      valueSnapshot: unversionedTarget.valueSnapshot,
+      initialMessage: "Revisión permitida sin versión funcional.",
+      createdByText: "Revisor R2A",
+    });
+    assert.equal(unversionedThread.recordVersionId, null);
+
     const versionOne = await prisma.qmsRecordVersion.create({
       data: {
         qmsRecordId: record.id,
@@ -90,7 +112,7 @@ async function main() {
     );
 
     console.log(
-      "R2A review UI smoke passed: complaint targets, navigation, current-version association and immutable V01 snapshot.",
+      "R2A review UI smoke passed: complaint targets, navigation, optional version association and immutable V01 snapshot.",
     );
   } finally {
     await prisma.reviewMessage.deleteMany({
@@ -101,6 +123,18 @@ async function main() {
     await prisma.qmsRecordVersion.deleteMany({
       where: { qmsRecordId: record.id },
     });
+    const orphanReviewRecords = await prisma.qmsRecord.findMany({
+      where: { recordType: QmsRecordType.COMPLAINT, year: 2098 },
+      select: { id: true },
+    });
+    for (const item of orphanReviewRecords) {
+      await prisma.reviewMessage.deleteMany({
+        where: { reviewThread: { qmsRecordId: item.id } },
+      });
+      await prisma.reviewThread.deleteMany({ where: { qmsRecordId: item.id } });
+      await prisma.changeHistory.deleteMany({ where: { qmsRecordId: item.id } });
+      await prisma.qmsRecord.delete({ where: { id: item.id } });
+    }
     await prisma.qmsRecord.delete({ where: { id: record.id } });
   }
 }
