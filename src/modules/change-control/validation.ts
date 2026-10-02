@@ -183,7 +183,6 @@ export function parseChangeControlForm(formData: FormData) {
   return {
     errors,
     fieldIssues,
-    errors,
     actor: text(formData, "modifiedByText") ?? requesterName ?? "Usuario no informado",
     values: {
       businessCode,
