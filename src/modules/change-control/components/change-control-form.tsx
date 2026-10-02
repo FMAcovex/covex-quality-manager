@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import type {
   ChangeControlFormDefaults,
   ChangeControlFormState,
@@ -21,6 +21,11 @@ const emptyTask: ChangeTaskInput = {
   plannedDate: "",
 };
 
+function FieldIssue({ messages }: { messages?: string[] }) {
+  if (!messages?.length) return null;
+  return <small className="field-error">{messages[0]}</small>;
+}
+
 function Field({
   label,
   name,
@@ -28,6 +33,7 @@ function Field({
   type = "text",
   required = false,
   span = "",
+  issues,
 }: {
   label: string;
   name: string;
@@ -35,11 +41,13 @@ function Field({
   type?: string;
   required?: boolean;
   span?: string;
+  issues?: string[];
 }) {
   return (
-    <label className={`field ${span}`}>
+    <label className={`field ${span} ${issues?.length ? "has-error" : ""}`}>
       <span>{label}{required ? " *" : ""}</span>
-      <input name={name} type={type} defaultValue={defaultValue ?? ""} required={required} />
+      <input name={name} type={type} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
+      <FieldIssue messages={issues} />
     </label>
   );
 }
@@ -50,18 +58,21 @@ function TextArea({
   defaultValue,
   help,
   required = false,
+  issues,
 }: {
   label: string;
   name: string;
   defaultValue?: string;
   help?: string;
   required?: boolean;
+  issues?: string[];
 }) {
   return (
-    <label className="field span-3">
+    <label className={`field span-3 ${issues?.length ? "has-error" : ""}`}>
       <span>{label}{required ? " *" : ""}</span>
       {help ? <small className="muted-note">{help}</small> : null}
-      <textarea name={name} defaultValue={defaultValue ?? ""} required={required} />
+      <textarea name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
+      <FieldIssue messages={issues} />
     </label>
   );
 }
@@ -71,20 +82,23 @@ function BooleanSelect({
   name,
   defaultValue,
   required = false,
+  issues,
 }: {
   label: string;
   name: string;
   defaultValue?: "" | "true" | "false";
   required?: boolean;
+  issues?: string[];
 }) {
   return (
-    <label className="field">
+    <label className={`field ${issues?.length ? "has-error" : ""}`}>
       <span>{label}{required ? " *" : ""}</span>
-      <select name={name} defaultValue={defaultValue ?? ""} required={required}>
+      <select name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined}>
         <option value="">No informado</option>
         <option value="true">Sí</option>
         <option value="false">No</option>
       </select>
+      <FieldIssue messages={issues} />
     </label>
   );
 }
@@ -94,21 +108,24 @@ function TriStateSelect({
   name,
   defaultValue,
   required = false,
+  issues,
 }: {
   label: string;
   name: string;
   defaultValue?: "YES" | "NO" | "NA";
   required?: boolean;
+  issues?: string[];
 }) {
   return (
-    <label className="field">
+    <label className={`field ${issues?.length ? "has-error" : ""}`}>
       <span>{label}{required ? " *" : ""}</span>
-      <select name={name} defaultValue={defaultValue ?? ""} required={required}>
+      <select name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined}>
         <option value="">No informado</option>
         <option value="YES">Sí</option>
         <option value="NO">No</option>
         <option value="NA">No aplica</option>
       </select>
+      <FieldIssue messages={issues} />
     </label>
   );
 }
@@ -140,6 +157,25 @@ export function ChangeControlForm({
   );
   const [dictamenResult, setDictamenResult] = useState(formDefaults.dictamenResult ?? "PENDING");
   const draft = recordStatus === "DRAFT";
+  const issues = state.fieldIssues ?? {};
+
+  useEffect(() => {
+    if (!state.formRevision || !Object.keys(issues).length) return;
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(
+        '.record-form [aria-invalid="true"], .record-form [data-error-anchor="true"]',
+      );
+      if (!target) return;
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement
+      ) {
+        target.focus({ preventScroll: true });
+      }
+    });
+  }, [state.formRevision, issues]);
 
   const updateTask = (index: number, patch: Partial<ChangeTaskInput>) => {
     setTasks((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
@@ -204,11 +240,11 @@ export function ChangeControlForm({
             </div>
           </div>
           <Field label="Especificar Otros" name="otherScope" defaultValue={formDefaults.otherScope} />
-          <Field label="Nombre y apellidos del solicitante" name="requesterName" defaultValue={formDefaults.requesterName} required={!draft} span="span-2" />
-          <Field label="Puesto" name="requesterPosition" defaultValue={formDefaults.requesterPosition} required={!draft} span="span-2" />
-          <TextArea label="Descripción del cambio" name="description" defaultValue={formDefaults.description} required={!draft} />
-          <TextArea label="Justificación del cambio" name="justification" defaultValue={formDefaults.justification} required={!draft} />
-          <TextArea label="Relación de documentos que se aportan" name="providedDocuments" defaultValue={formDefaults.providedDocuments} required={!draft} help="Si no se aportan documentos, indique No aplica." />
+          <Field label="Nombre y apellidos del solicitante" name="requesterName" defaultValue={formDefaults.requesterName} required={!draft} span="span-2" issues={issues.requesterName} />
+          <Field label="Puesto" name="requesterPosition" defaultValue={formDefaults.requesterPosition} required={!draft} span="span-2" issues={issues.requesterPosition} />
+          <TextArea label="Descripción del cambio" name="description" defaultValue={formDefaults.description} required={!draft} issues={issues.description} />
+          <TextArea label="Justificación del cambio" name="justification" defaultValue={formDefaults.justification} required={!draft} issues={issues.justification} />
+          <TextArea label="Relación de documentos que se aportan" name="providedDocuments" defaultValue={formDefaults.providedDocuments} required={!draft} help="Si no se aportan documentos, indique No aplica." issues={issues.providedDocuments} />
           <label className="field">
             <span>Solicitud</span>
             <select name="requestDecision" defaultValue={formDefaults.requestDecision ?? "PENDING"}>
@@ -217,9 +253,9 @@ export function ChangeControlForm({
               <option value="DENIED">Denegada</option>
             </select>
           </label>
-          <Field label="Responsable de dictamen" name="requestDecisionResponsible" defaultValue={formDefaults.requestDecisionResponsible} />
-          <Field label="Cargo / función" name="requestDecisionRole" defaultValue={formDefaults.requestDecisionRole} />
-          <Field label="Fecha aceptación/denegación" name="requestDecisionDate" type="date" defaultValue={formDefaults.requestDecisionDate} />
+          <Field label="Responsable de dictamen" name="requestDecisionResponsible" defaultValue={formDefaults.requestDecisionResponsible} issues={issues.requestDecisionResponsible} />
+          <Field label="Cargo / función" name="requestDecisionRole" defaultValue={formDefaults.requestDecisionRole} issues={issues.requestDecisionRole} />
+          <Field label="Fecha aceptación/denegación" name="requestDecisionDate" type="date" defaultValue={formDefaults.requestDecisionDate} issues={issues.requestDecisionDate} />
         </div>
       </section>
 
@@ -229,7 +265,7 @@ export function ChangeControlForm({
           El Dictamen aprobado constituye la línea base. Una vez aprobado, sus acciones quedan bloqueadas; las nuevas tareas se añaden desde los seguimientos.
         </p>
         <div className="form-grid">
-          <TextArea label="Evaluación del cambio" name="evaluation" defaultValue={formDefaults.evaluation} required={!draft} />
+          <TextArea label="Evaluación del cambio" name="evaluation" defaultValue={formDefaults.evaluation} required={!draft} issues={issues.evaluation} />
           <label className="field">
             <span>Clasificación{draft ? "" : " *"}</span>
             <select name="classification" defaultValue={formDefaults.classification ?? ""} required={!draft}>
@@ -238,21 +274,21 @@ export function ChangeControlForm({
               <option value="MINOR">Menor</option>
             </select>
           </label>
-          <Field label="Fecha prevista de implementación" name="plannedImplementationDate" type="date" defaultValue={formDefaults.plannedImplementationDate} required={!draft} />
+          <Field label="Fecha prevista de implementación" name="plannedImplementationDate" type="date" defaultValue={formDefaults.plannedImplementationDate} required={!draft} issues={issues.plannedImplementationDate} />
         </div>
 
         <h3>2.a Implicación del cambio y requisitos</h3>
         <div className="form-grid">
-          <BooleanSelect label="¿Comité de cambios?" name="committeeRequired" defaultValue={formDefaults.committeeRequired} required={!draft} />
+          <BooleanSelect label="¿Comité de cambios?" name="committeeRequired" defaultValue={formDefaults.committeeRequired} required={!draft} issues={issues.committeeRequired} />
           <Field label="Respuesta / justificación y personal implicado" name="committeeDetails" defaultValue={formDefaults.committeeDetails} span="span-2" />
-          <BooleanSelect label="¿Informar a cliente?" name="clientNotificationRequired" defaultValue={formDefaults.clientNotificationRequired} required={!draft} />
+          <BooleanSelect label="¿Informar a cliente?" name="clientNotificationRequired" defaultValue={formDefaults.clientNotificationRequired} required={!draft} issues={issues.clientNotificationRequired} />
           <Field label="Respuesta / justificación, fecha y evidencia cliente" name="clientNotificationDetails" defaultValue={formDefaults.clientNotificationDetails} span="span-2" />
-          <BooleanSelect label="¿Autoridad sanitaria?" name="authorityRequired" defaultValue={formDefaults.authorityRequired} required={!draft} />
+          <BooleanSelect label="¿Autoridad sanitaria?" name="authorityRequired" defaultValue={formDefaults.authorityRequired} required={!draft} issues={issues.authorityRequired} />
           <Field label="Respuesta / justificación sobre autoridad" name="authorityDetails" defaultValue={formDefaults.authorityDetails} span="span-2" />
-          <TriStateSelect label="¿Reflejar en PQR?" name="pqrRequired" defaultValue={formDefaults.pqrRequired} required={!draft} />
+          <TriStateSelect label="¿Reflejar en PQR?" name="pqrRequired" defaultValue={formDefaults.pqrRequired} required={!draft} issues={issues.pqrRequired} />
           <Field label="Respuesta / producto(s) PQR" name="pqrProducts" defaultValue={formDefaults.pqrProducts} />
           <Field label="Respuesta / periodo PQR" name="pqrPeriod" defaultValue={formDefaults.pqrPeriod} />
-          <TriStateSelect label="¿Lotes a estabilidad?" name="stabilityRequired" defaultValue={formDefaults.stabilityRequired} required={!draft} />
+          <TriStateSelect label="¿Lotes a estabilidad?" name="stabilityRequired" defaultValue={formDefaults.stabilityRequired} required={!draft} issues={issues.stabilityRequired} />
           <div className="field span-2">
             <span>Respuesta / tipo de estabilidad</span>
             <div className="checkbox-group">
@@ -260,11 +296,11 @@ export function ChangeControlForm({
               <label><input type="checkbox" name="stabilityOngoing" defaultChecked={formDefaults.stabilityOngoing} /> En curso</label>
             </div>
           </div>
-          <TriStateSelect label="¿Análisis adicionales?" name="additionalAnalysisRequired" defaultValue={formDefaults.additionalAnalysisRequired} required={!draft} />
+          <TriStateSelect label="¿Análisis adicionales?" name="additionalAnalysisRequired" defaultValue={formDefaults.additionalAnalysisRequired} required={!draft} issues={issues.additionalAnalysisRequired} />
           <Field label="Respuesta / justificación de análisis" name="additionalAnalysisDetails" defaultValue={formDefaults.additionalAnalysisDetails} span="span-2" />
-          <TriStateSelect label="¿Validación adicional?" name="additionalValidationRequired" defaultValue={formDefaults.additionalValidationRequired} required={!draft} />
+          <TriStateSelect label="¿Validación adicional?" name="additionalValidationRequired" defaultValue={formDefaults.additionalValidationRequired} required={!draft} issues={issues.additionalValidationRequired} />
           <Field label="Respuesta / justificación de validación" name="additionalValidationDetails" defaultValue={formDefaults.additionalValidationDetails} span="span-2" />
-          <BooleanSelect label="¿Otras implicaciones?" name="otherImplicationRequired" defaultValue={formDefaults.otherImplicationRequired} required={!draft} />
+          <BooleanSelect label="¿Otras implicaciones?" name="otherImplicationRequired" defaultValue={formDefaults.otherImplicationRequired} required={!draft} issues={issues.otherImplicationRequired} />
           <Field label="Respuesta / justificación de otras implicaciones" name="otherImplicationDetails" defaultValue={formDefaults.otherImplicationDetails} span="span-2" />
         </div>
 
@@ -352,14 +388,10 @@ export function ChangeControlForm({
               <option value="REJECTED">Rechazado</option>
             </select>
           </label>
-          <Field label="Fecha del dictamen" name="dictamenDate" type="date" defaultValue={formDefaults.dictamenDate} required={!draft && dictamenResult !== "PENDING"} />
-          <label className="field">
-            <span>Fecha del próximo seguimiento</span>
-            <input type="date" value={formDefaults.nextFollowupDate ?? ""} readOnly aria-readonly="true" />
-            <small className="muted-note">{formDefaults.nextFollowupDate ? "Derivada del último seguimiento registrado." : "Se informará al registrar el Seguimiento 00."}</small>
-          </label>
-          <Field label="Responsable de seguimiento" name="followupResponsible" defaultValue={formDefaults.followupResponsible} required={!draft && dictamenResult === "APPROVED"} span="span-2" />
-          <TextArea label="Observaciones" name="dictamenObservations" defaultValue={formDefaults.dictamenObservations} required={!draft && dictamenResult !== "PENDING"} />
+          <Field label="Fecha del dictamen" name="dictamenDate" type="date" defaultValue={formDefaults.dictamenDate} required={!draft && dictamenResult !== "PENDING"} issues={issues.dictamenDate} />
+          <Field label="Fecha del próximo seguimiento" name="nextFollowupDate" type="date" defaultValue={formDefaults.nextFollowupDate} required={!draft && dictamenResult === "APPROVED"} issues={issues.nextFollowupDate} />
+          <Field label="Responsable de seguimiento" name="followupResponsible" defaultValue={formDefaults.followupResponsible} required={!draft && dictamenResult === "APPROVED"} span="span-2" issues={issues.followupResponsible} />
+          <TextArea label="Observaciones" name="dictamenObservations" defaultValue={formDefaults.dictamenObservations} required={!draft && dictamenResult !== "PENDING"} issues={issues.dictamenObservations} />
         </div>
       </section>
 
