@@ -535,7 +535,7 @@ function parseFollowupTasks(raw: string): ChangeFollowupTaskInput[] {
         evidenceComment: typeof item.evidenceComment === "string" ? item.evidenceComment.trim() : "",
         isNew: item.isNew === true,
       }))
-      .filter((item) => item.description && item.departmentId);
+      .filter((item) => item.description && (item.departmentId || item.taskId));
   } catch {
     return [];
   }
@@ -729,6 +729,227 @@ export async function addChangeControlFollowupAction(id: string, _state: Followu
       "UI",
       sequenceNumber,
     );
+  });
+
+  revalidatePath("/changes");
+  revalidatePath(`/changes/${id}`);
+  redirect(`/changes/${id}?tab=followups`);
+}
+
+
+export async function updateChangeControlFollowupAction(
+  id: string,
+  followupId: string,
+  _state: FollowupActionState,
+  formData: FormData,
+): Promise<FollowupActionState> {
+  const change = await prisma.changeControl.findUnique({
+    where: { id },
+    include: {
+      qmsRecord: true,
+      tasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      followups: {
+        orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }],
+        include: { taskStates: { orderBy: { createdAt: "asc" } } },
+      },
+      formVersion: true,
+      annexIIITemplateVersion: true,
+      annexIVTemplateVersion: true,
+      annexVTemplateVersion: true,
+    },
+  });
+  if (!change) return { error: "Control de Cambio no encontrado." };
+  const followup = change.followups.find((item) => item.id === followupId);
+  if (!followup) return { error: "El seguimiento seleccionado no pertenece a este Control de Cambio." };
+
+  const followupDate = String(formData.get("followupDate") ?? "").trim();
+  const responsible = String(formData.get("responsible") ?? "").trim();
+  const observations = String(formData.get("observations") ?? "").trim();
+  const executionStatus = String(formData.get("executionStatus") ?? "NOT_EXECUTED");
+  const executionDate = String(formData.get("executionDate") ?? "").trim();
+  const effectivenessStatus = String(formData.get("effectivenessStatus") ?? "PENDING");
+  const effectivenessObservations = String(formData.get("effectivenessObservations") ?? "").trim();
+  const closeChange = formData.get("closeChange") === "true";
+  const nextFollowupDate = String(formData.get("nextFollowupDate") ?? "").trim();
+  const remainOpenReason = String(formData.get("remainOpenReason") ?? "").trim();
+  const conclusion = String(formData.get("conclusion") ?? "").trim();
+  const approvalByText = String(formData.get("approvalByText") ?? "").trim();
+  const tasks = parseFollowupTasks(String(formData.get("tasksJson") ?? "[]"));
+
+  if (!followupDate || !responsible) return { error: "Fecha y responsable de seguimiento son obligatorios." };
+  if (!["NOT_EXECUTED", "EXECUTED"].includes(executionStatus)) return { error: "Estado de ejecución no válido." };
+  if (!["PENDING", "ACCEPTABLE", "NOT_ACCEPTABLE", "NOT_APPLICABLE"].includes(effectivenessStatus)) {
+    return { error: "Estado de eficacia no válido." };
+  }
+  if (tasks.some((item) => item.isNew)) {
+    return { error: "La edición histórica no permite introducir acciones nuevas retroactivamente." };
+  }
+
+  const expectedTaskIds = new Set(followup.taskStates.map((item) => item.taskId));
+  const submittedTaskIds = new Set(tasks.map((item) => item.taskId).filter((value): value is string => Boolean(value)));
+  if (
+    expectedTaskIds.size !== submittedTaskIds.size ||
+    [...expectedTaskIds].some((taskId) => !submittedTaskIds.has(taskId))
+  ) {
+    return { error: "La edición debe conservar exactamente las acciones registradas en este seguimiento." };
+  }
+
+  if (executionStatus === "EXECUTED") {
+    if (!executionDate) return { error: "Un cambio Ejecutado requiere fecha de ejecución." };
+    if (tasks.some((item) => item.status === "PENDING")) {
+      return { error: "No se puede marcar Ejecutado mientras existan acciones pendientes." };
+    }
+  }
+  if (closeChange) {
+    if (executionStatus === "EXECUTED") {
+      if (effectivenessStatus !== "ACCEPTABLE") {
+        return { error: "El cierre efectivo de un cambio ejecutado requiere eficacia Aceptable." };
+      }
+    } else if (effectivenessStatus !== "NOT_APPLICABLE") {
+      return { error: "Un cierre sin ejecución debe registrar la eficacia como No aplica." };
+    }
+    if (!conclusion) return { error: "El cierre requiere motivo/conclusión documentado." };
+    if (!approvalByText) return { error: "Debe identificarse la aprobación del cierre." };
+  } else if (!nextFollowupDate || !remainOpenReason) {
+    return { error: "Si el cambio permanece abierto, debe indicarse motivo y próxima fecha de seguimiento." };
+  }
+
+  const latestSequence = Math.max(...change.followups.map((item) => item.sequenceNumber));
+  const isLatest = followup.sequenceNumber === latestSequence;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.changeControlFollowup.update({
+      where: { id: followup.id },
+      data: {
+        followupDate: new Date(followupDate),
+        responsible,
+        observations: observations || null,
+        executionStatus: executionStatus as "NOT_EXECUTED" | "EXECUTED",
+        executionDate: toDate(executionDate),
+        effectivenessStatus: effectivenessStatus as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE",
+        effectivenessObservations: effectivenessObservations || null,
+        closeChange,
+        nextFollowupDate: toDate(nextFollowupDate),
+        remainOpenReason: remainOpenReason || null,
+        conclusion: conclusion || null,
+        approvalByText: approvalByText || null,
+      },
+    });
+
+    for (const item of tasks) {
+      if (!item.taskId) continue;
+      await tx.changeControlTaskState.update({
+        where: {
+          followupId_taskId: {
+            followupId: followup.id,
+            taskId: item.taskId,
+          },
+        },
+        data: {
+          status: item.status,
+          actualDate: toDate(item.actualDate),
+          evidenceComment: item.evidenceComment || null,
+        },
+      });
+    }
+
+    if (isLatest) {
+      await tx.changeControl.update({
+        where: { id },
+        data: {
+          executionStatus: executionStatus as "NOT_EXECUTED" | "EXECUTED",
+          executionDate: toDate(executionDate),
+          operationalClosedAt:
+            executionStatus === "EXECUTED"
+              ? change.operationalClosedAt ?? new Date(followupDate)
+              : null,
+          effectivenessStatus: effectivenessStatus as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE",
+          finalStatus: closeChange ? "CLOSED" : "OPEN",
+          effectiveClosedAt: closeChange ? new Date(followupDate) : null,
+          closureConclusion: closeChange ? conclusion : null,
+        },
+      });
+    }
+
+    await tx.changeHistory.create({
+      data: {
+        qmsRecordId: change.qmsRecordId,
+        changedByText: responsible,
+        fieldPath: `followups[${followup.sequenceNumber}]`,
+        oldValue: jsonValue({
+          followupDate: followup.followupDate.toISOString().slice(0, 10),
+          responsible: followup.responsible,
+          executionStatus: followup.executionStatus,
+          effectivenessStatus: followup.effectivenessStatus,
+          closeChange: followup.closeChange,
+          nextFollowupDate: followup.nextFollowupDate?.toISOString().slice(0, 10) ?? null,
+        }),
+        newValue: jsonValue({
+          followupDate,
+          responsible,
+          executionStatus,
+          effectivenessStatus,
+          closeChange,
+          nextFollowupDate,
+        }),
+        reason: `Corrección del Seguimiento ${String(followup.sequenceNumber).padStart(2, "0")}`,
+        source: "UI",
+      },
+    });
+
+    const version = await tx.qmsRecordVersion.findUnique({
+      where: {
+        qmsRecordId_sequenceNumber: {
+          qmsRecordId: change.qmsRecordId,
+          sequenceNumber: followup.sequenceNumber,
+        },
+      },
+      select: { id: true, snapshot: true },
+    });
+    if (version) {
+      const root = structuredClone(version.snapshot) as Record<string, unknown>;
+      const section = root.changeControl as Record<string, unknown> | undefined;
+      if (section && Array.isArray(section.followups)) {
+        section.followups = section.followups.map((entry) => {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
+          const current = entry as Record<string, unknown>;
+          if (Number(current.sequenceNumber) !== followup.sequenceNumber) return entry;
+          return {
+            ...current,
+            followupDate,
+            responsible,
+            observations: observations || null,
+            executionStatus,
+            executionDate: executionDate || null,
+            effectivenessStatus,
+            effectivenessObservations: effectivenessObservations || null,
+            closeChange,
+            nextFollowupDate: nextFollowupDate || null,
+            remainOpenReason: remainOpenReason || null,
+            conclusion: conclusion || null,
+            approvalByText: approvalByText || null,
+            taskStates: tasks.map((item) => ({
+              taskId: item.taskId,
+              status: item.status,
+              actualDate: item.actualDate || null,
+              evidenceComment: item.evidenceComment || null,
+            })),
+          };
+        });
+        if (isLatest) {
+          section.executionStatus = executionStatus;
+          section.executionDate = executionDate || null;
+          section.effectivenessStatus = effectivenessStatus;
+          section.finalStatus = closeChange ? "CLOSED" : "OPEN";
+          section.effectiveClosedAt = closeChange ? followupDate : null;
+          section.closureConclusion = closeChange ? conclusion : null;
+        }
+        await tx.qmsRecordVersion.update({
+          where: { id: version.id },
+          data: { snapshot: snapshotJson(root) },
+        });
+      }
+    }
   });
 
   revalidatePath("/changes");
