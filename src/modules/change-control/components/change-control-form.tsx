@@ -223,7 +223,7 @@ export function ChangeControlForm({
             </select>
           </label>
 
-          <div className="field span-3">
+          <div className={`field span-3 ${issues.scope?.length ? "has-error" : ""}`} data-error-anchor={issues.scope?.length ? "true" : undefined}>
             <span>Alcance del cambio{draft ? "" : " *"}</span>
             <div className="checkbox-group">
               {Object.entries(scopeLabels).map(([key, label]) => (
@@ -238,8 +238,9 @@ export function ChangeControlForm({
                 </label>
               ))}
             </div>
+            <FieldIssue messages={issues.scope} />
           </div>
-          <Field label="Especificar Otros" name="otherScope" defaultValue={formDefaults.otherScope} />
+          <Field label="Especificar Otros" name="otherScope" defaultValue={formDefaults.otherScope} issues={issues.otherScope} />
           <Field label="Nombre y apellidos del solicitante" name="requesterName" defaultValue={formDefaults.requesterName} required={!draft} span="span-2" issues={issues.requesterName} />
           <Field label="Puesto" name="requesterPosition" defaultValue={formDefaults.requesterPosition} required={!draft} span="span-2" issues={issues.requesterPosition} />
           <TextArea label="Descripción del cambio" name="description" defaultValue={formDefaults.description} required={!draft} issues={issues.description} />
@@ -280,14 +281,14 @@ export function ChangeControlForm({
         <h3>2.a Implicación del cambio y requisitos</h3>
         <div className="form-grid">
           <BooleanSelect label="¿Comité de cambios?" name="committeeRequired" defaultValue={formDefaults.committeeRequired} required={!draft} issues={issues.committeeRequired} />
-          <Field label="Respuesta / justificación y personal implicado" name="committeeDetails" defaultValue={formDefaults.committeeDetails} span="span-2" />
+          <Field label="Respuesta / justificación y personal implicado" name="committeeDetails" defaultValue={formDefaults.committeeDetails} span="span-2" issues={issues.committeeDetails} />
           <BooleanSelect label="¿Informar a cliente?" name="clientNotificationRequired" defaultValue={formDefaults.clientNotificationRequired} required={!draft} issues={issues.clientNotificationRequired} />
-          <Field label="Respuesta / justificación, fecha y evidencia cliente" name="clientNotificationDetails" defaultValue={formDefaults.clientNotificationDetails} span="span-2" />
+          <Field label="Respuesta / justificación, fecha y evidencia cliente" name="clientNotificationDetails" defaultValue={formDefaults.clientNotificationDetails} span="span-2" issues={issues.clientNotificationDetails} />
           <BooleanSelect label="¿Autoridad sanitaria?" name="authorityRequired" defaultValue={formDefaults.authorityRequired} required={!draft} issues={issues.authorityRequired} />
-          <Field label="Respuesta / justificación sobre autoridad" name="authorityDetails" defaultValue={formDefaults.authorityDetails} span="span-2" />
+          <Field label="Respuesta / justificación sobre autoridad" name="authorityDetails" defaultValue={formDefaults.authorityDetails} span="span-2" issues={issues.authorityDetails} />
           <TriStateSelect label="¿Reflejar en PQR?" name="pqrRequired" defaultValue={formDefaults.pqrRequired} required={!draft} issues={issues.pqrRequired} />
-          <Field label="Respuesta / producto(s) PQR" name="pqrProducts" defaultValue={formDefaults.pqrProducts} />
-          <Field label="Respuesta / periodo PQR" name="pqrPeriod" defaultValue={formDefaults.pqrPeriod} />
+          <Field label="Respuesta / producto(s) PQR" name="pqrProducts" defaultValue={formDefaults.pqrProducts} issues={issues.pqrProducts} />
+          <Field label="Respuesta / periodo PQR" name="pqrPeriod" defaultValue={formDefaults.pqrPeriod} issues={issues.pqrPeriod} />
           <TriStateSelect label="¿Lotes a estabilidad?" name="stabilityRequired" defaultValue={formDefaults.stabilityRequired} required={!draft} issues={issues.stabilityRequired} />
           <div className="field span-2">
             <span>Respuesta / tipo de estabilidad</span>
@@ -297,11 +298,11 @@ export function ChangeControlForm({
             </div>
           </div>
           <TriStateSelect label="¿Análisis adicionales?" name="additionalAnalysisRequired" defaultValue={formDefaults.additionalAnalysisRequired} required={!draft} issues={issues.additionalAnalysisRequired} />
-          <Field label="Respuesta / justificación de análisis" name="additionalAnalysisDetails" defaultValue={formDefaults.additionalAnalysisDetails} span="span-2" />
+          <Field label="Respuesta / justificación de análisis" name="additionalAnalysisDetails" defaultValue={formDefaults.additionalAnalysisDetails} span="span-2" issues={issues.additionalAnalysisDetails} />
           <TriStateSelect label="¿Validación adicional?" name="additionalValidationRequired" defaultValue={formDefaults.additionalValidationRequired} required={!draft} issues={issues.additionalValidationRequired} />
-          <Field label="Respuesta / justificación de validación" name="additionalValidationDetails" defaultValue={formDefaults.additionalValidationDetails} span="span-2" />
+          <Field label="Respuesta / justificación de validación" name="additionalValidationDetails" defaultValue={formDefaults.additionalValidationDetails} span="span-2" issues={issues.additionalValidationDetails} />
           <BooleanSelect label="¿Otras implicaciones?" name="otherImplicationRequired" defaultValue={formDefaults.otherImplicationRequired} required={!draft} issues={issues.otherImplicationRequired} />
-          <Field label="Respuesta / justificación de otras implicaciones" name="otherImplicationDetails" defaultValue={formDefaults.otherImplicationDetails} span="span-2" />
+          <Field label="Respuesta / justificación de otras implicaciones" name="otherImplicationDetails" defaultValue={formDefaults.otherImplicationDetails} span="span-2" issues={issues.otherImplicationDetails} />
         </div>
 
         <h3>Plan de ejecución</h3>
@@ -310,7 +311,7 @@ export function ChangeControlForm({
             <strong>Baseline aprobado bloqueado.</strong> Las acciones del Dictamen ya no pueden modificarse. Las acciones adicionales deben incorporarse en un seguimiento y quedarán identificadas como nuevas.
           </div>
         ) : null}
-        <div className="dynamic-list">
+        <div className={`dynamic-list ${issues.tasks?.length ? "has-error" : ""}`} data-error-anchor={issues.tasks?.length ? "true" : undefined}>
           {tasks.map((item, index) => (
             <div className="dynamic-row change-task-row" key={item.id ?? index}>
               <label className="field">
@@ -366,6 +367,7 @@ export function ChangeControlForm({
               ) : null}
             </div>
           ))}
+          <FieldIssue messages={issues.tasks} />
           {!baselineLocked ? (
             <div>
               <button type="button" className="button small" onClick={() => setTasks((current) => [...current, { ...emptyTask }])}>
