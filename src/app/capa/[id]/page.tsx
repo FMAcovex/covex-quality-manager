@@ -14,6 +14,26 @@ import { OperationalRelationForm } from "@/components/operational-relation-form"
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { uploadCapaSignedPdfAction } from "@/modules/capa/signed-document-actions";
+import {
+  ReviewDrawer,
+  ReviewMarker,
+  ReviewModeToggle,
+  ReviewStatusSummary,
+  ReviewThreadList,
+  ReviewWorkspaceProvider,
+} from "@/components/review";
+import { getReviewThreadsForDisplay } from "@/lib/qms/review/ui-queries";
+import {
+  activeReviewCount,
+  reviewModeHref,
+  reviewTabHref,
+} from "@/lib/qms/review/ui-model";
+import { reviewTargetWithValue } from "@/lib/qms/review/targets/catalog";
+import {
+  capaActionFollowupReviewTarget,
+  capaPlannedActionReviewTarget,
+  capaReviewTargets,
+} from "@/lib/qms/review/targets/capa";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +44,7 @@ const tabs = [
   ["relations", "Relaciones"],
   ["versions", "Seguimientos"],
   ["documents", "Documentos"],
+  ["review", "Revisión"],
   ["history", "Historial"],
 ] as const;
 
@@ -42,15 +63,22 @@ export default async function CapaDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; review?: string; thread?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, review, thread } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const capa = await getCapaDetail(id);
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
+  const reviewMode = review === "1";
+  const basePath = `/capa/${id}`;
+  const reviewThreads = await getReviewThreadsForDisplay(capa.qmsRecord.id);
+  const reviewActiveCount = activeReviewCount({
+    PENDING: reviewThreads.filter((item) => item.status === "PENDING").length,
+    ACCEPTED: reviewThreads.filter((item) => item.status === "ACCEPTED").length,
+  });
   const signedFollowupNumbers = capa.qmsRecord.versions
     .filter((version) => version.documents.some((document) => document.kind === "SIGNED_PDF"))
     .map((version) => version.sequenceNumber);
@@ -63,9 +91,111 @@ export default async function CapaDetailPage({
     )
     .map((item) => item.sourceRecord);
 
+  const reviewTarget = {
+    actionType: reviewTargetWithValue(
+      capaReviewTargets.actionType,
+      capaTypeLabel(capa.actionType),
+    ),
+    applicableTo: reviewTargetWithValue(
+      capaReviewTargets.applicableTo,
+      capa.applicableTo,
+    ),
+    defectDescription: reviewTargetWithValue(
+      capaReviewTargets.defectDescription,
+      capa.defectDescription,
+    ),
+    rootCause: reviewTargetWithValue(
+      capaReviewTargets.rootCause,
+      capa.rootCause,
+    ),
+    impactAssessment: reviewTargetWithValue(
+      capaReviewTargets.impactAssessment,
+      capa.impactAssessment,
+    ),
+    internalObservations: reviewTargetWithValue(
+      capaReviewTargets.internalObservations,
+      capa.internalObservations,
+    ),
+    origin: reviewTargetWithValue(
+      capaReviewTargets.origin,
+      origins.map((record) =>
+        qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType)),
+      ),
+    ),
+    plannedActions: reviewTargetWithValue(
+      capaReviewTargets.plannedActions,
+      capa.plannedActions.map((item) => item.description),
+    ),
+    actionFollowups: reviewTargetWithValue(
+      capaReviewTargets.actionFollowups,
+      capa.actionFollowups.map((item) => item.description ?? "—"),
+    ),
+    actionFollowupObservations: reviewTargetWithValue(
+      capaReviewTargets.actionFollowupObservations,
+      capa.actionFollowupObservations,
+    ),
+    operationalState: reviewTargetWithValue(
+      capaReviewTargets.operationalState,
+      {
+        status: capaStatusLabel(capa.status),
+        closedAt: formatDate(capa.operationalClosedAt),
+        description:
+          capa.operationalStatusDescription ?? capa.cancellationReason ?? "—",
+      },
+    ),
+    effectivenessAssessment: reviewTargetWithValue(
+      capaReviewTargets.effectivenessAssessment,
+      capa.effectivenessAssessment,
+    ),
+    conclusion: reviewTargetWithValue(
+      capaReviewTargets.conclusion,
+      capa.conclusion,
+    ),
+  };
+  const plannedActionReviewTargets = capa.plannedActions.map((item) =>
+    capaPlannedActionReviewTarget(item.id, {
+      description: item.description,
+      responsible: item.responsible ?? "—",
+      plannedExecutionDate: formatDate(item.plannedExecutionDate),
+      impact: item.impact ?? "—",
+    }),
+  );
+  const actionFollowupReviewTargets = capa.actionFollowups.map((item) =>
+    capaActionFollowupReviewTarget(item.id, {
+      followupDate: formatDate(item.followupDate),
+      description: item.description ?? "—",
+    }),
+  );
+  const reviewTargets = [
+    ...Object.values(reviewTarget),
+    ...plannedActionReviewTargets,
+    ...actionFollowupReviewTargets,
+  ];
+  const plannedActionTargetById = new Map(
+    plannedActionReviewTargets.map((target) => [target.targetEntityId!, target]),
+  );
+  const actionFollowupTargetById = new Map(
+    actionFollowupReviewTargets.map((target) => [target.targetEntityId!, target]),
+  );
 
   return (
-    <section className="workspace">
+    <ReviewWorkspaceProvider
+      qmsRecordId={capa.qmsRecord.id}
+      module="CAPA"
+      basePath={basePath}
+      currentVersionLabel={
+        currentVersion ? followupLabel(currentVersion.sequenceNumber) : "Sin versión"
+      }
+      versionLabelMode="FOLLOWUP"
+      defaultActor={
+        process.env.DEFAULT_ACTOR_NAME?.trim() || capa.createdByText || "Usuario demo"
+      }
+      reviewMode={reviewMode}
+      targets={reviewTargets}
+      threads={reviewThreads}
+      initialThreadId={thread}
+    >
+    <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
       <div className="record-header">
         <div>
           <p className="eyebrow"><Link href="/capa">← CAPA</Link></p>
@@ -88,6 +218,7 @@ export default async function CapaDetailPage({
           </p>
         </div>
         <div className="record-actions">
+          <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, activeTab, reviewMode)} />
           <Link className="button primary" href={`/capa/${id}/edit`}>Editar / nuevo seguimiento</Link>
           {capa.status !== "DRAFT" ? <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a> : null}
         </div>
@@ -111,8 +242,8 @@ export default async function CapaDetailPage({
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (
-          <Link key={key} className={activeTab === key ? "active" : ""} href={`/capa/${id}?tab=${key}`}>
-            {label}
+          <Link key={key} className={activeTab === key ? "active" : ""} href={reviewTabHref(basePath, key, reviewMode)}>
+            {key === "review" ? `${label} (${reviewActiveCount})` : label}
           </Link>
         ))}
       </nav>
@@ -122,17 +253,18 @@ export default async function CapaDetailPage({
           <div className="card">
             <h2>Resumen del expediente</h2>
             <dl className="info-grid">
-              <div className="info-item"><dt>Tipo CAPA</dt><dd>{capaTypeLabel(capa.actionType)}</dd></div>
+              <div id={reviewTarget.actionType.anchorId} className="info-item review-target"><dt><span>Tipo CAPA</span><ReviewMarker target={reviewTarget.actionType} /></dt><dd>{capaTypeLabel(capa.actionType)}</dd></div>
               <div className="info-item"><dt>Departamento</dt><dd>{capa.departmentCodeSnapshot ?? "—"} · {capa.departmentNameSnapshot ?? ""}</dd></div>
-              <div className="info-item full"><dt>Materia / material / producto / sistema / equipo</dt><dd>{capa.applicableTo ?? "—"}</dd></div>
-              <div className="info-item full"><dt>Descripción breve del defecto</dt><dd className="prose-value">{capa.defectDescription ?? "—"}</dd></div>
-              <div className="info-item full"><dt>Causa raíz</dt><dd className="prose-value">{capa.rootCause ?? "—"}</dd></div>
-              <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value">{capa.internalObservations ?? "—"}</dd></div>
+              <div id={reviewTarget.applicableTo.anchorId} className="info-item full review-target"><dt><span>Materia / material / producto / sistema / equipo</span><ReviewMarker target={reviewTarget.applicableTo} /></dt><dd>{capa.applicableTo ?? "—"}</dd></div>
+              <div id={reviewTarget.defectDescription.anchorId} className="info-item full review-target"><dt><span>Descripción breve del defecto</span><ReviewMarker target={reviewTarget.defectDescription} /></dt><dd className="prose-value">{capa.defectDescription ?? "—"}</dd></div>
+              <div id={reviewTarget.rootCause.anchorId} className="info-item full review-target"><dt><span>Causa raíz</span><ReviewMarker target={reviewTarget.rootCause} /></dt><dd className="prose-value">{capa.rootCause ?? "—"}</dd></div>
+              {capa.impactAssessment || reviewMode ? <div id={reviewTarget.impactAssessment.anchorId} className="info-item full review-target"><dt><span>Evaluación de impacto</span><ReviewMarker target={reviewTarget.impactAssessment} /></dt><dd className="prose-value">{capa.impactAssessment ?? "—"}</dd></div> : null}
+              <div id={reviewTarget.internalObservations.anchorId} className="info-item full review-target"><dt><span>Observaciones internas</span><ReviewMarker target={reviewTarget.internalObservations} /></dt><dd className="prose-value">{capa.internalObservations ?? "—"}</dd></div>
             </dl>
           </div>
 
-          <div className="card">
-            <h2>Expediente / origen</h2>
+          <div id={reviewTarget.origin.anchorId} className="card review-target">
+            <div className="review-target-heading"><h2>Expediente / origen</h2><ReviewMarker target={reviewTarget.origin} /></div>
             {origins.length ? (
               <div className="relation-list">
                 {origins.map((record) => (
@@ -154,8 +286,8 @@ export default async function CapaDetailPage({
             )}
           </div>
 
-          <div className="card">
-            <h2>Acciones propuestas</h2>
+          <div id={reviewTarget.plannedActions.anchorId} className="card review-target">
+            <div className="review-target-heading"><h2>Acciones propuestas</h2><ReviewMarker target={reviewTarget.plannedActions} /></div>
             {capa.plannedActions.length ? (
               <div className="table-scroll">
                 <table className="records-table compact-table">
@@ -163,15 +295,18 @@ export default async function CapaDetailPage({
                     <tr><th>#</th><th>Descripción</th><th>Responsable</th><th>Fecha prevista</th><th>Impacto</th></tr>
                   </thead>
                   <tbody>
-                    {capa.plannedActions.map((item, index) => (
-                      <tr key={item.id}>
-                        <td>{String(index + 1).padStart(2, "0")}</td>
-                        <td className="table-cell-wrap">{item.description}</td>
-                        <td>{item.responsible ?? "—"}</td>
-                        <td>{formatDate(item.plannedExecutionDate)}</td>
-                        <td className="table-cell-wrap">{item.impact ?? "—"}</td>
-                      </tr>
-                    ))}
+                    {capa.plannedActions.map((item, index) => {
+                      const target = plannedActionTargetById.get(item.id)!;
+                      return (
+                        <tr id={target.anchorId} className="review-target" key={item.id}>
+                          <td>{String(index + 1).padStart(2, "0")}</td>
+                          <td className="table-cell-wrap"><span>{item.description}</span><ReviewMarker target={target} /></td>
+                          <td>{item.responsible ?? "—"}</td>
+                          <td>{formatDate(item.plannedExecutionDate)}</td>
+                          <td className="table-cell-wrap">{item.impact ?? "—"}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -181,10 +316,10 @@ export default async function CapaDetailPage({
       ) : null}
 
       {activeTab === "action-followups" ? (
-        <div className="card">
+        <div id={reviewTarget.actionFollowups.anchorId} className="card review-target">
           <div className="section-title-row">
             <div>
-              <h2>Seguimiento de la acción</h2>
+              <div className="review-target-heading"><h2>Seguimiento de la acción</h2><ReviewMarker target={reviewTarget.actionFollowups} /></div>
               <p className="muted-note">Contenido operativo de la CAPA. Estas filas no son Seguimientos 00/01/02 del expediente.</p>
             </div>
           </div>
@@ -193,21 +328,24 @@ export default async function CapaDetailPage({
               <table className="records-table compact-table">
                 <thead><tr><th>#</th><th>Fecha</th><th>Descripción</th></tr></thead>
                 <tbody>
-                  {capa.actionFollowups.map((item, index) => (
-                    <tr key={item.id}>
-                      <td>{String(index + 1).padStart(2, "0")}</td>
-                      <td>{formatDate(item.followupDate)}</td>
-                      <td className="table-cell-wrap">{item.description ?? "—"}</td>
-                    </tr>
-                  ))}
+                  {capa.actionFollowups.map((item, index) => {
+                    const target = actionFollowupTargetById.get(item.id)!;
+                    return (
+                      <tr id={target.anchorId} className="review-target" key={item.id}>
+                        <td>{String(index + 1).padStart(2, "0")}</td>
+                        <td>{formatDate(item.followupDate)}</td>
+                        <td className="table-cell-wrap"><span>{item.description ?? "—"}</span><ReviewMarker target={target} /></td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           ) : <div className="empty-panel">No hay seguimientos de acción registrados.</div>}
-          {capa.actionFollowupObservations ? (
-            <div className="info-item full" style={{ marginTop: 16 }}>
-              <dt>Observaciones</dt>
-              <dd className="prose-value">{capa.actionFollowupObservations}</dd>
+          {capa.actionFollowupObservations || reviewMode ? (
+            <div id={reviewTarget.actionFollowupObservations.anchorId} className="info-item full review-target" style={{ marginTop: 16 }}>
+              <dt><span>Observaciones</span><ReviewMarker target={reviewTarget.actionFollowupObservations} /></dt>
+              <dd className="prose-value">{capa.actionFollowupObservations ?? "—"}</dd>
             </div>
           ) : null}
 
@@ -218,8 +356,8 @@ export default async function CapaDetailPage({
         <div className="card">
           <h2>Estado y eficacia</h2>
           <div className="state-efficacy-grid">
-            <section className="state-efficacy-panel">
-              <h3>Estado operativo</h3>
+            <section id={reviewTarget.operationalState.anchorId} className="state-efficacy-panel review-target">
+              <div className="review-target-heading"><h3>Estado operativo</h3><ReviewMarker target={reviewTarget.operationalState} /></div>
               <dl className="info-grid">
                 <div className="info-item"><dt>Estado CAPA</dt><dd>{capaStatusLabel(capa.status)}</dd></div>
                 <div className="info-item"><dt>Fecha de cierre y ejecución</dt><dd>{formatDate(capa.operationalClosedAt)}</dd></div>
@@ -232,7 +370,7 @@ export default async function CapaDetailPage({
               <dl className="info-grid">
                 <div className="info-item"><dt>Verificación de la eficacia</dt><dd>{effectivenessLabel(capa.effectivenessStatus)}</dd></div>
                 <div className="info-item"><dt>Fecha de verificación final</dt><dd>{formatDate(capa.effectiveClosedAt)}</dd></div>
-                <div className="info-item full"><dt>Evaluación</dt><dd className="prose-value">{capa.effectivenessAssessment ?? "—"}</dd></div>
+                <div id={reviewTarget.effectivenessAssessment.anchorId} className="info-item full review-target"><dt><span>Evaluación</span><ReviewMarker target={reviewTarget.effectivenessAssessment} /></dt><dd className="prose-value">{capa.effectivenessAssessment ?? "—"}</dd></div>
               </dl>
             </section>
           </div>
@@ -240,7 +378,7 @@ export default async function CapaDetailPage({
           <section className="state-efficacy-panel" style={{ marginTop: 14 }}>
             <h3>Conclusión</h3>
             <dl className="info-grid">
-              <div className="info-item full"><dt>Conclusión / cierre</dt><dd className="prose-value">{capa.conclusion ?? "—"}</dd></div>
+              <div id={reviewTarget.conclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión / cierre</span><ReviewMarker target={reviewTarget.conclusion} /></dt><dd className="prose-value">{capa.conclusion ?? "—"}</dd></div>
               <div className="info-item"><dt>Fecha de próximo seguimiento</dt><dd>{formatDate(capa.nextFollowupDate)}</dd></div>
             </dl>
           </section>
@@ -437,6 +575,22 @@ export default async function CapaDetailPage({
         </div>
       ) : null}
 
+      {activeTab === "review" ? (
+        <div className="review-overview">
+          <div className="card">
+            <div className="section-title-row">
+              <div>
+                <h2>Revisión del expediente</h2>
+                <p className="muted-note">Observaciones vinculadas al seguimiento funcional revisado cuando exista.</p>
+              </div>
+              <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, "review", reviewMode)} />
+            </div>
+            <ReviewStatusSummary />
+          </div>
+          <ReviewThreadList />
+        </div>
+      ) : null}
+
       {activeTab === "history" ? (
         <div className="card">
           <h2>Historial interno de modificaciones</h2>
@@ -458,5 +612,7 @@ export default async function CapaDetailPage({
         </div>
       ) : null}
     </section>
+    <ReviewDrawer />
+    </ReviewWorkspaceProvider>
   );
 }

@@ -890,3 +890,16 @@ Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r2b1-deviations`; PENDIE
 - smoke `pnpm review-r2b1:smoke` integrado en CI;
 - sin cambios funcionales en formularios, estados, reglas de cierre, relaciones, anexos, PDF o versionado.
 
+## R2B2 — Revisión/comentarios · CAPA
+Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r2b2-capa`; PENDIENTE DE CI Y VALIDACIÓN MANUAL**.
+
+- reutiliza la UI transversal de R2A/R2B1;
+- añade Modo revisión y pestaña Revisión al detalle CAPA;
+- targets estables para tipo, ámbito de aplicación, defecto, causa raíz, impacto, origen, acciones propuestas, seguimiento de la acción, estado operativo, eficacia y conclusión;
+- `CapaPlannedAction` y `CapaActionFollowup` se revisan por UUID real mediante targets ITEM;
+- los hilos CAPA muestran `Seguimiento 00/01/02...` en lugar de `V00/V01/V02`;
+- «Ir al campo» conserva pestaña, modo, hilo y anchor estable;
+- soporte tanto para seguimiento funcional vigente como para históricos sin versión funcional;
+- smoke `pnpm review-r2b2:smoke` integrado en CI;
+- sin cambios funcionales en estados, cierre, eficacia, relaciones, anexos, PDF ni versionado.
+

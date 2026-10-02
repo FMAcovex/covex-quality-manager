@@ -1,0 +1,182 @@
+import { QmsRecordType, ReviewTargetKind } from "@prisma/client";
+import {
+  defineReviewTargets,
+  stableReviewAnchorPart,
+} from "@/lib/qms/review/targets/catalog";
+import type {
+  ReviewSnapshotValue,
+  ReviewTargetInstance,
+} from "@/lib/qms/review/targets/types";
+
+export const capaReviewTargets = defineReviewTargets({
+  actionType: {
+    key: "capa.summary.action-type",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.FIELD,
+    tabKey: "summary",
+    sectionKey: "identification",
+    fieldPath: "actionType",
+    label: "Tipo CAPA",
+    anchorId: "review-capa-action-type",
+  },
+  applicableTo: {
+    key: "capa.summary.applicable-to",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.FIELD,
+    tabKey: "summary",
+    sectionKey: "identification",
+    fieldPath: "applicableTo",
+    label: "Materia / material / producto / sistema / equipo",
+    anchorId: "review-capa-applicable-to",
+  },
+  defectDescription: {
+    key: "capa.summary.defect-description",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.FIELD,
+    tabKey: "summary",
+    sectionKey: "defect",
+    fieldPath: "defectDescription",
+    label: "Descripción breve del defecto",
+    anchorId: "review-capa-defect-description",
+  },
+  rootCause: {
+    key: "capa.summary.root-cause",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.FIELD,
+    tabKey: "summary",
+    sectionKey: "root-cause",
+    fieldPath: "rootCause",
+    label: "Causa raíz",
+    anchorId: "review-capa-root-cause",
+  },
+  impactAssessment: {
+    key: "capa.summary.impact-assessment",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.FIELD,
+    tabKey: "summary",
+    sectionKey: "impact",
+    fieldPath: "impactAssessment",
+    label: "Evaluación de impacto",
+    anchorId: "review-capa-impact-assessment",
+  },
+  internalObservations: {
+    key: "capa.summary.internal-observations",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.FIELD,
+    tabKey: "summary",
+    sectionKey: "identification",
+    fieldPath: "internalObservations",
+    label: "Observaciones internas",
+    anchorId: "review-capa-internal-observations",
+  },
+  origin: {
+    key: "capa.summary.origin",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.SECTION,
+    tabKey: "summary",
+    sectionKey: "origin",
+    fieldPath: null,
+    label: "Expediente / origen",
+    anchorId: "review-capa-origin",
+  },
+  plannedActions: {
+    key: "capa.summary.planned-actions",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.SECTION,
+    tabKey: "summary",
+    sectionKey: "planned-actions",
+    fieldPath: null,
+    label: "Acciones propuestas",
+    anchorId: "review-capa-planned-actions",
+  },
+  actionFollowups: {
+    key: "capa.action-followups.section",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.SECTION,
+    tabKey: "action-followups",
+    sectionKey: "action-followups",
+    fieldPath: null,
+    label: "Seguimiento de la acción",
+    anchorId: "review-capa-action-followups",
+  },
+  actionFollowupObservations: {
+    key: "capa.action-followups.observations",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.FIELD,
+    tabKey: "action-followups",
+    sectionKey: "action-followups",
+    fieldPath: "actionFollowupObservations",
+    label: "Observaciones del seguimiento de la acción",
+    anchorId: "review-capa-action-followup-observations",
+  },
+  operationalState: {
+    key: "capa.state.operational",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.SECTION,
+    tabKey: "state",
+    sectionKey: "operational-state",
+    fieldPath: null,
+    label: "Estado operativo",
+    anchorId: "review-capa-operational-state",
+  },
+  effectivenessAssessment: {
+    key: "capa.state.effectiveness-assessment",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.FIELD,
+    tabKey: "state",
+    sectionKey: "effectiveness",
+    fieldPath: "effectivenessAssessment",
+    label: "Evaluación de la eficacia",
+    anchorId: "review-capa-effectiveness-assessment",
+  },
+  conclusion: {
+    key: "capa.state.conclusion",
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.FIELD,
+    tabKey: "state",
+    sectionKey: "conclusion",
+    fieldPath: "conclusion",
+    label: "Conclusión / cierre",
+    anchorId: "review-capa-conclusion",
+  },
+});
+
+export function capaPlannedActionReviewTarget(
+  targetEntityId: string,
+  valueSnapshot: ReviewSnapshotValue,
+): ReviewTargetInstance {
+  const stableId = stableReviewAnchorPart(targetEntityId);
+  return {
+    key: `capa.summary.planned-action.${targetEntityId}`,
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.ITEM,
+    tabKey: "summary",
+    sectionKey: "planned-actions",
+    fieldPath: "description",
+    label: "Acción propuesta",
+    anchorId: `review-capa-planned-action-${stableId}`,
+    targetEntityType: "CapaPlannedAction",
+    targetEntityId,
+    valueSnapshot,
+  };
+}
+
+export function capaActionFollowupReviewTarget(
+  targetEntityId: string,
+  valueSnapshot: ReviewSnapshotValue,
+): ReviewTargetInstance {
+  const stableId = stableReviewAnchorPart(targetEntityId);
+  return {
+    key: `capa.action-followups.item.${targetEntityId}`,
+    module: QmsRecordType.CAPA,
+    targetKind: ReviewTargetKind.ITEM,
+    tabKey: "action-followups",
+    sectionKey: "action-followups",
+    fieldPath: "description",
+    label: "Seguimiento de la acción",
+    anchorId: `review-capa-action-followup-${stableId}`,
+    targetEntityType: "CapaActionFollowup",
+    targetEntityId,
+    valueSnapshot,
+  };
+}

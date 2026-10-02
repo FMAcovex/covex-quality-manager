@@ -15,6 +15,7 @@ import type { ReviewTargetInstance } from "@/lib/qms/review/targets/types";
 import {
   reviewThreadMatchesTarget,
   type ReviewThreadView,
+  type ReviewVersionLabelMode,
 } from "@/lib/qms/review/ui-model";
 
 type ReviewContextValue = {
@@ -22,6 +23,7 @@ type ReviewContextValue = {
   module: QmsRecordType;
   basePath: string;
   currentVersionLabel: string;
+  versionLabelMode: ReviewVersionLabelMode;
   defaultActor: string;
   reviewMode: boolean;
   targets: ReviewTargetInstance[];
@@ -45,6 +47,7 @@ export function ReviewWorkspaceProvider({
   module,
   basePath,
   currentVersionLabel,
+  versionLabelMode = "VERSION",
   defaultActor,
   reviewMode,
   targets,
@@ -56,6 +59,7 @@ export function ReviewWorkspaceProvider({
   module: QmsRecordType;
   basePath: string;
   currentVersionLabel: string;
+  versionLabelMode?: ReviewVersionLabelMode;
   defaultActor: string;
   reviewMode: boolean;
   targets: ReviewTargetInstance[];
@@ -122,6 +126,7 @@ export function ReviewWorkspaceProvider({
       module,
       basePath,
       currentVersionLabel,
+      versionLabelMode,
       defaultActor,
       reviewMode,
       targets,
@@ -141,6 +146,7 @@ export function ReviewWorkspaceProvider({
       module,
       basePath,
       currentVersionLabel,
+      versionLabelMode,
       defaultActor,
       reviewMode,
       targets,

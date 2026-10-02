@@ -13,6 +13,7 @@ export function ReviewDrawer() {
     closeDrawer,
     threadsForTarget,
     currentVersionLabel,
+    versionLabelMode,
   } = useReviewWorkspace();
   if (!drawerOpen) return null;
   const target = selectedTarget;
@@ -22,7 +23,7 @@ export function ReviewDrawer() {
     ACCEPTED: threads.filter((thread) => thread.status === "ACCEPTED").length,
   });
   const reviewedVersionLabel = selectedThread
-    ? reviewVersionLabel(selectedThread.recordVersionSequence)
+    ? reviewVersionLabel(selectedThread.recordVersionSequence, versionLabelMode)
     : currentVersionLabel;
   const reviewedSnapshot = selectedThread
     ? selectedThread.valueSnapshot
