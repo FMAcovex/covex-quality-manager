@@ -147,14 +147,14 @@ export function capaPlannedActionReviewTarget(
 ): ReviewTargetInstance {
   const stableId = stableReviewAnchorPart(targetEntityId);
   return {
-    key: \`capa.summary.planned-action.\${targetEntityId}\`,
+    key: `capa.summary.planned-action.${targetEntityId}`,
     module: QmsRecordType.CAPA,
     targetKind: ReviewTargetKind.ITEM,
     tabKey: "summary",
     sectionKey: "planned-actions",
     fieldPath: "description",
     label: "Acción propuesta",
-    anchorId: \`review-capa-planned-action-\${stableId}\`,
+    anchorId: `review-capa-planned-action-${stableId}`,
     targetEntityType: "CapaPlannedAction",
     targetEntityId,
     valueSnapshot,
@@ -167,14 +167,14 @@ export function capaActionFollowupReviewTarget(
 ): ReviewTargetInstance {
   const stableId = stableReviewAnchorPart(targetEntityId);
   return {
-    key: \`capa.action-followups.item.\${targetEntityId}\`,
+    key: `capa.action-followups.item.${targetEntityId}`,
     module: QmsRecordType.CAPA,
     targetKind: ReviewTargetKind.ITEM,
     tabKey: "action-followups",
     sectionKey: "action-followups",
     fieldPath: "description",
     label: "Seguimiento de la acción",
-    anchorId: \`review-capa-action-followup-\${stableId}\`,
+    anchorId: `review-capa-action-followup-${stableId}`,
     targetEntityType: "CapaActionFollowup",
     targetEntityId,
     valueSnapshot,
