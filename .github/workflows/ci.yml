@@ -84,13 +84,12 @@ jobs:
         run: pnpm quality
       - name: R2C browser regression
         run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -d covex_quality -c "ALTER SYSTEM SET checkpoint_timeout = '30min';"
-          PGPASSWORD=postgres psql -h localhost -U postgres -d covex_quality -c "SELECT pg_reload_conf();"
-          PGPASSWORD=postgres psql -h localhost -U postgres -d covex_quality -c "CHECKPOINT;"
           pnpm exec playwright install --with-deps chromium
           TZ=UTC pnpm start --port 3000 > /tmp/covex-r2c-next.log 2>&1 &
           review_server_pid=$!
           trap 'review_exit_code=$?; if [ "$review_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-r2c-next.log; fi; kill "$review_server_pid" 2>/dev/null || true' EXIT
           R2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm review-r2c:ui:smoke
-          R3A_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3a:ui:smoke
+          for audit_ui_run in 1 2 3; do
+            R3A_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3a:ui:smoke
+          done
           R3B_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3b:ui:smoke

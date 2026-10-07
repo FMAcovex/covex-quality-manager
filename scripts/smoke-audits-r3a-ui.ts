@@ -11,10 +11,11 @@ async function main() {
   if (!base || process.env.APP_ENV !== "test") throw new Error("Define APP_ENV=test y R3A_UI_BASE_URL para servidor y BD aislados.");
   const browser = await chromium.launch({executablePath:process.env.R3A_UI_CHROMIUM_PATH || undefined,args:["--no-sandbox"]});
   const page = await browser.newPage({viewport:{width:1440,height:1000},timezoneId:"Europe/Madrid"}), errors:string[]=[];
-  // GitHub Actions can take more than Playwright's 30 s navigation default while a Server Action persists and redirects.
-  // Keep all assertions unchanged; only give the existing navigation checks enough headroom on a cold CI runner.
-  page.setDefaultTimeout(60_000);
-  page.setDefaultNavigationTimeout(90_000);
+  const serverActions: { path: string; status?: number; redirect?: string; finished?: boolean }[] = [];
+  const requests = new Map<import("playwright").Request, typeof serverActions[number]>();
+  page.on("request", request => { if (request.method() === "POST" && request.headers()["next-action"]) { const entry = { path: new URL(request.url()).pathname }; serverActions.push(entry); requests.set(request, entry); } });
+  page.on("response", response => { const entry = requests.get(response.request()); if (entry) { entry.status = response.status(); entry.redirect = response.headers()["x-action-redirect"]; } });
+  page.on("requestfinished", request => { const entry = requests.get(request); if (entry) entry.finished = true; });
   page.on("pageerror",error=>errors.push(error.message));
   page.on("console", message => { if (message.type() === "error" && /hydrat|server rendered/i.test(message.text())) errors.push(message.text()); });
   try {
@@ -22,9 +23,8 @@ async function main() {
     await page.getByLabel("Objeto / título").fill(marker);
     await submit(page); await page.waitForURL(/\/audits\/[a-f0-9-]+$/);
     const audit = await prisma.audit.findFirstOrThrow({where:{title:marker}});
-    const editLink = page.getByRole("link",{name:"Editar",exact:true});
-    assert.equal(await editLink.getAttribute("href"), `/audits/${audit.id}/edit`);
-    await navigate(page,`${base}/audits/${audit.id}/edit`);
+    await page.getByRole("link",{name:"Editar",exact:true}).click();
+    await page.waitForURL(new RegExp(`/audits/${audit.id}/edit$`)); await page.waitForLoadState("networkidle");
     await page.locator('select[name="auditType"]').selectOption("INTERNAL");
     await page.locator('select[name="scenario"]').selectOption("INTERNAL_COVEX");
     const department = await prisma.department.findUniqueOrThrow({where:{code:"GC-00"}});
@@ -91,8 +91,12 @@ async function main() {
     await navigate(page,`${base}/audits?q=${encodeURIComponent(marker)}&administrative=ANNULLED`); await page.locator("#audit-list-table").waitFor(); assert.equal(await page.locator("#audit-list-table tbody tr").count(),1);
     await navigate(page,`${base}/audits/${audit.id}?tab=history`); assert(await page.getByText("Anulación UI de fixture",{exact:true}).count());
     assert.deepEqual(errors,[]);
+    assert.equal(serverActions.length,3,"Alta, validación y apertura deben usar Server Actions reales.");
+    assert(serverActions.every(entry => entry.status === 200 && entry.finished === true),"Cada Server Action debe resolver su respuesta antes de navegar.");
     console.log("R3A UI: alta/edición/apertura, valores tras error y escenario, UUID, resolver, ColumnSelector, administración e historial; responsive 1440/768/390px sin errores JS/hidratación OK.");
   } catch (error) {
+    console.error("R3A UI Server Actions:", serverActions);
+    console.error("R3A UI errors:", errors);
     console.error("R3A UI failure URL:", page.url());
     console.error(await page.evaluate(() => Array.from(document.querySelectorAll("body *")).filter(e => { const r=e.getBoundingClientRect(); return r.width && (r.x < 0 || r.right > window.innerWidth + 2); }).slice(0,15).map(e => ({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width}))));
     console.error(await page.locator("main").ariaSnapshot().catch(() => "No snapshot"));
