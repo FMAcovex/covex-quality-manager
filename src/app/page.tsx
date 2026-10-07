@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const modules = [
+  { name: "Auditorías", eyebrow: "GC-00/033 · GC-00/034", description: "Expedientes de auditoría interna y externa, planificación, áreas y equipo auditor.", href: "/audits", status: "Expediente base", tone: "ready", sections: ["Expedientes", "Planificación", "Participantes", "Historial"] },
   {
     name: "Desviaciones",
     eyebrow: "GC-00/023",

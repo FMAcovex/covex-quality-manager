@@ -11,6 +11,7 @@ import {
 export const runtime = "nodejs";
 
 const supportedTypes = new Set<QmsRecordType>([
+  QmsRecordType.AUDIT,
   QmsRecordType.CAPA,
   QmsRecordType.CHANGE_CONTROL,
   QmsRecordType.COMPLAINT,
@@ -40,6 +41,7 @@ export async function GET(request: Request) {
 
   let departmentCode: string | null = null;
   if (
+    (type === QmsRecordType.AUDIT && url.searchParams.get("auditType") === "INTERNAL") ||
     type === QmsRecordType.CAPA ||
     type === QmsRecordType.CHANGE_CONTROL ||
     type === QmsRecordType.RETURN
@@ -64,6 +66,9 @@ export async function GET(request: Request) {
     recordType: type,
     year,
     departmentCode,
+    auditType: url.searchParams.get("auditType") as OperationalBusinessCodeContext["auditType"],
+    auditScenario: url.searchParams.get("auditScenario") as OperationalBusinessCodeContext["auditScenario"],
+    entityCode: url.searchParams.get("entityCode")?.trim().toUpperCase(),
     actionType:
       actionType === "CORRECTIVE" || actionType === "PREVENTIVE"
         ? actionType

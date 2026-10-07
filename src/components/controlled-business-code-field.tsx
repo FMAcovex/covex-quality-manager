@@ -11,9 +11,13 @@ export function ControlledBusinessCodeField({
   departmentId,
   actionType,
   complaintType,
+  auditType,
+  auditScenario,
+  entityCode,
   locked,
+  onValueChange,
 }: {
-  recordType: "CAPA" | "CHANGE_CONTROL" | "COMPLAINT" | "RETURN";
+  recordType: "AUDIT" | "CAPA" | "CHANGE_CONTROL" | "COMPLAINT" | "RETURN";
   name?: string;
   label: string;
   initialValue?: string;
@@ -22,7 +26,11 @@ export function ControlledBusinessCodeField({
   departmentId?: string;
   actionType?: "CORRECTIVE" | "PREVENTIVE" | null;
   complaintType?: "CUSTOMER" | "PROVIDER" | null;
+  auditType?: "INTERNAL" | "EXTERNAL" | null;
+  auditScenario?: "INTERNAL_COVEX" | "INTERNAL_CONTRACTED" | "SUPPLIER" | "CLIENT" | "AUTHORITY" | null;
+  entityCode?: string;
   locked?: boolean;
+  onValueChange?: (value: string) => void;
 }) {
   const [value, setValue] = useState(initialValue ?? "");
   const [suggestion, setSuggestion] = useState("");
@@ -43,7 +51,7 @@ export function ControlledBusinessCodeField({
         : new Date().getFullYear();
 
     if (
-      (recordType === "CAPA" ||
+      ((recordType === "AUDIT" && auditType === "INTERNAL") || recordType === "CAPA" ||
         recordType === "CHANGE_CONTROL" ||
         recordType === "RETURN") &&
       !departmentId
@@ -63,10 +71,15 @@ export function ControlledBusinessCodeField({
       return;
     }
 
+    if (recordType === "AUDIT" && (!auditType || !auditScenario || (auditType === "EXTERNAL" && !entityCode))) { setSuggestion(""); setFormat(""); return; }
+
     const params = new URLSearchParams({
       recordType,
       year: String(year),
     });
+    if (auditType) params.set("auditType", auditType);
+    if (auditScenario) params.set("auditScenario", auditScenario);
+    if (entityCode) params.set("entityCode", entityCode);
     if (departmentId) params.set("departmentId", departmentId);
     if (actionType) params.set("actionType", actionType);
     if (complaintType) params.set("complaintType", complaintType);
@@ -93,7 +106,7 @@ export function ControlledBusinessCodeField({
         setError(cause instanceof Error ? cause.message : "No se ha podido calcular la sugerencia.");
       });
     return () => controller.abort();
-  }, [actionType, complaintType, departmentId, isLocked, recordType, yearSource]);
+  }, [actionType, complaintType, departmentId, isLocked, recordType, yearSource, auditType, auditScenario, entityCode]);
 
   return (
     <label className="field">
@@ -101,7 +114,7 @@ export function ControlledBusinessCodeField({
       <input
         name={name}
         value={value}
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => { setValue(event.target.value); onValueChange?.(event.target.value); }}
         readOnly={isLocked}
         placeholder={
           isLocked
@@ -113,7 +126,7 @@ export function ControlledBusinessCodeField({
         {isLocked
           ? "La codificación queda fijada al salir de Borrador."
           : suggestion
-            ? <>Sugerencia correlativa: <button type="button" className="link-button-inline" onClick={() => setValue(suggestion)}>{suggestion}</button>. Si se deja vacío, se asignará automáticamente al guardar.</>
+            ? <>Sugerencia correlativa: <button type="button" className="link-button-inline" onClick={() => { setValue(suggestion); onValueChange?.(suggestion); }}>{suggestion}</button>. Si se deja vacío, se asignará automáticamente al guardar.</>
             : error
               ? error
               : format

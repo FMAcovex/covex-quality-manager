@@ -195,3 +195,8 @@ Criterio de salida:
 - smoke test específico de endurecimiento incluido en CI;
 - documentación local/demo y límites de la V1 actualizados;
 - autenticación, roles corporativos y política de backup de producción permanecen en Hito 11.
+
+
+## R3 — Auditorías
+
+R3A: expediente base, planificación, áreas, participantes, códigos AI/AE, listado, alta/edición/detalle, administración e historial. R3B: hallazgos persistentes, tratamiento y relaciones a Desviación/CAPA; sin mini-CAPA. R3C: informes/plantillas/documentos, versiones por emisión/revisión, Review y política de cierre. Plan Maestro anual posterior, no incluido en R3A.

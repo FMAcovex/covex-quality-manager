@@ -971,3 +971,14 @@ Validación manual focalizada de la PR: comprobar visualmente 2.a/Plan/Seguimien
 - Se añaden siete casos de labels y tres de fechas (238 tests unitarios en total), y `pnpm review-r2c:ui:smoke` con fixtures propios: CAPA con comentario histórico/target ausente, CC 00→01→02, enlaces desde drawer/listado, recarga, scroll/foco/highlight y conservación de versiones/snapshots. Este smoke de Chromium se integra en CI después de quality.
 - Ejecución local UI: `APP_ENV=test R2C_UI_BASE_URL=http://127.0.0.1:3002 R2C_UI_CHROMIUM_PATH=/usr/bin/chromium pnpm review-r2c:ui:smoke`, con servidor y DATABASE_URL apuntando a la misma base aislada. Sin navegador local, instalar primero `pnpm exec playwright install chromium`.
 - Verificación: 25 tests afectados correctos; suite completa 238 tests/60 archivos, Prisma, lint y build correctos; smoke PostgreSQL R2C y nuevo smoke Chromium completos, sin errores JavaScript/hidratación en cliente Madrid. Permanecen únicamente los dos warnings de hooks preexistentes. La PR #97 queda abierta para segunda comprobación manual.
+
+
+## R3A — Auditorías: expediente base y planificación
+
+Baseline: main 0fa23067c1ab44e4e5bd719681d041fb77fde74f. Rama feature/audits-r3a-base-record. Audit, departamentos y participantes persistentes, cinco escenarios, Borrador/apertura, AI/AE, modalidad, listado con búsqueda SQL/paginación/filtros/ColumnSelector, detalle/edición, historial, estado administrativo y navegación QMS. Cierre final bloqueado. Demo ficticio idempotente.
+
+No implementado en R3A: hallazgos/clasificación/recomendaciones, CAPA Plan, relaciones nuevas, seguimientos de hallazgos, informes/anexos/adjuntos/firmados, versiones formales, Review de ficha, cierre definitivo GMP, Plan Maestro ni alertas automáticas.
+
+Se incluyen baseline previa y migración R3A porque main no disponía de migrations. Ver docs/AUDITS_R3A.md antes de desplegar sobre una BD existente. Validación y PR: ver resultados de CI y notas finales del bloque; aprobación funcional manual pendiente. No constituye validación GMP.
+
+Verificación local R3A: las dos migraciones aplican desde otra BD vacía, seed y smoke PostgreSQL completos. Concurrencia AI/AE, IDs persistentes, retiradas/reactivación, filtros/búsqueda/paginación y administración verificados. `pnpm quality` verde: 254 tests en 61 archivos, Prisma validate/generate, lint y build. Solo dos warnings de hooks preexistentes. Smokes UI de R3A y R2C verdes sobre build de producción, servidor UTC y navegador Europe/Madrid; R3A cubre 1440/768/390px. El smoke detectó y cubre la corrección de reset de controles tras errores y el desplegable de columnas móvil. CI y revisión manual de la PR quedan como comprobación remota/funcional del bloque.

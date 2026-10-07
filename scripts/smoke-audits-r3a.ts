@@ -1,0 +1,82 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { prisma } from "../src/lib/db";
+import { saveAudit, auditDefaults } from "../src/modules/audits/service";
+import { getAuditList } from "../src/modules/audits/queries";
+import { changeAdministrativeStatus } from "../src/lib/qms/administrative-status";
+import { suggestOperationalBusinessCode } from "../src/lib/qms/business-code";
+import { qmsRecordHref } from "../src/lib/qms/record-links";
+import { seedAuditDemo } from "../src/modules/audits/seed-demo";
+
+if (process.env.APP_ENV !== "test") throw new Error("Ejecuta este smoke exclusivamente con APP_ENV=test en una BD aislada.");
+const marker = `R3A-${randomUUID()}`, records: string[] = [];
+async function create(raw: unknown) { const audit = await saveAudit(raw); records.push(audit.qmsRecordId); return audit; }
+async function main() {
+  const department = await prisma.department.findUniqueOrThrow({where:{code:"GC-00"}});
+  const other = await prisma.department.findUniqueOrThrow({where:{code:"DT-00"}});
+  let audit = await create({actor:"Smoke R3A"});
+  assert.equal(audit.status,"DRAFT"); assert.equal(audit.qmsRecord.businessCode,null);
+  audit = await saveAudit({...auditDefaults(audit), title:marker, auditType:"INTERNAL",scenario:"INTERNAL_COVEX",departmentIds:[department.id,other.id],codingDepartmentId:department.id,participants:[{displayName:"Auditor ficticio",role:"LEAD_AUDITOR",sortOrder:0},{displayName:"Segundo auditor ficticio",role:"AUDITOR",sortOrder:10},{displayName:"Interlocutor ficticio",role:"AUDITEE",sortOrder:20}]},audit.id);
+  const participantIds = audit.participants.map(p => p.id), departmentIds = audit.departments.map(d => d.id), stale = auditDefaults(audit);
+  await assert.rejects(saveAudit({...stale,status:"OPEN"},audit.id), /alcance|prevista/);
+  audit = await saveAudit({...stale,status:"OPEN",scope:`Alcance ${marker}`,plannedDate:"2097-11-10"},audit.id);
+  assert.match(audit.qmsRecord.businessCode!,/^AI\/GC-00\/\d{2}\/2097$/);
+  assert.deepEqual(audit.participants.map(p=>p.id).sort(),participantIds.sort());
+  assert.deepEqual(audit.departments.map(d=>d.id).sort(),departmentIds.sort());
+  const originalCode = audit.qmsRecord.businessCode;
+  audit = await saveAudit({...auditDefaults(audit),plannedDate:"2099-11-10",performedDate:"2098-01-10",participants:auditDefaults(audit).participants.reverse()},audit.id);
+  assert.equal(audit.qmsRecord.businessCode,originalCode); assert.equal(audit.qmsRecord.year,2097);
+  await assert.rejects(saveAudit(stale,audit.id), /cambió/);
+  await assert.rejects(saveAudit({...auditDefaults(audit),status:"DRAFT"},audit.id), /Borrador/);
+  await assert.rejects(saveAudit({...auditDefaults(audit),departmentIds:[other.id]},audit.id), /codificación/);
+  await assert.rejects(saveAudit({...auditDefaults(audit),status:"CLOSED"},audit.id), /R3B/);
+  await assert.rejects(saveAudit({...auditDefaults(audit),businessCode:"AI/GC-00/99/2097"},audit.id), /modificar/);
+  for (const filters of [{q:marker},{q:"Auditor ficticio",year:["2097"],type:["INTERNAL"]},{q:marker,department:[other.id]},{q:marker,scenario:["INTERNAL_COVEX"],status:["OPEN"]},{q:marker,plannedFrom:"2099-01-01",performedTo:"2098-12-31"}]) assert((await getAuditList(filters)).rows.some(r=>r.id===audit.id));
+  assert.equal((await getAuditList({q:marker,type:["EXTERNAL"]})).total,0);
+  assert.equal(qmsRecordHref("AUDIT",audit.qmsRecordId),`/qms/${audit.qmsRecordId}`);
+  assert(await prisma.changeHistory.count({where:{qmsRecordId:audit.qmsRecordId,fieldPath:"audit.participants"}}));
+  await changeAdministrativeStatus(audit.qmsRecordId,"ANNUL","Anulación smoke","Smoke R3A");
+  assert.equal((await getAuditList({q:marker})).total,0);
+  assert.equal((await getAuditList({q:marker,administrative:"ANNULLED"})).total,1);
+  const next = await suggestOperationalBusinessCode(prisma,{recordType:"AUDIT",auditType:"INTERNAL",auditScenario:"INTERNAL_COVEX",departmentCode:department.code,year:2097});
+  assert.notEqual(next,originalCode);
+  await changeAdministrativeStatus(audit.qmsRecordId,"REACTIVATE","Reactivación smoke","Smoke R3A");
+  const internal = {...auditDefaults(audit),expectedUpdatedAt:"",title:`Concurrencia ${marker}`,plannedDate:"2097-11-11",performedDate:"",businessCode:"",participants:[{displayName:"Auditor",role:"AUDITOR",sortOrder:0}]};
+  const parallel = await Promise.all([create(internal),create(internal)]);
+  assert.notEqual(parallel[0].qmsRecord.businessCode,parallel[1].qmsRecord.businessCode);
+  const entityCode = `T${randomUUID().replaceAll("-","").slice(0,12).toUpperCase()}`;
+  const supplier = {...internal,auditType:"EXTERNAL",scenario:"SUPPLIER",departmentIds:[],codingDepartmentId:"",entityCode,auditedEntityName:"Proveedor ficticio",title:`Proveedor ${marker}`};
+  const external = await Promise.all([create(supplier),create(supplier)]);
+  assert.deepEqual(external.map(a=>a.qmsRecord.businessCode).sort(),[`AE/${entityCode}/01/2097`,`AE/${entityCode}/02/2097`]);
+  await assert.rejects(saveAudit({...auditDefaults(external[0]),participants:[{...auditDefaults(audit).participants[0]}]},external[0].id),/pertenece/);
+  for (const scenario of ["CLIENT","AUTHORITY"]) {
+    const received = await create({...supplier,scenario,entityCode:"",externalReference:`REF-${marker}`,businessCode:""});
+    assert.equal(received.qmsRecord.businessCode,null);
+    await changeAdministrativeStatus(received.qmsRecordId,"ANNUL","Anulación sin código","Smoke");
+    await changeAdministrativeStatus(received.qmsRecordId,"REACTIVATE","Reactivar sin código","Smoke");
+  }
+  const draft = await create({actor:"Smoke",title:`Identidad ${marker}`,departmentIds:[department.id],participants:[{displayName:"Persistente",role:"AUDITOR",sortOrder:0}]});
+  const removed = await saveAudit({...auditDefaults(draft),departmentIds:[],participants:[]},draft.id);
+  const restored = await saveAudit({...auditDefaults(removed),departmentIds:[department.id],participants:auditDefaults(draft).participants},draft.id);
+  assert.equal(restored.departments[0].id,draft.departments[0].id); assert.equal(restored.participants[0].id,draft.participants[0].id);
+  await changeAdministrativeStatus(draft.qmsRecordId,"ANNUL","Borrador incompleto","Smoke");
+  await changeAdministrativeStatus(draft.qmsRecordId,"REACTIVATE","Reactivar borrador","Smoke");
+  await assert.rejects(prisma.audit.update({where:{id:audit.id},data:{auditType:"EXTERNAL"}}));
+  for (let i=0;i<27;i++) await create({actor:"Smoke",title:`Paginación ${marker}`});
+  const page1 = await getAuditList({q:`Paginación ${marker}`}), page2 = await getAuditList({q:`Paginación ${marker}`,page:"2"});
+  assert.equal(page1.total,27); assert.equal(page1.rows.length,25); assert.equal(page2.rows.length,2);
+  assert(!page1.rows.some(r=>page2.rows.some(s=>s.id===r.id)));
+  assert.equal(await prisma.qmsRecordVersion.count({where:{qmsRecordId:{in:records}}}),0);
+  assert.equal(await prisma.qmsRelation.count({where:{sourceRecordId:{in:records}}}),0);
+  assert.equal(await prisma.reviewThread.count({where:{qmsRecordId:{in:records}}}),0);
+  const demoBefore = await prisma.qmsRecord.findFirst({where:{recordType:"AUDIT",businessCode:"DEMO-AUD-001-2026"}});
+  const demo1 = await seedAuditDemo(prisma), demo2 = await seedAuditDemo(prisma);
+  if (!demoBefore) records.push(demo1.qmsRecordId);
+  assert.equal(demo1.id,demo2.id); assert.equal(await prisma.auditParticipant.count({where:{auditId:demo1.id}}),3);
+  console.log("R3A PostgreSQL: borrador, apertura, UUID, multiárea, concurrencia AI/AE, filtros/búsqueda/paginación, historial, administración y seed idempotente OK.");
+}
+main().finally(async()=>{
+  const audits = await prisma.audit.findMany({where:{qmsRecordId:{in:records}},select:{id:true}}), ids=audits.map(a=>a.id);
+  await prisma.auditParticipant.deleteMany({where:{auditId:{in:ids}}}); await prisma.auditDepartment.deleteMany({where:{auditId:{in:ids}}});
+  await prisma.changeHistory.deleteMany({where:{qmsRecordId:{in:records}}}); await prisma.audit.deleteMany({where:{id:{in:ids}}}); await prisma.qmsRecord.deleteMany({where:{id:{in:records}}}); await prisma.$disconnect();
+}).catch(error=>{console.error(error);process.exitCode=1;});

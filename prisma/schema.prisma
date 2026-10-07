@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum QmsRecordType {
+  AUDIT
   DEVIATION
   CAPA
   CHANGE_CONTROL
@@ -347,6 +348,7 @@ model QmsRecord {
   annulledReason     String?              @db.Text
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
+  audit              Audit?
   deviation          Deviation?
   capa               Capa?
   changeControl       ChangeControl?
@@ -394,6 +396,8 @@ model Department {
   isActive   Boolean     @default(true)
   validFrom  DateTime?   @db.Date
   validTo    DateTime?   @db.Date
+  auditDepartments AuditDepartment[]
+  codingAudits Audit[] @relation("AuditCodingDepartment")
   deviations Deviation[]
   capas      Capa[]
   changeControls ChangeControl[]
@@ -1431,4 +1435,107 @@ model ReminderLog {
   @@index([qmsRecordId, createdAt])
   @@index([batchId])
   @@index([createdAt])
+}
+
+
+enum AuditType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum AuditScenario {
+  INTERNAL_COVEX
+  INTERNAL_CONTRACTED
+  SUPPLIER
+  CLIENT
+  AUTHORITY
+}
+
+enum AuditStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum AuditModality {
+  ONSITE
+  REMOTE
+  HYBRID
+}
+
+enum AuditParticipantRole {
+  LEAD_AUDITOR
+  AUDITOR
+  AUDITEE
+}
+
+model Audit {
+  id                           String             @id @default(uuid())
+  qmsRecordId                  String             @unique
+  qmsRecord                    QmsRecord          @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  auditType                    AuditType?
+  scenario                     AuditScenario?
+  status                       AuditStatus        @default(DRAFT)
+  title                        String?            @db.Text
+  scope                        String?            @db.Text
+  referenceText                String?            @db.Text
+  externalReference            String?
+  auditedEntityName            String?
+  auditedEntityAddress         String?            @db.Text
+  auditingEntityName           String?
+  entityCode                   String?
+  codingDepartmentId           String?
+  codingDepartment             Department?        @relation("AuditCodingDepartment", fields: [codingDepartmentId], references: [id], onDelete: Restrict)
+  codingDepartmentCodeSnapshot String?
+  codingDepartmentNameSnapshot String?
+  plannedDate                  DateTime?          @db.Date
+  performedDate                DateTime?          @db.Date
+  openedAt                     DateTime?          @db.Date
+  closedAt                     DateTime?          @db.Date
+  modality                     AuditModality?
+  internalObservations         String?            @db.Text
+  dataQualityStatus            DataQualityStatus  @default(INCOMPLETE)
+  createdByText                String?
+  updatedByText                String?
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+  departments                  AuditDepartment[]
+  participants                 AuditParticipant[]
+
+  @@index([status, plannedDate])
+  @@index([auditType, plannedDate])
+  @@index([performedDate])
+  @@index([scenario])
+}
+
+model AuditDepartment {
+  id                     String     @id @default(uuid())
+  auditId                String
+  audit                  Audit      @relation(fields: [auditId], references: [id], onDelete: Restrict)
+  departmentId           String
+  department             Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot String
+  departmentNameSnapshot String
+  isActive               Boolean    @default(true)
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  @@unique([auditId, departmentId])
+  @@index([departmentId, isActive])
+}
+
+model AuditParticipant {
+  id           String               @id @default(uuid())
+  auditId      String
+  audit        Audit                @relation(fields: [auditId], references: [id], onDelete: Restrict)
+  displayName  String
+  position     String?
+  organization String?
+  role         AuditParticipantRole
+  sortOrder    Int                  @default(0)
+  isActive     Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([auditId, sortOrder])
 }

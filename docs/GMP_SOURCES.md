@@ -64,3 +64,8 @@ Cuando cambie un PNT/anexo:
 ## Plazos
 
 No codificar plazos reglados basándose únicamente en un Excel histórico o memoria de proyecto. Confirmar el PNT vigente y, preferiblemente, modelarlos como configuración versionada.
+
+
+## Fuentes de Auditorías comunicadas para R3A
+
+Fuentes funcionales declaradas y aprobadas por el usuario: GC-00/033/03 Auditorías internas, vigencia 10/04/2026; GC-00/034/04 Auditorías externas, vigencia 08/06/2026. El usuario confirma revisión de sus anexos y programas/informes 2026. Los binarios no se han recibido ni verificado en esta fase: no se registran hashes inventados ni plantillas supuestamente instaladas. R3A implementa las reglas expresamente recogidas en la solicitud; documentos oficiales quedan para R3C.

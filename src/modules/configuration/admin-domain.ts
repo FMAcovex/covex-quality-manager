@@ -1,6 +1,7 @@
 import { DocumentType,QmsRecordType } from "@prisma/client";
 
 export const allowedDocumentTypes:Record<QmsRecordType,readonly DocumentType[]>={
+  AUDIT:[],
   DEVIATION:[DocumentType.DEVIATION_ANNEX_III,DocumentType.DEVIATION_ANNEX_V],
   CAPA:[DocumentType.CAPA_ANNEX_III,DocumentType.CAPA_ANNEX_IV],
   CHANGE_CONTROL:[DocumentType.CHANGE_ANNEX_III,DocumentType.CHANGE_ANNEX_IV,DocumentType.CHANGE_ANNEX_V,DocumentType.CHANGE_ANNEX_VII],

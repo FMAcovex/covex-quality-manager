@@ -11,6 +11,7 @@ const modules = [
   { label: "Controles de cambios", href: "/changes", enabled: true, match: "/changes" },
   { label: "Reclamaciones", href: "/complaints", enabled: true, match: "/complaints" },
   { label: "Devoluciones", href: "/returns", enabled: true, match: "/returns" },
+  { label: "Auditorías", href: "/audits", enabled: true, match: "/audits" },
   { label: "Configuración", href: "/settings", enabled: true, match: "/settings" },
 ];
 

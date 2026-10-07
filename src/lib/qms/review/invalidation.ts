@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 
 const modulePaths = {
+  AUDIT: "/audits",
   DEVIATION: "/deviations", CAPA: "/capa", COMPLAINT: "/complaints",
   RETURN: "/returns", CHANGE_CONTROL: "/changes",
 };
