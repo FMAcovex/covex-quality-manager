@@ -138,3 +138,13 @@ export function formatReviewSnapshot(value: ReviewSnapshotValue): string {
   if (Array.isArray(value)) return value.map(formatReviewSnapshot).join(" · ");
   return JSON.stringify(value, null, 2);
 }
+
+export function formatReviewDateTime(value: string | null): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  // SSR and the browser must render the same text regardless of their local TZ.
+  return `${new Intl.DateTimeFormat("es-ES", {
+    dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
+  }).format(date)} UTC`;
+}

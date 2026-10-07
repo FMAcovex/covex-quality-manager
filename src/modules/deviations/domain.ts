@@ -1,3 +1,16 @@
+export const deviationProvenanceOptions = [
+  { value: "FINISHED_PRODUCT_SYSTEM", label: "Producto terminado / Sistema" },
+  { value: "CLIENT", label: "Cliente" },
+  { value: "RAW_PACKAGING_MATERIAL", label: "Materia prima / Material de acondicionamiento" },
+  { value: "SUPPLIER", label: "Proveedor" },
+  { value: "EQUIPMENT_LINE", label: "Equipo / Línea afectada" },
+  { value: "OTHER", label: "Otros" },
+] as const;
+
+export function deviationProvenanceLabel(value: string | null | undefined): string {
+  return deviationProvenanceOptions.find((option) => option.value === value)?.label ?? (value?.trim() || "—");
+}
+
 export type MeasureShape = {
   immediateActions: unknown[];
   capaPlans: unknown[];

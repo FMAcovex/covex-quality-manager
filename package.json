@@ -60,7 +60,8 @@
     "review-r2b1:smoke": "tsx scripts/smoke-review-comments-r2b1.ts",
     "review-r2b2:smoke": "tsx scripts/smoke-review-comments-r2b2.ts",
     "review-r2b3:smoke": "tsx scripts/smoke-review-comments-r2b3.ts",
-    "review-r2c:smoke": "node --conditions=react-server --import tsx scripts/smoke-review-comments-r2c.ts"
+    "review-r2c:smoke": "node --conditions=react-server --import tsx scripts/smoke-review-comments-r2c.ts",
+    "review-r2c:ui:smoke": "tsx scripts/smoke-review-comments-r2c-ui.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
@@ -77,6 +78,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.5.4",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "playwright": "1.62.1",
     "prisma": "^6.16.2",
     "tsx": "^4.19.2",
     "typescript": "^5.9.2",

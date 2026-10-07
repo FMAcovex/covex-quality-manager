@@ -535,3 +535,4 @@ Reglas:
 - los cinco listados separan Control (`dataQualityStatus`) de Revisión (`ReviewThread`), con conteos pendientes/aceptados y ausencia de alerta para resueltos;
 - filtros compartidos Todas/Pendientes/Aceptadas/Activas/Sin activas mediante relaciones SQL; una sola agregación `groupBy` para las filas visibles, nunca una consulta por fila;
 - Review no se incorpora a anexos ni cambia reglas de estados, cierre, documentos, relaciones o seguimiento de CC1/CC2/CC3.
+- corrección de regresión manual: las fechas de mensajes/aceptación/resolución de Review se formatean en `es-ES` con UTC explícito y visible, para que servidor y navegador hidraten el mismo texto sin depender de su zona local; no se alteran timestamps persistidos ni asociaciones históricas.

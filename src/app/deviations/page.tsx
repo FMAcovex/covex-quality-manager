@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
-import { deadlineLabel, formatDate, measuresLabel } from "@/modules/deviations/domain";
+import { deadlineLabel, deviationProvenanceLabel, formatDate, measuresLabel } from "@/modules/deviations/domain";
 import { getDeviationList } from "@/modules/deviations/queries";
 import { ColumnSelector } from "@/components/column-selector";
 import { deviationColumns } from "@/modules/deviations/column-config";
@@ -92,7 +92,7 @@ export default async function DeviationsPage({
           <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departments.map((d)=>({value:d.id,label:d.code}))} />
           <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierta"},{value:"CLOSED",label:"Cerrada"}]} />
           <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={[{value:"CRITICAL",label:"Crítica"},{value:"MAJOR",label:"Mayor"},{value:"MINOR",label:"Menor"}]} />
-          <MultiSelectFilter name="provenance" label="Procedencia" selected={filters.provenance} options={provenances.map((value)=>({value,label:value}))} />
+          <MultiSelectFilter name="provenance" label="Procedencia" selected={filters.provenance} options={provenances.map((value)=>({value,label:deviationProvenanceLabel(value)}))} />
           <label className="filter-placeholder"><span>Medidas</span><select name="measures" defaultValue={filters.measures ?? ""}><option value="">Todas</option><option value="none">Ninguna</option><option value="immediate">Correctiva inmediata</option><option value="capa">CAPA</option><option value="both">Inmediata + CAPA</option></select></label>
           <label className="filter-placeholder"><span>CAPA</span><select name="capa" defaultValue={filters.capa ?? ""}><option value="">Todas</option><option value="yes">Con CAPA</option><option value="no">Sin CAPA</option></select></label>
           <label className="filter-placeholder"><span>En plazo</span><select name="deadline" defaultValue={filters.deadline ?? ""}><option value="">Todos</option><option value="IN_TIME">Sí</option><option value="OUT_OF_TIME">No</option><option value="NOT_EVALUATED">No evaluado</option><option value="NA">N/A</option></select></label>
@@ -112,6 +112,7 @@ export default async function DeviationsPage({
                 row.qmsRecord.businessCode,
                 row.materialProcessAffected,
                 row.provenance,
+                deviationProvenanceLabel(row.provenance),
                 row.whatHappened,
                 row.rootCause,
                 row.internalObservations,
@@ -159,7 +160,7 @@ export default async function DeviationsPage({
                   <td data-column-key="code"><Link className="summary-link" href={`/deviations/${row.id}`}>{qmsRecordDisplayCode(row.qmsRecord)}</Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                   <td data-column-key="department">{row.departmentCodeSnapshot ?? row.department?.code ?? "—"}</td>
                   <td data-column-key="material" className="table-cell-medium">{row.materialProcessAffected ?? "—"}</td>
-                  <td data-column-key="provenance">{row.provenance ?? "—"}</td>
+                  <td data-column-key="provenance">{deviationProvenanceLabel(row.provenance)}</td>
                   <td data-column-key="description" className="table-cell-wrap">{row.whatHappened ?? "—"}</td>
                   <td data-column-key="classification">{row.classification ? <span className={`badge ${row.classification.toLowerCase()}`}>{row.classification === "CRITICAL" ? "Crítica" : row.classification === "MAJOR" ? "Mayor" : "Menor"}</span> : "—"}</td>
                   <td data-column-key="rootCause" className="table-cell-wrap">{row.rootCause ?? "—"}</td>
