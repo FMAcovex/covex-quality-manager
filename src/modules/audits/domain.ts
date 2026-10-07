@@ -22,7 +22,16 @@ export function compatibleAuditScenario(type: AuditType | null, scenario: AuditS
 export function hasAuditBusinessSeries(scenario: AuditScenario | null) {
   return scenario === "INTERNAL_COVEX" || scenario === "INTERNAL_CONTRACTED" || scenario === "SUPPLIER";
 }
-export function auditSituation(audit: { status: AuditStatus; performedDate: Date | string | null; findings?: (FindingState & {isActive:boolean})[]; followups?: unknown[] }) { return auditFollowupSituation(audit); }
+export function auditSituation(audit: { status: AuditStatus; performedDate: Date | string | null; findings?: (FindingState & {isActive:boolean})[]; followups?: unknown[]; reportIssued?: boolean; capaPlanEstablishedAt?: Date | string | null; reportSentAt?: Date | string | null; scenario?: AuditScenario | null }) {
+  if (audit.status === "CLOSED") return "Cerrada";
+  if (audit.reportIssued) {
+    if (audit.scenario === "SUPPLIER" ? audit.reportSentAt : audit.scenario?.startsWith("INTERNAL") && audit.capaPlanEstablishedAt) return "Cierre parcial";
+    if (audit.findings?.some(f=>f.isActive && f.actions.some(a=>a.isActive && !["CLOSED","NOT_APPLICABLE"].includes(a.status))) || audit.followups?.length) return "En seguimiento";
+    return "Informe emitido";
+  }
+  if (audit.reportIssued === false) return audit.status === "DRAFT" ? "Borrador" : audit.performedDate ? "Realizada · informe pendiente" : "Planificada";
+  return auditFollowupSituation(audit);
+}
 export function auditDate(value: Date | string | null | undefined) {
   return value ? new Intl.DateTimeFormat("es-ES", { timeZone: "UTC" }).format(new Date(value)) : "—";
 }

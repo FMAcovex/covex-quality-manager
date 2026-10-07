@@ -72,7 +72,7 @@ export function AuditForm({ id, defaults, departments }: { id?: string; defaults
       <label className="field"><span>Control / calidad del dato</span><select name="dataQualityStatus" value={values.dataQualityStatus ?? "INCOMPLETE"} onChange={e => setValues(v => ({...v, dataQualityStatus:e.target.value}))}>{Object.entries(auditQualityLabels).map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
       <label className="field" data-field="actor"><span>Realizado por</span><input name="actor" value={values.actor ?? "Usuario demo"} onChange={e => setValues(v => ({...v, actor:e.target.value}))}/>{error("actor")}</label>{text("changeReason", "Motivo del cambio")}
     </div></section>
-    <p className="muted-note">El cierre definitivo se habilitará cuando estén disponibles hallazgos, informe y seguimiento en R3B/R3C.</p>
+    <p className="muted-note">El cierre definitivo se confirma desde Informe y cierre, según los hallazgos, las acciones y la verificación del expediente.</p>
     <div className="heading-actions"><button className="button primary" disabled={pending}>{pending ? "Guardando…" : "Guardar auditoría"}</button><Link className="button" href={id ? `/audits/${id}` : "/audits"}>Cancelar</Link></div>
   </form>;
 }

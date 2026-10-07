@@ -2419,3 +2419,7 @@ button[disabled] {
 .audit-detail-workspace .tabs { overflow-x: auto; max-width: 100%; min-width: 0; }
 .audit-detail-workspace .tab { flex-shrink: 0; }
 .audit-detail-workspace .relation-card, .audit-followup-timeline .card { min-width: 0; overflow-wrap: anywhere; }
+
+/* Audit archives can have long immutable UUID/code-based filenames. */
+.audit-detail-workspace .card { min-width: 0; overflow-wrap: anywhere; }
+.audit-detail-workspace .card a { overflow-wrap: anywhere; }

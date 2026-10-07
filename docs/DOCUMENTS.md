@@ -208,3 +208,9 @@ SHA-256 auditado del PNT fuente:
 `191c0e838f06d465bd820450b9130e1209c14fc9cb97559e8ec567819ba07f9a`.
 
 Los binarios controlados no se versionan en Git. Se instalan localmente y el hash se verifica antes de cualquier generación.
+
+## Auditorías R3C — anexos controlados
+
+Fuentes reales y hashes en AUDITS_R3C.md/GMP_SOURCES.md. A3.03 interno, A3 externo V04, A4.03 CAPA PLAN.xlsx y Anexo IV extraído del PNT externo GC-00.034.04. Sin borrador/obsoletos ni plantilla independiente inventada. Paquete OOXML/estilos/textos fijos/hojas/firmas preservados; tablas se amplían con los datos estructurados.
+
+Versiones formales generan solo desde su snapshot/plantilla fijada y conservan bytes/checksum; plan actual se archiva separado. Documento primario CLIENT/AUTHORITY es recibido. PDF firmado externo por QmsRecordVersion exacta, sin sobreescritura ni firma electrónica. Instalación de binarios oficiales excluidos de Git mediante templates:audits:install; QA manual de formato en Office antes del uso documental controlado.

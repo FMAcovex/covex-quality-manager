@@ -204,3 +204,9 @@ R3A: expediente base, planificación, áreas, participantes, códigos AI/AE, lis
 ## R3B — hallazgos, CAPA Plan y seguimiento
 
 Implementación sobre R3A fusionado en main 27c8270: hallazgos/recomendaciones, criticidad, acciones locales, atribuciones a relaciones QMS y seguimiento. R3C conserva documentos/informe oficial, versionado por emisión/revisión, firmado/adjuntos, Review y cierre definitivo. Plan Maestro anual/alertas automáticas posteriores. Ver D-065 y docs/AUDITS_R3B.md.
+
+## R3C — Auditorías: documentos, versiones, Review y cierre
+
+Implementado sobre main R3A/R3B: informes por plantilla controlada, CAPA Plan, Plan externo real, recepción de documentos, snapshots 00/01+, PDF exacto, Review transversal y cierre por escenario con excepción proveedor. Validación técnica/CI y alcance en AUDITS_R3C.md; PR abierta para revisión, sin merge automático.
+
+Bloques posteriores: Plan Maestro anual y alertas; fuera del cierre funcional R3C. Revisión manual de Calidad sobre formato/uso de documentos antes de producción controlada.

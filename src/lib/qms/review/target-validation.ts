@@ -8,7 +8,10 @@ import { complaintReviewTargets, complaintCapaPlanReviewTarget } from "@/lib/qms
 import { returnReviewTargets, returnProductReviewTarget, returnFollowupReviewTarget } from "@/lib/qms/review/targets/returns";
 import { changeControlReviewTargets, changeControlTaskReviewTarget, changeControlFollowupReviewTarget } from "@/lib/qms/review/targets/change-control";
 
+import { auditReviewTargets, auditFindingReviewTarget, auditActionReviewTarget, auditFollowupReviewTarget } from "./targets/audits";
+
 const catalogs = {
+  AUDIT: Object.values(auditReviewTargets),
   DEVIATION: Object.values(deviationReviewTargets),
   CAPA: Object.values(capaReviewTargets),
   COMPLAINT: Object.values(complaintReviewTargets),
@@ -17,6 +20,7 @@ const catalogs = {
 };
 
 const dynamicTargets = [
+  auditFindingReviewTarget, auditActionReviewTarget, auditFollowupReviewTarget,
   deviationImmediateActionReviewTarget, deviationCapaPlanReviewTarget,
   capaPlannedActionReviewTarget, capaActionFollowupReviewTarget,
   complaintCapaPlanReviewTarget, returnProductReviewTarget, returnFollowupReviewTarget,
@@ -52,6 +56,9 @@ export async function validateCatalogReviewTarget(input: CreateReviewThreadInput
   const qmsRecordId = input.qmsRecordId;
   let belongs = false;
   switch (input.targetEntityType) {
+    case "AuditFinding": belongs = Boolean(await prisma.auditFinding.findFirst({where:{id,audit:{qmsRecordId}},select:{id:true}})); break;
+    case "AuditFindingAction": belongs = Boolean(await prisma.auditFindingAction.findFirst({where:{id,finding:{audit:{qmsRecordId}}},select:{id:true}})); break;
+    case "AuditFollowup": belongs = Boolean(await prisma.auditFollowup.findFirst({where:{id,audit:{qmsRecordId}},select:{id:true}})); break;
     case "DeviationImmediateAction":
       belongs = Boolean(await prisma.deviationImmediateAction.findFirst({ where: { id, deviation: { qmsRecordId } }, select: { id: true } })); break;
     case "DeviationCapaPlan":

@@ -481,3 +481,9 @@ Las operaciones transversales crean eventos ligeros en `ChangeHistory` para alta
 ## Auditorías R3B
 
 AuditFinding: UUID, FK Audit, referencia única por auditoría, naturaleza AuditFindingType, criticidad AuditFindingCriticality, contenido/criterio/evidencia, tratamiento y AuditActionStatus para tratamiento sin acciones, cierre DATE, orden y retirada con autor/motivo/fecha. AuditFindingAction: UUID y FK hallazgo, múltiples acciones con responsable, objetivo/cierre DATE, AuditActionStatus, evidencia/referencia/verificación y retirada lógica. AuditFollowup: UUID, Audit y hallazgo opcional propio, fechas DATE, responsable, descripción, próxima revisión/evidencia. AuditFindingRelation: UUID y FKs reales a hallazgo/QmsRelation, unicidad del par, activación/retirada trazable. Detalle e índices en schema y docs/AUDITS_R3B.md. No se modifica estructura base R3A ni se añaden versiones de informe.
+
+## Auditorías R3C
+
+Campos mínimos Audit de informe/conclusión/programa/firmas manuales, Plan externo, fechas de hechos parciales/respuestas y decisión QA/excepción proveedor. AuditFindingAction reutiliza CapaEffectivenessStatus para verificación local más verifiedAt/verifiedBy. GeneratedDocument incorpora bytes opcionales, nombre/MIME; tipos AUDIT_INTERNAL_REPORT, AUDIT_EXTERNAL_REPORT, AUDIT_CAPA_PLAN, AUDIT_EXTERNAL_PLAN y recibido/respuesta/evidencia. No se añaden modelos.
+
+QmsRecordVersion INITIAL/AUDIT_REVISION con snapshot completo congelado; TemplateVersion UUID/hash en snapshot y documento. RecordVersionDocument SIGNED_PDF reutilizado. ReviewThread versionId/targets persistentes sin duplicar infraestructura. Migración aditiva 20261007000300_audits_r3c sobre R3B; detalles y compatibilidad en AUDITS_R3C.md.

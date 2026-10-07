@@ -57,7 +57,8 @@ export async function saveAuditFindingAction(auditId: string, findingId: string,
     const before = actionId ? await tx.auditFindingAction.findUnique({ where: { id: actionId } }) : null;
     if (actionId && (!before || before.findingId !== findingId || !before.isActive)) throw new Error("La acción no pertenece al hallazgo activo.");
     if (before) checkRevision(before, v.expectedUpdatedAt);
-    const data = { description: v.description, responsible: nullable(v.responsible), targetDate: day(v.targetDate), status: v.status, closedAt: day(v.closedAt), evidence: nullable(v.evidence), evidenceReference: nullable(v.evidenceReference), verificationComment: nullable(v.verificationComment), sortOrder: v.sortOrder, updatedByText: v.actor };
+    if (v.verificationResult && v.verificationResult !== "PENDING" && (!v.verifiedAt || !v.verifiedBy || (!v.evidence && !v.evidenceReference && !v.verificationComment))) throw new Error("La verificación requiere fecha, responsable y evidencia/justificación.");
+    const data = { ...(v.verificationResult ? { verificationResult: v.verificationResult, verifiedAt: day(v.verifiedAt ?? ""), verifiedBy: nullable(v.verifiedBy ?? "") } : {}), description: v.description, responsible: nullable(v.responsible), targetDate: day(v.targetDate), status: v.status, closedAt: day(v.closedAt), evidence: nullable(v.evidence), evidenceReference: nullable(v.evidenceReference), verificationComment: nullable(v.verificationComment), sortOrder: v.sortOrder, updatedByText: v.actor };
     const after = before ? await tx.auditFindingAction.update({ where: { id: before.id }, data }) : await tx.auditFindingAction.create({ data: { ...data, findingId, createdByText: v.actor } });
     await event(tx, audit.qmsRecordId, v.actor, `audit.actions.${after.id}`, before ? valuesOnly(before) : null, valuesOnly(after), v.changeReason || "Alta / edición / cierre / reapertura de acción");
     return after;

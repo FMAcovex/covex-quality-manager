@@ -12,6 +12,10 @@ export type TemplateAssetSummary = {
 };
 
 export const requiredControlledTemplates = [
+  {module:QmsRecordType.AUDIT,documentType:DocumentType.AUDIT_INTERNAL_REPORT,versionCode:"03",label:"Auditorías · Informe interno"},
+  {module:QmsRecordType.AUDIT,documentType:DocumentType.AUDIT_CAPA_PLAN,versionCode:"03",label:"Auditorías · CAPA Plan"},
+  {module:QmsRecordType.AUDIT,documentType:DocumentType.AUDIT_EXTERNAL_REPORT,versionCode:"04",label:"Auditorías · Informe externo"},
+  {module:QmsRecordType.AUDIT,documentType:DocumentType.AUDIT_EXTERNAL_PLAN,versionCode:"04",label:"Auditorías · Plan externo (PNT fuente)"},
   { module: QmsRecordType.DEVIATION, documentType: DocumentType.DEVIATION_ANNEX_III, versionCode: "06", label: "Desviaciones · Anexo III" },
   { module: QmsRecordType.DEVIATION, documentType: DocumentType.DEVIATION_ANNEX_V, versionCode: "06", label: "Desviaciones · Anexo V" },
   { module: QmsRecordType.CAPA, documentType: DocumentType.CAPA_ANNEX_III, versionCode: "05", label: "CAPA · Anexo III" },

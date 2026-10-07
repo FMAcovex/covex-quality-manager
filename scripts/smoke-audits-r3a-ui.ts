@@ -50,7 +50,7 @@ async function main() {
     const opened = await prisma.audit.findUniqueOrThrow({where:{id:audit.id},include:{qmsRecord:true,participants:true,departments:true}});
     assert.match(opened.qmsRecord.businessCode!,/^AI\/GC-00\/\d{2}\/2096$/);
     assert(await page.getByRole("button",{name:"Cerrar auditoría",exact:true}).isDisabled());
-    assert.equal(await page.getByRole("link",{name:"Revisión",exact:true}).count(),0);
+    assert.equal(await page.getByRole("link",{name:"Revisión",exact:true}).count(),1);
     await navigate(page,`${base}/qms/${opened.qmsRecordId}`); await page.waitForURL(new RegExp(`/audits/${audit.id}$`));
     for (const width of [1440,768,390]) {
       await page.setViewportSize({width,height:1000});

@@ -73,3 +73,9 @@ Fuentes funcionales declaradas y aprobadas por el usuario: GC-00/033/03 Auditor�
 ## Fuentes funcionales de R3B
 
 Se implementan los datos de hallazgos y CAPA Plan, atribuciones y seguimiento expresamente aprobados en la solicitud de R3B, tomando GC-00/033/03 (10/04/2026) y GC-00/034/04 (08/06/2026) como referencias declaradas. No se instalan ni verifican binarios oficiales, se generan anexos o se inventan plazos por criticidad, reglas de eficacia o cierre GMP. La incorporación documental queda para R3C.
+
+## Fuentes de Auditorías verificadas para R3C
+
+El 07/10/2026 se recuperaron y leyeron los binarios vigentes de SharePoint autorizados por el usuario: GC-00.033.03 Auditorías internas.docx, A3.03 INFORME AUDITORIA INTERNA.docx, A4.03 CAPA PLAN.xlsx, GC-00.034.04 Auditorías externas.docx y A3. INFORME AUDITORIA_V04.docx. Hashes, enlaces y vigencias en AUDITS_R3C.md. Esto completa la recepción pendiente en R3A/R3B.
+
+No se usó BORRADOR_Anexo_IV_CAPA_Auditorias_COVEX.xlsx ni OBSOLETOS. Plan externo: estructura real Anexo IV incorporada en GC-00.034.04; no binario independiente vigente identificado. Reglas de cierre D-066; sin nuevos plazos automáticos, firma electrónica ni validación GMP declarada.
