@@ -11,7 +11,7 @@ async function main() {
   if (!base || process.env.APP_ENV !== "test") throw new Error("Define APP_ENV=test y R3A_UI_BASE_URL para servidor y BD aislados.");
   const browser = await chromium.launch({executablePath:process.env.R3A_UI_CHROMIUM_PATH || undefined,args:["--no-sandbox"]});
   const page = await browser.newPage({viewport:{width:1440,height:1000},timezoneId:"Europe/Madrid"}), errors:string[]=[];
-  page.on("pageerror",error=>errors.push(error.message));
+  // GitHub Actions can take more than Playwright\'s 30 s navigation default while a Server Action persists and redirects.\n  // Keep all assertions unchanged; only give the existing navigation checks enough headroom on a cold CI runner.\n  page.setDefaultTimeout(60_000);\n  page.setDefaultNavigationTimeout(90_000);\n  page.on("pageerror",error=>errors.push(error.message));
   page.on("console", message => { if (message.type() === "error" && /hydrat|server rendered/i.test(message.text())) errors.push(message.text()); });
   try {
     await navigate(page,`${base}/audits/new`);
