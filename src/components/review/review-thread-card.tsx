@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { navigateToReviewTarget } from "@/lib/qms/review/navigation";
 import {
   formatReviewSnapshot,
+  formatReviewDateTime,
   reviewStatusLabel,
   reviewTargetHref,
   reviewThreadCapabilities,
@@ -16,11 +17,6 @@ import {
 } from "@/components/review/review-forms";
 import { useReviewWorkspace } from "@/components/review/review-context";
 
-const dateTime = (value: string | null) =>
-  value
-    ? new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value))
-    : "—";
-
 export function ReviewThreadCard({
   thread,
   showGoToField = false,
@@ -32,6 +28,7 @@ export function ReviewThreadCard({
     basePath,
     targetForThread,
     openThread,
+    closeDrawer,
     versionLabelMode,
     showVersionContext,
   } = useReviewWorkspace();
@@ -54,12 +51,17 @@ export function ReviewThreadCard({
       </header>
       <div className="review-snapshot"><span>Valor revisado</span><pre>{formatReviewSnapshot(thread.valueSnapshot)}</pre></div>
       <div className="review-conversation">
-        {thread.messages.map((message) => <div className="review-message" key={message.id}><p>{message.message}</p><small>{message.createdByText} · {dateTime(message.createdAt)}</small></div>)}
+        {thread.messages.map((message) => <div className="review-message" key={message.id}><p>{message.message}</p><small>{message.createdByText} · {formatReviewDateTime(message.createdAt)}</small></div>)}
       </div>
-      {thread.acceptedAt ? <p className="review-state-meta"><strong>Aceptada:</strong> {thread.acceptedByText} · {dateTime(thread.acceptedAt)}</p> : null}
-      {thread.resolvedAt ? <p className="review-state-meta"><strong>Resuelta:</strong> {thread.resolvedByText} · {dateTime(thread.resolvedAt)}{thread.resolutionNote ? ` · ${thread.resolutionNote}` : ""}</p> : null}
-      {showGoToField && target ? <Link className="button small" href={reviewTargetHref(basePath, target, thread.id)}>Ir al campo</Link> : null}
-      {!showGoToField ? <button className="review-thread-focus" type="button" onClick={() => openThread(thread.id)}>Ver hilo</button> : null}
+      {thread.acceptedAt ? <p className="review-state-meta"><strong>Aceptada:</strong> {thread.acceptedByText} · {formatReviewDateTime(thread.acceptedAt)}</p> : null}
+      {thread.resolvedAt ? <p className="review-state-meta"><strong>Resuelta:</strong> {thread.resolvedByText} · {formatReviewDateTime(thread.resolvedAt)}{thread.resolutionNote ? ` · ${thread.resolutionNote}` : ""}</p> : null}
+      {target ? <a className="button small" href={reviewTargetHref(basePath, target, thread.id)} onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        event.preventDefault();
+        closeDrawer();
+        navigateToReviewTarget(reviewTargetHref(basePath, target, thread.id), target.anchorId);
+      }}>Ir al campo</a> : null}
+      {showGoToField ? <button className="review-thread-focus" type="button" onClick={() => openThread(thread.id)}>Ver hilo</button> : null}
       {!capabilities.readOnly ? <div className="review-thread-actions">
         {capabilities.canReply ? <ReviewReplyForm reviewThreadId={thread.id} /> : null}
         <div className="review-state-actions">

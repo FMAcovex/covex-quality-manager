@@ -938,3 +938,36 @@ Estado: **IMPLEMENTADO EN RAMA `feature/change-control-cc2-expedient-tabs-ux`; P
 - Documentos agrupado en anexos generables, documentos por seguimiento y generaciones registradas, conservando las acciones existentes;
 - pestañas Seguimiento, Relaciones e Historial preservadas funcionalmente;
 - sin cambios Prisma, estados, validaciones, formularios, seguimientos, Anexo V, backend documental ni revisión R2C.
+
+## R2C — Review Control de Cambios, listados y regresión transversal
+Estado: **IMPLEMENTADO EN RAMA `feature/review-comments-r2c-change-control-regression`; PENDIENTE DE REVISIÓN MANUAL DE PR**.
+
+Base: `main` con CC3 fusionado en `7a9b780`. El trabajo anterior sin confirmar se conserva en su worktree original.
+
+- Control de Cambios reutiliza Modo revisión, marcadores, drawer, conversaciones, resumen y pestaña Revisión; 31 objetivos estáticos, filas lógicas 2.a y elementos dinámicos por UUID.
+- Los seguimientos incluyen apertura 00 y acciones/evidencias en su snapshot observado. Los hilos históricos conservan `QmsRecordVersion` y valor; Devoluciones sigue sin versión funcional de Review.
+- Navegación transversal con pestaña correcta, scroll/foco, resaltado de tres segundos e «Ir al campo» desde listado y drawer. Los enlaces a hilo sin anchor abren el drawer.
+- Columna Revisión independiente de Control en los cinco módulos; PENDING y ACCEPTED diferenciados, RESOLVED neutro. Cinco filtros compartidos y una agregación de conteos por listado.
+- Backend endurecido frente a objetivos manipulados, entidades/hilos ajenos, versiones ajenas/no vigentes y mensajes sobre hilos cerrados, también ante resolución concurrente.
+- Sin cambios Prisma/migraciones ni en los servicios funcionales CC1/CC2/CC3. Ajuste de fixture CAPA para mantener su contrato de exportación tipado.
+- `pnpm quality`: Prisma validate/generate, lint, 228 tests en 60 archivos y build correctos. Permanecen dos advertencias preexistentes de hooks en formularios CAPA/Control de Cambios.
+- Todos los smokes de CI pasan en PostgreSQL 16 aislado, incluido `review-r2c:smoke`: cinco consultas reales de listado, ciclos de revisión, filtros, nueve tipos dinámicos, seguridad y Control de Cambios 00→01.
+- El smoke nuevo se incorpora a CI. `server-only` se declara explícitamente para probar las consultas de servidor con la condición `react-server` fuera de Next.
+- Corregida una regresión visual encontrada en navegador: las Server Actions invalidan detalle/listado en su respuesta, sin un segundo `router.refresh()` dentro de la transición que podía dejar el drawer pendiente con datos antiguos.
+- Las acciones devuelven los hilos persistidos usando la query transversal existente; el provider los incorpora directamente y los formularios controlan su estado pendiente, evitando depender del refresco RSC para continuar una conversación.
+- Chromium: Desviaciones, CAPA, Reclamaciones, Devoluciones y Control de Cambios pasan creación/respuesta/aceptación/resolución/nueva observación, enlace directo a hilo, «Ir al campo» desde drawer, highlight temporal y navegación desde listado, en 1440/768/390 px, sin errores de página JavaScript.
+- Comprobados además Solicitud/Dictamen/2.a/tareas/Seguimiento 00 de CC y creación de un seguimiento posterior mediante su formulario real: el nuevo comentario usa la versión vigente y los históricos conservan su asociación. El caso exacto 00→01 también pasa en el smoke aislado.
+- Ajustados filtros móviles y ancho mínimo del timeline para que las tablas tengan scroll local sin desbordar el documento. Los enlaces de indicador/campo cargan su destino completo; el enlace a hilo sin pestaña respeta la pestaña inicial real de cada módulo.
+- Limitación local ajena a las acciones Review: el formulario funcional de nuevo seguimiento de CC persistió correctamente, pero su redirección a la misma URL dejó una vista vacía en una ejecución; la recarga mostró el seguimiento. Ese formulario/servicio no se modifica en R2C: comprobar su redirección en Codespace.
+
+Validación manual focalizada de la PR: comprobar visualmente 2.a/Plan/Seguimientos, comparar Control y Revisión, probar recarga/enlaces históricos 00/01 y verificar anexos/PDF oficiales en el entorno con sus plantillas controladas. Los smokes locales no sustituyen la aprobación manual ni constituyen validación GMP.
+
+### Correcciones tras la primera regresión manual — misma PR #97
+
+- Procedencia de Desviaciones: el listado y el filtro mostraban directamente el valor almacenado. `deviationProvenanceOptions`/`deviationProvenanceLabel` centralizan las seis etiquetas españolas en el dominio y se reutilizan en formulario/listado/filtro; los valores persistidos y del filtro siguen siendo los internos, y el texto histórico libre se conserva.
+- CAPA: reproducido el error de hidratación con un comentario ya persistido y navegador `Europe/Madrid` frente a servidor UTC. La traza mostraba `09:21` en servidor frente a `11:21` en cliente. No era corrupción del target, versión o snapshot. El formateo común de mensajes/aceptación/resolución usa ahora UTC explícito y visible, con fallback seguro para fechas no válidas.
+- Control de Cambios: reproducido 00→crear 01→comentario en 01→«Ir al campo» y recarga. El UUID, anchor y deep link eran correctos; el drawer hidrataba la conversación con la misma discrepancia horaria. La corrección compartida elimina el error sin cambiar identidad, navegación ni versionado.
+- No se modifican seed, schema, migraciones ni servicios funcionales. No se borran, reasocian o migran comentarios históricos para corregir estos errores.
+- Se añaden siete casos de labels y tres de fechas (238 tests unitarios en total), y `pnpm review-r2c:ui:smoke` con fixtures propios: CAPA con comentario histórico/target ausente, CC 00→01→02, enlaces desde drawer/listado, recarga, scroll/foco/highlight y conservación de versiones/snapshots. Este smoke de Chromium se integra en CI después de quality.
+- Ejecución local UI: `APP_ENV=test R2C_UI_BASE_URL=http://127.0.0.1:3002 R2C_UI_CHROMIUM_PATH=/usr/bin/chromium pnpm review-r2c:ui:smoke`, con servidor y DATABASE_URL apuntando a la misma base aislada. Sin navegador local, instalar primero `pnpm exec playwright install chromium`.
+- Verificación: 25 tests afectados correctos; suite completa 238 tests/60 archivos, Prisma, lint y build correctos; smoke PostgreSQL R2C y nuevo smoke Chromium completos, sin errores JavaScript/hidratación en cliente Madrid. Permanecen únicamente los dos warnings de hooks preexistentes. La PR #97 queda abierta para segunda comprobación manual.

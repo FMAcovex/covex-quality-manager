@@ -1,5 +1,6 @@
 "use client";
 import { deviationVersionLabel } from "@/modules/deviations/version-mode";
+import { deviationProvenanceOptions } from "@/modules/deviations/domain";
 
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
@@ -310,14 +311,7 @@ export function DeviationForm({
         <h2>A. Origen</h2>
         <p className="section-help">Selecciona, si corresponde, un único origen principal. Solo se muestran los campos asociados al origen elegido.</p>
         <div className="origin-selector" role="radiogroup" aria-label="Origen principal de la desviación">
-          {[
-            ["FINISHED_PRODUCT_SYSTEM", "Producto terminado / Sistema"],
-            ["CLIENT", "Cliente"],
-            ["RAW_PACKAGING_MATERIAL", "Materia prima / Material de acondicionamiento"],
-            ["SUPPLIER", "Proveedor"],
-            ["EQUIPMENT_LINE", "Equipo / Línea afectada"],
-            ["OTHER", "Otros"],
-          ].map(([value, label]) => (
+          {deviationProvenanceOptions.map(({value, label}) => (
             <label key={value} className={`origin-option ${origin === value ? "selected" : ""}`}>
               <input
                 type="radio"

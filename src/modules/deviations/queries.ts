@@ -1,9 +1,12 @@
+import { reviewListWhere } from "@/lib/qms/review/list-domain";
+import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 
 export type DeviationListFilters = {
+  review?: string;
   q?: string;
   administrative?: string;
   year?: string[];
@@ -18,6 +21,8 @@ export type DeviationListFilters = {
 
 export async function getDeviationList(filters: DeviationListFilters) {
   const and: Prisma.DeviationWhereInput[] = [];
+  const reviewWhere = reviewListWhere(filters.review);
+  if (reviewWhere) and.push({ qmsRecord: reviewWhere });
 
   if (filters.administrative === "ANNULLED") {
     and.push({ qmsRecord: { isActive: false } });
@@ -147,7 +152,7 @@ export async function getDeviationList(filters: DeviationListFilters) {
     ]);
 
   return {
-    rows,
+    rows: await withActiveReviewCounts(rows),
     departments,
     years: yearRows.map((row) => row.year).filter((value): value is number => value !== null),
     provenances: provenanceRows

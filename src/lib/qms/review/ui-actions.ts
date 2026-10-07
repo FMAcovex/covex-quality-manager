@@ -4,6 +4,8 @@ import {
   createCurrentVersionReviewThread,
   type CreateCurrentVersionReviewThreadInput,
 } from "@/lib/qms/review/current-version-service";
+import { getReviewThreadsForDisplay } from "@/lib/qms/review/ui-queries";
+import { invalidateReviewRecord } from "@/lib/qms/review/invalidation";
 import { ReviewThreadError } from "@/lib/qms/review/service";
 import type { ReviewActionState } from "@/lib/qms/review/types";
 
@@ -12,7 +14,9 @@ export async function createCurrentVersionReviewThreadAction(
 ): Promise<ReviewActionState> {
   try {
     const thread = await createCurrentVersionReviewThread(input);
+    await invalidateReviewRecord(input.qmsRecordId);
     return {
+      threads: await getReviewThreadsForDisplay(input.qmsRecordId),
       error: null,
       success: "Observación creada.",
       reviewThreadId: thread.id,

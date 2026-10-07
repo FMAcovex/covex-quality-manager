@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import {
   acceptReviewThreadAction,
   createReviewThreadAction,
@@ -10,6 +10,17 @@ import {
 import { createCurrentVersionReviewThreadAction } from "@/lib/qms/review/ui-actions";
 import type { ReviewTargetInstance } from "@/lib/qms/review/targets/types";
 import { useReviewWorkspace } from "@/components/review/review-context";
+
+function useReviewMutation(setError: (message: string | null) => void) {
+  const [pending, setPending] = useState(false);
+  async function runMutation(operation: () => Promise<void>) {
+    setPending(true);
+    try { await operation(); }
+    catch { setError("No se ha podido completar la revisión. Vuelve a intentarlo."); }
+    finally { setPending(false); }
+  }
+  return [pending, runMutation] as const;
+}
 
 function ActionFeedback({ error }: { error: string | null }) {
   return error ? <p className="review-action-error" role="alert">{error}</p> : null;
@@ -24,10 +35,10 @@ export function ReviewCreateForm({ target }: { target: ReviewTargetInstance }) {
   } = useReviewWorkspace();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, runMutation] = useReviewMutation(setError);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    startTransition(async () => {
+    void runMutation(async () => {
       const input = {
         qmsRecordId,
         targetKind: target.targetKind,
@@ -48,7 +59,7 @@ export function ReviewCreateForm({ target }: { target: ReviewTargetInstance }) {
       setError(result.error);
       if (!result.error) {
         setMessage("");
-        refresh(result.reviewThreadId);
+        refresh(result.reviewThreadId, result.threads);
       }
     });
   }
@@ -67,14 +78,15 @@ export function ReviewCreateForm({ target }: { target: ReviewTargetInstance }) {
 }
 
 export function ReviewReplyForm({ reviewThreadId }: { reviewThreadId: string }) {
-  const { defaultActor, refresh } = useReviewWorkspace();
+  const { qmsRecordId, defaultActor, refresh } = useReviewWorkspace();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, runMutation] = useReviewMutation(setError);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    startTransition(async () => {
+    void runMutation(async () => {
       const result = await replyToReviewThreadAction({
+        qmsRecordId,
         reviewThreadId,
         message,
         createdByText: defaultActor,
@@ -82,7 +94,7 @@ export function ReviewReplyForm({ reviewThreadId }: { reviewThreadId: string }) 
       setError(result.error);
       if (!result.error) {
         setMessage("");
-        refresh(reviewThreadId);
+        refresh(reviewThreadId, result.threads);
       }
     });
   }
@@ -101,31 +113,32 @@ export function ReviewReplyForm({ reviewThreadId }: { reviewThreadId: string }) 
 }
 
 export function ReviewAcceptButton({ reviewThreadId }: { reviewThreadId: string }) {
-  const { defaultActor, refresh } = useReviewWorkspace();
+  const { qmsRecordId, defaultActor, refresh } = useReviewWorkspace();
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  return <div><button className="button small" type="button" disabled={pending} onClick={() => startTransition(async () => {
-    const result = await acceptReviewThreadAction({ reviewThreadId, acceptedByText: defaultActor });
+  const [pending, runMutation] = useReviewMutation(setError);
+  return <div><button className="button small" type="button" disabled={pending} onClick={() => void runMutation(async () => {
+    const result = await acceptReviewThreadAction({ qmsRecordId, reviewThreadId, acceptedByText: defaultActor });
     setError(result.error);
-    if (!result.error) refresh(reviewThreadId);
+    if (!result.error) refresh(reviewThreadId, result.threads);
   })}>{pending ? "Aceptando…" : "Aceptar observación"}</button><ActionFeedback error={error} /></div>;
 }
 
 export function ReviewResolveForm({ reviewThreadId }: { reviewThreadId: string }) {
-  const { defaultActor, refresh } = useReviewWorkspace();
+  const { qmsRecordId, defaultActor, refresh } = useReviewWorkspace();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, runMutation] = useReviewMutation(setError);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    startTransition(async () => {
+    void runMutation(async () => {
       const result = await resolveReviewThreadAction({
+        qmsRecordId,
         reviewThreadId,
         resolvedByText: defaultActor,
         resolutionNote: note,
       });
       setError(result.error);
-      if (!result.error) refresh(reviewThreadId);
+      if (!result.error) refresh(reviewThreadId, result.threads);
     });
   }
   return <form className="review-resolve-form" onSubmit={submit}><input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Nota de resolución (opcional)"/><button className="button primary small" type="submit" disabled={pending}>{pending ? "Resolviendo…" : "Resolver"}</button><ActionFeedback error={error}/></form>;

@@ -103,7 +103,7 @@ export function reviewVersionLabel(
 ) {
   if (sequence === null) return "Sin versión";
   const number = String(sequence).padStart(2, "0");
-  return mode === "FOLLOWUP" ? `Seguimiento ${number}` : `V${number}`;
+  return mode === "FOLLOWUP" ? `Seguimiento ${number}${sequence === 0 ? " · Apertura" : ""}` : `V${number}`;
 }
 
 export function reviewThreadContextLabel({
@@ -137,4 +137,14 @@ export function formatReviewSnapshot(value: ReviewSnapshotValue): string {
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (Array.isArray(value)) return value.map(formatReviewSnapshot).join(" · ");
   return JSON.stringify(value, null, 2);
+}
+
+export function formatReviewDateTime(value: string | null): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  // SSR and the browser must render the same text regardless of their local TZ.
+  return `${new Intl.DateTimeFormat("es-ES", {
+    dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
+  }).format(date)} UTC`;
 }

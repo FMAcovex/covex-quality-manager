@@ -197,29 +197,23 @@ export async function replyToReviewThread(input: ReplyToReviewThreadInput) {
   );
   const message = requiredText(input.message, "La respuesta no puede estar vacía.");
 
-  const thread = await prisma.reviewThread.findUnique({
-    where: { id: reviewThreadId },
-    select: { id: true, status: true },
-  });
-  if (!thread) {
-    throw new ReviewThreadError(
-      "REVIEW_THREAD_NOT_FOUND",
-      "El hilo de revisión no existe.",
-    );
-  }
-  if (thread.status === ReviewThreadStatus.RESOLVED) {
-    throw new ReviewThreadError(
-      "INVALID_STATUS_TRANSITION",
-      "Un hilo resuelto está cerrado y no admite nuevas respuestas.",
-    );
-  }
-
-  return prisma.reviewMessage.create({
-    data: {
-      reviewThreadId,
-      message,
-      createdByText: reviewActor(input.createdByText),
-    },
+  return prisma.$transaction(async (tx) => {
+    // The guarded update locks the row until the reply is stored, serializing
+    // replies with resolution without allowing a message after closure.
+    const active = await tx.reviewThread.updateMany({
+      where: { id: reviewThreadId, status: { in: ["PENDING", "ACCEPTED"] } },
+      data: { updatedAt: new Date() },
+    });
+    if (!active.count) {
+      const exists = await tx.reviewThread.findUnique({ where: { id: reviewThreadId }, select: { id: true } });
+      throw new ReviewThreadError(
+        exists ? "INVALID_STATUS_TRANSITION" : "REVIEW_THREAD_NOT_FOUND",
+        exists ? "Un hilo resuelto está cerrado y no admite nuevas respuestas." : "El hilo de revisión no existe.",
+      );
+    }
+    return tx.reviewMessage.create({
+      data: { reviewThreadId, message, createdByText: reviewActor(input.createdByText) },
+    });
   });
 }
 

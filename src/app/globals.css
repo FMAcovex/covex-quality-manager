@@ -2106,11 +2106,22 @@ button[disabled] {
   justify-content: space-between;
   gap: 10px;
 }
-.review-target:target,
-.review-mode-active .review-target:target {
+.review-mode-active .review-target-highlight {
   outline: 3px solid #efb735;
   outline-offset: 4px;
   background-color: #fffaf0;
+}
+.review-target-heading, .review-target > dt { flex-wrap: wrap; }
+.review-list-indicator { display: inline-flex; flex-wrap: wrap; gap: 4px; text-decoration: none; }
+.review-list-indicator .badge { white-space: nowrap; }
+.change-requirement-row .review-marker { margin-top: 5px; }
+.timeline-item.review-target { grid-template-columns: 44px minmax(0, 1fr); min-width: 0; }
+.timeline-item.review-target > div { min-width: 0; }
+.review-thread-card { min-width: 0; }
+.review-message p { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .filter-panel.operational { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filter-panel.operational .filter-actions { grid-column: 1 / -1; }
 }
 .review-marker {
   flex: 0 0 auto;

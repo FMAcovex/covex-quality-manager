@@ -1,3 +1,4 @@
+import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
@@ -31,6 +32,7 @@ export default async function ChangeControlPage({
 }) {
   const query = await searchParams;
   const filters = {
+    review: firstQueryValue(query.review),
     q: param(query.q),
     administrative: param(query.administrative),
     year: queryList(query.year),
@@ -91,7 +93,7 @@ export default async function ChangeControlPage({
           <MultiSelectFilter name="execution" label="Ejecución" selected={filters.execution} options={[{value:"NOT_EXECUTED",label:"No ejecutado"},{value:"EXECUTED",label:"Ejecutado"}]} />
           <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"ACCEPTABLE",label:"Aceptable"},{value:"NOT_ACCEPTABLE",label:"No aceptable"},{value:"NOT_APPLICABLE",label:"No aplica"}]} />
           <MultiSelectFilter name="status" label="Estado final" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierto"},{value:"CLOSED",label:"Cerrado"}]} />
-          <div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/changes">Limpiar</Link></div>
+          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/changes">Limpiar</Link></div>
         </div>
         <div className="search-row">
           <SearchAutocomplete
@@ -133,7 +135,7 @@ export default async function ChangeControlPage({
             <thead>
               <tr>
                 <th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todos los Controles de Cambios visibles" /></th>
-                <th data-column-key="control">Control</th>
+                <th data-column-key="control">Control</th><th data-column-key="review">Revisión</th>
                 <th data-column-key="department">Departamento</th>
                 <th data-column-key="code">Codificación</th>
                 <th data-column-key="description">Descripción</th>
@@ -173,7 +175,7 @@ export default async function ChangeControlPage({
                         aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "Control de Cambio"}`}
                       />
                     </td>
-                    <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ Revisar</span> : "—"}</td>
+                    <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ Revisar</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} basePath={`/changes/${row.id}`} /></td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
                     <td data-column-key="code" className="sticky-code"><Link href={`/changes/${row.id}`}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                     <td data-column-key="description" className="long-cell">{row.description ?? "—"}</td>
@@ -197,7 +199,7 @@ export default async function ChangeControlPage({
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={19}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={20}><div className="empty-panel">No hay Controles de Cambios que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>

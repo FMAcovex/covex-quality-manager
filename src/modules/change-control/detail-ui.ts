@@ -5,10 +5,12 @@ export const changeControlDetailTabs = [
   ["followups", "Seguimiento"],
   ["documents", "Documentos"],
   ["relations", "Relaciones"],
+  ["review", "Revisión"],
   ["history", "Historial"],
 ] as const;
 
 export type ChangeRequirementRow = {
+  key: "committee" | "clientNotification" | "authority" | "pqr" | "stability" | "additionalAnalysis" | "additionalValidation" | "otherImplication";
   question: string;
   evaluation: string;
   detail: string;
@@ -63,21 +65,25 @@ export function changeRequirementRows(record: RequirementSource): ChangeRequirem
 
   return [
     {
+      key: "committee",
       question: "¿Se requiere Comité de cambios?",
       evaluation: yesNoLabel(record.committeeRequired),
       detail: displayValue(record.committeeDetails),
     },
     {
+      key: "clientNotification",
       question: "¿Es necesario informar al cliente?",
       evaluation: yesNoLabel(record.clientNotificationRequired),
       detail: displayValue(record.clientNotificationDetails),
     },
     {
+      key: "authority",
       question: "¿Interviene la autoridad sanitaria?",
       evaluation: yesNoLabel(record.authorityRequired),
       detail: displayValue(record.authorityDetails),
     },
     {
+      key: "pqr",
       question: "¿Debe reflejarse en PQR?",
       evaluation: triStateLabel(record.pqrRequired),
       detail: joinedDetail([
@@ -86,21 +92,25 @@ export function changeRequirementRows(record: RequirementSource): ChangeRequirem
       ]),
     },
     {
+      key: "stability",
       question: "¿Deben incluirse lotes en estabilidad?",
       evaluation: triStateLabel(record.stabilityRequired),
       detail: joinedDetail(stabilityTypes),
     },
     {
+      key: "additionalAnalysis",
       question: "¿Se requieren análisis adicionales?",
       evaluation: triStateLabel(record.additionalAnalysisRequired),
       detail: displayValue(record.additionalAnalysisDetails),
     },
     {
+      key: "additionalValidation",
       question: "¿Se requiere validación adicional?",
       evaluation: triStateLabel(record.additionalValidationRequired),
       detail: displayValue(record.additionalValidationDetails),
     },
     {
+      key: "otherImplication",
       question: "¿Existen otras implicaciones?",
       evaluation: yesNoLabel(record.otherImplicationRequired),
       detail: displayValue(record.otherImplicationDetails),

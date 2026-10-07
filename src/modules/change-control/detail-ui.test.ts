@@ -18,6 +18,7 @@ describe("modelo visual del expediente de Control de Cambios · CC2", () => {
       ["followups", "Seguimiento"],
       ["documents", "Documentos"],
       ["relations", "Relaciones"],
+      ["review", "Revisión"],
       ["history", "Historial"],
     ]);
   });
@@ -46,6 +47,7 @@ describe("modelo visual del expediente de Control de Cambios · CC2", () => {
 
     expect(rows).toHaveLength(8);
     expect(rows[0]).toEqual({
+      key: "committee",
       question: "¿Se requiere Comité de cambios?",
       evaluation: "Sí",
       detail: "Comité QA",

@@ -1,3 +1,5 @@
+import { reviewListWhere } from "@/lib/qms/review/list-domain";
+import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -9,6 +11,7 @@ import {
 } from "@/modules/complaints/domain";
 
 export type ComplaintListFilters={
+  review?: string;
   q?:string;
   administrative?:string;
   year?:string[];
@@ -29,6 +32,8 @@ const followupValues=["OVERDUE","PENDING","MISSING"] as const;
 
 export async function getComplaintList(filters:ComplaintListFilters){
  const and:Prisma.ComplaintWhereInput[]=[];
+  const reviewWhere = reviewListWhere(filters.review);
+  if (reviewWhere) and.push({ qmsRecord: reviewWhere });
  if(filters.administrative==="ANNULLED")and.push({qmsRecord:{isActive:false}});
  else if(filters.administrative!=="ALL")and.push({qmsRecord:{isActive:true}});
  if(filters.q)and.push({OR:[
@@ -83,7 +88,7 @@ export async function getComplaintList(filters:ComplaintListFilters){
    return true;
  });
 
- return {rows,departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{
+ return {rows: await withActiveReviewCounts(rows),departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{
   total,drafts,open,pendingPartII,pendingEfficacy,followupDue
  }};
 }

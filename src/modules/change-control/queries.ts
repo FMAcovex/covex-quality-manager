@@ -1,9 +1,12 @@
+import { reviewListWhere } from "@/lib/qms/review/list-domain";
+import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 
 export type ChangeControlListFilters = {
+  review?: string;
   q?: string;
   administrative?: string;
   year?: string[];
@@ -16,6 +19,8 @@ export type ChangeControlListFilters = {
 
 export async function getChangeControlList(filters: ChangeControlListFilters) {
   const and: Prisma.ChangeControlWhereInput[] = [];
+  const reviewWhere = reviewListWhere(filters.review);
+  if (reviewWhere) and.push({ qmsRecord: reviewWhere });
   if (filters.administrative === "ANNULLED") {
     and.push({ qmsRecord: { isActive: false } });
   } else if (filters.administrative !== "ALL") {
@@ -97,7 +102,7 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
 
   const now = new Date();
   return {
-    rows,
+    rows: await withActiveReviewCounts(rows),
     departments,
     years: years.map((row) => row.year).filter((value): value is number => value !== null),
     counters: {

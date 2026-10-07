@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   activeReviewCount,
+  formatReviewDateTime,
   reviewTabHref,
   reviewTargetHref,
   reviewThreadCapabilities,
@@ -9,6 +10,32 @@ import {
 } from "@/lib/qms/review/ui-model";
 import { reviewTargetWithValue } from "@/lib/qms/review/targets/catalog";
 import { complaintReviewTargets } from "@/lib/qms/review/targets/complaints";
+
+afterEach(() => vi.unstubAllEnvs());
+
+describe("fechas Review e hidratación", () => {
+  it("renders the reported CAPA instant identically in server and browser time zones", () => {
+    const value = "2026-10-07T09:21:00.000Z";
+    const labels = ["UTC", "Europe/Madrid", "America/New_York", "Asia/Tokyo"].map((zone) => {
+      vi.stubEnv("TZ", zone);
+      return formatReviewDateTime(value);
+    });
+    expect(labels).toEqual(Array(4).fill("7 oct 2026, 9:21 UTC"));
+  });
+
+  it("keeps the date stable across midnight and daylight-saving transitions", () => {
+    for (const value of ["2026-10-07T23:21:00Z", "2026-10-25T00:30:00Z", "2026-10-25T01:30:00Z"]) {
+      vi.stubEnv("TZ", "UTC");
+      const server = formatReviewDateTime(value);
+      vi.stubEnv("TZ", "Europe/Madrid");
+      expect(formatReviewDateTime(value)).toBe(server);
+    }
+  });
+
+  it("degrades absent or invalid historical dates without throwing", () => {
+    for (const value of [null, "", "fecha histórica inválida"]) expect(formatReviewDateTime(value)).toBe("—");
+  });
+});
 
 describe("modelo visual de revisión", () => {
   it("cuenta PENDING y ACCEPTED, pero excluye RESOLVED", () => {

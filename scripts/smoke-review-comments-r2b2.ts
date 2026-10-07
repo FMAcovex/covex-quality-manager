@@ -52,7 +52,7 @@ async function main() {
     assert.equal(created.tabKey, "summary");
     assert.equal(created.sectionKey, "root-cause");
     assert.equal(created.fieldPath, "rootCause");
-    assert.equal(reviewVersionLabel(0, "FOLLOWUP"), "Seguimiento 00");
+    assert.equal(reviewVersionLabel(0, "FOLLOWUP"), "Seguimiento 00 · Apertura");
 
     await prisma.qmsRecordVersion.create({
       data: {

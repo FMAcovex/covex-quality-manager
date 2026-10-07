@@ -1,13 +1,10 @@
 "use server";
 
 import type { ReviewActionState } from "@/lib/qms/review/types";
-import {
-  acceptReviewThread,
-  createReviewThread,
-  replyToReviewThread,
-  resolveReviewThread,
-  ReviewThreadError,
-} from "@/lib/qms/review/service";
+import { ReviewThreadError } from "@/lib/qms/review/service";
+import { createValidatedReviewThread, replyToValidatedReviewThread, acceptValidatedReviewThread, resolveValidatedReviewThread } from "@/lib/qms/review/mutation-service";
+import { getReviewThreadsForDisplay } from "@/lib/qms/review/ui-queries";
+import { invalidateReviewRecord } from "@/lib/qms/review/invalidation";
 import type {
   AcceptReviewThreadInput,
   CreateReviewThreadInput,
@@ -37,8 +34,10 @@ export async function createReviewThreadAction(
   input: CreateReviewThreadInput,
 ): Promise<ReviewActionState> {
   try {
-    const thread = await createReviewThread(input);
+    const thread = await createValidatedReviewThread(input);
+    await invalidateReviewRecord(input.qmsRecordId);
     return {
+      threads: await getReviewThreadsForDisplay(input.qmsRecordId),
       error: null,
       success: "Observación creada.",
       reviewThreadId: thread.id,
@@ -50,11 +49,13 @@ export async function createReviewThreadAction(
 }
 
 export async function replyToReviewThreadAction(
-  input: ReplyToReviewThreadInput,
+  input: ReplyToReviewThreadInput & { qmsRecordId: string },
 ): Promise<ReviewActionState> {
   try {
-    const message = await replyToReviewThread(input);
+    const message = await replyToValidatedReviewThread(input);
+    await invalidateReviewRecord(input.qmsRecordId);
     return {
+      threads: await getReviewThreadsForDisplay(input.qmsRecordId),
       error: null,
       success: "Respuesta añadida.",
       reviewThreadId: message.reviewThreadId,
@@ -66,11 +67,13 @@ export async function replyToReviewThreadAction(
 }
 
 export async function acceptReviewThreadAction(
-  input: AcceptReviewThreadInput,
+  input: AcceptReviewThreadInput & { qmsRecordId: string },
 ): Promise<ReviewActionState> {
   try {
-    const thread = await acceptReviewThread(input);
+    const thread = await acceptValidatedReviewThread(input);
+    await invalidateReviewRecord(input.qmsRecordId);
     return {
+      threads: await getReviewThreadsForDisplay(input.qmsRecordId),
       error: null,
       success: "Observación aceptada.",
       reviewThreadId: thread.id,
@@ -82,11 +85,13 @@ export async function acceptReviewThreadAction(
 }
 
 export async function resolveReviewThreadAction(
-  input: ResolveReviewThreadInput,
+  input: ResolveReviewThreadInput & { qmsRecordId: string },
 ): Promise<ReviewActionState> {
   try {
-    const thread = await resolveReviewThread(input);
+    const thread = await resolveValidatedReviewThread(input);
+    await invalidateReviewRecord(input.qmsRecordId);
     return {
+      threads: await getReviewThreadsForDisplay(input.qmsRecordId),
       error: null,
       success: "Observación resuelta.",
       reviewThreadId: thread.id,

@@ -1,13 +1,17 @@
+import { reviewListWhere } from "@/lib/qms/review/list-domain";
+import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma,QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { RETURN_DEPARTMENT_CODES } from "@/modules/returns/departments";
 
-export type ReturnListFilters={q?:string;administrative?:string;year?:string[];department?:string[];type?:string[];status?:string[];decision?:string[]};
+export type ReturnListFilters={review?:string;q?:string;administrative?:string;year?:string[];department?:string[];type?:string[];status?:string[];decision?:string[]};
 
 export async function getReturnList(filters:ReturnListFilters){
  const and:Prisma.ReturnRecordWhereInput[]=[];
+  const reviewWhere = reviewListWhere(filters.review);
+  if (reviewWhere) and.push({ qmsRecord: reviewWhere });
  if(filters.administrative==="ANNULLED")and.push({qmsRecord:{isActive:false}});
  else if(filters.administrative!=="ALL")and.push({qmsRecord:{isActive:true}});
  if(filters.q)and.push({OR:[
@@ -31,7 +35,7 @@ export async function getReturnList(filters:ReturnListFilters){
   prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:{not:"DRAFT"}}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:"DRAFT"}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:"OPEN"}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:{not:"DRAFT"},decision:"PENDING"}]}}),
   prisma.returnRecord.findMany({where:{AND:[administrativeWhere,{status:"OPEN"}]},select:{followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1,select:{nextFollowupDate:true}}}})
  ]);
- return {rows,departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{total,drafts,open,pending,followupDue:followupDue.filter(r=>r.followups[0]?.nextFollowupDate&&r.followups[0].nextFollowupDate<=new Date()).length}};
+ return {rows: await withActiveReviewCounts(rows),departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{total,drafts,open,pending,followupDue:followupDue.filter(r=>r.followups[0]?.nextFollowupDate&&r.followups[0].nextFollowupDate<=new Date()).length}};
 }
 
 export async function getReturnDetail(id:string){
