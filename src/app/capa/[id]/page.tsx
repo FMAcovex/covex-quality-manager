@@ -1,3 +1,4 @@
+import { AuditOriginPanel } from "@/modules/audits/origin-panel";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addCapaRelationAction, unlinkCapaOriginAction } from "@/modules/capa/actions";
@@ -51,6 +52,7 @@ const tabs = [
 function originRelationLabel(recordType: string) {
   if (recordType === "DEVIATION") return "Desviación de origen";
   if (recordType === "COMPLAINT") return "Reclamación de origen";
+  if (recordType === "AUDIT") return "Auditoría de origen";
   return "Expediente de origen";
 }
 
@@ -89,7 +91,7 @@ export default async function CapaDetailPage({
       (item) =>
         item.relationType === "GENERATES" &&
         (item.sourceRecord.recordType === "DEVIATION" ||
-          item.sourceRecord.recordType === "COMPLAINT"),
+          item.sourceRecord.recordType === "COMPLAINT" || item.sourceRecord.recordType === "AUDIT"),
     )
     .map((item) => item.sourceRecord);
 
@@ -283,7 +285,7 @@ export default async function CapaDetailPage({
               <div className="empty-panel">
                 {capa.status === "DRAFT"
                   ? "Los orígenes seleccionados en borrador se activarán al abrir la CAPA."
-                  : "No hay una Desviación o Reclamación de origen vinculada."}
+                  : "No hay un expediente de origen vinculado."}
               </div>
             )}
           </div>
@@ -389,24 +391,24 @@ export default async function CapaDetailPage({
 
       {activeTab === "relations" ? (
         <div className="card">
-          <h2>Orígenes de la CAPA</h2>
-          {origins.length ? (
+          <h2>Orígenes de la CAPA</h2><AuditOriginPanel targetRecordId={capa.qmsRecordId}/>
+          {origins.some(record => record.recordType !== "AUDIT") ? (
             <div className="relation-list">
-              {origins.map((record) => (
+              {origins.filter(record => record.recordType !== "AUDIT").map((record) => (
                 <div className="relation-card" key={record.id}>
                   <span>{originRelationLabel(record.recordType)}</span>
                   <Link href={qmsRecordHref(record.recordType, record.id)}>
                     <strong>{qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))}{!record.isActive ? " · Anulado" : ""}</strong>
                   </Link>
                   <small>Relación QMS canónica.</small>
-                  <form action={unlinkCapaOriginAction.bind(null, id, record.id)}>
+                  {record.recordType !== "AUDIT" ? <form action={unlinkCapaOriginAction.bind(null, id, record.id)}>
                     <input type="hidden" name="actor" value={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
                     <button className="button danger small" type="submit">Desvincular</button>
-                  </form>
+                  </form> : <small>Gestionar atribuciones desde la Auditoría.</small>}
                 </div>
               ))}
             </div>
-          ) : <div className="empty-panel">No hay orígenes operativos vinculados.</div>}
+          ) : !origins.length ? <div className="empty-panel">No hay orígenes operativos vinculados.</div> : null}
           {capa.status === "DRAFT" ? (
             <div className="empty-panel">Las relaciones operativas se activan al abrir la CAPA.</div>
           ) : (

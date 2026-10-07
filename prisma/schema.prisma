@@ -373,6 +373,7 @@ model QmsRecord {
 }
 
 model QmsRelation {
+  auditFindingRelations AuditFindingRelation[]
   id             String          @id @default(uuid())
   sourceRecordId String
   sourceRecord   QmsRecord       @relation("RelationSource", fields: [sourceRecordId], references: [id], onDelete: Restrict)
@@ -1501,6 +1502,8 @@ model Audit {
   updatedAt                    DateTime           @updatedAt
   departments                  AuditDepartment[]
   participants                 AuditParticipant[]
+  findings                     AuditFinding[]
+  followups                    AuditFollowup[]
 
   @@index([status, plannedDate])
   @@index([auditType, plannedDate])
@@ -1538,4 +1541,127 @@ model AuditParticipant {
   updatedAt    DateTime             @updatedAt
 
   @@index([auditId, sortOrder])
+}
+
+
+enum AuditFindingType {
+  FINDING
+  RECOMMENDATION
+  CLIENT_OBSERVATION
+  AUTHORITY_OBSERVATION
+}
+
+enum AuditFindingCriticality {
+  CRITICAL
+  MAJOR
+  MINOR
+  NA
+}
+
+enum AuditActionStatus {
+  OPEN
+  IN_PROGRESS
+  PENDING_VERIFICATION
+  CLOSED
+  NOT_APPLICABLE
+}
+
+model AuditFinding {
+  id String @id @default(uuid())
+  auditId String
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Restrict)
+  reference String
+  findingType AuditFindingType
+  criticality AuditFindingCriticality @default(NA)
+  description String @db.Text
+  criterionReference String? @db.Text
+  objectiveEvidence String? @db.Text
+  treatment String? @db.Text
+  treatmentStatus AuditActionStatus @default(OPEN)
+  closedAt DateTime? @db.Date
+  evidence String? @db.Text
+  evidenceReference String? @db.Text
+  verificationComment String? @db.Text
+  sortOrder Int @default(0)
+  isActive Boolean @default(true)
+  retiredAt DateTime?
+  retiredByText String?
+  retirementReason String? @db.Text
+  createdByText String
+  updatedByText String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  actions AuditFindingAction[]
+  followups AuditFollowup[]
+  relations AuditFindingRelation[]
+
+  @@unique([auditId, reference])
+  @@index([auditId, isActive, sortOrder])
+  @@index([criticality, isActive])
+}
+
+model AuditFindingAction {
+  id String @id @default(uuid())
+  findingId String
+  finding AuditFinding @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  description String @db.Text
+  responsible String?
+  targetDate DateTime? @db.Date
+  status AuditActionStatus @default(OPEN)
+  closedAt DateTime? @db.Date
+  evidence String? @db.Text
+  evidenceReference String? @db.Text
+  verificationComment String? @db.Text
+  sortOrder Int @default(0)
+  isActive Boolean @default(true)
+  retiredAt DateTime?
+  retiredByText String?
+  retirementReason String? @db.Text
+  createdByText String
+  updatedByText String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([findingId, isActive, sortOrder])
+  @@index([status, targetDate])
+}
+
+model AuditFindingRelation {
+  id String @id @default(uuid())
+  findingId String
+  finding AuditFinding @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  qmsRelationId String
+  qmsRelation QmsRelation @relation(fields: [qmsRelationId], references: [id], onDelete: Restrict)
+  isActive Boolean @default(true)
+  createdByText String
+  updatedByText String?
+  retiredAt DateTime?
+  retiredByText String?
+  retirementReason String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([findingId, qmsRelationId])
+  @@index([qmsRelationId, isActive])
+}
+
+model AuditFollowup {
+  id String @id @default(uuid())
+  auditId String
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Restrict)
+  findingId String?
+  finding AuditFinding? @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  followupDate DateTime @db.Date
+  completedByText String
+  description String @db.Text
+  nextReviewDate DateTime? @db.Date
+  evidenceReference String? @db.Text
+  createdByText String
+  updatedByText String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([auditId, followupDate])
+  @@index([findingId, followupDate])
+  @@index([nextReviewDate])
 }

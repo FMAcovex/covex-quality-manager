@@ -547,3 +547,9 @@ AI/departamento/YY/AAAA: correlativo 01–99 por área y año. Área de codifica
 Cliente/autoridad: businessCode null, UUID QMS y externalReference opcional; no se inventa serie. API administrativa permite reactivar AUDIT sin código para esos escenarios y borradores, conservando controles previos de los demás módulos. La UI de Auditorías indica reserva de código anulado.
 
 Participantes textuales UUID sin maestro global; al abrir al menos un auditor y exactamente un jefe si son varios. Áreas/participantes retirados se inactivan; pertenencia de UUID se valida en servidor. Demo sigue DEMO- como los otros módulos y permanece DRAFT; su apertura sustituye el código demo por una codificación normativa.
+
+## D-065 — Auditorías R3B: hallazgos, plan y seguimiento
+
+Se implementa la arquitectura y reglas de docs/AUDITS_R3B.md sobre R3A. Hijos UUID persistentes, OBS/Rk asignadas al guardar con bloqueo por auditoría y reserva histórica. Recomendaciones y criticidad independientes sin plazos automáticos. Acciones locales múltiples con AuditActionStatus, tratamiento sin acciones justificable y estado del hallazgo derivado. Cierre parcial derivado del plan registrado con acciones pendientes; no equivale a eficacia ni cierre definitivo.
+
+La matriz añade únicamente AUDIT GENERATES DEVIATION/CAPA; vínculos a expedientes existentes. Una relación global y atribuciones N:N por hallazgo. Retirada individual conserva el vínculo global; desvinculación global exige cero atribuciones activas y solicitud explícita. Orígenes CAPA admiten AUDIT con snapshots vigentes y anteriores preservados. Seguimientos generales/de hallazgo con DATE y pertenencia validada. Próxima revisión se toma del último seguimiento cronológico. Sin documentos, versiones de informe, Review ni CLOSED definitivo.

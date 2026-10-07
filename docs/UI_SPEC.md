@@ -165,3 +165,7 @@ La pestaña `Revisión (N)` agrupa Pendientes, Aceptados y Resueltos. `Ir al cam
 ## Auditorías R3A
 
 Menú único Auditorías; /audits con filtros SQL, búsqueda completa, paginación de 25 y ColumnSelector. Control del dato es independiente de Revisión, que muestra — sin hilos/targets/filtro ficticio. Alta/edición: Identificación, Alcance y entidad, Planificación y realización, Equipo y participantes, Control/observaciones. Campos condicionales conservan valores al cambiar escenario. Datos y filas se mantienen tras errores, con foco y scroll al primer campo. Detalle ofrece Información e Historial; cierre deshabilitado. Sin pestañas vacías. Vista adaptable a 1440/768/390px.
+
+## Auditorías R3B — workspace
+
+Pestañas Información, Hallazgos, Seguimiento, Relaciones e Historial. Tarjetas compactas con detalle editable, acciones persistentes, criticidad española, vinculador transversal y acceso a seguimiento. Retirados ocultos por defecto y consultables. Relaciones muestran estados vivos y hallazgos atribuidos; CAPA/Desviación enlazan Auditoría/OBS/Rk por UUID. Timeline general/hallazgo más reciente arriba. Nuevas columnas opcionales mediante ColumnSelector y filtros SQL, manteniendo las columnas esenciales R3A. Anchors preparados por UUID; sin Review ni pestañas documentales ficticias. Formularios conservan datos tras errores y se adaptan a 1440/768/390.

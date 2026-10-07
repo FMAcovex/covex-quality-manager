@@ -200,3 +200,7 @@ Criterio de salida:
 ## R3 — Auditorías
 
 R3A: expediente base, planificación, áreas, participantes, códigos AI/AE, listado, alta/edición/detalle, administración e historial. R3B: hallazgos persistentes, tratamiento y relaciones a Desviación/CAPA; sin mini-CAPA. R3C: informes/plantillas/documentos, versiones por emisión/revisión, Review y política de cierre. Plan Maestro anual posterior, no incluido en R3A.
+
+## R3B — hallazgos, CAPA Plan y seguimiento
+
+Implementación sobre R3A fusionado en main 27c8270: hallazgos/recomendaciones, criticidad, acciones locales, atribuciones a relaciones QMS y seguimiento. R3C conserva documentos/informe oficial, versionado por emisión/revisión, firmado/adjuntos, Review y cierre definitivo. Plan Maestro anual/alertas automáticas posteriores. Ver D-065 y docs/AUDITS_R3B.md.

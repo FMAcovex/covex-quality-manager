@@ -17,6 +17,8 @@ const rec = (id: string, recordType: QmsRecordType, businessCode: string) => ({
 describe("Hito 10.8C3-B1: reglas direccionales QMS", () => {
   it.each([
     [QmsRecordType.DEVIATION, QmsRecordType.CAPA],
+    [QmsRecordType.AUDIT, QmsRecordType.DEVIATION],
+    [QmsRecordType.AUDIT, QmsRecordType.CAPA],
     [QmsRecordType.COMPLAINT, QmsRecordType.CAPA],
     [QmsRecordType.COMPLAINT, QmsRecordType.RETURN],
   ])("permite %s -> %s con GENERATES", (sourceType, targetType) => {
@@ -35,6 +37,12 @@ describe("Hito 10.8C3-B1: reglas direccionales QMS", () => {
 
   it.each([
     [QmsRecordType.CAPA, QmsRecordType.DEVIATION],
+    [QmsRecordType.CAPA, QmsRecordType.AUDIT],
+    [QmsRecordType.DEVIATION, QmsRecordType.AUDIT],
+    [QmsRecordType.AUDIT, QmsRecordType.AUDIT],
+    [QmsRecordType.AUDIT, QmsRecordType.COMPLAINT],
+    [QmsRecordType.AUDIT, QmsRecordType.RETURN],
+    [QmsRecordType.AUDIT, QmsRecordType.CHANGE_CONTROL],
     [QmsRecordType.RETURN, QmsRecordType.CAPA],
     [QmsRecordType.RETURN, QmsRecordType.DEVIATION],
     [QmsRecordType.DEVIATION, QmsRecordType.RETURN],
@@ -77,6 +85,7 @@ describe("Hito 10.8C3-B1: reglas direccionales QMS", () => {
     expect(allowedIncomingRelationTypes(QmsRecordType.CAPA)).toEqual([
       QmsRecordType.DEVIATION,
       QmsRecordType.COMPLAINT,
+      QmsRecordType.AUDIT,
     ]);
     expect(allowedOutgoingRelationTypes(QmsRecordType.CHANGE_CONTROL)).toEqual([]);
     expect(allowedIncomingRelationTypes(QmsRecordType.CHANGE_CONTROL)).toEqual([]);

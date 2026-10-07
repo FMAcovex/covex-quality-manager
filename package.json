@@ -63,7 +63,9 @@
     "review-r2c:smoke": "node --conditions=react-server --import tsx scripts/smoke-review-comments-r2c.ts",
     "review-r2c:ui:smoke": "tsx scripts/smoke-review-comments-r2c-ui.ts",
     "audits-r3a:smoke": "tsx scripts/smoke-audits-r3a.ts",
-    "audits-r3a:ui:smoke": "tsx scripts/smoke-audits-r3a-ui.ts"
+    "audits-r3a:ui:smoke": "tsx scripts/smoke-audits-r3a-ui.ts",
+    "audits-r3b:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-r3b.ts",
+    "audits-r3b:ui:smoke": "tsx scripts/smoke-audits-r3b-ui.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

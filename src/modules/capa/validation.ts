@@ -24,9 +24,12 @@ const actionFollowupSchema = z.object({
 });
 const originSchema = z.object({
   id: z.string().trim().min(1),
-  recordType: z.enum(["DEVIATION", "COMPLAINT"]),
-  businessCode: z.string().trim().min(1),
+  recordType: z.enum(["DEVIATION", "COMPLAINT", "AUDIT"]),
+  businessCode: z.string().trim(),
   year: z.number().nullable().optional(),
+  displayLabel: z.string().optional(),
+}).superRefine((value, context) => {
+  if (value.recordType !== "AUDIT" && !value.businessCode) context.addIssue({ code: "custom", path: ["businessCode"], message: "La codificación de este origen es obligatoria." });
 });
 
 function text(formData: FormData, name: string): string | null {
@@ -159,8 +162,8 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
       actionType: enumValue(actionType, text(formData, "actionType")) ?? "CORRECTIVE",
       departmentId, openedAt, versionFollowupDate, createdByText,
       origins,
-      originType: firstOrigin?.recordType === "DEVIATION" ? "Desviación" : firstOrigin?.recordType === "COMPLAINT" ? "Reclamación" : text(formData, "originType"),
-      originCode: firstOrigin?.businessCode ?? text(formData, "originCode"),
+      originType: firstOrigin?.recordType === "DEVIATION" ? "Desviación" : firstOrigin?.recordType === "COMPLAINT" ? "Reclamación" : firstOrigin?.recordType === "AUDIT" ? "Auditoría" : text(formData, "originType"),
+      originCode: firstOrigin ? firstOrigin.businessCode || null : text(formData, "originCode"),
       applicableTo: text(formData, "applicableTo"),
       defectDescription, rootCause,
       impactAssessment: text(formData, "impactAssessment"),

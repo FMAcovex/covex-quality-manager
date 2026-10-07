@@ -10,11 +10,11 @@ import {
 export type QmsRelationClient = Pick<
   Prisma.TransactionClient,
   "qmsRecord" | "qmsRelation"
->;
+> & Partial<Pick<Prisma.TransactionClient, "audit" | "auditFindingRelation" | "$queryRaw">>;
 
 export type QmsRelationHistoryClient = Pick<
   Prisma.TransactionClient,
-  "qmsRecord" | "qmsRelation" | "changeHistory"
+  "qmsRecord" | "qmsRelation" | "audit" | "auditFindingRelation" | "$queryRaw" | "changeHistory"
 >;
 
 export type CreateQmsRelationInput = {
@@ -135,6 +135,15 @@ export async function createQmsRelation(
     input.relationType ?? QmsRelationType.GENERATES,
   );
 
+  if (source.recordType === "AUDIT") {
+    await lockAuditOrigin(client, source.id);
+    await client.$queryRaw!(Prisma.sql`SELECT id FROM "QmsRecord" WHERE id = ${target.id} FOR UPDATE`);
+    const [audit, operationalTarget] = await Promise.all([
+      client.audit!.findUnique({ where: { qmsRecordId: source.id }, select: { status: true, qmsRecord: { select: { isActive: true } } } }),
+      client.qmsRecord.findUnique({ where: { id: target.id }, select: { isActive: true, capa: { select: { status: true } }, deviation: { select: { status: true } } } }),
+    ]);
+    if (!audit || !audit.qmsRecord.isActive || audit.status === "DRAFT" || !operationalTarget?.isActive || (!operationalTarget.capa && !operationalTarget.deviation) || operationalTarget.capa?.status === "DRAFT" || operationalTarget.deviation?.status === "DRAFT") throw new QmsRelationValidationError("Auditoría y destino deben ser expedientes operativos y activos.");
+  }
   return client.qmsRelation.upsert({
     where: {
       sourceRecordId_targetRecordId_relationType: {
@@ -232,6 +241,12 @@ export function getIncomingRelations(
   });
 }
 
+async function lockAuditOrigin(client: QmsRelationClient, sourceRecordId: string) {
+  if (!client.audit || !client.auditFindingRelation || !client.$queryRaw) throw new QmsRelationValidationError("La operación de Auditoría requiere el cliente transaccional completo.");
+  await client.$queryRaw!(Prisma.sql`SELECT id FROM "Audit" WHERE "qmsRecordId" = ${sourceRecordId} FOR UPDATE`);
+  await client.$queryRaw!(Prisma.sql`SELECT id FROM "QmsRecord" WHERE id = ${sourceRecordId} FOR UPDATE`);
+}
+
 export async function deactivateQmsRelation(
   client: QmsRelationClient,
   input: {
@@ -257,6 +272,11 @@ export async function deactivateQmsRelation(
   }
 
   if (!relation.isActive) return relation;
+  const source = await client.qmsRecord.findUnique({ where: { id: input.sourceRecordId }, select: { recordType: true } });
+  if (source?.recordType === "AUDIT") {
+    await lockAuditOrigin(client, input.sourceRecordId);
+    if (await client.auditFindingRelation!.count({ where: { qmsRelationId: relation.id, isActive: true } })) throw new QmsRelationValidationError("Retira primero todas las atribuciones a hallazgos desde la Auditoría.");
+  }
 
   return client.qmsRelation.update({
     where: { id: relation.id },
@@ -332,8 +352,8 @@ export async function syncOperationalOriginRelations(
     if (!origin.isActive) {
       throw new QmsRelationValidationError("Un expediente de origen anulado no puede vincularse a una CAPA.");
     }
-    if (origin.recordType !== QmsRecordType.DEVIATION && origin.recordType !== QmsRecordType.COMPLAINT) {
-      throw new QmsRelationValidationError("Una CAPA solo puede tener como origen una Desviación o una Reclamación.");
+    if (origin.recordType !== QmsRecordType.DEVIATION && origin.recordType !== QmsRecordType.COMPLAINT && origin.recordType !== QmsRecordType.AUDIT) {
+      throw new QmsRelationValidationError("Una CAPA admite Desviación, Reclamación o Auditoría como origen.");
     }
     await createQmsRelation(client, {
       sourceRecordId: origin.id,
@@ -348,7 +368,7 @@ export async function syncOperationalOriginRelations(
       relationType: QmsRelationType.GENERATES,
       isActive: true,
       sourceRecord: {
-        recordType: { in: [QmsRecordType.DEVIATION, QmsRecordType.COMPLAINT] },
+        recordType: { in: [QmsRecordType.DEVIATION, QmsRecordType.COMPLAINT, QmsRecordType.AUDIT] },
       },
     },
     select: { id: true, sourceRecordId: true },
@@ -357,10 +377,7 @@ export async function syncOperationalOriginRelations(
   const selected = new Set(uniqueOriginIds);
   for (const relation of activeIncoming) {
     if (!selected.has(relation.sourceRecordId)) {
-      await client.qmsRelation.update({
-        where: { id: relation.id },
-        data: { isActive: false },
-      });
+      await deactivateQmsRelation(client, { sourceRecordId: relation.sourceRecordId, targetRecordId: capa.id });
     }
   }
 
@@ -370,7 +387,7 @@ export async function syncOperationalOriginRelations(
       relationType: QmsRelationType.GENERATES,
       isActive: true,
       sourceRecord: {
-        recordType: { in: [QmsRecordType.DEVIATION, QmsRecordType.COMPLAINT] },
+        recordType: { in: [QmsRecordType.DEVIATION, QmsRecordType.COMPLAINT, QmsRecordType.AUDIT] },
       },
     },
     include: { sourceRecord: true },

@@ -222,3 +222,7 @@ sin romper históricos.
 ## Auditorías R3A
 
 Un módulo y un expediente común para internas/externas. Escenarios: interna COVEX, interna contratada, a proveedor, cliente a COVEX e inspección. Modalidad opcional presencial/remota/mixta. Auditoría interna subcontratada sigue siendo interna. No se implementan hallazgos, CAPA Plan, relaciones nuevas, anexos, archivos, versiones formales, Review, alertas ni cierre definitivo. Las obligatoriedades y códigos aplicados son los aprobados para R3A por el usuario.
+
+## Auditorías R3B
+
+R3A se amplía con hallazgos persistentes, recomendaciones, criticidad, CAPA Plan con acciones locales, seguimiento general/hallazgo, atribuciones a Desviación/CAPA existentes y navegación bidireccional. Reglas concretas en D-065 y docs/AUDITS_R3B.md. No se emite informe ni se habilita cierre definitivo, Review, adjuntos o versiones de Auditorías.

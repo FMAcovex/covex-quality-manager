@@ -4,6 +4,6 @@ export type RelationActionState = {
 };
 
 export type RelationTargetOption = {
-  value: "DEVIATION" | "CAPA" | "COMPLAINT" | "RETURN";
+  value: "DEVIATION" | "CAPA" | "COMPLAINT" | "RETURN" | "AUDIT";
   label: string;
 };

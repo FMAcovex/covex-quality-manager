@@ -141,7 +141,7 @@ export default async function CapaPage({
               {rows.map((row) => {
                 const currentVersion = row.qmsRecord.versions[0] ?? null;
                 const originRecords = row.qmsRecord.targetRelations
-                  .filter((item) => item.relationType === "GENERATES" && (item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT"))
+                  .filter((item) => item.relationType === "GENERATES" && (item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT" || item.sourceRecord.recordType === "AUDIT"))
                   .map((item) => item.sourceRecord);
                 const plannedDates = row.plannedActions
                   .map((item) => item.plannedExecutionDate)

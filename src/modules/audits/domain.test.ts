@@ -37,7 +37,7 @@ describe("Auditorías R3A", () => {
   });
   it("deriva situación y año de referencia", () => {
     expect(auditSituation({status:"OPEN",performedDate:null})).toBe("Planificada");
-    expect(auditSituation({status:"OPEN",performedDate:"2026-10-07"})).toBe("Realizada");
+    expect(auditSituation({status:"OPEN",performedDate:"2026-10-07"})).toBe("Realizada · informe pendiente");
     expect(auditSituation({status:"CLOSED",performedDate:null})).toBe("Cerrada");
     expect(auditCodeYear({plannedDate:"2027-01-02",openedAt:"2026-10-07",performedDate:""})).toBe(2027);
   });

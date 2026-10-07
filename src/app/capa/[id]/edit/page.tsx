@@ -16,7 +16,7 @@ export default async function EditCapaPage({ params }: { params: Promise<{ id: s
       : [];
   const pendingOrigins = await getCapaOriginRecords(pendingOriginIds);
   const relationOrigins = capa.qmsRecord.targetRelations
-    .filter((item) => item.relationType === "GENERATES" && (item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT"))
+    .filter((item) => item.relationType === "GENERATES" && (item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT" || item.sourceRecord.recordType === "AUDIT"))
     .map((item) => item.sourceRecord);
   const originRecords = relationOrigins.length ? relationOrigins : pendingOrigins;
 
@@ -29,11 +29,11 @@ export default async function EditCapaPage({ params }: { params: Promise<{ id: s
     originType: capa.originType ?? undefined,
     originCode: capa.originCode ?? undefined,
     origins: originRecords
-      .filter((record) => Boolean(record.businessCode))
+      .filter(record => record.recordType === "AUDIT" || Boolean(record.businessCode))
       .map((record) => ({
         id: record.id,
-        recordType: record.recordType as "DEVIATION" | "COMPLAINT",
-        businessCode: record.businessCode!,
+        recordType: record.recordType as "DEVIATION" | "COMPLAINT" | "AUDIT",
+        businessCode: record.businessCode ?? "",
         year: record.year,
       })),
     applicableTo: capa.applicableTo ?? undefined,

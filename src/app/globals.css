@@ -2400,3 +2400,22 @@ button[disabled] {
   .audits-workspace .page-heading > .heading-actions { width: 100%; justify-content: space-between; flex-wrap: wrap; }
   .audits-workspace .column-popover { width: min(360px, calc(100vw - 32px)); }
 }
+
+/* Audit R3B persistent children and compact followup workspace. */
+.audit-work-panel { display: grid; gap: 16px; min-width: 0; }
+.audit-finding-card, .audit-action-card, .audit-work-panel .relation-card { min-width: 0; overflow-wrap: anywhere; }
+.audit-finding-card > header { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.audit-child-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.audit-child-form .full { grid-column: 1 / -1; }
+.audit-child-form input, .audit-child-form select, .audit-child-form textarea { max-width: 100%; width: 100%; min-width: 0; }
+.audit-editor { margin-top: 14px; border-top: 1px solid var(--border, #dce1e8); padding-top: 12px; }
+.audit-editor summary { cursor: pointer; font-weight: 600; }
+.audit-action-card { border: 1px solid var(--border, #dce1e8); padding: 14px; border-radius: 8px; margin: 12px 0; }
+.audit-followup-timeline { padding: 0; list-style: none; display: grid; gap: 14px; min-width: 0; }
+[id^="audit-finding-"], [id^="audit-action-"], [id^="audit-followup-"] { scroll-margin-top: 24px; }
+.audit-origin-panel { margin-bottom: 18px; }
+@media (max-width: 600px) { .audit-child-form { grid-template-columns: minmax(0, 1fr); } }
+
+.audit-detail-workspace .tabs { overflow-x: auto; max-width: 100%; min-width: 0; }
+.audit-detail-workspace .tab { flex-shrink: 0; }
+.audit-detail-workspace .relation-card, .audit-followup-timeline .card { min-width: 0; overflow-wrap: anywhere; }

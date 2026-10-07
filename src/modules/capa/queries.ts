@@ -56,8 +56,8 @@ export async function getCapaList(filters: CapaListFilters) {
   if (effectiveness.length) and.push({ effectivenessStatus: { in: effectiveness as ("CONFORMING" | "NONCONFORMING" | "PENDING" | "NA")[] } });
   if (filters.origin?.length) {
     const relationTypes = filters.origin
-      .map((value) => value === "Desviación" ? QmsRecordType.DEVIATION : value === "Reclamación" ? QmsRecordType.COMPLAINT : null)
-      .filter((value): value is "DEVIATION" | "COMPLAINT" => value !== null);
+      .map((value) => value === "Desviación" ? QmsRecordType.DEVIATION : value === "Reclamación" ? QmsRecordType.COMPLAINT : value === "Auditoría" ? QmsRecordType.AUDIT : null)
+      .filter((value): value is "DEVIATION" | "COMPLAINT" | "AUDIT" => value !== null);
     if (relationTypes.length) {
       and.push({
         qmsRecord: {
@@ -109,7 +109,7 @@ export async function getCapaList(filters: CapaListFilters) {
         distinct: ["year"],
         orderBy: { year: "desc" },
       }),
-      Promise.resolve([{ originType: "Desviación" }, { originType: "Reclamación" }]),
+      Promise.resolve([{ originType: "Desviación" }, { originType: "Reclamación" }, { originType: "Auditoría" }]),
       prisma.capa.count({ where: { AND: [administrativeWhere, { status: { not: "DRAFT" } }] } }),
       prisma.capa.count({ where: { AND: [administrativeWhere, { status: "DRAFT" }] } }),
       prisma.capa.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
@@ -259,7 +259,7 @@ export async function getCapaOriginRecords(ids: string[]) {
     where: {
       id: { in: ids },
       isActive: true,
-      recordType: { in: [QmsRecordType.DEVIATION, QmsRecordType.COMPLAINT] },
+      recordType: { in: [QmsRecordType.DEVIATION, QmsRecordType.COMPLAINT, QmsRecordType.AUDIT] },
     },
     select: { id: true, recordType: true, businessCode: true, year: true },
     orderBy: { businessCode: "asc" },

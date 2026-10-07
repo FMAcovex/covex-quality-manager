@@ -12,6 +12,7 @@ type RelationSuggestion = {
   id: string;
   recordType: RelationTargetOption["value"];
   businessCode: string;
+  displayLabel?: string;
   year: number | null;
 };
 
@@ -20,6 +21,7 @@ const typeLabels: Record<RelationTargetOption["value"], string> = {
   CAPA: "CAPA",
   COMPLAINT: "Reclamación",
   RETURN: "Devolución",
+  AUDIT: "Auditoría",
 };
 
 export function OperationalRelationForm({
@@ -32,6 +34,7 @@ export function OperationalRelationForm({
   targetOptions,
   currentRecordId,
   currentRecordType,
+  findingId,
 }: {
   action: (
     state: RelationActionState,
@@ -43,6 +46,7 @@ export function OperationalRelationForm({
   buttonLabel: string;
   defaultActor: string;
   targetOptions: RelationTargetOption[];
+  findingId?: string;
   currentRecordId: string;
   currentRecordType: RelationTargetOption["value"];
 }) {
@@ -54,6 +58,7 @@ export function OperationalRelationForm({
     targetOptions[0]?.value ?? "CAPA",
   );
   const [code, setCode] = useState("");
+  const [targetRecordId, setTargetRecordId] = useState("");
   const [focused, setFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [suggestions, setSuggestions] = useState<RelationSuggestion[]>([]);
@@ -77,6 +82,7 @@ export function OperationalRelationForm({
           relatedType: selectedType,
           q: query,
         });
+        if (findingId) params.set("findingId", findingId);
         const response = await fetch(`/api/qms/relation-suggestions?${params.toString()}`, {
           signal: controller.signal,
         });
@@ -99,10 +105,11 @@ export function OperationalRelationForm({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [code, currentRecordId, currentRecordType, selectedType]);
+  }, [code, currentRecordId, currentRecordType, selectedType, findingId]);
 
   useEffect(() => {
     setCode("");
+    setTargetRecordId("");
     setSuggestions([]);
     setActiveIndex(-1);
     inputRef.current?.focus();
@@ -115,7 +122,8 @@ export function OperationalRelationForm({
   );
 
   function chooseSuggestion(suggestion: RelationSuggestion) {
-    setCode(suggestion.businessCode);
+    setCode(suggestion.businessCode || suggestion.displayLabel || suggestion.id);
+    setTargetRecordId(suggestion.id);
     setSuggestions([]);
     setActiveIndex(-1);
     setFocused(false);
@@ -127,6 +135,7 @@ export function OperationalRelationForm({
       {state.error ? <div className="form-errors"><strong>{state.error}</strong></div> : null}
       {state.success ? <div className="form-success"><strong>{state.success}</strong></div> : null}
       <form action={formAction} className="inline-form relation-form">
+        <input type="hidden" name="targetRecordId" value={targetRecordId} />
         {showType ? (
           <label className="field">
             <span>Tipo de expediente</span>
@@ -163,6 +172,7 @@ export function OperationalRelationForm({
               onBlur={() => window.setTimeout(() => setFocused(false), 120)}
               onChange={(event) => {
                 setCode(event.target.value);
+                setTargetRecordId("");
                 setActiveIndex(-1);
               }}
               onKeyDown={(event) => {
@@ -199,7 +209,7 @@ export function OperationalRelationForm({
                       onMouseEnter={() => setActiveIndex(index)}
                       onClick={() => chooseSuggestion(suggestion)}
                     >
-                      <strong>{suggestion.businessCode}</strong>
+                      <strong>{suggestion.businessCode || suggestion.displayLabel || suggestion.id}</strong>
                       <span>{typeLabels[suggestion.recordType]}</span>
                       <small>{suggestion.year ?? ""}</small>
                     </button>

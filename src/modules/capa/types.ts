@@ -22,8 +22,9 @@ export type CapaActionFollowupInput = {
 
 export type CapaOriginInput = {
   id: string;
-  recordType: "DEVIATION" | "COMPLAINT";
+  recordType: "DEVIATION" | "COMPLAINT" | "AUDIT";
   businessCode: string;
+  displayLabel?: string;
   year?: number | null;
 };
 

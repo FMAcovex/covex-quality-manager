@@ -27,8 +27,8 @@ export async function getCapaExportRows(filters: CapaExportFilters) {
   const effectiveness = validValues(filters.effectiveness, ["CONFORMING","NONCONFORMING","PENDING"] as const); if (effectiveness.length) and.push({ effectivenessStatus: { in: effectiveness as ("CONFORMING"|"NONCONFORMING"|"PENDING")[] } });
   if (filters.origin?.length) {
     const relationTypes = filters.origin
-      .map((value) => value === "Desviación" ? QmsRecordType.DEVIATION : value === "Reclamación" ? QmsRecordType.COMPLAINT : null)
-      .filter((value): value is "DEVIATION" | "COMPLAINT" => value !== null);
+      .map((value) => value === "Desviación" ? QmsRecordType.DEVIATION : value === "Reclamación" ? QmsRecordType.COMPLAINT : value === "Auditoría" ? QmsRecordType.AUDIT : null)
+      .filter((value): value is "DEVIATION" | "COMPLAINT" | "AUDIT" => value !== null);
     if (relationTypes.length) {
       and.push({
         qmsRecord: {

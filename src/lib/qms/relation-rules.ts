@@ -44,6 +44,8 @@ const allowedRelations: readonly AllowedRelation[] = [
     targetType: QmsRecordType.RETURN,
     relationType: QmsRelationType.GENERATES,
   },
+  { sourceType: QmsRecordType.AUDIT, targetType: QmsRecordType.DEVIATION, relationType: QmsRelationType.GENERATES },
+  { sourceType: QmsRecordType.AUDIT, targetType: QmsRecordType.CAPA, relationType: QmsRelationType.GENERATES },
 ] as const;
 
 export function canRelate(
@@ -137,6 +139,7 @@ export function operationalRelationLabel(
   if (sourceType === QmsRecordType.COMPLAINT && targetType === QmsRecordType.RETURN) {
     return "Reclamación → Devolución";
   }
+  if (sourceType === QmsRecordType.AUDIT) return targetType === QmsRecordType.CAPA ? "Auditoría → CAPA" : "Auditoría → Desviación";
   return "Relación QMS";
 }
 

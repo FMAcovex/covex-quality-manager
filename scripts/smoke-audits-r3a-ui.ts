@@ -4,7 +4,7 @@ import { chromium, type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 
 const base = process.env.R3A_UI_BASE_URL, marker = `R3A-UI-${randomUUID()}`;
-async function submit(page: Page) { await page.getByRole("button",{name:"Guardar auditoría",exact:true}).click(); }
+async function submit(page: Page) { await page.waitForLoadState("networkidle"); await page.getByRole("button",{name:"Guardar auditoría",exact:true}).click(); }
 async function main() {
   if (!base || process.env.APP_ENV !== "test") throw new Error("Define APP_ENV=test y R3A_UI_BASE_URL para servidor y BD aislados.");
   const browser = await chromium.launch({executablePath:process.env.R3A_UI_CHROMIUM_PATH || undefined,args:["--no-sandbox"]});

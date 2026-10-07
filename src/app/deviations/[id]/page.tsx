@@ -1,3 +1,4 @@
+import { AuditOriginPanel } from "@/modules/audits/origin-panel";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addDeviationRelationAction, unlinkDeviationCapaAction } from "@/modules/deviations/actions";
@@ -334,7 +335,7 @@ export default async function DeviationDetailPage({
           ) : null}
 
           <div className="card related-capa-summary">
-            <h2>CAPA relacionadas</h2>
+            <AuditOriginPanel targetRecordId={deviation.qmsRecordId}/><h2>CAPA relacionadas</h2>
             <p className="section-help">
               Acciones CAPA propuestas o registradas a partir de esta desviación.
             </p>
@@ -541,7 +542,7 @@ export default async function DeviationDetailPage({
 
       {activeTab === "relations" ? (
         <div className="card">
-          <h2>CAPA relacionadas</h2>
+          <AuditOriginPanel targetRecordId={deviation.qmsRecordId}/><h2>CAPA relacionadas</h2>
           <p className="section-help">
             Una desviación puede generar una o varias CAPA. La relación se almacena una sola vez como Desviación → CAPA.
           </p>
