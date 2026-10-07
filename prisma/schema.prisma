@@ -237,6 +237,7 @@ enum ReminderStatus {
 }
 
 enum RecordVersionKind {
+  AUDIT_REVISION
   INITIAL
   REOPENING
   FOLLOWUP
@@ -250,6 +251,13 @@ enum RecordVersionDocumentKind {
 }
 
 enum DocumentType {
+  AUDIT_INTERNAL_REPORT
+  AUDIT_EXTERNAL_REPORT
+  AUDIT_CAPA_PLAN
+  AUDIT_EXTERNAL_PLAN
+  AUDIT_RECEIVED
+  AUDIT_RESPONSE
+  AUDIT_EVIDENCE
   DEVIATION_ANNEX_III
   DEVIATION_ANNEX_V
   SIMPLE_LIST
@@ -1277,6 +1285,9 @@ model RecordVersionDocument {
 }
 
 model GeneratedDocument {
+  fileData          Bytes?
+  fileName          String?
+  mimeType          String?
   id                String            @id @default(uuid())
   qmsRecordId       String
   qmsRecord         QmsRecord         @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
@@ -1471,6 +1482,34 @@ enum AuditParticipantRole {
 }
 
 model Audit {
+  reportDate                   DateTime?          @db.Date
+  conclusion                   String?            @db.Text
+  programme                    String?            @db.Text
+  previousAuditBackground      String?            @db.Text
+  supplierType                 String?
+  auditedContact               String?            @db.Text
+  planIntroduction             String?            @db.Text
+  activityDuration             String?            @db.Text
+  reportDistribution           String?            @db.Text
+  preparedBy                   String?
+  preparedPosition             String?
+  reviewedBy                   String?
+  reviewedPosition             String?
+  receivedBy                   String?
+  receivedPosition             String?
+  capaPlanDate                 DateTime?          @db.Date
+  capaPlanEstablishedAt        DateTime?          @db.Date
+  reportSentAt                 DateTime?          @db.Date
+  supplierResponseReceivedAt   DateTime?          @db.Date
+  responseRequired             Boolean            @default(false)
+  responseSentAt               DateTime?          @db.Date
+  closureEvidence              String?            @db.Text
+  supplierAssessment           String?            @db.Text
+  supplierException            Boolean            @default(false)
+  supplierExceptionReason      String?            @db.Text
+  supplierExceptionBy          String?
+  supplierExceptionAt          DateTime?          @db.Date
+  verifyAtNextAudit            Boolean            @default(false)
   id                           String             @id @default(uuid())
   qmsRecordId                  String             @unique
   qmsRecord                    QmsRecord          @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
@@ -1601,6 +1640,9 @@ model AuditFinding {
 }
 
 model AuditFindingAction {
+  verificationResult  CapaEffectivenessStatus @default(PENDING)
+  verifiedAt          DateTime?               @db.Date
+  verifiedBy          String?
   id String @id @default(uuid())
   findingId String
   finding AuditFinding @relation(fields: [findingId], references: [id], onDelete: Restrict)

@@ -22,6 +22,7 @@ export async function saveAudit(raw: unknown, id?: string) {
     const before = id ? await tx.audit.findUnique({ where: { id }, include: { qmsRecord: true, departments: true, participants: true } }) : null;
     if (id && !before) throw new AuditValidationError({ title: "La auditoría no existe." });
     if (before && !before.qmsRecord.isActive) throw new AuditValidationError({ title: "Reactiva el expediente antes de editarlo." });
+    if (before?.status === "CLOSED" && v.status !== "CLOSED") throw new AuditValidationError({ status: "La auditoría cerrada no se reabre automáticamente." });
     if (before && v.expectedUpdatedAt && v.expectedUpdatedAt !== before.updatedAt.toISOString()) throw new AuditValidationError({ title: "El expediente cambió desde que abriste el formulario. Recarga antes de guardar." });
     if (before && before.status !== "DRAFT") {
       if (v.status === "DRAFT") throw new AuditValidationError({ status: "Una auditoría operativa no puede volver a Borrador." });

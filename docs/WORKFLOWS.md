@@ -265,3 +265,9 @@ Guardar Borrador admite campos funcionales vacíos. Abrir exige tipo/escenario c
 ## Auditorías R3B — tratamiento y seguimiento
 
 Guardar un hallazgo asigna OBS/Rk; editar/reordenar conserva referencia/UUID. Registrar tratamiento y acciones múltiples, sus estados y evidencia textual. Vincular Desviación/CAPA existente mediante buscador UUID; varios hallazgos comparten la misma QmsRelation con atribuciones distintas. Consultar estado vivo y navegar desde ambos extremos. Retirar atribución conserva relación; retirar relación global requiere cero atribuciones activas y motivo. Retirar hallazgo conserva hijos, referencias e historial. Añadir seguimiento general o del hallazgo; timeline descendente con próxima revisión. Reglas derivadas y validaciones en D-065/docs/AUDITS_R3B.md. Cierre definitivo bloqueado hasta R3C.
+
+## Auditorías R3C — informe y cierre
+
+Completar datos de informe, emitir 00, descargar anexos del snapshot, firmar fuera de la aplicación y cargar PDF en la versión exacta. Tratamiento/seguimiento ordinario no modifica snapshot ni emite versión. Revisar contenido y emitir 01+ con motivo; 00/PDF/Review históricos permanecen. Documentos recibidos conservan revisión externa.
+
+QA consulta condiciones calculadas y confirma cierre. Internas: tratamiento/evidencia/verificación y CAPA necesaria cerrada/eficaz. Proveedor: envío final parcial; cierre normal o excepción sin respuesta/no críticos, razón y siguiente auditoría. Cliente/autoridad: acta primaria, acciones/evidencia y respuesta aplicable. Backend valida pertenencia y todas las reglas. closedAt solo definitivo; no reapertura automática. Reglas completas D-066/AUDITS_R3C.md.

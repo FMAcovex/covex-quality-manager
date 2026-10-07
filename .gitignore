@@ -26,3 +26,5 @@ backups/
 
 # Generated DEMO annex QA output
 demo-annexes/
+templates/audits/
+reports/audits/

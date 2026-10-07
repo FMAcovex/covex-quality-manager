@@ -41,6 +41,16 @@ describe("Auditorías R3A", () => {
     expect(auditSituation({status:"CLOSED",performedDate:null})).toBe("Cerrada");
     expect(auditCodeYear({plannedDate:"2027-01-02",openedAt:"2026-10-07",performedDate:""})).toBe(2027);
   });
+  it("no presenta un plan de tratamiento como cierre parcial antes de emitir el informe", () => {
+    expect(auditSituation({status:"OPEN",performedDate:"2026-10-07",reportIssued:false,findings:[{isActive:true,treatment:"Plan",treatmentStatus:"OPEN",actions:[{isActive:true,status:"OPEN"}]}]})).toBe("Realizada · informe pendiente");
+  });
+  it("distingue informe emitido, seguimiento y hechos de cierre parcial", () => {
+    const audit = {status:"OPEN" as const,performedDate:"2026-10-07",reportIssued:true};
+    expect(auditSituation(audit)).toBe("Informe emitido");
+    expect(auditSituation({...audit,followups:[{}]})).toBe("En seguimiento");
+    expect(auditSituation({...audit,scenario:"SUPPLIER",reportSentAt:"2026-10-08"})).toBe("Cierre parcial");
+    expect(auditSituation({...audit,scenario:"INTERNAL_COVEX",capaPlanEstablishedAt:"2026-10-08"})).toBe("Cierre parcial");
+  });
   it("usa dos dígitos por área/entidad y rechaza desbordamiento y series recibidas", () => {
     const internal = {recordType:"AUDIT" as const,auditType:"INTERNAL" as const,auditScenario:"INTERNAL_COVEX" as const,departmentCode:"LG-00",year:2026};
     const supplier = {recordType:"AUDIT" as const,auditType:"EXTERNAL" as const,auditScenario:"SUPPLIER" as const,entityCode:"ABC1",year:2026};

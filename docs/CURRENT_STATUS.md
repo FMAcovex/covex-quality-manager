@@ -1,6 +1,6 @@
 # Estado actual
 
-Fecha: 2026-10-02.
+Fecha: 2026-10-07.
 
 ## R2A — Revisión visual en Reclamaciones
 
@@ -990,3 +990,9 @@ Rama feature/audits-r3b-findings-relations-followup desde main 27c82704831c3425d
 Validación local completa: migración desde otra BD vacía y upgrade R3A → R3B preservando UUID/código/datos; 283 tests en 62 archivos; pnpm quality y build verdes, con los dos warnings de hooks preexistentes. Regresión PostgreSQL acumulada de los cinco módulos, R3A/R2C y smoke R3B con concurrencia, pertenencia, atribuciones compartidas, snapshots congelados e historial/filtros SQL. Chromium sobre build de producción: R3B 1440/768/390, formularios/errores/relaciones/retirada/historial; R3A y R2C verdes, servidor UTC y navegador Madrid. Los smokes esperan la carga del cliente antes de interactuar. CI remoto: consultar la PR y el informe final. Revisión funcional manual pendiente. No constituye validación GMP.
 
 Corrección técnica posterior en PR #99: bloqueo de navegación RSC tras guardar Auditoría, reproducido con transacción/HTTP finalizados en next start y standalone. El formulario base recibe el resultado de su Server Action antes de navegar al detalle dinámico. Se conservan reglas e historial; se retiran timeouts ampliados/checkpoint y se restaura el clic Editar del smoke. Evidencia y operación en docs/AUDITS_R3A.md. Validación local con Node 22.23.3: BD nueva/migraciones, toda la regresión PostgreSQL, pnpm quality/build (283 tests/62 archivos), R2C UI, tres pasadas consecutivas R3A UI y R3B UI verdes. CI remoto final en la PR/informe del diagnóstico.
+
+## R3C — Auditorías: documentos, versiones, Review y cierre
+
+Rama feature/audits-r3c-documents-versioning-review-close desde main cfd05b65eb682f65bfe55ede98dc87cb79837ceb. Implementación y decisiones en AUDITS_R3C.md/D-066. Fuentes oficiales SharePoint recibidas/revisadas con hashes: A3 interno/externo, A4.03 CAPA Plan y Anexo IV real del PNT externo. Snapshots de emisión 00/01+ congelados, archivos históricos, PDF por versión, adjuntos, Review UUID y cierre QA por escenario en backend.
+
+Migración aditiva, estados/codificaciones R3A/B conservados, navegación de Server Action estable mantenida. Integridad/listado/filtros y workspace documental, sin Plan Maestro ni alertas. Binarios corporativos fuera de Git: instalar con templates:audits:install. Validación local Node 22: pnpm quality verde (311 pruebas/64 archivos), 35 smokes PostgreSQL verdes, migración vacía y actualización R3B→R3C conservando datos, documentos reales con OOXML válido y render LibreOffice, R3C UI con fuentes oficiales en 1440/768/390 Madrid. Review R2C UI, tres R3A UI consecutivos y R3B UI verdes; CI definitivo en PR/informe final. Revisión manual documental Calidad pendiente, no validación GMP.

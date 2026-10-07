@@ -1,4 +1,5 @@
 export const auditColumns = [
+  {key:"reportVersion",label:"Versión informe",defaultVisible:false},{key:"reportDate",label:"Fecha informe",defaultVisible:false},{key:"signedPdf",label:"PDF firmado vigente",defaultVisible:false},{key:"partial",label:"Cierre parcial",defaultVisible:false},
   { key: "control", label: "Control" }, { key: "review", label: "Revisión" }, { key: "code", label: "Código", locked: true },
   { key: "type", label: "Tipo" }, { key: "scenario", label: "Escenario" }, { key: "title", label: "Objeto" }, { key: "area", label: "Área/Entidad" },
   { key: "planned", label: "Fecha prevista" }, { key: "performed", label: "Fecha realizada" }, { key: "status", label: "Estado" }, { key: "situation", label: "Situación" },

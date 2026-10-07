@@ -226,3 +226,9 @@ Un módulo y un expediente común para internas/externas. Escenarios: interna CO
 ## Auditorías R3B
 
 R3A se amplía con hallazgos persistentes, recomendaciones, criticidad, CAPA Plan con acciones locales, seguimiento general/hallazgo, atribuciones a Desviación/CAPA existentes y navegación bidireccional. Reglas concretas en D-065 y docs/AUDITS_R3B.md. No se emite informe ni se habilita cierre definitivo, Review, adjuntos o versiones de Auditorías.
+
+## Auditorías R3C
+
+Completa R3A/R3B con documentos sobre fuentes oficiales reales, versiones 00/01+ por emisión/revisión, snapshots congelados, PDF firmado externo por versión, documentos primarios recibidos, Review transversal y cierre QA validado en servidor. Internas/proveedor usan A3 correspondiente; todos usan A4.03 CAPA Plan; proveedor usa Anexo IV real extraído del PNT externo. Cliente/autoridad conserva acta externa sin informe COVEX artificial.
+
+Cierre por escenario y excepción proveedor sin respuesta/sin críticos en D-066/AUDITS_R3C.md. Situación, integridad y filtros derivados sin nuevos estados; no reapertura automática, firma electrónica, Plan Maestro ni alertas.
