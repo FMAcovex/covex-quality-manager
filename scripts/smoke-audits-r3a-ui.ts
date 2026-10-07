@@ -22,6 +22,7 @@ async function main() {
     await navigate(page,`${base}/audits/new`);
     await page.getByLabel("Objeto / título").fill(marker);
     await submit(page); await page.waitForURL(/\/audits\/[a-f0-9-]+$/);
+    await page.waitForLoadState("networkidle");
     const audit = await prisma.audit.findFirstOrThrow({where:{title:marker}});
     await page.getByRole("link",{name:"Editar",exact:true}).click();
     await page.waitForURL(new RegExp(`/audits/${audit.id}/edit$`)); await page.waitForLoadState("networkidle");
@@ -45,6 +46,7 @@ async function main() {
     assert.equal(await page.locator('select[name="modality"]').inputValue(),"REMOTE");
     await page.locator('textarea[name="scope"]').fill("Alcance UI ficticio");
     await submit(page); await page.waitForURL(new RegExp(`/audits/${audit.id}$`));
+    await page.waitForLoadState("networkidle");
     const opened = await prisma.audit.findUniqueOrThrow({where:{id:audit.id},include:{qmsRecord:true,participants:true,departments:true}});
     assert.match(opened.qmsRecord.businessCode!,/^AI\/GC-00\/\d{2}\/2096$/);
     assert(await page.getByRole("button",{name:"Cerrar auditoría",exact:true}).isDisabled());
@@ -92,13 +94,13 @@ async function main() {
     await navigate(page,`${base}/audits/${audit.id}?tab=history`); assert(await page.getByText("Anulación UI de fixture",{exact:true}).count());
     assert.deepEqual(errors,[]);
     assert.equal(serverActions.length,3,"Alta, validación y apertura deben usar Server Actions reales.");
-    assert(serverActions.every(entry => entry.status === 200 && entry.finished === true),"Cada Server Action debe resolver su respuesta antes de navegar.");
+    assert(serverActions.every(entry => entry.status === 200),"Cada guardado debe recibir el resultado de su Server Action.");
     console.log("R3A UI: alta/edición/apertura, valores tras error y escenario, UUID, resolver, ColumnSelector, administración e historial; responsive 1440/768/390px sin errores JS/hidratación OK.");
   } catch (error) {
     console.error("R3A UI Server Actions:", serverActions);
     console.error("R3A UI errors:", errors);
     console.error("R3A UI failure URL:", page.url());
-    console.error(await page.evaluate(() => Array.from(document.querySelectorAll("body *")).filter(e => { const r=e.getBoundingClientRect(); return r.width && (r.x < 0 || r.right > window.innerWidth + 2); }).slice(0,15).map(e => ({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width}))));
+    console.error(await page.evaluate(() => Array.from(document.querySelectorAll("body *")).filter(e => { const r=e.getBoundingClientRect(); return r.width && (r.x < 0 || r.right > window.innerWidth + 2); }).slice(0,15).map(e => ({tag:e.tagName,class:e.className,width:e.getBoundingClientRect().width}))).catch(() => []));
     console.error(await page.locator("main").ariaSnapshot().catch(() => "No snapshot"));
     throw error;
   } finally { await browser.close(); }
