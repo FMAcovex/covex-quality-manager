@@ -103,7 +103,7 @@ export function reviewVersionLabel(
 ) {
   if (sequence === null) return "Sin versión";
   const number = String(sequence).padStart(2, "0");
-  return mode === "FOLLOWUP" ? `Seguimiento ${number}` : `V${number}`;
+  return mode === "FOLLOWUP" ? `Seguimiento ${number}${sequence === 0 ? " · Apertura" : ""}` : `V${number}`;
 }
 
 export function reviewThreadContextLabel({

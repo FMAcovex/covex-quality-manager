@@ -1,9 +1,12 @@
+import { reviewListWhere } from "@/lib/qms/review/list-domain";
+import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 
 export type CapaListFilters = {
+  review?: string;
   q?: string;
   administrative?: string;
   year?: string[];
@@ -17,6 +20,8 @@ export type CapaListFilters = {
 
 export async function getCapaList(filters: CapaListFilters) {
   const and: Prisma.CapaWhereInput[] = [];
+  const reviewWhere = reviewListWhere(filters.review);
+  if (reviewWhere) and.push({ qmsRecord: reviewWhere });
 
   if (filters.administrative === "ANNULLED") {
     and.push({ qmsRecord: { isActive: false } });
@@ -123,14 +128,14 @@ export async function getCapaList(filters: CapaListFilters) {
     ]);
 
   return {
-    rows: rows.filter((row) => {
+    rows: await withActiveReviewCounts(rows.filter((row) => {
       if (!filters.followup) return true;
       const next = row.nextFollowupDate;
       if (filters.followup === "due") return Boolean(next && next <= now);
       if (filters.followup === "scheduled") return Boolean(next && next > now);
       if (filters.followup === "none") return !next;
       return true;
-    }),
+    })),
     departments,
     years: years.map((row) => row.year).filter((value): value is number => value !== null),
     origins: origins.map((row) => row.originType).filter((value): value is string => Boolean(value)),

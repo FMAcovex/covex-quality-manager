@@ -75,6 +75,7 @@ jobs:
           pnpm review-r2b1:smoke
           pnpm review-r2b2:smoke
           pnpm review-r2b3:smoke
+          pnpm review-r2c:smoke
           pnpm hito10:smoke
       - name: Quality checks
         run: pnpm quality

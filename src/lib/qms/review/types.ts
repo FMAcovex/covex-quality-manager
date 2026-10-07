@@ -3,6 +3,7 @@ import type {
   ReviewTargetKind,
   ReviewThreadStatus,
 } from "@prisma/client";
+import type { ReviewThreadView } from "@/lib/qms/review/ui-model";
 
 export type CreateReviewThreadInput = {
   qmsRecordId: string;
@@ -44,6 +45,7 @@ export type ReviewThreadFilters = {
 export type ReviewThreadCounts = Record<ReviewThreadStatus, number>;
 
 export type ReviewActionState = {
+  threads?: ReviewThreadView[];
   error: string | null;
   success: string | null;
   reviewThreadId: string | null;

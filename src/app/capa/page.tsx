@@ -1,3 +1,4 @@
+import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
@@ -27,6 +28,7 @@ export default async function CapaPage({
 }) {
   const query = await searchParams;
   const filters = {
+    review: firstQueryValue(query.review),
     q: param(query.q),
     administrative: param(query.administrative),
     year: queryList(query.year),
@@ -89,7 +91,7 @@ export default async function CapaPage({
           <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"CONFORMING",label:"Conforme"},{value:"NONCONFORMING",label:"No conforme"},{value:"NA",label:"N/A histórico"}]} />
           <MultiSelectFilter name="origin" label="Origen" selected={filters.origin} options={origins.map((value)=>({value,label:value}))} />
           <label className="filter-placeholder"><span>Seguimiento</span><select name="followup" defaultValue={filters.followup ?? ""}><option value="">Todos</option><option value="due">Vencido</option><option value="scheduled">Programado</option><option value="none">Sin próxima fecha</option></select></label>
-          <div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/capa">Limpiar</Link></div>
+          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/capa">Limpiar</Link></div>
         </div>
         <div className="search-row">
           <SearchAutocomplete
@@ -132,7 +134,7 @@ export default async function CapaPage({
           <table id="capa-list-table" className="records-table capa-table">
             <thead>
               <tr>
-<th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las CAPA visibles" /></th><th data-column-key="control">Control</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre y ejecución</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Verificación final</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
+<th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las CAPA visibles" /></th><th data-column-key="control">Control</th><th data-column-key="review">Revisión</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre y ejecución</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Verificación final</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
               </tr>
             </thead>
             <tbody>
@@ -165,7 +167,7 @@ export default async function CapaPage({
                         aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "CAPA"}`}
                       />
                     </td>
-                    <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td>
+                    <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} basePath={`/capa/${row.id}`} /></td>
                     <td data-column-key="type"><span className="badge neutral">{capaTypeLabel(row.actionType)}</span></td>
                     <td data-column-key="code" className="sticky-code"><Link href={`/capa/${row.id}`}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
@@ -194,7 +196,7 @@ export default async function CapaPage({
                   </tr>
                 );
               })}
-              {!rows.length ? <tr><td colSpan={18}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
+              {!rows.length ? <tr><td colSpan={19}><div className="empty-panel">No hay CAPA que coincidan con los filtros.</div></td></tr> : null}
             </tbody>
           </table>
         </div>

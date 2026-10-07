@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { navigateToReviewTarget } from "@/lib/qms/review/navigation";
 import {
   formatReviewSnapshot,
   reviewStatusLabel,
@@ -32,6 +32,7 @@ export function ReviewThreadCard({
     basePath,
     targetForThread,
     openThread,
+    closeDrawer,
     versionLabelMode,
     showVersionContext,
   } = useReviewWorkspace();
@@ -58,8 +59,13 @@ export function ReviewThreadCard({
       </div>
       {thread.acceptedAt ? <p className="review-state-meta"><strong>Aceptada:</strong> {thread.acceptedByText} · {dateTime(thread.acceptedAt)}</p> : null}
       {thread.resolvedAt ? <p className="review-state-meta"><strong>Resuelta:</strong> {thread.resolvedByText} · {dateTime(thread.resolvedAt)}{thread.resolutionNote ? ` · ${thread.resolutionNote}` : ""}</p> : null}
-      {showGoToField && target ? <Link className="button small" href={reviewTargetHref(basePath, target, thread.id)}>Ir al campo</Link> : null}
-      {!showGoToField ? <button className="review-thread-focus" type="button" onClick={() => openThread(thread.id)}>Ver hilo</button> : null}
+      {target ? <a className="button small" href={reviewTargetHref(basePath, target, thread.id)} onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+        event.preventDefault();
+        closeDrawer();
+        navigateToReviewTarget(reviewTargetHref(basePath, target, thread.id), target.anchorId);
+      }}>Ir al campo</a> : null}
+      {showGoToField ? <button className="review-thread-focus" type="button" onClick={() => openThread(thread.id)}>Ver hilo</button> : null}
       {!capabilities.readOnly ? <div className="review-thread-actions">
         {capabilities.canReply ? <ReviewReplyForm reviewThreadId={thread.id} /> : null}
         <div className="review-state-actions">

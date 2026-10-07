@@ -522,3 +522,16 @@ Reglas:
 - la UI de revisión de Devoluciones no muestra `V00/V01`, `Seguimiento 00/01` ni «Sin versión» porque el módulo mantiene un único expediente editable sin revisiones funcionales;
 - la capa de revisión no modifica estados, cierre, relaciones, productos, seguimientos, anexos, PDF ni reglas ya validadas de Devoluciones.
 
+## D-063 — R2C: cierre transversal de revisión y visibilidad en listados
+Control de Cambios reutiliza los modelos y componentes transversales existentes. No se añaden modelos ni migraciones.
+
+Reglas:
+- catálogo de 31 objetivos estáticos: Información, Solicitud, Dictamen y ocho filas lógicas de implicación/requisitos; tareas y seguimientos se identifican por tipo de entidad y UUID persistente;
+- creación, respuestas, aceptación y resolución validan en servidor el catálogo del módulo, la pertenencia de la entidad/hilo al expediente y la versión vigente; Devoluciones conserva `recordVersionId = null`;
+- los comentarios históricos conservan versión y valor observado, sin moverse ni clonarse al crear un seguimiento nuevo;
+- `Seguimiento 00 · Apertura` identifica la apertura en el contexto de revisión CAPA, Reclamaciones y Control de Cambios, sin alterar su versionado funcional;
+- una respuesta y la resolución del mismo hilo se serializan: un hilo cerrado no admite mensajes posteriores ni reapertura; una observación nueva genera otro hilo;
+- «Ir al campo» desde listado/drawer utiliza pestaña, `review=1`, hilo y anchor, cierra el drawer y aplica un resaltado temporal; un enlace con hilo sin anchor abre directamente el drawer;
+- los cinco listados separan Control (`dataQualityStatus`) de Revisión (`ReviewThread`), con conteos pendientes/aceptados y ausencia de alerta para resueltos;
+- filtros compartidos Todas/Pendientes/Aceptadas/Activas/Sin activas mediante relaciones SQL; una sola agregación `groupBy` para las filas visibles, nunca una consulta por fila;
+- Review no se incorpora a anexos ni cambia reglas de estados, cierre, documentos, relaciones o seguimiento de CC1/CC2/CC3.

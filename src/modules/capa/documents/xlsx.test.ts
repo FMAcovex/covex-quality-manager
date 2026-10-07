@@ -13,6 +13,9 @@ describe("CAPA Annex IV rows", () => {
     const data = Array.from({length:20},(_,index)=>({
       qmsRecord:{businessCode:`AC/GC-00/${String(index+1).padStart(3,"0")}/2026`},
       actionType:"CORRECTIVE",
+      status:"OPEN",
+      effectivenessStatus:"PENDING",
+      internalObservations:null,
       originType:"Desviación",
       originCode:"D/GC-00/001/2026",
       departmentNameSnapshot:"Garantía de Calidad",

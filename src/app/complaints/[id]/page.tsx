@@ -90,7 +90,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
  const reviewTargets=[...staticReviewTargets,...capaPlanReviewTargets];
  const capaPlanTargetById=new Map(capaPlanReviewTargets.map(target=>[target.targetEntityId!,target]));
 
- return <ReviewWorkspaceProvider qmsRecordId={r.qmsRecord.id} module="COMPLAINT" basePath={basePath} currentVersionLabel={reviewVersionLabel(currentVersion?.sequenceNumber??null)} defaultActor={process.env.DEFAULT_ACTOR_NAME?.trim()||r.createdByText||"Usuario demo"} reviewMode={reviewMode} targets={reviewTargets} threads={reviewThreads} initialThreadId={thread}>
+ return <ReviewWorkspaceProvider qmsRecordId={r.qmsRecord.id} module="COMPLAINT" versionLabelMode="FOLLOWUP" basePath={basePath} currentVersionLabel={reviewVersionLabel(currentVersion?.sequenceNumber??null,"FOLLOWUP")} defaultActor={process.env.DEFAULT_ACTOR_NAME?.trim()||r.createdByText||"Usuario demo"} reviewMode={reviewMode} targets={reviewTargets} threads={reviewThreads} initialThreadId={thread}>
  <section className={`workspace${reviewMode?" review-mode-active":""}`}>
   <div className="record-header"><div><p className="eyebrow"><Link href="/complaints">← Reclamaciones</Link></p><div className="record-title-line">
    <h1>{qmsRecordDisplayCode(r.qmsRecord)}</h1>

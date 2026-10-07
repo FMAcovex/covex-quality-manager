@@ -3,6 +3,7 @@ import Link from "next/link";
 export function ReviewModeToggle({ active, href }: { active: boolean; href: string }) {
   return (
     <Link
+      prefetch={false}
       className={`button review-mode-toggle${active ? " active" : ""}`}
       href={href}
       aria-pressed={active}

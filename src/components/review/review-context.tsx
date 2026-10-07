@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
+import { highlightReviewTarget } from "@/lib/qms/review/navigation";
 import type { QmsRecordType } from "@prisma/client";
 import type { ReviewTargetInstance } from "@/lib/qms/review/targets/types";
 import {
@@ -38,7 +38,7 @@ type ReviewContextValue = {
   openTarget: (target: ReviewTargetInstance) => void;
   openThread: (reviewThreadId: string) => void;
   closeDrawer: () => void;
-  refresh: (reviewThreadId?: string | null) => void;
+  refresh: (reviewThreadId?: string | null, updatedThreads?: ReviewThreadView[]) => void;
   targetForThread: (thread: ReviewThreadView) => ReviewTargetInstance | null;
   threadsForTarget: (target: ReviewTargetInstance) => ReviewThreadView[];
 };
@@ -57,7 +57,7 @@ export function ReviewWorkspaceProvider({
   defaultActor,
   reviewMode,
   targets,
-  threads,
+  threads: serverThreads,
   initialThreadId,
 }: {
   children: ReactNode;
@@ -74,14 +74,19 @@ export function ReviewWorkspaceProvider({
   threads: ReviewThreadView[];
   initialThreadId?: string | null;
 }) {
-  const router = useRouter();
+  const [threads, setThreads] = useState(serverThreads);
+  useEffect(() => setThreads(serverThreads), [serverThreads]);
   const [selectedTargetKey, setSelectedTargetKey] = useState<string | null>(null);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(
     initialThreadId ?? null,
   );
 
   useEffect(() => {
-    if (initialThreadId) setSelectedThreadId(initialThreadId);
+    if (initialThreadId) {
+      // Field links expose the highlighted target; thread-only links open the drawer.
+      setSelectedThreadId(window.location.hash ? null : initialThreadId);
+      setSelectedTargetKey(null);
+    }
   }, [initialThreadId]);
 
   const targetForThread = useCallback(
@@ -99,6 +104,22 @@ export function ReviewWorkspaceProvider({
   const selectedTarget = selectedThread
     ? targetForThread(selectedThread)
     : targets.find((target) => target.key === selectedTargetKey) ?? null;
+
+  useEffect(() => {
+    if (!reviewMode) return;
+    const initialThread = threads.find((item) => item.id === initialThreadId);
+    const target = initialThread ? targetForThread(initialThread) : null;
+    const url = new URL(window.location.href);
+    const renderedTab = url.searchParams.get("tab") ?? (module === "CHANGE_CONTROL" ? "information" : "summary");
+    if (target && renderedTab !== target.tabKey) {
+      // Preserve whether the caller requested the drawer or a field anchor.
+      url.searchParams.set("tab", target.tabKey);
+      window.location.replace(`${basePath}?${url.searchParams.toString()}${url.hash}`);
+      return;
+    }
+    const anchor = target?.anchorId ?? url.hash.slice(1);
+    if (anchor) return highlightReviewTarget(anchor);
+  }, [basePath, initialThreadId, module, reviewMode, targetForThread, targets, threads]);
 
   const openTarget = useCallback(
     (target: ReviewTargetInstance) => {
@@ -121,11 +142,13 @@ export function ReviewWorkspaceProvider({
     setSelectedTargetKey(null);
   }, []);
   const refresh = useCallback(
-    (reviewThreadId?: string | null) => {
+    (reviewThreadId?: string | null, updatedThreads?: ReviewThreadView[]) => {
+      // Server Actions revalidate detail/list data in their response. A second
+      // client refresh inside the mutation transition can suspend stale props.
       if (reviewThreadId) setSelectedThreadId(reviewThreadId);
-      router.refresh();
+      if (updatedThreads) setThreads(updatedThreads);
     },
-    [router],
+    [],
   );
 
   const value = useMemo<ReviewContextValue>(

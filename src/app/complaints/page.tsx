@@ -1,3 +1,4 @@
+import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
@@ -34,7 +35,7 @@ function efficacyTone(value:string){
 
 export default async function ComplaintsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  const q=await searchParams;
- const filters={
+ const filters={review:p(q.review),
   q:p(q.q),administrative:p(q.administrative),year:queryList(q.year),department:queryList(q.department),
   type:queryList(q.type),status:queryList(q.status),classification:queryList(q.classification),
   effectiveness:queryList(q.effectiveness),situation:queryList(q.situation),followup:queryList(q.followup)
@@ -68,7 +69,7 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
    ]}/>
    <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"ACCEPTABLE",label:"Conforme"},{value:"NOT_ACCEPTABLE",label:"No conforme"},{value:"NOT_REQUIRED",label:"N/A"}]}/>
    <MultiSelectFilter name="followup" label="Seguimiento" selected={filters.followup} options={[{value:"OVERDUE",label:"Vencido"},{value:"PENDING",label:"Pendiente"},{value:"MISSING",label:"Sin fecha"}]}/>
-   <div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/complaints">Limpiar</Link></div>
+   <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/complaints">Limpiar</Link></div>
   </div><div className="search-row">
    <SearchAutocomplete
     defaultValue={filters.q??""}
@@ -105,7 +106,7 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
     const related=[...r.qmsRecord.sourceRelations.map(x=>x.targetRecord),...r.qmsRecord.targetRelations.map(x=>x.sourceRecord)];
     return <tr key={r.id} className={followupState==="OVERDUE"?"complaint-followup-overdue":undefined}>
      <td className="reminder-select-column"><input type="checkbox" data-reminder-record="true" data-reminder-id={r.qmsRecord.id} data-reminder-code={qmsRecordDisplayCode(r.qmsRecord)} data-reminder-summary={r.description??r.partyName??"Sin descripción"} data-reminder-status={complaintOperationalSituationLabel(situation)} data-reminder-meta={r.departmentCodeSnapshot??""} data-reminder-href={`/complaints/${r.id}`} aria-label={`Seleccionar ${r.qmsRecord.businessCode??"reclamación"}`}/></td>
-     <td data-column-key="control">{r.dataQualityStatus!=="COMPLETE"?<span className="control-flag">⚠ Revisar</span>:"—"}</td>
+     <td data-column-key="control">{r.dataQualityStatus!=="COMPLETE"?<span className="control-flag">⚠ Revisar</span>:"—"}</td><td data-column-key="review"><ReviewListIndicator counts={r.reviewCounts} basePath={`/complaints/${r.id}`} /></td>
      <td data-column-key="code"><Link className="summary-link" href={`/complaints/${r.id}`}>{qmsRecordDisplayCode(r.qmsRecord)}</Link>{!r.qmsRecord.isActive?<span className="badge neutral">Anulado</span>:null}</td>
      <td data-column-key="version">{currentVersion===undefined?"—":versionLabel(currentVersion)}</td>
      <td data-column-key="type">{complaintTypeLabel(r.complaintType)}</td>
