@@ -22,8 +22,9 @@ async function main() {
     await page.getByLabel("Objeto / título").fill(marker);
     await submit(page); await page.waitForURL(/\/audits\/[a-f0-9-]+$/);
     const audit = await prisma.audit.findFirstOrThrow({where:{title:marker}});
-    await page.getByRole("link",{name:"Editar",exact:true}).click();
-    await page.waitForURL(new RegExp(`/audits/${audit.id}/edit$`)); await page.waitForLoadState("networkidle");
+    const editLink = page.getByRole("link",{name:"Editar",exact:true});
+    assert.equal(await editLink.getAttribute("href"), `/audits/${audit.id}/edit`);
+    await navigate(page,`${base}/audits/${audit.id}/edit`);
     await page.locator('select[name="auditType"]').selectOption("INTERNAL");
     await page.locator('select[name="scenario"]').selectOption("INTERNAL_COVEX");
     const department = await prisma.department.findUniqueOrThrow({where:{code:"GC-00"}});
