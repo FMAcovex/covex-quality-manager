@@ -217,3 +217,8 @@ La arquitectura debe permitir añadir:
 - audit trail;
 - aprobaciones/firma electrónica;
 sin romper históricos.
+
+
+## Auditorías R3A
+
+Un módulo y un expediente común para internas/externas. Escenarios: interna COVEX, interna contratada, a proveedor, cliente a COVEX e inspección. Modalidad opcional presencial/remota/mixta. Auditoría interna subcontratada sigue siendo interna. No se implementan hallazgos, CAPA Plan, relaciones nuevas, anexos, archivos, versiones formales, Review, alertas ni cierre definitivo. Las obligatoriedades y códigos aplicados son los aprobados para R3A por el usuario.

@@ -26,7 +26,7 @@ const dynamicTargets = [
 export function isAllowedReviewTarget(module: QmsRecordType, input: CreateReviewThreadInput) {
   const targets = input.targetKind === "ITEM"
     ? dynamicTargets.map((factory) => factory(input.targetEntityId ?? "", null))
-    : catalogs[module];
+    : (catalogs[module as keyof typeof catalogs] ?? []);
   return targets.some((target) =>
     target.module === module &&
     target.targetKind === input.targetKind &&

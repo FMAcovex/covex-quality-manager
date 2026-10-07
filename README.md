@@ -41,7 +41,7 @@ Requisitos: Node.js 22 compatible, pnpm y Docker Desktop o PostgreSQL local.
    ```
 4. Preparar base y configuración:
    ```bash
-   pnpm db:push
+   pnpm db:deploy
    pnpm db:seed
    ```
 5. Opcional: cargar cinco expedientes ficticios de demostración:
@@ -93,3 +93,7 @@ La CI añade PostgreSQL real y smoke tests de todos los módulos, versionado, ad
 ## Estado
 
 Hitos 0–10 completados y validados en CI. Hito 11 queda reservado para producción/IT.
+
+### Auditorías R3A y bases existentes
+
+La instalación limpia usa migraciones. Antes de actualizar una BD existente creada con `db push`, seguir [la adopción de baseline documentada](docs/AUDITS_R3A.md); no ejecutar reset ni aplicar CREATE TABLE sobre datos existentes. Auditorías R3A incluye expediente base, planificación y participantes; hallazgos, documentos, Review y cierre definitivo quedan para R3B/R3C.

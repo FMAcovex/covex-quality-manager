@@ -8,6 +8,8 @@ import {
 } from "@prisma/client";
 import { createQmsRelation } from "../src/lib/qms/relation-service";
 
+import { seedAuditDemo } from "../src/modules/audits/seed-demo";
+
 const prisma = new PrismaClient();
 
 const DEMO_PREFIX = "DEMO-";
@@ -38,6 +40,8 @@ async function main() {
   if (!department) {
     throw new Error("Ejecuta pnpm db:seed antes de cargar los datos de demo.");
   }
+
+  await seedAuditDemo(prisma);
 
   const [devQms, capaQms, changeQms, complaintQms, returnQms] = await Promise.all([
     upsertRecord(QmsRecordType.DEVIATION, "DEMO-DES-001-2026"),

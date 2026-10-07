@@ -2364,3 +2364,39 @@ button[disabled] {
     grid-template-columns: 1fr;
   }
 }
+
+/* Auditorías R3A: forms and persistent participant rows. */
+.audit-form { display: grid; gap: 18px; }
+.audit-form .card { padding: 20px; min-width: 0; }
+.audit-form .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.audit-form .full { grid-column: 1 / -1; }
+.audit-form input, .audit-form select, .audit-form textarea { max-width: 100%; }
+.audit-field-error { color: #a82020; display: block; }
+.audit-form [aria-invalid="true"] { outline: 2px solid #a82020; }
+.audit-departments { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.audit-departments label { display: flex; align-items: flex-start; gap: 8px; }
+.audit-departments input { width: auto; flex-shrink: 0; }
+.audit-participants { display: grid; gap: 14px; margin-bottom: 14px; }
+.audit-participant { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 14px; border: 1px solid #dbe3ec; border-radius: 8px; min-width: 0; }
+.audit-row-actions { display: flex; flex-wrap: wrap; gap: 8px; grid-column: 1 / -1; }
+.audit-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.audit-detail-grid dt { color: #526479; font-size: .85rem; }
+.audit-detail-grid dd { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.audit-team { padding: 0; list-style: none; display: grid; gap: 12px; }
+.audit-team li { display: grid; gap: 4px; }
+.audit-history { padding-left: 20px; }
+.audit-history li { margin-bottom: 20px; }
+.audit-history pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .audit-form .form-grid, .audit-participant, .audit-departments, .audit-detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .audit-form .card { padding: 14px; }
+}
+.audit-form fieldset { margin: 0; min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+#audit-list-table { min-width: 1500px; }
+.table-wrap:has(#audit-list-table) { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+/* The sixth QMS module must fit within the header's grid track. */
+.module-nav { min-width: 0; max-width: 100%; overflow-x: auto; }
+@media (max-width: 720px) {
+  .audits-workspace .page-heading > .heading-actions { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+  .audits-workspace .column-popover { width: min(360px, calc(100vw - 32px)); }
+}

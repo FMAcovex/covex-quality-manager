@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 export function moduleLabel(module:QmsRecordType){
   return ({
     DEVIATION:"Desviaciones",
+    AUDIT:"Auditorías",
     CAPA:"CAPA",
     CHANGE_CONTROL:"Controles de Cambios",
     COMPLAINT:"Reclamaciones",

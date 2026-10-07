@@ -472,3 +472,8 @@ El estado conserva por separado creación, aceptación y resolución, con sus au
 Conversación 1:N del hilo. El comentario inicial es el primer `ReviewMessage`; no se duplica dentro de `ReviewThread`. No existe borrado funcional ni Server Action de eliminación.
 
 Las operaciones transversales crean eventos ligeros en `ChangeHistory` para alta, aceptación y resolución. La conversación completa permanece en `ReviewMessage` y el historial sigue siendo operativo, no un audit trail GMP validado.
+
+
+## Auditorías R3A
+
+`Audit` se asocia 1:1 a `QmsRecord` de tipo AUDIT. Tipo y escenario nullable para borradores incompletos. Estados técnicos DRAFT/OPEN/CLOSED; cierre no disponible en R3A. `AuditDepartment` y `AuditParticipant` tienen UUID, FK Restrict y retirada lógica. La asociación auditId/departmentId es única y se reactiva con el mismo UUID. Department conserva snapshots. codingDepartmentId es una de las áreas internas auditadas; no limita el alcance. Tipo, escenario y dimensión de codificación se fijan al abrir. Índices por estado/tipo y fecha prevista, fecha realizada, escenario y orden de participantes. No hay AuditFinding, versiones, documentos, Review ni Plan Maestro.

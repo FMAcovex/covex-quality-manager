@@ -536,3 +536,14 @@ Reglas:
 - filtros compartidos Todas/Pendientes/Aceptadas/Activas/Sin activas mediante relaciones SQL; una sola agregación `groupBy` para las filas visibles, nunca una consulta por fila;
 - Review no se incorpora a anexos ni cambia reglas de estados, cierre, documentos, relaciones o seguimiento de CC1/CC2/CC3.
 - corrección de regresión manual: las fechas de mensajes/aceptación/resolución de Review se formatean en `es-ES` con UTC explícito y visible, para que servidor y navegador hidraten el mismo texto sin depender de su zona local; no se alteran timestamps persistidos ni asociaciones históricas.
+
+
+## D-064 — Auditorías R3A y límites aprobados
+
+Un único módulo Audit/QmsRecord AUDIT. INTERNAL/EXTERNAL con cinco escenarios; interna contratada sigue siendo INTERNAL. Hallazgos serán hijos persistentes en R3B; no se duplica CAPA. Relaciones a Desviación/CAPA llegarán en R3B sin modificar la matriz actual. Versiones por emisión/revisión del informe, no por seguimiento, y Review/documentos en R3C. Plan Maestro posterior. Cierre definitivo se completará con hallazgos/seguimiento/CAPA; R3A bloquea CLOSED en UI y backend.
+
+AI/departamento/YY/AAAA: correlativo 01–99 por área y año. Área de codificación explícita entre áreas auditadas; autoselección cuando solo hay una. AE/códigoEntidad/YY/AAAA para proveedor: código manual normalizado a mayúsculas, nunca derivado del nombre; correlativo por entidad/año. Año inicial: fecha prevista, después apertura, después realizada. Código y año quedan fijos al abrir aunque se reprograme. Serie/dimensión y escenario operativos inmutables para evitar incoherencia con el código. Borrador permite corregirlos.
+
+Cliente/autoridad: businessCode null, UUID QMS y externalReference opcional; no se inventa serie. API administrativa permite reactivar AUDIT sin código para esos escenarios y borradores, conservando controles previos de los demás módulos. La UI de Auditorías indica reserva de código anulado.
+
+Participantes textuales UUID sin maestro global; al abrir al menos un auditor y exactamente un jefe si son varios. Áreas/participantes retirados se inactivan; pertenencia de UUID se valida en servidor. Demo sigue DEMO- como los otros módulos y permanece DRAFT; su apertura sustituye el código demo por una codificación normativa.

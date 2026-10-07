@@ -10,6 +10,7 @@ export function QmsAdministrativeStatus({
   annulledByText,
   annulledReason,
   defaultActor,
+  reservesHistoricalCode = false,
 }: {
   qmsRecordId: string;
   isActive: boolean;
@@ -18,6 +19,7 @@ export function QmsAdministrativeStatus({
   annulledByText?: string | null;
   annulledReason?: string | null;
   defaultActor: string;
+  reservesHistoricalCode?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -95,7 +97,7 @@ export function QmsAdministrativeStatus({
                 <h2>{label}</h2>
                 <p>
                   {isActive
-                    ? "El expediente se conservará para trazabilidad, dejará de aparecer en los listados habituales y su codificación quedará disponible para reutilización."
+                    ? reservesHistoricalCode ? "El expediente se conserva para trazabilidad y deja de aparecer en el listado habitual. Su código histórico queda reservado." : "El expediente se conservará para trazabilidad, dejará de aparecer en los listados habituales y su codificación quedará disponible para reutilización."
                     : "La reactivación recuperará la codificación original solo si no ha sido reutilizada por otro expediente activo."}
                 </p>
               </div>

@@ -160,3 +160,8 @@ La cabecera del expediente ofrece `Modo revisión`. Al activarlo mediante `?revi
 El panel lateral común muestra el objetivo, pestaña/sección, versión funcional, snapshot, conversación, autores, fechas y estado. Permite las acciones definidas por el ciclo de vida; un hilo resuelto se presenta en solo lectura.
 
 La pestaña `Revisión (N)` agrupa Pendientes, Aceptados y Resueltos. `Ir al campo` abre la pestaña de origen, reactiva el modo de revisión, enfoca un anchor estable y abre el hilo seleccionado. R2A integra exclusivamente Reclamaciones sin modificar sus pestañas existentes ni sus reglas funcionales.
+
+
+## Auditorías R3A
+
+Menú único Auditorías; /audits con filtros SQL, búsqueda completa, paginación de 25 y ColumnSelector. Control del dato es independiente de Revisión, que muestra — sin hilos/targets/filtro ficticio. Alta/edición: Identificación, Alcance y entidad, Planificación y realización, Equipo y participantes, Control/observaciones. Campos condicionales conservan valores al cambiar escenario. Datos y filas se mantienen tras errores, con foco y scroll al primer campo. Detalle ofrece Información e Historial; cierre deshabilitado. Sin pestañas vacías. Vista adaptable a 1440/768/390px.

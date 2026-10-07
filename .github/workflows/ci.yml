@@ -42,7 +42,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Database smoke test
         run: |
-          pnpm db:push
+          pnpm db:deploy
           pnpm db:seed
           pnpm db:smoke
           pnpm import:smoke
@@ -75,6 +75,7 @@ jobs:
           pnpm review-r2b1:smoke
           pnpm review-r2b2:smoke
           pnpm review-r2b3:smoke
+          pnpm audits-r3a:smoke
           pnpm review-r2c:smoke
           pnpm hito10:smoke
       - name: Quality checks
@@ -86,3 +87,4 @@ jobs:
           review_server_pid=$!
           trap 'kill "$review_server_pid" 2>/dev/null || true' EXIT
           R2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm review-r2c:ui:smoke
+          R3A_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3a:ui:smoke

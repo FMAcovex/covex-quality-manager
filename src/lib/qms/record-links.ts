@@ -5,6 +5,7 @@ export function qmsRecordHref(_recordType: QmsRecordType | string, qmsRecordId: 
 }
 
 export function qmsRecordTypeLabel(recordType: QmsRecordType | string) {
+  if (recordType === "AUDIT") return "Auditoría";
   if (recordType === "DEVIATION") return "Desviación";
   if (recordType === "CAPA") return "CAPA";
   if (recordType === "CHANGE_CONTROL") return "Control de Cambio";

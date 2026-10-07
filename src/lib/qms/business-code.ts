@@ -185,6 +185,9 @@ export type OperationalBusinessCodeContext = {
   departmentCode?: string | null;
   actionType?: "CORRECTIVE" | "PREVENTIVE" | null;
   complaintType?: "CUSTOMER" | "PROVIDER" | null;
+  auditType?: "INTERNAL" | "EXTERNAL" | null;
+  auditScenario?: "INTERNAL_COVEX" | "INTERNAL_CONTRACTED" | "SUPPLIER" | "CLIENT" | "AUTHORITY" | null;
+  entityCode?: string | null;
 };
 
 function assertOperationalYear(year: number) {
@@ -200,6 +203,18 @@ export function operationalBusinessCodePrefix(
   context: OperationalBusinessCodeContext,
 ) {
   assertOperationalYear(context.year);
+
+  if (context.recordType === QmsRecordType.AUDIT) {
+    if (context.auditType === "INTERNAL" && ["INTERNAL_COVEX", "INTERNAL_CONTRACTED"].includes(context.auditScenario ?? "")) {
+      if (!context.departmentCode) throw new OperationalBusinessCodeError("INVALID_FORMAT", "Selecciona el área de referencia para codificación.");
+      return `AI/${context.departmentCode}/`;
+    }
+    if (context.auditType === "EXTERNAL" && context.auditScenario === "SUPPLIER") {
+      if (!context.entityCode || !/^[A-Z0-9][A-Z0-9_-]{0,39}$/.test(context.entityCode)) throw new OperationalBusinessCodeError("INVALID_FORMAT", "Indica un código de entidad válido, sin espacios ni barras.");
+      return `AE/${context.entityCode}/`;
+    }
+    throw new OperationalBusinessCodeError("INVALID_FORMAT", "Este escenario se identifica por UUID QMS y referencia externa, sin serie oficial generada.");
+  }
 
   if (context.recordType === QmsRecordType.CAPA) {
     if (!context.departmentCode) {
@@ -257,20 +272,20 @@ export function operationalBusinessCodePrefix(
 export function operationalBusinessCodeFormat(
   context: OperationalBusinessCodeContext,
 ) {
-  return `${operationalBusinessCodePrefix(context)}ZZZ/${context.year}`;
+  return `${operationalBusinessCodePrefix(context)}${context.recordType === "AUDIT" ? "YY" : "ZZZ"}/${context.year}`;
 }
 
 export function buildOperationalBusinessCode(
   context: OperationalBusinessCodeContext,
   sequence: number,
 ) {
-  if (!Number.isInteger(sequence) || sequence < 1 || sequence > 999) {
+  if (!Number.isInteger(sequence) || sequence < 1 || sequence > (context.recordType === "AUDIT" ? 99 : 999)) {
     throw new OperationalBusinessCodeError(
       "INVALID_FORMAT",
-      "El correlativo debe estar entre 001 y 999.",
+      context.recordType === "AUDIT" ? "El correlativo debe estar entre 01 y 99." : "El correlativo debe estar entre 001 y 999.",
     );
   }
-  return `${operationalBusinessCodePrefix(context)}${String(sequence).padStart(3, "0")}/${context.year}`;
+  return `${operationalBusinessCodePrefix(context)}${String(sequence).padStart(context.recordType === "AUDIT" ? 2 : 3, "0")}/${context.year}`;
 }
 
 export function extractOperationalBusinessCodeSequence(
@@ -280,12 +295,12 @@ export function extractOperationalBusinessCodeSequence(
   if (!code) return null;
   const prefix = operationalBusinessCodePrefix(context);
   const pattern = new RegExp(
-    `^${escapeRegex(prefix)}(\\d{3})/${context.year}$`,
+    `^${escapeRegex(prefix)}(\\d{${context.recordType === "AUDIT" ? 2 : 3}})/${context.year}$`,
   );
   const match = pattern.exec(code.trim());
   if (!match) return null;
   const sequence = Number(match[1]);
-  return Number.isInteger(sequence) && sequence >= 1 && sequence <= 999
+  return Number.isInteger(sequence) && sequence >= 1 && sequence <= (context.recordType === "AUDIT" ? 99 : 999)
     ? sequence
     : null;
 }
@@ -324,7 +339,7 @@ export async function suggestOperationalBusinessCode(
     }
   }
   const nextSequence = maxSequence + 1;
-  if (nextSequence > 999) {
+  if (nextSequence > (context.recordType === "AUDIT" ? 99 : 999)) {
     throw new OperationalBusinessCodeError(
       "EXHAUSTED",
       `Se ha agotado el correlativo para ${operationalBusinessCodePrefix(context)} en ${context.year}.`,
