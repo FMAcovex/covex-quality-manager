@@ -196,3 +196,23 @@ describe("parseCapaForm R1", () => {
     expect(parseCapaForm(versioned).fieldIssues.versionFollowupDate).toBeDefined();
   });
 });
+
+
+describe("CAPA R3B — origen Auditoría", () => {
+  it("admite origen Auditoría por UUID sin inventar código para cliente/autoridad", () => {
+    const f = base(); f.set("originsJson", JSON.stringify([{id:"audit-record-1",recordType:"AUDIT",businessCode:"",year:2026}]));
+    const result = parseCapaForm(f); expect(result.errors).toEqual([]); expect(result.values.originType).toBe("Auditoría"); expect(result.values.originCode).toBeNull(); expect(result.values.origins[0].id).toBe("audit-record-1");
+  });
+  it("admite multiorigen manteniendo Desviación y Reclamación", () => {
+    const f = base(); f.set("originsJson", JSON.stringify([{id:"d",recordType:"DEVIATION",businessCode:"D/1"},{id:"r",recordType:"COMPLAINT",businessCode:"R/1"},{id:"a",recordType:"AUDIT",businessCode:"AI/GC-00/01/2026"}]));
+    const result = parseCapaForm(f); expect(result.errors).toEqual([]); expect(result.values.origins).toHaveLength(3); expect(result.values.originType).toBe("Desviación"); expect(result.values.originCode).toBe("D/1");
+  });
+});
+
+
+it("conserva la exigencia de código en orígenes Desviación/Reclamación", () => {
+  for (const recordType of ["DEVIATION","COMPLAINT"]) {
+    const f = base(); f.set("originsJson",JSON.stringify([{id:"origin",recordType,businessCode:""}]));
+    expect(parseCapaForm(f).fieldIssues.originsJson).toBeDefined();
+  }
+});

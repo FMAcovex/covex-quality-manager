@@ -1,3 +1,5 @@
+import { auditFollowupSituation } from "./finding-domain";
+import type { FindingState } from "./finding-domain";
 import type { AuditScenario, AuditStatus, AuditType } from "@prisma/client";
 
 export const auditTypeLabels = { INTERNAL: "Interna", EXTERNAL: "Externa" } as const;
@@ -20,11 +22,7 @@ export function compatibleAuditScenario(type: AuditType | null, scenario: AuditS
 export function hasAuditBusinessSeries(scenario: AuditScenario | null) {
   return scenario === "INTERNAL_COVEX" || scenario === "INTERNAL_CONTRACTED" || scenario === "SUPPLIER";
 }
-export function auditSituation(audit: { status: AuditStatus; performedDate: Date | string | null }) {
-  if (audit.status === "CLOSED") return "Cerrada";
-  if (audit.status === "DRAFT") return "Borrador";
-  return audit.performedDate ? "Realizada" : "Planificada";
-}
+export function auditSituation(audit: { status: AuditStatus; performedDate: Date | string | null; findings?: (FindingState & {isActive:boolean})[]; followups?: unknown[] }) { return auditFollowupSituation(audit); }
 export function auditDate(value: Date | string | null | undefined) {
   return value ? new Intl.DateTimeFormat("es-ES", { timeZone: "UTC" }).format(new Date(value)) : "—";
 }

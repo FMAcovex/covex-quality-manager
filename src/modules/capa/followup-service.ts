@@ -25,7 +25,7 @@ export async function saveCapaFollowup(
         include: {
           targetRelations: {
             where: { isActive: true, relationType: "GENERATES" },
-            include: { sourceRecord: true },
+            include: { sourceRecord: true, auditFindingRelations: { where: { isActive: true }, include: { finding: { select: { id: true, reference: true } } } } },
           },
         },
       },
@@ -201,7 +201,7 @@ export async function saveCapaFollowup(
             include: {
               targetRelations: {
                 where: { isActive: true, relationType: "GENERATES" },
-                include: { sourceRecord: true },
+                include: { sourceRecord: true, auditFindingRelations: { where: { isActive: true }, include: { finding: { select: { id: true, reference: true } } } } },
               },
             },
           },

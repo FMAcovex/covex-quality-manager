@@ -25,6 +25,9 @@ export function AuditForm({ id, defaults, departments }: { id?: string; defaults
   const locked = Boolean(id && defaults?.status !== "DRAFT");
   const series = hasAuditBusinessSeries(scenario || null);
   useEffect(() => {
+    if (state.savedHref) window.location.assign(state.savedHref);
+  }, [state.savedHref]);
+  useEffect(() => {
     if (!state.error) return;
     const first = Object.keys(state.fieldErrors ?? {})[0];
     const element = form.current?.querySelector<HTMLElement>(`[data-field="${first}"]`) ?? form.current?.querySelector<HTMLElement>(".form-errors");

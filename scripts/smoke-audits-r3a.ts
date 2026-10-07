@@ -77,6 +77,7 @@ async function main() {
 }
 main().finally(async()=>{
   const audits = await prisma.audit.findMany({where:{qmsRecordId:{in:records}},select:{id:true}}), ids=audits.map(a=>a.id);
+  await prisma.auditFollowup.deleteMany({where:{auditId:{in:ids}}}); await prisma.auditFindingAction.deleteMany({where:{finding:{auditId:{in:ids}}}}); await prisma.auditFindingRelation.deleteMany({where:{finding:{auditId:{in:ids}}}}); await prisma.auditFinding.deleteMany({where:{auditId:{in:ids}}});
   await prisma.auditParticipant.deleteMany({where:{auditId:{in:ids}}}); await prisma.auditDepartment.deleteMany({where:{auditId:{in:ids}}});
   await prisma.changeHistory.deleteMany({where:{qmsRecordId:{in:records}}}); await prisma.audit.deleteMany({where:{id:{in:ids}}}); await prisma.qmsRecord.deleteMany({where:{id:{in:records}}}); await prisma.$disconnect();
 }).catch(error=>{console.error(error);process.exitCode=1;});

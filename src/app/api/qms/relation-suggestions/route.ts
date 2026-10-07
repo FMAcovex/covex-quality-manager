@@ -25,6 +25,7 @@ export async function GET(request: Request) {
   const currentRecordId = url.searchParams.get("currentRecordId")?.trim() || "";
   const currentType = asRecordType(url.searchParams.get("currentType"));
   const relatedType = asRecordType(url.searchParams.get("relatedType"));
+  const findingId = url.searchParams.get("findingId")?.trim() || "";
   const query = url.searchParams.get("q")?.trim() || "";
 
   if (!currentType || !relatedType) {
@@ -74,9 +75,14 @@ export async function GET(request: Request) {
       );
     }
 
+    if (findingId && currentType !== "AUDIT") return NextResponse.json({ error: "El hallazgo solo se usa desde Auditorías." }, { status: 400 });
+    if (findingId) {
+      const finding = await prisma.auditFinding.findUnique({ where: { id: findingId }, select: { isActive: true, audit: { select: { qmsRecordId: true } } } });
+      if (!finding?.isActive || finding.audit.qmsRecordId !== currentRecordId) return NextResponse.json({ error: "Hallazgo ajeno o retirado." }, { status: 400 });
+    }
     const activeRelations = direct
       ? await prisma.qmsRelation.findMany({
-          where: { sourceRecordId: currentRecordId, relationType: QmsRelationType.GENERATES, isActive: true },
+          where: { ...(findingId ? { auditFindingRelations: { some: { findingId, isActive: true } } } : {}), sourceRecordId: currentRecordId, relationType: QmsRelationType.GENERATES, isActive: true },
           select: { sourceRecordId: true, targetRecordId: true },
         })
       : await prisma.qmsRelation.findMany({
@@ -95,26 +101,28 @@ export async function GET(request: Request) {
       id: currentRecordId
         ? { notIn: [currentRecordId, ...alreadyLinkedIds] }
         : { notIn: alreadyLinkedIds },
-      businessCode: {
-        not: null,
-        contains: query,
-        mode: "insensitive",
-      },
+      ...(relatedType === "AUDIT" ? {
+        audit: { status: { not: "DRAFT" } },
+        OR: [{ businessCode: { contains: query, mode: "insensitive" } }, { audit: { OR: [{ title: { contains: query, mode: "insensitive" } }, { externalReference: { contains: query, mode: "insensitive" } }] } }],
+      } : { businessCode: { not: null, contains: query, mode: "insensitive" } }),
+      ...(currentType === "AUDIT" && relatedType === "CAPA" ? { capa: { status: { not: "DRAFT" } } } : {}),
+      ...(currentType === "AUDIT" && relatedType === "DEVIATION" ? { deviation: { status: { not: "DRAFT" } } } : {}),
     },
     select: {
       id: true,
       recordType: true,
       businessCode: true,
       year: true,
+      ...(relatedType === "AUDIT" ? { audit: { select: { title: true, externalReference: true } } } : {}),
     },
     take: 30,
   });
 
   const queryNormalized = normalized(query);
   const suggestions = records
-    .filter((record) => Boolean(record.businessCode))
+    .filter((record) => record.recordType === "AUDIT" || Boolean(record.businessCode))
     .map((record) => {
-      const code = record.businessCode!;
+      const code = record.businessCode || record.audit?.externalReference || record.audit?.title || record.id;
       const codeNormalized = normalized(code);
       const score =
         codeNormalized === queryNormalized
@@ -125,7 +133,8 @@ export async function GET(request: Request) {
       return {
         id: record.id,
         recordType: record.recordType,
-        businessCode: code,
+        businessCode: record.businessCode ?? "",
+        displayLabel: code,
         year: record.year,
         score,
       };
@@ -136,11 +145,12 @@ export async function GET(request: Request) {
         a.businessCode.localeCompare(b.businessCode, "es"),
     )
     .slice(0, 8)
-    .map(({ id, recordType, businessCode, year }) => ({
+    .map(({ id, recordType, businessCode, year, displayLabel }) => ({
       id,
       recordType,
       businessCode,
       year,
+      displayLabel,
     }));
 
   return NextResponse.json({ suggestions });

@@ -3,6 +3,7 @@
 import { Prisma, QmsRecordType, RecordVersionKind } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { refreshCapaVersionAfterRelationChange } from "./relation-version-service";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
@@ -118,50 +119,6 @@ async function relatePrimaryOrigin(
     targetRecordId: capaRecordId,
     createdByText: actor,
   });
-}
-
-async function refreshCapaVersionAfterRelationChange(
-  tx: Prisma.TransactionClient,
-  capaId: string,
-  actor: string,
-) {
-  const capa = await tx.capa.findUniqueOrThrow({
-    where: { id: capaId },
-    include: {
-      qmsRecord: {
-        include: {
-          targetRelations: {
-            where: { isActive: true, relationType: "GENERATES" },
-            include: { sourceRecord: true },
-          },
-        },
-      },
-      plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
-      actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
-      followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }] },
-      formVersion: true,
-      annexIIITemplateVersion: true,
-    },
-  });
-  const currentVersion = await tx.qmsRecordVersion.findFirst({
-    where: { qmsRecordId: capa.qmsRecordId },
-    orderBy: { sequenceNumber: "desc" },
-  });
-  if (!currentVersion) return;
-
-  const versionFollowupDate =
-    capaSnapshotVersionFollowupDate(
-      currentVersion.snapshot,
-      currentVersion.sequenceNumber,
-    ) ?? (currentVersion.sequenceNumber === 0 ? capa.openedAt : null);
-
-  await refreshCurrentVersion(
-    tx,
-    capa.qmsRecordId,
-    snapshotJson(serializeCapaVersion(capa, { versionFollowupDate })),
-    actor,
-    null,
-  );
 }
 
 export async function createCapaAction(
@@ -373,7 +330,7 @@ export async function createCapaAction(
             include: {
               targetRelations: {
                 where: { isActive: true, relationType: "GENERATES" },
-                include: { sourceRecord: true },
+                include: { sourceRecord: true, auditFindingRelations: { where: { isActive: true }, include: { finding: { select: { id: true, reference: true } } } } },
               },
             },
           },
@@ -438,7 +395,7 @@ export async function updateCapaAction(
         include: {
           targetRelations: {
             where: { isActive: true, relationType: "GENERATES" },
-            include: { sourceRecord: true },
+            include: { sourceRecord: true, auditFindingRelations: { where: { isActive: true }, include: { finding: { select: { id: true, reference: true } } } } },
           },
         },
       },
@@ -528,7 +485,7 @@ export async function updateCapaAction(
       description: item.description ?? "",
     })),
     origins: existing.qmsRecord.targetRelations
-      .filter((item) => item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT")
+      .filter((item) => item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT" || item.sourceRecord.recordType === "AUDIT")
       .map((item) => ({
         id: item.sourceRecord.id,
         recordType: item.sourceRecord.recordType,
@@ -778,7 +735,7 @@ export async function updateCapaAction(
             include: {
               targetRelations: {
                 where: { isActive: true, relationType: "GENERATES" },
-                include: { sourceRecord: true },
+                include: { sourceRecord: true, auditFindingRelations: { where: { isActive: true }, include: { finding: { select: { id: true, reference: true } } } } },
               },
             },
           },

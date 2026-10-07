@@ -1,9 +1,11 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type AuditFindingCriticality } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
+import { pendingActionStatuses } from "./finding-domain";
 import { auditTypeLabels, auditScenarioLabels, auditStatusLabels, auditModalityLabels, auditQualityLabels } from "./domain";
 
 export type AuditListFilters = {
+  findings?: string; criticality?: string[]; pendingActions?: string; relatedDeviation?: string; relatedCapa?: string; nextReviewFrom?: string; nextReviewTo?: string;
   q?: string; administrative?: string; year?: string[]; type?: string[]; scenario?: string[]; department?: string[]; status?: string[]; modality?: string[]; quality?: string[];
   plannedFrom?: string; plannedTo?: string; performedFrom?: string; performedTo?: string; page?: string;
 };
@@ -20,6 +22,17 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
   for (const [key, from, to] of [["plannedDate", filters.plannedFrom, filters.plannedTo], ["performedDate", filters.performedFrom, filters.performedTo]] as const) {
     const gte = day(from), lte = day(to); if (gte || lte) and.push({ [key]: { ...(gte ? { gte } : {}), ...(lte ? { lte } : {}) } });
   }
+  if (filters.findings === "yes") and.push({ findings: { some: { isActive: true } } });
+  if (filters.findings === "no") and.push({ findings: { none: { isActive: true } } });
+  const criticalities = validValues(filters.criticality, ["CRITICAL","MAJOR","MINOR","NA"] as const);
+  if (criticalities.length) and.push({ findings: { some: { isActive: true, criticality: { in: criticalities as AuditFindingCriticality[] } } } });
+  const pending = { isActive: true, actions: { some: { isActive: true, status: { in: pendingActionStatuses } } } };
+  if (filters.pendingActions === "yes") and.push({ findings: { some: pending } });
+  if (filters.pendingActions === "no") and.push({ findings: { none: pending } });
+  for (const [type, value] of [["DEVIATION", filters.relatedDeviation], ["CAPA", filters.relatedCapa]] as const) {
+    const relation = { isActive: true, relationType: "GENERATES" as const, targetRecord: { recordType: type } };
+    if (value === "yes" || value === "no") and.push({ qmsRecord: { sourceRelations: { [value === "yes" ? "some" : "none"]: relation } } });
+  }
   const q = filters.q?.trim().slice(0, 500);
   if (q) {
     const contains = { contains: q, mode: "insensitive" as const };
@@ -28,6 +41,8 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
       ...["title", "scope", "referenceText", "externalReference", "auditedEntityName", "auditingEntityName", "entityCode"].map(key => ({ [key]: contains })),
       { participants: { some: { isActive: true, OR: [{ displayName: contains }, { organization: contains }, { position: contains }] } } },
       { departments: { some: { isActive: true, OR: [{ departmentCodeSnapshot: contains }, { departmentNameSnapshot: contains }] } } },
+      { findings: { some: { isActive: true, OR: [{ reference: contains }, { description: contains }, { actions: { some: { isActive: true, description: contains } } }] } } },
+      { qmsRecord: { sourceRelations: { some: { isActive: true, targetRecord: { OR: [{ businessCode: contains }, { annulledBusinessCode: contains }] } } } } },
     ] });
   }
   return { AND: and };
@@ -35,10 +50,17 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
 export async function getAuditList(filters: AuditListFilters) {
   const where = auditListWhere(filters), pageSize = 25;
   return prisma.$transaction(async tx => {
+    // Next review is the value in the latest chronological followup, including an explicit blank.
+    const validDay = (value?: string) => value && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value ? new Date(value) : null;
+    const from = validDay(filters.nextReviewFrom), to = validDay(filters.nextReviewTo);
+    if (from || to) {
+      const ids = await tx.$queryRaw<{auditId:string}[]>(Prisma.sql`SELECT "auditId" FROM (SELECT DISTINCT ON ("auditId") "auditId", "nextReviewDate" FROM "AuditFollowup" ORDER BY "auditId", "followupDate" DESC, "createdAt" DESC, id DESC) latest WHERE "nextReviewDate" IS NOT NULL ${from ? Prisma.sql`AND "nextReviewDate" >= ${from}` : Prisma.empty} ${to ? Prisma.sql`AND "nextReviewDate" <= ${to}` : Prisma.empty}`);
+      (where.AND as Prisma.AuditWhereInput[]).push({ id: { in: ids.map(r => r.auditId) } });
+    }
     const total = await tx.audit.count({ where });
     const page = Math.min(Math.max(1, Number(filters.page) || 1), Math.max(1, Math.ceil(total / pageSize)));
     const [rows, departments, years] = await Promise.all([
-      tx.audit.findMany({ where, include: { qmsRecord: true, departments: { where: { isActive: true } }, participants: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } }, orderBy: [{ createdAt: "desc" }, { id: "asc" }], skip: (Math.floor(page) - 1) * pageSize, take: pageSize }),
+      tx.audit.findMany({ where, include: { findings: { where: { isActive: true }, select: { isActive: true, findingType: true, criticality: true, treatment: true, treatmentStatus: true, actions: { where: { isActive: true }, select: { isActive: true, status: true } } } }, followups: { orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }, { id: "desc" }], take: 1, select: { nextReviewDate: true } }, qmsRecord: { include: { _count: { select: { sourceRelations: { where: { isActive: true } } } } } }, departments: { where: { isActive: true } }, participants: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } }, orderBy: [{ createdAt: "desc" }, { id: "asc" }], skip: (Math.floor(page) - 1) * pageSize, take: pageSize }),
       tx.department.findMany({ orderBy: { code: "asc" } }),
       tx.qmsRecord.findMany({ where: { recordType: "AUDIT", year: { not: null } }, distinct: ["year"], select: { year: true }, orderBy: { year: "desc" } }),
     ]);

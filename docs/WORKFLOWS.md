@@ -261,3 +261,7 @@ Las reglas configuran preaviso y severidad. Hito 9 no envía notificaciones.
 ## Auditorías · alta y apertura R3A
 
 Guardar Borrador admite campos funcionales vacíos. Abrir exige tipo/escenario compatible, objeto, alcance, fecha prevista si no está realizada, áreas y área de codificación para internas, entidad y código entidad para proveedor y al menos un auditor. Con varios auditores se exige exactamente un jefe. Planificación puede preceder a realización. Ediciones conservan UUID de hijos; retirar desactiva, no elimina. No se vuelve a Borrador tras apertura. Cierre definitivo queda reservado a R3B/R3C. Historial operativo registra cambios reales. Anulación conserva expediente y código histórico reservado; AUDIT sin código se puede reactivar.
+
+## Auditorías R3B — tratamiento y seguimiento
+
+Guardar un hallazgo asigna OBS/Rk; editar/reordenar conserva referencia/UUID. Registrar tratamiento y acciones múltiples, sus estados y evidencia textual. Vincular Desviación/CAPA existente mediante buscador UUID; varios hallazgos comparten la misma QmsRelation con atribuciones distintas. Consultar estado vivo y navegar desde ambos extremos. Retirar atribución conserva relación; retirar relación global requiere cero atribuciones activas y motivo. Retirar hallazgo conserva hijos, referencias e historial. Añadir seguimiento general o del hallazgo; timeline descendente con próxima revisión. Reglas derivadas y validaciones en D-065/docs/AUDITS_R3B.md. Cierre definitivo bloqueado hasta R3C.

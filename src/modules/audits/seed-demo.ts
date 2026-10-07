@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 export async function seedAuditDemo(prisma: PrismaClient) {
   const department = await prisma.department.findUniqueOrThrow({ where: { code: "GC-00" } });
@@ -13,5 +14,13 @@ export async function seedAuditDemo(prisma: PrismaClient) {
     { auditId: audit.id, displayName: "Interlocutor demo", role: "AUDITEE", sortOrder: 20 },
   ] });
   if (!(await prisma.changeHistory.count({ where: { qmsRecordId: qms.id } }))) await prisma.changeHistory.create({ data: { qmsRecordId: qms.id, fieldPath: "__created__", changedByText: "Usuario demo", reason: "Alta demo ficticia de Auditoría R3A", source: "SYSTEM" } });
+  const obs = await prisma.auditFinding.upsert({ where: { auditId_reference: { auditId: audit.id, reference: "OBS 01" } }, update: {}, create: { auditId: audit.id, reference: "OBS 01", findingType: "FINDING", criticality: "MINOR", description: "OBS FICTICIA: revisión de una instrucción simulada", treatment: "Actualización documental simulada", createdByText: "Usuario demo" } });
+  await prisma.auditFinding.upsert({ where: { auditId_reference: { auditId: audit.id, reference: "Rk 01" } }, update: {}, create: { auditId: audit.id, reference: "Rk 01", findingType: "RECOMMENDATION", criticality: "NA", description: "RECOMENDACIÓN FICTICIA: mejorar el índice documental", sortOrder: 10, createdByText: "Usuario demo" } });
+  const childUuid = (key: string) => { const hex = createHash("sha256").update(`${audit.id}:${key}`).digest("hex"); return `${hex.slice(0,8)}-${hex.slice(8,12)}-4${hex.slice(13,16)}-8${hex.slice(17,20)}-${hex.slice(20,32)}`; };
+  const previousAction = await prisma.auditFindingAction.findFirst({where:{findingId:obs.id,description:"Acción FICTICIA: revisar índice"},select:{id:true}});
+  const previousFollowup = await prisma.auditFollowup.findFirst({where:{auditId:audit.id,description:"Seguimiento FICTICIO del ejemplo"},select:{id:true}});
+  const actionId = previousAction?.id ?? childUuid("demo-action-1"), followupId = previousFollowup?.id ?? childUuid("demo-followup-1");
+  await prisma.auditFindingAction.upsert({ where: { id: actionId }, update: {}, create: { id: actionId, findingId: obs.id, description: "Acción FICTICIA: revisar índice", responsible: "Responsable demo", targetDate: new Date("2026-11-20"), createdByText: "Usuario demo" } });
+  await prisma.auditFollowup.upsert({ where: { id: followupId }, update: {}, create: { id: followupId, auditId: audit.id, findingId: obs.id, followupDate: new Date("2026-11-12"), completedByText: "Usuario demo", description: "Seguimiento FICTICIO del ejemplo", nextReviewDate: new Date("2026-11-20"), createdByText: "Usuario demo" } });
   return audit;
 }

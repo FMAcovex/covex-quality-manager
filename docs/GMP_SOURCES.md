@@ -69,3 +69,7 @@ No codificar plazos reglados basándose únicamente en un Excel histórico o mem
 ## Fuentes de Auditorías comunicadas para R3A
 
 Fuentes funcionales declaradas y aprobadas por el usuario: GC-00/033/03 Auditorías internas, vigencia 10/04/2026; GC-00/034/04 Auditorías externas, vigencia 08/06/2026. El usuario confirma revisión de sus anexos y programas/informes 2026. Los binarios no se han recibido ni verificado en esta fase: no se registran hashes inventados ni plantillas supuestamente instaladas. R3A implementa las reglas expresamente recogidas en la solicitud; documentos oficiales quedan para R3C.
+
+## Fuentes funcionales de R3B
+
+Se implementan los datos de hallazgos y CAPA Plan, atribuciones y seguimiento expresamente aprobados en la solicitud de R3B, tomando GC-00/033/03 (10/04/2026) y GC-00/034/04 (08/06/2026) como referencias declaradas. No se instalan ni verifican binarios oficiales, se generan anexos o se inventan plazos por criticidad, reglas de eficacia o cierre GMP. La incorporación documental queda para R3C.

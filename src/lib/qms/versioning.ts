@@ -185,11 +185,12 @@ export function serializeCapaVersion(
         relation.isActive &&
         relation.relationType === "GENERATES" &&
         (relation.sourceRecord.recordType === "DEVIATION" ||
-          relation.sourceRecord.recordType === "COMPLAINT"),
+          relation.sourceRecord.recordType === "COMPLAINT" || relation.sourceRecord.recordType === "AUDIT"),
     )
     .map((relation) => ({
       recordType: relation.sourceRecord.recordType,
       businessCode: relation.sourceRecord.businessCode ?? null,
+      ...(relation.sourceRecord.recordType === "AUDIT" ? { qmsRecordId: relation.sourceRecord.id, findings: ((relation as typeof relation & { auditFindingRelations?: { finding: { id: string; reference: string } }[] }).auditFindingRelations ?? []).map(a => ({ id: a.finding.id, reference: a.finding.reference })) } : {}),
     }));
 
   return {
@@ -674,6 +675,7 @@ export function capaSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
     effectiveClosedAt: dateValue(d.effectiveClosedAt),
     origins: objectArray(d.origins).length
       ? objectArray(d.origins).map((item) => ({
+          ...(item.recordType === "AUDIT" ? { qmsRecordId: stringValue(item.qmsRecordId), findings: objectArray(item.findings) } : {}),
           recordType: stringValue(item.recordType),
           businessCode: stringValue(item.businessCode),
         }))

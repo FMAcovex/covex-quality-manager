@@ -6,7 +6,7 @@ import type { CapaOriginInput } from "@/modules/capa/types";
 type Suggestion = CapaOriginInput;
 
 const typeLabel = (value: CapaOriginInput["recordType"]) =>
-  value === "DEVIATION" ? "Desviación" : "Reclamación";
+  value === "DEVIATION" ? "Desviación" : value === "AUDIT" ? "Auditoría" : "Reclamación";
 
 export function CapaOriginSelector({
   value,
@@ -73,12 +73,12 @@ export function CapaOriginSelector({
   return (
     <div className="field span-3">
       <span>Expedientes de origen</span>
-      <small className="muted-note">Selecciona una o varias Desviaciones o Reclamaciones reales.</small>
+      <small className="muted-note">Selecciona una o varias Desviaciones, Reclamaciones o Auditorías reales.</small>
       {value.length ? (
         <div className="relation-chips">
           {value.map((item) => (
             <span className="relation-chip" key={item.id}>
-              <strong>{item.businessCode}</strong> · {typeLabel(item.recordType)}
+              <strong>{item.businessCode || item.displayLabel || `Auditoría · ${item.id.slice(0, 8)}`}</strong> · {typeLabel(item.recordType)}
               {!disabled ? (
                 <button type="button" className="button small" onClick={() => onChange(value.filter((selected) => selected.id !== item.id))}>
                   Quitar
@@ -94,7 +94,7 @@ export function CapaOriginSelector({
             <span>Tipo</span>
             <select value={selectedType} onChange={(event) => { setSelectedType(event.target.value as CapaOriginInput["recordType"]); setQuery(""); }}>
               <option value="DEVIATION">Desviación</option>
-              <option value="COMPLAINT">Reclamación</option>
+              <option value="COMPLAINT">Reclamación</option><option value="AUDIT">Auditoría</option>
             </select>
           </label>
           <label className="field relation-code-field">
@@ -104,7 +104,7 @@ export function CapaOriginSelector({
                 ref={inputRef}
                 value={query}
                 autoComplete="off"
-                placeholder={selectedType === "DEVIATION" ? "D/GC-..." : "REC-..."}
+                placeholder={selectedType === "DEVIATION" ? "D/GC-..." : selectedType === "AUDIT" ? "Código, objeto o referencia" : "REC-..."}
                 role="combobox"
                 aria-expanded={focused && Boolean(query.trim())}
                 aria-controls={listId}
@@ -117,7 +117,7 @@ export function CapaOriginSelector({
                   {loading ? <div className="search-no-results">Buscando expedientes…</div> : suggestions.length ? (
                     suggestions.map((item) => (
                       <button type="button" role="option" aria-selected="false" key={item.id} onMouseDown={(event) => event.preventDefault()} onClick={() => add(item)}>
-                        <strong>{item.businessCode}</strong>
+                        <strong>{item.businessCode || item.displayLabel || `Auditoría · ${item.id.slice(0, 8)}`}</strong>
                         <span>{typeLabel(item.recordType)}</span>
                         <small>{item.year ?? ""}</small>
                       </button>
