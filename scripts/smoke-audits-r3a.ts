@@ -29,7 +29,7 @@ async function main() {
   await assert.rejects(saveAudit(stale,audit.id), /cambió/);
   await assert.rejects(saveAudit({...auditDefaults(audit),status:"DRAFT"},audit.id), /Borrador/);
   await assert.rejects(saveAudit({...auditDefaults(audit),departmentIds:[other.id]},audit.id), /codificación/);
-  await assert.rejects(saveAudit({...auditDefaults(audit),status:"CLOSED"},audit.id), /R3B/);
+  await assert.rejects(saveAudit({...auditDefaults(audit),status:"CLOSED"},audit.id), /Informe y cierre/);
   await assert.rejects(saveAudit({...auditDefaults(audit),businessCode:"AI/GC-00/99/2097"},audit.id), /modificar/);
   for (const filters of [{q:marker},{q:"Auditor ficticio",year:["2097"],type:["INTERNAL"]},{q:marker,department:[other.id]},{q:marker,scenario:["INTERNAL_COVEX"],status:["OPEN"]},{q:marker,plannedFrom:"2099-01-01",performedTo:"2098-12-31"}]) assert((await getAuditList(filters)).rows.some(r=>r.id===audit.id));
   assert.equal((await getAuditList({q:marker,type:["EXTERNAL"]})).total,0);

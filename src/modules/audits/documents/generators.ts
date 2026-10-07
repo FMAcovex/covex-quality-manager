@@ -114,6 +114,9 @@ export function generateAuditCapaPlan(template: Buffer, s: AuditReportSnapshot, 
   const xmlRows=Array.from({length:count},(_,i)=>{
     let row=templateRow.replace(/\br="([A-Z]*)(\d+)"/g,(_m,c)=>`r="${c}${11+i}"`);
     for(let c=0;c<11;c++)row=setXlsxCell(row,`${String.fromCharCode(65+c)}${11+i}`,rows[i]?.[c] ?? "");
+    // Fixed source height clips/overlaps populated wrapped cells. Let Office
+    // calculate the height from the existing widths, fonts and wrap styles.
+    if (rows[i]) row=row.replace(/\s(?:ht|customHeight)="[^"]*"/g,"");
     return row;
   }).join("");
   if (delta) {
