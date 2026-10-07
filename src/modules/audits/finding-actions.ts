@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { saveAuditFinding, saveAuditFindingAction, saveAuditFollowup, retireAuditElement, linkAuditFinding, retireAuditAttribution, unlinkAuditRecord } from "./finding-service";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
+export type AuditRetirementFormState = RelationActionState & { savedHref?: string };
 export type AuditChildFormState = { error: string | null; values?: Record<string, string>; revision?: number; savedHref?: string };
 function invalidate(auditId: string) {
   for (const path of ["/audits", `/audits/${auditId}`, "/capa", "/deviations"]) revalidatePath(path);
@@ -23,15 +24,15 @@ export async function linkAuditFindingAction(auditId: string, findingId: string,
   try { await linkAuditFinding(auditId, findingId, String(form.get("targetRecordId") ?? ""), String(form.get("actor") ?? "")); invalidate(auditId); return { error: null, success: "Expediente vinculado al hallazgo." }; }
   catch (e) { return { error: e instanceof Error ? e.message : "No se pudo vincular." }; }
 }
-export async function retireAuditChildAction(auditId: string, findingId: string, actionId: string | undefined, _state: RelationActionState, form: FormData): Promise<RelationActionState> {
-  try { await retireAuditElement(auditId, findingId, { actor: form.get("actor"), reason: form.get("reason") }, actionId); invalidate(auditId); return { error: null, success: "Retirada registrada." }; }
+export async function retireAuditChildAction(auditId: string, findingId: string, actionId: string | undefined, _state: AuditRetirementFormState, form: FormData): Promise<AuditRetirementFormState> {
+  try { await retireAuditElement(auditId, findingId, { actor: form.get("actor"), reason: form.get("reason") }, actionId); return { error: null, success: "Retirada registrada.", savedHref: `/audits/${auditId}?tab=findings` }; }
   catch (e) { return { error: e instanceof Error ? e.message : "No se pudo retirar." }; }
 }
-export async function retireAuditAttributionAction(auditId: string, findingId: string, attributionId: string, _state: RelationActionState, form: FormData): Promise<RelationActionState> {
-  try { await retireAuditAttribution(auditId, findingId, attributionId, { actor: form.get("actor"), reason: form.get("reason") }); invalidate(auditId); return { error: null, success: "Atribución retirada; vínculo global conservado." }; }
+export async function retireAuditAttributionAction(auditId: string, findingId: string, attributionId: string, _state: AuditRetirementFormState, form: FormData): Promise<AuditRetirementFormState> {
+  try { await retireAuditAttribution(auditId, findingId, attributionId, { actor: form.get("actor"), reason: form.get("reason") }); return { error: null, success: "Atribución retirada; vínculo global conservado.", savedHref: `/audits/${auditId}?tab=findings#audit-finding-${findingId}` }; }
   catch (e) { return { error: e instanceof Error ? e.message : "No se pudo retirar." }; }
 }
-export async function unlinkAuditRecordAction(auditId: string, targetRecordId: string, _state: RelationActionState, form: FormData): Promise<RelationActionState> {
-  try { await unlinkAuditRecord(auditId, targetRecordId, { actor: form.get("actor"), reason: form.get("reason") }); invalidate(auditId); return { error: null, success: "Expedientes desvinculados." }; }
+export async function unlinkAuditRecordAction(auditId: string, targetRecordId: string, _state: AuditRetirementFormState, form: FormData): Promise<AuditRetirementFormState> {
+  try { await unlinkAuditRecord(auditId, targetRecordId, { actor: form.get("actor"), reason: form.get("reason") }); return { error: null, success: "Expedientes desvinculados.", savedHref: `/audits/${auditId}?tab=relations` }; }
   catch (e) { return { error: e instanceof Error ? e.message : "No se pudo desvincular." }; }
 }

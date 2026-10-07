@@ -1,19 +1,21 @@
 "use client";
 import { useActionState, useEffect } from "react";
 import { actionStatusLabels, criticalityLabels, findingTypeLabels } from "./finding-domain";
-import type { AuditChildFormState } from "./finding-actions";
-import type { RelationActionState } from "@/lib/qms/relation-form-types";
-export function AuditChildForm({ action, kind, defaults = {}, findings = [], buttonLabel = "Guardar" }: { action: (state: AuditChildFormState, form: FormData) => Promise<AuditChildFormState>; kind: "finding" | "action" | "followup"; defaults?: Record<string,string>; findings?: {id:string;reference:string;isActive:boolean}[]; buttonLabel?: string }) {
-  const [state, formAction, pending] = useActionState(action, { error: null } as AuditChildFormState);
+import type { AuditChildFormState, AuditRetirementFormState } from "./finding-actions";
+function useSavedAuditNavigation(savedHref?: string) {
   useEffect(() => {
-    if (!state.savedHref) return;
-    const target = new URL(state.savedHref, window.location.href);
+    if (!savedHref) return;
+    const target = new URL(savedHref, window.location.href);
     if (target.pathname === window.location.pathname && target.search === window.location.search) {
       // A fragment-only navigation would retain the current RSC tree after saving.
       window.history.replaceState(window.history.state, "", target.href);
       window.location.reload();
     } else window.location.assign(target.href);
-  }, [state.savedHref]);
+  }, [savedHref]);
+}
+export function AuditChildForm({ action, kind, defaults = {}, findings = [], buttonLabel = "Guardar" }: { action: (state: AuditChildFormState, form: FormData) => Promise<AuditChildFormState>; kind: "finding" | "action" | "followup"; defaults?: Record<string,string>; findings?: {id:string;reference:string;isActive:boolean}[]; buttonLabel?: string }) {
+  const [state, formAction, pending] = useActionState(action, { error: null } as AuditChildFormState);
+  useSavedAuditNavigation(state.savedHref);
   const values = { ...defaults, ...state.values };
   const field = (name: string, label: string, type = "text", required = false) => <label className={`field ${type === "textarea" ? "full" : ""}`} key={name}><span>{label}</span>{type === "textarea" ? <textarea name={name} defaultValue={values[name] ?? ""} required={required} rows={3}/> : <input name={name} type={type} defaultValue={values[name] ?? (name === "actor" ? "Usuario demo" : name === "sortOrder" ? "0" : "")} required={required}/>}</label>;
   const select = (name: string, label: string, labels: Record<string,string>, initial: string) => <label className="field"><span>{label}</span><select name={name} defaultValue={values[name] ?? initial}>{Object.entries(labels).map(([value,text]) => <option key={value} value={value}>{text}</option>)}</select></label>;
@@ -29,7 +31,8 @@ export function AuditChildForm({ action, kind, defaults = {}, findings = [], but
     <div className="full"><button className="button primary" disabled={pending}>{pending ? "Guardando…" : buttonLabel}</button></div>
   </form>;
 }
-export function AuditRetirementForm({ action, label }: { action: (state: RelationActionState, form: FormData) => Promise<RelationActionState>; label: string }) {
-  const [state, formAction, pending] = useActionState(action, { error: null } as RelationActionState);
+export function AuditRetirementForm({ action, label }: { action: (state: AuditRetirementFormState, form: FormData) => Promise<AuditRetirementFormState>; label: string }) {
+  const [state, formAction, pending] = useActionState(action, { error: null } as AuditRetirementFormState);
+  useSavedAuditNavigation(state.savedHref);
   return <form action={formAction} className="audit-child-form"><p className="full">{label}</p>{state.error ? <p className="form-errors full" role="alert">{state.error}</p> : null}{state.success ? <p className="form-success full">{state.success}</p> : null}<label className="field"><span>Motivo</span><input name="reason" required/></label><label className="field"><span>Registrado por</span><input name="actor" required defaultValue="Usuario demo"/></label><div className="full"><button className="button danger small" disabled={pending}>{label}</button></div></form>;
 }
