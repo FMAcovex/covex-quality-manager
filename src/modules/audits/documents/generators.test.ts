@@ -22,4 +22,10 @@ describe('Generadores de Auditorías sobre plantilla',()=>{
   expect(output.match(/<row\b[^>]*r="12"[^>]*>/)?.[0]).toContain('ht="30.75"');
   expect(output).toContain(description);expect(getZipEntryText(result,'xl/styles.xml')).toBe(getZipEntryText(entries,'xl/styles.xml'));
  });
+ it('pagina verticalmente el CAPA Plan cumplimentado sin comprimirlo en una sola página',()=>{
+  const entries=readZip(syntheticAuditCapaPlan());updateZipEntry(entries,'xl/worksheets/sheet1.xml',getZipEntryText(entries,'xl/worksheets/sheet1.xml').replace('</worksheet>','<pageSetup paperSize="9" scale="60" orientation="landscape"/></worksheet>'));
+  const s=snapshot();s.audit.findings=[{id:'uuid',reference:'OBS 01',findingType:'FINDING',criticality:'MINOR',isActive:true,description:'Texto largo '.repeat(100),treatmentStatus:'OPEN',actions:[],relations:[]} as unknown as typeof s.audit.findings[number]];
+  const xml=getZipEntryText(readZip(generateAuditCapaPlan(writeZip(entries),s,0)),'xl/worksheets/sheet1.xml');
+  expect(xml).toContain('<pageSetup paperSize="9" scale="60" orientation="landscape" fitToWidth="1" fitToHeight="0"/>');
+ });
 });

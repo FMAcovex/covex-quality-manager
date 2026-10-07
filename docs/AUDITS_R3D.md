@@ -7,10 +7,10 @@ Baseline: `cc097c1312bbed5890ac2180635919479a328e8a`, R3A/R3B/R3C fusionados. Ra
 ## Defectos corregidos
 
 1. **Adjuntos falsos aceptados como Office.** La comprobación de los dos bytes `PK` admitía texto con ese prefijo, un ZIP arbitrario o un XLSX renombrado DOCX. La validación comprueba ahora ZIP, tamaños y CRC, partes OPC de contenido/relaciones y parte principal correspondiente a la extensión. Verifica MIME declarado, admite MIME vacío/genérico del navegador y conserva el MIME correcto. Límite de archivo 15 MB y expansión acumulada 60 MB, incluso con tamaño declarado manipulado. Se aplica también la coherencia MIME al PDF firmado de Auditorías. No cambia el servicio PDF transversal.
-2. **CAPA Plan con textos largos superpuestos.** Las filas cumplimentadas heredaban `ht="30.75" customHeight="1"` de la fila vacía oficial. En el render real los textos invadían cabecera y otras filas. Se permite altura automática únicamente en filas cumplimentadas, conservando fuentes, anchos, estilos, colores, columnas, firmas, hojas y contenido. La comparación antes/después con LibreOffice elimina el solapamiento.
+2. **CAPA Plan con textos largos superpuestos.** Las filas cumplimentadas heredaban `ht="30.75" customHeight="1"` de la fila vacía oficial. En el render real los textos invadían cabecera y otras filas. La plantilla también activaba ajuste a página con altura implícita de una página, comprimiendo un plan largo hasta hacerlo ilegible. Se permite paginación vertical con una página de ancho y altura automática únicamente en filas cumplimentadas, conservando fuentes, anchos, estilos, colores, columnas, firmas, hojas y contenido. La comparación visual antes/después con LibreOffice elimina el solapamiento y la reducción de toda la tabla a una página; el plan extenso se distribuye verticalmente con tamaño legible, conservando pie/firmas y títulos de impresión originales.
 3. **Mensaje de cierre obsoleto.** El formulario base seguía anunciando que el cierre llegaría en R3B/R3C. Ahora remite a «Informe y cierre» y mantiene el bloqueo de cierre desde el formulario base, evitando eludir las comprobaciones QA.
 
-Ocho pruebas del defecto de adjuntos y una del defecto de altura. El smoke R3A conserva la comprobación de bloqueo con el mensaje actualizado. No se añaden pruebas permanentes para comportamientos que ya funcionaban.
+Ocho pruebas del defecto de adjuntos y dos del defecto de altura/paginación. El smoke R3A conserva la comprobación de bloqueo con el mensaje actualizado. No se añaden pruebas permanentes para comportamientos que ya funcionaban.
 
 ## Regresión integrada
 
@@ -44,9 +44,9 @@ PDF 00/01 independientes, ownership/checksum/descarga y no sobrescritura comprob
 - Listados: búsqueda y filtros SQL, paginación/ColumnSelector, Review agregado; consultas de metadatos no cargan GeneratedDocument.fileData. No se detectó N+1 que requiera corrección.
 - Navegador de producción Node 22, servidor UTC y Chromium Madrid: R2C UI, R3A UI ×3, R3B UI y R3C UI con fuentes oficiales; responsive 1440/768/390, formularios, tabs, retirados, Review, documentos, versiones y cierre sin errores JS/hidratación.
 - Regresión PostgreSQL: los 35 smokes existentes del pipeline, incluidos Desviaciones, CAPA, CC, Reclamaciones, Devoluciones, Review y Auditorías.
-- Quality final: Prisma validate/generate, lint, **320 tests en 65 archivos**, build. Permanecen los dos warnings de hooks preexistentes de CAPA/CC.
+- Quality final: Prisma validate/generate, lint, **321 tests en 65 archivos**, build. Permanecen los dos warnings de hooks preexistentes de CAPA/CC.
 - Evidencia local: logs de regresión/quality/navegador en `/tmp/r3d-*.log`; exportaciones ficticias en `reports/audits/r3d/`, excluidas de Git. Los binarios oficiales permanecen excluidos de Git.
 
 Pendientes de alcance posterior: Plan Maestro anual y alertas. Sin nueva funcionalidad, estados, reglas GMP/cierre/codificación, entidades, roles, dashboard, firma electrónica o integración. No se modifica el patrón estable de Server Action → resultado confirmado → navegación cliente; no se añaden retries, timeouts ni sleeps.
 
-El cierre final y la declaración COMPLETADO se registrarán después de verificar CI verde en la PR.
+Primera ejecución CI verde: https://github.com/FMAcovex/covex-quality-manager/actions/runs/37692547298 (a054bca). La corrección adicional de paginación detectada en la inspección visual final requiere verificar de nuevo CI antes de declarar COMPLETADO.

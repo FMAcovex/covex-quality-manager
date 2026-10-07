@@ -119,6 +119,9 @@ export function generateAuditCapaPlan(template: Buffer, s: AuditReportSnapshot, 
     if (rows[i]) row=row.replace(/\s(?:ht|customHeight)="[^"]*"/g,"");
     return row;
   }).join("");
+  // The source's implicit one-page height makes a long populated plan tiny.
+  // Keep one page across its existing columns and allow vertical pagination.
+  if (rows.length) sheet=sheet.replace(/<pageSetup\b([^>]*)\/>/,(_m,attributes)=>`<pageSetup${attributes.replace(/\sfitTo(?:Width|Height)="[^"]*"/g,"")} fitToWidth="1" fitToHeight="0"/>`);
   if (delta) {
     sheet=sheet.replace(/(<autoFilter\b[^>]*ref="A10:K)20"/,`$1${20+delta}"`).replace(/(<xm:sqref>[BDI]11:[BDI])20(<\/xm:sqref>)/g,`$1${20+delta}$2`);
     const workbook=getZipEntryText(entries,"xl/workbook.xml").replace(/(\$A\$10:\$K\$)20/g,`$1${20+delta}`);
