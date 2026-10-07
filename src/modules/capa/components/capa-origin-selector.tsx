@@ -73,7 +73,7 @@ export function CapaOriginSelector({
   return (
     <div className="field span-3">
       <span>Expedientes de origen</span>
-      <small className="muted-note">Selecciona una o varias Desviaciones o Reclamaciones reales.</small>
+      <small className="muted-note">Selecciona una o varias Desviaciones, Reclamaciones o Auditorías reales.</small>
       {value.length ? (
         <div className="relation-chips">
           {value.map((item) => (
