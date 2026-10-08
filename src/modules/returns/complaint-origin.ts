@@ -14,10 +14,12 @@ export type ComplaintReturnClient = Pick<
 >;
 
 const complaintSelect = {
+  status:true,
   qmsRecordId: true,
   qmsRecord: {
     select: {
       businessCode: true,
+      isActive:true,
     },
   },
 } as const;
@@ -36,6 +38,8 @@ export async function getComplaintReturnOrigin(
       "La reclamación de origen ya no existe.",
     );
   }
+
+  if(complaint.status==="DRAFT"||complaint.qmsRecord.isActive===false)throw new ComplaintReturnLinkError("La reclamación de origen debe estar activa y operativa.");
 
   return {
     complaintQmsRecordId: complaint.qmsRecordId,

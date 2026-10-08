@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { RecordVersionDocumentKind } from "@prisma/client";
+import { DocumentType,Prisma,RecordVersionDocumentKind } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 export const MAX_SIGNED_PDF_SIZE = 15 * 1024 * 1024;
@@ -50,6 +50,7 @@ export function validateSignedPdfSelection(
 }
 
 export async function storeSignedVersionPdf({
+  archiveReturnType,
   qmsRecordId,
   recordVersionId,
   file,
@@ -60,6 +61,7 @@ export async function storeSignedVersionPdf({
   kind = RecordVersionDocumentKind.SIGNED_PDF,
   historyFieldPath = "__signed_document__",
 }: {
+  archiveReturnType?:DocumentType;
   qmsRecordId: string;
   recordVersionId: string;
   file: File;
@@ -84,7 +86,7 @@ export async function storeSignedVersionPdf({
   }
 
   const checksum = createHash("sha256").update(bytes).digest("hex");
-  const existingDocument = await prisma.recordVersionDocument.findUnique({
+  let existingDocument = await prisma.recordVersionDocument.findUnique({
     where: {
       recordVersionId_kind: {
         recordVersionId,
@@ -109,6 +111,21 @@ export async function storeSignedVersionPdf({
   }
 
   await prisma.$transaction(async (tx) => {
+    if(archiveReturnType){
+      const {lockReturn}=await import("@/modules/returns/snapshot-service");await lockReturn(tx,qmsRecordId);
+      const current=await tx.returnRecord.findUnique({where:{qmsRecordId},select:{status:true,qmsRecord:{select:{isActive:true}}}});
+      if(!current?.qmsRecord.isActive||current.status==="DRAFT")throw new Error("La devolución debe estar activa y operativa para cargar PDF.");
+      const currentDocument=await tx.recordVersionDocument.findUnique({where:{recordVersionId_kind:{recordVersionId,kind}}});
+      existingDocument=currentDocument;
+      if(currentDocument&&!replacementReason)throw new Error("Para sustituir un PDF firmado debe indicarse el motivo.");
+      if(currentDocument){
+        // Archive a legacy upload once. Its original data snapshot is unknown.
+        const archived=await tx.generatedDocument.findFirst({where:{qmsRecordId,documentType:archiveReturnType,checksum:currentDocument.checksum,mimeType:"application/pdf"},select:{id:true}});
+        if(!archived)await tx.generatedDocument.create({data:{qmsRecordId,recordVersionId,documentType:archiveReturnType,fileData:currentDocument.fileData,fileName:currentDocument.fileName,mimeType:"application/pdf",checksum:currentDocument.checksum,generatedAt:currentDocument.uploadedAt,generatedByText:currentDocument.uploadedByText,metadata:{source:"legacy-signed-upload",kind,originalSnapshotKnown:false}}});
+      }
+      const snapshot=await tx.qmsRecordVersion.findUniqueOrThrow({where:{id:recordVersionId},select:{snapshot:true}});
+      await tx.generatedDocument.create({data:{qmsRecordId,recordVersionId,documentType:archiveReturnType,fileData:bytes,fileName:file.name,mimeType:"application/pdf",checksum,generatedByText:actor,metadata:{source:"signed-upload",kind,replacementReason,observedSnapshot:snapshot.snapshot} as Prisma.InputJsonObject}});
+    }
     await tx.recordVersionDocument.upsert({
       where: {
         recordVersionId_kind: {

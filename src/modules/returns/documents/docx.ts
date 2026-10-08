@@ -1,12 +1,15 @@
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { extractWordBodyRange,fillWordRowBalanced,replaceWordRowWithCopies,replaceWordRowsRangeBalanced,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { escapeXml,extractWordBodyRange,fillWordRowBalanced,replaceWordRowWithCopies,replaceWordRowsRangeBalanced,setWordCellTextBalanced } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
 
-type Product={id:string;productType:string;productNameCode:string;format:string|null;lot:string|null;expiryReanalysis:string|null;quantity:string|null;unit:string|null;netWeight:string|null;grossWeight:string|null;receptionObservations:string|null;receivedBy:string|null;receivedByDate:Date|null;verifiedBy:string|null;verifiedByDate:Date|null};
+import {contextFromExtraData} from "../rules";
+
+type Product={otherProductType?:string|null;id:string;productType:string;productNameCode:string;format:string|null;lot:string|null;expiryReanalysis:string|null;quantity:string|null;unit:string|null;netWeight:string|null;grossWeight:string|null;receptionObservations:string|null;receivedBy:string|null;receivedByDate:Date|null;verifiedBy:string|null;verifiedByDate:Date|null};
 type Followup={followupDate:Date;comment:string;nextFollowupDate:Date|null;evidenceReference:string|null};
 export type ReturnDocumentRecord={
+ extraData?:unknown;
  qmsRecord:{businessCode:string|null};communicationDate:Date|null;receivedAt:Date|null;returnType:string;otherReturnType:string|null;customerEntity:string|null;country:string|null;address:string|null;
  relatedDocument:string|null;conservationConditions:string|null;deliveryNote:string|null;reasonObservations:string|null;attachedDocumentation:string|null;
  withinAcceptedReturnPeriod:string|null;roomTemperatureWithinTenDays:string|null;coldChainWithinFortyEightHours:string|null;uniqueIdentifierActive:string|null;tamperEvidenceIntact:string|null;
@@ -44,16 +47,16 @@ export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,1,0,3,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,1,date(r.receivedAt));
  xml=setWordCellTextBalanced(xml,1,1,3,[box(r.returnType==="COMMERCIAL","Comercial"),box(r.returnType==="COMPLAINT","Reclamación"),box(r.returnType==="RECALL","Retirada"),box(r.returnType==="EXPIRY","Caducidad"),box(r.returnType==="TRANSPORT","Transporte"),box(r.returnType==="OTHER",`Otra: ${text(r.otherReturnType)}`)].join("   "));
  xml=setWordCellTextBalanced(xml,1,2,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,2,3,text(r.country));xml=setWordCellTextBalanced(xml,1,3,1,text(r.address));xml=setWordCellTextBalanced(xml,1,4,1,text(r.relatedDocument));
- xml=setWordCellTextBalanced(xml,2,0,1,[...new Set(r.products.map(x=>productType(x.productType)))].join(" · "));xml=setWordCellTextBalanced(xml,2,1,1,text(r.conservationConditions));xml=setWordCellTextBalanced(xml,2,1,3,text(r.deliveryNote));
+ xml=setWordCellTextBalanced(xml,2,0,1,[...new Set(r.products.map(x=>x.productType==="OTHER"&&x.otherProductType?`Otro: ${x.otherProductType}`:productType(x.productType)))].join(" · "));xml=setWordCellTextBalanced(xml,2,1,1,text(r.conservationConditions));xml=setWordCellTextBalanced(xml,2,1,3,text(r.deliveryNote));
  xml=replaceWordRowWithCopies(xml,3,1,r.products.map(x=>[x.productNameCode,text(x.format),text(x.lot),text(x.expiryReanalysis),[x.quantity,x.unit].filter(Boolean).join(" ")]));
- xml=setWordCellTextBalanced(xml,4,0,0,[text(r.reasonObservations),r.attachedDocumentation?`Documentación: ${r.attachedDocumentation}`:""].filter(Boolean).join("\n\n"));
+ xml=setWordCellTextBalanced(xml,4,0,0,["Observaciones o incidencias:",text(r.reasonObservations),r.attachedDocumentation?`Documentación: ${r.attachedDocumentation}`:""].filter(Boolean).join("\n\n"));
  const checks=[r.withinAcceptedReturnPeriod,r.roomTemperatureWithinTenDays,r.coldChainWithinFortyEightHours,r.uniqueIdentifierActive,r.tamperEvidenceIntact,r.packagingIntegrityOk,r.customerDeclarationAvailable,r.storageTransportConditionsOk,r.noUseDamageContamination,r.noRecallAlertBlock,r.expiryAcceptable,r.qcAssessmentCompleted];
  checks.forEach((v,i)=>{xml=setWordCellTextBalanced(xml,5,i+1,1,tri(v));});
  const cold=[r.storageTemperatureRecord,r.returnTransportTempEvidence,r.transportPackagingSuitable,r.receiptTemperatureAcceptable,r.temperatureExcursionEvaluated,r.coldChainReturnSystemValidated];
  cold.forEach((v,i)=>{xml=setWordCellTextBalanced(xml,6,i+1,1,tri(v));});
  xml=setWordCellTextBalanced(xml,7,0,0,`${box(r.decision==="ACCEPTED","Aceptada")}    ${box(r.decision==="REJECTED","Rechazada")}`);
- xml=setWordCellTextBalanced(xml,7,1,1,[text(r.finalDestination),text(r.decisionObservations),r.decisionDate?`Fecha decisión: ${date(r.decisionDate)}`:""].filter(Boolean).join("\n"));
- xml=setWordCellTextBalanced(xml,8,1,0,text(r.qaApprovalName));xml=setWordCellTextBalanced(xml,8,1,1,text(r.technicalApprovalName));
+ xml=setWordCellTextBalanced(xml,7,1,1,[text(r.finalDestination),text(r.decisionObservations),r.decisionDate?`Fecha decisión: ${date(r.decisionDate)}`:"",contextFromExtraData(r.extraData).ambientPeriodRiskJustification?`Justificación y evaluación de riesgos del plazo excepcional: ${contextFromExtraData(r.extraData).ambientPeriodRiskJustification}`:""].filter(Boolean).join("\n"));
+ xml=setWordCellTextBalanced(xml,8,1,0,`Nombre, fecha y firma:\n${text(r.qaApprovalName)}`);xml=setWordCellTextBalanced(xml,8,1,1,`Nombre, fecha y firma:\n${text(r.technicalApprovalName)}`);
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 
@@ -68,7 +71,7 @@ export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Produ
  xml=setWordCellTextBalanced(xml,0,4,0,`CANTIDAD: ${[product.quantity,product.unit].filter(Boolean).join(" ")}\nPESO NETO: ${text(product.netWeight)}\nPESO BRUTO: ${text(product.grossWeight)}`);
  xml=setWordCellTextBalanced(xml,0,5,0,`OBSERVACIONES: ${text(product.receptionObservations)}`);
  xml=setWordCellTextBalanced(xml,0,6,0,`RECIBIDO POR: ${text(product.receivedBy)}\nFECHA: ${date(product.receivedByDate||r.receivedAt)}`);xml=setWordCellTextBalanced(xml,0,6,1,`VERIFICADO POR: ${text(product.verifiedBy)}\nFECHA: ${date(product.verifiedByDate||r.receivedAt)}`);
- xml=forcePortraitSections(xml);
+ if(version!=="03")xml=forcePortraitSections(xml);
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 
@@ -79,10 +82,11 @@ export async function generateReturnAnnexV(r:ReturnDocumentRecord){
  if(version!=="03")xml=extractWordBodyRange(xml,"Anexo V:", "Anexo VI:", "last");
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,1,1,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.qmsRecord.businessCode));
  xml=setWordCellTextBalanced(xml,1,2,1,r.products.map(x=>x.productNameCode).join(" · "));xml=setWordCellTextBalanced(xml,1,2,3,r.products.map(x=>text(x.lot)).filter(Boolean).join(" · "));xml=setWordCellTextBalanced(xml,1,3,1,text(r.conservationConditions));
+ if(r.customerDeclarationSignatoryName)xml=xml.replace(/_{8,}/g,()=>escapeXml(r.customerDeclarationSignatoryName!));
  xml=setWordCellTextBalanced(xml,3,0,0,text(r.customerDeclarationObservations));
- xml=setWordCellTextBalanced(xml,4,0,1,[text(r.customerDeclarationSignatoryName),text(r.customerDeclarationSignatoryRole),date(r.customerDeclarationSignedAt)].filter(Boolean).join(" / "));
- xml=setWordCellTextBalanced(xml,5,0,1,text(r.qaApprovalName));
- xml=setWordCellTextBalanced(xml,5,1,1,text(r.technicalApprovalName));
+ xml=setWordCellTextBalanced(xml,4,0,1,["Nombre/Puesto/Firma/Fecha:",text(r.customerDeclarationSignatoryName),text(r.customerDeclarationSignatoryRole),date(r.customerDeclarationSignedAt)].filter(Boolean).join(" / "));
+ xml=setWordCellTextBalanced(xml,5,0,1,`Nombre/Firma/Fecha:\n${text(r.qaApprovalName)}`);
+ xml=setWordCellTextBalanced(xml,5,1,1,`Nombre/Firma/Fecha:\n${text(r.technicalApprovalName)}`);
  xml=keepOnlyFinalSectionProperties(xml);
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }

@@ -54,7 +54,7 @@ type ReturnVersionSource = Prisma.ReturnRecordGetPayload<{
     annexVTemplateVersion: true;
     annexVITemplateVersion: true;
   };
-}>;
+}> & {qmsRecord: {targetRelations?:Array<{id:string;sourceRecordId:string;sourceRecord:{businessCode:string|null;annulledBusinessCode:string|null}}>}};
 
 type ChangeControlVersionSource = Prisma.ChangeControlGetPayload<{
   include: {
@@ -439,6 +439,9 @@ export function serializeReturnVersion(record: ReturnVersionSource) {
     businessCode: record.qmsRecord.businessCode ?? null,
     year: record.qmsRecord.year ?? null,
     returnRecord: {
+      id:record.id, extraData:record.extraData,
+      origins:(record.qmsRecord.targetRelations??[]).map(x=>({id:x.id,sourceRecordId:x.sourceRecordId,businessCode:x.sourceRecord.businessCode??x.sourceRecord.annulledBusinessCode})),
+      templates:[record.annexIIITemplateVersion,record.annexIVTemplateVersion,record.annexVTemplateVersion,record.annexVITemplateVersion].map(t=>t?{id:t.id,versionCode:t.versionCode,checksum:t.checksum}:null),
       departmentId: record.departmentId ?? null, departmentCodeSnapshot: record.departmentCodeSnapshot ?? null,
       departmentNameSnapshot: record.departmentNameSnapshot ?? null, communicationDate: iso(record.communicationDate),
       receivedAt: iso(record.receivedAt), createdByText: record.createdByText ?? null, returnType: record.returnType,
@@ -466,7 +469,7 @@ export function serializeReturnVersion(record: ReturnVersionSource) {
       internalObservations: record.internalObservations ?? null, signedDocumentAvailable: record.signedDocumentAvailable ?? null,
       dataQualityStatus: record.dataQualityStatus, includeInKpi: record.includeInKpi, kpiExclusionReason: record.kpiExclusionReason ?? null,
       formVersionId: record.formVersionId ?? null, formVersionCode: record.formVersion?.versionCode ?? null,
-      products: record.products.map(x=>({departmentId:x.departmentId??null,productType:x.productType,otherProductType:x.otherProductType??null,productNameCode:x.productNameCode,format:x.format??null,lot:x.lot??null,expiryReanalysis:x.expiryReanalysis??null,quantity:x.quantity??null,unit:x.unit??null,netWeight:x.netWeight??null,grossWeight:x.grossWeight??null,receptionObservations:x.receptionObservations??null,receivedBy:x.receivedBy??null,receivedByDate:iso(x.receivedByDate),verifiedBy:x.verifiedBy??null,verifiedByDate:iso(x.verifiedByDate),sortOrder:x.sortOrder})),
+      products: record.products.map(x=>({id:x.id,departmentId:x.departmentId??null,productType:x.productType,otherProductType:x.otherProductType??null,productNameCode:x.productNameCode,format:x.format??null,lot:x.lot??null,expiryReanalysis:x.expiryReanalysis??null,quantity:x.quantity??null,unit:x.unit??null,netWeight:x.netWeight??null,grossWeight:x.grossWeight??null,receptionObservations:x.receptionObservations??null,receivedBy:x.receivedBy??null,receivedByDate:iso(x.receivedByDate),verifiedBy:x.verifiedBy??null,verifiedByDate:iso(x.verifiedByDate),sortOrder:x.sortOrder})),
       followups: record.followups.map(x=>({id:x.id,followupDate:iso(x.followupDate),completedByText:x.completedByText,comment:x.comment,nextFollowupDate:iso(x.nextFollowupDate),evidenceReference:x.evidenceReference??null}))
     }
   };

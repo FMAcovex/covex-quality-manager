@@ -1017,3 +1017,8 @@ Cinco escenarios integrados, incluida interna contratada INTERNAL/AI/informe int
 Regresión local: 35 smokes PostgreSQL, quality con 322 tests/66 archivos, Prisma/build, cuatro migraciones desde otra base vacía y actualización desde main preservando UUID/códigos. R2C UI, R3A UI ×3, R3B UI y R3C UI oficial verdes en producción Node 22 UTC/Madrid y 1440/768/390. Cinco hashes oficiales intactos; OOXML y render LibreOffice comprobados, sin afirmar fidelidad perfecta ni apertura verificada en Microsoft Office. Revisión visual Office por Calidad previa al uso controlado sigue pendiente no bloqueante del cierre funcional; Plan Maestro anual y alertas quedan fuera. No validación GMP.
 
 CI de cierre verde: https://github.com/FMAcovex/covex-quality-manager/actions/runs/37739441386 sobre b42b6e362844a29ea021680ff0f249c632a6c616. Smokes PostgreSQL, quality/build y R2C/R3A ×3/R3B/R3C UI confirmados. Auditorías COMPLETADO en alcance R3D; PR #101 abierta, sin merge ni squash.
+
+
+## Devoluciones R4B
+
+Devoluciones R4B sobre main fb931b6: cierre funcional implementado y verificado localmente. Se preservan ReturnFollowup/V00 técnico; UUID de productos estables, criterios aplicables, stock distinto de aceptación, archivo documental y filtros SQL/paginación. Fuente real GC-00/028/03 y anexos separados contrastados. Véase RETURNS_R4B.md; revisión visual global pendiente: Revisión UX/UI transversal final.

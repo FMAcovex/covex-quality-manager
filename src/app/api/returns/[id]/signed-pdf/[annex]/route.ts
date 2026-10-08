@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto";
 import { NextResponse } from "next/server";
 import { RecordVersionDocumentKind } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -36,7 +37,7 @@ export async function GET(
               documents: {
                 where: { kind: cfg.kind },
                 take: 1,
-                select: { fileName: true, fileData: true },
+                select: { fileName: true, fileData: true,checksum:true },
               },
             },
           },
@@ -55,6 +56,8 @@ export async function GET(
       { status: 404 },
     );
   }
+
+  if(createHash("sha256").update(document.fileData).digest("hex")!==document.checksum)return NextResponse.json({error:"El checksum del PDF firmado no coincide."},{status:409});
 
   const filename = safeSignedPdfFileName(document.fileName || cfg.fallback);
   return new Response(new Uint8Array(document.fileData), {

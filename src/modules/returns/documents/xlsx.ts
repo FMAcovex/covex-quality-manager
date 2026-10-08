@@ -55,7 +55,7 @@ export async function generateReturnAnnexVI(year:number,rows:Row[],versionCode="
  const flat=rows.flatMap(r=>(r.products.length?r.products:[null]).map((p,i)=>({r,p,i})));
  const body=flat.map(({r,p,i},index)=>{
   const n=5+index,styles=index===0?firstStyles:normalStyles;
-  const follow=[r.internalObservations,...r.followups.map(f=>`${formatDate(f.followupDate)}: ${f.comment}`)].filter(Boolean).join(" · ");
+  const follow=[r.finalDestination?`Destino: ${r.finalDestination}`:null,r.traceabilityUpdated?`Trazabilidad: ${r.traceabilityUpdated}`:null,r.internalObservations,...r.followups.map(f=>`${formatDate(f.followupDate)}: ${f.comment}`)].filter(Boolean).join(" · ");
   const vals=[
     r.qmsRecord.businessCode??"",formatDate(r.communicationDate),r.relatedDocument??returnTypeLabel(r.returnType),
     r.customerEntity??"",p?.productNameCode??"",p?.format??"",p?.lot??"",[p?.quantity,p?.unit].filter(Boolean).join(" "),

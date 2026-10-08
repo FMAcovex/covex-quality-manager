@@ -220,3 +220,8 @@ Regresión integrada R3A/R3B/R3C sobre main cc097c1, cinco escenarios, documento
 ## R4A — Reclamaciones funcional
 
 Cierre funcional sobre Auditorías R3A–R3D. Se reutilizan versiones, PDF y Review; condiciones del PNT v03, acciones múltiples, relaciones UUID, documentos históricos y listado paginado. Detalle en COMPLAINTS_R4A.md. Después: Devoluciones funcional, regresión conjunta Reclamaciones↔Devoluciones y módulo PNT. La revisión UX/UI global queda aplazada hasta completar todos los módulos.
+
+
+## Devoluciones R4B
+
+R4B — Devoluciones: cierre funcional, seguimiento operativo (D-068), archivo de documentos, compatibilidad Reclamaciones/Review y QA. Sin rediseño global. Revisión UX/UI transversal final queda después de los cierres funcionales de módulos.

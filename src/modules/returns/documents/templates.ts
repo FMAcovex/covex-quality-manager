@@ -12,6 +12,9 @@ const V03_ANNEX_IV_SHA="711a3cb833bd14d7aa6ddf5b2655b6e7bbc084c8331958db415feebf
 const V03_ANNEX_V_SHA="818a01a3a61cbf29546f70d99b67c2679888bfa77785ded39a17eefe624bcafd";
 const V03_ANNEX_VI_SHA="fa027508995beca7e39368f92e9d75ac2fdcf0dd7dffa57dfef8d59e6696db64";
 
+const CURRENT_IV_SHA="4c125e117f8b44f4605b4fde203cfb825ed3b5378e9858cda5591ecc84336460";
+const CURRENT_V_SHA="0b8a6e74a45c1f4a3cf216444449acd2cbdf54fc47276728c9cd7a48fb3a52ee";
+
 async function readChecked(filePath:string,expectedSha:string,label:string){
  let buffer:Buffer;
  try{buffer=await readFile(path.resolve(process.cwd(),filePath));}
@@ -41,4 +44,4 @@ export async function loadReturnPntTemplate(versionCode="03",documentType:Docume
  const filePath=process.env.RETURN_PNT_TEMPLATE||"templates/returns/v03/GC-00-028-03 Devoluciones.docx";
  return readChecked(filePath,V03_PNT_SHA,"PNT Devoluciones");
 }
-export const auditedReturnTemplateHashes={pntV03:V03_PNT_SHA,annexIIIV03:V03_ANNEX_III_SHA,annexIVV03:V03_ANNEX_IV_SHA,annexVV03:V03_ANNEX_V_SHA,annexVIV03:V03_ANNEX_VI_SHA};
+export const auditedReturnTemplateHashes={currentAnnexIVV03:CURRENT_IV_SHA,currentAnnexVV03:CURRENT_V_SHA,pntV03:V03_PNT_SHA,annexIIIV03:V03_ANNEX_III_SHA,annexIVV03:V03_ANNEX_IV_SHA,annexVV03:V03_ANNEX_V_SHA,annexVIV03:V03_ANNEX_VI_SHA};

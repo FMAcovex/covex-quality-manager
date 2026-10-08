@@ -237,3 +237,8 @@ Cierre por escenario y excepción proveedor sin respuesta/sin críticos en D-066
 ## Reclamaciones — alcance R4A
 
 Se aplica COMPLAINTS_R4A.md: QmsRecordVersion como seguimiento funcional único; Guardar y Guardar como nueva versión diferenciados; V01+ con fecha/motivo, secuencia concurrente y snapshot completo; ComplaintFollowup solo histórico/compatibilidad. Se mantienen relaciones COMPLAINT→CAPA/RETURN, PDF por versión y Review. GC-00/027/03 §5.2 permite registro simplificado sin impacto evaluado; §5.7 permite IV para respuesta formal al cliente, sin obligatoriedad universal. Sin migración ni rediseño general.
+
+
+## Devoluciones R4B
+
+R4B aplica D-068 y RETURNS_R4B.md: ReturnFollowup, V00 técnico, criterios condicionados a tipo/conservación/destino, archivo documental inmutable, UUID de productos estables y listado SQL paginado. No se copia el versionado de Complaint ni se añade eficacia CAPA local.

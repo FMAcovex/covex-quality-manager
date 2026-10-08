@@ -84,3 +84,8 @@ No se usó BORRADOR_Anexo_IV_CAPA_Auditorias_COVEX.xlsx ni OBSOLETOS. Plan exter
 ## Reclamaciones R4A — fuente v03 revisada
 
 GC-00.027.03 Reclamaciones.docx y anexos reales III/IV/V recuperados de SharePoint Dirección de Calidad, carpeta de PLAN CAPA/Deficiencia 4/4.b. Reclamaciones. Hashes y procedencia exacta en COMPLAINTS_R4A.md. Los nombres de IV/V conservan “02”, pero se verificó la cabecera GC-00/027/03. §5.2 registro proporcional sin impacto; §5.7 IV opcional para respuesta formal; §5.8 cierre compatible con acciones independientes bajo seguimiento. No se usan OBSOLETOS ni se inventan reglas GMP. El usuario ha contrastado RECLAMACIONES.docx y confirmado sus requisitos; las aprobaciones se retiran de la UX conservando el histórico legacy (ver COMPLAINTS_R4A.md).
+
+
+## Devoluciones R4B
+
+Devoluciones R4B: fuente vigente GC-00/028/03, 26/05/2026, descargada y contrastada en SharePoint Dirección de Calidad / GC-00.028 Devoluciones de productos. A3/A4/A5/A6 separados vigentes revisados; sin borradores/OBSOLETOS. Nombres y SHA-256 verificables en RETURNS_R4B.md. No se incorporan binarios controlados al repositorio.
