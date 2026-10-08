@@ -10,7 +10,7 @@ Versionado/seguimiento único QmsRecordVersion con fecha/motivo y bloqueo transa
 
 Validación local: `pnpm quality` en Node 22 (334 tests/67 archivos, Prisma validate/generate, lint y build), pipeline PostgreSQL completo (36 smokes y seed demo), smoke R4A cliente/proveedor y UI 1440/768/390 con anexos oficiales. Regresión Review R2C y Auditorías R3A×3/R3B/R3C en navegador. La CI de la PR ejecuta quality y todos los smokes, incluido R4A.
 
-La revisión UX/UI global queda aplazada hasta completar todos los módulos. El documento adicional RECLAMACIONES.docx está pendiente de localizar; el PNT y los tres anexos v03 reales se han revisado y sus hashes están documentados.
+La revisión UX/UI global queda aplazada hasta completar todos los módulos. El usuario ha contrastado RECLAMACIONES.docx; las aprobaciones se retiran de la UX conservando valores legacy en BD/snapshots, sin migración. El PNT y los tres anexos v03 reales se han revisado y sus hashes están documentados.
 
 ## R2A — Revisión visual en Reclamaciones
 

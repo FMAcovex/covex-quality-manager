@@ -249,8 +249,6 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
    {open?<Field label="Próximo seguimiento" name="nextFollowupDate" type="date" defaultValue={formDefaults.nextFollowupDate} required help="Obligatorio mientras la reclamación permanezca abierta."/>:null}
   </div></section>
 
-  <section className="form-section"><h2>J) Aprobaciones Parte I</h2><TextArea label="Aprobaciones Parte I" name="approvalNames" defaultValue={formDefaults.approvalNames} help="Conserva los datos documentales correspondientes; no constituye firma electrónica."/></section>
-
   <section className={`form-section ${partII?"":"complaint-section-muted"}`}><p className="eyebrow">Parte II</p><h2>Seguimiento y cierre de la reclamación</h2>
    {!partII?<div className="analytics-note">{partIIDecision==="pending"?"Parte II pendiente de decisión. Puedes guardar la reclamación abierta y continuar en un seguimiento posterior.":"Parte II no procede. La reclamación puede cerrarse en Parte I."}</div>:null}
    <div hidden={!partII}>
@@ -269,7 +267,6 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
      <Field label="Referencias / responsable del seguimiento" name="closeActionReferences" defaultValue={formDefaults.closeActionReferences} required={!draft&&partII} span="span-2"/>
      <TextArea label="Conclusión: suficiencia de evidencias, resolución y situación final" name="closeConclusion" defaultValue={formDefaults.closeConclusion} required={partII&&recordStatus==="CLOSED"}/>
     </div>
-    <TextArea label="Aprobaciones del seguimiento / cierre" name="closeApprovalNames" defaultValue={formDefaults.closeApprovalNames} help="Datos de las aprobaciones documentales; firma manual fuera de la aplicación."/>
    </div>
   </section>
 

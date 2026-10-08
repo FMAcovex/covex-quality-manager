@@ -61,8 +61,10 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   communicationSummary:v.communicationSummary,partIIRequired:v.partIIRequired,conclusion:v.conclusion,effectivenessRequired:existing?.effectivenessRequired??v.effectivenessRequired,initialEvaluationDate:existing?.initialEvaluationDate??d(v.initialEvaluationDate),
   initialConclusionDate:existing?.initialConclusionDate??d(v.initialConclusionDate),responseDate:d(v.responseDate),responseMedium:v.responseMedium,responseSummary:v.responseSummary,responseSufficient:v.responseSufficient,
   effectivenessStatus:v.effectivenessStatus,effectivenessAssessment:v.effectivenessAssessment,closeActionStatus:v.closeActionStatus,closeActionReferences:v.closeActionReferences,
-  closeConclusion:v.closeConclusion,approvalNames:v.approvalNames??existing?.approvalNames??null,
-  closeApprovalNames:v.closeApprovalNames??existing?.closeApprovalNames??null,closedAt:v.status==="CLOSED"?d(v.closedAt):null,status:v.status,internalObservations:v.internalObservations,
+  // Retired from functional capture: retain the locked database values on edits,
+  // including new versions, and ignore any legacy fields posted by old clients.
+  closeConclusion:v.closeConclusion,approvalNames:existing?.approvalNames??null,
+  closeApprovalNames:existing?.closeApprovalNames??null,closedAt:v.status==="CLOSED"?d(v.closedAt):null,status:v.status,internalObservations:v.internalObservations,
   signedDocumentAvailable:existing?.signedDocumentAvailable??v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
  };
 }
