@@ -41,6 +41,8 @@ import {
   returnReviewTargets,
 } from "@/lib/qms/review/targets/returns";
 
+import {contextFromExtraData} from "@/modules/returns/rules";
+
 export const dynamic = "force-dynamic";
 
 const tabs = [
@@ -262,10 +264,10 @@ export default async function ReturnDetailPage({
               active={reviewMode}
               href={reviewModeHref(basePath, tab, reviewMode)}
             />
-            <Link className="button primary" href={`/returns/${id}/edit`}>
+            {r.qmsRecord.isActive?<Link className="button primary" href={`/returns/${id}/edit`}>
               Editar
-            </Link>
-            {r.status !== "DRAFT" ? (
+            </Link>:null}
+            {r.qmsRecord.isActive&&r.status === "OPEN" ? (
               <Link
                 className="button"
                 href={`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`}
@@ -634,10 +636,10 @@ export default async function ReturnDetailPage({
                   <div className="empty-panel">Sin seguimientos.</div>
                 )}
               </div>
-              {r.status === "OPEN" ? (
+              {r.qmsRecord.isActive&&r.status === "OPEN" ? (
                 <div className="card" id="new-followup">
                   <h2>Nuevo seguimiento</h2>
-                  <BasicFollowupForm
+                  <BasicFollowupForm reloadOnSuccess nextFollowupRequired={contextFromExtraData(r.extraData).requiresFollowup}
                     action={addReturnFollowupAction.bind(null, id)}
                     defaultActor={
                       process.env.DEFAULT_ACTOR_NAME || "Usuario demo"
@@ -806,7 +808,7 @@ export default async function ReturnDetailPage({
                         Adjunta el PDF firmado del Anexo III cuando esté disponible.
                       </small>
                     )}
-                    <SignedVersionDocumentForm
+                    <SignedVersionDocumentForm reloadOnSuccess
                       action={uploadReturnSignedPdfAction.bind(
                         null,
                         id,
@@ -869,7 +871,7 @@ export default async function ReturnDetailPage({
                         Adjunta el PDF del Anexo V devuelto por el cliente.
                       </small>
                     )}
-                    <SignedVersionDocumentForm
+                    <SignedVersionDocumentForm reloadOnSuccess
                       action={uploadReturnSignedPdfAction.bind(null, id, "annex-v")}
                       defaultActor={
                         r.createdByText ??
@@ -927,6 +929,7 @@ export default async function ReturnDetailPage({
                         <strong className="document-generation-type">
                           {item.documentType}
                         </strong>
+                        {item.fileName?<a className="button small" href={`/api/returns/${id}/documents/${item.id}`}>Descargar archivo histórico</a>:null}
                         <small className="muted-note document-generation-meta">
                           Generado {formatDate(item.generatedAt)} ·{" "}
                           {item.generatedByText ?? "Usuario no informado"}

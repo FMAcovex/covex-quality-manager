@@ -175,3 +175,8 @@ Pestañas Información, Hallazgos, Seguimiento, Relaciones e Historial. Tarjetas
 Añade Informe y cierre, Documentos, Versiones y Revisión al workspace R3B. Formularios con valores preservados tras error; navegación nativa después del resultado de Server Action como R3B. 00/01+ descendentes, contenido histórico, descarga y PDF por versión; plan actual rotulado aparte. Condiciones/avisos de cierre calculados, excepción proveedor explícita; firma externa/manual.
 
 Review reutiliza drawer/estados/contadores, seis targets estáticos y UUID de hijos; pestaña y versión histórica, deep links y retirados. Columnas opcionales versión/fecha/PDF/parcial, filtros informe/situación/PDF último/Review. Integridad derivada separada de Review. Responsive 1440/768/390. Detalle en AUDITS_R3C.md.
+
+
+## Devoluciones R4B
+
+R4B incorpora solo UX funcional: destino/aplicabilidad, criterios condicionados, datos existentes de declaración/destrucción, planificación, descargas históricas, paginación/filtros. Sin versiones funcionales Return ni rediseño de pestañas. Pulido visual global agrupado como Revisión UX/UI transversal final.

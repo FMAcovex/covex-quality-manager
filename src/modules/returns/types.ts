@@ -1,5 +1,6 @@
 export type ReturnFormState={
   error:string|null;
+  savedRecordId?:string;
   fieldErrors?:string[];
   submittedValues?:Record<string,string|string[]>;
   formRevision?:number;
@@ -10,6 +11,7 @@ export type ReturnProductInput={
   netWeight:string; grossWeight:string; receptionObservations:string; receivedBy:string; receivedByDate:string; verifiedBy:string; verifiedByDate:string;
 };
 export type ReturnFormDefaults={
+  medicineFromWholesale?:boolean;ambientPeriodRiskJustification?:string;destinationKind?:string;temperatureControlled?:boolean;serializedMedicine?:boolean;declarationRequired?:boolean;qcRequired?:boolean;requiresFollowup?:boolean;nextFollowupDate?:string;
   businessCode?:string;departmentId?:string;communicationDate?:string;receivedAt?:string;createdByText?:string;
   returnType?:"COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER";otherReturnType?:string;customerEntity?:string;country?:string;
   address?:string;relatedDocument?:string;conservationConditions?:string;deliveryNote?:string;reasonObservations?:string;

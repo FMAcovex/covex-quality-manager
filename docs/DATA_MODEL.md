@@ -487,3 +487,8 @@ AuditFinding: UUID, FK Audit, referencia única por auditoría, naturaleza Audit
 Campos mínimos Audit de informe/conclusión/programa/firmas manuales, Plan externo, fechas de hechos parciales/respuestas y decisión QA/excepción proveedor. AuditFindingAction reutiliza CapaEffectivenessStatus para verificación local más verifiedAt/verifiedBy. GeneratedDocument incorpora bytes opcionales, nombre/MIME; tipos AUDIT_INTERNAL_REPORT, AUDIT_EXTERNAL_REPORT, AUDIT_CAPA_PLAN, AUDIT_EXTERNAL_PLAN y recibido/respuesta/evidencia. No se añaden modelos.
 
 QmsRecordVersion INITIAL/AUDIT_REVISION con snapshot completo congelado; TemplateVersion UUID/hash en snapshot y documento. RecordVersionDocument SIGNED_PDF reutilizado. ReviewThread versionId/targets persistentes sin duplicar infraestructura. Migración aditiva 20261007000300_audits_r3c sobre R3B; detalles y compatibilidad en AUDITS_R3C.md.
+
+
+## Devoluciones R4B
+
+R4B no cambia Prisma ni añade migraciones: ReturnFollowup y QmsRecordVersion técnico único existentes. extraData.r4b guarda aplicabilidad/destino contextual y conserva otras claves legacy. ReturnProduct conserva UUID al editar/reordenar. GeneratedDocument archiva binarios/checksum y snapshot inmutable para Return; PDF sustituidos también se archivan. Véase RETURNS_R4B.md.

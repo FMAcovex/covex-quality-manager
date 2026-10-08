@@ -10,7 +10,7 @@ import {
 export type QmsRelationClient = Pick<
   Prisma.TransactionClient,
   "qmsRecord" | "qmsRelation"
-> & Partial<Pick<Prisma.TransactionClient, "audit" | "auditFindingRelation" | "$queryRaw" | "complaint" | "qmsRecordVersion">>;
+> & Partial<Pick<Prisma.TransactionClient, "audit" | "auditFindingRelation" | "$queryRaw" | "complaint" | "returnRecord" | "qmsRecordVersion">>;
 
 export type QmsRelationHistoryClient = Pick<
   Prisma.TransactionClient,
@@ -148,6 +148,14 @@ export async function createQmsRelation(
     const { lockComplaintVersion } = await import("@/modules/complaints/version-service");
     await lockComplaintVersion(client as Prisma.TransactionClient, source.id);
   }
+  if(target.recordType==="RETURN"&&client.returnRecord&&client.$queryRaw&&!("$transaction" in client)){
+    const {lockReturn}=await import("@/modules/returns/snapshot-service");
+    await lockReturn(client as Prisma.TransactionClient,target.id);
+    const operational=await client.returnRecord.findUnique({where:{qmsRecordId:target.id},select:{status:true}});
+    const complaint=client.complaint?await client.complaint.findUnique({where:{qmsRecordId:source.id},select:{status:true,qmsRecord:{select:{isActive:true}}}}):null;
+    if(complaint&&(complaint.status==="DRAFT"||!complaint.qmsRecord.isActive))throw new QmsRelationValidationError("La reclamación debe estar activa y operativa para vincularse.");
+    if(!operational||operational.status==="DRAFT")throw new QmsRelationValidationError("La devolución debe ser operativa para vincularse.");
+  }
   const result = await client.qmsRelation.upsert({
     where: {
       sourceRecordId_targetRecordId_relationType: {
@@ -171,6 +179,10 @@ export async function createQmsRelation(
   if (source.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && !("$transaction" in client)) {
     const { refreshComplaintRelationSnapshot } = await import("@/modules/complaints/version-service");
     await refreshComplaintRelationSnapshot(client as Prisma.TransactionClient, source.id);
+  }
+  if(target.recordType==="RETURN"&&client.returnRecord&&client.qmsRecordVersion&&!("$transaction" in client)){
+    const {refreshReturnSnapshot}=await import("@/modules/returns/snapshot-service");
+    await refreshReturnSnapshot(client as Prisma.TransactionClient,target.id);
   }
   return result;
 
@@ -292,10 +304,17 @@ export async function deactivateQmsRelation(
     const { lockComplaintVersion } = await import("@/modules/complaints/version-service");
     await lockComplaintVersion(client as Prisma.TransactionClient, input.sourceRecordId);
   }
+  const target=client.returnRecord?await client.qmsRecord.findUnique({where:{id:input.targetRecordId},select:{recordType:true}}):null;
+  if(target?.recordType==="RETURN"&&client.$queryRaw&&!("$transaction" in client)){
+    const {lockReturn}=await import("@/modules/returns/snapshot-service");await lockReturn(client as Prisma.TransactionClient,input.targetRecordId);
+  }
   const result = await client.qmsRelation.update({where:{id:relation.id},data:{isActive:false}});
   if (source?.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && !("$transaction" in client)) {
     const { refreshComplaintRelationSnapshot } = await import("@/modules/complaints/version-service");
     await refreshComplaintRelationSnapshot(client as Prisma.TransactionClient, input.sourceRecordId);
+  }
+  if(target?.recordType==="RETURN"&&client.returnRecord&&client.qmsRecordVersion&&!("$transaction" in client)){
+    const {refreshReturnSnapshot}=await import("@/modules/returns/snapshot-service");await refreshReturnSnapshot(client as Prisma.TransactionClient,input.targetRecordId);
   }
   return result;
 }

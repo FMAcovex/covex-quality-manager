@@ -282,3 +282,8 @@ QA consulta condiciones calculadas y confirma cierre. Internas: tratamiento/evid
 5. Descargar III/IV y cargar PDF firmado de la versión exacta; Review conserva versión y targets históricos.
 6. Cerrar en Parte I justificando no continuar, o en Parte II con conclusión/eficacia/acciones y fecha; el seguimiento independiente documentado no exige cierre universal de CAPA.
 7. Consulta legacy en Historial; no hay +Seguimiento paralelo. Véase COMPLAINTS_R4A.md.
+
+
+## Devoluciones R4B
+
+R4B: borrador parcial → apertura con evaluación pendiente → seguimiento operativo → decisión de gestión y destino técnico → cierre con trazabilidad/reconciliación y evidencia aplicable. Aceptar no libera stock; reincorporación exige controles conformes. No se crean revisiones funcionales por seguimiento/cierre. Fuente y controles en RETURNS_R4B.md.

@@ -567,3 +567,9 @@ Cierre interno por QA con informe, tratamiento/evidencia/verificación y CAPA at
 Por petición expresa del usuario, los nuevos seguimientos funcionales se registran exclusivamente como QmsRecordVersion V00/V01+, con fecha/motivo y snapshot. ComplaintFollowup y sus datos se conservan como legacy, sin borrado/backfill masivo. Guardar actualiza la versión vigente; nueva versión es una acción explícita. Las relaciones canónicas y los targets Review mantienen UUID e históricos.
 
 Para Reclamaciones v03 se usan los anexos separados reales autorizados en SharePoint, cuyos hashes figuran en COMPLAINTS_R4A.md; D-035 conserva aplicación para históricos v02 y Devoluciones. Anexo IV es opcional para respuesta formal al cliente. Sin cambios de matriz, migración ni firma electrónica. La revisión UX/UI global queda aplazada hasta completar todos los módulos.
+
+## D-068 — Devoluciones R4B: seguimiento operativo y archivo documental
+
+GC-00/028/03 §5.2, vigente 26/05/2026, exige actualizar el formulario durante la investigación y no define revisiones funcionales. Se mantiene ReturnFollowup y V00 técnico único editable; sin V01/V02, migración ni backfill inventado. Review conserva UUID y recordVersionId null. III/IV/V generados y PDF recibidos se archivan por bytes/checksum/snapshot documental independiente del V00 mutable; sustitución PDF conserva el anterior. Detalle, clasificación previa y hashes reales en RETURNS_R4B.md.
+
+D-035 sigue aplicando a históricos instalados. Las copias separadas vigentes de III/IV/V/VI revisadas en SharePoint son fuentes autorizadas para R4B; ningún activo 03 poblado se sobrescribe silenciosamente con otro checksum. Aceptar gestión no libera stock; se comprueba aplicabilidad y coherencia de destino contra el PNT. Sin rediseño general ni permisos técnicos derivados de responsabilidades documentales.

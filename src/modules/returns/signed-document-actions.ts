@@ -1,7 +1,6 @@
 "use server";
 
 import { RecordVersionDocumentKind } from "@prisma/client";
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import {
   signedDocumentActor,
@@ -68,7 +67,9 @@ export async function uploadReturnSignedPdfAction(
     };
   }
 
-  const result = await storeSignedVersionPdf({
+  let result;
+  try{result = await storeSignedVersionPdf({
+    archiveReturnType:annex==="annex-iii"?"RETURN_ANNEX_III":"RETURN_ANNEX_V",
     qmsRecordId: record.qmsRecordId,
     recordVersionId: version.id,
     file: selected.file,
@@ -79,11 +80,11 @@ export async function uploadReturnSignedPdfAction(
     kind: annexConfig.kind,
     historyFieldPath: annexConfig.fieldPath,
   });
+  }catch(e){return {error:e instanceof Error?e.message:"No se pudo archivar el PDF.",success:null};}
   if (result.error) {
     return { error: result.error, success: null };
   }
 
-  revalidatePath(`/returns/${returnId}`);
   return {
     error: null,
     success: `PDF firmado del ${annexConfig.label} guardado correctamente.`,

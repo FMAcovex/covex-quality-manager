@@ -219,3 +219,8 @@ Versiones formales generan solo desde su snapshot/plantilla fijada y conservan b
 ## Reclamaciones R4A — documentos GC-00/027/03
 
 Fuentes separadas reales III/IV/V, estructura y SHA-256 en [COMPLAINTS_R4A.md](COMPLAINTS_R4A.md). III y IV se generan desde el snapshot de la versión solicitada; IV aplica opcionalmente a respuesta formal al cliente, sin requisito universal. V mantiene listado anual oficial. Binarios corporativos fuera de Git; instalador verifica hashes y conserva pins/vigencias históricas.
+
+
+## Devoluciones R4B
+
+R4B: se han revisado los cinco binarios reales GC-00/028/03 (26/05/2026), A3 FORMULARIO DEV 03, A4 PETICION DEV 03, A5 DECLARACION CLIENTE 03 y A6 LISTADO DEV 03. Hashes, instalador de carpeta autorizado y conservación de activos previos en RETURNS_R4B.md. III/IV/V se archivan con snapshot por generación; PDF independientes III/V mantienen sustitución con motivo y bytes anteriores. VI sigue formato anual XLSX con filas por producto.
