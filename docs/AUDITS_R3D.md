@@ -1,6 +1,6 @@
 # R3D — Auditorías: regresión final y cierre
 
-Estado: **VALIDACIÓN LOCAL COMPLETA; CI PENDIENTE**.
+Estado: **COMPLETADO**. Cierre funcional validado; PR #101 abierta para revisión, sin merge ni squash.
 
 Baseline: `cc097c1312bbed5890ac2180635919479a328e8a`, R3A/R3B/R3C fusionados. Rama: `feature/audits-r3d-final-regression`. Un único PR contra main, sin merge ni squash.
 
@@ -50,4 +50,6 @@ PDF 00/01 independientes, ownership/checksum/descarga y no sobrescritura comprob
 
 Pendientes de alcance posterior: Plan Maestro anual y alertas. Sin nueva funcionalidad, estados, reglas GMP/cierre/codificación, entidades, roles, dashboard, firma electrónica o integración. No se modifica el patrón estable de Server Action → resultado confirmado → navegación cliente; no se añaden retries, timeouts ni sleeps.
 
-CI previo al último ajuste de paginación: https://github.com/FMAcovex/covex-quality-manager/actions/runs/37692547298 (a054bca). La ejecución 37694043687 sobre 9825c84 detectó React #418. La corrección del desfase de fecha requiere un nuevo CI verde antes de declarar COMPLETADO. Reproducción exacta: `/tmp/r3d-hydration-repro.log`; nueva quality: `/tmp/r3d-quality-hydration.log`.
+CI de cierre verde: https://github.com/FMAcovex/covex-quality-manager/actions/runs/37739441386, commit `b42b6e362844a29ea021680ff0f249c632a6c616`. Database smoke test, quality (322 pruebas/66 archivos y build) y regresión de navegador completos: R2C UI, R3A UI ×3 consecutivos con fecha límite fija, R3B UI y R3C UI. Regresión local repetida sobre BD nueva/controlada, producción UTC/navegador Madrid y R3C con plantillas oficiales: todos verdes. Reproducción anterior a la corrección: `/tmp/r3d-hydration-repro.log`; quality y UI: `/tmp/r3d-quality-hydration.log`, `/tmp/r3d-browser-hydration.log`. El script temporal de diagnóstico se retiró del repositorio.
+
+Auditorías puede declararse **COMPLETADO** en el alcance R3D. Los límites documentales no bloqueantes descritos permanecen; no es validación GMP. PR #101 abierta, sin merge ni squash.

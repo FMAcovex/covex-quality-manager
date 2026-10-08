@@ -1000,10 +1000,10 @@ Migración aditiva, estados/codificaciones R3A/B conservados, navegación de Ser
 
 ## R3D — Auditorías: regresión final y cierre
 
-Estado: **VALIDACIÓN LOCAL COMPLETA; CI PENDIENTE**. Rama feature/audits-r3d-final-regression desde main cc097c1312bbed5890ac2180635919479a328e8a. Informe en AUDITS_R3D.md.
+Estado: **COMPLETADO**. Rama feature/audits-r3d-final-regression desde main cc097c1312bbed5890ac2180635919479a328e8a. Informe en AUDITS_R3D.md.
 
 Cinco escenarios integrados, incluida interna contratada INTERNAL/AI/informe interno. Versiones 00/01, histórico/documentos/PDF inmutables, CAPA Plan real de 14 filas/28 acciones, cierre parcial/definitivo, estado CAPA concurrente y doble cierre comprobados. Se corrigen adjuntos Office falsos/MIME, solapamiento y compresión de textos largos en CAPA Plan y mensaje de cierre obsoleto. Se corrige además React #418 del banner de anulación: fecha UTC/Madrid divergente tras medianoche, reproducida con diff exacto y ahora UTC explícito. Once pruebas de defectos; sin nueva funcionalidad, schema, migraciones ni reglas GMP/cierre/código.
 
 Regresión local: 35 smokes PostgreSQL, quality con 322 tests/66 archivos, Prisma/build, cuatro migraciones desde otra base vacía y actualización desde main preservando UUID/códigos. R2C UI, R3A UI ×3, R3B UI y R3C UI oficial verdes en producción Node 22 UTC/Madrid y 1440/768/390. Cinco hashes oficiales intactos; OOXML y render LibreOffice comprobados, sin afirmar fidelidad perfecta ni apertura verificada en Microsoft Office. Revisión visual Office por Calidad previa al uso controlado sigue pendiente no bloqueante del cierre funcional; Plan Maestro anual y alertas quedan fuera. No validación GMP.
 
-No se declara COMPLETADO hasta verificar CI de la PR; sin merge ni squash.
+CI de cierre verde: https://github.com/FMAcovex/covex-quality-manager/actions/runs/37739441386 sobre b42b6e362844a29ea021680ff0f249c632a6c616. Smokes PostgreSQL, quality/build y R2C/R3A ×3/R3B/R3C UI confirmados. Auditorías COMPLETADO en alcance R3D; PR #101 abierta, sin merge ni squash.
