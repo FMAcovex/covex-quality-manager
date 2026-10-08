@@ -405,6 +405,7 @@ model Department {
   isActive   Boolean     @default(true)
   validFrom  DateTime?   @db.Date
   validTo    DateTime?   @db.Date
+  controlledDocuments ControlledDocument[]
   auditDepartments AuditDepartment[]
   codingAudits Audit[] @relation("AuditCodingDepartment")
   deviations Deviation[]
@@ -1706,4 +1707,111 @@ model AuditFollowup {
   @@index([auditId, followupDate])
   @@index([findingId, followupDate])
   @@index([nextReviewDate])
+}
+
+
+// P1A: independent master/revisions. Approval events and assets belong to P2/P3.
+enum ControlledDocumentType {
+  PNT
+  TECHNICAL_INSTRUCTION
+}
+
+enum ControlledDocumentAdministrativeStatus {
+  DRAFT
+  ACTIVE
+  ANNULLED
+}
+
+enum ControlledDocumentRevisionStatus {
+  DRAFT
+  IN_REVIEW
+  PENDING_APPROVAL
+  APPROVED_PENDING_EFFECTIVE
+  IN_FORCE
+  OBSOLETE
+  ANNULLED
+}
+
+enum ControlledDocumentVerificationStatus {
+  UNVERIFIED
+  VERIFIED
+  REVIEW_REQUIRED
+}
+
+model ControlledDocument {
+  id String @id @default(uuid())
+  baseCode String? @unique
+  title String? @db.Text
+  documentType ControlledDocumentType @default(PNT)
+  departmentId String?
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot String?
+  departmentNameSnapshot String?
+  administrativeStatus ControlledDocumentAdministrativeStatus @default(DRAFT)
+  observations String? @db.Text
+  sourceMetadata Json?
+  verificationStatus ControlledDocumentVerificationStatus @default(UNVERIFIED)
+  createdByText String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  annulledAt DateTime?
+  annulledByText String?
+  annulmentReason String? @db.Text
+  revisions ControlledDocumentRevision[]
+  changes ControlledDocumentChange[]
+
+  @@index([departmentId, administrativeStatus])
+  @@index([administrativeStatus, createdAt])
+}
+
+model ControlledDocumentRevision {
+  id String @id @default(uuid())
+  documentId String
+  document ControlledDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  revisionCode String
+  baseCodeSnapshot String?
+  titleSnapshot String? @db.Text
+  departmentCodeSnapshot String?
+  departmentNameSnapshot String?
+  revisionReason String? @db.Text
+  status ControlledDocumentRevisionStatus @default(DRAFT)
+  effectiveFrom DateTime? @db.Date
+  reviewDueAt DateTime? @db.Date
+  obsoletedAt DateTime? @db.Date
+  previousRevisionId String?
+  previousRevision ControlledDocumentRevision? @relation("ControlledPreviousRevision", fields: [documentId, previousRevisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  followingRevisions ControlledDocumentRevision[] @relation("ControlledPreviousRevision")
+  sourceReference String? @db.Text
+  sourceMetadata Json?
+  verificationStatus ControlledDocumentVerificationStatus @default(UNVERIFIED)
+  verifiedByText String?
+  verifiedAt DateTime?
+  consolidatedAt DateTime?
+  registeredByText String
+  registeredAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  changes ControlledDocumentChange[]
+
+  @@unique([documentId, revisionCode])
+  @@unique([documentId, id])
+  @@index([status, effectiveFrom, reviewDueAt])
+  @@index([documentId, revisionCode])
+}
+
+model ControlledDocumentChange {
+  id String @id @default(uuid())
+  documentId String
+  document ControlledDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  revisionId String?
+  revision ControlledDocumentRevision? @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  action String
+  oldValue Json?
+  newValue Json?
+  changedByText String
+  reason String @db.Text
+  source HistorySource @default(UI)
+  changedAt DateTime @default(now())
+
+  @@index([documentId, changedAt, id])
+  @@index([revisionId])
 }
