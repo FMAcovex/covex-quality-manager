@@ -6,7 +6,7 @@ on:
 
 jobs:
   quality:
-    if: github.head_ref != 'feature/complaints-returns-final-regression'
+    if: github.head_ref != 'feature/complaints-returns-final-regression' && github.head_ref != 'feature/pnt-p1a-master'
     runs-on: ubuntu-22.04
     timeout-minutes: 30
 
@@ -159,5 +159,60 @@ jobs:
       - name: Final quality checks
         run: |
           # The prior Next build rewrites this generated file; lint the tracked source.
+          git restore next-env.d.ts
+          pnpm quality
+
+  pnt-p1a:
+    if: github.head_ref == 'feature/pnt-p1a-master'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: covex_quality
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d covex_quality"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
+      APP_ENV: test
+      DEFAULT_ACTOR_NAME: Usuario CI
+      ALLOW_DEMO_DATA: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: P1A PostgreSQL smoke
+        run: |
+          pnpm db:generate
+          pnpm db:deploy
+          pnpm db:seed
+          pnpm pnt-p1a:smoke
+      - name: P1A browser smoke
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm build
+          pnpm start --port 3000 > /tmp/covex-p1a-next.log 2>&1 &
+          pnt_server_pid=$!
+          trap 'pnt_exit_code=$?; if [ "$pnt_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-p1a-next.log; fi; kill "$pnt_server_pid" 2>/dev/null || true' EXIT
+          P1A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1a:ui:smoke
+      - name: Final quality checks
+        run: |
           git restore next-env.d.ts
           pnpm quality

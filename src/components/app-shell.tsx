@@ -12,6 +12,7 @@ const modules = [
   { label: "Reclamaciones", href: "/complaints", enabled: true, match: "/complaints" },
   { label: "Devoluciones", href: "/returns", enabled: true, match: "/returns" },
   { label: "Auditorías", href: "/audits", enabled: true, match: "/audits" },
+  { label: "Documentación controlada", href: "/controlled-documents", enabled: true, match: "/controlled-documents" },
   { label: "Configuración", href: "/settings", enabled: true, match: "/settings" },
 ];
 
@@ -40,6 +41,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={module.label}
                 href={module.href}
+                prefetch={module.href === "/controlled-documents" ? false : undefined}
+                onNavigate={module.href === "/controlled-documents" ? (event) => {
+                  event.preventDefault();
+                  window.location.assign(module.href);
+                } : undefined}
                 className={`module-link ${active ? "active" : ""}`}
               >
                 {module.label}
