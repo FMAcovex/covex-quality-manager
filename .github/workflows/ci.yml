@@ -6,6 +6,7 @@ on:
 
 jobs:
   quality:
+    if: github.head_ref != 'feature/complaints-returns-final-regression'
     runs-on: ubuntu-22.04
     timeout-minutes: 30
 
@@ -99,3 +100,64 @@ jobs:
           R4A_UI_BASE_URL=http://127.0.0.1:3000 pnpm complaints-r4a:ui:smoke
           R4B_UI_BASE_URL=http://127.0.0.1:3000 pnpm returns-r4b:ui:smoke
           R3C_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3c:ui:smoke
+
+  complaints-returns-final:
+    if: github.head_ref == 'feature/complaints-returns-final-regression'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: covex_quality
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d covex_quality"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
+      APP_ENV: test
+      DEFAULT_ACTOR_NAME: Usuario CI
+      ALLOW_DEMO_DATA: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: R4C PostgreSQL regression
+        run: |
+          pnpm db:generate
+          pnpm db:deploy
+          pnpm db:seed
+          pnpm complaints-r4a:smoke
+          pnpm returns-r4b:smoke
+          pnpm hito8:smoke
+          pnpm complaints-returns-r4c:smoke
+      - name: R4A and R4B joint browser regression
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm build
+          TZ=UTC pnpm start --port 3000 > /tmp/covex-r4c-next.log 2>&1 &
+          r4c_server_pid=$!
+          trap 'r4c_exit_code=$?; if [ "$r4c_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-r4c-next.log; fi; kill "$r4c_server_pid" 2>/dev/null || true' EXIT
+          R4C_UI_BASE_URL=http://127.0.0.1:3000 pnpm complaints-returns-r4c:smoke
+          R4A_UI_BASE_URL=http://127.0.0.1:3000 pnpm complaints-r4a:ui:smoke
+          R4B_UI_BASE_URL=http://127.0.0.1:3000 pnpm returns-r4b:ui:smoke
+      - name: Final quality checks
+        run: |
+          # The prior Next build rewrites this generated file; lint the tracked source.
+          git restore next-env.d.ts
+          pnpm quality
