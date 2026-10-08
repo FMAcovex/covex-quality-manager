@@ -55,7 +55,7 @@ function parseDerivedActions(raw:string|null):ComplaintDerivedActionInput[]{
  }catch{return [];}
 }
 
-export function parseComplaintForm(fd:FormData){
+export function parseComplaintForm(fd:FormData,linked:{capa?:boolean;returns?:boolean}={}){
   const businessCode=text(fd,"businessCode"),departmentId=text(fd,"departmentId"),openedAt=text(fd,"openedAt"),
     createdByText=text(fd,"createdByText"),partyName=text(fd,"partyName"),description=text(fd,"description"),
     complaintType=enumValue(typeSchema,text(fd,"complaintType"));
@@ -70,27 +70,28 @@ export function parseComplaintForm(fd:FormData){
   const partIIRequired=bool(fd,"partIIRequired");
   if(partIIRequired===false)effectivenessStatus="NOT_REQUIRED";
   if(partIIRequired===null)effectivenessStatus="PENDING";
-  const hasDerivedActions=bool(fd,"hasDerivedActions");
+  const simplified=classification==="NO_GMP_IMPACT";
+  const hasDerivedActions=bool(fd,"hasDerivedActions")??(simplified?false:null);
   const nextFollowupDate=text(fd,"nextFollowupDate");
   const recurrent=bool(fd,"recurrent");
   const errors:string[]=[];
   if(!complaintType)errors.push("Debe seleccionarse el tipo de reclamación.");
 
   if(status!=="DRAFT"){
-    const requiredText:Array<[string|null,string]>=[
-      [departmentId,"El departamento es obligatorio."],
-      [openedAt,"La fecha de apertura es obligatoria."],
-      [createdByText,"Debe indicarse quién cumplimenta el expediente."],
+    const requiredText:Array<[string|null,string,boolean?]>=[
+      [departmentId,"El departamento es obligatorio.",true],
+      [openedAt,"La fecha de apertura es obligatoria.",true],
+      [createdByText,"Debe indicarse quién cumplimenta el expediente.",true],
       [text(fd,"detectionDate"),"La fecha de detección es obligatoria."],
       [text(fd,"receptionDate"),"La fecha de recepción es obligatoria."],
       [partyName,"Debe indicarse el cliente/proveedor."],
       [text(fd,"contact"),"El contacto es obligatorio."],
       [text(fd,"reference"),"La referencia del material/servicio/equipo es obligatoria."],
-      [description,"La descripción de la reclamación es obligatoria."],
-      [text(fd,"emittedBy"),"Debe indicarse quién emite la reclamación."],
+      [description,"La descripción de la reclamación es obligatoria.",true],
+      [text(fd,"emittedBy"),"Debe indicarse quién emite la reclamación.",true],
       [text(fd,"riskJustification"),"La justificación del riesgo, alcance y medidas es obligatoria."],
       [text(fd,"investigation"),"La investigación y evidencias son obligatorias."],
-      [text(fd,"impactAssessment"),"La conclusión del impacto es obligatoria."],
+      [text(fd,"impactAssessment"),"La conclusión del impacto es obligatoria.",true],
       [text(fd,"rootCause"),"El análisis de causa raíz es obligatorio; si no procede, debe justificarse."],
       [text(fd,"regulatoryJustification"),"La justificación de la evaluación regulatoria es obligatoria."],
       [text(fd,"resolutionLines"),"Las líneas de actuación y resolución son obligatorias."],
@@ -98,9 +99,13 @@ export function parseComplaintForm(fd:FormData){
       [text(fd,"communicationMedium"),"El medio de comunicación es obligatorio."],
       [text(fd,"communicationParties"),"El emisor/destinatario es obligatorio."],
       [text(fd,"communicationSummary"),"El resumen de lo comunicado o solicitado es obligatorio."],
-      [text(fd,"conclusion"),"La conclusión de la Parte I es obligatoria."]
+      [text(fd,"conclusion"),"La conclusión de la Parte I es obligatoria.",true]
     ];
-    requiredText.forEach(([value,message])=>{if(!value)errors.push(message);});
+    requiredText.forEach(([value,message,simplifiedRequired])=>{if(!value&&(!simplified||simplifiedRequired))errors.push(message);});
+    if(simplified){
+      if(yesNo(fd,"impactQualityGmp")!=="NO"||yesNo(fd,"impactEnvironment")!=="NO"||["impactSafetyEfficacy","impactRegulatory","impactOtherSimilar"].some(key=>yesNo(fd,key)==="YES"))errors.push("El registro simplificado requiere evaluación de ausencia de impacto GMP y ambiental; si hay impacto debe abrirse el informe completo.");
+    }
+    if(!simplified){
         if(!sourceTypes.length)errors.push("Debe seleccionarse al menos un origen o fuente de detección.");
     if(!scopeTypes.length)errors.push("Debe seleccionarse al menos un ámbito.");
     if(!affectedObjectTypes.length)errors.push("Debe seleccionarse el objeto afectado.");
@@ -116,12 +121,13 @@ export function parseComplaintForm(fd:FormData){
     if(!tri(fd,"potentialRecall")||!tri(fd,"recallProcedureRequired")||!tri(fd,"authorityNotificationRequired")||!tri(fd,"responsiblePartyCommunicationRequired")){
       errors.push("La evaluación regulatoria debe responderse completamente.");
     }
+    }
     if(hasDerivedActions===null)errors.push("Debe indicarse si existen acciones derivadas.");
     if(hasDerivedActions===true&&!resolutionActions.length)errors.push("Si existen acciones derivadas debe seleccionarse al menos una.");
     if(hasDerivedActions===false&&resolutionActions.length)errors.push("No pueden seleccionarse acciones derivadas si se ha indicado que no existen.");
-    if(resolutionActions.includes("CORRECTIVE_ACTION")&&!capaPlans.some(x=>x.actionType==="CORRECTIVE"))errors.push("La acción correctora requiere al menos una CAPA propuesta o vinculada.");
-    if(resolutionActions.includes("PREVENTIVE_ACTION")&&!capaPlans.some(x=>x.actionType==="PREVENTIVE"))errors.push("La acción preventiva requiere al menos una CAPA propuesta o vinculada.");
-    if(resolutionActions.includes("RETURN")&&!derivedActions.some(x=>x.actionType==="RETURN"))errors.push("La devolución requiere al menos una devolución propuesta o vinculada.");
+    if(resolutionActions.includes("CORRECTIVE_ACTION")&&!linked.capa&&!capaPlans.some(x=>x.actionType==="CORRECTIVE"))errors.push("La acción correctora requiere al menos una CAPA propuesta o vinculada.");
+    if(resolutionActions.includes("PREVENTIVE_ACTION")&&!linked.capa&&!capaPlans.some(x=>x.actionType==="PREVENTIVE"))errors.push("La acción preventiva requiere al menos una CAPA propuesta o vinculada.");
+    if(resolutionActions.includes("RETURN")&&!linked.returns&&!derivedActions.some(x=>x.actionType==="RETURN"))errors.push("La devolución requiere al menos una devolución propuesta o vinculada.");
     if(resolutionActions.includes("IMMEDIATE_ACTION")&&!text(fd,"immediateActionDetails"))errors.push("La acción inmediata debe especificarse.");
     if(resolutionActions.includes("RECALL")&&!text(fd,"recallActionDetails"))errors.push("La retirada del mercado debe especificarse.");
     if(resolutionActions.includes("CREDIT")&&!text(fd,"creditActionDetails"))errors.push("El abono debe especificarse.");
@@ -130,7 +136,7 @@ export function parseComplaintForm(fd:FormData){
     if(status==="OPEN"&&!nextFollowupDate)errors.push("Una reclamación abierta requiere fecha de próximo seguimiento.");
   }
 
-  if(affectedObjectTypes.includes("PRODUCT_MATERIAL")&&status!=="DRAFT"){
+  if(!simplified&&affectedObjectTypes.includes("PRODUCT_MATERIAL")&&status!=="DRAFT"){
     if(!text(fd,"lotReference"))errors.push("Para producto/material debe indicarse el lote.");
     if(!text(fd,"quantity"))errors.push("Para producto/material debe indicarse la cantidad.");
     if(!text(fd,"expiryReanalysis"))errors.push("Para producto/material debe indicarse caducidad/reanálisis.");
@@ -141,7 +147,7 @@ export function parseComplaintForm(fd:FormData){
     if(!text(fd,"responseMedium"))errors.push("La Parte II requiere medio de respuesta.");
     if(!text(fd,"responseSummary"))errors.push("La Parte II requiere resumen de la respuesta/compromisos.");
     if(bool(fd,"responseSufficient")===null)errors.push("Debe indicarse si la respuesta es suficiente.");
-    if(effectivenessStatus!=="NOT_REQUIRED"&&!text(fd,"effectivenessAssessment"))errors.push("Debe documentarse la valoración de eficacia.");
+    if(!text(fd,"effectivenessAssessment"))errors.push("Debe documentarse la valoración de eficacia.");
     if(!text(fd,"closeActionStatus"))errors.push("Debe informarse el estado de las acciones en Parte II.");
     if(!text(fd,"closeActionReferences"))errors.push("Debe informarse la referencia/responsable del seguimiento de acciones.");
   }
@@ -150,28 +156,28 @@ export function parseComplaintForm(fd:FormData){
     if(partIIRequired===null)errors.push("No puede cerrarse una reclamación con la decisión de Parte II pendiente.");
     if(!text(fd,"closedAt"))errors.push("Una reclamación cerrada requiere fecha de cierre.");
     if(!text(fd,"closeConclusion")&&!text(fd,"conclusion"))errors.push("Una reclamación cerrada requiere conclusión.");
+    if(partIIRequired===true&&!text(fd,"closeConclusion"))errors.push("El cierre en Parte II requiere su conclusión de cierre.");
+    if(partIIRequired===true&&text(fd,"closeActionStatus")==="PENDING")errors.push("Antes del cierre, completa las acciones necesarias o justifica su seguimiento independiente con referencias.");
     if(partIIRequired===true&&effectivenessStatus==="PENDING")errors.push("No puede cerrarse con eficacia pendiente. Indica Conforme, No conforme o N/A.");
   }
 
-  if(text(fd,"sourceOther")&&!sourceTypes.includes("OTHER"))errors.push("Si se especifica otro origen, marca también «Otro».");
-  if(text(fd,"scopeOther")&&!scopeTypes.includes("OTHER"))errors.push("Si se especifica otro ámbito, marca también «Otro».");
-  if(text(fd,"affectedObjectOther")&&!affectedObjectTypes.includes("OTHER"))errors.push("Si se especifica otro objeto, marca también «Otro».");
-  if(text(fd,"categoryOther")&&!categoryTypes.includes("OTHER"))errors.push("Si se especifica otra categoría, marca también «Otro».");
-  if(text(fd,"containmentOther")&&!containmentActions.includes("OTHER"))errors.push("Si se especifica otra medida de contención, marca también «Otra».");
-
-  for(const plan of capaPlans){
+  if(status!=="DRAFT")for(const plan of capaPlans){
     if(!plan.description||!plan.responsible||!plan.plannedExecutionDate){
       errors.push("Cada CAPA propuesta/vinculada debe incluir descripción, responsable y fecha prevista.");
       break;
     }
   }
-  for(const action of derivedActions){
+  if(status!=="DRAFT")for(const action of derivedActions){
     if(!action.actionType||!action.description||!action.responsible||!action.plannedExecutionDate){
       errors.push("Cada acción/registro derivado debe incluir tipo, descripción, responsable y fecha prevista.");
       break;
     }
   }
 
+  for(const name of ["openedAt","detectionDate","receptionDate","communicationDate","nextFollowupDate","responseDate","closedAt","initialEvaluationDate","initialConclusionDate"]){
+    const value=text(fd,name);
+    if(value&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value).toISOString().slice(0,10)!==value))errors.push(`La fecha ${name} no es válida.`);
+  }
   return {errors,actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
     businessCode,departmentId,openedAt,detectionDate:text(fd,"detectionDate"),receptionDate:text(fd,"receptionDate"),detectedBy:text(fd,"detectedBy"),createdByText,
     complaintType,sourceTypes,sourceOther:text(fd,"sourceOther"),scopeTypes,scopeOther:text(fd,"scopeOther"),

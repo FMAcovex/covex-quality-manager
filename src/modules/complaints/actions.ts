@@ -1,10 +1,8 @@
 "use server";
 
-import type { FollowupActionState } from "@/components/basic-followup-form";
 
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
@@ -12,6 +10,7 @@ import { allowedOutgoingRelationTypes } from "@/lib/qms/relation-rules";
 import {
   deactivateOperationalRelation,
   linkOperationalRelationByBusinessCode,
+  createQmsRelation,
 } from "@/lib/qms/relation-service";
 import {
   assignOperationalBusinessCode,
@@ -25,14 +24,15 @@ import {
  ensureInitialVersion,refreshCurrentVersion,snapshotJson,serializeComplaintVersion,startNextVersion,
  complaintSnapshotVersionFollowupDate
 } from "@/lib/qms/versioning";
-import { complaintSaveMode,complaintVersionKind } from "@/modules/complaints/version-mode";
+import { complaintNewVersionErrors,complaintSaveMode,complaintVersionKind } from "@/modules/complaints/version-mode";
+
+import type { FollowupActionState } from "@/components/basic-followup-form";
+import { complaintVersionSource, lockComplaintVersion, refreshComplaintRelationSnapshot } from "@/modules/complaints/version-service";
 
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
 
-async function getSnapshot(tx:Prisma.TransactionClient,id:string){
- return tx.complaint.findUniqueOrThrow({where:{id},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"asc"},{createdAt:"asc"}]},capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:true}},derivedActions:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true}});
-}
+const getSnapshot = complaintVersionSource;
 
 type ExistingComplaintSnapshot={
  departmentId:string|null;departmentCodeSnapshot:string|null;departmentNameSnapshot:string|null;
@@ -61,27 +61,34 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   communicationSummary:v.communicationSummary,partIIRequired:v.partIIRequired,conclusion:v.conclusion,effectivenessRequired:existing?.effectivenessRequired??v.effectivenessRequired,initialEvaluationDate:existing?.initialEvaluationDate??d(v.initialEvaluationDate),
   initialConclusionDate:existing?.initialConclusionDate??d(v.initialConclusionDate),responseDate:d(v.responseDate),responseMedium:v.responseMedium,responseSummary:v.responseSummary,responseSufficient:v.responseSufficient,
   effectivenessStatus:v.effectivenessStatus,effectivenessAssessment:v.effectivenessAssessment,closeActionStatus:v.closeActionStatus,closeActionReferences:v.closeActionReferences,
-  closeConclusion:v.closeConclusion,approvalNames:existing?.approvalNames??v.approvalNames,
-  closeApprovalNames:existing?.closeApprovalNames??v.closeApprovalNames,closedAt:d(v.closedAt),status:v.status,internalObservations:v.internalObservations,
+  closeConclusion:v.closeConclusion,approvalNames:v.approvalNames??existing?.approvalNames??null,
+  closeApprovalNames:v.closeApprovalNames??existing?.closeApprovalNames??null,closedAt:v.status==="CLOSED"?d(v.closedAt):null,status:v.status,internalObservations:v.internalObservations,
   signedDocumentAvailable:existing?.signedDocumentAvailable??v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
  };
 }
 
 async function replaceCapaPlans(tx:Prisma.TransactionClient,complaintId:string,plans:ReturnType<typeof parseComplaintForm>["values"]["capaPlans"]){
- const linked=await tx.complaintCapaPlan.findMany({where:{complaintId,linkedCapaRecordId:{not:null}},select:{id:true}});
- const preserved=new Set(linked.map(item=>item.id));
- await tx.complaintCapaPlan.deleteMany({where:{complaintId,linkedCapaRecordId:null}});
+ const existing=await tx.complaintCapaPlan.findMany({where:{complaintId}});
+ const owned=new Map(existing.map(row=>[row.id,row]));
+ if(plans.some(row=>row.id&&!owned.has(row.id)))throw new Error("Una propuesta CAPA no pertenece a esta reclamación.");
+ const retained=plans.flatMap(row=>row.id?[row.id]:[]);
+ await tx.complaintCapaPlan.deleteMany({where:{complaintId,linkedCapaRecordId:null,id:{notIn:retained}}});
  for(const p of plans){
-  if(p.id&&preserved.has(p.id))continue;
-  await tx.complaintCapaPlan.create({data:{complaintId,actionType:p.actionType,description:p.description,plannedExecutionDate:d(p.plannedExecutionDate),responsible:p.responsible||null,businessCapaCode:p.businessCapaCode||null}});
+  const data={actionType:p.actionType,description:p.description,plannedExecutionDate:d(p.plannedExecutionDate),responsible:p.responsible||null,businessCapaCode:p.businessCapaCode||null};
+  if(p.id)await tx.complaintCapaPlan.update({where:{id:p.id},data});
+  else await tx.complaintCapaPlan.create({data:{complaintId,...data}});
  }
 }
 
 async function replaceDerivedActions(tx:Prisma.TransactionClient,complaintId:string,actions:ReturnType<typeof parseComplaintForm>["values"]["derivedActions"]){
- await tx.complaintDerivedAction.deleteMany({where:{complaintId}});
+ const existing=await tx.complaintDerivedAction.findMany({where:{complaintId},select:{id:true}});
+ const owned=new Set(existing.map(row=>row.id));
+ if(actions.some(row=>row.id&&!owned.has(row.id)))throw new Error("Una acción derivada no pertenece a esta reclamación.");
+ await tx.complaintDerivedAction.deleteMany({where:{complaintId,id:{notIn:actions.flatMap(row=>row.id?[row.id]:[])}}});
  for(let i=0;i<actions.length;i++){
-  const a=actions[i];
-  await tx.complaintDerivedAction.create({data:{complaintId,actionType:a.actionType||"OTRA",businessCode:a.businessCode||null,description:a.description||null,responsible:a.responsible||null,plannedExecutionDate:d(a.plannedExecutionDate),sortOrder:a.sortOrder??i*10}});
+  const a=actions[i],data={actionType:a.actionType||"OTRA",businessCode:a.businessCode||null,description:a.description||null,responsible:a.responsible||null,plannedExecutionDate:d(a.plannedExecutionDate),sortOrder:a.sortOrder??i*10};
+  if(a.id)await tx.complaintDerivedAction.update({where:{id:a.id},data});
+  else await tx.complaintDerivedAction.create({data:{complaintId,...data}});
  }
 }
 
@@ -99,7 +106,7 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
    getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_V",ref)
   ]);
   const created=await prisma.$transaction(async tx=>{
-   const openingYear=v.openedAt?new Date(v.openedAt).getFullYear():null;
+   const openingYear=v.openedAt?new Date(v.openedAt).getUTCFullYear():null;
    let businessCode=v.businessCode;
    if(openingYear&&(v.status!=="DRAFT"||businessCode)){
     businessCode=await assignOperationalBusinessCode(tx,{
@@ -129,25 +136,26 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
   }
   return preserveFormState(previous,fd,persistenceFormError(e,"la reclamación"));
  }
- revalidatePath("/complaints");redirect(`/complaints/${createdId}`);
+ // These pages are force-dynamic. The client loads the committed record in a
+ // fresh navigation, without streaming an invalidated form into this action.
+ return {error:null,savedRecordId:createdId};
 }
 
 export async function updateComplaintAction(id:string,previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
- const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
+ const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}}}}}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
+ const linked={capa:existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="CAPA"),returns:existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="RETURN")};
+ const parsed=parseComplaintForm(fd,linked); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values;
  const saveMode=complaintSaveMode(fd.get("saveMode"));
  const versionReason=String(fd.get("changeReason")??"").trim();
  const versionFollowupDate=String(fd.get("versionFollowupDate")??"").trim();
- if(saveMode==="CREATE_VERSION"&&!versionReason){
-  return preserveFormState(previous,fd,{error:"No se puede generar la nueva versión.",fieldErrors:["Debe indicarse el motivo del seguimiento o de la nueva versión."]});
- }
- if(saveMode==="CREATE_VERSION"&&!versionFollowupDate){
-  return preserveFormState(previous,fd,{error:"No se puede generar la nueva versión.",fieldErrors:["Debe indicarse la fecha del seguimiento o de la nueva versión."]});
- }
- const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}}}}}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
+ const versionErrors=saveMode==="CREATE_VERSION"?complaintNewVersionErrors(versionFollowupDate,versionReason):[];
+ if(versionErrors.length)return preserveFormState(previous,fd,{error:"No se puede generar la nueva versión.",fieldErrors:versionErrors});
  if(v.hasDerivedActions===false&&existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="CAPA"||x.targetRecord.recordType==="RETURN")){
   return preserveFormState(previous,fd,{error:"No se puede indicar que no existen acciones derivadas mientras haya CAPA o Devoluciones vinculadas.",fieldErrors:["Desvincula primero los expedientes derivados o mantén «Sí» en acciones derivadas."]});
  }
+ if(saveMode==="CREATE_VERSION"&&(existing.status==="DRAFT"||v.status==="DRAFT"))return preserveFormState(previous,fd,{error:"Abre la reclamación antes de crear una nueva versión / seguimiento."});
+ if(existing.status!=="DRAFT"&&(v.complaintType!==existing.complaintType||new Date(v.openedAt!).getUTCFullYear()!==existing.qmsRecord.year))return preserveFormState(previous,fd,{error:"El tipo y el año de apertura deben conservar la codificación operativa existente."});
  const requestedBusinessCode=v.businessCode;
  v.businessCode=existing.qmsRecord.businessCode??requestedBusinessCode;
  if(existing.status!=="DRAFT"&&v.status==="DRAFT"){
@@ -155,11 +163,17 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
  }
  const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
  if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
-  const reopening=existing.status==="CLOSED"&&v.status==="OPEN";
-  const versionKind=complaintVersionKind({saveMode,reopening});
+
   try{
   await prisma.$transaction(async tx=>{
+   await lockComplaintVersion(tx,existing.qmsRecordId);
    const before=await getSnapshot(tx,id);
+   const versionKind=complaintVersionKind({saveMode,reopening:before.status==="CLOSED"&&v.status==="OPEN"});
+   if(before.status!=="DRAFT"&&v.status==="DRAFT")throw new Error("Una reclamación operativa no puede volver a Borrador.");
+   if(saveMode==="CREATE_VERSION"&&before.status==="DRAFT")throw new Error("Abre la reclamación antes de crear una nueva versión.");
+   if(before.status!=="DRAFT"&&(v.complaintType!==before.complaintType||new Date(v.openedAt!).getUTCFullYear()!==before.qmsRecord.year))throw new Error("El tipo y el año deben conservar la codificación existente.");
+
+   if(v.hasDerivedActions===false&&before.qmsRecord.sourceRelations.length)throw new Error("No puede indicarse ausencia de acciones mientras existan expedientes derivados vinculados.");
    const latestBefore=await tx.qmsRecordVersion.findFirst({where:{qmsRecordId:existing.qmsRecordId},orderBy:{sequenceNumber:"desc"}});
    if(!latestBefore){
     await ensureInitialVersion(
@@ -176,14 +190,14 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
      tx,
      existing.qmsRecordId,
      snapshotJson(serializeComplaintVersion(before,{versionFollowupDate:currentVersionDate})),
-     parsed.actor,
-     versionKind?"Estado anterior a la nueva versión":undefined
+     latestBefore.createdByText,
+     latestBefore.reason
     );
    }
 
-   const openingYear=v.openedAt?new Date(v.openedAt).getFullYear():null;
-   let businessCode=existing.qmsRecord.businessCode;
-   if(existing.status==="DRAFT"&&openingYear){
+   const openingYear=v.openedAt?new Date(v.openedAt).getUTCFullYear():null;
+   let businessCode=before.qmsRecord.businessCode;
+   if(before.status==="DRAFT"&&openingYear){
     if(!businessCode&&(v.status!=="DRAFT"||requestedBusinessCode)){
      businessCode=await assignOperationalBusinessCode(tx,{recordType:QmsRecordType.COMPLAINT,year:openingYear,complaintType:v.complaintType,requestedCode:requestedBusinessCode,excludeQmsRecordId:existing.qmsRecordId});
     }else if(businessCode&&requestedBusinessCode&&requestedBusinessCode!==businessCode){
@@ -192,14 +206,14 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
    }
    v.businessCode=businessCode;
    await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode,year:openingYear}});
-   await tx.complaint.update({where:{id},data:complaintData(v,department,existing)});
+   await tx.complaint.update({where:{id},data:complaintData(v,department,before)});
    await replaceCapaPlans(tx,id,v.capaPlans);
    await replaceDerivedActions(tx,id,v.derivedActions);
    await tx.changeHistory.create({data:{
     qmsRecordId:existing.qmsRecordId,
     changedByText:parsed.actor,
     fieldPath:"__edit__",
-    oldValue:j({updatedAt:existing.updatedAt}),
+    oldValue:j({updatedAt:before.updatedAt}),
     newValue:j({businessCode:v.businessCode,status:v.status}),
     reason:versionReason||v.changeReason,
     source:"UI"
@@ -225,13 +239,13 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
     }});
    }else{
     const latest=await tx.qmsRecordVersion.findFirst({where:{qmsRecordId:existing.qmsRecordId},orderBy:{sequenceNumber:"desc"}});
-    const currentVersionDate=latest?complaintSnapshotVersionFollowupDate(latest.snapshot,latest.sequenceNumber):null;
+    const currentVersionDate=latest?(latest.sequenceNumber===0?snap.openedAt:complaintSnapshotVersionFollowupDate(latest.snapshot,latest.sequenceNumber)):snap.openedAt;
     await refreshCurrentVersion(
      tx,
      existing.qmsRecordId,
      snapshotJson(serializeComplaintVersion(snap,{versionFollowupDate:currentVersionDate})),
-     parsed.actor,
-     versionReason||null
+     latest?.createdByText,
+     latest?.reason
     );
    }
   });
@@ -240,9 +254,10 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
   if(e instanceof OperationalBusinessCodeError)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:[e.message]});
   return preserveFormState(previous,fd,persistenceFormError(e,"la reclamación"));
 }
- revalidatePath("/complaints");revalidatePath(`/complaints/${id}`);redirect(`/complaints/${id}`);
+ return {error:null,savedRecordId:id};
 }
 
+// Legacy technical entry point; functional followups use QmsRecordVersion in the main UI.
 export async function addComplaintFollowupAction(id:string,_state:FollowupActionState,fd:FormData):Promise<FollowupActionState>{
  const rec=await prisma.complaint.findUnique({where:{id}});if(!rec)return{error:"Reclamación no encontrada."};
  if(rec.status==="DRAFT")return{error:"La reclamación debe estar abierta antes de registrar seguimientos."};
@@ -250,9 +265,10 @@ export async function addComplaintFollowupAction(id:string,_state:FollowupAction
  if(!followupDate||!completedByText||!comment)return{error:"Fecha, responsable y comentario son obligatorios."};
  try{
 await prisma.$transaction(async tx=>{
+  await lockComplaintVersion(tx,rec.qmsRecordId);
   await tx.complaintFollowup.create({data:{complaintId:id,followupDate:new Date(followupDate),completedByText,followupType:String(fd.get("followupType")??"").trim()||null,comment,nextFollowupDate:d(String(fd.get("nextFollowupDate")??"")),evidenceReference:String(fd.get("evidenceReference")??"").trim()||null}});
   await tx.changeHistory.create({data:{qmsRecordId:rec.qmsRecordId,changedByText:completedByText,fieldPath:"followups",newValue:j({followupDate,comment}),reason:"Nuevo seguimiento",source:"UI"}});
-  const snap=await getSnapshot(tx,id);await refreshCurrentVersion(tx,rec.qmsRecordId,snapshotJson(serializeComplaintVersion(snap)),completedByText,"Nuevo seguimiento");
+  await refreshComplaintRelationSnapshot(tx,rec.qmsRecordId);
  });
 
  }catch(e){return persistenceFormError(e,"el seguimiento de la reclamación");}
@@ -297,7 +313,8 @@ export async function addComplaintRelationAction(
   const code=String(fd.get("businessCode")??"").trim();
   const actor=String(fd.get("actor")??process.env.DEFAULT_ACTOR_NAME??"Usuario demo").trim();
   const requestedType=String(fd.get("recordType")??"").trim() as QmsRecordType;
-  if(!code)return{error:"Debe indicarse la codificación del expediente derivado."};
+  const targetRecordId=String(fd.get("targetRecordId")??"").trim();
+  if(!code&&!targetRecordId)return{error:"Selecciona el expediente derivado."};
 
   const allowedTypes=allowedOutgoingRelationTypes(QmsRecordType.COMPLAINT);
   if(!allowedTypes.includes(requestedType)){
@@ -305,14 +322,24 @@ export async function addComplaintRelationAction(
   }
 
   await prisma.$transaction(async tx=>{
-   await linkOperationalRelationByBusinessCode(tx,{
+   await lockComplaintVersion(tx,rec.qmsRecordId);
+   await tx.complaint.update({where:{id},data:{hasDerivedActions:true}});
+   const previousLinks=await tx.qmsRelation.findMany({where:{sourceRecordId:rec.qmsRecordId,isActive:true},select:{id:true}});
+   if(targetRecordId){
+    const target=await tx.qmsRecord.findUnique({where:{id:targetRecordId},select:{recordType:true,capa:{select:{status:true}},returnRecord:{select:{status:true}}}});
+    if(!target||target.recordType!==requestedType)throw new Error("El expediente seleccionado no corresponde al tipo solicitado.");
+    if(target.capa?.status==="DRAFT"||target.returnRecord?.status==="DRAFT")throw new Error("Selecciona un expediente operativo; el destino sigue en borrador.");
+    await createQmsRelation(tx,{sourceRecordId:rec.qmsRecordId,targetRecordId,createdByText:actor});
+   }else await linkOperationalRelationByBusinessCode(tx,{
     currentRecordId:rec.qmsRecordId,
     currentType:QmsRecordType.COMPLAINT,
     relatedType:requestedType,
     businessCode:code,
     createdByText:actor
    });
-   await tx.complaint.update({where:{id},data:{hasDerivedActions:true}});
+   const links=await tx.qmsRelation.findMany({where:{sourceRecordId:rec.qmsRecordId,isActive:true},select:{id:true,targetRecordId:true}});
+   const added=links.filter(link=>!previousLinks.some(old=>old.id===link.id));
+   if(added.length)await tx.changeHistory.create({data:{qmsRecordId:rec.qmsRecordId,fieldPath:"relations",newValue:j(added),changedByText:actor,reason:"Vinculación de expediente derivado",source:"UI"}});
   });
   revalidatePath("/complaints");revalidatePath("/capa");revalidatePath("/returns");revalidatePath(`/complaints/${id}`);
   return{error:null,success:requestedType===QmsRecordType.CAPA?"CAPA vinculada correctamente.":"Devolución vinculada correctamente."};

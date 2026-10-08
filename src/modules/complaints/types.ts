@@ -2,6 +2,7 @@ export type ComplaintCapaPlanInput={id?:string;actionType:"CORRECTIVE"|"PREVENTI
 export type ComplaintDerivedActionInput={id?:string;actionType:string;businessCode:string;description:string;responsible:string;plannedExecutionDate:string;sortOrder?:number};
 export type ComplaintFormState = {
   error: string | null;
+  savedRecordId?: string;
   fieldErrors?: string[];
   submittedValues?: Record<string, string | string[]>;
   formRevision?: number;

@@ -140,3 +140,16 @@ describe("parseComplaintForm · R1", () => {
     expect(parsed.errors).toContain("Debe indicarse si la respuesta es suficiente.");
   });
 });
+
+describe("R4A · condiciones",()=>{
+ it("conserva propuestas incompletas en Draft",()=>{const f=new FormData();f.set("complaintType","PROVIDER");f.set("status","DRAFT");f.set("capaPlansJson",JSON.stringify([{description:"Pendiente de completar"}]));expect(parseComplaintForm(f).errors).toEqual([]);});
+ it("rechaza fechas imposibles en backend",()=>{const f=validOperationalForm();f.set("openedAt","2026-02-30");expect(parseComplaintForm(f).errors).toContain("La fecha openedAt no es válida.");});
+ it("acepta acciones CAPA y devolución con UUID canónico, sin exigir textos paralelos",()=>{const f=validOperationalForm();f.set("hasDerivedActions","true");f.append("resolutionActions","CORRECTIVE_ACTION");f.append("resolutionActions","RETURN");expect(parseComplaintForm(f,{capa:true,returns:true}).errors).toEqual([]);});
+ it("exige datos de producto solo cuando aplica",()=>{const f=validOperationalForm();expect(parseComplaintForm(f).errors).toEqual([]);f.set("affectedObjectTypes","PRODUCT_MATERIAL");expect(parseComplaintForm(f).errors).toContain("Para producto/material debe indicarse el lote.");});
+});
+
+describe("R4A · registro simplificado GC-00/027/03 §5.2",()=>{
+ function form(){const f=new FormData();for(const [k,v] of Object.entries({status:"CLOSED",complaintType:"CUSTOMER",departmentId:"department-1",openedAt:"2026-10-01",createdByText:"QA",emittedBy:"Evaluador QA",classification:"NO_GMP_IMPACT",description:"Incidencia comercial",impactQualityGmp:"NO",impactEnvironment:"NO",impactAssessment:"Ausencia de impacto GMP y ambiental evaluada",conclusion:"Resolución comercial sin seguimiento adicional",partIIRequired:"false",closedAt:"2026-10-02"}))f.set(k,v);return f;}
+ it("no exige apertura completa del Anexo III para una incidencia sin impacto evaluada",()=>{expect(parseComplaintForm(form()).errors).toEqual([]);});
+ it("obliga al informe completo si se identifica impacto",()=>{const f=form();f.set("impactQualityGmp","YES");expect(parseComplaintForm(f).errors).toContain("El registro simplificado requiere evaluación de ausencia de impacto GMP y ambiental; si hay impacto debe abrirse el informe completo.");});
+});

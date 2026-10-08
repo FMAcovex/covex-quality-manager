@@ -367,12 +367,12 @@ export function serializeChangeControlVersion(record: ChangeControlVersionSource
 }
 
 export function serializeComplaintVersion(
-  record: ComplaintVersionSource,
+  record: ComplaintVersionSource & { qmsRecord: { sourceRelations?: Array<{ id: string; targetRecordId: string; relationType: string; targetRecord: { recordType: string; businessCode: string | null; annulledBusinessCode?:string|null } }> } },
   metadata: { versionFollowupDate?: Date | null } = {},
 ) {
   return {
     recordType: "COMPLAINT",
-    businessCode: record.qmsRecord.businessCode ?? null,
+    businessCode: record.qmsRecord.businessCode ?? record.qmsRecord.annulledBusinessCode ?? null,
     year: record.qmsRecord.year ?? null,
     complaint: {
       departmentId: record.departmentId ?? null,
@@ -410,7 +410,7 @@ export function serializeComplaintVersion(
       externalCommunication: record.externalCommunication ?? null, communicationDate: iso(record.communicationDate),
       communicationMedium: record.communicationMedium ?? null, communicationParties: record.communicationParties ?? null,
       communicationSummary: record.communicationSummary ?? null, partIIRequired: record.partIIRequired ?? null,
-      versionFollowupDate: iso(metadata.versionFollowupDate),
+      versionFollowupDate: iso(metadata.versionFollowupDate===undefined?record.openedAt:metadata.versionFollowupDate),
       hasDerivedActions: record.hasDerivedActions ?? null, nextFollowupDate: iso(record.nextFollowupDate),
       conclusion: record.conclusion ?? null, effectivenessRequired: record.effectivenessRequired ?? null, initialEvaluationDate: iso(record.initialEvaluationDate),
       initialConclusionDate: iso(record.initialConclusionDate), responseDate: iso(record.responseDate),
@@ -425,8 +425,9 @@ export function serializeComplaintVersion(
       annexIIITemplateVersionId: record.annexIIITemplateVersionId ?? null, annexIIITemplateVersionCode: record.annexIIITemplateVersion?.versionCode ?? null,
       annexIVTemplateVersionId: record.annexIVTemplateVersionId ?? null, annexIVTemplateVersionCode: record.annexIVTemplateVersion?.versionCode ?? null,
       annexVTemplateVersionId: record.annexVTemplateVersionId ?? null, annexVTemplateVersionCode: record.annexVTemplateVersion?.versionCode ?? null,
-      capaPlans: record.capaPlans.map(x=>({actionType:x.actionType,description:x.description,plannedExecutionDate:iso(x.plannedExecutionDate),responsible:x.responsible??null,businessCapaCode:x.businessCapaCode??null,linkedCapaRecordId:x.linkedCapaRecordId??null,linkedCapaBusinessCode:x.linkedCapaRecord?.businessCode??null,proposalStatus:x.proposalStatus})),
-      derivedActions: record.derivedActions.map(x=>({actionType:x.actionType,businessCode:x.businessCode??null,description:x.description??null,responsible:x.responsible??null,plannedExecutionDate:iso(x.plannedExecutionDate),sortOrder:x.sortOrder})),
+      relations: (record.qmsRecord.sourceRelations ?? []).map(x=>({id:x.id,targetRecordId:x.targetRecordId,recordType:x.targetRecord.recordType,businessCode:x.targetRecord.businessCode??x.targetRecord.annulledBusinessCode??null,relationType:x.relationType})),
+      capaPlans: record.capaPlans.map(x=>({id:x.id,actionType:x.actionType,description:x.description,plannedExecutionDate:iso(x.plannedExecutionDate),responsible:x.responsible??null,businessCapaCode:x.businessCapaCode??null,linkedCapaRecordId:x.linkedCapaRecordId??null,linkedCapaBusinessCode:x.linkedCapaRecord?.businessCode??null,proposalStatus:x.proposalStatus})),
+      derivedActions: record.derivedActions.map(x=>({id:x.id,actionType:x.actionType,businessCode:x.businessCode??null,description:x.description??null,responsible:x.responsible??null,plannedExecutionDate:iso(x.plannedExecutionDate),sortOrder:x.sortOrder})),
       followups: record.followups.map(x=>({id:x.id,followupDate:iso(x.followupDate),completedByText:x.completedByText,followupType:x.followupType??null,comment:x.comment,nextFollowupDate:iso(x.nextFollowupDate),evidenceReference:x.evidenceReference??null}))
     }
   };
@@ -620,6 +621,7 @@ export function complaintSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
     ...d,
     qmsRecord: { businessCode: stringValue(root.businessCode) },
     openedAt: dateValue(d.openedAt),
+    versionFollowupDate: dateValue(d.versionFollowupDate),
     detectionDate: dateValue(d.detectionDate),
     receptionDate: dateValue(d.receptionDate),
     communicationDate: dateValue(d.communicationDate),
@@ -644,6 +646,10 @@ export function complaintSnapshotToAnnexRecord(snapshot: Prisma.JsonValue) {
       followupDate: dateValue(item.followupDate),
       nextFollowupDate: dateValue(item.nextFollowupDate),
     })),
+    annexIVTemplateVersion: d.annexIVTemplateVersionCode
+      ? { versionCode: stringValue(d.annexIVTemplateVersionCode) ?? "" } : null,
+    annexVTemplateVersion: d.annexVTemplateVersionCode
+      ? { versionCode: stringValue(d.annexVTemplateVersionCode) ?? "" } : null,
     annexIIITemplateVersion: d.annexIIITemplateVersionCode
       ? { versionCode: stringValue(d.annexIIITemplateVersionCode) ?? "" }
       : null,
@@ -846,6 +852,6 @@ export function recordVersionTemplateId(
         ? root.capa
         : root.complaint,
   );
-  const value = section.anexoIIITemplateVersionId;
+  const value = recordType === "COMPLAINT" ? section.annexIIITemplateVersionId : section.anexoIIITemplateVersionId;
   return typeof value === "string" ? value : null;
 }

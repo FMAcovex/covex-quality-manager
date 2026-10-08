@@ -35,14 +35,15 @@ function efficacyTone(value:string){
 
 export default async function ComplaintsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  const q=await searchParams;
- const filters={review:p(q.review),
+ const filters={page:p(q.page),recurrent:p(q.recurrent),capa:p(q.capa),returns:p(q.returns),review:p(q.review),
   q:p(q.q),administrative:p(q.administrative),year:queryList(q.year),department:queryList(q.department),
   type:queryList(q.type),status:queryList(q.status),classification:queryList(q.classification),
   effectiveness:queryList(q.effectiveness),situation:queryList(q.situation),followup:queryList(q.followup)
  };
- const {rows,departments,years,counters}=await getComplaintList(filters);
+ const {rows,departments,years,counters,pagination}=await getComplaintList(filters);
  const officialTemplateReady=await isActiveTemplateAssetReady(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_V);
  const exportParams=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>appendFilterValues(exportParams,k,v));
+ const pageHref=(page:number)=>{const params=new URLSearchParams(exportParams);params.set("page",String(page));return `/complaints?${params}`;};
  const currentYear=filters.year[0]??String(new Date().getFullYear());
  const today=new Date();
 
@@ -69,6 +70,9 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
    ]}/>
    <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"ACCEPTABLE",label:"Conforme"},{value:"NOT_ACCEPTABLE",label:"No conforme"},{value:"NOT_REQUIRED",label:"N/A"}]}/>
    <MultiSelectFilter name="followup" label="Seguimiento" selected={filters.followup} options={[{value:"OVERDUE",label:"Vencido"},{value:"PENDING",label:"Pendiente"},{value:"MISSING",label:"Sin fecha"}]}/>
+   <label className="filter-placeholder"><span>Recurrente</span><select name="recurrent" defaultValue={filters.recurrent??""}><option value="">Todas</option><option value="YES">Sí</option><option value="NO">No</option></select></label>
+   <label className="filter-placeholder"><span>CAPA vinculada</span><select name="capa" defaultValue={filters.capa??""}><option value="">Todas</option><option value="YES">Con CAPA</option><option value="NO">Sin CAPA</option></select></label>
+   <label className="filter-placeholder"><span>Devolución vinculada</span><select name="returns" defaultValue={filters.returns??""}><option value="">Todas</option><option value="YES">Con devolución</option><option value="NO">Sin devolución</option></select></label>
    <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/complaints">Limpiar</Link></div>
   </div><div className="search-row">
    <SearchAutocomplete
@@ -124,5 +128,6 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
     </tr>;
    }):<tr><td colSpan={complaintColumns.length+1} className="empty-state"><strong>No hay reclamaciones con estos filtros.</strong></td></tr>}
   </tbody></table></div></div>
+ <nav className="heading-actions" aria-label="Paginación de reclamaciones"><span>{pagination.total} resultados · Página {pagination.page} de {pagination.pageCount}</span>{pagination.page>1?<Link className="button small" href={pageHref(pagination.page-1)}>Anterior</Link>:null}{pagination.page<pagination.pageCount?<Link className="button small" href={pageHref(pagination.page+1)}>Siguiente</Link>:null}</nav>
  </section>;
 }

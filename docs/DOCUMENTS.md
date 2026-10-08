@@ -178,7 +178,7 @@ El libro fuente utilizado para validar el formato contiene hojas históricas y d
 Exportación independiente con las columnas operativas ampliadas de seguimiento, incluyendo ejecución, eficacia, último/próximo seguimiento y estado final.
 
 
-## 8. Reclamaciones · GC-00/027/02
+## 8. Reclamaciones · GC-00/027/02 (histórico; objetivo actual v03)
 
 Fuente controlada: PNT completo GC-00/027/02.
 
@@ -214,3 +214,8 @@ Los binarios controlados no se versionan en Git. Se instalan localmente y el has
 Fuentes reales y hashes en AUDITS_R3C.md/GMP_SOURCES.md. A3.03 interno, A3 externo V04, A4.03 CAPA PLAN.xlsx y Anexo IV extraído del PNT externo GC-00.034.04. Sin borrador/obsoletos ni plantilla independiente inventada. Paquete OOXML/estilos/textos fijos/hojas/firmas preservados; tablas se amplían con los datos estructurados.
 
 Versiones formales generan solo desde su snapshot/plantilla fijada y conservan bytes/checksum; plan actual se archiva separado. Documento primario CLIENT/AUTHORITY es recibido. PDF firmado externo por QmsRecordVersion exacta, sin sobreescritura ni firma electrónica. Instalación de binarios oficiales excluidos de Git mediante templates:audits:install; QA manual de formato en Office antes del uso documental controlado.
+
+
+## Reclamaciones R4A — documentos GC-00/027/03
+
+Fuentes separadas reales III/IV/V, estructura y SHA-256 en [COMPLAINTS_R4A.md](COMPLAINTS_R4A.md). III y IV se generan desde el snapshot de la versión solicitada; IV aplica opcionalmente a respuesta formal al cliente, sin requisito universal. V mantiene listado anual oficial. Binarios corporativos fuera de Git; instalador verifica hashes y conserva pins/vigencias históricas.

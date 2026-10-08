@@ -20,6 +20,7 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
  if(r.status==="DRAFT")return NextResponse.json({error:"Los documentos oficiales no se generan mientras la reclamación esté en borrador."},{status:409});
 
  const requestedVersion=new URL(request.url).searchParams.get("version");
+ if(requestedVersion!==null&&(!/^\d+$/.test(requestedVersion)||!Number.isSafeInteger(Number(requestedVersion))))return NextResponse.json({error:"Versión no válida."},{status:400});
  const sequenceNumber=requestedVersion!==null&&/^\d+$/.test(requestedVersion)?Number(requestedVersion):null;
  const storedVersion=sequenceNumber===null?r.qmsRecord.versions.at(-1)??null:r.qmsRecord.versions.find(item=>item.sequenceNumber===sequenceNumber)??null;
  if(sequenceNumber!==null&&!storedVersion){

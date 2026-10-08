@@ -69,6 +69,7 @@ jobs:
           pnpm r2b-documents:smoke
           pnpm r3-capa:smoke
           pnpm r3-complaints:smoke
+          pnpm complaints-r4a:smoke
           pnpm r2-returns-documents:smoke
           pnpm r3-returns:smoke
           pnpm review-r1:smoke
@@ -94,4 +95,5 @@ jobs:
             R3A_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3a:ui:smoke
           done
           R3B_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3b:ui:smoke
+          R4A_UI_BASE_URL=http://127.0.0.1:3000 pnpm complaints-r4a:ui:smoke
           R3C_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3c:ui:smoke

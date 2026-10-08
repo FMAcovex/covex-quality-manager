@@ -1,7 +1,7 @@
 export function formatDate(value: Date | string | null | undefined) {
   if (!value) return "—";
   const date = value instanceof Date ? value : new Date(value);
-  return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", timeZone:"UTC" }).format(date);
 }
 
 export function complaintTypeLabel(value: string | null | undefined) {

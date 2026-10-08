@@ -333,7 +333,7 @@ async function main() {
       create: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "02", effectiveFrom: new Date("2026-05-26"), isActive: false },
     });
   }
-  for (const documentType of [DocumentType.COMPLAINT_ANNEX_III,DocumentType.COMPLAINT_ANNEX_V]) {
+  for (const documentType of [DocumentType.COMPLAINT_ANNEX_III,DocumentType.COMPLAINT_ANNEX_IV,DocumentType.COMPLAINT_ANNEX_V]) {
     await prisma.templateVersion.upsert({
       where: { module_documentType_versionCode: { module: QmsRecordType.COMPLAINT, documentType, versionCode: "03" } },
       update: { isActive: true },

@@ -232,3 +232,8 @@ R3A se amplía con hallazgos persistentes, recomendaciones, criticidad, CAPA Pla
 Completa R3A/R3B con documentos sobre fuentes oficiales reales, versiones 00/01+ por emisión/revisión, snapshots congelados, PDF firmado externo por versión, documentos primarios recibidos, Review transversal y cierre QA validado en servidor. Internas/proveedor usan A3 correspondiente; todos usan A4.03 CAPA Plan; proveedor usa Anexo IV real extraído del PNT externo. Cliente/autoridad conserva acta externa sin informe COVEX artificial.
 
 Cierre por escenario y excepción proveedor sin respuesta/sin críticos en D-066/AUDITS_R3C.md. Situación, integridad y filtros derivados sin nuevos estados; no reapertura automática, firma electrónica, Plan Maestro ni alertas.
+
+
+## Reclamaciones — alcance R4A
+
+Se aplica COMPLAINTS_R4A.md: QmsRecordVersion como seguimiento funcional único; Guardar y Guardar como nueva versión diferenciados; V01+ con fecha/motivo, secuencia concurrente y snapshot completo; ComplaintFollowup solo histórico/compatibilidad. Se mantienen relaciones COMPLAINT→CAPA/RETURN, PDF por versión y Review. GC-00/027/03 §5.2 permite registro simplificado sin impacto evaluado; §5.7 permite IV para respuesta formal al cliente, sin obligatoriedad universal. Sin migración ni rediseño general.

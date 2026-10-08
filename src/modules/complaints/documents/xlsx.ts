@@ -1,3 +1,4 @@
+import { complaintSnapshotVersionFollowupDate } from "@/lib/qms/versioning";
 import { readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
 import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
@@ -6,7 +7,8 @@ import { DocumentType } from "@prisma/client";
 import { generateSimpleXlsx } from "@/lib/ooxml/simple-xlsx";
 import { complaintClassificationLabel,complaintEffectivenessLabel,complaintStatusLabel,complaintTypeLabel,formatDate } from "@/modules/complaints/domain";
 
-type Row=Awaited<ReturnType<typeof import("@/modules/complaints/documents/export-data").getComplaintExportRows>>[number];
+type ExportRow=Awaited<ReturnType<typeof import("@/modules/complaints/documents/export-data").getComplaintExportRows>>[number];
+type Row=Omit<ExportRow,"qmsRecord">&{qmsRecord:Omit<ExportRow["qmsRecord"],"versions">&{versions?:ExportRow["qmsRecord"]["versions"]}};
 
 function xmlCell(column:string,row:number,style:string,value:string){
  const s=style?` s="${style}"`:"";
@@ -90,10 +92,10 @@ export async function generateComplaintAnnexV(year:number,rows:Row[],versionCode
 
 export function generateComplaintSimpleList(rows:Row[]){
  const headers=["N.º reclamación","Tipo","Fecha apertura","Cliente/Proveedor","Producto/material/servicio","Lote/Ref.","Clasificación","Estado","Eficacia","Fecha cierre","Causa raíz","Recurrente","Último seguimiento","Próximo seguimiento","Observaciones/CAPA"];
- return generateSimpleXlsx("Reclamaciones",headers,rows.map(r=>{const f=r.followups[0];return[
+ return generateSimpleXlsx("Reclamaciones",headers,rows.map(r=>{const f=r.followups[0],v=r.qmsRecord.versions?.[0];return[
   r.qmsRecord.businessCode??"",complaintTypeLabel(r.complaintType),formatDate(r.openedAt),r.partyName??"",r.reference??r.affectedScope??"",r.lotReference??"",
   complaintClassificationLabel(r.classification),complaintStatusLabel(r.status),complaintEffectivenessLabel(r.effectivenessStatus),formatDate(r.closedAt),r.rootCause??"",
-  r.recurrent===true?"Sí":r.recurrent===false?"No":"",f?formatDate(f.followupDate):"",f?formatDate(f.nextFollowupDate):"",
+  r.recurrent===true?"Sí":r.recurrent===false?"No":"",v?formatDate(complaintSnapshotVersionFollowupDate(v.snapshot,v.sequenceNumber)):f?formatDate(f.followupDate):"",formatDate(r.nextFollowupDate),
   [r.internalObservations,...r.capaPlans.map(x=>x.businessCapaCode||x.description)].filter(Boolean).join(" · ")
  ]}));
 }

@@ -10,7 +10,7 @@ import {
 export type QmsRelationClient = Pick<
   Prisma.TransactionClient,
   "qmsRecord" | "qmsRelation"
-> & Partial<Pick<Prisma.TransactionClient, "audit" | "auditFindingRelation" | "$queryRaw">>;
+> & Partial<Pick<Prisma.TransactionClient, "audit" | "auditFindingRelation" | "$queryRaw" | "complaint" | "qmsRecordVersion">>;
 
 export type QmsRelationHistoryClient = Pick<
   Prisma.TransactionClient,
@@ -144,7 +144,11 @@ export async function createQmsRelation(
     ]);
     if (!audit || !audit.qmsRecord.isActive || audit.status === "DRAFT" || !operationalTarget?.isActive || (!operationalTarget.capa && !operationalTarget.deviation) || operationalTarget.capa?.status === "DRAFT" || operationalTarget.deviation?.status === "DRAFT") throw new QmsRelationValidationError("Auditoría y destino deben ser expedientes operativos y activos.");
   }
-  return client.qmsRelation.upsert({
+  if (source.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && client.$queryRaw && !("$transaction" in client)) {
+    const { lockComplaintVersion } = await import("@/modules/complaints/version-service");
+    await lockComplaintVersion(client as Prisma.TransactionClient, source.id);
+  }
+  const result = await client.qmsRelation.upsert({
     where: {
       sourceRecordId_targetRecordId_relationType: {
         sourceRecordId: relation.sourceRecordId,
@@ -164,6 +168,12 @@ export async function createQmsRelation(
         operationalRelationLabel(relation.sourceType, relation.targetType),
     },
   });
+  if (source.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && !("$transaction" in client)) {
+    const { refreshComplaintRelationSnapshot } = await import("@/modules/complaints/version-service");
+    await refreshComplaintRelationSnapshot(client as Prisma.TransactionClient, source.id);
+  }
+  return result;
+
 }
 
 export async function linkOperationalRelationByBusinessCode(
@@ -278,10 +288,16 @@ export async function deactivateQmsRelation(
     if (await client.auditFindingRelation!.count({ where: { qmsRelationId: relation.id, isActive: true } })) throw new QmsRelationValidationError("Retira primero todas las atribuciones a hallazgos desde la Auditoría.");
   }
 
-  return client.qmsRelation.update({
-    where: { id: relation.id },
-    data: { isActive: false },
-  });
+  if (source?.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && client.$queryRaw && !("$transaction" in client)) {
+    const { lockComplaintVersion } = await import("@/modules/complaints/version-service");
+    await lockComplaintVersion(client as Prisma.TransactionClient, input.sourceRecordId);
+  }
+  const result = await client.qmsRelation.update({where:{id:relation.id},data:{isActive:false}});
+  if (source?.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && !("$transaction" in client)) {
+    const { refreshComplaintRelationSnapshot } = await import("@/modules/complaints/version-service");
+    await refreshComplaintRelationSnapshot(client as Prisma.TransactionClient, input.sourceRecordId);
+  }
+  return result;
 }
 
 export async function deactivateOperationalRelation(

@@ -31,8 +31,8 @@ import { complaintCapaPlanReviewTarget,complaintReviewTargets } from "@/lib/qms/
 
 export const dynamic="force-dynamic";
 const tabs=[
- ["summary","Resumen"],["part-i","Parte I"],["part-ii","Parte II"],["versions","Versiones"],
- ["relations","Relaciones"],["documents","Documentos"],["review","Revisión"],["history","Historial"]
+ ["summary","Resumen"],["part-i","Parte I"],["part-ii","Parte II"],
+ ["relations","Relaciones"],["documents","Documentos"],["versions","Versiones"],["review","Revisión"],["history","Historial"]
 ] as const;
 const txt=(v:string|null|undefined)=>v||"—";
 const yesNo=(v:string|null|undefined)=>v==="YES"?"Sí":v==="NO"?"No":v==="NA"?"N/A":"—";
@@ -50,8 +50,8 @@ const containmentLabels:Record<string,string>={QUARANTINE:"Bloqueo / cuarentena"
 
 function complaintFollowupLabel(sequenceNumber: number) {
   return sequenceNumber === 0
-    ? "Seguimiento 00 · Apertura"
-    : `Seguimiento ${String(sequenceNumber).padStart(2, "0")}`;
+    ? "V00 · Apertura"
+    : `${versionLabel(sequenceNumber)} · Seguimiento`;
 }
 
 export default async function ComplaintDetailPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string}>}){
@@ -117,6 +117,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
   {tab==="summary"?<>
    <div className="card"><div className="section-title-row"><div><h2>Resumen del expediente</h2><p className="muted-note">Situación actual y próximos pasos de la reclamación.</p></div>{currentVersion?<span className="badge neutral">Actual {complaintFollowupLabel(currentVersion.sequenceNumber)}</span>:null}</div>
     <dl className="info-grid">
+     <div className="info-item"><dt>Objeto afectado</dt><dd>{joinLabels(r.affectedObjectTypes,objectLabels)}</dd></div>
      <div className="info-item"><dt>Tipo</dt><dd>{complaintTypeLabel(r.complaintType)}</dd></div>
      <div className="info-item"><dt>Cliente / proveedor</dt><dd>{txt(r.partyName)}</dd></div>
      <div className="info-item"><dt>Clasificación</dt><dd>{complaintClassificationLabel(r.classification)}</dd></div>
@@ -194,11 +195,12 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    {r.partIIRequired!==true?<div className="analytics-note">{r.partIIRequired===false?"Parte II no procede. El expediente puede cerrarse en Parte I.":"Parte II pendiente de decisión/seguimiento."}</div>:<>
     <h3>A) Respuesta del proveedor o al / del cliente</h3><dl className="info-grid"><div className="info-item"><dt>Fecha respuesta</dt><dd>{formatDate(r.responseDate)}</dd></div><div className="info-item"><dt>Medio</dt><dd>{txt(r.responseMedium)}</dd></div><div className="info-item"><dt>Respuesta suficiente</dt><dd>{bool(r.responseSufficient)}</dd></div><div id={reviewTarget.responseSummary.anchorId} className="info-item full review-target"><dt><span>Resumen / compromisos</span><ReviewMarker target={reviewTarget.responseSummary}/></dt><dd className="prose-value">{txt(r.responseSummary)}</dd></div></dl>
     <h3>B) Verificación de eficacia</h3><dl className="info-grid"><div className="info-item"><dt>Resultado</dt><dd>{complaintEffectivenessLabel(r.effectivenessStatus)}</dd></div><div id={reviewTarget.effectivenessAssessment.anchorId} className="info-item full review-target"><dt><span>Valoración</span><ReviewMarker target={reviewTarget.effectivenessAssessment}/></dt><dd className="prose-value">{txt(r.effectivenessAssessment)}</dd></div></dl>
-    <h3>C) Cierre</h3><dl className="info-grid"><div className="info-item"><dt>Estado acciones</dt><dd>{r.closeActionStatus==="COMPLETED"?"Completadas":r.closeActionStatus==="LINKED"?"Vinculadas a seguimiento independiente":r.closeActionStatus==="PENDING"?"Pendientes":"—"}</dd></div><div className="info-item"><dt>Referencias / responsable</dt><dd>{txt(r.closeActionReferences)}</dd></div><div className="info-item"><dt>Estado final</dt><dd>{complaintStatusLabel(r.status)}</dd></div><div className="info-item"><dt>Fecha cierre</dt><dd>{formatDate(r.closedAt)}</dd></div><div id={reviewTarget.closeConclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión</span><ReviewMarker target={reviewTarget.closeConclusion}/></dt><dd className="prose-value">{txt(r.closeConclusion)}</dd></div></dl>
+    <h3>C) Cierre</h3><dl className="info-grid"><div className="info-item"><dt>Estado acciones</dt><dd>{r.closeActionStatus==="COMPLETED"?"Completadas":r.closeActionStatus==="LINKED"?"Vinculadas a seguimiento independiente":r.closeActionStatus==="PENDING"?"Pendientes":"—"}</dd></div><div className="info-item"><dt>Referencias / responsable</dt><dd>{txt(r.closeActionReferences)}</dd></div><div className="info-item"><dt>Próximo seguimiento</dt><dd>{formatDate(r.nextFollowupDate)}</dd></div><div className="info-item"><dt>Estado final</dt><dd>{complaintStatusLabel(r.status)}</dd></div><div className="info-item"><dt>Fecha cierre</dt><dd>{formatDate(r.closedAt)}</dd></div><div id={reviewTarget.closeConclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión</span><ReviewMarker target={reviewTarget.closeConclusion}/></dt><dd className="prose-value">{txt(r.closeConclusion)}</dd></div></dl>
+    <h3>D) Aprobaciones</h3><p className="prose-value">{txt(r.closeApprovalNames)}</p>
    </>}
   </div>:null}
 
-  {tab==="versions"?<div className="card"><div className="section-title-row version-section-title-row"><div className="section-title-copy"><h2>Seguimientos del expediente</h2><p className="muted-note version-section-help">Seguimiento 00 corresponde a la apertura/registro inicial. El primer seguimiento posterior es 01; después 02, 03…</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
+  {tab==="versions"?<div className="card"><div className="section-title-row version-section-title-row"><div className="section-title-copy"><h2>Versiones / seguimientos del expediente</h2><p className="muted-note version-section-help">V00 corresponde a la apertura/registro inicial. Los seguimientos formales crean V01, V02, V03… Guardar cambios mantiene la versión vigente.</p></div>{currentVersion?<span className="badge neutral">Actual {versionLabel(currentVersion.sequenceNumber)}</span>:null}</div>
    {r.qmsRecord.versions.length?<div className="timeline">{[...r.qmsRecord.versions].reverse().map(item=>{
     const summary=recordVersionSummary("COMPLAINT",item.snapshot);
     const versionDate=complaintSnapshotVersionFollowupDate(item.snapshot,item.sequenceNumber);
@@ -215,11 +217,12 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
      </div>
      <div className="document-actions">
       <a className="button small" href={`/api/complaints/${id}/annex-iii?version=${item.sequenceNumber}`}>Descargar Anexo III {versionLabel(item.sequenceNumber)}</a>
+      <a className="button small" href={`/api/complaints/${id}/annex-iv?version=${item.sequenceNumber}`}>Descargar Anexo IV {versionLabel(item.sequenceNumber)}</a>
       {signedDocument?<a className="button small" href={`/api/complaints/${id}/versions/${item.sequenceNumber}/signed-pdf`}>Descargar PDF firmado {versionLabel(item.sequenceNumber)}</a>:null}
      </div>
      <div className="version-signed-document"><strong>PDF firmado: {signedDocument?"Disponible":"No cargado"}</strong>
       {signedDocument?<small className="muted-note">{signedDocument.fileName} · {Math.max(1,Math.round(signedDocument.fileSize/1024))} KB · cargado {formatDate(signedDocument.uploadedAt)} · {signedDocument.uploadedByText??"Usuario no informado"}</small>:<small className="muted-note">Carga aquí el documento firmado correspondiente exclusivamente a {versionLabel(item.sequenceNumber)}.</small>}
-      <SignedVersionDocumentForm action={uploadComplaintSignedPdfAction.bind(null,id,item.id)} defaultActor={r.createdByText??process.env.DEFAULT_ACTOR_NAME??"Usuario demo"} replace={Boolean(signedDocument)}/>
+      <SignedVersionDocumentForm reloadOnSuccess action={uploadComplaintSignedPdfAction.bind(null,id,item.id)} defaultActor={r.createdByText??process.env.DEFAULT_ACTOR_NAME??"Usuario demo"} replace={Boolean(signedDocument)}/>
      </div>
     </article>
    })}</div>:<div className="empty-panel">Este expediente todavía no tiene snapshot persistido.</div>}
@@ -237,8 +240,8 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    <div className="info-item"><dt>PDF firmados</dt><dd>{signedVersionCount} de {r.qmsRecord.versions.length} versiones</dd></div>
    <div className="info-item"><dt>PDF firmado versión vigente</dt><dd>{currentVersion?`${versionLabel(currentVersion.sequenceNumber)} · ${currentSignedDocument?"Disponible":"No cargado"}`:"Sin versión"}</dd></div>
   </dl><p className="muted-note">La carga, descarga y sustitución de PDF firmado se gestiona por versión en la pestaña Versiones.</p><div className="document-grid">
-   <div className="document-block"><h3>Anexo III · Informe de reclamación</h3><p>Plantilla oficial v03 y documento Word cumplimentado con los datos vigentes.</p><div className="document-actions">{r.annexIIITemplateVersion?.id?<a className="button" href={`/api/settings/templates/${r.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a>:<span className="muted-note">Plantilla pendiente de cargar.</span>}<a className="button primary" href={`/api/complaints/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></div></div>
-   {r.annexIIITemplateVersion?.versionCode==="02"?<div className="document-block"><h3>Anexo IV · Respuesta · histórico v02</h3><p>Solo para expedientes vinculados a la revisión 02.</p><div className="document-actions">{r.annexIVTemplateVersion?.id?<a className="button" href={`/api/settings/templates/${r.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a>:null}<a className="button" href={`/api/complaints/${id}/annex-iv`}>Generar respuesta v02</a></div></div>:null}
+   <div className="document-block"><h3>Anexo III · Informe de reclamación</h3><p>Plantilla oficial revisión {r.annexIIITemplateVersion?.versionCode??"sin asignar"}; documento cumplimentado desde la versión vigente.</p><div className="document-actions">{r.annexIIITemplateVersion?.id?<a className="button" href={`/api/settings/templates/${r.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a>:<span className="muted-note">Plantilla pendiente de cargar.</span>}<a className="button primary" href={`/api/complaints/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></div></div>
+   <div className="document-block"><h3>Anexo IV · Informe de respuesta</h3><p>Opcional cuando se requiere una respuesta formal al cliente. No es requisito universal de cierre. Las descargas históricas se realizan por versión.</p><div className="document-actions">{r.annexIVTemplateVersion?.id?<a className="button" href={`/api/settings/templates/${r.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a>:null}<a className="button" href={`/api/complaints/${id}/annex-iv`}>Generar informe de respuesta</a></div></div>
    <div className="document-block"><h3>Anexo V · Listado de reclamaciones</h3><p>Listado oficial anual validado. Se genera desde la pantalla principal.</p><Link className="button" href="/complaints">Ir al listado y descargar Anexo V</Link></div>
   </div>
   {r.qmsRecord.generatedDocuments.length?<><h3>Generaciones registradas</h3><div className="timeline">{r.qmsRecord.generatedDocuments.map(x=>{const generatedVersion=r.qmsRecord.versions.find(v=>v.id===x.recordVersionId);return <div className="timeline-item document-generation-item" key={x.id}><strong className="document-generation-type">{x.documentType}{generatedVersion?` · ${versionLabel(generatedVersion.sequenceNumber)}`:""}</strong><small className="muted-note document-generation-meta">Generado {formatDate(x.generatedAt)} · {x.generatedByText??"Usuario no informado"}</small></div>})}</div></>:null}
@@ -249,6 +252,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    <ReviewThreadList/>
   </div>:null}
 
+  {tab==="history"&&r.followups.length?<div className="card"><h2>Seguimientos históricos legacy</h2><p className="muted-note">Datos anteriores conservados para consulta. Los nuevos seguimientos se registran exclusivamente como versiones.</p><div className="timeline">{r.followups.map(item=><article key={item.id} className="timeline-item"><strong>{formatDate(item.followupDate)} · {item.completedByText??"—"}</strong><p className="prose-value">{item.comment}</p><small>Próximo seguimiento: {formatDate(item.nextFollowupDate)}</small></article>)}</div></div>:null}
   {tab==="history"?<div className="card"><h2>Historial interno de modificaciones</h2><p className="muted-note">Historial administrativo de cambios; no constituye un audit trail GMP validado.</p>{r.qmsRecord.history.length?<div className="timeline">{r.qmsRecord.history.map(x=><div className="timeline-item history-entry" key={x.id}><header className="history-entry-header"><strong>{formatDate(x.changedAt)}</strong><span>{x.changedByText??"Sistema"}</span><span className="badge neutral">{x.source}</span></header><p className="history-entry-detail"><strong>{x.fieldPath}</strong>{x.reason?<span> · Motivo: {x.reason}</span>:null}</p></div>)}</div>:<div className="empty-panel">Sin cambios registrados.</div>}</div>:null}
  </section>
  <ReviewDrawer/>

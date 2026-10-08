@@ -561,3 +561,9 @@ Se implementa docs/AUDITS_R3C.md sobre R3A/R3B. Las cinco fuentes oficiales auto
 Versionar únicamente emisión/revisión formal del informe: 00 inicial, 01+ con motivo/autor/fecha y snapshot congelado desde creación, incluida plantilla. Ediciones/seguimiento/plan actual no generan revisión. Cliente/autoridad conserva acta externa primaria y su revisión. PDF externo firmado por versión, sin sobrescribir; ausencia es aviso documental y no bloqueo absoluto de cierre. Review R2C reutilizado con UUID y asociación histórica exacta.
 
 Cierre interno por QA con informe, tratamiento/evidencia/verificación y CAPA atribuida necesaria cerrada/eficaz; no bloqueo general por todas las Desviaciones. Proveedor: parcial al envío, normal con verificación o excepción explícita sin respuesta/no críticos, justificación/actor/fecha y siguiente auditoría. Cliente/autoridad: documento primario, acciones/evidencia y respuesta cuando requerida, sin eficacia local universal inventada. DRAFT/OPEN/CLOSED permanecen; no reapertura automática. Detalle de política y despliegue en AUDITS_R3C.md.
+
+## D-067 — Reclamaciones R4A: seguimiento funcional único y documentos v03
+
+Por petición expresa del usuario, los nuevos seguimientos funcionales se registran exclusivamente como QmsRecordVersion V00/V01+, con fecha/motivo y snapshot. ComplaintFollowup y sus datos se conservan como legacy, sin borrado/backfill masivo. Guardar actualiza la versión vigente; nueva versión es una acción explícita. Las relaciones canónicas y los targets Review mantienen UUID e históricos.
+
+Para Reclamaciones v03 se usan los anexos separados reales autorizados en SharePoint, cuyos hashes figuran en COMPLAINTS_R4A.md; D-035 conserva aplicación para históricos v02 y Devoluciones. Anexo IV es opcional para respuesta formal al cliente. Sin cambios de matriz, migración ni firma electrónica. La revisión UX/UI global queda aplazada hasta completar todos los módulos.
