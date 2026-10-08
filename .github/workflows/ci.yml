@@ -5,8 +5,24 @@ on:
     branches: [main]
 
 jobs:
+  scope:
+    runs-on: ubuntu-22.04
+    outputs:
+      documentation_only: ${{ steps.scope.outputs.documentation_only }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: scope
+        name: Select validation by changed files
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 .github/scripts/controlled_document_scope.py
+
   quality:
-    if: github.head_ref != 'feature/complaints-returns-final-regression' && github.head_ref != 'feature/pnt-p1a-master'
+    needs: scope
+    if: github.head_ref != 'feature/complaints-returns-final-regression' && needs.scope.outputs.documentation_only != 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 30
 
@@ -163,7 +179,8 @@ jobs:
           pnpm quality
 
   pnt-p1a:
-    if: github.head_ref == 'feature/pnt-p1a-master'
+    needs: scope
+    if: needs.scope.outputs.documentation_only == 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 30
 
@@ -198,13 +215,14 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: P1A PostgreSQL smoke
+      - name: Controlled documentation PostgreSQL smokes
         run: |
           pnpm db:generate
           pnpm db:deploy
           pnpm db:seed
           pnpm pnt-p1a:smoke
-      - name: P1A browser smoke
+          pnpm pnt-p1b1:smoke
+      - name: Controlled documentation browser smokes
         run: |
           pnpm exec playwright install --with-deps chromium
           pnpm build
@@ -212,6 +230,7 @@ jobs:
           pnt_server_pid=$!
           trap 'pnt_exit_code=$?; if [ "$pnt_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-p1a-next.log; fi; kill "$pnt_server_pid" 2>/dev/null || true' EXIT
           P1A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1a:ui:smoke
+          P1B1_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b1:ui:smoke
       - name: Final quality checks
         run: |
           git restore next-env.d.ts

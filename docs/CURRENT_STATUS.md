@@ -1032,3 +1032,7 @@ Validación R4C local final verde: 90 tests afectados/12 archivos; cuatro smokes
 ## P1A — Documentación controlada: registro maestro PNT (2026-10-08)
 
 Registro independiente de maestro/revisiones/historial, reutilización de Department, captura de borrador incompleto y registro de revisiones existentes verificadas. Listado SQL y ficha Información/Revisiones/Documentos/Historial; edición de maestro y borrador, snapshots consolidados preservados. Referencias GC-00/001/03 y GC-00/013/01 contrastadas en su fuente vigente. Sin importación, aprobaciones, firma, gestión completa de archivos, QMS ni alertas. Detalle y preparación de P1B en `PNT_P1A.md`.
+
+## P1B-1 — Previsualización del índice maestro PNT (2026-10-08)
+
+Analizador XLSX y pantalla de previsualización/conciliación de solo lectura sobre P1A, sin importación definitiva ni staging persistente. GC-00 se descarta por instrucción expresa; GC-00( es la única fuente para GC-00 y conserva su procedencia. Libro real comprobado privadamente: 39 hojas válidas, 821 apariciones PNT, 817 códigos únicos y cuatro grupos repetidos; cero grupos con revisiones diferentes tras excluir GC-00. Contrato, límites, privacidad y pendientes P1B-2 en `PNT_P1B1.md`.

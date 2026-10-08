@@ -577,3 +577,7 @@ D-035 sigue aplicando a históricos instalados. Las copias separadas vigentes de
 ## P1A — Identidad y revisión de documentación controlada (2026-10-08)
 
 El PNT utiliza `ControlledDocument`, `ControlledDocumentRevision` y su historial específico, reutilizando Department con snapshots congelados. No se reutiliza QmsRecordVersion ni QmsRelation. Maestro administrativo y estado documental son distintos. El registro de una revisión documental existente exige fuente y verificación; no equivale a aprobación/publicación. Una vigente y una revisión en elaboración simultáneas; sin invención de revisiones ni fechas. Las consolidadas no se editan. P2 añadirá evidencia de aprobación vinculada a la revisión y separada del método de firma; no se implementa en P1A. Véase `PNT_P1A.md`.
+
+## P1B-1 — Declaración del índice separada de verificación (2026-10-08)
+
+La previsualización XLSX no verifica documentos controlados ni modifica P1A. La declaración del índice, sus valores originales y procedencia se conservan en un contrato de análisis; `sourceMetadata` permite su futura incorporación sin equipararla al estado documental verificado. No se añade esquema ni flujo de aprobación en P1B-1. La fuente GC-00 queda excluida completamente; solo GC-00( aporta procedimientos del departamento GC-00. Confirmación idempotente y decisiones de conciliación corresponden a P1B-2 (`PNT_P1B1.md`).

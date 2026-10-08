@@ -16,7 +16,7 @@ export default async function ListPage({ searchParams }: {
         params.set("page", String(page));
         return `/controlled-documents?${params}`;
     };
-    return <section className="workspace"><header><h1>Documentación controlada</h1><Link href="/controlled-documents/new">Nuevo PNT</Link></header>
+    return <section className="workspace"><header><h1>Documentación controlada</h1><Link href="/controlled-documents/new">Nuevo PNT</Link> <Link href="/controlled-documents/import-index">Importar índice maestro</Link></header>
  <form className="inline-form" method="get">
  <label>Buscar<input name="q" defaultValue={f.q} placeholder="Código, título o referencia"/></label>
  <label>Departamento<select name="department" defaultValue={f.department}><option value="">Todos</option>{departments.map(d => <option key={d.id} value={d.id}>{d.code} — {d.name}{!d.isActive ? " (inactivo)" : ""}</option>)}</select></label>
