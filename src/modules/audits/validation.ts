@@ -28,7 +28,7 @@ const auditBaseSchema = z.object({
 export const auditInputSchema = auditBaseSchema.superRefine((v, ctx) => {
   const add = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
   if (!compatibleAuditScenario(v.auditType || null, v.scenario || null)) add("scenario", "El escenario no corresponde al tipo de auditoría.");
-  if (v.status === "CLOSED") add("status", "El cierre definitivo se habilitará en R3B/R3C.");
+  if (v.status === "CLOSED") add("status", "Confirma el cierre definitivo desde Informe y cierre, después de verificar sus condiciones.");
   if (new Set(v.departmentIds).size !== v.departmentIds.length) add("departmentIds", "No repitas departamentos.");
   const ids = v.participants.flatMap(p => p.id ? [p.id] : []);
   if (new Set(ids).size !== ids.length) add("participants", "No repitas el UUID de un participante.");

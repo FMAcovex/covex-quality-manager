@@ -3,10 +3,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { DocumentType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { hasPdfHeader, validateSignedPdfMetadata, safeSignedPdfFileName } from "@/lib/qms/signed-version-document";
+import { validateSignedPdfMetadata, safeSignedPdfFileName } from "@/lib/qms/signed-version-document";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { auditReportInclude, lockReportAudit, auditReportEvent, readAuditSnapshot, snapshotAudit } from "../report-service";
 import { generateAuditReport, generateAuditCapaPlan, generateAuditExternalPlan } from "./generators";
+import { validateAuditAttachment } from "./attachment-validation";
 const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -42,12 +43,12 @@ export async function registerAuditAttachment(auditId: string, file: File, metad
   if (!['AUDIT_RECEIVED','AUDIT_RESPONSE','AUDIT_EVIDENCE'].includes(metadata.type)) throw new Error("Tipo de adjunto no permitido.");
   if (metadata.type === 'AUDIT_RECEIVED' && (!metadata.reference.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(metadata.date) || Number.isNaN(Date.parse(metadata.date)) || new Date(metadata.date).toISOString().slice(0,10)!==metadata.date)) throw new Error("El documento primario requiere referencia y fecha válidas.");
   if (file.size <= 0 || file.size > 15*1024*1024) throw new Error("El adjunto debe tener entre 1 byte y 15 MB.");
-  const bytes = new Uint8Array(await file.arrayBuffer()), ext = file.name.split('.').pop()?.toLowerCase();
-  if (!['pdf','docx','xlsx'].includes(ext ?? '') || (ext === 'pdf' ? !hasPdfHeader(bytes) : Buffer.from(bytes.subarray(0,2)).toString('ascii') !== 'PK')) throw new Error("Solo se admiten PDF, DOCX o XLSX válidos.");
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const mimeType = validateAuditAttachment(file.name, file.type, bytes);
   return prisma.$transaction(async tx => {
     const a = await lockReportAudit(tx, auditId);
     if (a.status === 'DRAFT') throw new Error("Abre el expediente antes de registrar documentación formal.");
-    const document = await tx.generatedDocument.create({ data: { qmsRecordId: a.qmsRecordId, documentType: metadata.type, fileName: safeSignedPdfFileName(file.name), fileData: bytes, mimeType: ext==='pdf'?'application/pdf':ext==='docx'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', checksum: digest(bytes), generatedByText: metadata.actor, metadata: json({ ...metadata, source: "RECEIVED" }) } });
+    const document = await tx.generatedDocument.create({ data: { qmsRecordId: a.qmsRecordId, documentType: metadata.type, fileName: safeSignedPdfFileName(file.name), fileData: bytes, mimeType, checksum: digest(bytes), generatedByText: metadata.actor, metadata: json({ ...metadata, source: "RECEIVED" }) } });
     await auditReportEvent(tx,a.qmsRecordId,metadata.actor,"audit.document.received",null,{ id:document.id, fileName:document.fileName, checksum:document.checksum, ...metadata },"Documento recibido/adjunto conservado, sin reemplazar históricos");
     return document;
   });
@@ -56,7 +57,7 @@ export async function storeAuditSignedPdf(auditId: string, versionId: string, fi
   const error = validateSignedPdfMetadata(file.name,file.size);
   if(error)throw new Error(error);
   if(!actor.trim())throw new Error("Indica quién carga el PDF.");
-  const bytes=new Uint8Array(await file.arrayBuffer());if(!hasPdfHeader(bytes))throw new Error("Cabecera PDF no válida.");
+  const bytes=new Uint8Array(await file.arrayBuffer());validateAuditAttachment(file.name,file.type,bytes);
   return prisma.$transaction(async tx=>{
     const a=await lockReportAudit(tx,auditId);
     if(a.status==='DRAFT')throw new Error("El PDF requiere un informe emitido.");

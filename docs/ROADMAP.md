@@ -210,3 +210,8 @@ Implementación sobre R3A fusionado en main 27c8270: hallazgos/recomendaciones, 
 Implementado sobre main R3A/R3B: informes por plantilla controlada, CAPA Plan, Plan externo real, recepción de documentos, snapshots 00/01+, PDF exacto, Review transversal y cierre por escenario con excepción proveedor. Validación técnica/CI y alcance en AUDITS_R3C.md; PR abierta para revisión, sin merge automático.
 
 Bloques posteriores: Plan Maestro anual y alertas; fuera del cierre funcional R3C. Revisión manual de Calidad sobre formato/uso de documentos antes de producción controlada.
+
+
+## R3D — regresión final y cierre funcional de Auditorías
+
+Regresión integrada R3A/R3B/R3C sobre main cc097c1, cinco escenarios, documentos oficiales/QA, histórico, Review, cierre, relaciones, listados y concurrencia. Correcciones limitadas a defectos de archivo, altura/paginación CAPA Plan, mensaje UX e hidratación del banner administrativo (UTC explícito). Sin migración ni ampliación funcional. Auditorías **COMPLETADO** en alcance R3D: validación local y CI 37739441386 verdes, incluido R3A UI ×3 con regresión de medianoche UTC/Madrid. PR #101 abierta, sin merge ni squash. Criterios y evidencia en AUDITS_R3D.md. Plan Maestro anual/alertas posteriores; revisión documental visual en Office por Calidad antes del uso controlado.

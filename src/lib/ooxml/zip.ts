@@ -23,16 +23,19 @@ function findEocd(buffer: Buffer) {
   throw new Error("ZIP end-of-central-directory not found.");
 }
 
-export function readZip(buffer: Buffer): ZipEntry[] {
+export function readZip(buffer: Buffer, limits?: { maxExpandedBytes: number; verifyIntegrity?: boolean }): ZipEntry[] {
   const eocd = findEocd(buffer);
   const total = buffer.readUInt16LE(eocd + 10);
   let offset = buffer.readUInt32LE(eocd + 16);
   const entries: ZipEntry[] = [];
+  const names = new Set<string>();
+  let expandedBytes = 0;
 
   for (let index = 0; index < total; index += 1) {
     if (buffer.readUInt32LE(offset) !== 0x02014b50) throw new Error("Invalid ZIP central directory.");
     const method = buffer.readUInt16LE(offset + 10);
     const compressedSize = buffer.readUInt32LE(offset + 20);
+    const expandedSize = buffer.readUInt32LE(offset + 24);
     const nameLength = buffer.readUInt16LE(offset + 28);
     const extraLength = buffer.readUInt16LE(offset + 30);
     const commentLength = buffer.readUInt16LE(offset + 32);
@@ -44,12 +47,16 @@ export function readZip(buffer: Buffer): ZipEntry[] {
     const localExtraLength = buffer.readUInt16LE(localOffset + 28);
     const dataStart = localOffset + 30 + localNameLength + localExtraLength;
     const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
+    if (limits && (expandedSize > limits.maxExpandedBytes - expandedBytes || dataStart + compressedSize > buffer.length || names.has(name))) throw new Error("Invalid or oversized ZIP entry.");
+    names.add(name);
 
     let data: Buffer;
     if (method === 0) data = Buffer.from(compressed);
-    else if (method === 8) data = inflateRawSync(compressed);
+    else if (method === 8) data = inflateRawSync(compressed, limits ? { maxOutputLength: Math.max(1, limits.maxExpandedBytes - expandedBytes) } : undefined);
     else throw new Error(`Unsupported ZIP compression method: ${method}`);
 
+    expandedBytes += data.length;
+    if (limits && (expandedBytes > limits.maxExpandedBytes || (limits.verifyIntegrity && (data.length !== expandedSize || crc32(data) !== buffer.readUInt32LE(offset + 16))))) throw new Error("Invalid ZIP size or checksum.");
     entries.push({ name, data });
     offset += 46 + nameLength + extraLength + commentLength;
   }
