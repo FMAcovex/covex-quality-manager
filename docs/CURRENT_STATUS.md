@@ -1022,3 +1022,9 @@ CI de cierre verde: https://github.com/FMAcovex/covex-quality-manager/actions/ru
 ## Devoluciones R4B
 
 Devoluciones R4B sobre main fb931b6: cierre funcional implementado y verificado localmente. Se preservan ReturnFollowup/V00 técnico; UUID de productos estables, criterios aplicables, stock distinto de aceptación, archivo documental y filtros SQL/paginación. Fuente real GC-00/028/03 y anexos separados contrastados. Véase RETURNS_R4B.md; revisión visual global pendiente: Revisión UX/UI transversal final.
+
+## R4C — Regresión conjunta final Reclamaciones / Devoluciones
+
+Baseline main d2ee3266386a5e4e699a0f7a67da95e9458e17a1; rama feature/complaints-returns-final-regression. Cobertura limitada a los catorce puntos conjuntos R4A/R4B en COMPLAINTS_RETURNS_R4C.md. Se corrige únicamente la carrera de foco del selector de relaciones al revincular. Sin nuevas funcionalidades, rediseño, Prisma ni migraciones. CI específica de esta rama: smokes R4A/R4B/transversal/R4C, navegador R4C/R4A/R4B y quality final; batería acumulada intacta para las demás ramas. Resultado final y head en la PR; COMPLETADO condicionado a CI verde. Revisión UX/UI transversal final sigue fuera del alcance.
+
+Validación R4C local final verde: 90 tests afectados/12 archivos; cuatro smokes PostgreSQL y navegador conjunto R4C + R4A/R4B con fuentes oficiales; quality final 346 tests/67 archivos, Prisma/lint/build. Los catorce puntos funcionales conjuntos quedan verificados; Reclamaciones y Devoluciones pueden marcarse COMPLETADO al confirmar la CI del head de esta PR. Sin merge ni squash automático.

@@ -72,7 +72,8 @@
     "complaints-r4a:smoke": "node --conditions=react-server --import tsx scripts/smoke-complaints-r4a.ts",
     "complaints-r4a:ui:smoke": "tsx scripts/smoke-complaints-r4a-ui.ts",
     "returns-r4b:smoke": "node --conditions=react-server --import tsx scripts/smoke-returns-r4b.ts",
-    "returns-r4b:ui:smoke": "tsx scripts/smoke-returns-r4b-ui.ts"
+    "returns-r4b:ui:smoke": "tsx scripts/smoke-returns-r4b-ui.ts",
+    "complaints-returns-r4c:smoke": "node --conditions=react-server --import tsx scripts/smoke-complaints-returns-r4c.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

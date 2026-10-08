@@ -169,7 +169,9 @@ export function OperationalRelationForm({
               aria-controls={listId}
               aria-activedescendant={activeSuggestion ? `${listId}-${activeIndex}` : undefined}
               onFocus={() => setFocused(true)}
-              onBlur={() => window.setTimeout(() => setFocused(false), 120)}
+              onBlur={() => window.setTimeout(() => {
+                if (document.activeElement !== inputRef.current) setFocused(false);
+              }, 120)}
               onChange={(event) => {
                 setCode(event.target.value);
                 setTargetRecordId("");
