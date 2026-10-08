@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import type { SignedVersionDocumentState } from "@/lib/qms/signed-version-document-types";
 
 const initialState: SignedVersionDocumentState = { error: null, success: null };
@@ -9,6 +9,7 @@ export function SignedVersionDocumentForm({
   action,
   defaultActor,
   replace = false,
+  reloadOnSuccess = false,
 }: {
   action: (
     state: SignedVersionDocumentState,
@@ -16,8 +17,11 @@ export function SignedVersionDocumentForm({
   ) => Promise<SignedVersionDocumentState>;
   defaultActor: string;
   replace?: boolean;
+  reloadOnSuccess?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
+
+  useEffect(()=>{if(reloadOnSuccess&&state.success)window.location.reload();},[reloadOnSuccess,state.success]);
 
   return (
     <form action={formAction} className="inline-form">

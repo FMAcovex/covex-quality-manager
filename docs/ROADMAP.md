@@ -215,3 +215,8 @@ Bloques posteriores: Plan Maestro anual y alertas; fuera del cierre funcional R3
 ## R3D — regresión final y cierre funcional de Auditorías
 
 Regresión integrada R3A/R3B/R3C sobre main cc097c1, cinco escenarios, documentos oficiales/QA, histórico, Review, cierre, relaciones, listados y concurrencia. Correcciones limitadas a defectos de archivo, altura/paginación CAPA Plan, mensaje UX e hidratación del banner administrativo (UTC explícito). Sin migración ni ampliación funcional. Auditorías **COMPLETADO** en alcance R3D: validación local y CI 37739441386 verdes, incluido R3A UI ×3 con regresión de medianoche UTC/Madrid. PR #101 abierta, sin merge ni squash. Criterios y evidencia en AUDITS_R3D.md. Plan Maestro anual/alertas posteriores; revisión documental visual en Office por Calidad antes del uso controlado.
+
+
+## R4A — Reclamaciones funcional
+
+Cierre funcional sobre Auditorías R3A–R3D. Se reutilizan versiones, PDF y Review; condiciones del PNT v03, acciones múltiples, relaciones UUID, documentos históricos y listado paginado. Detalle en COMPLAINTS_R4A.md. Después: Devoluciones funcional, regresión conjunta Reclamaciones↔Devoluciones y módulo PNT. La revisión UX/UI global queda aplazada hasta completar todos los módulos.

@@ -8,6 +8,7 @@ export class ComplaintTemplateUnavailableError extends TemplateAssetError {}
 
 const LEGACY_V02_PNT_SHA="f717ae907da9ed8b575f740fbf8b1536d4157174de5b7b4d240220910b570df4";
 const V03_ANNEX_III_SHA="764e12076b407e9675f6291f03c8bab477f7850fbdb62fed8a904b4693b2bcde";
+const V03_ANNEX_IV_SHA="61b642c608cf4f8726a6ec04325e2cbbdbec30f3cf727b96acab746be1861dce";
 const V03_ANNEX_V_SHA="8d9a572fcfbc8bba05d99e3772aa0fec6fd3b716b6db2eaa5a056737d79d1d83";
 
 async function readChecked(filePath:string,expectedSha:string,label:string){
@@ -30,7 +31,9 @@ export async function loadComplaintPntTemplate(versionCode="03",documentType:Doc
   if(documentType===DocumentType.COMPLAINT_ANNEX_V){
    return readChecked("templates/complaints/v03/Anexo V Listado Reclamaciones 03.xlsx",V03_ANNEX_V_SHA,"Anexo V Reclamaciones v03");
   }
-  throw new ComplaintTemplateUnavailableError("GC-00/027/03 no requiere generar desde la app el anexo de respuesta al cliente.");
+  if(documentType===DocumentType.COMPLAINT_ANNEX_IV){
+   return readChecked("templates/complaints/v03/Anexo IV 02 RECLAMACION RESPUESTA.docx",V03_ANNEX_IV_SHA,"Anexo IV Reclamaciones GC-00/027/03");
+  }
  }
 
  if(versionCode==="02"){
@@ -40,4 +43,4 @@ export async function loadComplaintPntTemplate(versionCode="03",documentType:Doc
  throw new ComplaintTemplateUnavailableError(`No hay plantilla controlada para Reclamaciones versión ${versionCode}.`);
 }
 
-export const auditedComplaintTemplateHashes={legacyV02:LEGACY_V02_PNT_SHA,annexIIIV03:V03_ANNEX_III_SHA,annexVV03:V03_ANNEX_V_SHA};
+export const auditedComplaintTemplateHashes={legacyV02:LEGACY_V02_PNT_SHA,annexIIIV03:V03_ANNEX_III_SHA,annexIVV03:V03_ANNEX_IV_SHA,annexVV03:V03_ANNEX_V_SHA};

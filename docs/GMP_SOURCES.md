@@ -79,3 +79,8 @@ Se implementan los datos de hallazgos y CAPA Plan, atribuciones y seguimiento ex
 El 07/10/2026 se recuperaron y leyeron los binarios vigentes de SharePoint autorizados por el usuario: GC-00.033.03 Auditorías internas.docx, A3.03 INFORME AUDITORIA INTERNA.docx, A4.03 CAPA PLAN.xlsx, GC-00.034.04 Auditorías externas.docx y A3. INFORME AUDITORIA_V04.docx. Hashes, enlaces y vigencias en AUDITS_R3C.md. Esto completa la recepción pendiente en R3A/R3B.
 
 No se usó BORRADOR_Anexo_IV_CAPA_Auditorias_COVEX.xlsx ni OBSOLETOS. Plan externo: estructura real Anexo IV incorporada en GC-00.034.04; no binario independiente vigente identificado. Reglas de cierre D-066; sin nuevos plazos automáticos, firma electrónica ni validación GMP declarada.
+
+
+## Reclamaciones R4A — fuente v03 revisada
+
+GC-00.027.03 Reclamaciones.docx y anexos reales III/IV/V recuperados de SharePoint Dirección de Calidad, carpeta de PLAN CAPA/Deficiencia 4/4.b. Reclamaciones. Hashes y procedencia exacta en COMPLAINTS_R4A.md. Los nombres de IV/V conservan “02”, pero se verificó la cabecera GC-00/027/03. §5.2 registro proporcional sin impacto; §5.7 IV opcional para respuesta formal; §5.8 cierre compatible con acciones independientes bajo seguimiento. No se usan OBSOLETOS ni se inventan reglas GMP. El usuario ha contrastado RECLAMACIONES.docx y confirmado sus requisitos; las aprobaciones se retiran de la UX conservando el histórico legacy (ver COMPLAINTS_R4A.md).

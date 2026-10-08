@@ -271,3 +271,14 @@ Guardar un hallazgo asigna OBS/Rk; editar/reordenar conserva referencia/UUID. Re
 Completar datos de informe, emitir 00, descargar anexos del snapshot, firmar fuera de la aplicación y cargar PDF en la versión exacta. Tratamiento/seguimiento ordinario no modifica snapshot ni emite versión. Revisar contenido y emitir 01+ con motivo; 00/PDF/Review históricos permanecen. Documentos recibidos conservan revisión externa.
 
 QA consulta condiciones calculadas y confirma cierre. Internas: tratamiento/evidencia/verificación y CAPA necesaria cerrada/eficaz. Proveedor: envío final parcial; cierre normal o excepción sin respuesta/no críticos, razón y siguiente auditoría. Cliente/autoridad: acta primaria, acciones/evidencia y respuesta aplicable. Backend valida pertenencia y todas las reglas. closedAt solo definitivo; no reapertura automática. Reglas completas D-066/AUDITS_R3C.md.
+
+
+## W-R4A — Reclamaciones: apertura, seguimiento y cierre
+
+1. Seleccionar cliente/proveedor y guardar Draft incompleto.
+2. Completar los campos aplicables del PNT v03 y abrir; V00 y código normativo estable.
+3. Guardar cambios mantiene versión; acciones múltiples y relaciones se consultan/vinculan mediante UUID real.
+4. Completar Parte II cuando proceda. Guardar como nueva versión requiere fecha y motivo, congela la anterior y crea V01+.
+5. Descargar III/IV y cargar PDF firmado de la versión exacta; Review conserva versión y targets históricos.
+6. Cerrar en Parte I justificando no continuar, o en Parte II con conclusión/eficacia/acciones y fecha; el seguimiento independiente documentado no exige cierre universal de CAPA.
+7. Consulta legacy en Historial; no hay +Seguimiento paralelo. Véase COMPLAINTS_R4A.md.

@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import {
   signedDocumentActor,
@@ -48,7 +47,8 @@ export async function uploadComplaintSignedPdfAction(
     return { error: result.error, success: null };
   }
 
-  revalidatePath(`/complaints/${complaintId}`);
+  // The complaint version form reloads after success; avoid streaming the
+  // revalidated version tree into its own pending upload action.
   return {
     error: null,
     success: `PDF firmado vinculado a V${String(result.sequenceNumber).padStart(2, "0")}.`,

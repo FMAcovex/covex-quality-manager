@@ -1,6 +1,16 @@
 # Estado actual
 
-Fecha: 2026-10-07.
+Fecha: 2026-10-08.
+
+## R4A — Reclamaciones: cierre funcional
+
+Implementación en `feature/complaints-r4a-functional`, desde main `4e09c3f`. Detalle y clasificación previa A/B/C/D en [COMPLAINTS_R4A.md](COMPLAINTS_R4A.md).
+
+Versionado/seguimiento único QmsRecordVersion con fecha/motivo y bloqueo transaccional, UUID de propuestas y relaciones preservados en snapshots, Partes I/II y condiciones del PNT v03, III/IV históricos y V existente, listado SQL paginado y filtros nuevos. ComplaintFollowup y anexos v02 quedan conservados como legacy, sin migración ni backfill masivo. PDF y Review transversales se reutilizan.
+
+Validación local: `pnpm quality` en Node 22 (334 tests/67 archivos, Prisma validate/generate, lint y build), pipeline PostgreSQL completo (36 smokes y seed demo), smoke R4A cliente/proveedor y UI 1440/768/390 con anexos oficiales. Regresión Review R2C y Auditorías R3A×3/R3B/R3C en navegador. La CI de la PR ejecuta quality y todos los smokes, incluido R4A.
+
+La revisión UX/UI global queda aplazada hasta completar todos los módulos. El usuario ha contrastado RECLAMACIONES.docx; las aprobaciones se retiran de la UX conservando valores legacy en BD/snapshots, sin migración. El PNT y los tres anexos v03 reales se han revisado y sus hashes están documentados.
 
 ## R2A — Revisión visual en Reclamaciones
 

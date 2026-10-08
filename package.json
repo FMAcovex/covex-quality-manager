@@ -68,7 +68,9 @@
     "audits-r3b:ui:smoke": "tsx scripts/smoke-audits-r3b-ui.ts",
     "templates:audits:install": "tsx scripts/install-audit-templates.ts",
     "audits-r3c:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-r3c.ts",
-    "audits-r3c:ui:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-r3c-ui.ts"
+    "audits-r3c:ui:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-r3c-ui.ts",
+    "complaints-r4a:smoke": "node --conditions=react-server --import tsx scripts/smoke-complaints-r4a.ts",
+    "complaints-r4a:ui:smoke": "tsx scripts/smoke-complaints-r4a-ui.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

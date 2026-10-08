@@ -28,3 +28,7 @@ backups/
 demo-annexes/
 templates/audits/
 reports/audits/
+
+# Controlled complaint sources and disposable QA outputs.
+templates/complaints/v03/
+reports/complaints/
