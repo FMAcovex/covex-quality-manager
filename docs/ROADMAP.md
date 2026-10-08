@@ -214,4 +214,4 @@ Bloques posteriores: Plan Maestro anual y alertas; fuera del cierre funcional R3
 
 ## R3D — regresión final y cierre funcional de Auditorías
 
-Regresión integrada R3A/R3B/R3C sobre main cc097c1, cinco escenarios, documentos oficiales/QA, histórico, Review, cierre, relaciones, listados y concurrencia. Correcciones limitadas a defectos de archivo, altura CAPA Plan y mensaje UX. Sin migración ni ampliación funcional. Validación local completa; CI pendiente. Criterios y evidencia en AUDITS_R3D.md. Plan Maestro anual/alertas posteriores; revisión documental visual en Office por Calidad antes del uso controlado.
+Regresión integrada R3A/R3B/R3C sobre main cc097c1, cinco escenarios, documentos oficiales/QA, histórico, Review, cierre, relaciones, listados y concurrencia. Correcciones limitadas a defectos de archivo, altura/paginación CAPA Plan, mensaje UX e hidratación del banner administrativo (UTC explícito). Sin migración ni ampliación funcional. Validación local completa; CI pendiente. Criterios y evidencia en AUDITS_R3D.md. Plan Maestro anual/alertas posteriores; revisión documental visual en Office por Calidad antes del uso controlado.

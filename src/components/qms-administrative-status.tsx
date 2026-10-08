@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatAdministrativeDate } from "@/lib/qms/administrative-date";
 
 export function QmsAdministrativeStatus({
   qmsRecordId,
@@ -73,7 +74,7 @@ export function QmsAdministrativeStatus({
             <strong>Expediente anulado</strong>
             <span>
               {code}
-              {annulledAt ? ` · ${new Date(annulledAt).toLocaleDateString("es-ES")}` : ""}
+              {annulledAt ? ` · ${formatAdministrativeDate(annulledAt)}` : ""}
               {annulledByText ? ` · ${annulledByText}` : ""}
             </span>
             {annulledReason ? <small>Motivo: {annulledReason}</small> : null}
