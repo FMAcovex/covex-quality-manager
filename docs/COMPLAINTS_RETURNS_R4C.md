@@ -38,3 +38,5 @@ La CI de esta rama ejecuta un job acotado con PostgreSQL, los cuatro smokes, los
 El resultado definitivo de quality, CI y head se registra en la PR. El cierre funcional de Reclamaciones y Devoluciones puede marcarse COMPLETADO cuando esta regresión y la CI estén verdes. Permanece fuera del alcance: **Revisión UX/UI transversal final**.
 
 Validación local final: 90 tests afectados en 12 archivos; los cuatro smokes PostgreSQL verdes; R4C UI conjunto y R4A/R4B UI con fuentes oficiales verdes, incluidos documentos históricos/PDF, Review y 1440/768/390 Madrid. pnpm quality final verde: 346 tests en 67 archivos, Prisma validate/generate, lint y build. Solo permanecen los dos avisos de lint preexistentes en CAPA/CC; cero errores. No se ejecutó la batería de navegador de Auditorías.
+
+El build previo a navegador regenera next-env.d.ts con una referencia triple-slash que la regla existente de lint rechaza. Antes de quality, CI restaura exclusivamente ese archivo autogenerado al contenido versionado; mantiene todas las reglas y pruebas. No se excluyen archivos de lint ni se desactivan checks.

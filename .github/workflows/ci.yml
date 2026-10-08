@@ -157,4 +157,7 @@ jobs:
           R4A_UI_BASE_URL=http://127.0.0.1:3000 pnpm complaints-r4a:ui:smoke
           R4B_UI_BASE_URL=http://127.0.0.1:3000 pnpm returns-r4b:ui:smoke
       - name: Final quality checks
-        run: pnpm quality
+        run: |
+          # The prior Next build rewrites this generated file; lint the tracked source.
+          git restore next-env.d.ts
+          pnpm quality
