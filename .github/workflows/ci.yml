@@ -222,6 +222,7 @@ jobs:
           pnpm db:seed
           pnpm pnt-p1a:smoke
           pnpm pnt-p1b1:smoke
+          pnpm pnt-p1b2:smoke
       - name: Controlled documentation browser smokes
         run: |
           pnpm exec playwright install --with-deps chromium
@@ -231,6 +232,7 @@ jobs:
           trap 'pnt_exit_code=$?; if [ "$pnt_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-p1a-next.log; fi; kill "$pnt_server_pid" 2>/dev/null || true' EXIT
           P1A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1a:ui:smoke
           P1B1_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b1:ui:smoke
+          P1B2_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b2:ui:smoke
       - name: Final quality checks
         run: |
           git restore next-env.d.ts

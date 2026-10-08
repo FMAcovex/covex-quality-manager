@@ -77,7 +77,9 @@
     "pnt-p1a:smoke": "tsx scripts/smoke-pnt-p1a.ts",
     "pnt-p1a:ui:smoke": "tsx scripts/smoke-pnt-p1a-ui.ts",
     "pnt-p1b1:smoke": "node --import tsx scripts/smoke-pnt-p1b1.ts",
-    "pnt-p1b1:ui:smoke": "node --import tsx scripts/smoke-pnt-p1b1-ui.ts"
+    "pnt-p1b1:ui:smoke": "node --import tsx scripts/smoke-pnt-p1b1-ui.ts",
+    "pnt-p1b2:smoke": "node --import tsx scripts/smoke-pnt-p1b2.ts",
+    "pnt-p1b2:ui:smoke": "node --import tsx scripts/smoke-pnt-p1b2-ui.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

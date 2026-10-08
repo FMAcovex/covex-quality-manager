@@ -1036,3 +1036,7 @@ Registro independiente de maestro/revisiones/historial, reutilización de Depart
 ## P1B-1 — Previsualización del índice maestro PNT (2026-10-08)
 
 Analizador XLSX y pantalla de previsualización/conciliación de solo lectura sobre P1A, sin importación definitiva ni staging persistente. GC-00 se descarta por instrucción expresa; GC-00( es la única fuente para GC-00 y conserva su procedencia. Libro real comprobado privadamente: 39 hojas válidas, 821 apariciones PNT, 817 códigos únicos y cuatro grupos repetidos; cero grupos con revisiones diferentes tras excluir GC-00. Contrato, límites, privacidad y pendientes P1B-2 en `PNT_P1B1.md`.
+
+## P1B-2 — Conciliación e importación controlada PNT (2026-10-09)
+
+Staging limitado por lote/capacidad y retención, decisiones manuales con procedencia y responsable, propuesta explícita, importación parcial SERIALIZABLE e idempotente, resultados e historial operativo. GC-00 permanece descartada; solo GC-00( aporta GC-00. Revisiones importadas IMPORTED_PENDING / UNVERIFIED, maestros DRAFT, declaración del índice separada y visible. No sobrescribe históricos ni simula verificación/aprobación. Migración aditiva de staging y estado pendiente, sin cambios QMS. Detalle, pruebas y límites en `PNT_P1B2.md`. P2 (evidencia, aprobación, PDF) pendiente; datos reales solo analizados privadamente en QA sin confirmación definitiva.

@@ -45,6 +45,6 @@ export async function listDocuments(f: Filters, db: PrismaClient = prisma) {
     const count = await db.controlledDocument.count({ where });
     const pages = Math.max(1, Math.ceil(count / 25));
     const page = Math.min(pages, Math.max(1, Number.parseInt(f.page || "1", 10) || 1));
-    const rows = await db.controlledDocument.findMany({ where, skip: (page - 1) * 25, take: 25, orderBy: [{ baseCode: "asc" }, { id: "asc" }], include: { revisions: { orderBy: { revisionCode: "desc" }, select: { id: true, revisionCode: true, status: true, effectiveFrom: true, reviewDueAt: true } } } });
+    const rows = await db.controlledDocument.findMany({ where, skip: (page - 1) * 25, take: 25, orderBy: [{ baseCode: "asc" }, { id: "asc" }], include: { revisions: { orderBy: { revisionCode: "desc" }, select: { id: true, revisionCode: true, status: true, effectiveFrom: true, reviewDueAt: true, sourceMetadata: true } } } });
     return { rows, count, page, pages };
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 export const administrativeLabels = { DRAFT: "Borrador de registro", ACTIVE: "Activo en registro", ANNULLED: "Anulado" };
-export const revisionLabels = { DRAFT: "Borrador / en elaboración", IN_REVIEW: "En revisión", PENDING_APPROVAL: "Pendiente de aprobación", APPROVED_PENDING_EFFECTIVE: "Aprobado / pendiente de vigencia", IN_FORCE: "Vigente", OBSOLETE: "Obsoleto", ANNULLED: "Anulado" };
+export const revisionLabels = { IMPORTED_PENDING: "Importada / pendiente de verificación", DRAFT: "Borrador / en elaboración", IN_REVIEW: "En revisión", PENDING_APPROVAL: "Pendiente de aprobación", APPROVED_PENDING_EFFECTIVE: "Aprobado / pendiente de vigencia", IN_FORCE: "Vigente", OBSOLETE: "Obsoleto", ANNULLED: "Anulado" };
 export const verificationLabels = { UNVERIFIED: "Sin verificar", VERIFIED: "Verificado documentalmente", REVIEW_REQUIRED: "Requiere contraste documental" };
 export const existingStatuses = ["IN_FORCE", "OBSOLETE", "ANNULLED"] as const;
 export type ExistingStatus = typeof existingStatuses[number];

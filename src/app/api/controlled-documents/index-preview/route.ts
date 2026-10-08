@@ -1,3 +1,4 @@
+import { createBatch } from "@/modules/controlled-documents/import/service";
 import { previewIndex } from "@/modules/controlled-documents/preview/service";
 import { MAX_FILE_BYTES } from "@/modules/controlled-documents/preview/workbook";
 export const runtime = "nodejs";
@@ -36,7 +37,13 @@ export async function POST(request: Request) {
         if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".xlsx") || !file.size || file.size > MAX_FILE_BYTES)
             return Response.json({ error: "Selecciona un XLSX de hasta 8 MiB." }, { status: 400, headers });
         const name = file.name.split(/[\\/]/).pop()!.slice(0, 255);
-        const report = await previewIndex(Buffer.from(await file.arrayBuffer()), name);
+        const buffer = Buffer.from(await file.arrayBuffer());
+        if (form.get("saveBatch") === "on") {
+            const actor = form.get("actor");
+            if (typeof actor !== "string") throw new Error("Indica el responsable del lote.");
+            return Response.json({ batchId: await createBatch(buffer, name, actor) }, { headers });
+        }
+        const report = await previewIndex(buffer, name);
         return Response.json({ report }, { headers });
     }
     catch (error) {

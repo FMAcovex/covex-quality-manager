@@ -1,3 +1,4 @@
+import { indexMetadata } from "./import/domain";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../../lib/db";
 import { MasterInput, RevisionInput, validateExistingRevision, validateRevisionDates } from "./domain";
@@ -34,6 +35,8 @@ export async function saveMaster(v: MasterInput, id?: string, db: PrismaClient =
             throw new Error("El maestro anulado no admite cambios.");
         if (old && old.updatedAt.toISOString() !== v.updatedAt)
             throw new Error("El registro ha cambiado. Recarga antes de guardar.");
+        if (old && indexMetadata(old.sourceMetadata) && old.baseCode !== v.baseCode)
+            throw new Error("El código de un maestro importado es permanente.");
         if (old?.administrativeStatus === "ACTIVE" && old.baseCode !== v.baseCode)
             throw new Error("El código de un maestro registrado es permanente.");
         if (old?.revisions.some(r => r.consolidatedAt) && old.baseCode !== v.baseCode)
