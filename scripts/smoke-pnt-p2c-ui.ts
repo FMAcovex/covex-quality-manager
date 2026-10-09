@@ -113,7 +113,8 @@ async function authenticated(page: Page) {
   const historical = await prisma.controlledDocument.findUniqueOrThrow({ where: { baseCode: legacyCode }, include: { revisions: true } });
   assert.equal(historical.createdByText, "P2C proxy autenticado"); assert.equal(historical.revisions[0].verifiedByText, "P2C proxy autenticado"); assert.equal(await prisma.controlledRevisionLifecycle.count({ where: { documentId: historical.id } }), 0);
   await legacy.close();
-  assert.deepEqual(lifecyclePermissions.filter(p => p !== "legacy-register").sort(), [...new Set(Object.values(permissions))].sort());
+  assert.ok(lifecyclePermissions.includes("manage-state"), "La gestión manual de estados requiere una capacidad independiente.");
+   assert.deepEqual(lifecyclePermissions.filter(p => p !== "legacy-register" && p !== "manage-state").sort(), [...new Set(Object.values(permissions))].sort());
   await writer.close(); await reader.close();
   console.log("P2C Chromium reinicio OK: descarga persistente íntegra, lectura autenticada, anónimos sin metadatos indirectos en cinco pestañas; capacidades UI/servidor separadas y flujo completo proxy, retirada/rectificación sin reactivación; legacy-register denegado/permitido mediante UI y Server Actions, actor autenticado.");
 }
