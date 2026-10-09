@@ -75,6 +75,8 @@
     "audits-r3b:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-r3b.ts",
     "audits-r3b:ui:smoke": "tsx scripts/smoke-audits-r3b-ui.ts",
     "templates:audits:install": "tsx scripts/install-audit-templates.ts",
+    "audits-r4b:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-r4b.ts",
+    "audits-r4b:ui:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-r4b-ui.ts",
     "audits-r3c:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-r3c.ts",
     "audits-r3c:ui:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-r3c-ui.ts",
     "complaints-r4a:smoke": "node --conditions=react-server --import tsx scripts/smoke-complaints-r4a.ts",
