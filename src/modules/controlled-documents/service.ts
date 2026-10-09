@@ -1,7 +1,7 @@
 import { indexMetadata } from "./import/domain";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../../lib/db";
-import { MasterInput, RevisionInput, validateExistingRevision, validateRevisionDates } from "./domain";
+import { MasterInput, RevisionInput, validateDepartmentForBaseCode, validateExistingRevision, validateRevisionDates } from "./domain";
 const nullable = (v: string) => v || null;
 const date = (v: string) => v ? new Date(`${v}T00:00:00Z`) : null;
 const snapshot = (m: {
@@ -48,8 +48,8 @@ export async function saveMaster(v: MasterInput, id?: string, db: PrismaClient =
             throw new Error("Un departamento inactivo requiere documentación histórica verificada.");
         const same = !!old && old.departmentId === (department?.id || null);
         const departmentCode = same ? old!.departmentCodeSnapshot : department?.code;
-        if (v.baseCode && departmentCode && v.baseCode.split("-")[0] !== departmentCode.split("-")[0])
-            throw new Error("El código base no corresponde al departamento responsable.");
+        if (v.baseCode && departmentCode)
+            validateDepartmentForBaseCode(v.baseCode, departmentCode);
         const active = v.operation === "REGISTER" || old?.administrativeStatus === "ACTIVE";
         if (active && (!v.baseCode || !v.title || !department))
             throw new Error("El registro requiere código, título y departamento.");

@@ -6,6 +6,10 @@ export const existingStatuses = ["IN_FORCE", "OBSOLETE", "ANNULLED"] as const;
 export type ExistingStatus = typeof existingStatuses[number];
 export function normalizeBaseCode(value: string) { return value.trim().toUpperCase(); }
 export function validBaseCode(value: string) { return /^[A-Z]{2}-\d{2}\/\d{3}$/.test(value); }
+export function validateDepartmentForBaseCode(baseCode: string, departmentCode: string) {
+    if (baseCode.split("-")[0] !== departmentCode.split("-")[0])
+        throw new Error("El código base no corresponde al departamento responsable.");
+}
 export function validRevisionCode(value: string) { return /^\d{2}$/.test(value); }
 export function validDate(value: string) { return !value || (/^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value); }
 export const iso = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : "";

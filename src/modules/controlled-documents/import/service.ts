@@ -2,6 +2,7 @@ import { Prisma, PrismaClient, type ControlledDocumentImportRow } from "@prisma/
 import { importDb as prisma } from "./database";
 import { previewIndex } from "../preview/service";
 import type { PreviewReport, PreviewRow } from "../preview/types";
+import { validateDepartmentForBaseCode } from "../domain";
 import { actorSchema, decisionSchema, hash, validateCandidate, MAX_BATCH_BYTES, MAX_PENDING_BATCHES, RETENTION_DAYS, type DecisionInput, type Resolution } from "./domain";
 type Tx = Prisma.TransactionClient;
 const json = (v: unknown): Prisma.InputJsonValue => JSON.parse(JSON.stringify(v));
@@ -86,6 +87,7 @@ export async function decide(id: string, input: DecisionInput, db: PrismaClient 
             validateCandidate(source, v.resolution);
             const now = await current(tx, target.baseCode!, v.resolution.departmentId);
             if (!now.department) throw new Error("Selecciona un departamento existente. No se creará ni reactivará.");
+            validateDepartmentForBaseCode(target.baseCode!, now.department.code);
             baseline = now.fingerprint;
             const competing = b.rows.filter(r => r.baseCode === target.baseCode && r.id !== target.id && r.decision === "INCLUDE");
             if (competing.some(r => r.result)) throw new Error("El grupo ya tiene una procedencia confirmada.");
@@ -112,10 +114,14 @@ async function planRows(tx: Tx, rows: ControlledDocumentImportRow[]) {
         let reason: string | undefined;
         if (r.baseline !== now.fingerprint) reason = "La BD o el departamento cambiaron desde la decisión. Conciliar de nuevo.";
         else if (!d) reason = "Departamento desconocido.";
-        else if (m && m.documentType !== "PNT") reason = "Tipo documental incompatible.";
-        else if (m?.administrativeStatus === "ANNULLED") reason = "Maestro anulado: omitir sin modificar.";
-        else if (m && ((existing ? existing.titleSnapshot : m.title) !== v.title || (existing ? existing.departmentCodeSnapshot : m.departmentCodeSnapshot) !== d?.code || (!existing && m.departmentId !== v.departmentId))) reason = "Título o departamento difieren del registro existente. No se sobrescribe.";
-        else if (existing && ((existing.effectiveFrom?.toISOString().slice(0,10) || "") !== v.effectiveFrom || (existing.reviewDueAt?.toISOString().slice(0,10) || "") !== v.reviewDueAt)) reason = "Fechas diferentes de la revisión existente. No se sobrescribe.";
+        else {
+            try { validateDepartmentForBaseCode(r.baseCode!, d.code); }
+            catch { reason = "El código base no corresponde al departamento responsable."; }
+        }
+        if (!reason && m && m.documentType !== "PNT") reason = "Tipo documental incompatible.";
+        else if (!reason && m?.administrativeStatus === "ANNULLED") reason = "Maestro anulado: omitir sin modificar.";
+        else if (!reason && m && ((existing ? existing.titleSnapshot : m.title) !== v.title || (existing ? existing.departmentCodeSnapshot : m.departmentCodeSnapshot) !== d?.code || (!existing && m.departmentId !== v.departmentId))) reason = "Título o departamento difieren del registro existente. No se sobrescribe.";
+        else if (!reason && existing && ((existing.effectiveFrom?.toISOString().slice(0,10) || "") !== v.effectiveFrom || (existing.reviewDueAt?.toISOString().slice(0,10) || "") !== v.reviewDueAt)) reason = "Fechas diferentes de la revisión existente. No se sobrescribe.";
         if (reason) { candidate.kind = "CONFLICT"; candidate.writes = 0; candidate.reason = reason; }
         proposals.push(candidate);
     }
@@ -155,6 +161,7 @@ export async function confirm(id: string, input: { actor: string; version: numbe
             for (const p of eligible) {
                 const r = b.rows.find(r => r.sourceKey === p.sourceKey)!, source = rowValue(r), v = r.resolution as unknown as Resolution;
                 const now = await current(tx, p.baseCode, v.departmentId), d = now.department!;
+                validateDepartmentForBaseCode(p.baseCode, d.code);
                 const provenance = b.rows.filter(row => row.baseCode === p.baseCode).map(row => { const src = rowValue(row).source; return { sourceKey: row.sourceKey, sheet: src.sheet, row: src.row, originalCode: src.originalCode, decision: row.decision }; });
                 const metadata = { indexImport: { batchId: id, sha256: b.sha256, fileName: b.fileName, sheet: source.source.sheet, row: source.source.row, sourceKey: r.sourceKey, originalCode: source.source.originalCode, originalDepartmentCode: source.normalized.departmentCode, originalDepartmentLabel: source.source.sheet, originalDepartmentName: null, declaredState: v.declaredState, originalDeclaredState: source.normalized.declaredState, stateBasis: source.normalized.stateBasis, normalizedOriginal: source.normalized, resolution: v, decidedBy: r.decidedBy, decidedAt: r.decidedAt, provenance, pendingDocumentaryVerification: true } };
                 const m = now.document || await tx.controlledDocument.create({ data: { baseCode: p.baseCode, title: v.title, departmentId: d.id, departmentCodeSnapshot: d.code, departmentNameSnapshot: d.name, administrativeStatus: "DRAFT", verificationStatus: "UNVERIFIED", sourceMetadata: json(metadata), createdByText: actor } });
