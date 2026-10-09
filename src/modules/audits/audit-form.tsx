@@ -6,14 +6,17 @@ import { saveAuditAction } from "./actions";
 import type { AuditInput } from "./validation";
 import { auditTypeLabels, auditScenarioLabels, auditModalityLabels, auditRoleLabels, auditQualityLabels, compatibleAuditScenario, hasAuditBusinessSeries } from "./domain";
 
+import type { PlanOption } from "./plans";
 type DepartmentOption = { id: string; code: string; name: string; isActive: boolean };
-export function AuditForm({ id, defaults, departments }: { id?: string; defaults?: Partial<AuditInput>; departments: DepartmentOption[] }) {
+export function AuditForm({ id, defaults, departments, plans=[] }: { id?: string; defaults?: Partial<AuditInput>; departments: DepartmentOption[]; plans?: PlanOption[] }) {
   const [state, action, pending] = useActionState(saveAuditAction.bind(null, id ?? null), { error: null } as import("./actions").AuditFormState);
   const [values, setValues] = useState<Record<string, string>>(Object.fromEntries(Object.entries(defaults ?? {}).flatMap(([k,v]) => typeof v === "string" ? [[k,v]] : [])));
   const [businessCode, setBusinessCode] = useState(defaults?.businessCode ?? "");
   const [type, setType] = useState(defaults?.auditType ?? "");
   const [scenario, setScenario] = useState(defaults?.scenario ?? "");
   const [status, setStatus] = useState(defaults?.status ?? "DRAFT");
+  const [planningStatus,setPlanningStatus]=useState(defaults?.planningStatus??"UNCLASSIFIED");
+  const [planEntryId,setPlanEntryId]=useState(defaults?.planEntryId??"");
   const [selected, setSelected] = useState(defaults?.departmentIds ?? []);
   const [coding, setCoding] = useState(defaults?.codingDepartmentId ?? "");
   const [entityCode, setEntityCode] = useState(defaults?.entityCode ?? "");
@@ -54,6 +57,10 @@ export function AuditForm({ id, defaults, departments }: { id?: string; defaults
       {scenario === "SUPPLIER" || entityCode ? <label className="field" data-field="entityCode"><span>Código de entidad para auditoría</span><input name="entityCode" value={entityCode} readOnly={locked} onChange={e => setEntityCode(e.target.value.toUpperCase())}/>{error("entityCode")}</label> : <input type="hidden" name="entityCode" value={entityCode}/>}
       <fieldset className="field full" data-field="departmentIds"><legend>Departamentos / áreas auditadas</legend><div className="audit-departments">{departments.filter(d => d.isActive || selected.includes(d.id)).map(d => <label key={d.id}><input type="checkbox" name="departmentIds" value={d.id} checked={selected.includes(d.id)} onChange={e => changeDepartments(e.target.checked ? [...selected,d.id] : selected.filter(x => x !== d.id))}/>{d.code} · {d.name}{!d.isActive ? " (inactivo)" : ""}</label>)}</div>{error("departmentIds")}</fieldset>
       {type === "INTERNAL" || coding ? <label className="field full" data-field="codingDepartmentId"><span>Área/departamento de referencia para codificación</span><select name="codingDepartmentId" value={coding} disabled={locked} onChange={e => setCoding(e.target.value)}><option value="">Seleccionar</option>{departments.filter(d => selected.includes(d.id) || d.id === coding).map(d => <option key={d.id} value={d.id}>{d.code} · {d.name}</option>)}</select>{locked ? <input type="hidden" name="codingDepartmentId" value={coding}/> : null}<small>No limita el alcance de las demás áreas. La serie queda fijada al abrir.</small>{error("codingDepartmentId")}</label> : <input type="hidden" name="codingDepartmentId" value={coding}/>}
+    </div></section>
+    <section className="card"><h2>Plan anual</h2><p className="muted-note">Clasifica la auditoría: asociada a una entrada del plan, fuera de plan o pendiente de clasificación histórica.</p><div className="form-grid"><label className="field"><span>Vinculación al plan anual</span><select name="planningStatus" value={planningStatus} onChange={e=>{setPlanningStatus(e.target.value as typeof planningStatus);setPlanEntryId("");}}><option value="UNCLASSIFIED">Pendiente de clasificación</option><option value="PLANNED">Incluida en plan anual</option><option value="OUT_OF_PLAN">Fuera de plan</option></select>{error("planningStatus")}</label>
+    {planningStatus==="PLANNED"?<label className="field"><span>Auditoría prevista en el plan</span><select name="planEntryId" value={planEntryId} onChange={e=>setPlanEntryId(e.target.value)}><option value="">Seleccionar entrada</option>{plans.filter(p=>!type||p.auditType===type).flatMap(p=>p.entries.filter(entry=>!entry.audit||entry.audit.id===id||entry.id===planEntryId).map(entry=><option key={entry.id} value={entry.id}>{p.year} · {p.auditType==="INTERNAL"?"Interno":"Externo"} · {entry.subject}</option>))}</select>{error("planEntryId")}</label>:<input type="hidden" name="planEntryId" value=""/>}
+    {planningStatus==="OUT_OF_PLAN"?text("outsidePlanReason","Motivo de auditoría fuera de plan",true):<input type="hidden" name="outsidePlanReason" value=""/>}
     </div></section>
     <section className="card"><h2>Planificación y realización</h2><div className="form-grid">
       {[["plannedDate", "Fecha prevista", planned, setPlanned], ["performedDate", "Fecha realizada", performed, setPerformed], ["openedAt", "Fecha apertura", opened, setOpened]].map(([name,label,value,setter]) => <label className="field" data-field={String(name)} key={String(name)}><span>{String(label)}</span><input type="date" name={String(name)} value={String(value)} onChange={e => (setter as (v: string) => void)(e.target.value)}/>{error(String(name))}</label>)}
