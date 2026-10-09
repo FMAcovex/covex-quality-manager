@@ -5,7 +5,7 @@ describe("PNT: filtros por fechas de revisiones", () => {
   it("permite fechas abiertas y rangos cerrados independientes", () => {
     const r = listRevisionWhere({ effectiveFromStart: "2026-01-01", effectiveFromEnd: "2026-12-31", reviewDueEnd: "2027-12-31" });
     expect(r.AND).toHaveLength(2);
-    expect(JSON.stringify(r)).toContain("2027-12-31");
+    expect(JSON.stringify(r)).toContain("2028-01-01");
     expect(JSON.stringify(r)).toContain("2027-01-01"); // 31/12 inclusivo
     expect(JSON.stringify(r)).toContain("lifecycle");
     expect(JSON.stringify(r)).toContain("effectiveFrom");
