@@ -45,7 +45,7 @@ async function main(){
     assert.equal(await card.count(),1);
     await card.locator("details.audit-editor").first().locator("summary").click();
     await card.locator('input[name="plannedDate"]').fill("2091-07-03");
-    await card.locator('input[name="reason"]').fill("Cambio de calendario ficticio");
+    await card.locator('details.audit-editor').first().locator('input[name="reason"]').fill("Cambio de calendario ficticio");
     await submitAndWait(page,"Guardar cambios",new RegExp("/audits/plans/"+internalId+"$"));
     assert.equal((await prisma.auditPlanEntry.findUniqueOrThrow({where:{id:entry.id}})).plannedDate?.toISOString().slice(0,10),"2091-07-03");
     await page.locator("article.audit-action-card").filter({hasText:subject}).getByRole("link",{name:"Crear expediente para esta entrada"}).click();
