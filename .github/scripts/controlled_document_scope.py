@@ -10,7 +10,7 @@ head = os.environ["PR_HEAD_SHA"]
 paths = subprocess.check_output(["git", "diff", "--name-only", base, head], text=True).splitlines()
 allowed = re.compile(
     r"^(?:src/(?:modules/controlled-documents/|app/(?:controlled-documents/|api/controlled-documents/))"
-    r"|prisma/schema\.prisma$|prisma/migrations/[^/]+_pnt_(?:p1b2_import|p2a_documents|p2b_lifecycle)/migration\.sql$"
+    r"|prisma/schema\.prisma$|prisma/migrations/[^/]+_pnt_(?:p1b2_import|p2a_documents|p2b_lifecycle|p3c2_manual_status)/migration\.sql$"
     r"|scripts/smoke-pnt-[^/]+\.ts$|docs/PNT_[^/]+\.md$"
     r"|docs/(?:CURRENT_STATUS|DECISIONS)\.md$|package\.json$"
     r"|\.github/(?:workflows/ci\.yml|scripts/controlled_document_scope\.py)$)"
