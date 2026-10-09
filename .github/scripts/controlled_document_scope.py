@@ -10,7 +10,7 @@ head = os.environ["PR_HEAD_SHA"]
 paths = subprocess.check_output(["git", "diff", "--name-only", base, head], text=True).splitlines()
 allowed = re.compile(
     r"^(?:src/(?:modules/controlled-documents/|app/(?:controlled-documents/|api/controlled-documents/))"
-    r"|prisma/schema\.prisma$|prisma/migrations/[^/]+_pnt_(?:p1b2_import|p2a_documents)/migration\.sql$"
+    r"|prisma/schema\.prisma$|prisma/migrations/[^/]+_pnt_(?:p1b2_import|p2a_documents|p2b_lifecycle)/migration\.sql$"
     r"|scripts/smoke-pnt-[^/]+\.ts$|docs/PNT_[^/]+\.md$"
     r"|docs/(?:CURRENT_STATUS|DECISIONS)\.md$|package\.json$"
     r"|\.github/(?:workflows/ci\.yml|scripts/controlled_document_scope\.py)$)"
@@ -20,9 +20,13 @@ scoped = scoped and any("controlled-documents/" in path or path.startswith("scri
 if scoped and "prisma/schema.prisma" in paths:
     old_schema = subprocess.check_output(["git", "show", f"{base}:prisma/schema.prisma"], text=True)
     new_schema = pathlib.Path("prisma/schema.prisma").read_text()
-    # P2A adds only one documentary relation and its isolated immutable object model.
-    restored = re.sub(r"// P2A: immutable documentary objects, separate from revision snapshots\.\nmodel ControlledRevisionDocument \{.*?^\}\n", "", new_schema, flags=re.S | re.M)
-    restored = restored.replace("  documents ControlledRevisionDocument[]\n", "")
+    # Remove only additive controlled-document models not present in the PR baseline.
+    restored = new_schema
+    for model, relation in [("ControlledRevisionDocument", "  documents ControlledRevisionDocument[]\n"), ("ControlledRevisionLifecycle", "  lifecycle ControlledRevisionLifecycle?\n"), ("ControlledRevisionDecision", "  decisions ControlledRevisionDecision[]\n"), ("ControlledDecisionEvidence", "  decisionEvidence ControlledDecisionEvidence[]\n")]:
+        if f"model {model} {{" not in old_schema:
+            restored = re.sub(rf"model {model} \{{.*?^\}}\n", "", restored, flags=re.S | re.M).replace(relation, "")
+    restored = re.sub(r"^// P2[AB]:.*\n", "", restored, flags=re.M)
+    old_schema = re.sub(r"^// P2[AB]:.*\n", "", old_schema, flags=re.M)
     if "// P1B-2: bounded staging;" not in old_schema:
         restored = restored.split("// P1B-2: bounded staging;")[0].replace("  IMPORTED_PENDING\n", "")
     # Keep whitespace insignificant; every pre-existing model/field still has to match.

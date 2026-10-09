@@ -2,4 +2,5 @@
 export const documentHistoryActions = {
   incorporation: "Incorporación documental",
   replacement: "Sustitución documental (original conservado)",
+  lifecycle: "Decisión documental P2B",
 } as const;

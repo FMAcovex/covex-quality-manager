@@ -2,6 +2,8 @@
 import { parseMasterForm, parseRevisionForm } from "./domain";
 import { saveMaster, saveRevision } from "./service";
 import { Prisma } from "@prisma/client";
+import { headers } from "next/headers";
+import { lifecyclePrincipal, requireLifecyclePermission } from "./lifecycle/access";
 import { preserveFormState, type PreservedFormState } from "../../lib/forms/preserved-state";
 export type SaveState = PreservedFormState & {
     error?: string;
@@ -16,7 +18,9 @@ function errorMessage(error: unknown) {
 }
 export async function masterAction(id: string | null, _state: SaveState, fd: FormData): Promise<SaveState> {
     try {
-        const saved = await saveMaster(parseMasterForm(fd), id || undefined);
+        const input = parseMasterForm(fd);
+        if (input.existingDocument) { const principal = lifecyclePrincipal(await headers()); requireLifecyclePermission(principal, "legacy-register"); input.actor = principal.name; }
+        const saved = await saveMaster(input, id || undefined);
         return { url: `/controlled-documents/${saved}` };
     }
     catch (error) {
@@ -25,7 +29,9 @@ export async function masterAction(id: string | null, _state: SaveState, fd: For
 }
 export async function revisionAction(documentId: string, id: string | null, _state: SaveState, fd: FormData): Promise<SaveState> {
     try {
-        await saveRevision(documentId, parseRevisionForm(fd), id || undefined);
+        const input = parseRevisionForm(fd);
+        if (input.existingDocument) { const principal = lifecyclePrincipal(await headers()); requireLifecyclePermission(principal, "legacy-register"); input.actor = principal.name; }
+        await saveRevision(documentId, input, id || undefined);
         return { url: `/controlled-documents/${documentId}?tab=revisions` };
     }
     catch (error) {

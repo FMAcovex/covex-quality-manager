@@ -16,6 +16,7 @@ const events = [
   { id: "ordinary-p1b", action: "Importación del índice", changedByText: "Responsable P1B", reason: "Motivo ordinario P1B", oldValue: {}, newValue: { sourceReference: "Fuente ordinaria P1B" } },
   { id: "incorporation", action: documentHistoryActions.incorporation, changedByText: "Responsable documental privado", reason: "Motivo de incorporación privado", oldValue: {}, newValue: { documentObjectId: "uuid-privado", originalName: "archivo-privado.pdf", sha256: "hash-privado" } },
   { id: "replacement", action: documentHistoryActions.replacement, changedByText: "Sustituidor documental privado", reason: "Motivo de sustitución privado", oldValue: { documentObjectId: "uuid-privado" }, newValue: { documentObjectId: "uuid-sustituto", originalName: "sustituto-privado.pdf" } },
+  { id: "lifecycle", action: documentHistoryActions.lifecycle, changedByText: "Decisor P2B privado", reason: "Motivo P2B privado", oldValue: {}, newValue: { decisionId: "decision-p2b-privada", status: "IN_REVIEW" } },
 ].map(e => ({ ...e, changedAt: new Date("2026-10-09T00:00:00Z") }));
 
 beforeEach(() => {
@@ -38,6 +39,7 @@ describe("P2A permiso de lectura del historial documental", () => {
     expect((await findUnique.mock.results[0].value).changes).toEqual(events.slice(0, 2));
     for (const text of ["Responsable P1A", "Motivo ordinario P1A", "Título P1A", "Responsable P1B", "Motivo ordinario P1B", "Fuente ordinaria P1B"]) expect(html).toContain(text);
     for (const text of [documentHistoryActions.incorporation, documentHistoryActions.replacement, "Responsable documental privado", "Sustituidor documental privado", "Motivo de incorporación privado", "Motivo de sustitución privado", "uuid-privado", "uuid-sustituto", "archivo-privado.pdf", "hash-privado"]) expect(html).not.toContain(text);
+    for (const text of [documentHistoryActions.lifecycle, "Decisor P2B privado", "Motivo P2B privado", "decision-p2b-privada"]) expect(html).not.toContain(text);
   });
   it("con permiso read (sin write) conserva todos los eventos y sus datos sin redacción", async () => {
     requestHeaders.mockResolvedValue(new Headers({ "x-pnt-user": "Lector autenticado", "x-pnt-permissions": "read", "x-pnt-proxy-secret": secret }));
@@ -45,5 +47,6 @@ describe("P2A permiso de lectura del historial documental", () => {
     expect(findUnique.mock.calls[0][0].include.changes.where).toEqual({});
     expect((await findUnique.mock.results[0].value).changes).toEqual(events);
     for (const text of ["Responsable P1A", "Responsable P1B", documentHistoryActions.incorporation, documentHistoryActions.replacement, "Responsable documental privado", "Sustituidor documental privado", "Motivo de incorporación privado", "Motivo de sustitución privado"]) expect(html).toContain(text);
+    for (const text of [documentHistoryActions.lifecycle, "Decisor P2B privado", "Motivo P2B privado"]) expect(html).toContain(text);
   });
 });
