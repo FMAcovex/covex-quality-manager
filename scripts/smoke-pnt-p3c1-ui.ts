@@ -66,7 +66,14 @@ async function main() {
           const box = await link.boundingBox(); assert.ok(box && box.height >= 44 && box.x >= 0 && box.x + box.width <= width + 1);
         }
       }
-      await checkPage(page, `/controlled-documents?q=${encodeURIComponent(master.baseCode!)}`, "list", width);
+      await page.goto(`${base}/controlled-documents?q=${encodeURIComponent(master.baseCode!)}`);
+      const advanced = page.locator("details.pnt-advanced-filters");
+      assert.equal(await advanced.count(), 1);
+      assert.equal(await advanced.evaluate(element => (element as HTMLDetailsElement).open), false, "Los filtros avanzados se muestran plegados inicialmente.");
+      await checkPage(page, null, "list", width);
+      await advanced.locator("summary").click();
+      assert.equal(await advanced.evaluate(element => (element as HTMLDetailsElement).open), true);
+      await checkPage(page, null, "list-advanced", width);
       const recordLinks = page.getByRole("link", { name: master.baseCode!, exact: true });
       await recordLinks.first().waitFor();
       assert.equal(await recordLinks.count(), 2, "El listado debe mostrar las revisiones 00 y 01 en filas independientes.");
