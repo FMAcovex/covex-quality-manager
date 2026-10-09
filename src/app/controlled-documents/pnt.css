@@ -113,3 +113,9 @@
 .pnt-state--approved-pending-effective { background: #f2ebff; color: #66389c; border-color: #d8c6f5; }
 .pnt-state--in-force { background: #e9f7ef; color: #23663f; border-color: #bce0c9; }
 .pnt-state--obsolete, .pnt-state--annulled { background: #fff0f0; color: #a33131; border-color: #efc5c5; }
+
+/* P3C-3: date ranges form two compact, clearly labelled groups. */
+.pnt-workspace .pnt-filters .pnt-date-range { grid-column: span 1; min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px 12px; }
+.pnt-workspace .pnt-date-range legend { font-size: 12px; font-weight: 700; color: var(--muted); padding: 0 5px; }
+.pnt-workspace .pnt-date-range .field input { min-width: 0; }
+@media (max-width: 760px) { .pnt-workspace .pnt-filters .pnt-date-range { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
