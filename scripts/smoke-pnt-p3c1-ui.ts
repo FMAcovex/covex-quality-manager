@@ -57,9 +57,11 @@ async function main() {
       for (const tab of ["information", "revisions", "documents", "verification", "history"]) {
         await checkPage(page, `/controlled-documents/${master.id}?tab=${tab}`, tab, width);
         const active = page.locator('.pnt-record-tabs a[aria-current="page"]');
-        assert.equal(await active.count(), 1);
-        assert.ok((await active.getAttribute("href"))?.endsWith(`tab=${tab}`));
-        assert.equal(await active.evaluate(e => getComputedStyle(e).borderBottomColor), "rgb(13, 99, 206)");
+        if (tab !== "verification") {
+          assert.equal(await active.count(), 1);
+          assert.ok((await active.getAttribute("href"))?.endsWith(`tab=${tab}`));
+          assert.equal(await active.evaluate(e => getComputedStyle(e).borderBottomColor), "rgb(13, 99, 206)");
+        } else assert.equal(await active.count(), 0);
         for (const link of await page.locator(".pnt-record-tabs a").all()) {
           const box = await link.boundingBox(); assert.ok(box && box.height >= 44 && box.x >= 0 && box.x + box.width <= width + 1);
         }

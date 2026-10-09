@@ -37,7 +37,7 @@ async function cycle(page: Page, id: string, revisionId: string) {
     await article.locator('textarea[name="referenceBasis"]').fill("Referencia sintética humanamente contrastada, no custodiada");
     if (fill) await fill();
     const response = page.waitForResponse(r => r.url().endsWith(`/revisions/${revisionId}/lifecycle`) && r.request().method() === "POST");
-    const navigation = page.waitForNavigation(); await article.getByRole("button", { name: "Registrar decisión explícita" }).click(); const res = await response;
+    const navigation = page.waitForNavigation(); await article.locator(".pnt-lifecycle-form button").click(); const res = await response;
     if (res.status() !== 201) throw new Error(`P2C UI decisión: ${await res.text()}`);
     await navigation; await article.getByLabel("Operación", { exact: true }).waitFor();
     return (await prisma.controlledRevisionDecision.findFirstOrThrow({ where: { revisionId }, orderBy: { sequence: "desc" } })).id;
@@ -77,7 +77,7 @@ async function authenticated(page: Page) {
     const c = await command(m.id, r.id, ids, extra), cap = permissions[c.operation], endpoint = `${base}/api/controlled-documents/${m.id}/revisions/${r.id}/lifecycle`;
     const count = await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } });
     await writer.goto(`${base}/controlled-documents/${m.id}?tab=verification`); await writer.getByText("Sin operaciones autorizadas en este estado.", { exact: true }).waitFor();
-    assert.equal(await writer.getByRole("button", { name: "Registrar decisión explícita", exact: true }).count(), 0);
+    assert.equal(await writer.locator(".pnt-lifecycle-form button").count(), 0);
     assert.equal((await page.request.post(endpoint, { headers: { origin: base }, data: c })).status(), 403);
     assert.equal((await writer.request.post(endpoint, { headers: { origin: base }, data: c })).ok(), false);
     assert.equal(await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } }), count);

@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.19.0",
   "scripts": {
+    "pnt-p3c2:smoke": "tsx scripts/smoke-pnt-p3c2-manual.ts",
     "pnt-p3c1:ui:smoke": "tsx scripts/smoke-pnt-p3c1-ui.ts",
     "pnt-p2c:smoke": "tsx scripts/smoke-pnt-p2c-defects.ts && tsx scripts/smoke-pnt-p2c.ts",
     "pnt-p2c:ui:smoke": "tsx scripts/smoke-pnt-p2c-ui.ts",

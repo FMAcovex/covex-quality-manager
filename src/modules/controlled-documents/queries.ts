@@ -27,6 +27,7 @@ export function listWhere(f: Filters): Prisma.ControlledDocumentWhereInput {
         r.status = f.revisionState as keyof typeof revisionLabels;
     const today = new Date(`${iso(new Date())}T00:00:00Z`);
     if (f.validity === "current") {
+        if (r.status && r.status !== "IN_FORCE") return { AND: [{ id: "__no_matching_pnt__" }] };
         r.status = "IN_FORCE";
         r.OR = [{ lifecycle: { is: { effectiveFrom: { lte: today } } } }, { lifecycle: { is: null }, effectiveFrom: { lte: today } }];
     }
