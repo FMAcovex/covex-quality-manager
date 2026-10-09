@@ -20,9 +20,14 @@ async function main() {
       assert.equal((await denied.content()).includes("Persona aprobación UI"), false);
       await denied.goto(`${base}/controlled-documents/${m.id}?tab=history`); await denied.getByRole("heading", { name: "Historial operativo" }).waitFor();
       assert.equal((await denied.locator("body").innerText()).includes("Decisión documental P2B"), false);
-      await reader.goto(`${base}/controlled-documents/${m.id}?tab=history`); assert.ok(await reader.getByRole("heading", { name: "Decisión documental P2B", exact: true }).count() > 0);
+      await reader.goto(`${base}/controlled-documents/${m.id}?tab=history`);
+      await reader.getByRole("heading", { name: "Decisión documental P2B", exact: true }).first().waitFor();
+      await reader.getByText("Motivo humano sintético UI", { exact: true }).first().waitFor();
+      assert.ok(await reader.getByRole("heading", { name: "Decisión documental P2B", exact: true }).count() > 0);
       const writeOnly = await browser.newPage({ extraHTTPHeaders: { ...h, "x-pnt-permissions": "read,write" } });
-      await writeOnly.goto(`${base}/controlled-documents/${m.id}?tab=verification`); assert.equal(await writeOnly.getByRole("button", { name: "Registrar decisión explícita" }).count(), 0);
+      await writeOnly.goto(`${base}/controlled-documents/${m.id}?tab=verification`);
+      await writeOnly.getByText("Sin operaciones autorizadas en este estado.", { exact: true }).waitFor();
+      assert.equal(await writeOnly.getByRole("button", { name: "Registrar decisión explícita" }).count(), 0);
       const decision = m.revisions[0].decisions[0], d = decision.details as Record<string, unknown>;
       const payload = { ...d, requestId: randomUUID() };
       assert.equal((await writeOnly.request.post(`${base}/api/controlled-documents/${m.id}/revisions/${m.revisions[0].id}/lifecycle`, { headers: { origin: base }, data: payload })).ok(), false);
