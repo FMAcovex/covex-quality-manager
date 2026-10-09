@@ -8,7 +8,17 @@ export const planSchema = z.object({year:z.coerce.number().int().min(2000).max(2
 export const entrySchema = z.object({subject:text.min(1).max(20000),targetName:text.max(250),departmentId:z.string().uuid().or(z.literal("")),plannedDate:day,notes:text.max(20000),actor:text.min(1).max(200),reason:text.max(20000)});
 const serialize=(v:unknown)=>JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
 function requireReason(v:string){if(!v.trim())throw Error("Indica el motivo del cambio.");}
-export async function listAnnualPlans(){return prisma.auditAnnualPlan.findMany({include:{entries:{include:{audit:{include:{qmsRecord:true}}},orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]}}},orderBy:[{year:"desc"},{auditType:"asc"}]});}
+export async function listAnnualPlans() {
+  return prisma.auditAnnualPlan.findMany({
+    include: {
+      entries: {
+        include: { audit: { include: { qmsRecord: true } } },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      },
+    },
+    orderBy: [{ year: "desc" }, { auditType: "asc" }],
+  });
+}
 export async function getAnnualPlan(id:string){return prisma.auditAnnualPlan.findUnique({where:{id},include:{entries:{include:{audit:{include:{qmsRecord:true}},department:true},orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},changes:{orderBy:{createdAt:"desc"},take:100}}});}
 export async function createAnnualPlan(input:unknown){const v=planSchema.parse(input);return prisma.$transaction(async tx=>{const duplicate=await tx.auditAnnualPlan.findUnique({where:{year_auditType:{year:v.year,auditType:v.auditType}}});if(duplicate)throw Error("Ya existe un plan de este tipo y año.");const p=await tx.auditAnnualPlan.create({data:{year:v.year,auditType:v.auditType,title:v.title,notes:v.notes||null,createdByText:v.actor}});await tx.auditPlanChange.create({data:{planId:p.id,event:"PLAN_CREATED",actor:v.actor,reason:"Alta del plan anual",newValue:serialize(v)}});return p;});}
 export async function addPlanEntry(id:string,input:unknown){const v=entrySchema.parse(input);return prisma.$transaction(async tx=>{const plan=await tx.auditAnnualPlan.findUniqueOrThrow({where:{id}});if(v.departmentId){const dep=await tx.department.findUnique({where:{id:v.departmentId}});if(!dep?.isActive)throw Error("El departamento no está activo.");}const entry=await tx.auditPlanEntry.create({data:{planId:id,subject:v.subject,targetName:v.targetName||null,departmentId:v.departmentId||null,plannedDate:v.plannedDate?new Date(v.plannedDate+"T00:00:00.000Z"):null,notes:v.notes||null,createdByText:v.actor}});await tx.auditPlanChange.create({data:{planId:id,entryId:entry.id,event:"ENTRY_ADDED",actor:v.actor,reason:"Incorporación a la planificación",newValue:serialize(v)}});return {entry,plan};});}
