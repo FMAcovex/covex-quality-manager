@@ -1,0 +1,57 @@
+/* PNT presentation only. Shared QMS cards, fields, tabs and buttons remain the base. */
+.pnt-module, .pnt-workspace { min-width: 0; }
+.pnt-module { max-width: 100%; }
+.pnt-workspace :is(.page-heading, .record-header) { overflow-wrap: anywhere; }
+.pnt-workspace .heading-actions { flex-wrap: wrap; }
+.pnt-workspace .pnt-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pnt-workspace .pnt-form-grid > .full { grid-column: 1 / -1; }
+.pnt-workspace fieldset.form-section { min-width: 0; margin: 0; }
+.pnt-workspace fieldset.form-section > legend { padding: 0 6px; font-size: 18px; font-weight: 700; }
+.pnt-workspace .pnt-check { display: flex; align-items: flex-start; gap: 9px; font-size: 14px; line-height: 1.5; }
+.pnt-workspace .pnt-check input { flex: 0 0 auto; margin-top: 4px; }
+.pnt-workspace .pnt-help { margin: 0; line-height: 1.5; }
+.pnt-workspace .pnt-form-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding: 16px 0; }
+.pnt-workspace .pnt-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 18px; }
+.pnt-workspace .pnt-filters .filter-actions { grid-column: 1 / -1; justify-content: flex-end; flex-wrap: wrap; }
+.pnt-workspace .pnt-table-scroll { max-width: 100%; }
+.pnt-workspace .pnt-table-hint { display: none; }
+.pnt-workspace .pnt-list-table { width: 100%; min-width: 1000px; table-layout: fixed; }
+.pnt-list-table :is(th, td) { white-space: normal; overflow-wrap: anywhere; vertical-align: top; line-height: 1.5; }
+.pnt-list-table th:nth-child(1) { width: 12%; }
+.pnt-list-table th:nth-child(2) { width: 28%; }
+.pnt-list-table th:nth-child(3) { width: 15%; }
+.pnt-list-table th:nth-child(4) { width: 12%; }
+.pnt-list-table th:nth-child(5) { width: 18%; }
+.pnt-list-table th:nth-child(6) { width: 15%; }
+.pnt-list-table td > p { margin: 6px 0 0; }
+.pnt-list-table .pnt-list-revision + .pnt-list-revision { margin-top: 12px; }
+.pnt-list-table .pnt-list-revision p { margin: 5px 0 0; }
+.pnt-list-table .pnt-list-dates + .pnt-list-dates { margin-top: 12px; }
+.pnt-workspace .pnt-pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+.pnt-workspace .pnt-record-header { align-items: flex-start; margin-bottom: 18px; }
+.pnt-workspace .pnt-record-identity { min-width: 0; }
+.pnt-workspace .pnt-record-title { margin: 8px 0; font-size: 24px; line-height: 1.4; }
+.pnt-workspace .pnt-record-status { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pnt-workspace .pnt-record-tabs { flex-wrap: wrap; gap: 4px; }
+.pnt-workspace .pnt-record-tabs a { min-height: 44px; display: inline-flex; align-items: center; }
+.pnt-workspace .pnt-tab-content { min-width: 0; max-width: 100%; overflow-x: auto; }
+.pnt-workspace .pnt-revision-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.pnt-workspace .pnt-revision-header h3 { margin: 0; overflow-wrap: anywhere; }
+.pnt-workspace .pnt-revision-title { margin: 10px 0 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pnt-workspace .pnt-revision-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pnt-workspace .pnt-revision-info .full { grid-column: 1 / -1; }
+.pnt-workspace .pnt-revision-note { margin: 16px 0 0; line-height: 1.5; }
+.pnt-workspace :is(a, button, input, select, textarea, summary):focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.pnt-workspace .button { min-height: 44px; }
+@media (max-width: 1000px) {
+  .pnt-workspace .pnt-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pnt-workspace .pnt-table-hint { display: block; }
+}
+@media (max-width: 760px) {
+  .pnt-workspace :is(.pnt-form-grid, .pnt-filters, .pnt-revision-info) { grid-template-columns: minmax(0, 1fr); }
+  .pnt-workspace .heading-actions { width: 100%; }
+  .pnt-workspace :is(.heading-actions, .pnt-form-actions) .button { flex: 1 1 auto; }
+  .pnt-workspace .pnt-record-title { font-size: 20px; }
+  .pnt-workspace .pnt-record-tabs a { padding: 9px 10px; }
+  .pnt-workspace .pnt-pagination { justify-content: flex-start; }
+}

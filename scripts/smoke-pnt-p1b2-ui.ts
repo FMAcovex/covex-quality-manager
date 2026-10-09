@@ -35,7 +35,9 @@ async function main() {
         const snapshot = JSON.stringify(master);
         await article.getByRole("link",{name:"Consultar PNT",exact:true}).click();
         await page.getByText(/Importado del índice: pendiente de verificación documental/).waitFor();
-        await page.getByRole("link",{name:"Revisiones",exact:true}).click(); await page.getByText(/00 — Importada \/ pendiente de verificación/).waitFor();
+        await page.getByRole("link",{name:"Revisiones",exact:true}).click();
+        const revisionCard = page.locator("article.form-section").filter({has: page.getByRole("heading",{name:"GC-00/002/00",exact:true})});
+        await revisionCard.getByText("Importada / pendiente de verificación",{exact:true}).waitFor();
         await page.getByRole("link",{name:"Documentos",exact:true}).click(); await page.getByText("Sin verificar",{exact:true}).waitFor();
         await page.goto(`${base}/controlled-documents?q=GC-00%2F002&revisionState=IMPORTED_PENDING`); await page.getByText(/Vigente según índice/).first().waitFor();
         assert.equal(JSON.stringify(await prisma.controlledDocument.findUniqueOrThrow({where:{id:master.id},include:{revisions:true}})),snapshot);

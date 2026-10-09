@@ -1,5 +1,9 @@
 # Estado actual
 
+## P3C-1 — Maquetación responsive base PNT (2026-10-09)
+
+Desde main `8705687954426f7cb38002d709f5c1ab123c0490`, rama `feature/pnt-p3c1-layout-responsive`. Presentación QMS de listado, formularios, ficha, pestañas y revisiones; dos/una columnas, tabla con scroll interno, foco visible y acciones separadas. Sin cambios funcionales, permisos, Prisma ni migraciones. Nuevo smoke de geometría/teclado a 1440/768/390 añadido a la CI existente, sin retirar regresiones. Decisiones y pendientes excluidos en `PNT_P3C1.md`; resultados/head finales en la única PR abierta para revisión, sin merge ni squash.
+
 ## P2C — Regresión conjunta final PNT (2026-10-09)
 
 Ajuste final PR #110: la activación compara identidad completa del maestro con la revisión objetivo (código, título, código/nombre departamental congelados). Rechaza divergencias sin reescribir snapshots ni bloquear cambios legítimos del maestro para futuras revisiones. Smokes comprueban rechazo/rollback, recuperación mediante nueva revisión y evolución A/00 → B/01 conservando históricos. P1A/P2B/P2C PostgreSQL/Chromium y P2C autenticado verdes; 88 tests focalizados y quality final verde (434 tests/78 archivos). Misma rama/PR; sin nuevas funciones ni migraciones. Resultados actualizados en PNT_P2C.md y PR.
