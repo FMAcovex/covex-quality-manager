@@ -78,6 +78,12 @@ describe("Auditorías R3A", () => {
     expect(JSON.stringify(auditListWhere({planning:"OUT_OF_PLAN"}))).toContain("OUT_OF_PLAN");
     expect(JSON.stringify(auditListWhere({planId:"123"}))).toContain("planId");
   });
+  it("R4A conserva el contacto externo como texto optativo sin alterar clasificación anual", () => {
+    const input = auditInputSchema.parse({...valid,auditedContact:"Contacto ficticio · correo@example.com · 900 000 000",planningStatus:"UNCLASSIFIED"});
+    expect(input.auditedContact).toBe("Contacto ficticio · correo@example.com · 900 000 000");
+    expect(input.planningStatus).toBe("UNCLASSIFIED");
+    expect(auditInputSchema.safeParse({...valid,auditedContact:""}).success).toBe(true);
+  });
   it("presenta escenarios y roles en español", () => {
     expect(auditScenarioLabels.INTERNAL_CONTRACTED).toBe("Interna · auditor externo contratado");
     expect(auditRoleLabels.LEAD_AUDITOR).toBe("Auditor jefe");
