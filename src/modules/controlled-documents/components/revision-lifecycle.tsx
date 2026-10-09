@@ -5,6 +5,8 @@ import { displayDate, revisionLabels } from "../domain";
 import { metadataSelection } from "../documents/service";
 import { importStates, indexMetadata } from "../import/domain";
 import { LifecycleForm } from "./lifecycle-form";
+import { documentKinds } from "../documents/types";
+const documentKindsLabel = (kind: string) => documentKinds[kind as keyof typeof documentKinds] || kind;
 import type { LifecycleCommand } from "../lifecycle/domain";
 export async function RevisionLifecycle({ documentId }: { documentId: string }) {
   let principal;
@@ -18,14 +20,14 @@ export async function RevisionLifecycle({ documentId }: { documentId: string }) 
       const role = (current.find(v => v.id === (d.details as unknown as LifecycleCommand).registrationId)?.details as unknown as LifecycleCommand)?.function;
       approvedRoles.delete(role); if (d.result === "ACCEPTED") approvedRoles.add(role);
     }
-    return <article className="form-section" key={r.id} data-lifecycle-revision={r.id}><h3>Revisión {r.revisionCode} — {revisionLabels[r.status]}</h3><p>{r.baseCodeSnapshot} — {r.titleSnapshot} · {r.departmentCodeSnapshot} — {r.departmentNameSnapshot}</p>
+    return <article className="form-section pnt-lifecycle-card" key={r.id} data-lifecycle-revision={r.id}><h3>Revisión {r.revisionCode} — {revisionLabels[r.status]}</h3><p>{r.baseCodeSnapshot} — {r.titleSnapshot} · {r.departmentCodeSnapshot} — {r.departmentNameSnapshot}</p>
       {(r.lifecycle?.legacyOrigin || !r.lifecycle && r.consolidatedAt) && <p>Registro histórico P1A, sin acreditación P2B. No se presume aprobación por su estado previo.</p>}
       <p>Fechas originales conservadas: vigencia {displayDate(r.effectiveFrom)} · revisión {displayDate(r.reviewDueAt)} · obsolescencia {displayDate(r.obsoletedAt)}</p>
       {index && <p>Estado declarado por el índice: {importStates[index.declaredState]} (no acredita vigencia). Hoja {index.sheet} · lote {index.batchId}</p>}
       <details><summary>Fuente y procedencia original (solo lectura)</summary><p>{r.sourceReference}</p><pre>{JSON.stringify(r.sourceMetadata, null, 2)}</pre></details>
       <p>Resultado de verificación: {verification?.result || "Pendiente"}. {verification?.result !== "FAVORABLE" && "Falta contraste documental favorable."}</p>
       <p>Funciones externas contrastadas: {Array.from(approvedRoles).filter(Boolean).join(", ") || "Ninguna"}. Requeridas: preparación, revisión y aprobación conforme a GC-00/001/03; no tres aprobadores.</p>
-      <p>Faltantes: {verification?.result !== "FAVORABLE" ? "verificación favorable; " : ""}{["PREPARATION", "REVIEW", "APPROVAL"].filter(role => !approvedRoles.has(role as LifecycleCommand["function"])).join(", ") || "ninguna función"}. La vigencia exige además documento final identificado, fechas coherentes, evidencia vigente y confirmación de revisión anterior.</p>
+      <p className="section-help">Faltantes: {verification?.result !== "FAVORABLE" ? "verificación favorable; " : ""}{["PREPARATION", "REVIEW", "APPROVAL"].filter(role => !approvedRoles.has(role as LifecycleCommand["function"])).join(", ") || "ninguna función"}. La vigencia exige además documento final identificado, fechas coherentes, evidencia vigente y confirmación de revisión anterior.</p>
       <p>Fechas operativas: aprobación {displayDate(r.lifecycle?.approvalAt)} · vigencia {displayDate(r.lifecycle?.effectiveFrom)} · revisión prevista {displayDate(r.lifecycle?.reviewDueAt)} · obsolescencia {displayDate(r.lifecycle?.obsoletedAt)}</p>
       <p>Revisión anterior en la activación P2B: {(() => { const activation = [...r.decisions].reverse().find(d => d.operation === "ACTIVATE"); const previous = (activation?.details as unknown as LifecycleCommand | undefined)?.previousRevisionId; return previous ? `${master.revisions.find(v => v.id === previous)?.revisionCode || "—"} (${previous})` : "Sin activación registrada o sin revisión anterior"; })()}</p>
       {r.documents.map(o => <p key={o.id}>Objeto {o.originalName} — {o.kind} · UUID {o.id} · SHA-256 {o.sha256 || "No comprobado: referencia externa"} {o.replacement && "(sustituido; no utilizable para decisiones nuevas)"}</p>)}
