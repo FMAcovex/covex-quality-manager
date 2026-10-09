@@ -68,6 +68,16 @@ describe("Auditorías R3A", () => {
     expect(JSON.stringify(where)).toContain("participants");
     expect(JSON.stringify(where)).toContain("annulledBusinessCode");
   });
+  it("clasifica planificación anual sin modificar borradores históricos",()=>{
+    expect(auditInputSchema.safeParse({...valid,planningStatus:"UNCLASSIFIED"}).success).toBe(true);
+    expect(auditInputSchema.safeParse({...valid,planningStatus:"OUT_OF_PLAN",outsidePlanReason:"Revisión extraordinaria"}).success).toBe(true);
+    expect(auditInputSchema.safeParse({...valid,planningStatus:"PLANNED",planEntryId:""}).success).toBe(false);
+    expect(auditInputSchema.safeParse({...valid,planningStatus:"PLANNED",planEntryId:"00000000-0000-4000-8000-000000000011"}).success).toBe(true);
+    expect(auditInputSchema.safeParse({...valid,planningStatus:"UNCLASSIFIED",planEntryId:"00000000-0000-4000-8000-000000000011"}).success).toBe(false);
+    expect(auditInputSchema.safeParse({...valid,planningStatus:"PLANNED",planEntryId:"00000000-0000-4000-8000-000000000011",outsidePlanReason:"No corresponde"}).success).toBe(false);
+    expect(JSON.stringify(auditListWhere({planning:"OUT_OF_PLAN"}))).toContain("OUT_OF_PLAN");
+    expect(JSON.stringify(auditListWhere({planId:"123"}))).toContain("planId");
+  });
   it("presenta escenarios y roles en español", () => {
     expect(auditScenarioLabels.INTERNAL_CONTRACTED).toBe("Interna · auditor externo contratado");
     expect(auditRoleLabels.LEAD_AUDITOR).toBe("Auditor jefe");
