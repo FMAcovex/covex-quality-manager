@@ -18,7 +18,7 @@ async function request(id: string) { const p = await prepare(id); return {actor,
 async function businessSnapshot() { return JSON.stringify(await Promise.all([prisma.controlledDocument.findMany({orderBy:{id:"asc"}}),prisma.controlledDocumentRevision.findMany({orderBy:{id:"asc"}}),prisma.controlledDocumentChange.findMany({orderBy:{id:"asc"}})])); }
 async function main() {
     if (process.env.APP_ENV !== "test") throw new Error("Se exige APP_ENV=test y PostgreSQL QA aislado.");
-    const gc = await prisma.department.findUniqueOrThrow({where:{code:"GC-00"}}), sg = await prisma.department.create({data:{code:"SG-20",name:"Histórico QA sintético",isActive:false}}); let mc: {id:string} | null = null;
+    const gc = await prisma.department.findUniqueOrThrow({where:{code:"GC-00"}}), sg = await prisma.department.create({data:{code:"SG-20",name:"Histórico QA sintético",isActive:false}}); let mc: {id:string} | null = null, mc10: {id:string} | null = null;
     try {
         const id = await batch(), b = await getBatch(id);
         assert.equal((await prepare(id)).summary.conflicts,1); assert.equal((await prepare(id)).summary.writes,0);
@@ -29,6 +29,13 @@ async function main() {
         assert.ok((unknown.data as unknown as PreviewRow).issues.includes("DEPARTMENT_UNKNOWN"));
         await assert.rejects(include(id,"MC-20/001","12345678-1234-4234-8234-123456789abc"),/departamento existente/);
         await assert.rejects(include(id,"MC-20/001",gc.id),/no corresponde al departamento responsable/);
+        mc10 = await prisma.department.create({data:{code:"MC-10",name:"Otra familia MC QA sintética",isActive:true}});
+        await assert.rejects(include(id,"MC-20/001",mc10.id),/no corresponde al departamento responsable/);
+        for (const departmentId of [gc.id, mc10.id]) {
+            const incompatibleMaster = new FormData();
+            for (const [key,value] of Object.entries({baseCode:"MC-20/001",title:"Procedimiento QA sintético",departmentId,actor,operation:"DRAFT"})) incompatibleMaster.set(key,value);
+            await assert.rejects(saveMaster(parseMasterForm(incompatibleMaster)),/no corresponde al departamento responsable/);
+        }
         mc = await prisma.department.create({data:{code:"MC-20",name:"Departamento QA sintético",isActive:true}});
         for (const code of ["GC-00/001","GC-00/002","GC-00/003","GC-00/004"]) await include(id,code,gc.id);
         await include(id,"SG-20/001",sg.id);
@@ -103,7 +110,7 @@ async function main() {
         // Only UUID fixtures created by this smoke are removed in isolated QA.
         const created = await prisma.controlledDocument.findMany({where:{createdByText:actor},select:{id:true}}); const ids = [...new Set([...docs,...created.map(d=>d.id)])];
         await prisma.controlledDocumentChange.deleteMany({where:{documentId:{in:ids}}}); await prisma.controlledDocumentRevision.deleteMany({where:{documentId:{in:ids}}}); await prisma.controlledDocument.deleteMany({where:{id:{in:ids}}});
-        await prisma.controlledDocumentImportEvent.deleteMany({where:{batchId:{in:batches}}}); await prisma.controlledDocumentImportRow.deleteMany({where:{batchId:{in:batches}}}); await prisma.controlledDocumentImportBatch.deleteMany({where:{id:{in:batches}}}); if (mc) await prisma.department.delete({where:{id:mc.id}}); await prisma.department.delete({where:{id:sg.id}});
+        await prisma.controlledDocumentImportEvent.deleteMany({where:{batchId:{in:batches}}}); await prisma.controlledDocumentImportRow.deleteMany({where:{batchId:{in:batches}}}); await prisma.controlledDocumentImportBatch.deleteMany({where:{id:{in:batches}}}); if (mc) await prisma.department.delete({where:{id:mc.id}}); if (mc10) await prisma.department.delete({where:{id:mc10.id}}); await prisma.department.delete({where:{id:sg.id}});
     }
 }
 main().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>prisma.$disconnect());

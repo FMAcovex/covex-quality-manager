@@ -7,7 +7,7 @@ export type ExistingStatus = typeof existingStatuses[number];
 export function normalizeBaseCode(value: string) { return value.trim().toUpperCase(); }
 export function validBaseCode(value: string) { return /^[A-Z]{2}-\d{2}\/\d{3}$/.test(value); }
 export function validateDepartmentForBaseCode(baseCode: string, departmentCode: string) {
-    if (baseCode.split("-")[0] !== departmentCode.split("-")[0])
+    if (baseCode.split("/")[0] !== departmentCode)
         throw new Error("El código base no corresponde al departamento responsable.");
 }
 export function validRevisionCode(value: string) { return /^\d{2}$/.test(value); }
