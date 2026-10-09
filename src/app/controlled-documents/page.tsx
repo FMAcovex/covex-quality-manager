@@ -19,6 +19,7 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
  const link = (changes: Record<string,string>) => "/controlled-documents?" + params(changes);
  const exportLink = "/api/controlled-documents/export?" + params({});
  const errors = dateFilterErrors(f);
+ const advancedActive = Boolean(f.department || f.state || f.revision || f.revisionState || f.validity || f.effectiveFromStart || f.effectiveFromEnd || f.reviewDueStart || f.reviewDueEnd || result.options.view !== "all" || result.options.sort !== "code" || result.options.direction !== "asc");
  const headings: [string, string][] = [
    ["code","Código"], ["title","Título"], ["department","Departamento"], ["masterState","Estado maestro"],
    ["revision","Revisión"], ["status","Estado documental"], ["effectiveFrom","Fecha de vigencia"], ["reviewDueAt","Próxima revisión"],
@@ -30,13 +31,15 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
     <div><span>Revisiones</span><strong>{result.revisionCount}</strong></div>
     <div><span>Filas encontradas</span><strong>{result.rowCount}</strong></div>
   </div>
-  <section className="pnt-filter-card"><div className="pnt-section-heading"><div><h2>Buscar y filtrar</h2><p>Los filtros se combinan sobre la misma revisión.</p></div><Link className="button" href="/controlled-documents">Limpiar</Link></div>
+  <section className="pnt-filter-card"><div className="pnt-section-heading"><div><h2>Buscar procedimientos</h2></div><Link className="button" href="/controlled-documents">Limpiar filtros</Link></div>
    <div className="pnt-quick" aria-label="Filtros rápidos">{[
     ["","Todas"], ["current","Vigentes"], ["dueSoon","Revisión en 30 días"], ["overdue","Revisión vencida"], ["missing","Sin fechas"], ["unverified","Pendientes de verificar"],
    ].map(([value,label]) => <Link key={value} className={"pnt-quick-link"+(result.options.quick === (value || null) ? " is-active" : "")} href={link({quick:value})}>{label}</Link>)}</div>
    <form className="filter-panel pnt-filters" method="get">
     {f.quick && <input type="hidden" name="quick" value={f.quick}/>}
-    <label className="field"><span>Buscar</span><input name="q" defaultValue={f.q} placeholder="Código, título o referencia"/></label>
+    <div className="pnt-search-row"><label className="field"><span>Buscar</span><input name="q" defaultValue={f.q} placeholder="Código, título o referencia"/></label><button className="button primary" type="submit">Buscar</button></div>
+    <details className="pnt-advanced-filters" open={advancedActive}><summary>Filtros avanzados{advancedActive ? " · activos" : ""}<span className="pnt-advanced-hint">Departamento, estado, revisión, fechas y ordenación</span></summary>
+    <div className="pnt-advanced-grid">
     <label className="field"><span>Departamento</span><select name="department" defaultValue={f.department}><option value="">Todos</option>{departments.map(d => <option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
     <label className="field"><span>Estado maestro</span><select name="state" defaultValue={f.state}><option value="">Todos</option>{Object.entries(administrativeLabels).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label>
     <label className="field"><span>Revisión</span><input name="revision" defaultValue={f.revision} maxLength={2} placeholder="00"/></label>
@@ -47,7 +50,8 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
     <label className="field"><span>Mostrar</span><select name="view" defaultValue={result.options.view}><option value="all">Todas las revisiones</option><option value="latest">Solo última revisión</option></select></label>
     <label className="field"><span>Ordenar por</span><select name="sort" defaultValue={result.options.sort}>{headings.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
     <label className="field"><span>Orden</span><select name="direction" defaultValue={result.options.direction}><option value="asc">Ascendente</option><option value="desc">Descendente</option></select></label>
-    <div className="filter-actions"><button className="button primary">Aplicar filtros</button><Link className="button" href={exportLink}>Exportar Excel</Link></div>
+    <div className="filter-actions"><button className="button primary" type="submit">Aplicar filtros</button><Link className="button" href="/controlled-documents">Limpiar</Link></div>
+    </div></details>
    </form>{errors.length>0 && <p className="form-errors" role="alert">{errors.join(" ")}</p>}
   </section>
   <section className="pnt-results"><div className="pnt-section-heading"><div><h2>Resultados</h2><p>{result.rowCount} filas · {result.masterCount} PNT diferentes · {result.revisionCount} revisiones</p></div><Link className="button" href={exportLink}>Descargar .xlsx</Link></div>
