@@ -119,8 +119,8 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
           const previous = await tx.controlledDocumentRevision.findFirst({ where: { documentId, status: "IN_FORCE" } });
           if ((previous?.id || null) !== c.previousRevisionId) throw new Error("Confirme explícitamente la revisión vigente anterior (o ausencia de ella).");
           if (!master.baseCode || !master.title || !master.departmentId) throw new Error("Complete el maestro antes de activar.");
+          if (master.baseCode !== r.baseCodeSnapshot) throw new Error("El código del maestro no coincide con el código congelado de la revisión.");
           if (previous) {
-            if (day(previous.effectiveFrom) && plan.effectiveFrom! < day(previous.effectiveFrom)!) throw new Error("La nueva vigencia no puede anteceder a la anterior.");
             const previousProjection = await tx.controlledRevisionLifecycle.upsert({ where: { revisionId: previous.id }, create: { revisionId: previous.id, documentId, legacyOrigin: true, effectiveFrom: previous.effectiveFrom, reviewDueAt: previous.reviewDueAt }, update: {} });
             if (day(previousProjection.effectiveFrom) && plan.effectiveFrom! < day(previousProjection.effectiveFrom)!) throw new Error("Vigencia anterior incompatible.");
             const old = { revision: previous, projection: previousProjection };

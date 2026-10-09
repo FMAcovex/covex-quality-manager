@@ -227,6 +227,7 @@ jobs:
           pnpm pnt-p1b2:smoke
           pnpm pnt-p2a:smoke
           pnpm pnt-p2b:smoke
+          pnpm pnt-p2c:smoke
       - name: Controlled documentation browser smokes
         run: |
           pnpm exec playwright install --with-deps chromium
@@ -239,6 +240,7 @@ jobs:
           P1B2_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b2:ui:smoke
           P2A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2a:ui:smoke
           P2B_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2b:ui:smoke
+          P2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2c:ui:smoke
           # Restart the application with a synthetic authenticated gateway configuration.
           kill "$pnt_server_pid"
           wait "$pnt_server_pid" || true
@@ -248,6 +250,7 @@ jobs:
           pnt_server_pid=$!
           P2A_VERIFY_RESTART=true P2A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2a:ui:smoke
           P2B_VERIFY_ACCESS=true P2B_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2b:ui:smoke
+          P2C_VERIFY_RESTART=true P2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2c:ui:smoke
       - name: Final quality checks
         run: |
           git restore next-env.d.ts
