@@ -97,3 +97,19 @@
 @media (max-width: 760px) {
   .pnt-workspace .pnt-manual-status-row { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* P3C-2: estados y fechas independientes en el listado por revisión. */
+.pnt-workspace .pnt-list-table { min-width: 1210px; }
+.pnt-list-table th:nth-child(1) { width: 11%; }
+.pnt-list-table th:nth-child(2) { width: 22%; }
+.pnt-list-table th:nth-child(3) { width: 14%; }
+.pnt-list-table th:nth-child(4) { width: 10%; }
+.pnt-list-table th:nth-child(5) { width: 7%; }
+.pnt-list-table th:nth-child(6) { width: 14%; }
+.pnt-list-table th:nth-child(7) { width: 11%; }
+.pnt-list-table th:nth-child(8) { width: 11%; }
+.pnt-state--draft, .pnt-state--imported-pending { background: #f3f5f8; color: #576679; border-color: #dce2ea; }
+.pnt-state--in-review, .pnt-state--pending-approval { background: #eaf3ff; color: #245f9e; border-color: #c6dcf5; }
+.pnt-state--approved-pending-effective { background: #f2ebff; color: #66389c; border-color: #d8c6f5; }
+.pnt-state--in-force { background: #e9f7ef; color: #23663f; border-color: #bce0c9; }
+.pnt-state--obsolete, .pnt-state--annulled { background: #fff0f0; color: #a33131; border-color: #efc5c5; }
