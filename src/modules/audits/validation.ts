@@ -12,7 +12,7 @@ const auditBaseSchema = z.object({
   planEntryId: z.string().uuid().or(z.literal("")).default(""),
   outsidePlanReason: text,
   title: text, scope: text, referenceText: text, externalReference: text,
-  auditedEntityName: text, auditedEntityAddress: text, auditingEntityName: text,
+  auditedEntityName: text, auditedEntityAddress: text, auditingEntityName: text, auditedContact: text,
   entityCode: z.string().trim().toUpperCase().max(40).default(""),
   codingDepartmentId: z.union([z.string().uuid(), z.literal("")]).default(""),
   departmentIds: z.array(z.string().uuid()).max(100).default([]),

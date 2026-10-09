@@ -28,10 +28,12 @@ async function main() {
   await assert.rejects(updatePlanEntry(internal.id,free.id,{...makeInput("Sin motivo"),reason:""}),/motivo/i);
   await updatePlanEntry(internal.id,free.id,{...makeInput(marker+" auditoría modificada"),plannedDate:"2092-05-07",reason:"Reprogramación documentada"});
   assert.equal((await prisma.auditPlanEntry.findUniqueOrThrow({where:{id:free.id}})).plannedDate?.toISOString().slice(0,10),"2092-05-07");
-  const base = {actor,status:"DRAFT" as const,auditType:"INTERNAL" as const,scenario:"INTERNAL_COVEX" as const,title:marker+" expediente",scope:"Alcance ficticio",plannedDate:"2092-04-15",departmentIds:[department.id],codingDepartmentId:department.id,participants:[{displayName:"Auditor ficticio",role:"AUDITOR" as const,sortOrder:0}],businessCode:"",planningStatus:"PLANNED" as const,planEntryId:first.id};
+  const base = {actor,status:"DRAFT" as const,auditType:"INTERNAL" as const,scenario:"INTERNAL_COVEX" as const,title:marker+" expediente",auditedContact:"Contacto externo ficticio · correo@example.com",scope:"Alcance ficticio",plannedDate:"2092-04-15",departmentIds:[department.id],codingDepartmentId:department.id,participants:[{displayName:"Auditor ficticio",role:"AUDITOR" as const,sortOrder:0}],businessCode:"",planningStatus:"PLANNED" as const,planEntryId:first.id};
   const audit = await saveAudit(base);
   assert.equal(audit.planningStatus,"PLANNED");
   assert.equal(audit.planEntryId,first.id);
+  assert.equal(audit.auditedContact,"Contacto externo ficticio · correo@example.com");
+  assert.equal(auditDefaults(audit).auditedContact,"Contacto externo ficticio · correo@example.com");
   assert.equal((await getAnnualPlan(internal.id))?.entries.find(e=>e.id===first.id)?.audit?.id,audit.id);
   assert.equal((await getAuditList({planning:"PLANNED",planId:internal.id,q:marker})).total,1);
   assert.equal((await getAuditList({planning:"PLANNED",planId:external.id,q:marker})).total,0);

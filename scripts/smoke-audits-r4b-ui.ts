@@ -27,6 +27,14 @@ async function main(){
   page.on("pageerror",error=>errors.push(error.message));
   page.on("console",message=>{if(message.type()==="error"&&/hydration/i.test(message.text())) errors.push(message.text())});
   try{
+    await navigate(page,"/audits?q="+encodeURIComponent(marker)+"&planning=OUT_OF_PLAN");
+    const filterTypeNav=page.getByRole("navigation",{name:"Filtrar auditorías por tipo"});
+    assert.equal(await filterTypeNav.getByRole("link").count(),3,"El selector debe tener todas/internas/externas");
+    const externalHref=await filterTypeNav.getByRole("link",{name:"Externas"}).getAttribute("href");
+    assert(externalHref && externalHref.includes("type=EXTERNAL") && externalHref.includes("planning=OUT_OF_PLAN"),"Filtro externo preserva la clasificación anual");
+    await filterTypeNav.getByRole("link",{name:"Externas"}).click();
+    await page.waitForURL(/type=EXTERNAL/);
+    assert.equal(await page.getByRole("navigation",{name:"Filtrar auditorías por tipo"}).getByRole("link",{name:"Externas"}).getAttribute("aria-current"),"page");
     await navigate(page,"/audits/plans");
     await page.locator('input[name="year"]').fill("2091");
     await page.locator('select[name="auditType"]').selectOption("INTERNAL");
