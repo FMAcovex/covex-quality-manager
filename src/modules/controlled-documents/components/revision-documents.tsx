@@ -18,10 +18,10 @@ export async function RevisionDocuments({ documentId, revisions, annulled }: { d
         <p>{verificationLabels[r.verificationStatus]}</p>{r.verificationStatus !== "VERIFIED" && <p role="note">Advertencia: revisión pendiente de verificación documental. Los archivos y evidencias aportados no acreditan aprobación.</p>}
         <p style={{ whiteSpace: "pre-wrap" }}>{r.sourceReference || "Sin referencia registrada"}</p>
         {!docs.length && <p>Sin documentos incorporados.</p>}
-        {docs.map(d => <section key={d.id} className="form-section"><h4>{documentKinds[d.kind as keyof typeof documentKinds]}</h4>
-          <p>{d.originalName} — {d.replacement ? "Sustituido (original conservado)" : d.state === "WORKING" ? "En elaboración — no aprobado" : "Registrado — sin verificación"}</p>
+        {docs.map(d => <section key={d.id} className="form-section pnt-document-item"><h4>{documentKinds[d.kind as keyof typeof documentKinds]}</h4>
+          <p className="pnt-document-name">{d.originalName} — {d.replacement ? "Sustituido (original conservado)" : d.state === "WORKING" ? "En elaboración — no aprobado" : "Registrado — sin verificación"}</p>
           <p>{displayDate(d.incorporatedAt)} — {d.incorporatedBy} ({d.identitySource})</p>
-          <dl><dt>UUID</dt><dd>{d.id}</dd><dt>Revisión UUID</dt><dd>{d.revisionId}</dd><dt>MIME / tamaño</dt><dd>{d.mimeType || "Referencia externa (sin binario custodiado)"} / {d.sizeBytes ?? "No comprobado"}</dd><dt>SHA-256</dt><dd>{d.sha256 || "No comprobado: referencia externa"}</dd><dt>Referencia de almacenamiento</dt><dd>{d.storageReference}</dd><dt>Contexto</dt><dd>{d.description || "—"}</dd></dl>
+          <details className="pnt-technical-data"><summary>Detalles técnicos del documento</summary><dl><dt>UUID</dt><dd>{d.id}</dd><dt>Revisión UUID</dt><dd>{d.revisionId}</dd><dt>MIME / tamaño</dt><dd>{d.mimeType || "Referencia externa (sin binario custodiado)"} / {d.sizeBytes ?? "No comprobado"}</dd><dt>SHA-256</dt><dd>{d.sha256 || "No comprobado: referencia externa"}</dd><dt>Referencia de almacenamiento</dt><dd>{d.storageReference}</dd><dt>Contexto</dt><dd>{d.description || "—"}</dd></dl></details>
           {d.replacesId && <p>Sustituye a {d.replacesId}. Motivo: {d.replacementReason}</p>}
           {d.externalReference ? <a href={d.externalReference} target="_blank" rel="noopener noreferrer">Abrir referencia externa</a> : <a href={`/api/controlled-documents/${documentId}/revisions/${r.id}/documents/${d.id}`}>Descargar {d.originalName}</a>}
         </section>)}
