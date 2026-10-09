@@ -50,6 +50,15 @@ async function main() {
     await page.locator("summary").filter({hasText:"+ Añadir seguimiento"}).click();form=page.locator(".audit-child-form").first();await form.locator('[name="findingId"]').selectOption(obs.id);await form.locator('[name="followupDate"]').fill("2026-10-08");await form.locator('[name="completedByText"]').fill("Responsable OBS UI");await form.locator('[name="description"]').fill("Seguimiento OBS UI");await saveChild(page,form,"Guardar seguimiento");await page.locator("p.prose-value").filter({hasText:/^Seguimiento OBS UI$/}).waitFor();
     for(const width of [1440,768,390]) {
       await page.setViewportSize({width,height:1000});
+      await view(page,`/audits/${audit.id}?tab=information`);
+      const info=page.locator(".audit-info-layout");
+      assert.equal(await info.locator(".audit-info-section").count(),5,"La ficha organiza información y participantes en cinco bloques");
+      for(const heading of ["Información","Alcance y referencias","Entidades y áreas","Fechas y control","Equipo y participantes"]) {
+        assert.equal(await info.getByRole("heading",{name:heading,exact:true}).count(),1,`Falta bloque ${heading}`);
+      }
+      assert.equal(await page.locator("#review-audit-scope").count()>0,true,"El anclaje de alcance no debe desaparecer");
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`Información desborda ${width}`);
+
       for(const tab of ["findings","followup","relations"]) {
         await view(page,`/audits/${audit.id}?tab=${tab}`);await page.getByRole("heading",{name:tab==="findings"?"Hallazgos y CAPA Plan":tab==="followup"?"Seguimiento":"Relaciones",exact:true}).waitFor();
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,`${tab} desborda ${width}`);
