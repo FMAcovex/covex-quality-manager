@@ -37,8 +37,6 @@ export async function saveAudit(raw: unknown, id?: string) {
       if(!entry||!entry.isActive)throw new AuditValidationError({planEntryId:"La entrada del plan anual no está disponible."});
       if(!v.auditType||entry.plan.auditType!==v.auditType)throw new AuditValidationError({planEntryId:"El tipo de auditoría no corresponde al plan anual."});
       if(entry.audit&&entry.audit.id!==id)throw new AuditValidationError({planEntryId:"Esta entrada ya tiene otra auditoría vinculada."});
-      const year=auditCodeYear(v);
-      if(v.status==="OPEN"&&year!==entry.plan.year)throw new AuditValidationError({plannedDate:"El año operativo debe coincidir con el plan seleccionado."});
       selectedPlan={id:entry.id,year:entry.plan.year,auditType:entry.plan.auditType,plannedDate:entry.plannedDate,isActive:entry.isActive,audit:entry.audit};
     }
     if(before?.planEntryId&&before.planEntryId!==selectedPlan?.id){
