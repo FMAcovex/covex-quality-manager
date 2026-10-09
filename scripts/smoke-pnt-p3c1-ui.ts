@@ -14,7 +14,9 @@ async function checkPage(page: Page, path: string | null, name: string, width: n
   const dimensions = await page.evaluate(() => ({ viewport: innerWidth, body: document.body.scrollWidth }));
   assert.ok(dimensions.body <= dimensions.viewport + 1, `${name}/${width}: desbordamiento global ${dimensions.body}`);
   // Hit testing catches a control covered by a neighbouring fieldset, even when both are visible.
-  const controls = page.locator('.pnt-workspace .field :is(input, select, textarea), .pnt-workspace .pnt-check input');
+  // A collapsed <details> keeps its inputs in the DOM, but they have no layout box.
+  // Validate all rendered controls, including advanced filters after expanding them.
+  const controls = page.locator('.pnt-workspace .field :is(input, select, textarea):visible, .pnt-workspace .pnt-check input:visible');
   for (const control of await controls.all()) {
     assert.equal(await control.evaluate(element => {
       const r = element.getBoundingClientRect(), label = element.closest("label");
@@ -66,7 +68,14 @@ async function main() {
           const box = await link.boundingBox(); assert.ok(box && box.height >= 44 && box.x >= 0 && box.x + box.width <= width + 1);
         }
       }
-      await checkPage(page, `/controlled-documents?q=${encodeURIComponent(master.baseCode!)}`, "list", width);
+      await page.goto(`${base}/controlled-documents?q=${encodeURIComponent(master.baseCode!)}`);
+      const advanced = page.locator("details.pnt-advanced-filters");
+      assert.equal(await advanced.count(), 1);
+      assert.equal(await advanced.evaluate(element => (element as HTMLDetailsElement).open), false, "Los filtros avanzados se muestran plegados inicialmente.");
+      await checkPage(page, null, "list", width);
+      await advanced.locator("summary").click();
+      assert.equal(await advanced.evaluate(element => (element as HTMLDetailsElement).open), true);
+      await checkPage(page, null, "list-advanced", width);
       const recordLinks = page.getByRole("link", { name: master.baseCode!, exact: true });
       await recordLinks.first().waitFor();
       assert.equal(await recordLinks.count(), 2, "El listado debe mostrar las revisiones 00 y 01 en filas independientes.");

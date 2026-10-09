@@ -1,38 +1,68 @@
-import { indexMetadata, importStates } from "@/modules/controlled-documents/import/domain";
-import { DocumentLink as Link } from "@/modules/controlled-documents/components/document-link";
 import { prisma } from "@/lib/db";
-import { Filters, dateFilterErrors, listDocuments } from "@/modules/controlled-documents/queries";
-import { administrativeLabels, revisionLabels, displayDate } from "@/modules/controlled-documents/domain";
+import { DocumentLink as Link } from "@/modules/controlled-documents/components/document-link";
+import { administrativeLabels, displayDate, revisionLabels } from "@/modules/controlled-documents/domain";
 import { manualStateLabels } from "@/modules/controlled-documents/manual-state/domain";
+import { importStates, indexMetadata } from "@/modules/controlled-documents/import/domain";
+import { dateFilterErrors } from "@/modules/controlled-documents/queries";
+import { queryPntListing, operationalDates, type PntListingFilters } from "@/modules/controlled-documents/listing";
 export const dynamic = "force-dynamic";
-export default async function ListPage({ searchParams }: {
-    searchParams: Promise<Filters>;
-}) {
-    const f = await searchParams;
-    const filterErrors = dateFilterErrors(f);
-    const [result, departments] = await Promise.all([listDocuments(f), prisma.department.findMany({ orderBy: { code: "asc" } })]);
-    const pageLink = (page: number) => {
-        const params = new URLSearchParams();
-        for (const [k, v] of Object.entries(f))
-            if (typeof v === "string" && v)
-                params.set(k, v);
-        params.set("page", String(page));
-        return `/controlled-documents?${params}`;
-    };
-    return <section className="workspace pnt-workspace"><header className="page-heading"><div><p className="eyebrow">Gestión documental · PNT</p><h1>Documentación controlada</h1></div><div className="heading-actions"><Link className="button primary" href="/controlled-documents/new">Nuevo PNT</Link><Link className="button" href="/controlled-documents/import-index">Importar índice maestro</Link></div></header>
- <form className="filter-panel pnt-filters" method="get">
- <label className="field"><span>Buscar</span><input name="q" defaultValue={f.q} placeholder="Código, título o referencia"/></label>
- <label className="field"><span>Departamento</span><select name="department" defaultValue={f.department}><option value="">Todos</option>{departments.map(d => <option key={d.id} value={d.id}>{d.code} — {d.name}{!d.isActive ? " (inactivo)" : ""}</option>)}</select></label>
- <label className="field"><span>Estado maestro</span><select name="state" defaultValue={f.state}><option value="">Todos</option>{Object.entries(administrativeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
- <label className="field"><span>Revisión</span><input name="revision" maxLength={2} placeholder="00" defaultValue={f.revision}/></label>
- <label className="field"><span>Estado documental</span><select name="revisionState" defaultValue={f.revisionState}><option value="">Todos</option>{Object.entries(revisionLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
- <label className="field"><span>Plazos documentales</span><select name="validity" defaultValue={f.validity}><option value="">Todos</option><option value="current">Vigencia iniciada</option><option value="due">Revisión prevista alcanzada</option><option value="missing">Fechas sin completar</option></select></label>
- <fieldset className="pnt-date-range"><legend>Fecha de vigencia</legend><label className="field"><span>Desde</span><input type="date" name="effectiveFromStart" defaultValue={f.effectiveFromStart || ""}/></label><label className="field"><span>Hasta</span><input type="date" name="effectiveFromEnd" defaultValue={f.effectiveFromEnd || ""}/></label></fieldset>
- <fieldset className="pnt-date-range"><legend>Próxima revisión</legend><label className="field"><span>Desde</span><input type="date" name="reviewDueStart" defaultValue={f.reviewDueStart || ""}/></label><label className="field"><span>Hasta</span><input type="date" name="reviewDueEnd" defaultValue={f.reviewDueEnd || ""}/></label></fieldset>
- <div className="filter-actions"><button className="button primary">Filtrar</button><Link className="button" href="/controlled-documents">Limpiar filtros</Link></div></form>
- <p className="muted-note">{result.count} PNT encontrados · una fila por revisión</p><div className="table-card"><div className="table-wrap table-scroll pnt-table-scroll" tabIndex={0} role="region" aria-label="Listado maestro PNT; desplazamiento horizontal"><table className="data-table pnt-list-table"><thead><tr><th scope="col">Código</th><th scope="col">Título</th><th scope="col">Departamento</th><th scope="col">Estado maestro</th><th scope="col">Revisión</th><th scope="col">Estado documental</th><th scope="col">Fecha de vigencia</th><th scope="col">Próxima revisión</th></tr></thead><tbody>{result.rows.flatMap(m => (m.revisions.length ? m.revisions : [null]).map(r => <tr key={m.id + ":" + (r?.id || "none")}><td><Link href={`/controlled-documents/${m.id}`}>{m.baseCode || "Borrador sin código"}</Link></td><td>{m.title || "Sin título"}{indexMetadata(m.sourceMetadata) && <p className="muted-note">Importado del índice · {importStates[indexMetadata(m.sourceMetadata)!.declaredState]}</p>}</td><td>{m.departmentCodeSnapshot} — {m.departmentNameSnapshot}</td><td><span className="badge neutral">{administrativeLabels[m.administrativeStatus]}</span></td><td>{r?.revisionCode || "—"}</td><td>{r ? <span className={`badge pnt-state pnt-state--${r.status.toLowerCase().replaceAll("_", "-")}`}>{manualStateLabels[r.status as keyof typeof manualStateLabels] || revisionLabels[r.status]}</span> : "—"}{r && indexMetadata(r.sourceMetadata) && <p className="muted-note">Estado importado: {importStates[indexMetadata(r.sourceMetadata)!.declaredState]}</p>}</td><td>{r ? displayDate(r.lifecycle ? r.lifecycle.effectiveFrom : r.effectiveFrom) : "—"}</td><td>{r ? displayDate(r.lifecycle ? r.lifecycle.reviewDueAt : r.reviewDueAt) : "—"}</td></tr>))}</tbody></table></div></div>
- <p className="muted-note pnt-table-hint">Desplaza la tabla horizontalmente para consultar todas las columnas.</p>
- {!result.count && <p>No hay PNT para estos filtros.</p>}
- <nav className="pnt-pagination" aria-label="Paginación">{result.page > 1 && <Link className="button" href={pageLink(result.page - 1)}>Anterior</Link>} <span>Página {result.page} de {result.pages}</span> {result.page < result.pages && <Link className="button" href={pageLink(result.page + 1)}>Siguiente</Link>}</nav>
+
+export default async function ListPage({ searchParams }: { searchParams: Promise<PntListingFilters> }) {
+ const f = await searchParams;
+ const [result, departments] = await Promise.all([queryPntListing(f), prisma.department.findMany({ orderBy: { code: "asc" } })]);
+ const params = (changes: Record<string,string>) => {
+   const p = new URLSearchParams();
+   for (const [k,v] of Object.entries(f)) if (typeof v === "string" && v && k !== "page") p.set(k,v);
+   for (const [k,v] of Object.entries(changes)) v ? p.set(k,v) : p.delete(k);
+   return p.toString();
+ };
+ const link = (changes: Record<string,string>) => "/controlled-documents?" + params(changes);
+ const exportLink = "/api/controlled-documents/export?" + params({});
+ const errors = dateFilterErrors(f);
+ const advancedActive = Boolean(f.department || f.state || f.revision || f.revisionState || f.validity || f.effectiveFromStart || f.effectiveFromEnd || f.reviewDueStart || f.reviewDueEnd || result.options.view !== "all" || result.options.sort !== "code" || result.options.direction !== "asc");
+ const headings: [string, string][] = [
+   ["code","Código"], ["title","Título"], ["department","Departamento"], ["masterState","Estado maestro"],
+   ["revision","Revisión"], ["status","Estado documental"], ["effectiveFrom","Fecha de vigencia"], ["reviewDueAt","Próxima revisión"],
+ ];
+ return <section className="workspace pnt-workspace pnt-p3c4">
+  <header className="page-heading pnt-hero"><div><p className="eyebrow">GESTIÓN DOCUMENTAL · PNT</p><h1>Biblioteca de procedimientos</h1><p className="muted-note">Consulta de revisiones, estados, fechas y documentos controlados.</p></div><div className="heading-actions"><Link className="button primary" href="/controlled-documents/new">Nuevo PNT</Link><Link className="button" href="/controlled-documents/import-index">Importar índice maestro</Link></div></header>
+  <div className="pnt-summary" aria-label="Resumen del listado">
+    <div><span>Procedimientos</span><strong>{result.masterCount}</strong></div>
+    <div><span>Revisiones</span><strong>{result.revisionCount}</strong></div>
+    <div><span>Filas encontradas</span><strong>{result.rowCount}</strong></div>
+  </div>
+  <section className="pnt-filter-card"><div className="pnt-section-heading"><div><h2>Buscar procedimientos</h2></div><Link className="button" href="/controlled-documents">Limpiar filtros</Link></div>
+   <div className="pnt-quick" aria-label="Filtros rápidos">{[
+    ["","Todas"], ["current","Vigentes"], ["dueSoon","Revisión en 30 días"], ["overdue","Revisión vencida"], ["missing","Sin fechas"], ["unverified","Pendientes de verificar"],
+   ].map(([value,label]) => <Link key={value} className={"pnt-quick-link"+(result.options.quick === (value || null) ? " is-active" : "")} href={link({quick:value})}>{label}</Link>)}</div>
+   <form className="filter-panel pnt-filters" method="get">
+    {f.quick && <input type="hidden" name="quick" value={f.quick}/>}
+    <div className="pnt-search-row"><label className="field"><span>Buscar</span><input name="q" defaultValue={f.q} placeholder="Código, título o referencia"/></label><button className="button primary" type="submit">Buscar</button></div>
+    <details className="pnt-advanced-filters" open={advancedActive}><summary>Filtros avanzados{advancedActive ? " · activos" : ""}<span className="pnt-advanced-hint">Departamento, estado, revisión, fechas y ordenación</span></summary>
+    <div className="pnt-advanced-grid">
+    <label className="field"><span>Departamento</span><select name="department" defaultValue={f.department}><option value="">Todos</option>{departments.map(d => <option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
+    <label className="field"><span>Estado maestro</span><select name="state" defaultValue={f.state}><option value="">Todos</option>{Object.entries(administrativeLabels).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label>
+    <label className="field"><span>Revisión</span><input name="revision" defaultValue={f.revision} maxLength={2} placeholder="00"/></label>
+    <label className="field"><span>Estado documental</span><select name="revisionState" defaultValue={f.revisionState}><option value="">Todos</option>{Object.entries(revisionLabels).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label>
+    <label className="field"><span>Plazos documentales</span><select name="validity" defaultValue={f.validity}><option value="">Todos</option><option value="current">Vigencia iniciada</option><option value="due">Revisión prevista alcanzada</option><option value="missing">Fechas sin completar</option></select></label>
+    <fieldset className="pnt-date-range"><legend>Fecha de vigencia</legend><label className="field"><span>Desde</span><input type="date" name="effectiveFromStart" defaultValue={f.effectiveFromStart || ""}/></label><label className="field"><span>Hasta</span><input type="date" name="effectiveFromEnd" defaultValue={f.effectiveFromEnd || ""}/></label></fieldset>
+    <fieldset className="pnt-date-range"><legend>Próxima revisión</legend><label className="field"><span>Desde</span><input type="date" name="reviewDueStart" defaultValue={f.reviewDueStart || ""}/></label><label className="field"><span>Hasta</span><input type="date" name="reviewDueEnd" defaultValue={f.reviewDueEnd || ""}/></label></fieldset>
+    <label className="field"><span>Mostrar</span><select name="view" defaultValue={result.options.view}><option value="all">Todas las revisiones</option><option value="latest">Solo última revisión</option></select></label>
+    <label className="field"><span>Ordenar por</span><select name="sort" defaultValue={result.options.sort}>{headings.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
+    <label className="field"><span>Orden</span><select name="direction" defaultValue={result.options.direction}><option value="asc">Ascendente</option><option value="desc">Descendente</option></select></label>
+    <div className="filter-actions"><button className="button primary" type="submit">Aplicar filtros</button><Link className="button" href="/controlled-documents">Limpiar</Link></div>
+    </div></details>
+   </form>{errors.length>0 && <p className="form-errors" role="alert">{errors.join(" ")}</p>}
+  </section>
+  <section className="pnt-results"><div className="pnt-section-heading"><div><h2>Resultados</h2><p>{result.rowCount} filas · {result.masterCount} PNT diferentes · {result.revisionCount} revisiones</p></div><Link className="button" href={exportLink}>Descargar .xlsx</Link></div>
+   <div className="table-card"><div className="table-wrap table-scroll pnt-table-scroll" tabIndex={0} role="region" aria-label="Listado maestro PNT; desplazamiento horizontal"><table className="data-table pnt-list-table"><thead><tr>{headings.map(([key,label])=><th scope="col" key={key}><Link href={link({sort:key,direction:result.options.sort===key&&result.options.direction==="asc"?"desc":"asc"})}>{label}{result.options.sort===key ? result.options.direction==="asc"?" ↑":" ↓":""}</Link></th>)}</tr></thead><tbody>{result.rows.map(({master,revision}) => {
+     const dates=revision ? operationalDates(revision) : null;
+     const origin=revision ? indexMetadata(revision.sourceMetadata) : null;
+     return <tr key={master.id+":"+(revision?.id||"none")}><td><Link href={`/controlled-documents/${master.id}?returnTo=${encodeURIComponent("/controlled-documents?"+params({}))}`}>{master.baseCode||"Borrador sin código"}</Link></td><td><strong>{master.title||"Sin título"}</strong>{indexMetadata(master.sourceMetadata) && <p className="muted-note">Importado del índice</p>}</td><td>{master.departmentCodeSnapshot||"—"} — {master.departmentNameSnapshot||"—"}</td><td><span className="badge neutral">{administrativeLabels[master.administrativeStatus]}</span></td><td>{revision?.revisionCode||"—"}</td><td>{revision ? <span className={`badge pnt-state pnt-state--${revision.status.toLowerCase().replaceAll("_","-")}`}>{manualStateLabels[revision.status as keyof typeof manualStateLabels]||revisionLabels[revision.status]}</span>:"—"}{origin && <p className="muted-note">Índice: {importStates[origin.declaredState]}</p>}</td><td>{dates?.effectiveFrom ? displayDate(dates.effectiveFrom):"—"}</td><td>{dates?.reviewDueAt ? displayDate(dates.reviewDueAt):"—"}</td></tr>;
+   })}</tbody></table></div></div>
+   {!result.rows.length && <div className="pnt-empty">No hay documentos que cumplan los filtros indicados.</div>}
+   <p className="muted-note pnt-table-hint">Desplaza la tabla horizontalmente para consultar todas las columnas.</p>
+   <nav className="pnt-pagination" aria-label="Paginación"><span>Página {result.page} de {result.pages} · 25 filas por página</span><div>{result.page>1 && <Link className="button" href={link({page:String(result.page-1)})}>Anterior</Link>}{result.page<result.pages && <Link className="button" href={link({page:String(result.page+1)})}>Siguiente</Link>}</div></nav>
+  </section>
  </section>;
 }
