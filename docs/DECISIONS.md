@@ -1,5 +1,9 @@
 # Decisiones cerradas
 
+## P2A — Custodia documental inmutable por revisión (2026-10-09)
+
+ControlledRevisionDocument separa bytes/metadatos del snapshot de ControlledDocumentRevision. PostgreSQL BYTEA persistente y transacción conjunta con historial; sustitución mediante INSERT y antecesor/motivo, trigger contra UPDATE/DELETE. Word de trabajo no es aprobado; firmado/evidencia permanecen sin verificar. Adjuntar conserva estados y procedencia P1B-2. Acceso documental fail-closed con gateway autenticado configurado o demo explícito no operativo, nunca por actor escrito. Sin integración SharePoint, aprobación/publicación ni firma electrónica; configuración/riesgos/P2B en `PNT_P2A.md`.
+
 Este documento registra decisiones funcionales/arquitectónicas confirmadas. Codex no debe reabrirlas salvo instrucción expresa.
 
 ## D-001 — Proyecto independiente

@@ -4,6 +4,8 @@
   "private": true,
   "packageManager": "pnpm@11.19.0",
   "scripts": {
+    "pnt-p2a:smoke": "tsx scripts/smoke-pnt-p2a.ts",
+    "pnt-p2a:ui:smoke": "tsx scripts/smoke-pnt-p2a-ui.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

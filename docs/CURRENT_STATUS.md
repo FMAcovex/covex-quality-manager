@@ -1,5 +1,11 @@
 # Estado actual
 
+## P2A — Documentos y evidencias por revisión de PNT
+
+Implementado en `feature/pnt-p2a-documents` desde main `236262e9ac861125dbc426744d4dc697f1e1b823`. Custodia PostgreSQL persistente, múltiples documentos/referencia por UUID de revisión, metadatos/hash, descarga y sustitución inmutable con historial. Importados mantienen estados/snapshots/procedencia. Acceso documental configurado en servidor; no aprobación/publicación/firma. Pruebas focalizadas P2A/P1A/P1B y quality; resultados finales en PR abierta. Arquitectura, configuración, límites y P2B en [PNT_P2A.md](PNT_P2A.md).
+
+Validación local final: 53 tests afectados, cuatro smokes PostgreSQL/navegador P1A/P1B-1/P1B-2/P2A y reinicio autenticado correctos; `pnpm quality` verde (399 tests/73 archivos). Pendiente revisión de PR y configuración/cualificación operativa de acceso, almacenamiento y backups.
+
 Fecha: 2026-10-08.
 
 ## R4A — Reclamaciones: cierre funcional

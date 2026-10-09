@@ -1792,6 +1792,7 @@ model ControlledDocumentRevision {
   registeredAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   changes ControlledDocumentChange[]
+  documents ControlledRevisionDocument[]
 
   @@unique([documentId, revisionCode])
   @@unique([documentId, id])
@@ -1815,6 +1816,35 @@ model ControlledDocumentChange {
 
   @@index([documentId, changedAt, id])
   @@index([revisionId])
+}
+
+// P2A: immutable documentary objects, separate from revision snapshots.
+model ControlledRevisionDocument {
+  id String @id @default(uuid())
+  documentId String
+  revisionId String
+  revision ControlledDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  originalName String
+  kind String
+  state String
+  mimeType String?
+  sizeBytes Int?
+  sha256 String?
+  fileData Bytes?
+  storageReference String @unique
+  externalReference String? @db.Text
+  description String? @db.Text
+  incorporatedAt DateTime @default(now())
+  incorporatedBy String
+  identitySource String
+  replacesId String? @unique
+  replacementReason String? @db.Text
+  replaces ControlledRevisionDocument? @relation("DocumentReplacement", fields: [revisionId, replacesId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
+  replacement ControlledRevisionDocument? @relation("DocumentReplacement")
+
+  @@unique([revisionId, id])
+  @@unique([revisionId, replacesId])
+  @@index([documentId, revisionId, incorporatedAt])
 }
 
 // P1B-2: bounded staging; no original workbook binary.

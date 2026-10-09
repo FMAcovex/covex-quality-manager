@@ -200,6 +200,7 @@ jobs:
           --health-retries 10
 
     env:
+      PNT_DOCUMENT_ACCESS_MODE: demo
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
       APP_ENV: test
       DEFAULT_ACTOR_NAME: Usuario CI
@@ -223,16 +224,26 @@ jobs:
           pnpm pnt-p1a:smoke
           pnpm pnt-p1b1:smoke
           pnpm pnt-p1b2:smoke
+          pnpm pnt-p2a:smoke
       - name: Controlled documentation browser smokes
         run: |
           pnpm exec playwright install --with-deps chromium
           pnpm build
-          pnpm start --port 3000 > /tmp/covex-p1a-next.log 2>&1 &
+          node node_modules/next/dist/bin/next start --port 3000 > /tmp/covex-p1a-next.log 2>&1 &
           pnt_server_pid=$!
           trap 'pnt_exit_code=$?; if [ "$pnt_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-p1a-next.log; fi; kill "$pnt_server_pid" 2>/dev/null || true' EXIT
           P1A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1a:ui:smoke
           P1B1_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b1:ui:smoke
           P1B2_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b2:ui:smoke
+          P2A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2a:ui:smoke
+          # Restart the application with a synthetic authenticated gateway configuration.
+          kill "$pnt_server_pid"
+          wait "$pnt_server_pid" || true
+          export PNT_DOCUMENT_ACCESS_MODE=trusted-proxy
+          export PNT_DOCUMENT_PROXY_SECRET=synthetic-test-key-not-a-real-secret
+          node node_modules/next/dist/bin/next start --port 3000 > /tmp/covex-p2a-restart.log 2>&1 &
+          pnt_server_pid=$!
+          P2A_VERIFY_RESTART=true P2A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2a:ui:smoke
       - name: Final quality checks
         run: |
           git restore next-env.d.ts
