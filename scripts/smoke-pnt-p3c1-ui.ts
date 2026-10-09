@@ -14,7 +14,9 @@ async function checkPage(page: Page, path: string | null, name: string, width: n
   const dimensions = await page.evaluate(() => ({ viewport: innerWidth, body: document.body.scrollWidth }));
   assert.ok(dimensions.body <= dimensions.viewport + 1, `${name}/${width}: desbordamiento global ${dimensions.body}`);
   // Hit testing catches a control covered by a neighbouring fieldset, even when both are visible.
-  const controls = page.locator('.pnt-workspace .field :is(input, select, textarea), .pnt-workspace .pnt-check input');
+  // A collapsed <details> keeps its inputs in the DOM, but they have no layout box.
+  // Validate all rendered controls, including advanced filters after expanding them.
+  const controls = page.locator('.pnt-workspace .field :is(input, select, textarea):visible, .pnt-workspace .pnt-check input:visible');
   for (const control of await controls.all()) {
     assert.equal(await control.evaluate(element => {
       const r = element.getBoundingClientRect(), label = element.closest("label");
