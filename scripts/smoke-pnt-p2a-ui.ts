@@ -53,7 +53,8 @@ async function main() {
       await article.getByLabel("Soporte", { exact: true }).selectOption("file");
       await article.getByLabel("Archivo documental", { exact: true }).setInputFiles({ name, mimeType: "application/pdf", buffer: pdf });
       await article.getByLabel("Sustituye a", { exact: true }).selectOption(replacing);
-      await article.getByLabel("Motivo de sustitución", { exact: true }).fill(replacing ? "Copia corregida QA" : "");
+      if (replacing) await article.getByLabel(/^Motivo de sustitución/).fill("Copia corregida QA");
+      else assert.equal(await article.getByLabel(/^Motivo de sustitución/).count(), 0, "El motivo solo se solicita para una sustitución.");
       const response = page.waitForResponse(response => response.url().endsWith(`/revisions/${r.id}/documents`) && response.request().method() === "POST");
       await article.getByRole("button", { name: "Añadir documento", exact: true }).click();
       assert.equal((await response).status(), 201);
