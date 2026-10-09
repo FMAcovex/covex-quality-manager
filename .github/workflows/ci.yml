@@ -201,7 +201,7 @@ jobs:
 
     env:
       PNT_DOCUMENT_ACCESS_MODE: demo
-      PNT_LIFECYCLE_TEST_PERMISSIONS: verify,record-approval,accept-approval,activate,retire,correct,legacy-register
+      PNT_LIFECYCLE_TEST_PERMISSIONS: verify,record-approval,accept-approval,activate,retire,correct,legacy-register,manage-state
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
       APP_ENV: test
       DEFAULT_ACTOR_NAME: Usuario CI
@@ -228,6 +228,7 @@ jobs:
           pnpm pnt-p2a:smoke
           pnpm pnt-p2b:smoke
           pnpm pnt-p2c:smoke
+          pnpm pnt-p3c2:smoke
       - name: Controlled documentation browser smokes
         run: |
           pnpm exec playwright install --with-deps chromium
