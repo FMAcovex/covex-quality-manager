@@ -161,7 +161,7 @@ async function main() {
       await page.setViewportSize({ width, height: 900 });
       for (const tab of ["information", "revisions", "documents", "verification", "history"]) { await page.goto(`${base}/controlled-documents/${manual.id}?tab=${tab}`); await page.locator("main h2").first().waitFor(); assert.ok(await page.locator("main").isVisible()); }
       await page.goto(`${base}/controlled-documents/${manual.id}?tab=documents`); assert.deepEqual(await page.locator("article[data-revision-id] > h3").allTextContents(), ["Revisión 01", "Revisión 00"]);
-      await page.goto(`${base}/controlled-documents?validity=current&revision=01&q=${encodeURIComponent(manualCode)}`); await page.getByRole("link", { name: manualCode, exact: true }).waitFor();
+      await page.goto(`${base}/controlled-documents?validity=current&revision=01&q=${encodeURIComponent(manualCode)}`); await page.getByRole("link", { name: manualCode, exact: true }).first().waitFor();
       await page.goto(`${base}/controlled-documents/import-index/${batchId}`); await page.getByRole("heading", { name: "Conciliación del lote", exact: true }).waitFor();
       await page.goto(`${base}/controlled-documents/import-index`); await page.getByLabel("Excel del índice maestro", { exact: true }).waitFor();
       await page.goto(`${base}/controlled-documents/new`); await page.getByLabel("Código base", { exact: true }).waitFor();
