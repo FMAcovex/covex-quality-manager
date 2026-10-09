@@ -98,6 +98,7 @@ jobs:
           pnpm audits-r3a:smoke
           pnpm audits-r3b:smoke
           pnpm audits-r3c:smoke
+          pnpm audits-r4b:smoke
           pnpm review-r2c:smoke
           pnpm hito10:smoke
       - name: Quality checks
@@ -116,6 +117,7 @@ jobs:
           R4A_UI_BASE_URL=http://127.0.0.1:3000 pnpm complaints-r4a:ui:smoke
           R4B_UI_BASE_URL=http://127.0.0.1:3000 pnpm returns-r4b:ui:smoke
           R3C_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3c:ui:smoke
+          R4B_AUDITS_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r4b:ui:smoke
 
   complaints-returns-final:
     if: github.head_ref == 'feature/complaints-returns-final-regression'
