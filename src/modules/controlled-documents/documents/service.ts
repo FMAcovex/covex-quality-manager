@@ -30,6 +30,8 @@ export async function incorporateDocument(input: Incorporation, principal: Docum
   if (input.replacesId) { uuid(input.replacesId); if (!reason || reason.length > 2000) throw new Error("Se necesita un motivo de sustitución explícito de hasta 2000 caracteres."); }
   else if (reason) throw new Error("Un motivo de sustitución requiere un documento anterior.");
   return db.$transaction(async tx => {
+    // Serialize custody replacements with P2B evidence/activation checks on the same master.
+    await tx.$queryRaw`SELECT id FROM "ControlledDocument" WHERE id = ${input.documentId} FOR UPDATE`;
     const revision = await tx.controlledDocumentRevision.findFirst({ where: { id: input.revisionId, documentId: input.documentId }, include: { document: { select: { administrativeStatus: true } } } });
     if (!revision) throw new Error("Revisión no encontrada en este PNT.");
     if (revision.document.administrativeStatus === "ANNULLED") throw new Error("El PNT está anulado: documentación de solo lectura.");

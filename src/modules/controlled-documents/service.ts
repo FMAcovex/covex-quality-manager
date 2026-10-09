@@ -72,6 +72,8 @@ export async function saveRevision(documentId: string, v: RevisionInput, id?: st
         if (m.administrativeStatus !== "ACTIVE")
             throw new Error("Registra primero el maestro activo.");
         const old = id ? await tx.controlledDocumentRevision.findUniqueOrThrow({ where: { id } }) : null;
+        if (old && await tx.controlledRevisionLifecycle.findUnique({ where: { revisionId: old.id } }))
+            throw new Error("Una revisión gestionada por P2B no se edita desde el registro P1A.");
         if (old && (old.documentId !== documentId || old.consolidatedAt || old.status !== "DRAFT"))
             throw new Error("La revisión consolidada no admite edición.");
         if (old && old.updatedAt.toISOString() !== v.updatedAt)

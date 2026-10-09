@@ -28,14 +28,14 @@ export function listWhere(f: Filters): Prisma.ControlledDocumentWhereInput {
     const today = new Date(`${iso(new Date())}T00:00:00Z`);
     if (f.validity === "current") {
         r.status = "IN_FORCE";
-        r.effectiveFrom = { lte: today };
+        r.OR = [{ lifecycle: { is: { effectiveFrom: { lte: today } } } }, { lifecycle: { is: null }, effectiveFrom: { lte: today } }];
     }
     if (f.validity === "due") {
         r.status = "IN_FORCE";
-        r.reviewDueAt = { lte: today };
+        r.OR = [{ lifecycle: { is: { reviewDueAt: { lte: today } } } }, { lifecycle: { is: null }, reviewDueAt: { lte: today } }];
     }
     if (f.validity === "missing")
-        r.OR = [{ effectiveFrom: null }, { reviewDueAt: null }];
+        r.OR = [{ lifecycle: { is: { OR: [{ effectiveFrom: null }, { reviewDueAt: null }] } } }, { lifecycle: { is: null }, OR: [{ effectiveFrom: null }, { reviewDueAt: null }] }];
     if (Object.keys(r).length)
         AND.push({ revisions: { some: r } });
     return { AND };
@@ -45,6 +45,6 @@ export async function listDocuments(f: Filters, db: PrismaClient = prisma) {
     const count = await db.controlledDocument.count({ where });
     const pages = Math.max(1, Math.ceil(count / 25));
     const page = Math.min(pages, Math.max(1, Number.parseInt(f.page || "1", 10) || 1));
-    const rows = await db.controlledDocument.findMany({ where, skip: (page - 1) * 25, take: 25, orderBy: [{ baseCode: "asc" }, { id: "asc" }], include: { revisions: { orderBy: { revisionCode: "desc" }, select: { id: true, revisionCode: true, status: true, effectiveFrom: true, reviewDueAt: true, sourceMetadata: true } } } });
+    const rows = await db.controlledDocument.findMany({ where, skip: (page - 1) * 25, take: 25, orderBy: [{ baseCode: "asc" }, { id: "asc" }], include: { revisions: { orderBy: { revisionCode: "desc" }, select: { id: true, revisionCode: true, status: true, effectiveFrom: true, reviewDueAt: true, sourceMetadata: true, verificationStatus: true, lifecycle: { select: { effectiveFrom: true, reviewDueAt: true } } } } } });
     return { rows, count, page, pages };
 }

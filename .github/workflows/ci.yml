@@ -201,6 +201,7 @@ jobs:
 
     env:
       PNT_DOCUMENT_ACCESS_MODE: demo
+      PNT_LIFECYCLE_TEST_PERMISSIONS: verify,record-approval,accept-approval,activate,retire,correct,legacy-register
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
       APP_ENV: test
       DEFAULT_ACTOR_NAME: Usuario CI
@@ -225,6 +226,7 @@ jobs:
           pnpm pnt-p1b1:smoke
           pnpm pnt-p1b2:smoke
           pnpm pnt-p2a:smoke
+          pnpm pnt-p2b:smoke
       - name: Controlled documentation browser smokes
         run: |
           pnpm exec playwright install --with-deps chromium
@@ -236,6 +238,7 @@ jobs:
           P1B1_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b1:ui:smoke
           P1B2_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b2:ui:smoke
           P2A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2a:ui:smoke
+          P2B_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2b:ui:smoke
           # Restart the application with a synthetic authenticated gateway configuration.
           kill "$pnt_server_pid"
           wait "$pnt_server_pid" || true
@@ -244,6 +247,7 @@ jobs:
           node node_modules/next/dist/bin/next start --port 3000 > /tmp/covex-p2a-restart.log 2>&1 &
           pnt_server_pid=$!
           P2A_VERIFY_RESTART=true P2A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2a:ui:smoke
+          P2B_VERIFY_ACCESS=true P2B_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2b:ui:smoke
       - name: Final quality checks
         run: |
           git restore next-env.d.ts

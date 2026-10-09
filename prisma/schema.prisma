@@ -1793,6 +1793,8 @@ model ControlledDocumentRevision {
   updatedAt DateTime @updatedAt
   changes ControlledDocumentChange[]
   documents ControlledRevisionDocument[]
+  lifecycle ControlledRevisionLifecycle?
+  decisions ControlledRevisionDecision[]
 
   @@unique([documentId, revisionCode])
   @@unique([documentId, id])
@@ -1841,10 +1843,64 @@ model ControlledRevisionDocument {
   replacementReason String? @db.Text
   replaces ControlledRevisionDocument? @relation("DocumentReplacement", fields: [revisionId, replacesId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
   replacement ControlledRevisionDocument? @relation("DocumentReplacement")
+  decisionEvidence ControlledDecisionEvidence[]
 
   @@unique([revisionId, id])
   @@unique([revisionId, replacesId])
   @@index([documentId, revisionId, incorporatedAt])
+}
+
+// P2B: operational dates are separate from frozen imported/legacy dates.
+model ControlledRevisionLifecycle {
+  revisionId String @id
+  documentId String
+  revision ControlledDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  version Int @default(0)
+  legacyOrigin Boolean @default(false)
+  approvalAt DateTime? @db.Date
+  effectiveFrom DateTime? @db.Date
+  reviewDueAt DateTime? @db.Date
+  obsoletedAt DateTime? @db.Date
+  @@unique([documentId, revisionId])
+}
+
+model ControlledRevisionDecision {
+  id String @id @default(uuid())
+  documentId String
+  revisionId String
+  revision ControlledDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  sequence Int
+  requestId String @unique
+  requestHash String
+  operation String
+  result String?
+  actor String
+  identitySource String
+  decidedAt DateTime @default(now())
+  reason String @db.Text
+  oldState ControlledDocumentRevisionStatus
+  newState ControlledDocumentRevisionStatus
+  details Json
+  before Json
+  after Json
+  rectifiesId String?
+  rectifies ControlledRevisionDecision? @relation("DecisionCorrection", fields: [revisionId, rectifiesId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
+  corrections ControlledRevisionDecision[] @relation("DecisionCorrection")
+  evidence ControlledDecisionEvidence[]
+  @@unique([revisionId, id])
+  @@unique([revisionId, sequence])
+  @@index([documentId, revisionId, decidedAt])
+}
+
+model ControlledDecisionEvidence {
+  id String @id @default(uuid())
+  revisionId String
+  decisionId String
+  documentObjectId String
+  decision ControlledRevisionDecision @relation(fields: [revisionId, decisionId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
+  documentObject ControlledRevisionDocument @relation(fields: [revisionId, documentObjectId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
+  snapshot Json
+  @@unique([decisionId, documentObjectId])
 }
 
 // P1B-2: bounded staging; no original workbook binary.
