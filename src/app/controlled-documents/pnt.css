@@ -55,3 +55,33 @@
   .pnt-workspace .pnt-record-tabs a { padding: 9px 10px; }
   .pnt-workspace .pnt-pagination { justify-content: flex-start; }
 }
+
+
+/* P3C-2: operational documentary forms are readable at every supported width. */
+.pnt-workspace .pnt-inner-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.pnt-workspace .pnt-inner-grid > .full { grid-column: 1 / -1; }
+.pnt-workspace .pnt-inner-grid :is(input, select, textarea) { max-width: 100%; min-width: 0; }
+.pnt-workspace .pnt-inner-grid > :is(label, p, fieldset) { min-width: 0; overflow-wrap: anywhere; }
+.pnt-workspace .pnt-document-form { margin-top: 22px; }
+.pnt-workspace .pnt-document-form h4, .pnt-workspace .pnt-lifecycle-form h4 { margin: 0 0 14px; }
+.pnt-workspace .pnt-document-item { min-width: 0; margin-top: 12px; }
+.pnt-workspace .pnt-document-item .pnt-document-name { overflow-wrap: anywhere; font-weight: 700; }
+.pnt-workspace .pnt-technical-data { margin: 14px 0; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+.pnt-workspace .pnt-technical-data summary { cursor: pointer; font-weight: 650; }
+.pnt-workspace .pnt-technical-data dl { display: grid; grid-template-columns: minmax(100px, 170px) minmax(0, 1fr); gap: 9px 12px; }
+.pnt-workspace .pnt-technical-data dd { margin: 0; overflow-wrap: anywhere; }
+.pnt-workspace .pnt-evidence-fieldset { min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin: 14px 0; }
+.pnt-workspace .pnt-evidence-fieldset legend { font-weight: 700; padding: 0 5px; }
+.pnt-workspace .pnt-evidence-fieldset .pnt-check { margin: 8px 0; overflow-wrap: anywhere; }
+.pnt-workspace .pnt-lifecycle-form { margin-top: 18px; }
+.pnt-workspace .pnt-lifecycle-form > .field { max-width: 650px; }
+.pnt-workspace .pnt-lifecycle-form .pnt-inner-grid .pnt-check { align-items: flex-start; }
+.pnt-workspace .pnt-lifecycle-form .section-help { margin: 6px 0 14px; }
+.pnt-workspace .pnt-lifecycle-card { min-width: 0; }
+.pnt-workspace .pnt-lifecycle-card :is(p, pre, summary) { overflow-wrap: anywhere; white-space: pre-wrap; }
+.pnt-workspace .pnt-document-content { min-width: 0; }
+.pnt-workspace .pnt-document-content .pnt-document-item a { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .pnt-workspace .pnt-inner-grid { grid-template-columns: minmax(0, 1fr); }
+  .pnt-workspace .pnt-technical-data dl { grid-template-columns: minmax(0, 1fr); }
+}
