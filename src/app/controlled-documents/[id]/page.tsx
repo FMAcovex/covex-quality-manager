@@ -2,6 +2,9 @@ import { indexMetadata, importStates } from "@/modules/controlled-documents/impo
 import { RevisionDocuments } from "@/modules/controlled-documents/components/revision-documents";
 import { DocumentLink as Link } from "@/modules/controlled-documents/components/document-link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { documentPrincipal } from "@/modules/controlled-documents/documents/access";
+import { documentHistoryActions } from "@/modules/controlled-documents/documents/history";
 import { prisma } from "@/lib/db";
 import { administrativeLabels, revisionLabels, verificationLabels, displayDate } from "@/modules/controlled-documents/domain";
 export const dynamic = "force-dynamic";
@@ -23,7 +26,12 @@ export default async function DetailPage({ params, searchParams }: {
     const { id } = await params;
     const { tab: requestedTab } = await searchParams;
     const tab = requestedTab && ["information", "revisions", "documents", "history"].includes(requestedTab) ? requestedTab : "information";
-    const m = await prisma.controlledDocument.findUnique({ where: { id }, include: { revisions: { orderBy: { revisionCode: "desc" } }, changes: { orderBy: [{ changedAt: "desc" }, { id: "desc" }] } } });
+    let canReadDocumentHistory = false;
+    if (tab === "history") {
+        try { documentPrincipal(await headers()); canReadDocumentHistory = true; }
+        catch { /* Keep ordinary P1A/P1B history available; documentary history fails closed. */ }
+    }
+    const m = await prisma.controlledDocument.findUnique({ where: { id }, include: { revisions: { orderBy: { revisionCode: "desc" } }, changes: { where: canReadDocumentHistory ? {} : { action: { notIn: Object.values(documentHistoryActions) } }, orderBy: [{ changedAt: "desc" }, { id: "desc" }] } } });
     if (!m)
         notFound();
     return <section className="workspace"><Link href="/controlled-documents">Volver al listado</Link><h1>{m.baseCode || "Borrador PNT"} — {m.title || "Sin título"}</h1><p>{administrativeLabels[m.administrativeStatus]}</p>

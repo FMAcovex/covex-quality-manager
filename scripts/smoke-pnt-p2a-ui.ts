@@ -23,11 +23,21 @@ async function main() {
       assert.equal(await reader.getByRole("button", { name: "Añadir documento", exact: true }).count(), 0);
       const denied = await browser.newPage(); await denied.goto(`${base}/controlled-documents/${d.documentId}?tab=documents`);
       await denied.getByRole("alert").filter({ hasText: "Acceso documental no autorizado" }).waitFor(); assert.equal(await denied.getByRole("link", { name: "Descargar first.pdf", exact: true }).count(), 0);
+      const historyUrl = `${base}/controlled-documents/${d.documentId}?tab=history`;
+      await reader.goto(historyUrl);
+      await reader.getByRole("heading", { name: "Sustitución documental (original conservado)", exact: true }).waitFor();
+      assert.ok(await reader.getByRole("heading", { name: "Incorporación documental", exact: true }).count() > 0);
+      await reader.getByText("Copia corregida QA", { exact: true }).waitFor();
+      await denied.goto(historyUrl);
+      await denied.getByRole("heading", { name: "Historial operativo", exact: true }).waitFor();
+      await denied.getByText("Motivo ordinario QA", { exact: true }).waitFor();
+      const publicHistory = await denied.locator("body").innerText();
+      for (const text of ["Incorporación documental", "Sustitución documental (original conservado)", "Usuario de prueba documental", "Copia corregida QA", d.id, d.sha256!]) assert.equal(publicHistory.includes(text), false);
     } finally { await browser.close(); }
-    console.log("P2A reinicio real OK: binario original íntegro, descarga autenticada, solicitudes sin acceso/bad secret denegadas y lectura sin escritura en navegador.");
+    console.log("P2A reinicio real OK: binario íntegro, descarga autenticada y lectura sin escritura; historial documental completo con read, oculto sin acceso, historial ordinario disponible.");
     return;
   }
-  const master = await prisma.controlledDocument.create({ data: { title: "P2A navegador ficticio", createdByText: "P2A UI QA", revisions: { create: [{ revisionCode: "00", registeredByText: "P2A UI QA", status: "IMPORTED_PENDING", sourceMetadata: { synthetic: true, sheet: "GC-00(" } }, { revisionCode: "01", registeredByText: "P2A UI QA" }] } }, include: { revisions: { orderBy: { revisionCode: "desc" } } } });
+  const master = await prisma.controlledDocument.create({ data: { title: "P2A navegador ficticio", createdByText: "P2A UI QA", changes: { create: { action: "Edición ordinaria QA", changedByText: "Responsable ordinario QA", reason: "Motivo ordinario QA", newValue: { title: "Título ordinario QA" } } }, revisions: { create: [{ revisionCode: "00", registeredByText: "P2A UI QA", status: "IMPORTED_PENDING", sourceMetadata: { synthetic: true, sheet: "GC-00(" } }, { revisionCode: "01", registeredByText: "P2A UI QA" }] } }, include: { revisions: { orderBy: { revisionCode: "desc" } } } });
   const snapshot = JSON.stringify(master), r = master.revisions[1];
   const browser = await chromium.launch({ headless: true }), page = await browser.newPage(); page.setDefaultTimeout(20000);
   const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));

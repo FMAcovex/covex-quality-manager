@@ -3,6 +3,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { DocumentPrincipal, requireDocumentWrite } from "./access";
 import { externalReference, kind, originalName, uuid, validateDocumentFile } from "./domain";
+import { documentHistoryActions } from "./history";
 
 export const metadataSelection = {
   id: true, documentId: true, revisionId: true, originalName: true, kind: true, state: true,
@@ -47,7 +48,7 @@ export async function incorporateDocument(input: Incorporation, principal: Docum
       replacesId: input.replacesId || null, replacementReason: reason,
     }, select: metadataSelection });
     await tx.controlledDocumentChange.create({ data: { documentId: input.documentId, revisionId: revision.id,
-      action: input.replacesId ? "Sustitución documental (original conservado)" : "Incorporación documental",
+      action: input.replacesId ? documentHistoryActions.replacement : documentHistoryActions.incorporation,
       oldValue: input.replacesId ? { documentObjectId: input.replacesId } : Prisma.JsonNull,
       newValue: { documentObjectId: id, kind: type, sha256: object.sha256, originalName: name, identitySource: principal.source },
       changedByText: principal.name, reason: reason || "Incorporación sin aprobación ni modificación de estados o snapshots", source: "UI",
