@@ -1,5 +1,6 @@
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
+import { listAnnualPlans } from "@/modules/audits/plans";
 import { getAuditList, type AuditListFilters } from "@/modules/audits/queries";
 import { auditTypeLabels, auditScenarioLabels, auditStatusLabels, auditModalityLabels, auditQualityLabels, auditDate, auditSituation } from "@/modules/audits/domain";
 import { criticalityLabels, isTerminalAction } from "@/modules/audits/finding-domain";
@@ -14,13 +15,15 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
   const query = await searchParams;
   const filters: AuditListFilters = {};
   for (const key of ["year","type","scenario","department","status","modality","quality","criticality"] as const) filters[key] = queryList(query[key]);
-  for (const key of ["q","administrative","plannedFrom","plannedTo","performedFrom","performedTo","page","findings","pendingActions","relatedDeviation","relatedCapa","nextReviewFrom","nextReviewTo","review","report","signedPdf","situation"] as const) filters[key] = firstQueryValue(query[key]);
-  const {rows,departments,years,total,page,pages} = await getAuditList(filters);
+  for (const key of ["q","administrative","plannedFrom","plannedTo","performedFrom","performedTo","page","findings","pendingActions","relatedDeviation","relatedCapa","nextReviewFrom","nextReviewTo","review","report","signedPdf","situation","planning","planId"] as const) filters[key] = firstQueryValue(query[key]);
+  const [{rows,departments,years,total,page,pages},annualPlans] = await Promise.all([getAuditList(filters),listAnnualPlans()]);
   const options = (labels: Record<string,string>) => Object.entries(labels).map(([value,label]) => ({value,label}));
   const pageHref = (next: number) => { const params = new URLSearchParams(); Object.entries(query).forEach(([k,v]) => { if (k !== "page") (Array.isArray(v) ? v : v ? [v] : []).forEach(x => params.append(k,x)); }); params.set("page",String(next)); return `/audits?${params}`; };
-  return <section className="workspace audits-workspace"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Auditorías</h1><p>Expedientes, planificación, hallazgos y seguimiento.</p></div><div className="heading-actions"><Link className="button primary" href="/audits/new">+ Nueva auditoría</Link><ColumnSelector tableId="audit-list-table" storageKey="qms.columns.audits" columns={auditColumns}/></div></div>
+  return <section className="workspace audits-workspace"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Auditorías</h1><p>Expedientes, planificación, hallazgos y seguimiento.</p></div><div className="heading-actions"><Link className="button" href="/audits/plans">Planes anuales</Link><Link className="button primary" href="/audits/new">+ Nueva auditoría</Link><ColumnSelector tableId="audit-list-table" storageKey="qms.columns.audits" columns={auditColumns}/></div></div>
     <form method="get" className="toolbar-form"><div className="filter-panel operational">
       <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
+      <label className="filter-placeholder"><span>Planificación</span><select name="planning" defaultValue={filters.planning??""}><option value="">Todas</option><option value="PLANNED">En plan anual</option><option value="OUT_OF_PLAN">Fuera de plan</option><option value="UNCLASSIFIED">Pendiente de clasificación</option></select></label>
+      <label className="filter-placeholder"><span>Plan anual</span><select name="planId" defaultValue={filters.planId??""}><option value="">Todos los planes</option>{annualPlans.map(p=><option key={p.id} value={p.id}>{p.year} · {p.auditType==="INTERNAL"?"Interno":"Externo"} · {p.title}</option>)}</select></label>
       <MultiSelectFilter name="year" label="Año" selected={filters.year ?? []} options={years.map(y => ({value:String(y),label:String(y)}))}/>
       <MultiSelectFilter name="type" label="Tipo" selected={filters.type ?? []} options={options(auditTypeLabels)}/>
       <MultiSelectFilter name="scenario" label="Escenario" selected={filters.scenario ?? []} options={options(auditScenarioLabels)}/>
