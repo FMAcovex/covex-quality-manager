@@ -9,11 +9,14 @@ import { auditTypeLabels, auditScenarioLabels, auditStatusLabels, auditModalityL
 export type AuditListFilters = {
   review?: string; report?: string; signedPdf?: string; situation?: string;
   findings?: string; criticality?: string[]; pendingActions?: string; relatedDeviation?: string; relatedCapa?: string; nextReviewFrom?: string; nextReviewTo?: string;
+  planning?: string; planId?: string;
   q?: string; administrative?: string; year?: string[]; type?: string[]; scenario?: string[]; department?: string[]; status?: string[]; modality?: string[]; quality?: string[];
   plannedFrom?: string; plannedTo?: string; performedFrom?: string; performedTo?: string; page?: string;
 };
 export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInput {
   const and: Prisma.AuditWhereInput[] = [];
+  if(filters.planning==="PLANNED"||filters.planning==="OUT_OF_PLAN"||filters.planning==="UNCLASSIFIED")and.push({planningStatus:filters.planning});
+  if(filters.planId)and.push({planEntry:{planId:filters.planId}});
   if (filters.administrative === "ANNULLED") and.push({ qmsRecord: { isActive: false } });
   else if (filters.administrative !== "ALL") and.push({ qmsRecord: { isActive: true } });
   const review = reviewListWhere(filters.review); if (review) and.push({qmsRecord:review});
@@ -74,7 +77,7 @@ export async function getAuditList(filters: AuditListFilters) {
     const total = await tx.audit.count({ where });
     const page = Math.min(Math.max(1, Number(filters.page) || 1), Math.max(1, Math.ceil(total / pageSize)));
     const [rows, departments, years] = await Promise.all([
-      tx.audit.findMany({ where, include: { findings: { where: { isActive: true }, select: { isActive: true, findingType: true, criticality: true, treatment: true, treatmentStatus: true, actions: { where: { isActive: true }, select: { isActive: true, status: true } } } }, followups: { orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }, { id: "desc" }], take: 1, select: { nextReviewDate: true } }, qmsRecord: { include: { versions: { orderBy: {sequenceNumber:"desc"}, take:1, select:{sequenceNumber:true,documents:{where:{kind:"SIGNED_PDF"},select:{id:true}}} }, _count: { select: { sourceRelations: { where: { isActive: true } } } } } }, departments: { where: { isActive: true } }, participants: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } }, orderBy: [{ createdAt: "desc" }, { id: "asc" }], skip: (Math.floor(page) - 1) * pageSize, take: pageSize }),
+      tx.audit.findMany({ where, include: { findings: { where: { isActive: true }, select: { isActive: true, findingType: true, criticality: true, treatment: true, treatmentStatus: true, actions: { where: { isActive: true }, select: { isActive: true, status: true } } } }, followups: { orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }, { id: "desc" }], take: 1, select: { nextReviewDate: true } }, qmsRecord: { include: { versions: { orderBy: {sequenceNumber:"desc"}, take:1, select:{sequenceNumber:true,documents:{where:{kind:"SIGNED_PDF"},select:{id:true}}} }, _count: { select: { sourceRelations: { where: { isActive: true } } } } } }, planEntry:{include:{plan:true}}, departments: { where: { isActive: true } }, participants: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } }, orderBy: [{ createdAt: "desc" }, { id: "asc" }], skip: (Math.floor(page) - 1) * pageSize, take: pageSize }),
       tx.department.findMany({ orderBy: { code: "asc" } }),
       tx.qmsRecord.findMany({ where: { recordType: "AUDIT", year: { not: null } }, distinct: ["year"], select: { year: true }, orderBy: { year: "desc" } }),
     ]);

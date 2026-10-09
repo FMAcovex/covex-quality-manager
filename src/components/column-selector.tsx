@@ -81,7 +81,10 @@ export function ColumnSelector({
             <strong>Columnas visibles</strong>
             <span>Solo cambia tu vista. No modifica el expediente ni los anexos.</span>
           </div>
-          <button className="link-button" type="button" onClick={reset}>Restablecer</button>
+          <div className="column-popover-actions">
+            <button className="link-button" type="button" onClick={reset}>Restablecer</button>
+            <button className="link-button" type="button" onClick={(event) => event.currentTarget.closest("details")?.removeAttribute("open")}>Cerrar</button>
+          </div>
         </div>
         <div className="column-options">
           {columns.map((column) => (

@@ -408,6 +408,7 @@ model Department {
   controlledDocuments ControlledDocument[]
   auditDepartments AuditDepartment[]
   codingAudits Audit[] @relation("AuditCodingDepartment")
+  auditPlanEntries AuditPlanEntry[]
   deviations Deviation[]
   capas      Capa[]
   changeControls ChangeControl[]
@@ -1470,6 +1471,12 @@ enum AuditStatus {
   CLOSED
 }
 
+enum AuditPlanningStatus {
+  UNCLASSIFIED
+  PLANNED
+  OUT_OF_PLAN
+}
+
 enum AuditModality {
   ONSITE
   REMOTE
@@ -1517,6 +1524,10 @@ model Audit {
   auditType                    AuditType?
   scenario                     AuditScenario?
   status                       AuditStatus        @default(DRAFT)
+  planningStatus               AuditPlanningStatus @default(UNCLASSIFIED)
+  outsidePlanReason            String?            @db.Text
+  planEntryId                  String?            @unique
+  planEntry                    AuditPlanEntry?    @relation(fields: [planEntryId], references: [id], onDelete: Restrict)
   title                        String?            @db.Text
   scope                        String?            @db.Text
   referenceText                String?            @db.Text
@@ -1549,6 +1560,59 @@ model Audit {
   @@index([auditType, plannedDate])
   @@index([performedDate])
   @@index([scenario])
+}
+
+model AuditAnnualPlan {
+  id            String         @id @default(uuid())
+  year          Int
+  auditType     AuditType
+  title         String
+  notes         String?        @db.Text
+  createdByText String
+  updatedByText String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  entries       AuditPlanEntry[]
+  changes       AuditPlanChange[]
+
+  @@unique([year, auditType])
+  @@index([auditType, year])
+}
+
+model AuditPlanEntry {
+  id             String         @id @default(uuid())
+  planId         String
+  plan           AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  subject        String         @db.Text
+  targetName     String?
+  departmentId   String?
+  department     Department?    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  plannedDate    DateTime?      @db.Date
+  notes          String?        @db.Text
+  sortOrder      Int            @default(0)
+  isActive       Boolean        @default(true)
+  createdByText  String
+  updatedByText  String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  audit          Audit?
+
+  @@index([planId, isActive, sortOrder])
+}
+
+model AuditPlanChange {
+  id          String         @id @default(uuid())
+  planId      String
+  plan        AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  entryId     String?
+  event       String
+  oldValue    Json?
+  newValue    Json?
+  actor       String
+  reason      String         @db.Text
+  createdAt   DateTime       @default(now())
+
+  @@index([planId, createdAt])
 }
 
 model AuditDepartment {

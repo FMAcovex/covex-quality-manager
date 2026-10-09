@@ -8,6 +8,9 @@ const auditBaseSchema = z.object({
   auditType: optionalEnum(["INTERNAL", "EXTERNAL"]),
   scenario: optionalEnum(["INTERNAL_COVEX", "INTERNAL_CONTRACTED", "SUPPLIER", "CLIENT", "AUTHORITY"]),
   status: z.enum(["DRAFT", "OPEN", "CLOSED"]).default("DRAFT"),
+  planningStatus: z.enum(["UNCLASSIFIED","PLANNED","OUT_OF_PLAN"]).default("UNCLASSIFIED"),
+  planEntryId: z.string().uuid().or(z.literal("")).default(""),
+  outsidePlanReason: text,
   title: text, scope: text, referenceText: text, externalReference: text,
   auditedEntityName: text, auditedEntityAddress: text, auditingEntityName: text,
   entityCode: z.string().trim().toUpperCase().max(40).default(""),
@@ -29,6 +32,9 @@ export const auditInputSchema = auditBaseSchema.superRefine((v, ctx) => {
   const add = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
   if (!compatibleAuditScenario(v.auditType || null, v.scenario || null)) add("scenario", "El escenario no corresponde al tipo de auditoría.");
   if (v.status === "CLOSED") add("status", "Confirma el cierre definitivo desde Informe y cierre, después de verificar sus condiciones.");
+  if (v.planningStatus === "PLANNED" && !v.planEntryId) add("planEntryId","Selecciona una entrada del plan anual.");
+  if (v.planningStatus !== "PLANNED" && v.planEntryId) add("planEntryId","Solo las auditorías planificadas se vinculan al plan.");
+  if (v.planningStatus !== "OUT_OF_PLAN" && v.outsidePlanReason) add("outsidePlanReason","El motivo solo corresponde a auditorías fuera de plan.");
   if (new Set(v.departmentIds).size !== v.departmentIds.length) add("departmentIds", "No repitas departamentos.");
   const ids = v.participants.flatMap(p => p.id ? [p.id] : []);
   if (new Set(ids).size !== ids.length) add("participants", "No repitas el UUID de un participante.");

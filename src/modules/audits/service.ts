@@ -31,6 +31,18 @@ export async function saveAudit(raw: unknown, id?: string) {
       }
       if (v.businessCode !== (before.qmsRecord.businessCode ?? "")) throw new AuditValidationError({ businessCode: "El código operativo no se puede modificar." });
     }
+    let selectedPlan: {id:string;year:number;auditType:import("@prisma/client").AuditType;plannedDate:Date|null;isActive:boolean;audit:{id:string}|null}|null=null;
+    if(v.planningStatus === "PLANNED"){
+      const entry=await tx.auditPlanEntry.findUnique({where:{id:v.planEntryId},include:{plan:true,audit:{select:{id:true}}}});
+      if(!entry||!entry.isActive)throw new AuditValidationError({planEntryId:"La entrada del plan anual no está disponible."});
+      if(!v.auditType||entry.plan.auditType!==v.auditType)throw new AuditValidationError({planEntryId:"El tipo de auditoría no corresponde al plan anual."});
+      if(entry.audit&&entry.audit.id!==id)throw new AuditValidationError({planEntryId:"Esta entrada ya tiene otra auditoría vinculada."});
+      selectedPlan={id:entry.id,year:entry.plan.year,auditType:entry.plan.auditType,plannedDate:entry.plannedDate,isActive:entry.isActive,audit:entry.audit};
+    }
+    if(before?.planEntryId&&before.planEntryId!==selectedPlan?.id){
+      if(!v.changeReason.trim())throw new AuditValidationError({changeReason:"Justifica el cambio de clasificación o de plan."});
+    }
+    if(before&&before.planningStatus!==v.planningStatus&&!v.changeReason.trim())throw new AuditValidationError({changeReason:"Indica el motivo de la reclasificación."});
     const oldDepartments = new Map(before?.departments.map(d => [d.departmentId, d]) ?? []);
     const departments = await tx.department.findMany({ where: { id: { in: v.departmentIds } } });
     if (departments.length !== v.departmentIds.length || departments.some(d => !d.isActive && !oldDepartments.get(d.id)?.isActive)) throw new AuditValidationError({ departmentIds: "Selecciona departamentos existentes y activos; los históricos seleccionados se conservan." });
@@ -51,6 +63,7 @@ export async function saveAudit(raw: unknown, id?: string) {
     const openedAt = date(v.openedAt) ?? (v.status === "OPEN" ? (before?.openedAt ?? new Date(new Date().toISOString().slice(0, 10))) : null);
     const data = {
       auditType: v.auditType || null, scenario: v.scenario || null, status: v.status,
+      planningStatus:v.planningStatus,planEntryId:selectedPlan?.id??null,outsidePlanReason:v.planningStatus==="OUT_OF_PLAN"?nullable(v.outsidePlanReason):null,
       title: nullable(v.title), scope: nullable(v.scope), referenceText: nullable(v.referenceText), externalReference: nullable(v.externalReference),
       auditedEntityName: nullable(v.auditedEntityName), auditedEntityAddress: nullable(v.auditedEntityAddress), auditingEntityName: nullable(v.auditingEntityName), entityCode: nullable(v.entityCode),
       codingDepartmentId: coding?.id ?? null,
@@ -78,6 +91,11 @@ export async function saveAudit(raw: unknown, id?: string) {
       if (field === "updatedByText") continue;
       if (JSON.stringify(before[field]) !== JSON.stringify(after[field])) await event(`audit.${field}`, before[field], after[field], v.changeReason || (field === "status" ? "Apertura de auditoría" : "Edición del expediente base"));
     }
+    if((before?.planEntryId??null)!==(selectedPlan?.id??null)||before?.planningStatus!==v.planningStatus){
+      const changedPlans=[before?.planEntryId,selectedPlan?.id].filter((v):v is string=>Boolean(v));
+      const planRows=changedPlans.length?await tx.auditPlanEntry.findMany({where:{id:{in:changedPlans}},select:{planId:true}}):[];
+      for(const planId of [...new Set(planRows.map(x=>x.planId))])await tx.auditPlanChange.create({data:{planId,event:"AUDIT_CLASSIFICATION",actor:v.actor,reason:v.changeReason||"Asignación inicial de auditoría",oldValue:json({auditId:before?.id??null,planningStatus:before?.planningStatus??null,planEntryId:before?.planEntryId??null}),newValue:json({auditId:audit.id,planningStatus:v.planningStatus,planEntryId:selectedPlan?.id??null})}});
+    }
     if ((before?.qmsRecord.businessCode ?? null) !== businessCode) await event("businessCode", before?.qmsRecord.businessCode ?? null, businessCode, "Asignación de codificación");
     for (const child of ["departments", "participants"] as const) {
       const project = (rows: typeof after[typeof child]) => rows.filter(r => r.isActive).map(r => {
@@ -94,6 +112,7 @@ export function auditDefaults(audit: Awaited<ReturnType<typeof saveAudit>>): Aud
   const day = (v: Date | null) => v?.toISOString().slice(0, 10) ?? "";
   return {
     auditType: audit.auditType ?? "", scenario: audit.scenario ?? "", status: audit.status,
+    planningStatus:audit.planningStatus,planEntryId:audit.planEntryId??"",outsidePlanReason:audit.outsidePlanReason??"",
     title: audit.title ?? "", scope: audit.scope ?? "", referenceText: audit.referenceText ?? "", externalReference: audit.externalReference ?? "",
     auditedEntityName: audit.auditedEntityName ?? "", auditedEntityAddress: audit.auditedEntityAddress ?? "", auditingEntityName: audit.auditingEntityName ?? "", entityCode: audit.entityCode ?? "",
     codingDepartmentId: audit.codingDepartmentId ?? "", departmentIds: audit.departments.filter(d => d.isActive).map(d => d.departmentId),
