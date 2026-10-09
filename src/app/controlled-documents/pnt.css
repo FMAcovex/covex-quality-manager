@@ -85,3 +85,15 @@
   .pnt-workspace .pnt-inner-grid { grid-template-columns: minmax(0, 1fr); }
   .pnt-workspace .pnt-technical-data dl { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Manual documentary state, always accessible from the record detail. */
+.pnt-workspace .pnt-manual-panel { margin-bottom: 18px; }
+.pnt-workspace .pnt-manual-revision + .pnt-manual-revision { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+.pnt-workspace .pnt-manual-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
+.pnt-workspace .pnt-manual-status { min-width: 0; max-width: 100%; }
+.pnt-workspace .pnt-manual-status-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 12px; }
+.pnt-workspace .pnt-manual-status-row > label { min-width: 0; }
+.pnt-workspace .pnt-manual-status > .field { max-width: 850px; }
+@media (max-width: 760px) {
+  .pnt-workspace .pnt-manual-status-row { grid-template-columns: minmax(0, 1fr); }
+}
