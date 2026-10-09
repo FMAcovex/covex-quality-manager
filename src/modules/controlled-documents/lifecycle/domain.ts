@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ControlledDocumentRevisionStatus as State } from "@prisma/client";
+import type { ControlledDocument, ControlledDocumentRevision, ControlledDocumentRevisionStatus as State } from "@prisma/client";
 import type { LifecyclePermission } from "./access";
 import { documentHistoryActions } from "../documents/history";
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v => Number.isFinite(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v, "Fecha inválida.");
@@ -22,6 +22,17 @@ export const permissions: Record<LifecycleCommand["operation"], LifecyclePermiss
   PLAN: "accept-approval", ACTIVATE: "activate", RETIRE: "retire", ANNUL: "retire", RECTIFY: "correct",
 };
 export const lifecycleHistoryActions = { decision: documentHistoryActions.lifecycle } as const;
+export function assertActivationIdentity(
+  master: Pick<ControlledDocument, "baseCode" | "title" | "departmentCodeSnapshot" | "departmentNameSnapshot">,
+  revision: Pick<ControlledDocumentRevision, "baseCodeSnapshot" | "titleSnapshot" | "departmentCodeSnapshot" | "departmentNameSnapshot">,
+) {
+  if (master.baseCode !== revision.baseCodeSnapshot) throw new Error("El código del maestro no coincide con el código congelado de la revisión.");
+  if (master.title !== revision.titleSnapshot) throw new Error("El título del maestro no coincide con el título congelado de la revisión.");
+  // Compare stored documentary identity, not the current catalog name: catalog changes
+  // must not retrospectively reinterpret snapshots or block a legitimate successor.
+  if (master.departmentCodeSnapshot !== revision.departmentCodeSnapshot || master.departmentNameSnapshot !== revision.departmentNameSnapshot)
+    throw new Error("El departamento del maestro no coincide con el departamento congelado de la revisión.");
+}
 export function assertTransition(operation: LifecycleCommand["operation"], state: State, role?: string) {
   const allowed: Record<LifecycleCommand["operation"], State[]> = {
     VERIFY: ["IMPORTED_PENDING", "DRAFT", "IN_REVIEW"], REGISTER_EXTERNAL: role === "APPROVAL" ? ["PENDING_APPROVAL"] : ["IN_REVIEW"],

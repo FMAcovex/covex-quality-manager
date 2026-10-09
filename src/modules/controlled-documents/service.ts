@@ -30,7 +30,7 @@ export async function saveMaster(v: MasterInput, id?: string, db: PrismaClient =
     return db.$transaction(async (tx) => {
         if (id)
             await tx.$queryRaw `SELECT id FROM "ControlledDocument" WHERE id = ${id} FOR UPDATE`;
-        const old = id ? await tx.controlledDocument.findUniqueOrThrow({ where: { id }, include: { revisions: true } }) : null;
+        const old = id ? await tx.controlledDocument.findUniqueOrThrow({ where: { id }, include: { revisions: { include: { lifecycle: true } } } }) : null;
         if (old?.administrativeStatus === "ANNULLED")
             throw new Error("El maestro anulado no admite cambios.");
         if (old && old.updatedAt.toISOString() !== v.updatedAt)
@@ -41,6 +41,8 @@ export async function saveMaster(v: MasterInput, id?: string, db: PrismaClient =
             throw new Error("El código de un maestro registrado es permanente.");
         if (old?.revisions.some(r => r.consolidatedAt) && old.baseCode !== v.baseCode)
             throw new Error("El código con revisiones consolidadas es permanente.");
+        if (old?.revisions.some(r => r.lifecycle) && old.baseCode !== v.baseCode)
+            throw new Error("El código con revisiones gestionadas por P2B es permanente.");
         const department = v.departmentId ? await tx.department.findUnique({ where: { id: v.departmentId } }) : null;
         if (v.departmentId && !department)
             throw new Error("El departamento no existe.");
