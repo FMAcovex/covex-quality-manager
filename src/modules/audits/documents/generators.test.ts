@@ -12,6 +12,23 @@ describe('Generadores de Auditorías sobre plantilla',()=>{
  it('exige información suficiente para el Plan y rechaza escenario interno',()=>{expect(()=>generateAuditExternalPlan(syntheticAuditPlan(),snapshot())).toThrow(/solo aplica/);const s=snapshot(true);s.audit.activityDuration=null;expect(()=>generateAuditExternalPlan(syntheticAuditPlan(),s)).toThrow(/Completa/);});
  it('CAPA Plan distingue estado actual y versión formal sin escribir fórmulas',()=>{for(const sequence of [null,0,1]){const xml=getZipEntryText(readZip(generateAuditCapaPlan(syntheticAuditCapaPlan(),snapshot(),sequence)),'xl/worksheets/sheet1.xml');expect(xml).toContain(sequence===null?'Estado actual':String(sequence).padStart(2,'0'));expect(xml).not.toContain('<f>');}});
  it('rellena celdas autocerradas sin consumir las etiquetas fijas adyacentes',()=>{const entries=readZip(syntheticAuditCapaPlan());let sheet=getZipEntryText(entries,'xl/worksheets/sheet1.xml');sheet=sheet.replace(/<c r="F5"[^>]*>[\s\S]*?<\/c>/,'<c r="F5" s="0"/>').replace(/<c r="G5"[^>]*>[\s\S]*?<\/c>/,'<c r="G5" t="inlineStr"><is><t>Fecha de auditoría</t></is></c>');updateZipEntry(entries,'xl/worksheets/sheet1.xml',sheet);const output=getZipEntryText(readZip(generateAuditCapaPlan(writeZip(entries),snapshot(),0)),'xl/worksheets/sheet1.xml');expect(output).toContain('Fecha de auditoría');expect(output).not.toContain('/ t="');expect(output).toContain('<cols>');expect(output).toContain('</cols>');expect(output).toContain('<col min=');});
+ it('escribe celdas omitidas en el XLSX sin perder estilos ni etiquetas vecinas',()=>{
+  const entries=readZip(syntheticAuditCapaPlan());
+  let sheet=getZipEntryText(entries,'xl/worksheets/sheet1.xml');
+  sheet=sheet.replace(/<c r="C5"[^>]*>[\s\S]*?<\/c>/,'').replace(/<c r="D11"[^>]*>[\s\S]*?<\/c>/,'');
+  updateZipEntry(entries,'xl/worksheets/sheet1.xml',sheet);
+  const s=snapshot();s.audit.findings=[{id:'fake',reference:'OBS 01',findingType:'FINDING',criticality:'MAJOR',isActive:true,description:'Hallazgo disperso',treatmentStatus:'OPEN',actions:[],relations:[]} as unknown as typeof s.audit.findings[number]];
+  const output=getZipEntryText(readZip(generateAuditCapaPlan(writeZip(entries),s,0)),'xl/worksheets/sheet1.xml');
+  expect(output).toContain('r="C5"');expect(output).toContain('r="D11"');expect(output).toContain('Hallazgo disperso');
+  expect(output).toContain('AI/GC-00/01/2026');
+ });
+ it('rechaza escritura sobre celda no inicial de un rango combinado',()=>{
+  const entries=readZip(syntheticAuditCapaPlan());
+  let sheet=getZipEntryText(entries,'xl/worksheets/sheet1.xml');
+  sheet=sheet.replace(/<c r="C5"[^>]*>[\s\S]*?<\/c>/,'').replace('</worksheet>','<mergeCells count="1"><mergeCell ref="B5:D5"/></mergeCells></worksheet>');
+  updateZipEntry(entries,'xl/worksheets/sheet1.xml',sheet);
+  expect(()=>generateAuditCapaPlan(writeZip(entries),snapshot(),0)).toThrow(/combinada/);
+ });
  it('expande más de diez filas conservando el bloque posterior',()=>{const s=snapshot();s.audit.findings=Array.from({length:14},(_,i)=>({id:`uuid-${i}`,reference:`OBS ${i+1}`,findingType:'FINDING',criticality:'MINOR',isActive:true,description:'Ficticio',treatmentStatus:'OPEN',actions:[],relations:[]} as unknown as typeof s.audit.findings[number]));const xml=getZipEntryText(readZip(generateAuditCapaPlan(syntheticAuditCapaPlan(),s,0)),'xl/worksheets/sheet1.xml');expect(xml).toContain('OBS 14');expect(xml).toContain('r="31"');const refs=[...xml.matchAll(/<row\b[^>]*\br="(\d+)"/g)].map(m=>Number(m[1]));expect(refs).toEqual([...refs].sort((a,b)=>a-b));expect(new Set(refs).size).toEqual(refs.length);});
  it('permite altura automática en filas cumplimentadas para no solapar textos largos',()=>{
   const entries=readZip(syntheticAuditCapaPlan());let sheet=getZipEntryText(entries,'xl/worksheets/sheet1.xml');
