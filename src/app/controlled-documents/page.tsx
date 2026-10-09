@@ -24,7 +24,7 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
    ["revision","Revisión"], ["status","Estado documental"], ["effectiveFrom","Fecha de vigencia"], ["reviewDueAt","Próxima revisión"],
  ];
  return <section className="workspace pnt-workspace pnt-p3c4">
-  <header className="page-heading pnt-hero"><div><p className="eyebrow">GESTIÓN DOCUMENTAL · PNT</p><h1>Biblioteca de procedimientos</h1><p className="muted-note">Consulta de revisiones, estados, fechas y documentos controlados.</p></div><div className="heading-actions"><Link className="button primary" href="/controlled-documents/new">Nuevo PNT</Link><Link className="button" href="/controlled-documents/import-index">Importar índice</Link></div></header>
+  <header className="page-heading pnt-hero"><div><p className="eyebrow">GESTIÓN DOCUMENTAL · PNT</p><h1>Biblioteca de procedimientos</h1><p className="muted-note">Consulta de revisiones, estados, fechas y documentos controlados.</p></div><div className="heading-actions"><Link className="button primary" href="/controlled-documents/new">Nuevo PNT</Link><Link className="button" href="/controlled-documents/import-index">Importar índice maestro</Link></div></header>
   <div className="pnt-summary" aria-label="Resumen del listado">
     <div><span>Procedimientos</span><strong>{result.masterCount}</strong></div>
     <div><span>Revisiones</span><strong>{result.revisionCount}</strong></div>
