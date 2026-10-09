@@ -10,8 +10,13 @@ async function navigate(page:Page,path:string){
   await page.waitForLoadState("networkidle");
 }
 async function submitAndWait(page:Page,label:string,expected:RegExp){
+  const completedAction=page.waitForResponse(response=>response.request().method()==="POST"&&Boolean(response.request().headers()["next-action"]),{timeout:25000});
   await page.getByRole("button",{name:label,exact:true}).click();
+  const result=await completedAction;
+  assert(result.ok(),`La acción ${label} devolvió HTTP ${result.status()}`);
   await page.waitForURL(expected,{timeout:25000});
+  await page.waitForLoadState("networkidle");
+  await page.reload();
   await page.waitForLoadState("networkidle");
 }
 async function main(){
