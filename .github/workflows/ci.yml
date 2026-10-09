@@ -241,6 +241,7 @@ jobs:
           P2A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2a:ui:smoke
           P2B_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2b:ui:smoke
           P2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2c:ui:smoke
+          P3C1_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p3c1:ui:smoke
           # Restart the application with a synthetic authenticated gateway configuration.
           kill "$pnt_server_pid"
           wait "$pnt_server_pid" || true

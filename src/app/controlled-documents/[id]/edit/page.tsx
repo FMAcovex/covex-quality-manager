@@ -12,5 +12,5 @@ export default async function EditPage({ params }: {
     const [master, departments] = await Promise.all([prisma.controlledDocument.findUnique({ where: { id } }), prisma.department.findMany({ orderBy: { code: "asc" } })]);
     if (!master || master.administrativeStatus === "ANNULLED")
         notFound();
-    return <section className="workspace"><Link href={`/controlled-documents/${id}`}>Volver a la ficha</Link><h1>Editar maestro PNT</h1><DocumentForm master={master} departments={departments}/></section>;
+    return <section className="workspace form-page pnt-workspace"><header className="page-heading"><div><p className="eyebrow">Gestión documental · PNT</p><h1>Editar maestro PNT</h1></div><Link className="button" href={`/controlled-documents/${id}`}>Volver a la ficha</Link></header><DocumentForm master={master} departments={departments}/></section>;
 }

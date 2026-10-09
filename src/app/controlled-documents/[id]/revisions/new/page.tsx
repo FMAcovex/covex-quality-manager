@@ -12,5 +12,5 @@ export default async function RevisionPage({ params }: {
     const master = await prisma.controlledDocument.findUnique({ where: { id }, include: { revisions: { orderBy: { revisionCode: "desc" } } } });
     if (!master || master.administrativeStatus !== "ACTIVE")
         notFound();
-    return <section className="workspace"><Link href={`/controlled-documents/${id}`}>Volver a la ficha</Link><h1>Añadir revisión de {master.baseCode}</h1><DocumentForm master={master} departments={[]} revisions={master.revisions} revisionOnly/></section>;
+    return <section className="workspace form-page pnt-workspace"><header className="page-heading"><div><p className="eyebrow">Gestión documental · PNT</p><h1>Añadir revisión de {master.baseCode}</h1></div><Link className="button" href={`/controlled-documents/${id}`}>Volver a la ficha</Link></header><DocumentForm master={master} departments={[]} revisions={master.revisions} revisionOnly/></section>;
 }
