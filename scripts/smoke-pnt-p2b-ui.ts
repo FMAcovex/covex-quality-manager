@@ -15,7 +15,7 @@ async function main() {
       const reader = await browser.newPage({ extraHTTPHeaders: h }), denied = await browser.newPage();
       await reader.goto(`${base}/controlled-documents/${m.id}?tab=verification`); await reader.getByRole("heading", { name: "Verificación y aprobaciones", exact: true }).waitFor();
       for (const detail of await reader.locator("article[data-lifecycle-revision] > details").all()) await detail.locator(":scope > summary").click();
-      assert.ok((await reader.locator("body").innerText()).includes("Persona aprobación UI")); assert.equal(await reader.getByRole("button", { name: "Registrar decisión explícita" }).count(), 0);
+      assert.ok((await reader.locator("body").innerText()).includes("Persona aprobación UI")); assert.equal(await reader.locator(".pnt-lifecycle-form button").count(), 0);
       await denied.goto(`${base}/controlled-documents/${m.id}?tab=verification`); await denied.getByRole("alert").filter({ hasText: "Acceso documental no autorizado" }).waitFor();
       assert.equal((await denied.content()).includes("Persona aprobación UI"), false);
       await denied.goto(`${base}/controlled-documents/${m.id}?tab=history`); await denied.getByRole("heading", { name: "Historial operativo" }).waitFor();
@@ -27,7 +27,7 @@ async function main() {
       const writeOnly = await browser.newPage({ extraHTTPHeaders: { ...h, "x-pnt-permissions": "read,write" } });
       await writeOnly.goto(`${base}/controlled-documents/${m.id}?tab=verification`);
       await writeOnly.getByText("Sin operaciones autorizadas en este estado.", { exact: true }).waitFor();
-      assert.equal(await writeOnly.getByRole("button", { name: "Registrar decisión explícita" }).count(), 0);
+      assert.equal(await writeOnly.locator(".pnt-lifecycle-form button").count(), 0);
       const decision = m.revisions[0].decisions[0], d = decision.details as Record<string, unknown>;
       const payload = { ...d, requestId: randomUUID() };
       assert.equal((await writeOnly.request.post(`${base}/api/controlled-documents/${m.id}/revisions/${m.revisions[0].id}/lifecycle`, { headers: { origin: base }, data: payload })).ok(), false);
@@ -48,13 +48,21 @@ async function main() {
     const response = await fetch(`${base}/api/controlled-documents/${m.id}/revisions/${r.id}/documents`, { method: "POST", headers: { origin: base }, body: fd }); assert.equal(response.status, 201);
     await page.goto(url); const article = page.locator(`article[data-lifecycle-revision="${r.id}"]`);
     await article.getByText(/Estado declarado por el índice:/).waitFor(); await article.getByText(/Falta contraste documental favorable/).waitFor();
+    // Regression for the manual failure: submitting without a checked evidence
+    // must show a clear field-level instruction and must not send a decision.
+    const decisionsBefore = await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } });
+    await article.locator('textarea[name="reason"]').fill("Prueba sin evidencia");
+    await article.locator('textarea[name="notes"]').fill("Validación sintética");
+    await article.locator(".pnt-lifecycle-form button").click();
+    await article.getByRole("alert").filter({ hasText: "Seleccione al menos un documento" }).waitFor();
+    assert.equal(await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } }), decisionsBefore);
     async function submit(operation: string, fill?: () => Promise<void>) {
       await article.getByLabel("Operación", { exact: true }).selectOption(operation);
       await article.locator('input[name="evidenceIds"]').check(); await article.locator('textarea[name="reason"]').fill("Motivo humano sintético UI"); await article.locator('textarea[name="notes"]').fill("Contraste humano UI según evidencia concreta; no firma electrónica");
       if (fill) await fill();
       const responsePromise = page.waitForResponse(res => res.url().endsWith(`/revisions/${r.id}/lifecycle`) && res.request().method() === "POST");
       const navigation = page.waitForNavigation({ waitUntil: "domcontentloaded" });
-      await article.getByRole("button", { name: "Registrar decisión explícita" }).click(); const res = await responsePromise;
+      await article.locator(".pnt-lifecycle-form button").click(); const res = await responsePromise;
       if (res.status() !== 201) throw new Error(`P2B UI decisión: ${await res.text()}`);
       await navigation; await article.getByLabel("Operación", { exact: true }).waitFor();
       return (await prisma.controlledRevisionDecision.findFirstOrThrow({ where: { revisionId: r.id }, orderBy: { sequence: "desc" } })).id;

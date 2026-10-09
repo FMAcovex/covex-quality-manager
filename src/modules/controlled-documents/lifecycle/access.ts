@@ -1,5 +1,5 @@
 import { documentPrincipal, type DocumentPrincipal } from "../documents/access";
-export const lifecyclePermissions = ["verify", "record-approval", "accept-approval", "activate", "retire", "correct", "legacy-register"] as const;
+export const lifecyclePermissions = ["verify", "record-approval", "accept-approval", "activate", "retire", "correct", "legacy-register", "manage-state"] as const;
 export type LifecyclePermission = typeof lifecyclePermissions[number];
 export type LifecyclePrincipal = DocumentPrincipal & { capabilities: string[] };
 export function lifecyclePrincipal(headers: Pick<Headers, "get">, env: Record<string, string | undefined> = process.env): LifecyclePrincipal {
