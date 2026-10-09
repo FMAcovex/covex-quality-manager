@@ -99,13 +99,50 @@ export function auditCapaPlanRows(s: AuditReportSnapshot) {
     return [f.reference,findingTypeLabels[f.findingType],f.description,criticalityLabels[f.criticality],codes.join("; "),[f.treatment,...actions.map(a=>a.description)].filter(Boolean).join("\n"),actions.map(a=>a.responsible).filter(Boolean).join("\n"),actions.map(a=>a.targetDate ? auditDate(a.targetDate):"").join("\n"),actions.length ? actions.map(a=>actionStatusLabels[a.status]).join("\n") : actionStatusLabels[f.treatmentStatus],actions.length ? actions.map(a=>a.closedAt?auditDate(a.closedAt):"").join("\n") : f.closedAt?auditDate(f.closedAt):"",[f.evidence,f.evidenceReference,f.verificationComment,...actions.flatMap(a=>[a.evidence,a.evidenceReference,a.verificationComment])].filter(Boolean).join("\n")];
   });
 }
+
+// An official workbook can omit physically empty cells. The controlled row,
+// existing cell styling and merged cells must still be respected.
+function capaCellPosition(ref: string) {
+  const match = /^([A-Z]+)(\d+)$/.exec(ref);
+  if (!match) throw new Error("Referencia Excel CAPA Plan no válida.");
+  const column = [...match[1]].reduce((n, c) => n * 26 + c.charCodeAt(0) - 64, 0);
+  return { column, row: Number(match[2]) };
+}
+function isMergedFollower(sheet: string, ref: string) {
+  const cell = capaCellPosition(ref);
+  for (const match of sheet.matchAll(/<mergeCell\b[^>]*\bref="([A-Z]+\d+:[A-Z]+\d+)"[^>]*\/>/g)) {
+    const [first,last] = match[1].split(":");
+    const a = capaCellPosition(first), b = capaCellPosition(last);
+    if (cell.row >= a.row && cell.row <= b.row && cell.column >= a.column && cell.column <= b.column && ref !== first) return true;
+  }
+  return false;
+}
+function writeCapaCell(sheet: string, ref: string, value: string) {
+  if (new RegExp('<c\\b[^>]*\\br="' + ref + '"(?:\\s|>)').test(sheet)) return setXlsxCell(sheet, ref, value);
+  if (isMergedFollower(sheet, ref)) throw new Error("CAPA Plan: la dirección " + ref + " está dentro de una celda combinada; revisa la plantilla.");
+  const position = capaCellPosition(ref);
+  const rowRegex = new RegExp('<row\\b(?=[^>]*\\br="' + position.row + '")[^>]*>[\\s\\S]*?<\\/row>');
+  const match = sheet.match(rowRegex);
+  if (!match) throw new Error("CAPA Plan: falta la fila controlada " + position.row + " (" + ref + ").");
+  const original = match[0];
+  const cells = [...original.matchAll(/<c\b([^>]*\br="([A-Z]+)\d+"[^>]*)(?:\/>|>[\s\S]*?<\/c>)/g)];
+  const next = cells.find(c => capaCellPosition(c[2] + "1").column > position.column);
+  const previous = [...cells].reverse().find(c => capaCellPosition(c[2] + "1").column < position.column);
+  const donor = previous ?? next;
+  const style = donor?.[1].match(/\bs="(\d+)"/)?.[1];
+  const cell = '<c r="' + ref + '"' + (style ? ' s="' + style + '"' : '') + '></c>';
+  const insertion = next ? next.index! : original.lastIndexOf("</row>");
+  const expanded = original.slice(0, insertion) + cell + original.slice(insertion);
+  return setXlsxCell(sheet.replace(original, expanded), ref, value);
+}
+
 export function generateAuditCapaPlan(template: Buffer, s: AuditReportSnapshot, sequence: number | null) {
   const entries=readZip(template), a=s.audit;
   // Normalize empty cells before using the shared setter: a self-closing cell
   // must not consume the following labelled cell as its closing block.
   let sheet=getZipEntryText(entries,"xl/worksheets/sheet1.xml").replace(/<c\b([^>]*?)\/>/g,'<c$1></c>');
   const values: Record<string,string> = { C5:a.qmsRecord.businessCode ?? a.externalReference ?? "", F5:a.scenario?auditScenarioLabels[a.scenario]:"", I5:a.performedDate?auditDate(a.performedDate):"", C6:a.auditedEntityName ?? a.departments.filter(d=>d.isActive).map(d=>d.departmentNameSnapshot).join("; "), F6:a.title ?? "", I6:a.reportDate?auditDate(a.reportDate):"", C7:a.auditingEntityName ?? "", F7:a.referenceText ?? a.externalReference ?? "", I7:a.capaPlanDate?auditDate(a.capaPlanDate):"", K7:sequence===null?"Estado actual":String(sequence).padStart(2,"0") };
-  for(const [ref,value] of Object.entries(values)) sheet=setXlsxCell(sheet,ref,value);
+  for(const [ref,value] of Object.entries(values)) sheet=writeCapaCell(sheet,ref,value);
   const rows=auditCapaPlanRows(s), count=Math.max(10,rows.length), delta=count-10;
   const pattern=/<row\b[^>]*\br="11"[^>]*>[\s\S]*?<\/row>/, templateRow=sheet.match(pattern)?.[0];
   if(!templateRow)throw new Error("Falta la fila controlada del CAPA Plan.");
@@ -113,7 +150,7 @@ export function generateAuditCapaPlan(template: Buffer, s: AuditReportSnapshot, 
   if(delta) sheet=sheet.replace(/\b(r|ref|sqref)="([^"]+)"/g,(_m,key,value)=>`${key}="${/^\d+$/.test(value) ? Number(value)>=21?Number(value)+delta:value : String(value).replace(/([A-Z]+)(\d+)/g,(_m,c,n)=>`${c}${Number(n)>=21?Number(n)+delta:n}`)}"`);
   const xmlRows=Array.from({length:count},(_,i)=>{
     let row=templateRow.replace(/\br="([A-Z]*)(\d+)"/g,(_m,c)=>`r="${c}${11+i}"`);
-    for(let c=0;c<11;c++)row=setXlsxCell(row,`${String.fromCharCode(65+c)}${11+i}`,rows[i]?.[c] ?? "");
+    for(let c=0;c<11;c++)row=writeCapaCell(row,`${String.fromCharCode(65+c)}${11+i}`,rows[i]?.[c] ?? "");
     // Fixed source height clips/overlaps populated wrapped cells. Let Office
     // calculate the height from the existing widths, fonts and wrap styles.
     if (rows[i]) row=row.replace(/\s(?:ht|customHeight)="[^"]*"/g,"");
@@ -131,6 +168,6 @@ export function generateAuditCapaPlan(template: Buffer, s: AuditReportSnapshot, 
   const firstFooter=[...sheet.matchAll(/<row\b[^>]*\br="(\d+)"/g)].find(m=>Number(m[1])>=21+delta); const insert=firstFooter?.index ?? -1;
   if(insert<0)throw new Error("Falta el bloque de firmas del CAPA Plan.");
   sheet=sheet.slice(0,insert)+xmlRows+sheet.slice(insert);
-  for (const [ref,value] of [[`A${24+delta}`,`Nombre y apellidos: ${a.preparedBy ?? ""}`],[`F${24+delta}`,`Nombre y apellidos: ${a.reviewedBy ?? ""}`],[`A${25+delta}`,`Puesto: ${a.preparedPosition ?? ""}`],[`F${25+delta}`,`Puesto: ${a.reviewedPosition ?? ""}`]]) sheet=setXlsxCell(sheet,ref,value);
+  for (const [ref,value] of [[`A${24+delta}`,`Nombre y apellidos: ${a.preparedBy ?? ""}`],[`F${24+delta}`,`Nombre y apellidos: ${a.reviewedBy ?? ""}`],[`A${25+delta}`,`Puesto: ${a.preparedPosition ?? ""}`],[`F${25+delta}`,`Puesto: ${a.reviewedPosition ?? ""}`]]) sheet=writeCapaCell(sheet,ref,value);
   updateZipEntry(entries,"xl/worksheets/sheet1.xml",sheet);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
