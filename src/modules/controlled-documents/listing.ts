@@ -76,7 +76,7 @@ export async function queryPntListing(f: PntListingFilters, paginate = true) {
   const now = iso(new Date());
   const errors = dateFilterErrors(f);
   const masters = errors.length ? [] : await prisma.controlledDocument.findMany({
-    where: listWhere(f),
+    where: listWhere({ q: f.q, department: f.department, state: f.state }),
     orderBy: [{ baseCode: "asc" }, { id: "asc" }],
     include: {
       revisions: {
