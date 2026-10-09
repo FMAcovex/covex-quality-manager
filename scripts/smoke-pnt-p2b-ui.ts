@@ -48,6 +48,14 @@ async function main() {
     const response = await fetch(`${base}/api/controlled-documents/${m.id}/revisions/${r.id}/documents`, { method: "POST", headers: { origin: base }, body: fd }); assert.equal(response.status, 201);
     await page.goto(url); const article = page.locator(`article[data-lifecycle-revision="${r.id}"]`);
     await article.getByText(/Estado declarado por el índice:/).waitFor(); await article.getByText(/Falta contraste documental favorable/).waitFor();
+    // Regression for the manual failure: submitting without a checked evidence
+    // must show a clear field-level instruction and must not send a decision.
+    const decisionsBefore = await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } });
+    await article.locator('textarea[name="reason"]').fill("Prueba sin evidencia");
+    await article.locator('textarea[name="notes"]').fill("Validación sintética");
+    await article.locator(".pnt-lifecycle-form button").click();
+    await article.getByRole("alert").filter({ hasText: "Seleccione al menos un documento" }).waitFor();
+    assert.equal(await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } }), decisionsBefore);
     async function submit(operation: string, fill?: () => Promise<void>) {
       await article.getByLabel("Operación", { exact: true }).selectOption(operation);
       await article.locator('input[name="evidenceIds"]').check(); await article.locator('textarea[name="reason"]').fill("Motivo humano sintético UI"); await article.locator('textarea[name="notes"]').fill("Contraste humano UI según evidencia concreta; no firma electrónica");
