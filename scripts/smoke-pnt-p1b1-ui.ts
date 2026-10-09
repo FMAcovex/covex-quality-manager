@@ -51,7 +51,7 @@ async function main() {
         assert.deepEqual(errors, []);
         await page.getByLabel("Excel del índice maestro", { exact: true }).setInputFiles({ name: "invalid.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from("invalid") });
         await page.getByRole("button", { name: "Analizar Excel", exact: true }).click();
-        await page.getByRole("alert").waitFor();
+        await page.getByRole("alert").filter({ hasText: "El XLSX no es válido" }).waitFor();
         assert.equal(await snapshot(), before);
         console.log("P1B-1 navegador OK: carga/análisis, resumen, filtros, procedencia GC-00(, exclusión GC-00 y código exclusivo descartado, valores originales, sin botón definitivo, rechazo de XLSX inválido; cero escrituras operativas.");
     }
