@@ -19,7 +19,20 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
   const [{rows,departments,years,total,page,pages},annualPlans] = await Promise.all([getAuditList(filters),listAnnualPlans()]);
   const options = (labels: Record<string,string>) => Object.entries(labels).map(([value,label]) => ({value,label}));
   const pageHref = (next: number) => { const params = new URLSearchParams(); Object.entries(query).forEach(([k,v]) => { if (k !== "page") (Array.isArray(v) ? v : v ? [v] : []).forEach(x => params.append(k,x)); }); params.set("page",String(next)); return `/audits?${params}`; };
+  const selectedType = filters.type?.length === 1 ? filters.type[0] : "";
+  const typeHref = (type: string) => {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, values]) => {
+      if (key === "type" || key === "page") return;
+      (Array.isArray(values) ? values : values ? [values] : []).forEach(value => params.append(key, value));
+    });
+    if (type) params.append("type", type);
+    const suffix = params.toString();
+    return suffix ? `/audits?${suffix}` : "/audits";
+  };
+  const typeTabs = [{type:"",label:"Todas las auditorías"},{type:"INTERNAL",label:"Internas"},{type:"EXTERNAL",label:"Externas"}];
   return <section className="workspace audits-workspace"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Auditorías</h1><p>Expedientes, planificación, hallazgos y seguimiento.</p></div><div className="heading-actions"><Link className="button" href="/audits/plans">Planes anuales</Link><Link className="button primary" href="/audits/new">+ Nueva auditoría</Link><ColumnSelector tableId="audit-list-table" storageKey="qms.columns.audits" columns={auditColumns}/></div></div>
+    <nav className="audit-type-nav" aria-label="Filtrar auditorías por tipo">{typeTabs.map(tab => <Link key={tab.type} className={`audit-type-option ${selectedType === tab.type ? "active" : ""}`} aria-current={selectedType === tab.type ? "page" : undefined} href={typeHref(tab.type)}>{tab.label}</Link>)}</nav>
     <form method="get" className="toolbar-form"><div className="filter-panel operational">
       <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
       <label className="filter-placeholder"><span>Planificación</span><select name="planning" defaultValue={filters.planning??""}><option value="">Todas</option><option value="PLANNED">En plan anual</option><option value="OUT_OF_PLAN">Fuera de plan</option><option value="UNCLASSIFIED">Pendiente de clasificación</option></select></label>
