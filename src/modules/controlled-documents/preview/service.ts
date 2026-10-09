@@ -1,4 +1,4 @@
-import { prisma } from "../../../lib/db";
+import { importDb as prisma } from "../import/database";
 import { parseIndex } from "./analysis";
 import { reconcileIndex, type ExistingDepartment, type ExistingDocument } from "./reconciliation";
 export type PreviewReader = {
@@ -7,7 +7,7 @@ export type PreviewReader = {
 };
 export const databaseReader: PreviewReader = {
     departments: () => prisma.department.findMany({ select: { id: true, code: true, isActive: true } }),
-    documents: codes => prisma.controlledDocument.findMany({ where: { baseCode: { in: codes } }, select: { id: true, baseCode: true, title: true, departmentId: true, departmentCodeSnapshot: true, administrativeStatus: true, documentType: true, revisions: { select: { id: true, revisionCode: true, titleSnapshot: true, departmentCodeSnapshot: true, effectiveFrom: true, reviewDueAt: true, verificationStatus: true, status: true, consolidatedAt: true } } } })
+    documents: codes => prisma.controlledDocument.findMany({ where: { baseCode: { in: codes } }, select: { id: true, baseCode: true, title: true, departmentId: true, departmentCodeSnapshot: true, administrativeStatus: true, documentType: true, revisions: { select: { id: true, revisionCode: true, titleSnapshot: true, departmentCodeSnapshot: true, effectiveFrom: true, reviewDueAt: true, verificationStatus: true, status: true, consolidatedAt: true, sourceMetadata: true } } } })
 };
 export async function previewIndex(buffer: Buffer, fileName: string, reader: PreviewReader = databaseReader, asOf?: string) {
     const report = parseIndex(buffer, fileName, asOf);

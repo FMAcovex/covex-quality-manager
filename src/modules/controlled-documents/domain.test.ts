@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { validBaseCode, validRevisionCode, validDate, normalizeBaseCode, parseMasterForm, validateExistingRevision, validateRevisionDates, displayDate } from "./domain";
+import { validBaseCode, validRevisionCode, validDate, normalizeBaseCode, parseMasterForm, validateDepartmentForBaseCode, validateExistingRevision, validateRevisionDates, displayDate } from "./domain";
 import { listWhere } from "./queries";
 describe("PNT P1A: identidad y evidencia documental", () => {
+    it.each([["MC-20", true], ["GC-00", false], ["MC-10", false]])("comprueba la familia completa del PNT para el departamento %s", (department, allowed) => {
+        const validate = () => validateDepartmentForBaseCode("MC-20/001", String(department));
+        if (allowed) expect(validate).not.toThrow();
+        else expect(validate).toThrow("El código base no corresponde al departamento responsable.");
+    });
     it("distingue maestro y revisión original sin código anual", () => {
         expect(normalizeBaseCode(" gc-00/001 ")).toBe("GC-00/001");
         expect(validBaseCode("GC-00/001")).toBe(true);

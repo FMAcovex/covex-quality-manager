@@ -581,3 +581,7 @@ El PNT utiliza `ControlledDocument`, `ControlledDocumentRevision` y su historial
 ## P1B-1 — Declaración del índice separada de verificación (2026-10-08)
 
 La previsualización XLSX no verifica documentos controlados ni modifica P1A. La declaración del índice, sus valores originales y procedencia se conservan en un contrato de análisis; `sourceMetadata` permite su futura incorporación sin equipararla al estado documental verificado. No se añade esquema ni flujo de aprobación en P1B-1. La fuente GC-00 queda excluida completamente; solo GC-00( aporta procedimientos del departamento GC-00. Confirmación idempotente y decisiones de conciliación corresponden a P1B-2 (`PNT_P1B1.md`).
+
+## P1B-2 — Importación declarada pendiente y staging limitado (2026-10-09)
+
+Los PNT del índice no adquieren estado documental IN_FORCE ni evidencia de verificación. Se añade IMPORTED_PENDING separado de DRAFT, con ausencia de consolidación/verificador, y los nuevos maestros quedan DRAFT / UNVERIFIED. Estado declarado y procedencia se conservan en metadatos; desconocidos/contradicciones requieren decisiones manuales. Staging 30 días, 100 lotes pendientes y 16 MiB de JSON por lote, sin binario XLSX; resultados confirmados y decisiones conservan el historial mínimo. Reimportación omite identidades existentes, sin sobrescribir datos verificados o snapshots. Confirmación por propuesta exacta, versión/huella y transacción SERIALIZABLE. P2 acreditará documentalmente la revisión mediante un flujo posterior, sin aprobación ni firma ficticia ahora. Véase `PNT_P1B2.md`.

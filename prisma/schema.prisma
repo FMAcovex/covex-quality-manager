@@ -1723,6 +1723,7 @@ enum ControlledDocumentAdministrativeStatus {
 }
 
 enum ControlledDocumentRevisionStatus {
+  IMPORTED_PENDING
   DRAFT
   IN_REVIEW
   PENDING_APPROVAL
@@ -1814,4 +1815,52 @@ model ControlledDocumentChange {
 
   @@index([documentId, changedAt, id])
   @@index([revisionId])
+}
+
+// P1B-2: bounded staging; no original workbook binary.
+model ControlledDocumentImportBatch {
+  id String @id @default(uuid())
+  fileName String
+  sha256 String
+  analyzedAt DateTime
+  actor String
+  state String @default("PENDING")
+  version Int @default(0)
+  summary Json
+  reportMetadata Json
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  confirmedAt DateTime?
+  rows ControlledDocumentImportRow[]
+  events ControlledDocumentImportEvent[]
+  @@index([state, expiresAt])
+  @@index([sha256])
+}
+
+model ControlledDocumentImportRow {
+  id String @id @default(uuid())
+  batchId String
+  batch ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  sourceKey String
+  baseCode String?
+  data Json
+  decision String @default("PENDING")
+  resolution Json?
+  baseline String?
+  decidedBy String?
+  decidedAt DateTime?
+  result Json?
+  @@unique([batchId, sourceKey])
+  @@index([batchId, decision])
+}
+
+model ControlledDocumentImportEvent {
+  id String @id @default(uuid())
+  batchId String
+  batch ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  action String
+  actor String
+  detail Json
+  createdAt DateTime @default(now())
+  @@index([batchId, createdAt, id])
 }

@@ -1,3 +1,4 @@
+import { indexMetadata } from "../import/domain";
 import type { PreviewReport, PreviewRow } from "./types";
 import { refreshSummary } from "./analysis";
 import { fold } from "./normalization";
@@ -24,6 +25,7 @@ export type ExistingDocument = {
         verificationStatus: string;
         status: string;
         consolidatedAt: Date | null;
+        sourceMetadata?: unknown;
     }[];
 };
 const iso = (d: Date | null) => d ? d.toISOString().slice(0, 10) : null;
@@ -63,7 +65,10 @@ export function reconcileIndex(report: PreviewReport, departments: ExistingDepar
                 compare("Fecha de vigencia", n.effectiveFrom, iso(rev.effectiveFrom));
                 compare("Fecha prevista de revisión", n.reviewDueAt, iso(rev.reviewDueAt));
                 const declared = { IN_FORCE: "IN_FORCE", ANNULLED: "ANNULLED", IN_PREPARATION: "DRAFT", UNDETERMINED: null }[n.declaredState];
-                if (declared)
+                if (rev.status === "IMPORTED_PENDING") {
+                    const imported = indexMetadata(rev.sourceMetadata);
+                    if (imported) compare("Estado declarado original del índice", n.declaredState, imported.declaredState);
+                } else if (declared)
                     compare("Estado documental (declaración del índice)", declared, rev.status);
             }
             if (existing.administrativeStatus === "ANNULLED" && n.declaredState !== "ANNULLED")

@@ -7,7 +7,7 @@ async function main() {
     const tag = randomUUID();
     const title = `P1A navegador ${tag}`;
     const actor = `P1A UI ${tag}`;
-    const dep = await prisma.department.create({ data: { code: `QU-${tag}`, name: "P1A UI ficticio" } });
+    const dep = await prisma.department.create({ data: { code: "QU-99", name: "P1A UI ficticio" } });
     const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     page.setDefaultTimeout(20000);

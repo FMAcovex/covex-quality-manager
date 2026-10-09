@@ -1,11 +1,15 @@
 import { z } from "zod";
 export const administrativeLabels = { DRAFT: "Borrador de registro", ACTIVE: "Activo en registro", ANNULLED: "Anulado" };
-export const revisionLabels = { DRAFT: "Borrador / en elaboración", IN_REVIEW: "En revisión", PENDING_APPROVAL: "Pendiente de aprobación", APPROVED_PENDING_EFFECTIVE: "Aprobado / pendiente de vigencia", IN_FORCE: "Vigente", OBSOLETE: "Obsoleto", ANNULLED: "Anulado" };
+export const revisionLabels = { IMPORTED_PENDING: "Importada / pendiente de verificación", DRAFT: "Borrador / en elaboración", IN_REVIEW: "En revisión", PENDING_APPROVAL: "Pendiente de aprobación", APPROVED_PENDING_EFFECTIVE: "Aprobado / pendiente de vigencia", IN_FORCE: "Vigente", OBSOLETE: "Obsoleto", ANNULLED: "Anulado" };
 export const verificationLabels = { UNVERIFIED: "Sin verificar", VERIFIED: "Verificado documentalmente", REVIEW_REQUIRED: "Requiere contraste documental" };
 export const existingStatuses = ["IN_FORCE", "OBSOLETE", "ANNULLED"] as const;
 export type ExistingStatus = typeof existingStatuses[number];
 export function normalizeBaseCode(value: string) { return value.trim().toUpperCase(); }
 export function validBaseCode(value: string) { return /^[A-Z]{2}-\d{2}\/\d{3}$/.test(value); }
+export function validateDepartmentForBaseCode(baseCode: string, departmentCode: string) {
+    if (baseCode.split("/")[0] !== departmentCode)
+        throw new Error("El código base no corresponde al departamento responsable.");
+}
 export function validRevisionCode(value: string) { return /^\d{2}$/.test(value); }
 export function validDate(value: string) { return !value || (/^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value); }
 export const iso = (v: Date | string | null | undefined) => v ? new Date(v).toISOString().slice(0, 10) : "";
