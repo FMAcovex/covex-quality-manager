@@ -146,8 +146,17 @@ async function main() {
       await upload(page, master.id, r.id); await cycle(page, master.id, r.id);
       const after = await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: r.id } }); assert.equal(JSON.stringify([after.sourceMetadata, after.baseCodeSnapshot, after.effectiveFrom, after.reviewDueAt]), frozen);
     }
-    const next = await nextRevision(manual.id, manual.revisions[0].id); await upload(page, manual.id, next); await cycle(page, manual.id, next);
+    await page.goto(`${base}/controlled-documents/${manual.id}/edit`);
+    const evolvedTitle = "P2C UI título B para nueva revisión";
+    await page.getByLabel("Título", { exact: true }).fill(evolvedTitle); await page.getByLabel("Responsable del registro", { exact: true }).fill(actor);
+    await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Evolución legítima hacia revisión 01 sin reescribir 00");
+    await page.getByRole("button", { name: "Guardar cambios", exact: true }).click(); await page.waitForURL(`${base}/controlled-documents/${manual.id}`);
+    assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: manual.revisions[0].id } })).titleSnapshot, manual.title);
+    const next = await nextRevision(manual.id, manual.revisions[0].id);
+    assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: next } })).titleSnapshot, evolvedTitle);
+    await upload(page, manual.id, next); await cycle(page, manual.id, next);
     assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: manual.revisions[0].id } })).status, "OBSOLETE"); assert.equal(await prisma.controlledDocumentRevision.count({ where: { documentId: manual.id, status: "IN_FORCE" } }), 1);
+    assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: manual.revisions[0].id } })).titleSnapshot, manual.title);
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       for (const tab of ["information", "revisions", "documents", "verification", "history"]) { await page.goto(`${base}/controlled-documents/${manual.id}?tab=${tab}`); await page.locator("main h2").first().waitFor(); assert.ok(await page.locator("main").isVisible()); }

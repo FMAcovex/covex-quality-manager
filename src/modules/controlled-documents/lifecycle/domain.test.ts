@@ -1,9 +1,22 @@
 import { describe, it, expect } from "vitest";
 import { randomUUID } from "node:crypto";
-import { assertTransition, plannedDates, normalizedPerson, commandSchema } from "./domain";
+import { assertTransition, assertActivationIdentity, plannedDates, normalizedPerson, commandSchema } from "./domain";
 import { lifecyclePrincipal, requireLifecyclePermission } from "./access";
 const env = { PNT_DOCUMENT_ACCESS_MODE: "trusted-proxy", PNT_DOCUMENT_PROXY_SECRET: "synthetic-test-key-not-a-real-secret" };
 describe("P2B permisos y flujo controlado", () => {
+  const master = { baseCode: "GC-00/600", title: "Título A", departmentCodeSnapshot: "GC-00", departmentNameSnapshot: "Garantía de Calidad" };
+  const revision = { baseCodeSnapshot: master.baseCode, titleSnapshot: master.title, departmentCodeSnapshot: master.departmentCodeSnapshot, departmentNameSnapshot: master.departmentNameSnapshot };
+  it("activa únicamente la identidad de la revisión objetivo, sin comparar el título de históricos anteriores", () => {
+    expect(() => assertActivationIdentity(master, revision)).not.toThrow();
+    expect(() => assertActivationIdentity({ ...master, title: "Título B" }, { ...revision, titleSnapshot: "Título B" })).not.toThrow();
+    expect(() => assertActivationIdentity({ ...master, departmentNameSnapshot: null }, { ...revision, departmentNameSnapshot: null })).not.toThrow();
+  });
+  it.each([
+    ["baseCode", "GC-00/601", "código"], ["title", "Título B", "título"],
+    ["departmentCodeSnapshot", "MC-20", "departamento"], ["departmentNameSnapshot", "Otro departamento", "departamento"],
+  ] as const)("rechaza activación cuando difiere %s del snapshot", (field, value, message) => {
+    expect(() => assertActivationIdentity({ ...master, [field]: value }, revision)).toThrow(new RegExp(`${message}.*congelado`));
+  });
   it("write no concede decisiones; cada capacidad sensible es explícita", () => {
     const h = new Headers({ "x-pnt-proxy-secret": env.PNT_DOCUMENT_PROXY_SECRET, "x-pnt-user": "Registrador QA", "x-pnt-permissions": "read,write" });
     const p = lifecyclePrincipal(h, env); expect(p.canWrite).toBe(true);

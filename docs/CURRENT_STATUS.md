@@ -2,6 +2,8 @@
 
 ## P2C — Regresión conjunta final PNT (2026-10-09)
 
+Ajuste final PR #110: la activación compara identidad completa del maestro con la revisión objetivo (código, título, código/nombre departamental congelados). Rechaza divergencias sin reescribir snapshots ni bloquear cambios legítimos del maestro para futuras revisiones. Smokes comprueban rechazo/rollback, recuperación mediante nueva revisión y evolución A/00 → B/01 conservando históricos. P1A/P2B/P2C PostgreSQL/Chromium y P2C autenticado verdes; 88 tests focalizados y quality final verde (434 tests/78 archivos). Misma rama/PR; sin nuevas funciones ni migraciones. Resultados actualizados en PNT_P2C.md y PR.
+
 Sobre main `41f082908e87967fb9d355ca54237910dfd23d9e` (P2B fusionada), rama `feature/pnt-p2c-final-regression`. Regresión P1A/P1B-1/P1B-2/P2A/P2B y recorridos integrados sintéticos índice/manual hasta vigencia. Corregidos dos defectos comprobados: comparación de fecha original en lugar de vigencia operativa anterior e identidad maestro/revisión divergente (código permanente tras P2B y coincidencia al activar). Sin nuevas funciones, migraciones ni cambios QMS. Regresión técnica local superada: matriz 15/15, seis smokes PostgreSQL, seis Chromium y tres comprobaciones tras reinicio autenticado; quality verde (429 tests/78 archivos). Matriz, pruebas, CI y límites en [PNT_P2C.md](PNT_P2C.md); CI/head definitivos en la única PR abierta, sin merge ni squash. Validación funcional pendiente del usuario y cualificación/validación GMP pendiente; no se declara uso GMP validado.
 
 ## P2A — Documentos y evidencias por revisión de PNT

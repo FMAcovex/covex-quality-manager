@@ -72,7 +72,7 @@ async function main() {
   assert.equal(races.filter(v => v.status === "fulfilled").length, 1); assert.equal(races.filter(v => v.status === "rejected").length, 1);
   assert.equal((await prisma.controlledDocument.findUniqueOrThrow({ where: { id: master.id } })).administrativeStatus, "ACTIVE");
   await assert.rejects(run(master.id, r.id, { operation: "RECTIFY", rectifiesId: first.id }, ids), /Transición/);
-  const next = await prisma.controlledDocumentRevision.create({ data: { documentId: master.id, revisionCode: "01", baseCodeSnapshot: code, titleSnapshot: master.title, departmentCodeSnapshot: "GC-00", registeredByText: p.name } });
+  const next = await prisma.controlledDocumentRevision.create({ data: { documentId: master.id, revisionCode: "01", baseCodeSnapshot: code, titleSnapshot: master.title, departmentCodeSnapshot: "GC-00", departmentNameSnapshot: master.departmentNameSnapshot, registeredByText: p.name } });
   const nextObject = await incorporateDocument({ documentId: master.id, revisionId: next.id, kind: "DOCUMENT_PDF", file: { name: "p2b-next.pdf", mime: "application/pdf", bytes } }, p), nextIds = [nextObject.id];
   await assert.rejects(run(master.id, next.id, { result: "FAVORABLE" }, ids), /Evidencia/);
   await run(master.id, next.id, { result: "FAVORABLE" }, nextIds); await roles(master.id, next.id, nextIds);

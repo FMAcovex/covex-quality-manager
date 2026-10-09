@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Prisma, PrismaClient, type ControlledDocumentRevision, type ControlledRevisionDecision } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { uuid } from "../documents/domain";
-import { commandSchema, permissions, assertTransition, plannedDates, normalizedPerson, lifecycleHistoryActions, type LifecycleCommand } from "./domain";
+import { commandSchema, permissions, assertTransition, assertActivationIdentity, plannedDates, normalizedPerson, lifecycleHistoryActions, type LifecycleCommand } from "./domain";
 import { requireLifecyclePermission, type LifecyclePrincipal } from "./access";
 type Tx = Prisma.TransactionClient;
 const json = (value: unknown): Prisma.InputJsonValue => JSON.parse(JSON.stringify(value));
@@ -119,7 +119,7 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
           const previous = await tx.controlledDocumentRevision.findFirst({ where: { documentId, status: "IN_FORCE" } });
           if ((previous?.id || null) !== c.previousRevisionId) throw new Error("Confirme explícitamente la revisión vigente anterior (o ausencia de ella).");
           if (!master.baseCode || !master.title || !master.departmentId) throw new Error("Complete el maestro antes de activar.");
-          if (master.baseCode !== r.baseCodeSnapshot) throw new Error("El código del maestro no coincide con el código congelado de la revisión.");
+          assertActivationIdentity(master, r);
           if (previous) {
             const previousProjection = await tx.controlledRevisionLifecycle.upsert({ where: { revisionId: previous.id }, create: { revisionId: previous.id, documentId, legacyOrigin: true, effectiveFrom: previous.effectiveFrom, reviewDueAt: previous.reviewDueAt }, update: {} });
             if (day(previousProjection.effectiveFrom) && plan.effectiveFrom! < day(previousProjection.effectiveFrom)!) throw new Error("Vigencia anterior incompatible.");
