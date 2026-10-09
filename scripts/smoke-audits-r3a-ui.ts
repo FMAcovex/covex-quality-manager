@@ -66,6 +66,9 @@ async function main() {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2),false,`Listado desborda a ${width}px`);
     }
     await page.locator(".column-menu summary").click();
+    // At 390px viewport the entire selector must be scrollable, not clipped beneath the viewport.
+    const popover = await page.locator(".column-popover").boundingBox();
+    assert(popover && popover.y >= 0 && popover.y + popover.height <= 1002, "Selector de columnas fuera de viewport móvil");
     await page.locator(".column-menu").getByRole("checkbox",{name:"Modalidad",exact:true}).check();
     await page.locator("td[data-column-key=modality]").waitFor({state:"visible"});
     assert(await page.locator("td[data-column-key=modality]").isVisible());
