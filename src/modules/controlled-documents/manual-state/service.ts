@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { uuid } from "../documents/domain";
+import { documentHistoryActions } from "../documents/history";
 import { assertActivationIdentity } from "../lifecycle/domain";
 import { requireLifecyclePermission, type LifecyclePrincipal } from "../lifecycle/access";
 import { manualStatusSchema, validateManualChange } from "./domain";
@@ -60,7 +61,7 @@ export async function changeManualRevisionStatus(documentId: string, revisionId:
       await tx.controlledDocumentRevision.update({ where: { id: prior.id }, data: { status: "OBSOLETE" } });
       await tx.controlledRevisionLifecycle.update({ where: { revisionId: prior.id }, data: { version: { increment: 1 }, obsoletedAt: start } });
       await tx.controlledDocumentChange.create({ data: {
-        documentId, revisionId: prior.id, action: "Cambio manual de estado documental",
+        documentId, revisionId: prior.id, action: documentHistoryActions.manual,
         changedByText: principal.name, reason: "Sustituida por revisión " + revision.revisionCode + ". " + input.reason,
         oldValue: json({ status: prior.status, revisionCode: prior.revisionCode }),
         newValue: json({ status: "OBSOLETE", revisionCode: prior.revisionCode, obsoletedAt: iso(start), successorRevisionId: revisionId, mode: "MANUAL" }),
@@ -86,7 +87,7 @@ export async function changeManualRevisionStatus(documentId: string, revisionId:
       after: json({ revision: { id: updated.id, status: updated.status, updatedAt: updated.updatedAt }, lifecycle: nextProjection }),
     } });
     await tx.controlledDocumentChange.create({ data: {
-      documentId, revisionId, action: "Cambio manual de estado documental", changedByText: principal.name,
+      documentId, revisionId, action: documentHistoryActions.manual, changedByText: principal.name,
       reason: input.reason,
       oldValue: json({ status: revision.status, revisionCode: revision.revisionCode }),
       newValue: json({ status: updated.status, revisionCode: revision.revisionCode,
