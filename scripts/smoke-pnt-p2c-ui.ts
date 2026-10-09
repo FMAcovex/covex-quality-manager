@@ -37,7 +37,7 @@ async function cycle(page: Page, id: string, revisionId: string) {
     await article.locator('textarea[name="referenceBasis"]').fill("Referencia sintética humanamente contrastada, no custodiada");
     if (fill) await fill();
     const response = page.waitForResponse(r => r.url().endsWith(`/revisions/${revisionId}/lifecycle`) && r.request().method() === "POST");
-    const navigation = page.waitForNavigation(); await article.getByRole("button", { name: "Registrar decisión explícita" }).click(); const res = await response;
+    const navigation = page.waitForNavigation(); await article.locator(".pnt-lifecycle-form button").click(); const res = await response;
     if (res.status() !== 201) throw new Error(`P2C UI decisión: ${await res.text()}`);
     await navigation; await article.getByLabel("Operación", { exact: true }).waitFor();
     return (await prisma.controlledRevisionDecision.findFirstOrThrow({ where: { revisionId }, orderBy: { sequence: "desc" } })).id;
@@ -77,7 +77,7 @@ async function authenticated(page: Page) {
     const c = await command(m.id, r.id, ids, extra), cap = permissions[c.operation], endpoint = `${base}/api/controlled-documents/${m.id}/revisions/${r.id}/lifecycle`;
     const count = await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } });
     await writer.goto(`${base}/controlled-documents/${m.id}?tab=verification`); await writer.getByText("Sin operaciones autorizadas en este estado.", { exact: true }).waitFor();
-    assert.equal(await writer.getByRole("button", { name: "Registrar decisión explícita", exact: true }).count(), 0);
+    assert.equal(await writer.locator(".pnt-lifecycle-form button").count(), 0);
     assert.equal((await page.request.post(endpoint, { headers: { origin: base }, data: c })).status(), 403);
     assert.equal((await writer.request.post(endpoint, { headers: { origin: base }, data: c })).ok(), false);
     assert.equal(await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } }), count);
@@ -113,7 +113,8 @@ async function authenticated(page: Page) {
   const historical = await prisma.controlledDocument.findUniqueOrThrow({ where: { baseCode: legacyCode }, include: { revisions: true } });
   assert.equal(historical.createdByText, "P2C proxy autenticado"); assert.equal(historical.revisions[0].verifiedByText, "P2C proxy autenticado"); assert.equal(await prisma.controlledRevisionLifecycle.count({ where: { documentId: historical.id } }), 0);
   await legacy.close();
-  assert.deepEqual(lifecyclePermissions.filter(p => p !== "legacy-register").sort(), [...new Set(Object.values(permissions))].sort());
+  assert.ok(lifecyclePermissions.includes("manage-state"), "La gestión manual de estados requiere una capacidad independiente.");
+   assert.deepEqual(lifecyclePermissions.filter(p => p !== "legacy-register" && p !== "manage-state").sort(), [...new Set(Object.values(permissions))].sort());
   await writer.close(); await reader.close();
   console.log("P2C Chromium reinicio OK: descarga persistente íntegra, lectura autenticada, anónimos sin metadatos indirectos en cinco pestañas; capacidades UI/servidor separadas y flujo completo proxy, retirada/rectificación sin reactivación; legacy-register denegado/permitido mediante UI y Server Actions, actor autenticado.");
 }
@@ -161,7 +162,7 @@ async function main() {
       await page.setViewportSize({ width, height: 900 });
       for (const tab of ["information", "revisions", "documents", "verification", "history"]) { await page.goto(`${base}/controlled-documents/${manual.id}?tab=${tab}`); await page.locator("main h2").first().waitFor(); assert.ok(await page.locator("main").isVisible()); }
       await page.goto(`${base}/controlled-documents/${manual.id}?tab=documents`); assert.deepEqual(await page.locator("article[data-revision-id] > h3").allTextContents(), ["Revisión 01", "Revisión 00"]);
-      await page.goto(`${base}/controlled-documents?validity=current&revision=01&q=${encodeURIComponent(manualCode)}`); await page.getByRole("link", { name: manualCode, exact: true }).waitFor();
+      await page.goto(`${base}/controlled-documents?validity=current&revision=01&q=${encodeURIComponent(manualCode)}`); await page.getByRole("link", { name: manualCode, exact: true }).first().waitFor();
       await page.goto(`${base}/controlled-documents/import-index/${batchId}`); await page.getByRole("heading", { name: "Conciliación del lote", exact: true }).waitFor();
       await page.goto(`${base}/controlled-documents/import-index`); await page.getByLabel("Excel del índice maestro", { exact: true }).waitFor();
       await page.goto(`${base}/controlled-documents/new`); await page.getByLabel("Código base", { exact: true }).waitFor();

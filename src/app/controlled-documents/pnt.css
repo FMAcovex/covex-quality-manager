@@ -55,3 +55,61 @@
   .pnt-workspace .pnt-record-tabs a { padding: 9px 10px; }
   .pnt-workspace .pnt-pagination { justify-content: flex-start; }
 }
+
+
+/* P3C-2: operational documentary forms are readable at every supported width. */
+.pnt-workspace .pnt-inner-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.pnt-workspace .pnt-inner-grid > .full { grid-column: 1 / -1; }
+.pnt-workspace .pnt-inner-grid :is(input, select, textarea) { max-width: 100%; min-width: 0; }
+.pnt-workspace .pnt-inner-grid > :is(label, p, fieldset) { min-width: 0; overflow-wrap: anywhere; }
+.pnt-workspace .pnt-document-form { margin-top: 22px; }
+.pnt-workspace .pnt-document-form h4, .pnt-workspace .pnt-lifecycle-form h4 { margin: 0 0 14px; }
+.pnt-workspace .pnt-document-item { min-width: 0; margin-top: 12px; }
+.pnt-workspace .pnt-document-item .pnt-document-name { overflow-wrap: anywhere; font-weight: 700; }
+.pnt-workspace .pnt-technical-data { margin: 14px 0; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+.pnt-workspace .pnt-technical-data summary { cursor: pointer; font-weight: 650; }
+.pnt-workspace .pnt-technical-data dl { display: grid; grid-template-columns: minmax(100px, 170px) minmax(0, 1fr); gap: 9px 12px; }
+.pnt-workspace .pnt-technical-data dd { margin: 0; overflow-wrap: anywhere; }
+.pnt-workspace .pnt-evidence-fieldset { min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin: 14px 0; }
+.pnt-workspace .pnt-evidence-fieldset legend { font-weight: 700; padding: 0 5px; }
+.pnt-workspace .pnt-evidence-fieldset .pnt-check { margin: 8px 0; overflow-wrap: anywhere; }
+.pnt-workspace .pnt-lifecycle-form { margin-top: 18px; }
+.pnt-workspace .pnt-lifecycle-form > .field { max-width: 650px; }
+.pnt-workspace .pnt-lifecycle-form .pnt-inner-grid .pnt-check { align-items: flex-start; }
+.pnt-workspace .pnt-lifecycle-form .section-help { margin: 6px 0 14px; }
+.pnt-workspace .pnt-lifecycle-card { min-width: 0; }
+.pnt-workspace .pnt-lifecycle-card :is(p, pre, summary) { overflow-wrap: anywhere; white-space: pre-wrap; }
+.pnt-workspace .pnt-document-content { min-width: 0; }
+.pnt-workspace .pnt-document-content .pnt-document-item a { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .pnt-workspace .pnt-inner-grid { grid-template-columns: minmax(0, 1fr); }
+  .pnt-workspace .pnt-technical-data dl { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Manual documentary state, always accessible from the record detail. */
+.pnt-workspace .pnt-manual-panel { margin-bottom: 18px; }
+.pnt-workspace .pnt-manual-revision + .pnt-manual-revision { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+.pnt-workspace .pnt-manual-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
+.pnt-workspace .pnt-manual-status { min-width: 0; max-width: 100%; }
+.pnt-workspace .pnt-manual-status-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 12px; }
+.pnt-workspace .pnt-manual-status-row > label { min-width: 0; }
+.pnt-workspace .pnt-manual-status > .field { max-width: 850px; }
+@media (max-width: 760px) {
+  .pnt-workspace .pnt-manual-status-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* P3C-2: estados y fechas independientes en el listado por revisión. */
+.pnt-workspace .pnt-list-table { min-width: 1210px; }
+.pnt-list-table th:nth-child(1) { width: 11%; }
+.pnt-list-table th:nth-child(2) { width: 22%; }
+.pnt-list-table th:nth-child(3) { width: 14%; }
+.pnt-list-table th:nth-child(4) { width: 10%; }
+.pnt-list-table th:nth-child(5) { width: 7%; }
+.pnt-list-table th:nth-child(6) { width: 14%; }
+.pnt-list-table th:nth-child(7) { width: 11%; }
+.pnt-list-table th:nth-child(8) { width: 11%; }
+.pnt-state--draft, .pnt-state--imported-pending { background: #f3f5f8; color: #576679; border-color: #dce2ea; }
+.pnt-state--in-review, .pnt-state--pending-approval { background: #eaf3ff; color: #245f9e; border-color: #c6dcf5; }
+.pnt-state--approved-pending-effective { background: #f2ebff; color: #66389c; border-color: #d8c6f5; }
+.pnt-state--in-force { background: #e9f7ef; color: #23663f; border-color: #bce0c9; }
+.pnt-state--obsolete, .pnt-state--annulled { background: #fff0f0; color: #a33131; border-color: #efc5c5; }

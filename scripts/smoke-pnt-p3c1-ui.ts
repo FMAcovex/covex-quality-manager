@@ -57,15 +57,20 @@ async function main() {
       for (const tab of ["information", "revisions", "documents", "verification", "history"]) {
         await checkPage(page, `/controlled-documents/${master.id}?tab=${tab}`, tab, width);
         const active = page.locator('.pnt-record-tabs a[aria-current="page"]');
-        assert.equal(await active.count(), 1);
-        assert.ok((await active.getAttribute("href"))?.endsWith(`tab=${tab}`));
-        assert.equal(await active.evaluate(e => getComputedStyle(e).borderBottomColor), "rgb(13, 99, 206)");
+        if (tab !== "verification") {
+          assert.equal(await active.count(), 1);
+          assert.ok((await active.getAttribute("href"))?.endsWith(`tab=${tab}`));
+          assert.equal(await active.evaluate(e => getComputedStyle(e).borderBottomColor), "rgb(13, 99, 206)");
+        } else assert.equal(await active.count(), 0);
         for (const link of await page.locator(".pnt-record-tabs a").all()) {
           const box = await link.boundingBox(); assert.ok(box && box.height >= 44 && box.x >= 0 && box.x + box.width <= width + 1);
         }
       }
       await checkPage(page, `/controlled-documents?q=${encodeURIComponent(master.baseCode!)}`, "list", width);
-      await page.getByRole("link", { name: master.baseCode!, exact: true }).waitFor();
+      const recordLinks = page.getByRole("link", { name: master.baseCode!, exact: true });
+      await recordLinks.first().waitFor();
+      assert.equal(await recordLinks.count(), 2, "El listado debe mostrar las revisiones 00 y 01 en filas independientes.");
+      assert.deepEqual(await page.locator(".pnt-list-table tbody tr td:nth-child(5)").allTextContents(), ["01", "00"]);
       const region = page.getByRole("region", { name: "Listado maestro PNT; desplazamiento horizontal", exact: true });
       const sizes = await region.evaluate(e => ({ client: e.clientWidth, scroll: e.scrollWidth, overflow: getComputedStyle(e).overflowX }));
       assert.equal(sizes.overflow, "auto");
