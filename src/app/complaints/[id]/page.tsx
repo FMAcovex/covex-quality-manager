@@ -101,7 +101,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    <span className="badge neutral">{complaintTypeLabel(r.complaintType)}</span>
    {currentVersion?<span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span>:null}
   </div><p className="muted-note">Apertura {formatDate(r.openedAt)} · {txt(r.partyName)}</p></div>
-  <div className="record-actions"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath,tab,reviewMode), "/complaints", returnTo)}/><Link className="button primary" href={qmsWithReturnTo(`/complaints/${id}/edit`, "/complaints", returnTo)}>Editar / nueva versión / seguimiento</Link></div></div>
+  <div className="record-actions"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath,tab,reviewMode), "/complaints", returnTo)}/><Link className="button primary" href={qmsWithReturnTo(`/complaints/${id}/edit?tab=${tab}`, "/complaints", returnTo)}>Editar / nueva versión / seguimiento</Link></div></div>
 
   {r.status==="DRAFT"?<div className="analytics-note"><strong>Borrador:</strong> todavía no es una reclamación operativa. Al abrirla se validarán todos los campos aplicables del Anexo III.</div>:null}
   {r.status==="OPEN"&&followupState==="OVERDUE"?<div className="form-errors"><strong>Seguimiento vencido:</strong> la fecha prevista era {formatDate(r.nextFollowupDate)}.</div>:null}
