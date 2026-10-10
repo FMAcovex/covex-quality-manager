@@ -136,6 +136,7 @@ export function ChangeControlForm({
   departments,
   defaults = {},
   changeId,
+  cancelHref,
   baselineLocked = false,
 }: {
   mode: "create" | "edit";
@@ -143,6 +144,7 @@ export function ChangeControlForm({
   departments: Department[];
   defaults?: ChangeControlFormDefaults;
   changeId?: string;
+  cancelHref?: string;
   baselineLocked?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -484,7 +486,7 @@ export function ChangeControlForm({
       </section>
 
       <div className="form-footer">
-        <Link className="button" href={changeId ? `/changes/${changeId}` : "/changes"}>Cancelar</Link>
+        <Link className="button" href={cancelHref ?? changeId ? `/changes/${changeId}` : "/changes"}>Cancelar</Link>
         <button className="button primary" type="submit" disabled={pending}>
           {pending ? "Guardando…" : draft ? "Guardar borrador" : mode === "create" ? "Guardar Control de Cambio" : "Guardar cambios"}
         </button>
