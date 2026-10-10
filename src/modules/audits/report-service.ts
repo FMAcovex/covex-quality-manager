@@ -64,7 +64,7 @@ export async function issueAuditReport(id: string, raw: unknown) {
   const v = parse(issueReportSchema, raw);
   return prisma.$transaction(async tx => {
     const a = await lockReportAudit(tx, id);
-    if (a.status !== "OPEN") throw new Error("La emisión requiere una auditoría abierta.");
+    if (a.status === "DRAFT") throw new Error("La emisión requiere una auditoría abierta o cerrada.");
     if (!a.reportDate || !a.conclusion?.trim() || !a.performedDate) throw new Error("Completa fecha realizada, fecha de informe y conclusión antes de emitir.");
     const received = a.scenario === "CLIENT" || a.scenario === "AUTHORITY";
     if (received && !a.qmsRecord.generatedDocuments.some(d => d.documentType === "AUDIT_RECEIVED")) throw new Error("Registra el documento externo primario antes de emitir su snapshot.");
