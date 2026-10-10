@@ -367,8 +367,6 @@ export async function createChangeControlAction(
 
 export async function updateChangeControlAction(
   id: string,
-  returnTo: string,
-  tab: string,
   previous: ChangeControlFormState,
   formData: FormData,
 ): Promise<ChangeControlFormState> {
@@ -670,7 +668,7 @@ export async function updateChangeControlAction(
 
     revalidatePath("/changes");
     revalidatePath(`/changes/${id}`);
-    redirect(qmsDetailUrl("/changes", id, returnTo, tab));
+    redirect(qmsDetailUrl("/changes", id, formData.get("returnTo"), formData.get("detailTab")));
   } catch (error) {
     if (error instanceof OperationalBusinessCodeError) {
       return preserveFormState(previous, formData, {
