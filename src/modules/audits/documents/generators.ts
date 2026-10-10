@@ -49,6 +49,56 @@ function bodyBlocks(body: string) {
   if (depth !== 0) throw new Error('El DOCX controlado contiene bloques no equilibrados.');
   return out;
 }
+
+/**
+ * The approved external-report Word template splits "AE/XXXX/YY/AAAA"
+ * across several w:t runs in both footer parts. Edit only their text,
+ * preserving the run properties, layout, page fields and controlled PNT header.
+ */
+function replaceExternalFooterMarker(xml: string, code: string) {
+  const marker = "AE/XXXX/YY/AAAA";
+  let replacements = 0;
+  const output = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, original => {
+    const tokens = [...original.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)];
+    const combined = tokens.map(token => token[1]).join("");
+    const markerStart = combined.indexOf(marker);
+    if (markerStart < 0) return original;
+    if (combined.indexOf(marker, markerStart + marker.length) !== -1)
+      throw new Error("Pie de página: marcador de auditoría duplicado en el mismo párrafo.");
+    const markerEnd = markerStart + marker.length;
+    const patches: { start: number; end: number; text: string }[] = [];
+    let offset = 0;
+    for (const token of tokens) {
+      const start = offset, end = start + token[1].length;
+      offset = end;
+      if (end <= markerStart || start >= markerEnd) continue;
+      const localStart = Math.max(0, markerStart - start);
+      const localEnd = Math.min(end, markerEnd) - start;
+      const replacement = start <= markerStart && markerStart < end ? escapeXml(code) : "";
+      const value = token[1].slice(0, localStart) + replacement + token[1].slice(localEnd);
+      const textStart = token.index! + token[0].indexOf(">") + 1;
+      patches.push({ start: textStart, end: textStart + token[1].length, text: value });
+    }
+    let updated = original;
+    for (const patch of patches.reverse())
+      updated = updated.slice(0, patch.start) + patch.text + updated.slice(patch.end);
+    replacements += 1;
+    return updated;
+  });
+  return { xml: output, replacements };
+}
+function fillExternalReportFooters(entries: ReturnType<typeof readZip>, code: string) {
+  const footers = entries.filter(entry => /^word\/footer\d+\.xml$/.test(entry.name));
+  if (!footers.length) return; // Minimal synthetic templates have no footer parts.
+  let filled = 0;
+  for (const footer of footers) {
+    const result = replaceExternalFooterMarker(footer.data.toString("utf8"), code);
+    if (result.replacements) updateZipEntry(entries, footer.name, result.xml);
+    filled += result.replacements;
+  }
+  if (!filled) throw new Error("La plantilla externa no contiene el código editable esperado en los pies de página.");
+}
+
 export function generateAuditReport(template: Buffer, s: AuditReportSnapshot, sequence: number) {
   const a = s.audit, supplier = a.scenario === "SUPPLIER";
   if (a.scenario === "CLIENT" || a.scenario === "AUTHORITY") throw new Error("El documento primario de cliente/autoridad es recibido, no un informe COVEX artificial.");
@@ -71,6 +121,11 @@ export function generateAuditReport(template: Buffer, s: AuditReportSnapshot, se
   xml = section(xml, "HALLAZGOS DE LA AUDITORÍA", findings.map(f => `${f.reference} · ${findingTypeLabels[f.findingType]} · ${criticalityLabels[f.criticality]}\n${f.description}\nCriterio: ${f.criterionReference ?? ""}\nEvidencia: ${f.objectiveEvidence ?? ""}\nTratamiento: ${f.treatment ?? ""}`).join("\n\n"));
   xml = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, p => plain(p).startsWith("Ejemplo") ? styledParagraph(p, "") : p);
   xml = section(xml, "CONCLUSIÓN", a.conclusion ?? ""); xml = section(xml, "ANEXO I: PROGRAMA DE AUDITORÍA", a.programme ?? "");
+  if (supplier) {
+    const auditCode = a.qmsRecord.businessCode ?? a.externalReference;
+    if (!auditCode) throw new Error("El informe externo requiere un código de auditoría para completar el pie de página.");
+    fillExternalReportFooters(entries, auditCode);
+  }
   updateZipEntry(entries, "word/document.xml", xml); sanitizeOfficeMetadata(entries); return writeZip(entries);
 }
 export function generateAuditExternalPlan(template: Buffer, s: AuditReportSnapshot) {
