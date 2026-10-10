@@ -83,10 +83,10 @@ export default async function EditChangeControlPage({ params, searchParams }: { 
       </div>
       <ChangeControlForm
         mode="edit"
-        action={updateChangeControlAction.bind(null,id,qmsListingReturnTo("/changes",returnTo),qmsDetailTab("/changes",tab))}
+        action={updateChangeControlAction.bind(null,id)}
         departments={lookups.departments}
         defaults={defaults}
-        changeId={id} cancelHref={cancelHref}
+        changeId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/changes",returnTo)} detailTab={qmsDetailTab("/changes",tab)}
         baselineLocked={record.dictamenResult === "APPROVED"}
       />
     </section>
