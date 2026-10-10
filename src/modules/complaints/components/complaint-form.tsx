@@ -43,7 +43,9 @@ const containmentOptions=[["QUARANTINE","Bloqueo / cuarentena"],["SUSPEND_USE_DI
 const resolutionOptions=[["RETURN","Devolución"],["CORRECTIVE_ACTION","Acc. correctora"],["PREVENTIVE_ACTION","Acc. preventiva"],["IMMEDIATE_ACTION","Acc. inmediata"],["RECALL","Retirada del mercado"],["CREDIT","Abono"],["REPLACEMENT","Reposición"],["OTHER","Otros"]] as const;
 
 export function ComplaintForm({mode,action,departments,defaults={},complaintId,cancelHref,returnTo,detailTab}:{mode:"create"|"edit";action:(s:ComplaintFormState,fd:FormData)=>Promise<ComplaintFormState>;departments:DepartmentOption[];defaults?:ComplaintFormDefaults;complaintId?:string
-  cancelHref?: string;}) {
+  cancelHref?: string;
+  returnTo?: string;
+  detailTab?: string;}) {
  const [state,formAction,pending]=useActionState(action,initial);
  useEffect(()=>{
   // Navigate after the committed action result; a streamed redirect to the
