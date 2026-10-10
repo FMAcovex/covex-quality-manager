@@ -1,5 +1,6 @@
 import { AuditOriginPanel } from "@/modules/audits/origin-panel";
 import Link from "next/link";
+import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
 import { addDeviationRelationAction, unlinkDeviationCapaAction } from "@/modules/deviations/actions";
 import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
@@ -108,10 +109,10 @@ export default async function DeviationDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; review?: string; thread?: string }>;
+  searchParams: Promise<{ tab?: string; review?: string; thread?: string; returnTo?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab, review, thread } = await searchParams;
+  const { tab: rawTab, review, thread, returnTo } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const deviation = await getDeviationDetail(id);
   if (!deviation) notFound();
@@ -262,7 +263,7 @@ export default async function DeviationDetailPage({
     <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
       <div className="record-header">
         <div>
-          <p className="eyebrow"><Link href="/deviations">← Desviaciones</Link></p>
+          <p className="eyebrow"><Link href={qmsListingReturnTo("/deviations", returnTo)}>← Desviaciones</Link></p>
           <div className="record-title-line">
             <h1>{code}</h1>
             <span className={`badge ${deviation.status === "DRAFT" ? "neutral" : deviation.status === "OPEN" ? "open" : "closed"}`}>{deviation.status === "DRAFT" ? "Borrador" : deviation.status === "OPEN" ? "Abierta" : "Cerrada"}</span>
@@ -274,7 +275,7 @@ export default async function DeviationDetailPage({
         </div>
         <div className="record-actions">
           <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, activeTab, reviewMode)} />
-          <Link className="button primary" href={`/deviations/${id}/edit`}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link>
+          <Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link>
           {deviation.status === "DRAFT"
             ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
             : <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>}
@@ -293,7 +294,7 @@ export default async function DeviationDetailPage({
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (
-          <Link key={key} className={activeTab === key ? "active" : ""} href={reviewTabHref(basePath, key, reviewMode)}>
+          <Link key={key} className={activeTab === key ? "active" : ""} href={qmsWithReturnTo(reviewTabHref(basePath, key, reviewMode), "/deviations", returnTo)}>
             {key === "review" ? `${label} (${reviewActiveCount})` : label}
           </Link>
         ))}
