@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       documentation_only: ${{ steps.scope.outputs.documentation_only }}
+      docs_only: ${{ steps.scope.outputs.docs_only }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,7 +23,7 @@ jobs:
 
   quality:
     needs: scope
-    if: github.head_ref != 'feature/complaints-returns-final-regression' && needs.scope.outputs.documentation_only != 'true'
+    if: github.head_ref != 'feature/complaints-returns-final-regression' && needs.scope.outputs.documentation_only != 'true' && needs.scope.outputs.docs_only != 'true'
     runs-on: ubuntu-22.04
     timeout-minutes: 30
 
