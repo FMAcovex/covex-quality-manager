@@ -251,6 +251,8 @@ enum RecordVersionDocumentKind {
 }
 
 enum DocumentType {
+  AUDIT_ANNUAL_INTERNAL_PROGRAMME
+  AUDIT_ANNUAL_EXTERNAL_PROGRAMME
   AUDIT_INTERNAL_REPORT
   AUDIT_EXTERNAL_REPORT
   AUDIT_CAPA_PLAN
@@ -469,6 +471,7 @@ model FormFieldConfig {
 }
 
 model TemplateVersion {
+  annualProgrammes AuditAnnualProgrammeVersion[]
   id                  String              @id @default(uuid())
   module              QmsRecordType
   documentType        DocumentType
@@ -1563,6 +1566,9 @@ model Audit {
 }
 
 model AuditAnnualPlan {
+  technicalApproverName String?
+  qualityApproverName String?
+  programmeVersions AuditAnnualProgrammeVersion[]
   id            String         @id @default(uuid())
   year          Int
   auditType     AuditType
@@ -1580,6 +1586,12 @@ model AuditAnnualPlan {
 }
 
 model AuditPlanEntry {
+  plannedPeriodText String?
+  plannedAuditorsText String? @db.Text
+  productService String? @db.Text
+  plannedScope String? @db.Text
+  plannedModality AuditModality?
+  programmeArea String?
   id             String         @id @default(uuid())
   planId         String
   plan           AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
@@ -2013,4 +2025,32 @@ model ControlledDocumentImportEvent {
   detail Json
   createdAt DateTime @default(now())
   @@index([batchId, createdAt, id])
+}
+
+// Programme issuance is independent from individual audit record versions.
+model AuditAnnualProgrammeVersion {
+  id String @id @default(uuid())
+  planId String
+  plan AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  sequenceNumber Int
+  requestId String
+  requestHash String
+  contentFingerprint String
+  snapshot Json
+  templateVersionId String
+  templateVersion TemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  templateChecksum String
+  reference String
+  generatedAt DateTime @default(now())
+  generatedBy String
+  reason String @db.Text
+  fileName String
+  mimeType String
+  fileData Bytes
+  fileSize Int
+  checksum String
+
+  @@unique([planId, sequenceNumber])
+  @@unique([planId, requestId])
+  @@index([planId, generatedAt])
 }

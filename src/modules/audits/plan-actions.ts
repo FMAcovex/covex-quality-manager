@@ -1,6 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { addPlanEntry, createAnnualPlan, retirePlanEntry, updatePlanEntry } from "./plans";
+const programmeFields=(fd:FormData)=>Object.fromEntries(["plannedPeriodText","plannedAuditorsText","productService","plannedScope","plannedModality","programmeArea"].map(k=>[k,String(fd.get(k)??"").trim()]));
 const str=(fd:FormData,key:string)=>String(fd.get(key)??"").trim();
 export async function createPlanAction(fd:FormData) {
   let id:string;
@@ -9,11 +10,11 @@ export async function createPlanAction(fd:FormData) {
   redirect("/audits/plans/"+id);
 }
 export async function addPlanEntryAction(planId:string,fd:FormData){
-  await addPlanEntry(planId,{subject:str(fd,"subject"),targetName:str(fd,"targetName"),departmentId:str(fd,"departmentId"),plannedDate:str(fd,"plannedDate"),notes:str(fd,"notes"),actor:str(fd,"actor"),reason:""});
+  await addPlanEntry(planId,{...programmeFields(fd),subject:str(fd,"subject"),targetName:str(fd,"targetName"),departmentId:str(fd,"departmentId"),plannedDate:str(fd,"plannedDate"),notes:str(fd,"notes"),actor:str(fd,"actor"),reason:""});
   redirect("/audits/plans/"+planId);
 }
 export async function updatePlanEntryAction(planId:string,entryId:string,fd:FormData){
-  await updatePlanEntry(planId,entryId,{subject:str(fd,"subject"),targetName:str(fd,"targetName"),departmentId:str(fd,"departmentId"),plannedDate:str(fd,"plannedDate"),notes:str(fd,"notes"),actor:str(fd,"actor"),reason:str(fd,"reason")});
+  await updatePlanEntry(planId,entryId,{...programmeFields(fd),subject:str(fd,"subject"),targetName:str(fd,"targetName"),departmentId:str(fd,"departmentId"),plannedDate:str(fd,"plannedDate"),notes:str(fd,"notes"),actor:str(fd,"actor"),reason:str(fd,"reason")});
   redirect("/audits/plans/"+planId);
 }
 export async function retirePlanEntryAction(planId:string,entryId:string,fd:FormData){

@@ -1077,3 +1077,17 @@ Rama `feature/pnt-final-corrections`, actualizada desde main `417e3a3a` tras el 
 - Badge documental común, separado del maestro; procedencia por metadatos reales, sin inferencia por existencia del ciclo.
 - Excel con verificación en español y enums intactos; aclaración de última revisión (número mayor), sin cambiar selección.
 - Regresiones unitarias, PostgreSQL y Chromium en CI documental; capturas como artefacto. Sin schema/migraciones ni cambios funcionales en otros módulos. Sin merge/squash automático. Resultados en la única PR.
+
+## Programas anuales de Auditorías — PR limitada (2026-10-10)
+
+Implementada en rama sobre main tras PR #122: campos documentales de entradas/aprobadores, previsualización, emisión DOCX interna/general y externa/Anexo I, histórico independiente con snapshot/bytes/checksum, motivo desde emisión 01, concurrencia e idempotencia. Las funcionalidades ya aprobadas de Auditorías y PNT conservan su alcance.
+
+Fuentes oficiales contrastadas en SharePoint; instalador separado con hashes del original interno `.doc` y PMAE V05 `.docx`, sin binarios corporativos en Git ni cambios en SharePoint. Ver `AUDITS_ANNUAL_PROGRAMMES.md` para el mapeo y operación. CI incorpora smoke PostgreSQL y navegador con plantillas ficticias compatibles; QA local complementaria utiliza documentos reales.
+
+Pendiente de aceptación del usuario: edición y acabado en Microsoft Word, y preparación/revisión/aprobación documental por las vías existentes. No fusionada ni desplegada.
+
+## Corrección CI #583 — PR #123 (2026-10-10)
+
+Ambos fallos R4B UI se han acotado al reintento perdido de Suspense en el React compilado dentro de Next 15.5.26: hidratación completa, datos correctos, RSC HTTP 200 y Server Action HTTP 303 con destino correcto, sin commit posterior del cliente. Se aplica un parche pnpm mínimo a esa rama en producción/desarrollo, equivalente a la existente en react-dom 19.3.0. Sin cambios funcionales en Auditorías/PNT ni saltos de navegación; pruebas R4B originales preservadas y redirección HTTP reforzada.
+
+Regresión del renderer: roja sin el parche y verde con él. Verificación previa: 12/12 filtros, 98 pruebas/9 archivos, lint/build y smokes PostgreSQL 16 + navegador de R4B y Programa Anual interno/externo, incluidas vistas 1440/768/390. La CI completa se lanza sobre el commit de esta corrección; resultado final en la PR/conversación. Detalle, límites del entorno local y mantenimiento en CI_583_R4B_DIAGNOSIS.md. Sin merge ni squash.

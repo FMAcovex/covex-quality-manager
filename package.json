@@ -91,7 +91,10 @@
     "pnt-p1b2:smoke": "node --import tsx scripts/smoke-pnt-p1b2.ts",
     "pnt-p1b2:ui:smoke": "node --import tsx scripts/smoke-pnt-p1b2-ui.ts",
     "pnt-final:smoke": "node --import tsx scripts/smoke-pnt-final.ts",
-    "pnt-final:ui:smoke": "node --import tsx scripts/smoke-pnt-final-ui.ts"
+    "pnt-final:ui:smoke": "node --import tsx scripts/smoke-pnt-final-ui.ts",
+    "templates:audits:annual:install": "tsx scripts/install-annual-audit-programme-templates.ts",
+    "audits-annual:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-annual-programmes.ts",
+    "audits-annual:ui:smoke": "node --conditions=react-server --import tsx scripts/smoke-audits-annual-programmes-ui.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",

@@ -599,3 +599,15 @@ GC-00/001/03 y GC-00/013/01 justifican funciones preparación/revisión/aprobaci
 La existencia de `ControlledRevisionLifecycle` no consolida ni importa una revisión. El borrador devuelto puede editarse si no está consolidado y su historial no contiene aprobación aceptada, estado aprobado/vigente/obsoleto/anulado u origen histórico consolidado. Servidor y UI comparten la condición. Todos los registros previos y documentos permanecen por UUID.
 
 La edición incrementa la versión de concurrencia sin modificar decisiones/evidencias; sus secuencias existentes permanecen intactas (puede haber huecos). El contraste favorable anterior se conserva históricamente, pero la verificación operativa pasa a REVIEW_REQUIRED hasta contrastar el contenido modificado. Se conserva la atribución previa y no se añade aprobación automática ni nuevas reglas GMP. El módulo sigue pendiente de revisión del usuario.
+
+## Programas anuales de Auditorías — emisión documental (2026-10-10)
+
+Tras aprobar el usuario la propuesta, se limita la ampliación a emitir el Programa Anual de los planes de PR #117. Internas utilizan la plantilla general PMAI V04/01-2023; el DOCX de 2026 se mantiene como referencia de contraste, no cambia los cargos de aprobación. Externas emiten exclusivamente Anexo I del PMAE V05/06-2026; no se utiliza el antiguo Anexo II ni se reedita el cuerpo del maestro.
+
+Se adopta secuencia de emisiones 00/01 independiente de V04/V05, con motivo desde 01. Solo entradas activas planificadas, sin incorporación ni reclasificación automática de auditorías fuera de plan. Se congelan datos, ejecución disponible, plantilla y bytes en histórico propio `AuditAnnualProgrammeVersion`. Descargar conserva el mismo archivo y no emite. Los aprobadores se cumplimentan expresamente; firmas/fechas se completan manualmente en Word. No se modifica el modelo/ciclo de vida de los expedientes individuales ni sus versiones aprobadas.
+
+La generación no acredita revisión del Plan Maestro ni aprobación del Programa Anual. Las obligaciones de los procedimientos vigentes se tramitan por su vía documental. Véase `AUDITS_ANNUAL_PROGRAMMES.md` para fuentes, correspondencia, instalación y aceptación manual pendiente.
+
+## CI #583 — reintento síncrono de React incluido en Next (2026-10-10)
+
+PR #123 incorpora un parche pnpm ligado a next@15.5.26 para conservar el ping de Suspense recibido durante un render activo. Se traslada exclusivamente la rama corregida ya presente en react-dom@19.3.0; App Router utiliza su propio renderer compilado. Sin actualización general del framework, temporizadores de recuperación ni cambios de navegación/acciones/modelos de negocio. Dos regresiones prueban el renderer instalado; los recorridos de navegador se conservan. Revisar y retirar el parche cuando una actualización de Next integre la corrección. Evidencia y alcance compartido del runtime en CI_583_R4B_DIAGNOSIS.md.

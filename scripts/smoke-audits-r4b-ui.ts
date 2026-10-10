@@ -13,6 +13,11 @@ async function submitAndWait(page:Page,label:string,expected:RegExp){
   const completedAction=page.waitForResponse(response=>response.request().method()==="POST"&&Boolean(response.request().headers()["next-action"]),{timeout:25000});
   await page.getByRole("button",{name:label,exact:true}).click();
   const result=await completedAction;
+  console.log("R4B acción:",label,{status:result.status(),redirect:result.headers()["x-action-redirect"]});
+  if(result.status()===303){
+    const redirect=result.headers()["x-action-redirect"]?.split(";")[0];
+    assert(redirect && expected.test(new URL(redirect,base).pathname),`Redirección inesperada para ${label}: ${redirect}`);
+  }
   assert([200, 303].includes(result.status()),`La acción ${label} devolvió HTTP ${result.status()}`);
   await page.waitForURL(expected,{timeout:25000});
   await page.waitForLoadState("networkidle");
@@ -24,6 +29,9 @@ async function main(){
   const browser=await chromium.launch({args:["--no-sandbox"]});
   const page=await browser.newPage({viewport:{width:1440,height:950}});
   const errors:string[]=[];
+  const network:unknown[]=[];
+  page.on("request",request=>{if(request.method()==="POST")network.push({event:"action",url:request.url(),data:request.postData()});});
+  page.on("response",response=>{if(response.request().method()==="POST"||response.url().includes("type=EXTERNAL"))network.push({event:"response",url:response.url(),status:response.status(),redirect:response.headers()["x-action-redirect"]});});
   page.on("pageerror",error=>errors.push(error.message));
   page.on("console",message=>{if(message.type()==="error"&&/hydration/i.test(message.text())) errors.push(message.text())});
   try{
@@ -101,6 +109,7 @@ async function main(){
   }catch(e){
     console.error("R4B UI FAIL:",e);
     console.error("URL:",page.url(),"Errores:",errors);
+    console.error("R4B HTTP:",JSON.stringify(network));
     console.error((await page.locator("main").innerText().catch(()=>"" )).slice(0,3000));
     throw e;
   }finally{await browser.close();await prisma.$disconnect();}
