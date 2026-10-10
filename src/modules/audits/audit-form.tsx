@@ -30,7 +30,7 @@ export function AuditForm({ id, defaults, departments, plans=[], returnTo }: { i
   const series = hasAuditBusinessSeries(scenario || null);
   useEffect(() => {
     if (state.savedHref) window.location.assign(auditWithReturnTo(state.savedHref,returnTo));
-  }, [state.savedHref]);
+  }, [state.savedHref,returnTo]);
   useEffect(() => {
     if (!state.error) return;
     const first = Object.keys(state.fieldErrors ?? {})[0];
