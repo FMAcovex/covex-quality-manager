@@ -649,7 +649,7 @@ export function CapaForm({
       </section>
 
       <div className="form-footer">
-        <Link className="button" href={cancelHref ?? (capaId ? `/capa/${capaId)}` : "/capa"}>
+        <Link className="button" href={cancelHref ?? (capaId ? `/capa/${capaId}` : "/capa")}>
           Cancelar
         </Link>
 
