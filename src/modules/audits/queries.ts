@@ -67,17 +67,27 @@ export async function getAuditList(filters: AuditListFilters) {
       const signed = await tx.$queryRaw<{qmsRecordId:string}[]>(Prisma.sql`SELECT v."qmsRecordId" FROM (SELECT DISTINCT ON ("qmsRecordId") id, "qmsRecordId" FROM "QmsRecordVersion" ORDER BY "qmsRecordId", "sequenceNumber" DESC) v JOIN "RecordVersionDocument" d ON d."recordVersionId"=v.id AND d.kind='SIGNED_PDF'`);
       (where.AND as Prisma.AuditWhereInput[]).push({qmsRecordId: filters.signedPdf === "yes" ? {in:signed.map(v=>v.qmsRecordId)} : {notIn:signed.map(v=>v.qmsRecordId)}});
     }
-    // Next review is the value in the latest chronological followup, including an explicit blank.
-    const validDay = (value?: string) => value && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value ? new Date(value) : null;
+    // Latest followup per active scope (general or active finding), including an explicit blank.
+    // An unrelated later general note must not hide a pending finding review.
+    const validDay = (value?: string) => value && /^\\d{4}-\\d{2}-\\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value ? new Date(value) : null;
     const from = validDay(filters.nextReviewFrom), to = validDay(filters.nextReviewTo);
     if (from || to) {
-      const ids = await tx.$queryRaw<{auditId:string}[]>(Prisma.sql`SELECT "auditId" FROM (SELECT DISTINCT ON ("auditId") "auditId", "nextReviewDate" FROM "AuditFollowup" ORDER BY "auditId", "followupDate" DESC, "createdAt" DESC, id DESC) latest WHERE "nextReviewDate" IS NOT NULL ${from ? Prisma.sql`AND "nextReviewDate" >= ${from}` : Prisma.empty} ${to ? Prisma.sql`AND "nextReviewDate" <= ${to}` : Prisma.empty}`);
+      const ids = await tx.$queryRaw<{auditId:string}[]>(Prisma.sql`SELECT DISTINCT latest."auditId" FROM (
+        SELECT DISTINCT ON (f."auditId", f."findingId") f."auditId", f."findingId", f."nextReviewDate"
+        FROM "AuditFollowup" f
+        ORDER BY f."auditId", f."findingId", f."followupDate" DESC, f."createdAt" DESC, f.id DESC
+      ) latest
+      LEFT JOIN "AuditFinding" finding ON finding.id=latest."findingId"
+      WHERE (latest."findingId" IS NULL OR (finding."isActive"=true AND finding."auditId"=latest."auditId"))
+        AND latest."nextReviewDate" IS NOT NULL
+        ${from ? Prisma.sql`AND latest."nextReviewDate" >= ${from}` : Prisma.empty}
+        ${to ? Prisma.sql`AND latest."nextReviewDate" <= ${to}` : Prisma.empty}`);
       (where.AND as Prisma.AuditWhereInput[]).push({ id: { in: ids.map(r => r.auditId) } });
     }
     const total = await tx.audit.count({ where });
     const page = Math.min(Math.max(1, Number(filters.page) || 1), Math.max(1, Math.ceil(total / pageSize)));
     const [rows, departments, years] = await Promise.all([
-      tx.audit.findMany({ where, include: { findings: { where: { isActive: true }, select: { isActive: true, findingType: true, criticality: true, treatment: true, treatmentStatus: true, actions: { where: { isActive: true }, select: { isActive: true, status: true } } } }, followups: { orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }, { id: "desc" }], take: 1, select: { nextReviewDate: true } }, qmsRecord: { include: { versions: { orderBy: {sequenceNumber:"desc"}, take:1, select:{sequenceNumber:true,documents:{where:{kind:"SIGNED_PDF"},select:{id:true}}} }, _count: { select: { sourceRelations: { where: { isActive: true } } } } } }, planEntry:{include:{plan:true}}, departments: { where: { isActive: true } }, participants: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } }, orderBy: [{ createdAt: "desc" }, { id: "asc" }], skip: (Math.floor(page) - 1) * pageSize, take: pageSize }),
+      tx.audit.findMany({ where, include: { findings: { where: { isActive: true }, select: { isActive: true, findingType: true, criticality: true, treatment: true, treatmentStatus: true, actions: { where: { isActive: true }, select: { isActive: true, status: true } } } }, followups: { orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }, { id: "desc" }], select: { findingId: true, nextReviewDate: true } }, qmsRecord: { include: { versions: { orderBy: {sequenceNumber:"desc"}, take:1, select:{sequenceNumber:true,documents:{where:{kind:"SIGNED_PDF"},select:{id:true}}} }, _count: { select: { sourceRelations: { where: { isActive: true } } } } } }, planEntry:{include:{plan:true}}, departments: { where: { isActive: true } }, participants: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] } }, orderBy: [{ createdAt: "desc" }, { id: "asc" }], skip: (Math.floor(page) - 1) * pageSize, take: pageSize }),
       tx.department.findMany({ orderBy: { code: "asc" } }),
       tx.qmsRecord.findMany({ where: { recordType: "AUDIT", year: { not: null } }, distinct: ["year"], select: { year: true }, orderBy: { year: "desc" } }),
     ]);
