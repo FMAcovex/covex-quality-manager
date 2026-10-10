@@ -104,7 +104,9 @@ export function UnsavedChangesGuard({
     // It does not alter the displayed URL and requires no persistent storage.
     let historyGuarded = false;
     try {
-      window.history.pushState({ ...window.history.state, __qmsUnsavedGuard: true }, "", window.location.href);
+      if (!window.history.state?.__qmsUnsavedGuard) {
+        window.history.pushState({ ...window.history.state, __qmsUnsavedGuard: true }, "", window.location.href);
+      }
       historyGuarded = true;
     } catch {
       // beforeunload and link protection remain available.
