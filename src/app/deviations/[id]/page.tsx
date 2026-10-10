@@ -275,7 +275,7 @@ export default async function DeviationDetailPage({
         </div>
         <div className="record-actions">
           <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/deviations", returnTo)} />
-          <Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link>
+          <Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${activeTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link>
           {deviation.status === "DRAFT"
             ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
             : <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>}
