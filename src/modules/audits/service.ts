@@ -24,7 +24,7 @@ export async function saveAudit(raw: unknown, id?: string) {
     if (before && !before.qmsRecord.isActive) throw new AuditValidationError({ title: "Reactiva el expediente antes de editarlo." });
     if (!before && v.status === "CLOSED") throw new AuditValidationError({ status: "El cierre inicial requiere el procedimiento de Informe y cierre." });
     if (before?.status !== "CLOSED" && v.status === "CLOSED") throw new AuditValidationError({ status: "Confirma el cierre mediante Informe y cierre." });
-    if (before?.status === "CLOSED" && v.status !== "CLOSED") throw new AuditValidationError({ status: "Conserva el estado Cerrada al editar; el cierre no se modifica desde este formulario." });
+    if (before?.status === "CLOSED" && v.status !== "CLOSED") throw new AuditValidationError({ status: "La auditoría cerrada no se reabre automáticamente. Conserva el estado Cerrada durante la edición." });
     if (before && v.expectedUpdatedAt && v.expectedUpdatedAt !== before.updatedAt.toISOString()) throw new AuditValidationError({ title: "El expediente cambió desde que abriste el formulario. Recarga antes de guardar." });
     if (before && before.status !== "DRAFT") {
       if (v.status === "DRAFT") throw new AuditValidationError({ status: "Una auditoría operativa no puede volver a Borrador." });
