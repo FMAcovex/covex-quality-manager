@@ -1,4 +1,22 @@
-# Estado actual
+# Estado vigente — corte 2026-10-10
+
+**Fuente de verdad para estado presente:** [V1_BASELINE_AND_BACKLOG.md](V1_BASELINE_AND_BACKLOG.md). El histórico a continuación NO representa el estado actual de PR, a menos que su fecha coincida con este corte.
+
+- **main:** 5194afe5fb672b33e299a0d9b1bb6a90bbd07647; PR #123 integrada mediante squash. CI #585 (38065843516), quality verde con 496 pruebas unitarias y regresiones PostgreSQL/navegador.
+- **7 módulos integrados como desarrollo:** Desviaciones, CAPA, Controles de Cambios, Reclamaciones, Devoluciones, Auditorías y PNT. Cierre técnico y funcional no implica validación GMP.
+- **Auditorías:** la PR #123 añadió emisión Word PMAI V04 y PMAE V05 Anexo I, previsualización, versiones 00/01+, snapshot/bytes históricos. Se utilizaron plantillas oficiales para pruebas, pero **no está confirmada** la instalación en el entorno final ni aceptación visual/editable en Microsoft Word.
+- **PNT:** pruebas con índice de 817 códigos únicos; importador/maestro/documentos integrados, sin prueba de que los 817 PNT reales estén importados, conciliados y verificados.
+- **Pendientes V1:** UX puntual en filtros/indicadores (sin rediseño), mejora funcional de navegación, dashboard global, backend/CI, identidad/autorización/IT, datos/plantillas, alertas autorizadas y validación.
+- **Compatibilidad:** seguimiento requerido del parche de Next/React incorporado en #123, conforme a [CI_583_R4B_DIAGNOSIS.md](CI_583_R4B_DIAGNOSIS.md).
+- **PR antiguas abiertas identificadas:** #11, #16, #17, #19, #20, #21, #76 y #112. Cierre separado, sin merge y solo tras verificar sustituciones.
+- **Arquitectura futura:** modularidad, flujos versionados, inicio de sesión, firmas electrónicas y audit trail según riesgos son objetivos, no funcionalidades actualmente validadas o implantadas.
+
+Esta consolidación es **solo documental**. No modifica módulos, esquema, código de producción, CI, datos ni estado GMP.
+
+---
+
+## Registro cronológico anterior (conservar para trazabilidad)
+
 
 ## P3C-1 — Maquetación responsive base PNT (2026-10-09)
 
