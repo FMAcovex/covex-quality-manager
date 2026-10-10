@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import { updateChangeControlAction } from "@/modules/change-control/actions";
 import { ChangeControlForm } from "@/modules/change-control/components/change-control-form";
 import { getChangeControlDetail, getChangeControlLookups } from "@/modules/change-control/queries";
@@ -10,8 +11,10 @@ function boolValue(value: boolean | null): "" | "true" | "false" {
   return value === true ? "true" : value === false ? "false" : "";
 }
 
-export default async function EditChangeControlPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditChangeControlPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{returnTo?:string;tab?:string}> }) {
   const { id } = await params;
+ const {returnTo,tab}=await searchParams;
+ const cancelHref=qmsDetailUrl("/changes",id,returnTo,tab);
   const [record, lookups] = await Promise.all([getChangeControlDetail(id), getChangeControlLookups()]);
   if (!record) notFound();
 
@@ -80,10 +83,10 @@ export default async function EditChangeControlPage({ params }: { params: Promis
       </div>
       <ChangeControlForm
         mode="edit"
-        action={updateChangeControlAction.bind(null, id)}
+        action={updateChangeControlAction.bind(null,id,qmsListingReturnTo("/changes",returnTo),qmsDetailTab("/changes",tab))}
         departments={lookups.departments}
         defaults={defaults}
-        changeId={id}
+        changeId={id} cancelHref={cancelHref}
         baselineLocked={record.dictamenResult === "APPROVED"}
       />
     </section>
