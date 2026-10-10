@@ -238,10 +238,10 @@ export function DeviationForm({
       key={state.formRevision ?? 0}
       action={formAction}
       className={`form-stack ${openingAttempted ? "show-required-errors" : ""}`}
-      onInvalid={() =>
-    <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
-    <input type="hidden" name="detailTab" value={detailTab ?? ""}/> setOpeningAttempted(true)}
+      onInvalid={() => setOpeningAttempted(true)}
     >
+      <input type="hidden" name="returnTo" value={returnTo ?? ""} />
+      <input type="hidden" name="detailTab" value={detailTab ?? ""} />
       <input type="hidden" name="immediateActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)} />
       <input type="hidden" name="processEquipmentSystem" value={formDefaults.processEquipmentSystem ?? ""} />
