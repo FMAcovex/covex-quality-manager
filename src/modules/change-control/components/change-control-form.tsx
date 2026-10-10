@@ -137,6 +137,8 @@ export function ChangeControlForm({
   defaults = {},
   changeId,
   cancelHref,
+  returnTo,
+  detailTab,
   baselineLocked = false,
 }: {
   mode: "create" | "edit";
@@ -145,6 +147,8 @@ export function ChangeControlForm({
   defaults?: ChangeControlFormDefaults;
   changeId?: string;
   cancelHref?: string;
+  returnTo?: string;
+  detailTab?: string;
   baselineLocked?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -185,6 +189,8 @@ export function ChangeControlForm({
 
   return (
     <form key={state.formRevision ?? 0} action={formAction} className="record-form">
+    <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
+    <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
       <input type="hidden" name="tasksJson" value={JSON.stringify(tasks)} />
 
       {state.error ? (
