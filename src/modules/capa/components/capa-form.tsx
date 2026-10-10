@@ -115,6 +115,7 @@ export function CapaForm({
   departments,
   defaults = {},
   capaId,
+  cancelHref,
   qmsRecordId,
   fromDeviationPlanId,
   fromComplaintPlanId,
@@ -125,6 +126,7 @@ export function CapaForm({
   departments: Department[];
   defaults?: CapaFormDefaults;
   capaId?: string;
+  cancelHref?: string;
   qmsRecordId?: string;
   fromDeviationPlanId?: string;
   fromComplaintPlanId?: string;
@@ -647,7 +649,7 @@ export function CapaForm({
       </section>
 
       <div className="form-footer">
-        <Link className="button" href={capaId ? `/capa/${capaId}` : "/capa"}>
+        <Link className="button" href={cancelHref ?? capaId ? `/capa/${capaId}` : "/capa"}>
           Cancelar
         </Link>
 
