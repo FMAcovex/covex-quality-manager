@@ -201,6 +201,8 @@ jobs:
           --health-retries 10
 
     env:
+      PNT_FINAL_SCREENSHOT_DIR: /tmp/pnt-final-captures
+      PNT_DOCUMENT_ALLOWED_ORIGIN: http://127.0.0.1:3000
       PNT_DOCUMENT_ACCESS_MODE: demo
       PNT_LIFECYCLE_TEST_PERMISSIONS: verify,record-approval,accept-approval,activate,retire,correct,legacy-register,manage-state
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
@@ -230,6 +232,7 @@ jobs:
           pnpm pnt-p2b:smoke
           pnpm pnt-p2c:smoke
           pnpm pnt-p3c2:smoke
+          pnpm pnt-final:smoke
       - name: Controlled documentation browser smokes
         run: |
           pnpm exec playwright install --with-deps chromium
@@ -244,6 +247,7 @@ jobs:
           P2B_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2b:ui:smoke
           P2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2c:ui:smoke
           P3C1_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p3c1:ui:smoke
+          PNT_FINAL_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-final:ui:smoke
           # Restart the application with a synthetic authenticated gateway configuration.
           kill "$pnt_server_pid"
           wait "$pnt_server_pid" || true
@@ -258,3 +262,11 @@ jobs:
         run: |
           git restore next-env.d.ts
           pnpm quality
+
+      - name: PNT final browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnt-final-browser-captures
+          path: /tmp/pnt-final-captures
+          if-no-files-found: ignore

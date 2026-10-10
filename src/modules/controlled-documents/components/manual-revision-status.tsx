@@ -1,13 +1,15 @@
 "use client";
+import { withReturnTo } from "../navigation";
 import { useState, type FormEvent } from "react";
 import { manualStateLabels, type ManualState } from "../manual-state/domain";
 
 type Props = {
+  returnTo?: string;
   documentId: string; revisionId: string; revisionCode: string;
   status: string; version: number; updatedAt: string; previousRevisionId: string | null;
   effectiveFrom: string | null; reviewDueAt: string | null;
 };
-export function ManualRevisionStatus({ documentId, revisionId, revisionCode, status, version, updatedAt, previousRevisionId, effectiveFrom, reviewDueAt }: Props) {
+export function ManualRevisionStatus({ returnTo, documentId, revisionId, revisionCode, status, version, updatedAt, previousRevisionId, effectiveFrom, reviewDueAt }: Props) {
   const [target, setTarget] = useState<ManualState>(
     status in manualStateLabels ? status as ManualState : "DRAFT",
   );
@@ -35,7 +37,7 @@ export function ManualRevisionStatus({ documentId, revisionId, revisionCode, sta
       });
       const value = await res.json();
       if (!res.ok) throw new Error(value.error || "No se pudo cambiar el estado.");
-      window.location.assign("/controlled-documents/" + documentId + "?tab=information");
+      window.location.assign(withReturnTo("/controlled-documents/" + documentId + "?tab=information", returnTo));
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudo cambiar el estado."); }
     finally { setPending(false); }
   }

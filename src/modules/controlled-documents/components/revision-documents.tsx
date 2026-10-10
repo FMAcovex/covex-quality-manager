@@ -6,7 +6,7 @@ import { documentPrincipal } from "../documents/access";
 import { metadataSelection } from "../documents/service";
 import { RevisionDocumentForm } from "./revision-document-form";
 import type { ControlledDocumentRevision } from "@prisma/client";
-export async function RevisionDocuments({ documentId, revisions, annulled }: { documentId: string; revisions: ControlledDocumentRevision[]; annulled: boolean }) {
+export async function RevisionDocuments({ returnTo, documentId, revisions, annulled }: { returnTo?: string; documentId: string; revisions: ControlledDocumentRevision[]; annulled: boolean }) {
   let principal;
   try { principal = documentPrincipal(await headers()); } catch { return <div><h2>Documentos por revisión</h2><p role="alert">Acceso documental no autorizado o sin configurar. El nombre de responsable no autentica al usuario.</p></div>; }
   const objects = await prisma.controlledRevisionDocument.findMany({ where: { documentId }, orderBy: [{ incorporatedAt: "desc" }, { id: "desc" }], select: metadataSelection });
@@ -25,7 +25,7 @@ export async function RevisionDocuments({ documentId, revisions, annulled }: { d
           {d.replacesId && <p>Sustituye a {d.replacesId}. Motivo: {d.replacementReason}</p>}
           {d.externalReference ? <a href={d.externalReference} target="_blank" rel="noopener noreferrer">Abrir referencia externa</a> : <a href={`/api/controlled-documents/${documentId}/revisions/${r.id}/documents/${d.id}`}>Descargar {d.originalName}</a>}
         </section>)}
-        {principal.canWrite && !annulled && <RevisionDocumentForm documentId={documentId} revisionId={r.id} documents={docs.filter(d => !d.replacement)} />}
+        {principal.canWrite && !annulled && <RevisionDocumentForm returnTo={returnTo} documentId={documentId} revisionId={r.id} documents={docs.filter(d => !d.replacement)} />}
       </article>;
     })}
   </div>;

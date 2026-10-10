@@ -1,8 +1,9 @@
 "use client";
+import { withReturnTo } from "../navigation";
 import { FormEvent, useState } from "react";
 import { documentKinds } from "../documents/types";
 // Only the presentation changes: P2A continues to validate, store and preserve each document.
-export function RevisionDocumentForm({ documentId, revisionId, documents }: { documentId: string; revisionId: string; documents: { id: string; originalName: string; kind: string }[] }) {
+export function RevisionDocumentForm({ returnTo, documentId, revisionId, documents }: { returnTo?: string; documentId: string; revisionId: string; documents: { id: string; originalName: string; kind: string }[] }) {
   const [error, setError] = useState<string | null>(null), [pending, setPending] = useState(false);
   const [mode, setMode] = useState("file"), [kind, setKind] = useState("WORKING_WORD"), [replacesId, setReplacesId] = useState("");
   const eligible = documents.filter(d => d.kind === kind);
@@ -17,7 +18,7 @@ export function RevisionDocumentForm({ documentId, revisionId, documents }: { do
       const response = await fetch("/api/controlled-documents/" + documentId + "/revisions/" + revisionId + "/documents", { method: "POST", body: form });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "No se pudo incorporar el documento.");
-      window.location.assign("/controlled-documents/" + documentId + "?tab=documents");
+      window.location.assign(withReturnTo("/controlled-documents/" + documentId + "?tab=documents", returnTo));
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudo incorporar el documento."); }
     finally { setPending(false); }
   }

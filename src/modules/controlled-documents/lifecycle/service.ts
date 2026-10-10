@@ -96,6 +96,7 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
       if (JSON.stringify([...evidence].sort()) !== JSON.stringify([...c.evidenceIds].sort())) throw new Error("El contraste debe identificar las mismas evidencias del registro externo.");
     }
     if (["SUBMIT", "PLAN", "ACTIVATE"].includes(c.operation)) {
+      if (r.verificationStatus !== "VERIFIED") throw new Error("Falta verificación documental favorable del contenido actual.");
       const accepted = await requirements(tx, revisionId, decisions);
       if (!accepted.PREPARATION || !accepted.REVIEW) throw new Error("Faltan preparación y revisión externas contrastadas y aceptadas.");
       if (c.operation === "SUBMIT") status = "PENDING_APPROVAL";

@@ -30,3 +30,20 @@ describe("P2C P1A Server Actions y registro histórico", () => {
     expect(mocks.headers).not.toHaveBeenCalled(); expect(mocks.master.mock.calls[0][0].actor).toBe("P1A sintético");
   });
 });
+
+describe("PNT returnTo en guardados", () => {
+  it("conserva contexto en alta, edición y revisión", async () => {
+    const fd = new FormData(); fd.set("operation", "DRAFT"); fd.set("actor", "QA");
+    const back = "/controlled-documents?q=QA&sort=title&view=latest&page=2"; fd.set("returnTo", back);
+    const result = await masterAction(null, {}, fd);
+    expect(new URL(result.url!, "https://qa.invalid").searchParams.get("returnTo")).toBe(back);
+    fd.set("changeReason", "Cambio QA"); fd.set("revisionCode", "00");
+    const revision = await revisionAction("master", "revision", {}, fd);
+    expect(new URL(revision.url!, "https://qa.invalid").searchParams.get("returnTo")).toBe(back);
+    expect(new URL(revision.url!, "https://qa.invalid").searchParams.get("tab")).toBe("revisions");
+  });
+  it("no redirige fuera del listado PNT", async () => {
+    const fd = new FormData(); fd.set("operation", "DRAFT"); fd.set("actor", "QA"); fd.set("returnTo", "https://example.invalid");
+    expect((await masterAction(null, {}, fd)).url).toBe("/controlled-documents/master");
+  });
+});

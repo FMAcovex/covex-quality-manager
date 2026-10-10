@@ -1,7 +1,8 @@
 "use client";
+import { withReturnTo } from "../navigation";
 import { useState } from "react";
 import { permissions, assertTransition, type LifecycleCommand } from "../lifecycle/domain";
-export type LifecycleFormProps = { documentId: string; revisionId: string; version: number; state: Parameters<typeof assertTransition>[1]; capabilities: string[];
+export type LifecycleFormProps = { returnTo?: string; documentId: string; revisionId: string; version: number; state: Parameters<typeof assertTransition>[1]; capabilities: string[];
   objects: { id: string; originalName: string; kind: string; externalReference: string | null }[];
   decisions: { id: string; operation: string; label: string; evidenceIds: string[] }[]; previousId: string | null };
 const labels: Record<LifecycleCommand["operation"], string> = { VERIFY: "Verificar documentos", REGISTER_EXTERNAL: "Registrar función/ aprobación externa", CONTRAST_EXTERNAL: "Contrastar evidencia externa", SUBMIT: "Pasar a pendiente de aprobación", PLAN: "Registrar aprobación y planificar vigencia", ACTIVATE: "Activar vigencia explícitamente", RETIRE: "Declarar obsoleta", ANNUL: "Anular revisión", RECTIFY: "Rectificar decisión (sin eliminarla)" };
@@ -24,7 +25,7 @@ export function LifecycleForm(p: LifecycleFormProps) {
     if (selected === "PLAN") input.separationConfirmed = fd.get("separationConfirmed") === "on";
     try {
       const res = await fetch(`/api/controlled-documents/${p.documentId}/revisions/${p.revisionId}/lifecycle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
-      const result = await res.json(); if (!res.ok) { setError(result.error || "La decisión no se ha registrado. Compruebe las evidencias y los datos indicados."); setRequestId(null); } else window.location.assign(`/controlled-documents/${p.documentId}?tab=verification`);
+      const result = await res.json(); if (!res.ok) { setError(result.error || "La decisión no se ha registrado. Compruebe las evidencias y los datos indicados."); setRequestId(null); } else window.location.assign(withReturnTo(`/controlled-documents/${p.documentId}?tab=verification`, p.returnTo));
     } catch { setError("No se pudo confirmar el resultado. Reintente sin cambiar datos para evitar duplicación."); } finally { setBusy(false); }
   }}>
     <h4>Registrar una decisión sobre esta revisión</h4><label className="field"><span>Operación</span><select aria-label="Operación" value={selected} onChange={e => setOperation(e.target.value as LifecycleCommand["operation"])}>{available.map(op => <option key={op} value={op}>{labels[op]}</option>)}</select></label>
