@@ -49,7 +49,7 @@ export default async function CapaPage({
 
 
   return (
-    <section className="workspace">
+    <section className="workspace qms-list-ux-b">
       <div className="page-heading">
         <div>
           <p className="eyebrow">Sistema de Calidad</p>
