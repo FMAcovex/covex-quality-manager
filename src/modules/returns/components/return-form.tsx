@@ -21,7 +21,7 @@ function Tri({label,name,defaultValue,required=false}:{label:string;name:string;
   return <label className="field"><span>{label}{required?" *":""}</span><select name={name} defaultValue={defaultValue??""} required={required}><option value="">No informado</option><option value="YES">Sí</option><option value="NO">No</option><option value="NA">N/A</option></select></label>;
 }
 
-export function ReturnForm({mode,action,departments,defaults={},returnId,fromComplaintId,cancelHref}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string;
+export function ReturnForm({mode,action,departments,defaults={},returnId,fromComplaintId,cancelHref,returnTo,detailTab}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string;
   cancelHref?: string;fromComplaintId?:string}){
   const [state,formAction,pending]=useActionState(action,initial);
   const formDefaults=submittedDefaults(defaults,state.submittedValues);
@@ -42,6 +42,8 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
   const patch=(i:number,p:Partial<ReturnProductInput>)=>setProducts(x=>x.map((v,n)=>n===i?{...v,...p}:v));
 
   return <form key={state.formRevision??0} action={formAction} className="form-stack return-form-stack">
+    <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
+    <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
     <input type="hidden" name="productsJson" value={JSON.stringify(products)}/>
     {fromComplaintId?<input type="hidden" name="fromComplaintId" value={fromComplaintId}/>:null}
     {state.error?<div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length?<ul>{state.fieldErrors.map(x=><li key={x}>{x}</li>)}</ul>:null}</div>:null}
