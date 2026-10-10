@@ -24,7 +24,7 @@ export default async function AuditPage({ params, searchParams }: { params: Prom
   const view = await getAuditReportView(id); if (!view) notFound();
   const reviewThreads = await getReviewThreadsForDisplay(audit.qmsRecordId), reviewMode = query.review === "1", basePath = `/audits/${id}`;
   const tabHref = (key: string) => auditWithReturnTo(reviewTabHref(basePath,key,reviewMode),query.returnTo);
-  const modeHref = auditWithReturnTo(reviewModeHref(basePath,tab,reviewMode),query.returnTo);
+  const modeHref = auditWithReturnTo(reviewModeHref(basePath,tab ?? "information",reviewMode),query.returnTo);
   const staticTargets = Object.entries(auditReviewTargets).map(([key,t]) => reviewTargetWithValue(t, key === "conclusion" ? audit.conclusion : key === "scope" ? audit.scope : key === "participants" ? audit.participants.filter(p=>p.isActive).map(p=>p.displayName) : key === "planning" ? {planned:auditDate(audit.plannedDate),performed:auditDate(audit.performedDate)} : key === "closure" ? audit.status : {code:audit.qmsRecord.businessCode,title:audit.title,scenario:audit.scenario}));
   const reviewTargets = [...staticTargets,...work.findings.flatMap(f=>[ {...auditFindingReviewTarget(f.id,{reference:f.reference,description:f.description,retired:!f.isActive}),label:f.reference},...f.actions.map(a=>auditActionReviewTarget(a.id,{description:a.description,retired:!a.isActive}))]),...work.followups.map(f=>auditFollowupReviewTarget(f.id,{description:f.description,date:auditDate(f.followupDate)}))];
   const target = (key: string) => staticTargets.find(t=>t.sectionKey===key)!;
