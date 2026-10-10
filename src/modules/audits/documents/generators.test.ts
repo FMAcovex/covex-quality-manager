@@ -45,4 +45,30 @@ describe('Generadores de Auditorías sobre plantilla',()=>{
   const xml=getZipEntryText(readZip(generateAuditCapaPlan(writeZip(entries),s,0)),'xl/worksheets/sheet1.xml');
   expect(xml).toContain('<pageSetup paperSize="9" scale="60" orientation="landscape" fitToWidth="1" fitToHeight="0"/>');
  });
+
+ it('sustituye el código de auditoría externa repartido en ambos pies sin alterar la plantilla controlada',()=>{
+  const source=readZip(syntheticAuditReport(true));
+  const splitFooter=(page:string)=>`<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial"/></w:rPr><w:t>A</w:t></w:r><w:r><w:t>E</w:t></w:r><w:r><w:t>/</w:t></w:r><w:r><w:t>XXXX</w:t></w:r><w:r><w:t>/YY/AAAA</w:t></w:r><w:r><w:t> Página </w:t></w:r><w:r><w:t>${page}</w:t></w:r></w:p></w:ftr>`;
+  source.push({name:'word/footer1.xml',data:Buffer.from(splitFooter('1 de 2'))},{name:'word/footer2.xml',data:Buffer.from(splitFooter('2 de 2'))},{name:'word/header1.xml',data:Buffer.from('<w:hdr><w:p><w:r><w:t>Anexo III del PNT N.º GC-00/034/03</w:t></w:r></w:p></w:hdr>')});
+  const current=snapshot(true);current.audit.qmsRecord.businessCode='AE/PROV01/02/2026';
+  const generated=readZip(generateAuditReport(writeZip(source),current,0));
+  const visible=(file:string)=>[...getZipEntryText(generated,file).matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map(m=>m[1]).join('');
+  for(const [file,page] of [['word/footer1.xml','1 de 2'],['word/footer2.xml','2 de 2']]){
+    expect(visible(file)).toBe('AE/PROV01/02/2026 Página '+page);
+    expect(getZipEntryText(generated,file)).toContain('w:rFonts');
+    expect(getZipEntryText(generated,file)).toContain('w:jc w:val="both"');
+    expect(visible(file)).not.toContain('XXXX');
+  }
+  expect(visible('word/header1.xml')).toContain('GC-00/034/03');
+  expect(visible('word/document.xml')).toContain('AE/PROV01/02/2026');
+ });
+ it('falla controladamente si la plantilla externa tiene pie sin marcador, o falta código',()=>{
+  const entries=readZip(syntheticAuditReport(true));
+  entries.push({name:'word/footer1.xml',data:Buffer.from('<w:ftr><w:p><w:r><w:t>Pie sin marcador</w:t></w:r></w:p></w:ftr>')});
+  const current=snapshot(true);current.audit.qmsRecord.businessCode='AE/PROV01/02/2026';
+  expect(()=>generateAuditReport(writeZip(entries),current,0)).toThrow(/código editable esperado/);
+  current.audit.qmsRecord.businessCode=null;
+  expect(()=>generateAuditReport(writeZip(entries),current,0)).toThrow(/requiere un código/);
+ });
+
 });
