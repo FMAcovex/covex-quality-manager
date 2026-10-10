@@ -193,3 +193,14 @@
  .pnt-p3c4 .pnt-search-row { flex-wrap: wrap; }
  .pnt-p3c4 .pnt-search-row button { width: 100%; }
 }
+
+/* V1 UX-B — documentary list only; retain the established PNT appearance. */
+.pnt-workspace.qms-list-ux-b .pnt-summary { gap: 12px; }
+.pnt-workspace.qms-list-ux-b .pnt-summary > div { min-width: 0; min-height: 80px; justify-content: center; }
+.pnt-workspace.qms-list-ux-b .pnt-filter-card .pnt-section-heading { gap: 12px; flex-wrap: wrap; }
+.pnt-workspace.qms-list-ux-b .pnt-advanced-grid { column-gap: 12px; row-gap: 14px; }
+.pnt-workspace.qms-list-ux-b .pnt-advanced-grid .filter-actions { padding-top: 10px; border-top: 1px solid var(--border); }
+@media (max-width: 760px) {
+  .pnt-workspace.qms-list-ux-b .pnt-summary { gap: 8px; }
+  .pnt-workspace.qms-list-ux-b .pnt-summary > div { padding: 10px; }
+}
