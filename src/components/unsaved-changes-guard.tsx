@@ -73,6 +73,11 @@ export function UnsavedChangesGuard({
       submitting = true;
       setDirty(false);
     };
+    const onSaveError = () => {
+      submitting = false;
+      interacted = true;
+      setDirty(true);
+    };
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!hasChanges()) return;
       event.preventDefault();
@@ -119,6 +124,7 @@ export function UnsavedChangesGuard({
     form.addEventListener("change", onInteraction);
     form.addEventListener("click", onFormClick);
     form.addEventListener("submit", onSubmit);
+    form.addEventListener("qms:save-error", onSaveError);
     document.addEventListener("click", onNavigationClick, true);
     window.addEventListener("beforeunload", onBeforeUnload);
     if (historyGuarded) window.addEventListener("popstate", onPopState);
@@ -128,6 +134,7 @@ export function UnsavedChangesGuard({
       form.removeEventListener("change", onInteraction);
       form.removeEventListener("click", onFormClick);
       form.removeEventListener("submit", onSubmit);
+      form.removeEventListener("qms:save-error", onSaveError);
       document.removeEventListener("click", onNavigationClick, true);
       window.removeEventListener("beforeunload", onBeforeUnload);
       window.removeEventListener("popstate", onPopState);
@@ -138,6 +145,7 @@ export function UnsavedChangesGuard({
     if (!pending && saveError) {
       setDirty(true);
       const form = anchorRef.current?.closest("form");
+      form?.dispatchEvent(new Event("qms:save-error"));
       const summary = form?.querySelector<HTMLElement>(".form-errors");
       if (summary) {
         window.requestAnimationFrame(() => {
