@@ -3,12 +3,13 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import { saveAuditAction } from "./actions";
+import { auditWithReturnTo } from "./navigation";
 import type { AuditInput } from "./validation";
 import { auditTypeLabels, auditScenarioLabels, auditModalityLabels, auditRoleLabels, auditQualityLabels, compatibleAuditScenario, hasAuditBusinessSeries } from "./domain";
 
 import type { PlanOption } from "./plans";
 type DepartmentOption = { id: string; code: string; name: string; isActive: boolean };
-export function AuditForm({ id, defaults, departments, plans=[] }: { id?: string; defaults?: Partial<AuditInput>; departments: DepartmentOption[]; plans?: PlanOption[] }) {
+export function AuditForm({ id, defaults, departments, plans=[], returnTo }: { id?: string; defaults?: Partial<AuditInput>; departments: DepartmentOption[]; plans?: PlanOption[];returnTo?:string }) {
   const [state, action, pending] = useActionState(saveAuditAction.bind(null, id ?? null), { error: null } as import("./actions").AuditFormState);
   const [values, setValues] = useState<Record<string, string>>(Object.fromEntries(Object.entries(defaults ?? {}).flatMap(([k,v]) => typeof v === "string" ? [[k,v]] : [])));
   const [businessCode, setBusinessCode] = useState(defaults?.businessCode ?? "");
@@ -28,7 +29,7 @@ export function AuditForm({ id, defaults, departments, plans=[] }: { id?: string
   const locked = Boolean(id && defaults?.status !== "DRAFT");
   const series = hasAuditBusinessSeries(scenario || null);
   useEffect(() => {
-    if (state.savedHref) window.location.assign(state.savedHref);
+    if (state.savedHref) window.location.assign(auditWithReturnTo(state.savedHref,returnTo));
   }, [state.savedHref]);
   useEffect(() => {
     if (!state.error) return;
@@ -81,6 +82,6 @@ export function AuditForm({ id, defaults, departments, plans=[] }: { id?: string
       <label className="field" data-field="actor"><span>Realizado por</span><input name="actor" value={values.actor ?? "Usuario demo"} onChange={e => setValues(v => ({...v, actor:e.target.value}))}/>{error("actor")}</label>{text("changeReason", "Motivo del cambio")}
     </div></section>
     <p className="muted-note">El cierre definitivo se confirma desde Informe y cierre, según los hallazgos, las acciones y la verificación del expediente.</p>
-    <div className="heading-actions"><button className="button primary" disabled={pending}>{pending ? "Guardando…" : "Guardar auditoría"}</button><Link className="button" href={id ? `/audits/${id}` : "/audits"}>Cancelar</Link></div>
+    <div className="heading-actions"><button className="button primary" disabled={pending}>{pending ? "Guardando…" : "Guardar auditoría"}</button><Link className="button" href={id ? auditWithReturnTo(`/audits/${id}`,returnTo) : "/audits"}>Cancelar</Link></div>
   </form>;
 }
