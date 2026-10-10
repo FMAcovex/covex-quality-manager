@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation";
+import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import { updateCapaAction } from "@/modules/capa/actions";
 import { CapaForm } from "@/modules/capa/components/capa-form";
 import { getCapaDetail, getCapaLookups, getCapaOriginRecords } from "@/modules/capa/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditCapaPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditCapaPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{returnTo?:string;tab?:string}> }) {
   const { id } = await params;
+ const {returnTo,tab}=await searchParams;
+ const cancelHref=qmsDetailUrl("/capa",id,returnTo,tab);
   const [capa, lookups] = await Promise.all([getCapaDetail(id), getCapaLookups()]);
   if (!capa) notFound();
 
@@ -73,11 +76,11 @@ export default async function EditCapaPage({ params }: { params: Promise<{ id: s
     })),
   };
 
-  const action = updateCapaAction.bind(null, id);
+  const action = updateCapaAction.bind(null,id,qmsListingReturnTo("/capa",returnTo),qmsDetailTab("/capa",tab));
   return (
     <section className="workspace">
       <div className="page-heading"><div><p className="eyebrow">CAPA</p><h1>Editar {capa.qmsRecord.businessCode}</h1><p>Los expedientes cerrados permanecen editables en V1 con historial de cambios.</p></div></div>
-      <CapaForm mode="edit" action={action} departments={lookups.departments} defaults={defaults} capaId={id} qmsRecordId={capa.qmsRecord.id} />
+      <CapaForm mode="edit" action={action} departments={lookups.departments} defaults={defaults} capaId={id} cancelHref={cancelHref} qmsRecordId={capa.qmsRecord.id} />
     </section>
   );
 }
