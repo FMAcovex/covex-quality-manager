@@ -67,6 +67,20 @@ async function main(){
  await prisma.capa.update({where:{qmsRecordId:capa.id},data:{status:'CLOSED',effectivenessStatus:'CONFORMING'}});
  const closed=await closeAudit(a.id,{actor,closedAt:'2096-10-11'});assert.equal(closed.status,'CLOSED');assert(closed.closedAt);
  await assert.rejects(saveAudit({...auditDefaults(now),status:'OPEN'},a.id),/reabre/);
+ // R5: closed audits stay editable by explicit decision, but preserve status,
+ // close date and previously frozen documents/snapshots.
+ const afterClosure=await prisma.audit.findUniqueOrThrow({where:{id:a.id},include:{qmsRecord:true,departments:true,participants:true}});
+ const originalCloseDate=afterClosure.closedAt?.toISOString();
+ await saveAudit({...auditDefaults(afterClosure),title:'Auditoría cerrada editable R5'},a.id);
+ await saveAuditReport(a.id,{actor,reportDate:'2096-10-10',conclusion:'Conclusión editada tras cierre'});
+ const afterClosedEdit=await prisma.audit.findUniqueOrThrow({where:{id:a.id}});
+ assert.equal(afterClosedEdit.status,'CLOSED');assert.equal(afterClosedEdit.closedAt?.toISOString(),originalCloseDate);
+ const v02=await issueAuditReport(a.id,{actor,reason:'Corrección documental posterior al cierre'});
+ assert.equal(v02.sequenceNumber,2);
+ assert.equal(JSON.stringify((await prisma.qmsRecordVersion.findUniqueOrThrow({where:{id:v00.id}})).snapshot),before);
+ assert.equal((await getAuditDocument(a.id,signed00.id,true)).checksum,signed00.checksum);
+ await saveAuditFollowup(a.id,{actor,followupDate:'2096-10-12',completedByText:actor,description:'Seguimiento registrado después del cierre',nextReviewDate:'2096-11-01'});
+ assert.equal((await prisma.audit.findUniqueOrThrow({where:{id:a.id}})).status,'CLOSED');
  const supplier=await create('SUPPLIER'), critical=await create('SUPPLIER');
  await saveAuditFinding(supplier.id,{actor,findingType:'FINDING',criticality:'MINOR',description:'Deficiencia pendiente del proveedor'});await saveAuditFinding(critical.id,{actor,findingType:'FINDING',criticality:'CRITICAL',description:'Crítico del proveedor'});
  for(const x of [supplier,critical]){await issueAuditReport(x.id,{actor});await saveAuditReport(x.id,{actor,reportDate:'2096-10-08',conclusion:'Proveedor evaluado',programme:'09:00 | Visita',planIntroduction:'Objetivo',activityDuration:'09:00–12:00',reportSentAt:'2096-10-09'});}
