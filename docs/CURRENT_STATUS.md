@@ -1086,6 +1086,8 @@ Fuentes oficiales contrastadas en SharePoint; instalador separado con hashes del
 
 Pendiente de aceptación del usuario: edición y acabado en Microsoft Word, y preparación/revisión/aprobación documental por las vías existentes. No fusionada ni desplegada.
 
-## Diagnóstico CI de Programas Anuales — PR #123 (2026-10-10)
+## Corrección CI #583 — PR #123 (2026-10-10)
 
-CI #583: ambos intentos superan PostgreSQL y quality (494 pruebas); R4B UI termina en timeout al filtrar Externas (intento 1) o crear el plan externo (intento 2). Se añade evidencia del formulario, petición/respuesta de Server Actions, redirección y eventos de clic/envío al smoke existente. Se mantienen todos los recorridos y aserciones; no se modifica código funcional ni se sustituye navegación. Diagnóstico y validación final en curso, sin merge ni squash.
+Ambos fallos R4B UI se han acotado al reintento perdido de Suspense en el React compilado dentro de Next 15.5.26: hidratación completa, datos correctos, RSC HTTP 200 y Server Action HTTP 303 con destino correcto, sin commit posterior del cliente. Se aplica un parche pnpm mínimo a esa rama en producción/desarrollo, equivalente a la existente en react-dom 19.3.0. Sin cambios funcionales en Auditorías/PNT ni saltos de navegación; pruebas R4B originales preservadas y redirección HTTP reforzada.
+
+Regresión del renderer: roja sin el parche y verde con él. Verificación previa: 12/12 filtros, 98 pruebas/9 archivos, lint/build y smokes PostgreSQL 16 + navegador de R4B y Programa Anual interno/externo, incluidas vistas 1440/768/390. La CI completa se lanza sobre el commit de esta corrección; resultado final en la PR/conversación. Detalle, límites del entorno local y mantenimiento en CI_583_R4B_DIAGNOSIS.md. Sin merge ni squash.

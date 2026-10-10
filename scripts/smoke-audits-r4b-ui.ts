@@ -10,11 +10,14 @@ async function navigate(page:Page,path:string){
   await page.waitForLoadState("networkidle");
 }
 async function submitAndWait(page:Page,label:string,expected:RegExp){
-  console.log("R4B formulario:",label,await page.getByRole("button",{name:label,exact:true}).evaluate(button=>Array.from(new FormData((button as HTMLButtonElement).form!).entries())));
   const completedAction=page.waitForResponse(response=>response.request().method()==="POST"&&Boolean(response.request().headers()["next-action"]),{timeout:25000});
   await page.getByRole("button",{name:label,exact:true}).click();
   const result=await completedAction;
-  console.log("R4B acción:",label,{url:result.url(),status:result.status(),action:result.request().headers()["next-action"],redirect:result.headers()["x-action-redirect"],data:result.request().postData()});
+  console.log("R4B acción:",label,{status:result.status(),redirect:result.headers()["x-action-redirect"]});
+  if(result.status()===303){
+    const redirect=result.headers()["x-action-redirect"]?.split(";")[0];
+    assert(redirect && expected.test(new URL(redirect,base).pathname),`Redirección inesperada para ${label}: ${redirect}`);
+  }
   assert([200, 303].includes(result.status()),`La acción ${label} devolvió HTTP ${result.status()}`);
   await page.waitForURL(expected,{timeout:25000});
   await page.waitForLoadState("networkidle");
@@ -27,23 +30,10 @@ async function main(){
   const page=await browser.newPage({viewport:{width:1440,height:950}});
   const errors:string[]=[];
   const network:unknown[]=[];
-  page.on("request",request=>{if(request.method()==="POST"||request.url().includes("type=EXTERNAL"))network.push({event:"request",url:request.url(),method:request.method(),action:request.headers()["next-action"],data:request.postData()});});
-  page.on("response",async response=>{if(response.request().method()==="POST"||response.url().includes("type=EXTERNAL"))network.push({event:"response",url:response.url(),status:response.status(),redirect:response.headers()["x-action-redirect"],body:(await response.text().catch(error=>String(error))).slice(0,4000)});});
-  page.on("requestfailed",request=>network.push({event:"requestfailed",url:request.url(),failure:request.failure()}));
-  await page.addInitScript(()=>{
-    const events:unknown[]=[];
-    (window as unknown as {r4bEvents:unknown[]}).r4bEvents=events;
-    document.addEventListener("click",event=>{
-      const target=(event.target as HTMLElement).closest("button,a");
-      if(target)events.push({event:"click",text:target.textContent,href:target.getAttribute("href"),at:performance.now(),reactPropsAttached:Object.keys(target).some(key=>key.startsWith("__reactProps"))});
-    },true);
-    document.addEventListener("submit",event=>{
-      const form=event.target as HTMLFormElement;
-      events.push({event:"submit",data:Array.from(new FormData(form).entries()),at:performance.now(),reactPropsAttached:Object.keys(form).some(key=>key.startsWith("__reactProps"))});
-    },true);
-  });
+  page.on("request",request=>{if(request.method()==="POST")network.push({event:"action",url:request.url(),data:request.postData()});});
+  page.on("response",response=>{if(response.request().method()==="POST"||response.url().includes("type=EXTERNAL"))network.push({event:"response",url:response.url(),status:response.status(),redirect:response.headers()["x-action-redirect"]});});
   page.on("pageerror",error=>errors.push(error.message));
-  page.on("console",message=>{if(message.type()==="error") errors.push(message.text())});
+  page.on("console",message=>{if(message.type()==="error"&&/hydration/i.test(message.text())) errors.push(message.text())});
   try{
     await navigate(page,"/audits?q="+encodeURIComponent(marker)+"&planning=OUT_OF_PLAN");
     const filterTypeNav=page.getByRole("navigation",{name:"Filtrar auditorías por tipo"});
@@ -119,8 +109,7 @@ async function main(){
   }catch(e){
     console.error("R4B UI FAIL:",e);
     console.error("URL:",page.url(),"Errores:",errors);
-    console.error("R4B red:",JSON.stringify(network));
-    console.error("R4B eventos DOM:",await page.evaluate(()=>(window as unknown as {r4bEvents:unknown[]}).r4bEvents));
+    console.error("R4B HTTP:",JSON.stringify(network));
     console.error((await page.locator("main").innerText().catch(()=>"" )).slice(0,3000));
     throw e;
   }finally{await browser.close();await prisma.$disconnect();}
