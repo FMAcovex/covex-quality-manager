@@ -1,5 +1,5 @@
-import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 "use server";
+import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
