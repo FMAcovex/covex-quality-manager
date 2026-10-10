@@ -144,6 +144,8 @@ export function DeviationForm({
   mode,
   deviationId,
   cancelHref,
+  returnTo,
+  detailTab,
   currentVersionSequence = 0,
 }: {
   action: FormAction;
@@ -152,6 +154,8 @@ export function DeviationForm({
   mode: "create" | "edit";
   deviationId?: string;
   cancelHref?: string;
+  returnTo?: string;
+  detailTab?: string;
   currentVersionSequence?: number;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null });
@@ -234,7 +238,9 @@ export function DeviationForm({
       key={state.formRevision ?? 0}
       action={formAction}
       className={`form-stack ${openingAttempted ? "show-required-errors" : ""}`}
-      onInvalid={() => setOpeningAttempted(true)}
+      onInvalid={() =>
+    <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
+    <input type="hidden" name="detailTab" value={detailTab ?? ""}/> setOpeningAttempted(true)}
     >
       <input type="hidden" name="immediateActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)} />
