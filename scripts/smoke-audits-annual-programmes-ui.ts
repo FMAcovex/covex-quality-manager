@@ -37,7 +37,7 @@ async function main() {
       await approval.locator('[name="qualityApproverName"]').fill("Calidad QA ficticia");
       await approval.locator('[name="actor"]').fill(actor); await approval.locator('[name="reason"]').fill("Preparación QA");
       await submit(page, "Guardar datos de aprobación");
-      assert(await page.getByRole("status").filter({ hasText: "guardados" }).isVisible());
+      await page.getByRole("status").filter({ hasText: "guardados" }).waitFor({ state: "visible" });
       await page.getByText("Editar planificación", { exact: true }).click();
       const edit = page.locator('form').filter({ has: page.getByRole("button", { name: "Guardar cambios", exact: true }) });
       await edit.locator('[name="plannedPeriodText"]').fill("Primer trimestre"); await edit.locator('[name="plannedAuditorsText"]').fill("Auditor UI ficticio");
@@ -60,7 +60,7 @@ async function main() {
       await issue.locator('[name="actor"]').fill(actor); await issue.locator('[name="reason"]').fill("Vista obsoleta QA");
       await prisma.auditPlanEntry.update({ where: { id: entry.id }, data: { notes: "Cambio posterior QA" } });
       await submit(page, "Emitir Programa Anual en Word");
-      assert((await page.getByRole("alert").textContent())?.includes("cambiado"));
+      await page.getByRole("alert").filter({ hasText: "cambiado" }).waitFor({ state: "visible" });
       assert.equal(await prisma.auditAnnualProgrammeVersion.count({ where: { planId: plan.id } }), 1);
       await page.reload(); await page.waitForLoadState("networkidle");
       const subsequent = page.locator('form').filter({ has: page.getByRole("button", { name: "Emitir Programa Anual en Word" }) });
