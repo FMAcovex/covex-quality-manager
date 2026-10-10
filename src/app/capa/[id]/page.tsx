@@ -223,7 +223,7 @@ export default async function CapaDetailPage({
           </p>
         </div>
         <div className="record-actions">
-          <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, activeTab, reviewMode)} />
+          <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/capa", returnTo)} />
           <Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit`, "/capa", returnTo)}>Editar / nuevo seguimiento</Link>
           {capa.status !== "DRAFT" ? <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a> : null}
         </div>
@@ -588,7 +588,7 @@ export default async function CapaDetailPage({
                 <h2>Revisión del expediente</h2>
                 <p className="muted-note">Observaciones vinculadas al seguimiento funcional revisado cuando exista.</p>
               </div>
-              <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, "review", reviewMode)} />
+              <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, "review", reviewMode), "/capa", returnTo)} />
             </div>
             <ReviewStatusSummary />
           </div>
