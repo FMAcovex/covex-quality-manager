@@ -1,4 +1,5 @@
 "use client";
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { deviationVersionLabel } from "@/modules/deviations/version-mode";
 import { deviationProvenanceOptions } from "@/modules/deviations/domain";
 
@@ -240,6 +241,7 @@ export function DeviationForm({
       className={`form-stack ${openingAttempted ? "show-required-errors" : ""}`}
       onInvalid={() => setOpeningAttempted(true)}
     >
+      <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""} />
       <input type="hidden" name="detailTab" value={detailTab ?? ""} />
       <input type="hidden" name="immediateActionsJson" value={JSON.stringify(actions)} />
