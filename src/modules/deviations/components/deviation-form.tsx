@@ -642,7 +642,7 @@ export function DeviationForm({
       ) : null}
 
       <div className="form-footer">
-        <Link className="button" href={cancelHref ?? deviationId ? `/deviations/${deviationId}` : "/deviations"}>Cancelar</Link>
+        <Link className="button" href={cancelHref ?? (deviationId ? `/deviations/${deviationId)}` : "/deviations"}>Cancelar</Link>
         {mode === "create" ? (
           <div className="version-submit-group">
             <button type="submit" name="saveIntent" value="draft" className="button" formNoValidate onClick={() => setOpeningAttempted(false)} disabled={pending}>
