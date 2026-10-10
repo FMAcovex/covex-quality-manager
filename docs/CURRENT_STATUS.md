@@ -1077,3 +1077,11 @@ Rama `feature/pnt-final-corrections`, actualizada desde main `417e3a3a` tras el 
 - Badge documental común, separado del maestro; procedencia por metadatos reales, sin inferencia por existencia del ciclo.
 - Excel con verificación en español y enums intactos; aclaración de última revisión (número mayor), sin cambiar selección.
 - Regresiones unitarias, PostgreSQL y Chromium en CI documental; capturas como artefacto. Sin schema/migraciones ni cambios funcionales en otros módulos. Sin merge/squash automático. Resultados en la única PR.
+
+## Programas anuales de Auditorías — PR limitada (2026-10-10)
+
+Implementada en rama sobre main tras PR #122: campos documentales de entradas/aprobadores, previsualización, emisión DOCX interna/general y externa/Anexo I, histórico independiente con snapshot/bytes/checksum, motivo desde emisión 01, concurrencia e idempotencia. Las funcionalidades ya aprobadas de Auditorías y PNT conservan su alcance.
+
+Fuentes oficiales contrastadas en SharePoint; instalador separado con hashes del original interno `.doc` y PMAE V05 `.docx`, sin binarios corporativos en Git ni cambios en SharePoint. Ver `AUDITS_ANNUAL_PROGRAMMES.md` para el mapeo y operación. CI incorpora smoke PostgreSQL y navegador con plantillas ficticias compatibles; QA local complementaria utiliza documentos reales.
+
+Pendiente de aceptación del usuario: edición y acabado en Microsoft Word, y preparación/revisión/aprobación documental por las vías existentes. No fusionada ni desplegada.

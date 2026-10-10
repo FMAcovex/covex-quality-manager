@@ -1,0 +1,68 @@
+import assert from "node:assert/strict";
+import { randomUUID, createHash } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import { prisma } from "../src/lib/db";
+import { addPlanEntry, createAnnualPlan, updatePlanEntry } from "../src/modules/audits/plans";
+import { getAnnualProgrammeFile, getProgrammePreview, issueAnnualProgramme, saveProgrammeApprovers } from "../src/modules/audits/annual-programme/service";
+import { programmeDocumentTypes } from "../src/modules/audits/annual-programme/domain";
+import { syntheticAnnualProgramme } from "./audits-annual-programme-fixtures";
+import { readZip, getZipEntryText } from "../src/lib/ooxml/zip";
+const actor = "QA programa ficticio";
+async function main() {
+  if (process.env.APP_ENV !== "test") throw Error("Smoke de programas anuales solo en APP_ENV=test con PostgreSQL aislado.");
+  const suffix = randomUUID().slice(0, 8);
+  for (const internal of [true, false]) {
+    const type = internal ? "INTERNAL" : "EXTERNAL";
+    const source = syntheticAnnualProgramme(internal);
+    if (process.env.ANNUAL_OFFICIAL_TEMPLATES !== "1") await prisma.templateVersion.create({ data: { module: "AUDIT", documentType: programmeDocumentTypes[type], versionCode: `QA-${suffix}`, effectiveFrom: new Date("2026-10-09"), fileName: "ficticia.docx", fileData: new Uint8Array(source), fileSize: source.length, checksum: createHash("sha256").update(source).digest("hex") } });
+    const occupied = await prisma.auditAnnualPlan.findMany({ where: { auditType: type }, select: { year: true } });
+    const year = Array.from({ length: 101 }, (_, i) => 2100 - i).find(y => !occupied.some(p => p.year === y))!;
+    const plan = await createAnnualPlan({ year, auditType: type, title: `Programa QA ${suffix}`, notes: "Datos ficticios", actor });
+    const entryInput = { subject: "Objeto ficticio", targetName: "Entidad QA ficticia", departmentId: "", plannedDate: "", plannedPeriodText: "Primer trimestre", plannedAuditorsText: "Auditor QA", productService: "Servicio ficticio", plannedScope: "Alcance ficticio", plannedModality: "REMOTE", programmeArea: "Calidad", notes: "Notas de planificación", actor, reason: "Cambio QA" };
+    const { entry } = await addPlanEntry(plan.id, entryInput);
+    const missing = await getProgrammePreview(plan.id); assert(missing.blockers.length > 0);
+    await saveProgrammeApprovers(plan.id, { technicalApproverName: "Técnico QA ficticio", qualityApproverName: "Calidad QA ficticia", actor, reason: "Completar aprobación" });
+    const preview = await getProgrammePreview(plan.id); assert.equal(preview.blockers.length, 0);
+    const input = { actor, reason: "", requestId: randomUUID(), expectedFingerprint: preview.fingerprint };
+    const first = await issueAnnualProgramme(plan.id, input); assert.equal(first.sequenceNumber, 0);
+    const repeat = await issueAnnualProgramme(plan.id, input); assert.equal(repeat.id, first.id);
+    await assert.rejects(issueAnnualProgramme(plan.id, { ...input, actor: "Otro" }), /utilizada/);
+    await assert.rejects(issueAnnualProgramme(plan.id, { ...input, requestId: randomUUID() }), /motivo/);
+    const download = await getAnnualProgrammeFile(plan.id, first.id); assert.deepEqual(download.fileData, first.fileData);
+    await assert.rejects(getAnnualProgrammeFile(randomUUID(), first.id), /encontrada/);
+    await assert.rejects(prisma.auditAnnualProgrammeVersion.update({ where: { id: first.id }, data: { reason: "No permitido" } }));
+    await assert.rejects(prisma.auditAnnualProgrammeVersion.delete({ where: { id: first.id } }));
+    const linked = await prisma.qmsRecord.create({ data: { recordType: "AUDIT" } });
+    await prisma.audit.create({ data: { qmsRecordId: linked.id, auditType: type, scenario: internal ? "INTERNAL_COVEX" : "SUPPLIER", status: "OPEN", planningStatus: "PLANNED", planEntryId: entry.id, performedDate: new Date("2026-10-07"), capaPlanEstablishedAt: new Date("2026-10-08"), reportSentAt: new Date("2026-10-09"), closedAt: new Date("2026-10-10") } });
+    await assert.rejects(issueAnnualProgramme(plan.id, { ...input, requestId: randomUUID(), reason: "Vista obsoleta" }), /cambiado/);
+    const execution = await getProgrammePreview(plan.id);
+    assert.equal(execution.content.rows[0].performed, "07/10/2026");
+    assert.equal(execution.content.rows[0].partial, internal ? "08/10/2026" : "09/10/2026");
+    const next = await Promise.all([1, 2].map(i => issueAnnualProgramme(plan.id, { actor, reason: `Concurrente ${i}`, requestId: randomUUID(), expectedFingerprint: execution.fingerprint })));
+    assert.deepEqual(next.map(v => v.sequenceNumber).sort(), [1, 2]);
+    const sameKey = { actor, reason: "Doble envío", requestId: randomUUID(), expectedFingerprint: execution.fingerprint };
+    const same = await Promise.all([issueAnnualProgramme(plan.id, sameKey), issueAnnualProgramme(plan.id, sameKey)]); assert.equal(same[0].id, same[1].id);
+    await updatePlanEntry(plan.id, entry.id, { ...entryInput, notes: "Cambio posterior documentado" });
+    assert.deepEqual((await getAnnualProgrammeFile(plan.id, first.id)).fileData, first.fileData);
+    assert.equal((first.snapshot as { content: { rows: { notes: string }[] } }).content.rows[0].notes, "Notas de planificación");
+    const audit = await prisma.audit.findUniqueOrThrow({ where: { planEntryId: entry.id } });
+    const outsideRecord = await prisma.qmsRecord.create({ data: { recordType: "AUDIT" } });
+    await prisma.audit.create({ data: { qmsRecordId: outsideRecord.id, auditType: type, scenario: internal ? "INTERNAL_COVEX" : "SUPPLIER", planningStatus: "OUT_OF_PLAN", outsidePlanReason: "Auditoría extraordinaria QA", title: "FUERA DE PLAN QA" } });
+    assert.equal((await getProgrammePreview(plan.id)).content.rows.length, 1);
+    await prisma.qmsRecord.update({ where: { id: linked.id }, data: { isActive: false } });
+    assert.equal((await getProgrammePreview(plan.id)).content.rows[0].performed, "");
+    await prisma.qmsRecord.update({ where: { id: linked.id }, data: { isActive: true } });
+    await prisma.audit.update({ where: { id: audit.id }, data: { status: "DRAFT" } });
+    assert.equal((await getProgrammePreview(plan.id)).content.rows[0].partial, "");
+    await prisma.audit.update({ where: { id: audit.id }, data: { status: "OPEN" } });
+    const template = await prisma.templateVersion.findUniqueOrThrow({ where: { id: first.templateVersionId } });
+    await prisma.templateVersion.update({ where: { id: template.id }, data: { checksum: "0".repeat(64) } });
+    const corrupt = await getProgrammePreview(plan.id);
+    await assert.rejects(issueAnnualProgramme(plan.id, { actor, reason: "Plantilla corrupta", requestId: randomUUID(), expectedFingerprint: corrupt.fingerprint }), /checksum/);
+    await prisma.templateVersion.update({ where: { id: template.id }, data: { checksum: template.checksum } });
+    const xml = getZipEntryText(readZip(Buffer.from(next[0].fileData)), "word/document.xml"); assert(xml.includes("Entidad QA ficticia"));
+    if (process.env.ANNUAL_QA_OUTPUT) { await mkdir(process.env.ANNUAL_QA_OUTPUT, { recursive: true }); await writeFile(`${process.env.ANNUAL_QA_OUTPUT}/${type}-00.docx`, first.fileData); await writeFile(`${process.env.ANNUAL_QA_OUTPUT}/${type}-01.docx`, next[0].fileData); }
+    console.log(`OK ${type}: emisión, ejecución, integridad, histórico, idempotencia, concurrencia, separación fuera de plan. Plan ${plan.id}`);
+  }
+}
+main().finally(() => prisma.$disconnect()).catch(e => { console.error(e); process.exitCode = 1; });
