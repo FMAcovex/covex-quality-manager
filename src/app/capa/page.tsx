@@ -1,5 +1,6 @@
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
+import { qmsListingUrl, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
@@ -27,6 +28,7 @@ export default async function CapaPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
+  const toDetail = (id: string) => qmsWithReturnTo("/capa/" + id, "/capa", qmsListingUrl("/capa", query));
   const filters = {
     review: firstQueryValue(query.review),
     q: param(query.q),
@@ -99,7 +101,7 @@ export default async function CapaPage({
             placeholder="Buscar código, origen, acción, causa raíz u observaciones…"
             suggestions={rows.map((row) => ({
               id: row.id,
-              href: `/capa/${row.id}`,
+              href: toDetail(row.id),
               code: row.qmsRecord.businessCode ?? "Sin código",
               title: row.plannedActions[0]?.description ?? row.defectDescription ?? "Sin descripción",
               meta: [row.departmentCodeSnapshot, capaStatusLabel(row.status)].filter(Boolean).join(" · "),
@@ -163,13 +165,13 @@ export default async function CapaPage({
                         data-reminder-summary={actionDescription}
                         data-reminder-status={capaStatusLabel(row.status)}
                         data-reminder-meta={row.departmentCodeSnapshot ?? ""}
-                        data-reminder-href={`/capa/${row.id}`}
+                        data-reminder-href={toDetail(row.id)}
                         aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "CAPA"}`}
                       />
                     </td>
                     <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} basePath={`/capa/${row.id}`} /></td>
                     <td data-column-key="type"><span className="badge neutral">{capaTypeLabel(row.actionType)}</span></td>
-                    <td data-column-key="code" className="sticky-code"><Link href={`/capa/${row.id}`}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
+                    <td data-column-key="code" className="sticky-code"><Link href={toDetail(row.id)}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
                     <td data-column-key="origin">{originRecords.length ? originRecords.map((record) => qmsRecordTypeLabel(record.recordType)).join(" · ") : row.originType ?? "—"}</td>
                     <td data-column-key="originCode">{originRecords.length ? originRecords.map((record) => qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))).join(" · ") : row.originCode ?? "—"}</td>
