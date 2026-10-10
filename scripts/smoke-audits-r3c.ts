@@ -72,7 +72,7 @@ async function main(){
  const afterClosure=await prisma.audit.findUniqueOrThrow({where:{id:a.id},include:{qmsRecord:true,departments:true,participants:true}});
  const originalCloseDate=afterClosure.closedAt?.toISOString();
  await saveAudit({...auditDefaults(afterClosure),title:'Auditoría cerrada editable R5'},a.id);
- await saveAuditReport(a.id,{actor,reportDate:'2096-10-10',conclusion:'Conclusión editada tras cierre'});
+ await saveAuditReport(a.id,{actor,reportDate:'2096-10-10',conclusion:'Conclusión editada tras cierre',capaPlanEstablishedAt:'2096-10-10'});
  const afterClosedEdit=await prisma.audit.findUniqueOrThrow({where:{id:a.id}});
  assert.equal(afterClosedEdit.status,'CLOSED');assert.equal(afterClosedEdit.closedAt?.toISOString(),originalCloseDate);
  const v02=await issueAuditReport(a.id,{actor,reason:'Corrección documental posterior al cierre'});
