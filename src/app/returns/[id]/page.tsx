@@ -265,7 +265,7 @@ export default async function ReturnDetailPage({
               active={reviewMode}
               href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/returns", returnTo)}
             />
-            {r.qmsRecord.isActive?<Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit`, "/returns", returnTo)}>
+            {r.qmsRecord.isActive?<Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit?tab=${tab}`, "/returns", returnTo)}>
               Editar
             </Link>:null}
             {r.qmsRecord.isActive&&r.status === "OPEN" ? (
