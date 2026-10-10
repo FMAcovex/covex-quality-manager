@@ -611,3 +611,40 @@ La generación no acredita revisión del Plan Maestro ni aprobación del Program
 ## CI #583 — reintento síncrono de React incluido en Next (2026-10-10)
 
 PR #123 incorpora un parche pnpm ligado a next@15.5.26 para conservar el ping de Suspense recibido durante un render activo. Se traslada exclusivamente la rama corregida ya presente en react-dom@19.3.0; App Router utiliza su propio renderer compilado. Sin actualización general del framework, temporizadores de recuperación ni cambios de navegación/acciones/modelos de negocio. Dos regresiones prueban el renderer instalado; los recorridos de navegador se conservan. Revisar y retirar el parche cuando una actualización de Next integre la corrección. Evidencia y alcance compartido del runtime en CI_583_R4B_DIAGNOSIS.md.
+
+
+## D-069 — Cierre funcional del núcleo y baseline V1 (2026-10-10)
+
+Se acepta como referencia para la fase de consolidación el commit de main 5194afe5 (PR #123 integrada) y la CI #585 verde. Los siete módulos —Desviaciones, CAPA, Controles de Cambios, Reclamaciones, Devoluciones, Auditorías y PNT— están integrados y se consideran cerrados en alcance de desarrollo revisado. No se declaran instalados, cualificados ni GMP validados. Las notas cronológicas antiguas conservan su significado histórico. La referencia viva es V1_BASELINE_AND_BACKLOG.md.
+
+## D-070 — Preservar diseño actual; UX de listados acotada (2026-10-10)
+
+Se conserva el diseño corporativo actual: apariencia, disposición principal, navegación, colores y componentes. No se autoriza un rediseño. La mejora visual prioritaria se limita a **maquetación/espaciado/legibilidad de filtros e indicadores en listados de cada módulo**, con pruebas responsive 1440/768/390 y sin cambiar filtros, reglas ni consultas. Las restantes mejoras UX son funcionales: retorno con filtros/pestaña, búsqueda, ayuda, errores inline, indicadores de cambios pendientes y vistas guardadas según alcance aprobado.
+
+## D-071 — Guardado explícito y conservación de comportamiento (2026-10-10)
+
+Se mantiene guardado explícito en expedientes y formularios; no autoguardado silencioso GMP. Mantener campos ante error, control de concurrencia, protección de doble envío, versiones, snapshots y documentos históricos. Las PR transversales no homogenizarán indebidamente estados, cierres o seguimientos de módulos con procedimientos distintos. Una mejora con impacto funcional requiere aceptación y regresión propias.
+
+## D-072 — Arquitectura QMS extensible, sin reescritura (2026-10-10)
+
+Conservar monolito modular Next.js/TypeScript/React + PostgreSQL/Prisma. Preparar contratos de módulo y servicios comunes (identidad y autorización, gestión documental, relaciones, tareas, KPI, notificaciones, flujos) por composición y evolución versionada. No introducir microservicios, motor genérico o nuevas tablas solo por previsión. Nuevos dominios como Proveedores, OOS/OOT, PQR, validaciones, formación y equipos son posibilidades, no alcance V1. Training Manager permanece proyecto independiente salvo decisión posterior. Véase QMS_TARGET_ARCHITECTURE.md.
+
+## D-073 — Configurabilidad controlada y futura aprobación (2026-10-10)
+
+Separar catálogos/parametrización administrativa, versiones de formularios, reglas de negocio controladas, definiciones de workflow y cambios de código. Diseñar futuros flujos versionados con revisión/aprobación/devolución y tareas; cada instancia conservará definición/versiones aplicadas. La firma se asociará al snapshot o archivo exacto. **No afirmar que existe actualmente un workflow corporativo de aprobación o una firma electrónica GMP**. Su implementación requiere requisitos y evaluación de riesgos específicos.
+
+## D-074 — Identidad, firma y trazabilidad son controles distintos (2026-10-10)
+
+Login no equivale a autorización; autorización no equivale a firma; PDF firmado recibido no equivale a firma electrónica generada por la aplicación. No considerar un nombre de actor escrito manualmente identidad autenticada para uso GMP. Evaluar autenticación corporativa, RBAC en servidor, segregación de funciones, audit trail legible/seguro y firmas según uso previsto y requisitos aplicables. El historial operativo de V1 **no constituye audit trail GMP validado**. Implantación sujeta a QA/DT/IT y validación.
+
+## D-075 — Dashboard y mejoras técnicas basados en evidencia (2026-10-10)
+
+Crear dashboard QMS global reutilizando KPI existentes, con definiciones de cálculo, filtros, tendencias, tareas y navegación al expediente; no inventar valores ni duplicar relaciones. Medir SQL, paginación, volumen documental y latencia antes de optimizar. CI por impacto más pruebas integrales periódicas; no silenciar fallos ni retirar regresiones. Mantener seguimiento del parche Next/React #123 hasta una actualización verificada.
+
+## D-076 — Implantación controlada y frontera GMP (2026-10-10)
+
+IT estudiará alojamiento en servidor interno corporativo (o VM, por decidir); exigir HTTPS, identidad/permisos, secretos, operación, copias automáticas y restauración demostrada, seguridad de documentos, trazabilidad y cambios controlados. Carga real de históricos/PNT y plantillas requiere conciliación y aceptación separadas de las pruebas técnicas. Validación GMP y liberación se documentarán conforme a uso previsto; no se infiere por CI verde ni por generación de Word en LibreOffice.
+
+## D-077 — Gobernanza del roadmap y PR antiguas (2026-10-10)
+
+Se aprueban fases 0–7 del nuevo roadmap (ROADMAP.md); primero PR A documental, luego PR B filtros/indicadores sin rediseño y PR C de productividad/navegación. Las PR antiguas #11/#16/#17/#19/#20/#21/#76/#112 son **candidatas a obsolescencia**, no cambios pendientes a fusionar. Cerrar solo después de contrastar su diff con main y registrar reemplazo o descarte; preservar enlaces sin fusionar. PR A no ejecuta cierre ni cambia comportamiento.

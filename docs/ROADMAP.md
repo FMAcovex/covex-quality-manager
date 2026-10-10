@@ -1,4 +1,46 @@
-# Roadmap
+# Roadmap vigente — COVEX Quality Manager V1 consolidación
+
+**Aprobado conceptualmente:** 2026-10-10. **Baseline de desarrollo:** main 5194afe5, PR #123 integrada, CI #585 verde. Estado detallado y cautelas en [V1_BASELINE_AND_BACKLOG.md](V1_BASELINE_AND_BACKLOG.md); decisiones de arquitectura en [QMS_TARGET_ARCHITECTURE.md](QMS_TARGET_ARCHITECTURE.md).
+
+> Este bloque sustituye como planificación activa a los hitos históricos de la parte inferior. **No** presupone validación GMP, instalación de plantillas en servidores futuros ni carga productiva de históricos.
+
+## Principios de ejecución
+
+- Los **siete módulos** (Desviaciones, CAPA, Controles de Cambios, Reclamaciones, Devoluciones, Auditorías y PNT) tienen desarrollo funcional integrado. No reabrirlos salvo defectos o ampliaciones concretas.
+- **Mantener UI actual**, sin rediseño corporativo. Ajustar únicamente la maquetación de filtros/indicadores de los listados y aprobar comparativas visuales.
+- UX adicional: navegación y retorno, búsqueda, filtros persistentes, vistas guardadas, ayudas, avisos de cambios pendientes y errores contextualizados. **Guardado siempre explícito, no autosave silencioso**.
+- Dashboard global de Calidad, backend y CI más eficientes. Mantener la arquitectura monolítica modular y preparar extensibilidad, login, permisos, aprobaciones y firma **sin dar por implementado lo futuro**.
+- Mantener transacciones, historial/versiones, documentos, datos históricos y semántica por PNT. Toda PR acotada, con pruebas y aceptación, sin merge automático.
+
+## Fases de la siguiente etapa
+
+| Fase | Entregable | Salida/criterios de aceptación |
+| --- | --- | --- |
+| **0 — Consolidación (PR A)** | Baseline, roadmap, decisiones, arquitectura objetivo e inventario de PR obsoletas | Solo documentación; fuente de verdad concordante con main, ningún comportamiento modificado; candidatas abiertas sin merge |
+| **1 — UX transversal** | **PR B:** mejora de maquetación de filtros e indicadores de listados; **PR C:** navegación, errores, búsqueda y productividad | Capturas/recorridos 1440/768/390; mantener diseño, semántica, filtros y guardados; regresión por módulo |
+| **2 — Dashboard global** | KPI definidos, vencimientos, acciones, tendencias, drill-down y filtros comunes | Conciliación de recuentos contra BD, reglas de exclusión/relaciones y pruebas de filtros |
+| **3 — Backend y CI** | Medir SQL/volúmenes, optimizar paginación/documentos, errores, parches de dependencias y pipeline | Línea base vs resultados, seguridad/regresión inalteradas, CI por impacto + suite integral |
+| **4 — IT, seguridad y arquitectura GMP** | Hosting corporativo, autenticación/autorización, roles, audit trail según riesgo, backup/restauración; diseño versionado de flujos/firmas futuras | Pruebas de acceso, recuperación y revisión por IT/QA. Trabajo desde el inicio en paralelo |
+| **5 — Datos y aceptación documental** | PNT/históricos con alcance, conciliación y procedencia; plantillas oficiales por entorno; Word real | Actas de importación/conciliación, aceptación de tablas/paginación/firmas; no confundir con CI |
+| **6 — Alertas e integraciones** | Notificaciones controladas, tareas, correo/Teams y SharePoint según necesidad/IT | Idempotencia, límites, trazabilidad de entregas, permisos y fallback; activación autorizada |
+| **7 — Validación GMP e implantación** | URS, evaluación de riesgo, especificaciones, trazabilidad, pruebas formales, SOP, formación, liberación | Evidencias firmadas/aprobadas y decisión de uso operativo; no confundir con desarrollo concluido |
+
+**Dependencias:** IT y seguridad deben diseñarse desde fases 0–3, no esperar a la fase 4. La producción GMP queda bloqueada hasta completar seguridad, datos, controles y validación pertinentes. UX/KPI/CI pueden avanzar en paralelo con preparación IT.
+
+## Primeras PR acordadas
+
+- **PR A (ahora):** consolidación documental y gobernanza, sin código, schema, migraciones, plantillas, workflows, dependencias ni acciones administrativas sobre PR antiguas.
+- **PR B (posterior):** únicamente disposición y legibilidad de filtros e indicadores de listados, preservando estilos, lógica, responsive y componentes corporativos.
+- **PR C (posterior):** retorno con filtros/página/pestaña, errores inline y estados de cambios; no modificar ciclo documental, firmas, plazos, obligaciones ni guardado explícito.
+
+La evaluación de UX en Work/Codex precederá a B/C y se dividirá en cambios pequeños revisables. Dashboard y backend tendrán PR independientes según impacto.
+
+---
+
+## Cronología de desarrollo anterior (conservada como histórico)
+
+El bloque siguiente describe objetivos y estados **en el momento en que se redactaron** y puede contener frases como «pendiente» o «PR abierta» ya superadas. No usarlo como backlog vigente; usar el apartado superior.
+
 
 ## Hito 0 — Especificación y GitHub
 Objetivo:

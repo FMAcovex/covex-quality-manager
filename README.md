@@ -1,99 +1,57 @@
 # COVEX Quality Manager
 
-Aplicación web interna para gestionar procesos del Sistema de Calidad de COVEX.
+Aplicación web interna de COVEX para gestionar procesos del Sistema de Calidad. **Desarrollo funcional integrado en siete módulos; no equivale a sistema GMP validado ni a implantación productiva autorizada.**
 
-## Módulos
+## Módulos integrados en desarrollo
 
-- Desviaciones · GC-00/023
-- CAPA · GC-00/030
-- Controles de Cambios · GC-00/003
-- Reclamaciones · GC-00/027
-- Devoluciones · GC-00/028
-- Indicadores y tendencias
-- Administración de catálogos, versiones, plantillas y vencimientos
+- **Desviaciones** — GC-00/023.
+- **CAPA** — GC-00/030.
+- **Controles de Cambios** — GC-00/003.
+- **Reclamaciones** — GC-00/027.
+- **Devoluciones** — GC-00/028.
+- **Auditorías internas y externas**, incluidos planes y Programas Anuales Word — GC-00/033, GC-00/034 y Planes Maestros correspondientes.
+- **PNT / documentación controlada**, maestro, revisiones, biblioteca e importación controlada.
 
-La aplicación es independiente de COVEX Training Manager. La V1 es una herramienta interna de gestión y generación documental; no debe considerarse un sistema GMP validado ni sustituye los controles corporativos requeridos para producción.
+Servicios compartidos: relaciones QMS, UUID/códigos de negocio, versiones y snapshots, anexos, registros históricos, catálogos, filtros, indicadores y vencimientos. El envío automático de avisos sigue desactivado.
 
-## Arquitectura
+**Baseline 2026-10-10:** main 5194afe5 (PR #123 squash), CI #585 verde (496 pruebas unitarias comunicadas). Ver [estado y backlog V1](docs/V1_BASELINE_AND_BACKLOG.md). El cierre técnico de módulos no acredita instalación, firma electrónica ni validación GMP.
 
-- Next.js + TypeScript + React
-- PostgreSQL + Prisma
-- monolito modular
-- documentos DOCX/XLSX generados en servidor
-- plantillas versionadas con control SHA-256
-- relaciones QMS N:N y versionado funcional de expedientes
-- Microsoft 365 / Entra ID reservados para Hito 11
+## Arquitectura y futuro
 
-La fuente funcional de verdad está en `/docs`. Antes de cambiar comportamiento, leer `AGENTS.md`.
+- Next.js + React/TypeScript; Prisma + PostgreSQL; monolito modular.
+- Generación documental DOCX/XLSX en servidor y plantillas controladas por versiones/checksum.
+- Preparación gradual para nuevos módulos, dashboard global, autenticación corporativa, autorización por rol/operación, audit trail según riesgos, flujos de aprobación versionados y firmas electrónicas **futuras**.
+- **Se conserva la interfaz corporativa actual**. Las mejoras visuales propuestas se limitan a maquetación de filtros e indicadores de listados; las mejoras funcionales UX serán incrementales y sujetas a regresión.
+- Independiente de COVEX Training Manager; integración solo mediante decisión posterior.
+
+Prioridad documental y límites: [Decisiones](docs/DECISIONS.md), [Roadmap vigente](docs/ROADMAP.md), [Arquitectura objetivo](docs/QMS_TARGET_ARCHITECTURE.md), [Estado actual/histórico](docs/CURRENT_STATUS.md) y [AGENTS](AGENTS.md).
 
 ## Demo local sin intervención de IT
 
 Requisitos: Node.js 22 compatible, pnpm y Docker Desktop o PostgreSQL local.
 
-1. Iniciar PostgreSQL:
-   ```bash
-   docker compose up -d postgres
-   ```
-2. Copiar `.env.example` a `.env`.
-3. Instalar dependencias:
-   ```bash
-   pnpm install
-   ```
-4. Preparar base y configuración:
-   ```bash
-   pnpm db:deploy
-   pnpm db:seed
-   ```
-5. Opcional: cargar cinco expedientes ficticios de demostración:
-   ```bash
-   pnpm demo:seed
-   ```
-   Requiere `ALLOW_DEMO_DATA=true` y se bloquea siempre si `APP_ENV=production`.
-6. Instalar las plantillas controladas que se vayan a demostrar mediante los comandos `templates:*`.
-7. Iniciar:
-   ```bash
-   pnpm dev
-   ```
-8. Abrir `http://localhost:3000`.
+1. Iniciar PostgreSQL: `docker compose up -d postgres`.
+2. Copiar `.env.example` a `.env` sin incorporar secretos al repositorio.
+3. Instalar dependencias: `pnpm install`.
+4. Preparar la base: `pnpm db:deploy` y `pnpm db:seed`.
+5. Opcional: `pnpm demo:seed`, con `ALLOW_DEMO_DATA=true`; bloqueado con `APP_ENV=production`.
+6. Instalar **en este entorno de base de datos** las plantillas controladas necesarias mediante los comandos `templates:*` que correspondan. Programas Anuales: ver [instalación y fuentes](docs/AUDITS_ANNUAL_PROGRAMMES.md), con sus originales oficiales y hashes.
+7. Iniciar `pnpm dev`; abrir `http://localhost:3000`.
 
-Todos los registros creados por `demo:seed` usan prefijo `DEMO-` y texto explícito de datos ficticios.
+La instalación en pruebas de una plantilla no la instala en otro Codespace ni en el futuro servidor. Los registros demo se identifican como ficticios.
 
 ## Backup lógico de demo / contingencia técnica
 
-Generar una exportación lógica completa de PostgreSQL:
+Exportación: `pnpm backup:export`; ruta opcional: `pnpm backup:export -- --out ./backups/mi-backup.json`. Verificación: `pnpm backup:verify -- ./backups/mi-backup.json`.
 
-```bash
-pnpm backup:export
-```
-
-O elegir ruta:
-
-```bash
-pnpm backup:export -- --out ./backups/mi-backup.json
-```
-
-Validar estructura y recuentos:
-
-```bash
-pnpm backup:verify -- ./backups/mi-backup.json
-```
-
-El export incluye todas las tablas Prisma y conserva de forma reversible fechas y binarios. Se genera además SHA-256. La carpeta `backups/` está excluida de Git porque puede contener el contenido completo del QMS.
-
-Este mecanismo es una exportación técnica para demo/contingencia y no sustituye una política corporativa de backup, restauración, retención o disaster recovery.
+La exportación incorpora datos y binarios reversibles y checksum SHA-256. El directorio `backups/` se excluye de Git porque puede contener datos sensibles del QMS. **No sustituye política IT de backup/restauración, retención o continuidad de negocio.**
 
 ## Comprobaciones
 
-```bash
-pnpm quality
-```
+`pnpm quality` ejecuta comprobaciones estáticas/unitarias; la CI incorpora PostgreSQL real y suites de navegador según workflow. La CI validada de referencia para el baseline es [#585](https://github.com/FMAcovex/covex-quality-manager/actions/runs/38065843516).
 
-La CI añade PostgreSQL real y smoke tests de todos los módulos, versionado, administración y endurecimiento.
+Para una base antigua creada con `db push`, consultar [adopción de baseline y migraciones](docs/AUDITS_R3A.md). No reinicializar ni aplicar migraciones destructivas sobre datos existentes sin evaluación.
 
-## Estado
+## Límites para el uso regulado
 
-Hitos 0–10 completados y validados en CI. Hito 11 queda reservado para producción/IT.
-
-### Auditorías R3A y bases existentes
-
-La instalación limpia usa migraciones. Antes de actualizar una BD existente creada con `db push`, seguir [la adopción de baseline documentada](docs/AUDITS_R3A.md); no ejecutar reset ni aplicar CREATE TABLE sobre datos existentes. Auditorías R3A incluye expediente base, planificación y participantes; hallazgos, documentos, Review y cierre definitivo quedan para R3B/R3C.
+Quedan por confirmar instalación persistente de plantillas y aceptación manual de Microsoft Word, cargas reales conciliadas de históricos y PNT, identidad y permisos corporativos, auditoría de cambios conforme al uso previsto, backup/restauración, procedimientos, validación GMP y liberación. Los PDFs firmados recibidos y evidencias externas no representan por sí mismos firma electrónica GMP nativa.
