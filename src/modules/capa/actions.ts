@@ -386,8 +386,6 @@ export async function createCapaAction(
 
 export async function updateCapaAction(
   id: string,
-  returnTo: string,
-  tab: string,
   previous: CapaFormState,
   formData: FormData,
 ): Promise<CapaFormState> {
@@ -804,7 +802,7 @@ export async function updateCapaAction(
     return preserveFormState(previous, formData, persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" }));
   }
 
-  redirect(qmsDetailUrl("/capa", id, returnTo, tab));
+  redirect(qmsDetailUrl("/capa", id, formData.get("returnTo"), formData.get("detailTab")));
 }
 
 export async function addCapaFollowupAction(
