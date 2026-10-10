@@ -22,6 +22,8 @@ export async function saveAudit(raw: unknown, id?: string) {
     const before = id ? await tx.audit.findUnique({ where: { id }, include: { qmsRecord: true, departments: true, participants: true } }) : null;
     if (id && !before) throw new AuditValidationError({ title: "La auditoría no existe." });
     if (before && !before.qmsRecord.isActive) throw new AuditValidationError({ title: "Reactiva el expediente antes de editarlo." });
+    if (!before && v.status === "CLOSED") throw new AuditValidationError({ status: "El cierre inicial requiere el procedimiento de Informe y cierre." });
+    if (before?.status !== "CLOSED" && v.status === "CLOSED") throw new AuditValidationError({ status: "Confirma el cierre mediante Informe y cierre." });
     if (before?.status === "CLOSED" && v.status !== "CLOSED") throw new AuditValidationError({ status: "Conserva el estado Cerrada al editar; el cierre no se modifica desde este formulario." });
     if (before && v.expectedUpdatedAt && v.expectedUpdatedAt !== before.updatedAt.toISOString()) throw new AuditValidationError({ title: "El expediente cambió desde que abriste el formulario. Recarga antes de guardar." });
     if (before && before.status !== "DRAFT") {
