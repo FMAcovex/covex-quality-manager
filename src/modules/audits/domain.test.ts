@@ -14,9 +14,10 @@ describe("Auditorías R3A", () => {
     expect(compatibleAuditScenario(type,scenario)).toBe(expected);
     expect(auditInputSchema.safeParse({actor:"Test",auditType:type,scenario}).success).toBe(expected);
   });
-  it("exige mínimos al abrir y bloquea cierre final", () => {
+  it("exige mínimos al abrir y acepta editar cerradas sin permitir cierre nuevo fuera del servicio", () => {
     for (const missing of ["title","scope","auditType","scenario","plannedDate"]) expect(auditInputSchema.safeParse({...valid,[missing]:""}).success).toBe(false);
-    expect(auditInputSchema.safeParse({...valid,status:"CLOSED"}).success).toBe(false);
+    // CLOSED must parse on closed records; saveAudit enforces the close transition through closeAudit.
+    expect(auditInputSchema.safeParse({...valid,status:"CLOSED"}).success).toBe(true);
     expect(auditInputSchema.safeParse({...valid,departmentIds:[]}).success).toBe(false);
     expect(auditInputSchema.safeParse({...valid,participants:[]}).success).toBe(false);
   });

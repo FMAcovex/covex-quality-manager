@@ -67,6 +67,20 @@ async function main(){
  await prisma.capa.update({where:{qmsRecordId:capa.id},data:{status:'CLOSED',effectivenessStatus:'CONFORMING'}});
  const closed=await closeAudit(a.id,{actor,closedAt:'2096-10-11'});assert.equal(closed.status,'CLOSED');assert(closed.closedAt);
  await assert.rejects(saveAudit({...auditDefaults(now),status:'OPEN'},a.id),/reabre/);
+ // R5: closed audits stay editable by explicit decision, but preserve status,
+ // close date and previously frozen documents/snapshots.
+ const afterClosure=await prisma.audit.findUniqueOrThrow({where:{id:a.id},include:{qmsRecord:true,departments:true,participants:true}});
+ const originalCloseDate=afterClosure.closedAt?.toISOString();
+ await saveAudit({...auditDefaults(afterClosure),title:'Auditoría cerrada editable R5'},a.id);
+ await saveAuditReport(a.id,{actor,reportDate:'2096-10-10',conclusion:'Conclusión editada tras cierre',capaPlanEstablishedAt:'2096-10-10'});
+ const afterClosedEdit=await prisma.audit.findUniqueOrThrow({where:{id:a.id}});
+ assert.equal(afterClosedEdit.status,'CLOSED');assert.equal(afterClosedEdit.closedAt?.toISOString(),originalCloseDate);
+ const v02=await issueAuditReport(a.id,{actor,reason:'Corrección documental posterior al cierre'});
+ assert.equal(v02.sequenceNumber,2);
+ assert.equal(JSON.stringify((await prisma.qmsRecordVersion.findUniqueOrThrow({where:{id:v00.id}})).snapshot),before);
+ assert.equal((await getAuditDocument(a.id,signed00.id,true)).checksum,signed00.checksum);
+ await saveAuditFollowup(a.id,{actor,followupDate:'2096-10-12',completedByText:actor,description:'Seguimiento registrado después del cierre',nextReviewDate:'2096-11-01'});
+ assert.equal((await prisma.audit.findUniqueOrThrow({where:{id:a.id}})).status,'CLOSED');
  const supplier=await create('SUPPLIER'), critical=await create('SUPPLIER');
  await saveAuditFinding(supplier.id,{actor,findingType:'FINDING',criticality:'MINOR',description:'Deficiencia pendiente del proveedor'});await saveAuditFinding(critical.id,{actor,findingType:'FINDING',criticality:'CRITICAL',description:'Crítico del proveedor'});
  for(const x of [supplier,critical]){await issueAuditReport(x.id,{actor});await saveAuditReport(x.id,{actor,reportDate:'2096-10-08',conclusion:'Proveedor evaluado',programme:'09:00 | Visita',planIntroduction:'Objetivo',activityDuration:'09:00–12:00',reportSentAt:'2096-10-09'});}
@@ -85,8 +99,8 @@ async function main(){
  const supplierClosed=await closeAudit(supplier.id,{actor,closedAt:'2096-10-12',supplierException:true,reason:'Proveedor sin respuesta; comprobar en siguiente auditoría',verifyAtNextAudit:true});assert(supplierClosed.verifyAtNextAudit);assert(supplierClosed.supplierExceptionBy);
  for(const scenario of ['CLIENT','AUTHORITY'] as const){const x=await create(scenario);await assert.rejects(issueAuditReport(x.id,{actor}),/primario/);const received=await registerAuditAttachment(x.id,pdf(),{type:'AUDIT_RECEIVED',reference:`${marker}-acta`,date:'2096-10-07',externalVersion:'Rev-external-7',observations:'Acta recibida ficticia',actor,documentName:'Acta externa'});const receivedObs=await saveAuditFinding(x.id,{actor,findingType:scenario==='CLIENT'?'CLIENT_OBSERVATION':'AUTHORITY_OBSERVATION',description:'Observación del acta',treatment:'Respuesta COVEX'});const receivedAction=await saveAuditFindingAction(x.id,receivedObs.id,{actor,description:'Corrección COVEX',status:'OPEN'});const v=await issueAuditReport(x.id,{actor});assert(readAuditSnapshot(v.snapshot).audit.qmsRecord.generatedDocuments.some(d=>d.id===received.id));await assert.rejects(generateAuditDocument(x.id,DocumentType.AUDIT_EXTERNAL_REPORT,0,actor),/escenario/);await saveAuditReport(x.id,{actor,reportDate:'2096-10-08',conclusion:'Respuesta documentada',responseRequired:true,closureEvidence:'Aceptación recibida'});await assert.rejects(closeAudit(x.id,{actor,closedAt:'2096-10-12'}),/respuesta requerida/);await saveAuditReport(x.id,{actor,reportDate:'2096-10-08',conclusion:'Respuesta aceptada',responseRequired:true,responseSentAt:'2096-10-10',closureEvidence:'Acta de cierre'});await assert.rejects(closeAudit(x.id,{actor,closedAt:'2096-10-12'}),/acción local pendiente/);await saveAuditFindingAction(x.id,receivedObs.id,{actor,description:'Corrección COVEX',status:'CLOSED',closedAt:'2096-10-11',evidence:'Ejecución documentada, sin regla universal de eficacia local'},receivedAction.id);await closeAudit(x.id,{actor,closedAt:'2096-10-12'});assert((await getAuditDocument(x.id,received.id)).fileData);}
  const concurrent=await Promise.all([issueAuditReport(other.id,{actor,reason:'Emisión concurrente A'}),issueAuditReport(other.id,{actor,reason:'Emisión concurrente B'})]);assert.deepEqual(concurrent.map(v=>v.sequenceNumber).sort(),[0,1]);
- const view=await getAuditReportView(a.id);assert.deepEqual(view!.versions.map(v=>v.sequenceNumber),[1,0]);assert(auditClosureChecklist(view!.closure).partial);
- assert((await getAuditList({q:marker,report:'issued'})).rows.some(r=>r.id===a.id));assert((await getAuditList({q:marker,signedPdf:'yes'})).rows.some(r=>r.id===a.id));assert((await getAuditList({q:marker,review:'ACTIVE'})).rows.some(r=>r.id===a.id));
+ const view=await getAuditReportView(a.id);assert.deepEqual(view!.versions.map(v=>v.sequenceNumber),[2,1,0]);assert(auditClosureChecklist(view!.closure).partial);
+ assert((await getAuditList({q:marker,report:'issued'})).rows.some(r=>r.id===a.id));assert(!(await getAuditList({q:marker,signedPdf:'yes'})).rows.some(r=>r.id===a.id));assert((await getAuditList({q:marker,signedPdf:'no'})).rows.some(r=>r.id===a.id));assert((await getAuditList({q:marker,review:'ACTIVE'})).rows.some(r=>r.id===a.id));
  await prisma.qmsRecord.update({where:{id:other.qmsRecordId},data:{isActive:false}});await assert.rejects(issueAuditReport(other.id,{actor,reason:'Anulado'}),/Reactiva/);await assert.rejects(generateAuditDocument(other.id,DocumentType.AUDIT_CAPA_PLAN,0,actor),/Reactiva/);
  console.log(`R3C PostgreSQL OK: versiones 00/01+, motivo/concurrencia/snapshot/retirados, documentos ${process.env.R3C_OFFICIAL_TEMPLATES==='1'?'con binarios oficiales verificados':'con fixtures sintéticos'}, PDF independiente/no sobrescritura, Review UUID/histórico, cierre interno/CAPA y proveedor/excepción/crítico, cliente/autoridad, filtros/anulación.`);
 }

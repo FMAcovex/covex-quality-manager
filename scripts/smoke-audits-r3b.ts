@@ -71,7 +71,8 @@ async function main() {
   await assert.rejects(unlinkAuditRecord(audit.id,capa.id,{actor,reason:"Aún atribuido"}),/atribuciones/);
   await assert.rejects(prisma.$transaction(tx=>syncOperationalOriginRelations(tx,{capaRecordId:capa.id,originRecordIds:[],changedByText:actor})),/atribuciones/);
   for(const filters of [{q:marker,findings:"yes"},{q:marker,criticality:["MAJOR"]},{q:marker,pendingActions:"yes"},{q:marker,relatedDeviation:"yes",relatedCapa:"yes"},{q:obs.reference,year:["2096"]},{q:action1.description},{q:capa.businessCode!},{q:marker,nextReviewFrom:"2026-11-08",nextReviewTo:"2026-11-12"}]) assert((await getAuditList(filters)).rows.some(r=>r.id===audit.id));
-  assert(!(await getAuditList({q:marker,nextReviewTo:"2026-11-08"})).rows.some(r=>r.id===audit.id));
+  // A pending OBS review remains visible even when a later general followup has no date.
+  assert((await getAuditList({q:marker,nextReviewTo:"2026-11-08"})).rows.some(r=>r.id===audit.id));
   assert((await getCapaList({q:marker,origin:["Auditoría"]})).rows.some(r=>r.qmsRecordId===capa.id));
   await retireAuditAttribution(audit.id,obs.id,attr1.id,{actor,reason:"Retirada de una atribución"}); assert((await prisma.qmsRelation.findUniqueOrThrow({where:{id:attr1.qmsRelationId}})).isActive);
   assert.equal((await getAuditOrigins(capa.id))[0].auditFindingRelations.length,1);

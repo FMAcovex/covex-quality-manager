@@ -1,11 +1,12 @@
 "use client";
+import { auditWithReturnTo } from "./navigation";
 import { useActionState, useEffect } from "react";
 import type { AuditReportActionState } from "./report-actions";
 export type AuditReportFormField = { name: string; label: string; type?: 'text'|'date'|'textarea'|'checkbox'|'file'|'hidden'; value?: string; required?: boolean; options?: Record<string,string> };
-export function AuditCloseNavigation({id,disabled}:{id:string;disabled:boolean}) { return <button className="button" disabled={disabled} onClick={()=>window.location.assign(`/audits/${id}?tab=report`)}>Cerrar auditoría</button>; }
+export function AuditCloseNavigation({id,disabled}:{id:string;disabled:boolean}) { return <button className="button" disabled={disabled} onClick={()=>window.location.assign(auditWithReturnTo(`/audits/${id}?tab=report`,new URL(window.location.href).searchParams.get("returnTo")))}>Cerrar auditoría</button>; }
 export function AuditReportForm({ action, fields, label, disabled = false }: { action:(s:AuditReportActionState,fd:FormData)=>Promise<AuditReportActionState>; fields:AuditReportFormField[]; label:string; disabled?:boolean }) {
   const [state,submit,pending]=useActionState(action,{error:null} as AuditReportActionState);
-  useEffect(()=>{if(state.savedHref){const target=new URL(state.savedHref,window.location.href);if(target.href===window.location.href)window.location.reload();else window.location.assign(target.href);}},[state.savedHref]);
+  useEffect(()=>{if(state.savedHref){const target=new URL(auditWithReturnTo(state.savedHref,new URL(window.location.href).searchParams.get("returnTo")),window.location.href);if(target.href===window.location.href)window.location.reload();else window.location.assign(target.href);}},[state.savedHref]);
   return <form action={submit} key={state.revision ?? 0} className="audit-child-form">
     {state.error?<p className="form-errors full" role="alert">{state.error}</p>:null}
     {fields.map(f=>{const value=f.type==='checkbox'&&state.values ? state.values[f.name] ?? '' : state.values?.[f.name] ?? f.value ?? '';

@@ -31,7 +31,7 @@ const auditBaseSchema = z.object({
 export const auditInputSchema = auditBaseSchema.superRefine((v, ctx) => {
   const add = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
   if (!compatibleAuditScenario(v.auditType || null, v.scenario || null)) add("scenario", "El escenario no corresponde al tipo de auditoría.");
-  if (v.status === "CLOSED") add("status", "Confirma el cierre definitivo desde Informe y cierre, después de verificar sus condiciones.");
+  // CLOSED is permitted when editing an already closed record; the service forbids direct closure transitions.
   if (v.planningStatus === "PLANNED" && !v.planEntryId) add("planEntryId","Selecciona una entrada del plan anual.");
   if (v.planningStatus !== "PLANNED" && v.planEntryId) add("planEntryId","Solo las auditorías planificadas se vinculan al plan.");
   if (v.planningStatus !== "OUT_OF_PLAN" && v.outsidePlanReason) add("outsidePlanReason","El motivo solo corresponde a auditorías fuera de plan.");

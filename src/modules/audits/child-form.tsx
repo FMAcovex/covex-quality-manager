@@ -1,11 +1,12 @@
 "use client";
 import { useActionState, useEffect } from "react";
+import { auditWithReturnTo } from "./navigation";
 import { actionStatusLabels, criticalityLabels, findingTypeLabels } from "./finding-domain";
 import type { AuditChildFormState, AuditRetirementFormState } from "./finding-actions";
 function useSavedAuditNavigation(savedHref?: string) {
   useEffect(() => {
     if (!savedHref) return;
-    const target = new URL(savedHref, window.location.href);
+    const target = new URL(auditWithReturnTo(savedHref, new URL(window.location.href).searchParams.get("returnTo")),window.location.href);
     if (target.pathname === window.location.pathname && target.search === window.location.search) {
       // A fragment-only navigation would retain the current RSC tree after saving.
       window.history.replaceState(window.history.state, "", target.href);
