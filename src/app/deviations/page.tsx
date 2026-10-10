@@ -43,7 +43,7 @@ export default async function DeviationsPage({
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_V);
 
   return (
-    <section className="workspace">
+    <section className="workspace qms-list-ux-b">
       <div className="page-heading">
         <div>
           <p className="eyebrow">Sistema de Calidad</p>
