@@ -115,6 +115,9 @@ export function CapaForm({
   departments,
   defaults = {},
   capaId,
+  cancelHref,
+  returnTo,
+  detailTab,
   qmsRecordId,
   fromDeviationPlanId,
   fromComplaintPlanId,
@@ -125,6 +128,9 @@ export function CapaForm({
   departments: Department[];
   defaults?: CapaFormDefaults;
   capaId?: string;
+  cancelHref?: string;
+  returnTo?: string;
+  detailTab?: string;
   qmsRecordId?: string;
   fromDeviationPlanId?: string;
   fromComplaintPlanId?: string;
@@ -219,6 +225,8 @@ export function CapaForm({
 
   return (
     <form key={state.formRevision ?? 0} action={formAction} className="record-form">
+    <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
+    <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
       <input type="hidden" name="plannedActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="actionFollowupsJson" value={JSON.stringify(actionFollowups)} />
       <input type="hidden" name="originsJson" value={JSON.stringify(origins)} />
@@ -647,7 +655,7 @@ export function CapaForm({
       </section>
 
       <div className="form-footer">
-        <Link className="button" href={capaId ? `/capa/${capaId}` : "/capa"}>
+        <Link className="button" href={cancelHref ?? (capaId ? `/capa/${capaId}` : "/capa")}>
           Cancelar
         </Link>
 

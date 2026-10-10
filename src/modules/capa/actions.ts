@@ -1,4 +1,5 @@
 "use server";
+import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import { Prisma, QmsRecordType, RecordVersionKind } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -801,7 +802,7 @@ export async function updateCapaAction(
     return preserveFormState(previous, formData, persistenceFormError(error, "la CAPA", { duplicateField: "businessCode" }));
   }
 
-  redirect(`/capa/${id}`);
+  redirect(qmsDetailUrl("/capa", id, formData.get("returnTo"), formData.get("detailTab")));
 }
 
 export async function addCapaFollowupAction(

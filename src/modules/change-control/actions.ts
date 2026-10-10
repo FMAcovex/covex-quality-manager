@@ -1,4 +1,5 @@
 "use server";
+import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import type { FollowupActionState } from "@/components/basic-followup-form";
 
@@ -667,7 +668,7 @@ export async function updateChangeControlAction(
 
     revalidatePath("/changes");
     revalidatePath(`/changes/${id}`);
-    redirect(`/changes/${id}`);
+    redirect(qmsDetailUrl("/changes", id, formData.get("returnTo"), formData.get("detailTab")));
   } catch (error) {
     if (error instanceof OperationalBusinessCodeError) {
       return preserveFormState(previous, formData, {

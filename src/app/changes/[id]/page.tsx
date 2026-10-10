@@ -193,7 +193,7 @@ export default async function ChangeControlDetailPage({
         </div>
         <div className="record-actions">
           <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/changes", returnTo)} />
-          <Link className="button primary" href={qmsWithReturnTo(`/changes/${id}/edit`, "/changes", returnTo)}>Editar Solicitud / Dictamen</Link>
+          <Link className="button primary" href={qmsWithReturnTo(`/changes/${id}/edit?tab=${activeTab}`, "/changes", returnTo)}>Editar Solicitud / Dictamen</Link>
           {record.dictamenResult === "APPROVED" && record.finalStatus === "OPEN" ? (
             <Link className="button" href={qmsWithReturnTo(`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`, "/changes", returnTo)}>+ Seguimiento</Link>
           ) : null}

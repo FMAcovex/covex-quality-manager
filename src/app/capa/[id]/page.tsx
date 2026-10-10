@@ -224,7 +224,7 @@ export default async function CapaDetailPage({
         </div>
         <div className="record-actions">
           <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/capa", returnTo)} />
-          <Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit`, "/capa", returnTo)}>Editar / nuevo seguimiento</Link>
+          <Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit?tab=${activeTab}`, "/capa", returnTo)}>Editar / nuevo seguimiento</Link>
           {capa.status !== "DRAFT" ? <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a> : null}
         </div>
       </div>

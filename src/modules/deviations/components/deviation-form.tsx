@@ -143,6 +143,9 @@ export function DeviationForm({
   defaults = {},
   mode,
   deviationId,
+  cancelHref,
+  returnTo,
+  detailTab,
   currentVersionSequence = 0,
 }: {
   action: FormAction;
@@ -150,6 +153,9 @@ export function DeviationForm({
   defaults?: DeviationFormDefaults;
   mode: "create" | "edit";
   deviationId?: string;
+  cancelHref?: string;
+  returnTo?: string;
+  detailTab?: string;
   currentVersionSequence?: number;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null });
@@ -234,6 +240,8 @@ export function DeviationForm({
       className={`form-stack ${openingAttempted ? "show-required-errors" : ""}`}
       onInvalid={() => setOpeningAttempted(true)}
     >
+      <input type="hidden" name="returnTo" value={returnTo ?? ""} />
+      <input type="hidden" name="detailTab" value={detailTab ?? ""} />
       <input type="hidden" name="immediateActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)} />
       <input type="hidden" name="processEquipmentSystem" value={formDefaults.processEquipmentSystem ?? ""} />
@@ -640,7 +648,7 @@ export function DeviationForm({
       ) : null}
 
       <div className="form-footer">
-        <Link className="button" href={deviationId ? `/deviations/${deviationId}` : "/deviations"}>Cancelar</Link>
+        <Link className="button" href={cancelHref ?? (deviationId ? `/deviations/${deviationId}` : "/deviations")}>Cancelar</Link>
         {mode === "create" ? (
           <div className="version-submit-group">
             <button type="submit" name="saveIntent" value="draft" className="button" formNoValidate onClick={() => setOpeningAttempted(false)} disabled={pending}>

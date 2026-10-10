@@ -1,4 +1,5 @@
 "use server";
+import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -652,7 +653,7 @@ export async function updateDeviationAction(
 
   revalidatePath("/deviations");
   revalidatePath(`/deviations/${id}`);
-  redirect(`/deviations/${id}`);
+  redirect(qmsDetailUrl("/deviations", id, formData.get("returnTo"), formData.get("detailTab")));
 }
 
 export async function addDeviationFollowupAction(deviationId: string, _state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
