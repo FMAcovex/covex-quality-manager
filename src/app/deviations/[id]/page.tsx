@@ -274,7 +274,7 @@ export default async function DeviationDetailPage({
           <p className="muted-note">Apertura {formatDate(deviation.issueDate)} · Cumplimentado por {text(deviation.createdByText)}</p>
         </div>
         <div className="record-actions">
-          <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, activeTab, reviewMode)} />
+          <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/deviations", returnTo)} />
           <Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link>
           {deviation.status === "DRAFT"
             ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
@@ -722,7 +722,7 @@ export default async function DeviationDetailPage({
                 <h2>Revisión del expediente</h2>
                 <p className="muted-note">Observaciones vinculadas a objetivos estables y a la versión del expediente revisada cuando exista.</p>
               </div>
-              <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, "review", reviewMode)} />
+              <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, "review", reviewMode), "/deviations", returnTo)} />
             </div>
             <ReviewStatusSummary />
           </div>
