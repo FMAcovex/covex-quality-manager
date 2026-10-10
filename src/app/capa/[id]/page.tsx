@@ -1,5 +1,6 @@
 import { AuditOriginPanel } from "@/modules/audits/origin-panel";
 import Link from "next/link";
+import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
 import { addCapaRelationAction, unlinkCapaOriginAction } from "@/modules/capa/actions";
 import {
@@ -67,10 +68,10 @@ export default async function CapaDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; review?: string; thread?: string }>;
+  searchParams: Promise<{ tab?: string; review?: string; thread?: string; returnTo?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab, review, thread } = await searchParams;
+  const { tab: rawTab, review, thread, returnTo } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const capa = await getCapaDetail(id);
   if (!capa) notFound();
@@ -202,7 +203,7 @@ export default async function CapaDetailPage({
     <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
       <div className="record-header">
         <div>
-          <p className="eyebrow"><Link href="/capa">← CAPA</Link></p>
+          <p className="eyebrow"><Link href={qmsListingReturnTo("/capa", returnTo)}>← CAPA</Link></p>
           <div className="record-title-line">
             <h1>{qmsRecordDisplayCode(capa.qmsRecord, "CAPA sin código")}</h1>
             <span className="badge neutral">{capaTypeLabel(capa.actionType)}</span>
@@ -223,7 +224,7 @@ export default async function CapaDetailPage({
         </div>
         <div className="record-actions">
           <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, activeTab, reviewMode)} />
-          <Link className="button primary" href={`/capa/${id}/edit`}>Editar / nuevo seguimiento</Link>
+          <Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit`, "/capa", returnTo)}>Editar / nuevo seguimiento</Link>
           {capa.status !== "DRAFT" ? <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a> : null}
         </div>
       </div>
@@ -246,7 +247,7 @@ export default async function CapaDetailPage({
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (
-          <Link key={key} className={activeTab === key ? "active" : ""} href={reviewTabHref(basePath, key, reviewMode)}>
+          <Link key={key} className={activeTab === key ? "active" : ""} href={qmsWithReturnTo(reviewTabHref(basePath, key, reviewMode), "/capa", returnTo)}>
             {key === "review" ? `${label} (${reviewActiveCount})` : label}
           </Link>
         ))}
