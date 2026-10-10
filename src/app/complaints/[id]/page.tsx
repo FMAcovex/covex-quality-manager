@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
 import { addComplaintRelationAction,unlinkComplaintRelationAction } from "@/modules/complaints/actions";
 import {
@@ -54,8 +55,8 @@ function complaintFollowupLabel(sequenceNumber: number) {
     : `${versionLabel(sequenceNumber)} · Seguimiento`;
 }
 
-export default async function ComplaintDetailPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string}>}){
- const {id}=await params;const {tab:raw,review,thread}=await searchParams;const tab=tabs.some(([k])=>k===raw)?raw!:"summary";
+export default async function ComplaintDetailPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string;returnTo?:string}>}){
+ const {id}=await params;const {tab:raw,review,thread, returnTo}=await searchParams;const tab=tabs.some(([k])=>k===raw)?raw!:"summary";
  const r=await getComplaintDetail(id);if(!r)notFound();
  const situation=complaintOperationalSituation(r);
  const followupState=complaintFollowupState(r);
@@ -92,7 +93,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
 
  return <ReviewWorkspaceProvider qmsRecordId={r.qmsRecord.id} module="COMPLAINT" versionLabelMode="FOLLOWUP" basePath={basePath} currentVersionLabel={reviewVersionLabel(currentVersion?.sequenceNumber??null,"FOLLOWUP")} defaultActor={process.env.DEFAULT_ACTOR_NAME?.trim()||r.createdByText||"Usuario demo"} reviewMode={reviewMode} targets={reviewTargets} threads={reviewThreads} initialThreadId={thread}>
  <section className={`workspace${reviewMode?" review-mode-active":""}`}>
-  <div className="record-header"><div><p className="eyebrow"><Link href="/complaints">← Reclamaciones</Link></p><div className="record-title-line">
+  <div className="record-header"><div><p className="eyebrow"><Link href={qmsListingReturnTo("/complaints", returnTo)}>← Reclamaciones</Link></p><div className="record-title-line">
    <h1>{qmsRecordDisplayCode(r.qmsRecord)}</h1>
    <span className={`badge ${r.status==="DRAFT"?"neutral":r.status==="OPEN"?"open":"closed"}`}>{complaintStatusLabel(r.status)}</span>
    <span className={`badge ${complaintOperationalSituationTone(situation)}`}>{complaintOperationalSituationLabel(situation)}</span>
@@ -100,7 +101,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    <span className="badge neutral">{complaintTypeLabel(r.complaintType)}</span>
    {currentVersion?<span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span>:null}
   </div><p className="muted-note">Apertura {formatDate(r.openedAt)} · {txt(r.partyName)}</p></div>
-  <div className="record-actions"><ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath,tab,reviewMode)}/><Link className="button primary" href={`/complaints/${id}/edit`}>Editar / nueva versión / seguimiento</Link></div></div>
+  <div className="record-actions"><ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath,tab,reviewMode)}/><Link className="button primary" href={qmsWithReturnTo(`/complaints/${id}/edit`, "/complaints", returnTo)}>Editar / nueva versión / seguimiento</Link></div></div>
 
   {r.status==="DRAFT"?<div className="analytics-note"><strong>Borrador:</strong> todavía no es una reclamación operativa. Al abrirla se validarán todos los campos aplicables del Anexo III.</div>:null}
   {r.status==="OPEN"&&followupState==="OVERDUE"?<div className="form-errors"><strong>Seguimiento vencido:</strong> la fecha prevista era {formatDate(r.nextFollowupDate)}.</div>:null}
@@ -112,7 +113,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
    annulledReason={r.qmsRecord.annulledReason} defaultActor={process.env.DEFAULT_ACTOR_NAME||"Usuario demo"}
   />
 
-  <nav className="record-tabs">{tabs.map(([k,l])=><Link key={k} className={tab===k?"active":""} href={reviewTabHref(basePath,k,reviewMode)}>{k==="review"?`${l} (${reviewActiveCount})`:l}</Link>)}</nav>
+  <nav className="record-tabs">{tabs.map(([k,l])=><Link key={k} className={tab===k?"active":""} href={qmsWithReturnTo(reviewTabHref(basePath,k,reviewMode), "/complaints", returnTo)}>{k==="review"?`${l} (${reviewActiveCount})`:l}</Link>)}</nav>
 
   {tab==="summary"?<>
    <div className="card"><div className="section-title-row"><div><h2>Resumen del expediente</h2><p className="muted-note">Situación actual y próximos pasos de la reclamación.</p></div>{currentVersion?<span className="badge neutral">Actual {complaintFollowupLabel(currentVersion.sequenceNumber)}</span>:null}</div>
