@@ -176,6 +176,6 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
       </div>
     </section>
 
-    <div className="form-footer"><Link className="button" href={cancelHref ?? returnId?`/returns/${returnId}`:"/returns"}>Cancelar</Link><button className="button primary" disabled={pending}>{pending?"Guardando…":draft?"Guardar borrador":mode==="create"?"Guardar devolución":"Guardar cambios"}</button></div>
+    <div className="form-footer"><Link className="button" href={cancelHref ?? (returnId ? `/returns/${returnId}` : "/returns")}>Cancelar</Link><button className="button primary" disabled={pending}>{pending?"Guardando…":draft?"Guardar borrador":mode==="create"?"Guardar devolución":"Guardar cambios"}</button></div>
   </form>;
 }
