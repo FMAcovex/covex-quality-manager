@@ -141,7 +141,7 @@ export async function createReturnAction(previous:ReturnFormState,fd:FormData):P
  }
  return {error:null,savedRecordId:createdId};
 }
-export async function updateReturnAction(id:string,returnTo:string,tab:string,previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
+export async function updateReturnAction(id:string,previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
  const existing=await prisma.returnRecord.findUnique({where:{id},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"},{id:"desc"}],take:1}}});if(!existing)return preserveFormState(previous,fd,{error:"La devolución ya no existe."});
  const parsed=parseReturnForm(fd,existing.followups[0]?.nextFollowupDate?.toISOString().slice(0,10));if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors});
  const v=parsed.values;
