@@ -143,6 +143,7 @@ export function DeviationForm({
   defaults = {},
   mode,
   deviationId,
+  cancelHref,
   currentVersionSequence = 0,
 }: {
   action: FormAction;
@@ -150,6 +151,7 @@ export function DeviationForm({
   defaults?: DeviationFormDefaults;
   mode: "create" | "edit";
   deviationId?: string;
+  cancelHref?: string;
   currentVersionSequence?: number;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null });
@@ -640,7 +642,7 @@ export function DeviationForm({
       ) : null}
 
       <div className="form-footer">
-        <Link className="button" href={deviationId ? `/deviations/${deviationId}` : "/deviations"}>Cancelar</Link>
+        <Link className="button" href={cancelHref ?? deviationId ? `/deviations/${deviationId}` : "/deviations"}>Cancelar</Link>
         {mode === "create" ? (
           <div className="version-submit-group">
             <button type="submit" name="saveIntent" value="draft" className="button" formNoValidate onClick={() => setOpeningAttempted(false)} disabled={pending}>
