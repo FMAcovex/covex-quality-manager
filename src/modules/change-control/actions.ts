@@ -1,5 +1,5 @@
-import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 "use server";
+import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import type { FollowupActionState } from "@/components/basic-followup-form";
 
