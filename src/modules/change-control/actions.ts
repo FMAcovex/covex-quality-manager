@@ -1,3 +1,4 @@
+import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 "use server";
 
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -366,6 +367,8 @@ export async function createChangeControlAction(
 
 export async function updateChangeControlAction(
   id: string,
+  returnTo: string,
+  tab: string,
   previous: ChangeControlFormState,
   formData: FormData,
 ): Promise<ChangeControlFormState> {
@@ -667,7 +670,7 @@ export async function updateChangeControlAction(
 
     revalidatePath("/changes");
     revalidatePath(`/changes/${id}`);
-    redirect(`/changes/${id}`);
+    redirect(qmsDetailUrl("/changes", id, returnTo, tab));
   } catch (error) {
     if (error instanceof OperationalBusinessCodeError) {
       return preserveFormState(previous, formData, {
