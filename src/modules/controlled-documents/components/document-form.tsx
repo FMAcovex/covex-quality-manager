@@ -4,13 +4,15 @@ import type { ControlledDocument, ControlledDocumentRevision, Department } from 
 import { masterAction, revisionAction, SaveState } from "../actions";
 import { iso } from "../domain";
 type Props = {
+    returnTo?: string;
+    allowExistingRegistration?: boolean;
     departments: Department[];
     master?: ControlledDocument;
     revision?: ControlledDocumentRevision;
     revisions?: ControlledDocumentRevision[];
     revisionOnly?: boolean;
 };
-export function DocumentForm({ departments, master, revision, revisions = [], revisionOnly = false }: Props) {
+export function DocumentForm({ returnTo, allowExistingRegistration = true, departments, master, revision, revisions = [], revisionOnly = false }: Props) {
     const action = revisionOnly ? revisionAction.bind(null, master!.id, revision?.id || null) : masterAction.bind(null, master?.id || null);
     const [state, submit, pending] = useActionState<SaveState, FormData>(action, {});
     const [existing, setExisting] = useState(false);
@@ -24,6 +26,7 @@ export function DocumentForm({ departments, master, revision, revisions = [], re
         return typeof submitted === "string" ? submitted : fallback;
     };
     return <form key={state.formRevision ?? 0} action={submit} className="form-stack">
+ <input type="hidden" name="returnTo" value={returnTo || ""}/>
  <input type="hidden" name="updatedAt" value={revisionOnly ? revision?.updatedAt.toISOString() || "" : master?.updatedAt.toISOString() || ""}/>
  {state.error && <div className="form-errors" role="alert">{state.error}</div>}
  {!revisionOnly && <fieldset className="form-section"><legend>Identidad del PNT</legend>
@@ -40,7 +43,7 @@ export function DocumentForm({ departments, master, revision, revisions = [], re
  {revisionOnly && <label className="field"><span>Revisión anterior</span><select name="previousRevisionId" defaultValue={value("previousRevisionId", revision?.previousRevisionId || "")}><option value="">No documentada</option>{revisions.filter(r => r.id !== revision?.id).map(r => <option key={r.id} value={r.id}>{r.revisionCode}</option>)}</select></label>}
  <p className="section-help pnt-help full">00 es la revisión original. No se crean automáticamente revisiones anteriores.</p>
  <label className="field full"><span>Motivo de revisión</span><textarea name="revisionReason" defaultValue={value("revisionReason", revision?.revisionReason || "")}/></label>
- <label className="pnt-check full"><input type="checkbox" name="existingDocument" checked={existing} onChange={e => setExisting(e.target.checked)}/> Registrar revisión documental ya existente</label>
+ {allowExistingRegistration && <label className="pnt-check full"><input type="checkbox" name="existingDocument" checked={existing} onChange={e => setExisting(e.target.checked)}/> Registrar revisión documental ya existente</label>}
  <p className="section-help pnt-help full">El borrador queda en elaboración. El registro documental exige contraste con una fuente real; no constituye una aprobación en la aplicación.</p>
  <label className="field"><span>Fecha de vigencia</span><input type="date" name="effectiveFrom" defaultValue={value("effectiveFrom", iso(revision?.effectiveFrom))}/></label>
  <label className="field"><span>Fecha prevista de revisión</span><input type="date" name="reviewDueAt" defaultValue={value("reviewDueAt", iso(revision?.reviewDueAt))}/></label>

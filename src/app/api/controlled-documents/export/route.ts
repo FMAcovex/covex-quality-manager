@@ -1,6 +1,6 @@
 import { generateSimpleXlsx } from "@/lib/ooxml/simple-xlsx";
-import { administrativeLabels, revisionLabels } from "@/modules/controlled-documents/domain";
-import { manualStateLabels } from "@/modules/controlled-documents/manual-state/domain";
+import { administrativeLabels, verificationLabels } from "@/modules/controlled-documents/domain";
+import { documentStateLabel } from "@/modules/controlled-documents/presentation";
 import { operationalDates, queryPntListing, type PntListingFilters } from "@/modules/controlled-documents/listing";
 export const runtime = "nodejs";
 
@@ -15,9 +15,9 @@ export async function GET(request: Request) {
    master.baseCode || "", master.title || "", master.departmentCodeSnapshot || "",
    master.departmentNameSnapshot || "", administrativeLabels[master.administrativeStatus],
    revision?.revisionCode || "",
-   revision ? manualStateLabels[revision.status as keyof typeof manualStateLabels] || revisionLabels[revision.status] : "",
+   revision ? documentStateLabel(revision.status) : "",
    dates?.effectiveFrom || "", dates?.reviewDueAt || "",
-   revision?.verificationStatus || "",
+   revision ? verificationLabels[revision.verificationStatus] : "",
   ].map(value => /^[=+\-@\t\r]/.test(value) ? "'" + value : value);
  });
  const output = generateSimpleXlsx("PNT filtrados", [

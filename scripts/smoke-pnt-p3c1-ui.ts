@@ -91,7 +91,9 @@ async function main() {
       await page.keyboard.press("Tab");
       await page.getByRole("link", { name: "Nuevo PNT", exact: true }).focus();
       assert.equal(await page.getByRole("link", { name: "Nuevo PNT", exact: true }).evaluate(e => e.matches(":focus-visible") && getComputedStyle(e).outlineStyle === "solid"), true);
-      await page.keyboard.press("Enter"); await page.waitForURL(`${base}/controlled-documents/new`);
+      await page.keyboard.press("Enter");
+      await page.waitForURL(url => url.origin === new URL(base).origin && url.pathname === "/controlled-documents/new");
+      assert.equal(new URL(page.url()).searchParams.get("returnTo"), "/controlled-documents?q=" + encodeURIComponent(master.baseCode!), "El alta conserva la búsqueda del listado.");
     }
     assert.equal(await snapshot(), before, "La lectura/presentación conserva estados, UUID, snapshots, decisiones y documentos.");
     assert.deepEqual(errors, []);

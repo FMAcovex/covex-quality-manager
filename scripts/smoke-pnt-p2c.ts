@@ -52,7 +52,7 @@ async function main() {
   await assert.rejects(lifecycleDecision(m.id, r.id, { ...succeeded, reason: "UUID reutilizado con otro contenido" }, qaPrincipal)); assert.equal(await state(m.id), afterActivation);
   assert.equal(frozen(await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: r.id } })), source);
   assert.equal((await prisma.controlledDocument.findUniqueOrThrow({ where: { id: m.id } })).administrativeStatus, "ACTIVE");
-  await assert.rejects(saveRevision(m.id, parseRevisionForm(form({ operation: "DRAFT", actor: qaPrincipal.name, revisionCode: "00", changeReason: "Intento P1A QA" })), r.id), /P2B/);
+  await assert.rejects(saveRevision(m.id, parseRevisionForm(form({ operation: "DRAFT", actor: qaPrincipal.name, revisionCode: "00", changeReason: "Intento P1A QA" })), r.id), /no admite edición/);
   const next = await nextRevision(m.id, r.id), nextDocs = await evidence(m.id, next), nextIds = nextDocs.map(d => d.id);
   const original = await prisma.controlledRevisionDocument.findUniqueOrThrow({ where: { id: docs[2].id } });
   await planRevision(m.id, next, nextIds, nextDocs[2].id);

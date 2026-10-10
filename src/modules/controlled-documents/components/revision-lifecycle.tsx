@@ -5,10 +5,8 @@ import { displayDate, revisionLabels } from "../domain";
 import { metadataSelection } from "../documents/service";
 import { importStates, indexMetadata } from "../import/domain";
 import { LifecycleForm } from "./lifecycle-form";
-import { documentKinds } from "../documents/types";
-const documentKindsLabel = (kind: string) => documentKinds[kind as keyof typeof documentKinds] || kind;
 import type { LifecycleCommand } from "../lifecycle/domain";
-export async function RevisionLifecycle({ documentId }: { documentId: string }) {
+export async function RevisionLifecycle({ returnTo, documentId }: { returnTo?: string; documentId: string }) {
   let principal;
   try { principal = lifecyclePrincipal(await headers()); } catch { return <p role="alert">Acceso documental no autorizado o sin configurar.</p>; }
   const master = await prisma.controlledDocument.findUniqueOrThrow({ where: { id: documentId }, include: { revisions: { orderBy: { revisionCode: "desc" }, include: { lifecycle: true, decisions: { orderBy: { sequence: "asc" }, include: { evidence: true } }, documents: { select: metadataSelection } } } } });
@@ -32,7 +30,7 @@ export async function RevisionLifecycle({ documentId }: { documentId: string }) 
       <p>Revisión anterior en la activación P2B: {(() => { const activation = [...r.decisions].reverse().find(d => d.operation === "ACTIVATE"); const previous = (activation?.details as unknown as LifecycleCommand | undefined)?.previousRevisionId; return previous ? `${master.revisions.find(v => v.id === previous)?.revisionCode || "—"} (${previous})` : "Sin activación registrada o sin revisión anterior"; })()}</p>
       {r.documents.map(o => <p key={o.id}>Objeto {o.originalName} — {o.kind} · UUID {o.id} · SHA-256 {o.sha256 || "No comprobado: referencia externa"} {o.replacement && "(sustituido; no utilizable para decisiones nuevas)"}</p>)}
       {r.decisions.map(d => <details key={d.id}><summary>#{d.sequence} {d.operation} — {d.result || "Decisión"} — {d.actor} — {displayDate(d.decidedAt)}</summary><p>{d.oldState} → {d.newState}. {d.reason}</p><p>UUID {d.id} · rectifica {d.rectifiesId || "—"} · {d.identitySource}</p><pre>{JSON.stringify(d.details, null, 2)}</pre><pre>{JSON.stringify(d.evidence.map(e => e.snapshot), null, 2)}</pre><details><summary>Snapshots antes/después</summary><pre>{JSON.stringify({ before: d.before, after: d.after }, null, 2)}</pre></details></details>)}
-      {master.administrativeStatus !== "ANNULLED" && <LifecycleForm documentId={documentId} revisionId={r.id} state={r.status} version={r.lifecycle?.version || 0} capabilities={principal.capabilities} previousId={master.revisions.find(v => v.status === "IN_FORCE")?.id || null} objects={r.documents.filter(o => !o.replacement).map(o => ({ id: o.id, originalName: o.originalName, kind: o.kind, externalReference: o.externalReference }))} decisions={r.decisions.map(d => ({ id: d.id, operation: d.operation, label: `#${d.sequence} ${d.operation} ${(d.details as unknown as LifecycleCommand).function || ""} ${(d.details as unknown as LifecycleCommand).externalPerson || ""}`, evidenceIds: (d.details as unknown as LifecycleCommand).evidenceIds }))}/>}
+      {master.administrativeStatus !== "ANNULLED" && <LifecycleForm returnTo={returnTo} documentId={documentId} revisionId={r.id} state={r.status} version={r.lifecycle?.version || 0} capabilities={principal.capabilities} previousId={master.revisions.find(v => v.status === "IN_FORCE")?.id || null} objects={r.documents.filter(o => !o.replacement).map(o => ({ id: o.id, originalName: o.originalName, kind: o.kind, externalReference: o.externalReference }))} decisions={r.decisions.map(d => ({ id: d.id, operation: d.operation, label: `#${d.sequence} ${d.operation} ${(d.details as unknown as LifecycleCommand).function || ""} ${(d.details as unknown as LifecycleCommand).externalPerson || ""}`, evidenceIds: (d.details as unknown as LifecycleCommand).evidenceIds }))}/>}
     </article>;
   })}</div>;
 }

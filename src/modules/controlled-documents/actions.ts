@@ -1,4 +1,5 @@
 "use server";
+import { withReturnTo } from "./navigation";
 import { parseMasterForm, parseRevisionForm } from "./domain";
 import { saveMaster, saveRevision } from "./service";
 import { Prisma } from "@prisma/client";
@@ -21,7 +22,7 @@ export async function masterAction(id: string | null, _state: SaveState, fd: For
         const input = parseMasterForm(fd);
         if (input.existingDocument) { const principal = lifecyclePrincipal(await headers()); requireLifecyclePermission(principal, "legacy-register"); input.actor = principal.name; }
         const saved = await saveMaster(input, id || undefined);
-        return { url: `/controlled-documents/${saved}` };
+        return { url: withReturnTo(`/controlled-documents/${saved}`, fd.get("returnTo")) };
     }
     catch (error) {
         return preserveFormState(_state, fd, { error: errorMessage(error) });
@@ -32,7 +33,7 @@ export async function revisionAction(documentId: string, id: string | null, _sta
         const input = parseRevisionForm(fd);
         if (input.existingDocument) { const principal = lifecyclePrincipal(await headers()); requireLifecyclePermission(principal, "legacy-register"); input.actor = principal.name; }
         await saveRevision(documentId, input, id || undefined);
-        return { url: `/controlled-documents/${documentId}?tab=revisions` };
+        return { url: withReturnTo(`/controlled-documents/${documentId}?tab=revisions`, fd.get("returnTo")) };
     }
     catch (error) {
         return preserveFormState(_state, fd, { error: errorMessage(error) });

@@ -1,3 +1,4 @@
+import { canEditRevision } from "./revision-editability";
 import { indexMetadata } from "./import/domain";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../../lib/db";
@@ -24,7 +25,7 @@ async function revisionData(tx: Prisma.TransactionClient, m: Awaited<ReturnType<
         if (!previous || previous.documentId !== m.id || previous.id === id || previous.revisionCode >= v.revisionCode)
             throw new Error("La revisión anterior debe pertenecer al mismo PNT y ser menor.");
     }
-    return { ...snapshot(m), revisionCode: v.revisionCode, revisionReason: nullable(v.revisionReason), status: v.existingDocument ? v.existingStatus : "DRAFT" as const, effectiveFrom: date(v.effectiveFrom), reviewDueAt: date(v.reviewDueAt), obsoletedAt: date(v.obsoletedAt), previousRevisionId: nullable(v.previousRevisionId), sourceReference: nullable(v.sourceReference), verificationStatus: v.existingDocument ? "VERIFIED" as const : "UNVERIFIED" as const, verifiedByText: v.existingDocument ? v.actor : null, verifiedAt: v.existingDocument ? new Date() : null, consolidatedAt: v.existingDocument ? new Date() : null };
+    return { ...snapshot(m), revisionCode: v.revisionCode, revisionReason: nullable(v.revisionReason), status: v.existingDocument ? v.existingStatus : "DRAFT" as const, effectiveFrom: date(v.effectiveFrom), reviewDueAt: date(v.reviewDueAt), obsoletedAt: date(v.obsoletedAt), previousRevisionId: nullable(v.previousRevisionId), sourceReference: nullable(v.sourceReference), verificationStatus: (v.existingDocument ? "VERIFIED" : "UNVERIFIED") as "VERIFIED" | "UNVERIFIED" | "REVIEW_REQUIRED", verifiedByText: v.existingDocument ? v.actor : null, verifiedAt: v.existingDocument ? new Date() : null, consolidatedAt: v.existingDocument ? new Date() : null };
 }
 export async function saveMaster(v: MasterInput, id?: string, db: PrismaClient = prisma) {
     return db.$transaction(async (tx) => {
@@ -73,17 +74,26 @@ export async function saveRevision(documentId: string, v: RevisionInput, id?: st
         const m = await tx.controlledDocument.findUniqueOrThrow({ where: { id: documentId } });
         if (m.administrativeStatus !== "ACTIVE")
             throw new Error("Registra primero el maestro activo.");
-        const old = id ? await tx.controlledDocumentRevision.findUniqueOrThrow({ where: { id } }) : null;
-        if (old && await tx.controlledRevisionLifecycle.findUnique({ where: { revisionId: old.id } }))
-            throw new Error("Una revisión gestionada por P2B no se edita desde el registro P1A.");
-        if (old && (old.documentId !== documentId || old.consolidatedAt || old.status !== "DRAFT"))
-            throw new Error("La revisión consolidada no admite edición.");
+        const old = id ? await tx.controlledDocumentRevision.findUniqueOrThrow({ where: { id }, include: { lifecycle: true, decisions: true } }) : null;
+        if (old && (old.documentId !== documentId || !canEditRevision(old)))
+            throw new Error("La revisión no admite edición por su estado o historial documental.");
         if (old && old.updatedAt.toISOString() !== v.updatedAt)
             throw new Error("La revisión ha cambiado. Recarga antes de guardar.");
+        if (old?.lifecycle && v.existingDocument)
+            throw new Error("Una revisión con decisiones documentales no se convierte en registro histórico desde la edición.");
         const data = await revisionData(tx, m, v, id);
+        if (old?.lifecycle) {
+            // Keep original verification attribution and every decision/evidence link.
+            // An earlier favourable contrast cannot attest changed draft content.
+            data.verificationStatus = old.verificationStatus === "UNVERIFIED" ? "UNVERIFIED" : "REVIEW_REQUIRED";
+            data.verifiedAt = old.verifiedAt;
+            data.verifiedByText = old.verifiedByText;
+            await tx.controlledRevisionLifecycle.update({ where: { revisionId: old.id }, data: { version: { increment: 1 } } });
+        }
         const r = old ? await tx.controlledDocumentRevision.update({ where: { id }, data }) : await tx.controlledDocumentRevision.create({ data: { ...data, documentId, registeredByText: v.actor } });
         await tx.controlledDocument.update({ where: { id: documentId }, data: { updatedAt: new Date() } });
-        await history(tx, documentId, r.id, old ? "Cambio de revisión en elaboración" : "Registro de revisión", v.actor, v.changeReason, old, r);
+        const priorContent = old ? Object.fromEntries(Object.entries(old).filter(([key]) => key !== "lifecycle" && key !== "decisions")) : null;
+        await history(tx, documentId, r.id, old ? "Cambio de revisión en elaboración" : "Registro de revisión", v.actor, v.changeReason, priorContent, r);
         return r.id;
     });
 }

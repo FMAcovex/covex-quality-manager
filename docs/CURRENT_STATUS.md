@@ -1066,3 +1066,14 @@ Sobre main e051c3b22921a687c1a7f7fefb7b17385208b59a (P2A fusionada), rama featur
 ## P3C-4 — Biblioteca documental: explotación y presentación (2026-10-09)
 
 Implementado en rama `feature/pnt-p3c4-list-ux`, PR #115, pendiente de CI y validación visual manual. Incluye filtro rápido de vigencia, revisión prevista en 30 días, revisión vencida, fechas incompletas y verificación documental pendiente; vista todas/última revisión; ordenación de las ocho columnas; contadores separados de PNT y revisiones; 25 filas por página; XLSX con la selección y ordenación completas, no solo la página. Al abrir la ficha se conserva el regreso al listado con los filtros actuales. Se mejora la presentación de Información, Revisiones, Documentos, Historial y paneles de estado, sin cambio de permisos, validaciones, aprobación externa, datos históricos ni schema. Las fechas de decisiones P2B siguen teniendo prioridad frente a las originales. La mejora constituye funcionalidad de consulta y no validación GMP. Antes de fusionar: comprobar en Codespaces el rendimiento sobre el índice completo y el aspecto 1440/768/390.
+
+## PNT — Correcciones de la revisión final
+
+Rama `feature/pnt-final-corrections`, actualizada desde main `417e3a3a` tras el reinicio del entorno. F-01/F-02/V-01/V-02 y dos mejoras autorizadas; módulo **pendiente de revisión y aprobación del usuario, sin cierre**.
+
+- Editabilidad compartida entre servidor, ficha y URL: borrador devuelto editable si nunca fue aprobado/consolidado. El historial de aprobación también bloquea.
+- Objetos, bytes, decisiones, evidencias y cambios previos conservados. Editar añade su cambio e incrementa la versión; un contraste anterior no acredita contenido modificado.
+- `returnTo` local conserva búsqueda, filtros, vista, orden y página en pestañas, formularios y guardados de contenido/estado/documentos; filtros expresamente modificados reinician página.
+- Badge documental común, separado del maestro; procedencia por metadatos reales, sin inferencia por existencia del ciclo.
+- Excel con verificación en español y enums intactos; aclaración de última revisión (número mayor), sin cambiar selección.
+- Regresiones unitarias, PostgreSQL y Chromium en CI documental; capturas como artefacto. Sin schema/migraciones ni cambios funcionales en otros módulos. Sin merge/squash automático. Resultados en la única PR.
