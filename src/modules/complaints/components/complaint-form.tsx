@@ -42,7 +42,7 @@ const categoryOptions=[["PRODUCT_QUALITY","Calidad del producto"],["SPECIFICATIO
 const containmentOptions=[["QUARANTINE","Bloqueo / cuarentena"],["SUSPEND_USE_DISTRIBUTION","Suspender uso / distribución"],["NOTIFY_PARTIES","Aviso a cliente / proveedor / titular / Autoridad"],["NONE","Ninguna"],["OTHER","Otra"]] as const;
 const resolutionOptions=[["RETURN","Devolución"],["CORRECTIVE_ACTION","Acc. correctora"],["PREVENTIVE_ACTION","Acc. preventiva"],["IMMEDIATE_ACTION","Acc. inmediata"],["RECALL","Retirada del mercado"],["CREDIT","Abono"],["REPLACEMENT","Reposición"],["OTHER","Otros"]] as const;
 
-export function ComplaintForm({mode,action,departments,defaults={},complaintId,cancelHref}:{mode:"create"|"edit";action:(s:ComplaintFormState,fd:FormData)=>Promise<ComplaintFormState>;departments:DepartmentOption[];defaults?:ComplaintFormDefaults;complaintId?:string
+export function ComplaintForm({mode,action,departments,defaults={},complaintId,cancelHref,returnTo,detailTab}:{mode:"create"|"edit";action:(s:ComplaintFormState,fd:FormData)=>Promise<ComplaintFormState>;departments:DepartmentOption[];defaults?:ComplaintFormDefaults;complaintId?:string
   cancelHref?: string;}) {
  const [state,formAction,pending]=useActionState(action,initial);
  useEffect(()=>{
@@ -85,6 +85,8 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
  };
 
  return <form key={state.formRevision??0} action={formAction} className="form-stack">
+    <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
+    <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
   <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)}/>
   <input type="hidden" name="derivedActionsJson" value={JSON.stringify(derived)}/>
   {state.error?<div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length?<ul>{state.fieldErrors.map((x,i)=><li key={`${x}-${i}`}>{x}</li>)}</ul>:null}</div>:null}
