@@ -263,7 +263,7 @@ export default async function ReturnDetailPage({
           <div className="record-actions">
             <ReviewModeToggle
               active={reviewMode}
-              href={reviewModeHref(basePath, tab, reviewMode)}
+              href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/returns", returnTo)}
             />
             {r.qmsRecord.isActive?<Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit`, "/returns", returnTo)}>
               Editar
@@ -957,7 +957,7 @@ export default async function ReturnDetailPage({
                 </div>
                 <ReviewModeToggle
                   active={reviewMode}
-                  href={reviewModeHref(basePath, "review", reviewMode)}
+                  href={qmsWithReturnTo(reviewModeHref(basePath, "review", reviewMode), "/returns", returnTo)}
                 />
               </div>
               <ReviewStatusSummary />
