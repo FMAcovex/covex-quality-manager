@@ -29,7 +29,7 @@ export default async function EditDeviationPage({
   ]);
   if (!deviation) notFound();
 
-  const action = updateDeviationAction.bind(null, id, qmsListingReturnTo("/deviations", returnTo), qmsDetailTab("/deviations", tab));
+  const action = updateDeviationAction.bind(null, id);
 
   return (
     <section className="form-page">
@@ -43,7 +43,7 @@ export default async function EditDeviationPage({
       </div>
       <DeviationForm
         action={action}
-        cancelHref={qmsDetailUrl("/deviations", id, returnTo, tab)}
+        cancelHref={qmsDetailUrl("/deviations", id, returnTo, tab)} returnTo={qmsListingReturnTo("/deviations", returnTo)} detailTab={qmsDetailTab("/deviations", tab)}
         departments={lookups.departments}
         mode="edit"
         deviationId={id}
