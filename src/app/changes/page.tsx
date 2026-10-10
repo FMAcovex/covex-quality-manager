@@ -1,5 +1,6 @@
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
+import { qmsListingUrl, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
@@ -31,6 +32,7 @@ export default async function ChangeControlPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
+  const toDetail = (id: string) => qmsWithReturnTo("/changes/" + id, "/changes", qmsListingUrl("/changes", query));
   const filters = {
     review: firstQueryValue(query.review),
     q: param(query.q),
@@ -101,7 +103,7 @@ export default async function ChangeControlPage({
             placeholder="Buscar código, descripción, solicitante, tarea u observaciones…"
             suggestions={rows.map((row) => ({
               id: row.id,
-              href: `/changes/${row.id}`,
+              href: toDetail(row.id),
               code: row.qmsRecord.businessCode ?? "Sin código",
               title: row.description ?? "Sin descripción",
               meta: [row.departmentCodeSnapshot, finalStatusLabel(row.finalStatus)].filter(Boolean).join(" · "),
@@ -171,13 +173,13 @@ export default async function ChangeControlPage({
                         data-reminder-summary={row.description ?? "Sin descripción"}
                         data-reminder-status={finalStatusLabel(row.finalStatus)}
                         data-reminder-meta={row.departmentCodeSnapshot ?? ""}
-                        data-reminder-href={`/changes/${row.id}`}
+                        data-reminder-href={toDetail(row.id)}
                         aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "Control de Cambio"}`}
                       />
                     </td>
                     <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ Revisar</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} basePath={`/changes/${row.id}`} /></td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
-                    <td data-column-key="code" className="sticky-code"><Link href={`/changes/${row.id}`}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
+                    <td data-column-key="code" className="sticky-code"><Link href={toDetail(row.id)}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                     <td data-column-key="description" className="long-cell">{row.description ?? "—"}</td>
                     <td data-column-key="requestDate">{formatDate(row.requestDate)}</td>
                     <td data-column-key="approvalDate">{formatDate(row.dictamenDate)}</td>

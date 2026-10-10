@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
 import { ReviewDrawer, ReviewMarker, ReviewModeToggle, ReviewStatusSummary, ReviewThreadList, ReviewWorkspaceProvider } from "@/components/review";
 import { getReviewThreadsForDisplay } from "@/lib/qms/review/ui-queries";
@@ -58,10 +59,10 @@ export default async function ChangeControlDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; relationError?: string; review?: string; thread?: string }>;
+  searchParams: Promise<{ tab?: string; relationError?: string; review?: string; thread?: string; returnTo?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab, relationError, review, thread } = await searchParams;
+  const { tab: rawTab, relationError, review, thread, returnTo } = await searchParams;
   const activeTab = changeControlDetailTabs.some(([key]) => key === rawTab) ? rawTab! : "information";
   const [record, lookups] = await Promise.all([
     getChangeControlDetail(id),
@@ -168,7 +169,7 @@ export default async function ChangeControlDetailPage({
     <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
       <div className="record-header">
         <div>
-          <p className="eyebrow"><Link href="/changes">← Controles de Cambios</Link></p>
+          <p className="eyebrow"><Link href={qmsListingReturnTo("/changes", returnTo)}>← Controles de Cambios</Link></p>
           <div className="record-title-line">
             <h1>{qmsRecordDisplayCode(record.qmsRecord, "Control de Cambio sin código")}</h1>
             <span className="badge neutral">{classificationLabel(record.classification)}</span>
@@ -191,10 +192,10 @@ export default async function ChangeControlDetailPage({
           </p>
         </div>
         <div className="record-actions">
-          <ReviewModeToggle active={reviewMode} href={reviewModeHref(basePath, activeTab, reviewMode)} />
-          <Link className="button primary" href={`/changes/${id}/edit`}>Editar Solicitud / Dictamen</Link>
+          <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/changes", returnTo)} />
+          <Link className="button primary" href={qmsWithReturnTo(`/changes/${id}/edit`, "/changes", returnTo)}>Editar Solicitud / Dictamen</Link>
           {record.dictamenResult === "APPROVED" && record.finalStatus === "OPEN" ? (
-            <Link className="button" href={`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`}>+ Seguimiento</Link>
+            <Link className="button" href={qmsWithReturnTo(`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`, "/changes", returnTo)}>+ Seguimiento</Link>
           ) : null}
         </div>
       </div>
@@ -217,7 +218,7 @@ export default async function ChangeControlDetailPage({
 
       <nav className="record-tabs">
         {changeControlDetailTabs.map(([key, label]) => (
-          <Link key={key} className={activeTab === key ? "active" : ""} href={reviewTabHref(basePath, key, reviewMode)}>
+          <Link key={key} className={activeTab === key ? "active" : ""} href={qmsWithReturnTo(reviewTabHref(basePath, key, reviewMode), "/changes", returnTo)}>
             {key === "review" ? `Revisión (${reviewActiveCount})` : label}
           </Link>
         ))}

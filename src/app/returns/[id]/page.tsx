@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
 import {
   addReturnFollowupAction,
@@ -62,10 +63,10 @@ export default async function ReturnDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; review?: string; thread?: string }>;
+  searchParams: Promise<{ tab?: string; review?: string; thread?: string; returnTo?: string }>;
 }) {
   const { id } = await params;
-  const { tab: raw, review, thread } = await searchParams;
+  const { tab: raw, review, thread, returnTo } = await searchParams;
   const tab = tabs.some(([key]) => key === raw) ? raw! : "summary";
   const r = await getReturnDetail(id);
   if (!r) notFound();
@@ -237,7 +238,7 @@ export default async function ReturnDetailPage({
         <div className="record-header">
           <div>
             <p className="eyebrow">
-              <Link href="/returns">← Devoluciones</Link>
+              <Link href={qmsListingReturnTo("/returns", returnTo)}>← Devoluciones</Link>
             </p>
             <div className="record-title-line">
               <h1>{qmsRecordDisplayCode(r.qmsRecord)}</h1>
@@ -262,9 +263,9 @@ export default async function ReturnDetailPage({
           <div className="record-actions">
             <ReviewModeToggle
               active={reviewMode}
-              href={reviewModeHref(basePath, tab, reviewMode)}
+              href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/returns", returnTo)}
             />
-            {r.qmsRecord.isActive?<Link className="button primary" href={`/returns/${id}/edit`}>
+            {r.qmsRecord.isActive?<Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit`, "/returns", returnTo)}>
               Editar
             </Link>:null}
             {r.qmsRecord.isActive&&r.status === "OPEN" ? (
@@ -301,7 +302,7 @@ export default async function ReturnDetailPage({
             <Link
               key={key}
               className={tab === key ? "active" : ""}
-              href={reviewTabHref(basePath, key, reviewMode)}
+              href={qmsWithReturnTo(reviewTabHref(basePath, key, reviewMode), "/returns", returnTo)}
             >
               {key === "review" ? `${label} (${reviewActiveCount})` : label}
             </Link>
@@ -956,7 +957,7 @@ export default async function ReturnDetailPage({
                 </div>
                 <ReviewModeToggle
                   active={reviewMode}
-                  href={reviewModeHref(basePath, "review", reviewMode)}
+                  href={qmsWithReturnTo(reviewModeHref(basePath, "review", reviewMode), "/returns", returnTo)}
                 />
               </div>
               <ReviewStatusSummary />

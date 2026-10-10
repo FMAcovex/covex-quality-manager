@@ -1,5 +1,6 @@
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
+import { qmsListingUrl, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
@@ -22,6 +23,7 @@ export default async function DeviationsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
+  const toDetail = (id: string) => qmsWithReturnTo("/deviations/" + id, "/deviations", qmsListingUrl("/deviations", query));
   const filters = {
     review: firstQueryValue(query.review),
     q: param(query.q),
@@ -104,7 +106,7 @@ export default async function DeviationsPage({
             placeholder="Buscar por código, descripción, material/proceso, causa raíz, CAPA u observaciones…"
             suggestions={rows.map((row) => ({
               id: row.id,
-              href: `/deviations/${row.id}`,
+              href: toDetail(row.id),
               code: row.qmsRecord.businessCode ?? "Sin código",
               title: row.whatHappened ?? row.materialProcessAffected ?? "Sin descripción",
               meta: [row.departmentCodeSnapshot ?? row.department?.code, row.status === "DRAFT" ? "Borrador" : row.status === "OPEN" ? "Abierta" : "Cerrada"].filter(Boolean).join(" · "),
@@ -152,12 +154,12 @@ export default async function DeviationsPage({
                       data-reminder-summary={row.whatHappened ?? row.materialProcessAffected ?? "Sin descripción"}
                       data-reminder-status={row.status === "DRAFT" ? "Borrador" : row.status === "OPEN" ? "Abierta" : "Cerrada"}
                       data-reminder-meta={row.departmentCodeSnapshot ?? row.department?.code ?? ""}
-                      data-reminder-href={`/deviations/${row.id}`}
+                      data-reminder-href={toDetail(row.id)}
                       aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "desviación"}`}
                     />
                   </td>
                   <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} basePath={`/deviations/${row.id}`} /></td>
-                  <td data-column-key="code"><Link className="summary-link" href={`/deviations/${row.id}`}>{qmsRecordDisplayCode(row.qmsRecord)}</Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
+                  <td data-column-key="code"><Link className="summary-link" href={toDetail(row.id)}>{qmsRecordDisplayCode(row.qmsRecord)}</Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                   <td data-column-key="department">{row.departmentCodeSnapshot ?? row.department?.code ?? "—"}</td>
                   <td data-column-key="material" className="table-cell-medium">{row.materialProcessAffected ?? "—"}</td>
                   <td data-column-key="provenance">{deviationProvenanceLabel(row.provenance)}</td>
