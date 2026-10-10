@@ -486,7 +486,7 @@ export function ChangeControlForm({
       </section>
 
       <div className="form-footer">
-        <Link className="button" href={cancelHref ?? changeId ? `/changes/${changeId}` : "/changes"}>Cancelar</Link>
+        <Link className="button" href={cancelHref ?? (changeId ? `/changes/${changeId)}` : "/changes"}>Cancelar</Link>
         <button className="button primary" type="submit" disabled={pending}>
           {pending ? "Guardando…" : draft ? "Guardar borrador" : mode === "create" ? "Guardar Control de Cambio" : "Guardar cambios"}
         </button>
