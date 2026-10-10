@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import Link from "next/link";
 import { updateDeviationAction } from "@/modules/deviations/actions";
 import { DeviationForm } from "@/modules/deviations/components/deviation-form";
@@ -15,18 +16,20 @@ function dateTime(value: Date | null) {
 }
 
 export default async function EditDeviationPage({
-  params,
+  params, searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{returnTo?: string; tab?: string}>;
 }) {
   const { id } = await params;
+  const {returnTo, tab} = await searchParams;
   const [deviation, lookups] = await Promise.all([
     getDeviationDetail(id),
     getDeviationFormLookups(),
   ]);
   if (!deviation) notFound();
 
-  const action = updateDeviationAction.bind(null, id);
+  const action = updateDeviationAction.bind(null, id, qmsListingReturnTo("/deviations", returnTo), qmsDetailTab("/deviations", tab));
 
   return (
     <section className="form-page">
@@ -36,10 +39,11 @@ export default async function EditDeviationPage({
           <h1>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar"} {deviation.qmsRecord.businessCode ?? "desviación"}</h1>
           <p>{deviation.status === "DRAFT" ? "Completa los campos pendientes y abre la desviación cuando esté lista." : "Edita la versión vigente o genera el siguiente seguimiento como una versión completa del expediente."}</p>
         </div>
-        <Link className="button" href={`/deviations/${id}`}>← Volver al expediente</Link>
+        <Link className="button" href={qmsDetailUrl("/deviations", id, returnTo, tab)}>← Volver al expediente</Link>
       </div>
       <DeviationForm
         action={action}
+        cancelHref={qmsDetailUrl("/deviations", id, returnTo, tab)}
         departments={lookups.departments}
         mode="edit"
         deviationId={id}
