@@ -21,14 +21,15 @@ function Tri({label,name,defaultValue,required=false}:{label:string;name:string;
   return <label className="field"><span>{label}{required?" *":""}</span><select name={name} defaultValue={defaultValue??""} required={required}><option value="">No informado</option><option value="YES">Sí</option><option value="NO">No</option><option value="NA">N/A</option></select></label>;
 }
 
-export function ReturnForm({mode,action,departments,defaults={},returnId,fromComplaintId}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string;fromComplaintId?:string}){
+export function ReturnForm({mode,action,departments,defaults={},returnId,fromComplaintId,cancelHref}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string;
+  cancelHref?: string;fromComplaintId?:string}){
   const [state,formAction,pending]=useActionState(action,initial);
   const formDefaults=submittedDefaults(defaults,state.submittedValues);
   const [products,setProducts]=useState(defaults.products?.length?defaults.products:[{...emptyProduct}]);
   const [departmentId,setDepartmentId]=useState(formDefaults.departmentId??"");
   const [communicationDate,setCommunicationDate]=useState(formDefaults.communicationDate??"");
   const [recordStatus,setRecordStatus]=useState<"DRAFT"|"OPEN"|"CLOSED">(formDefaults.status??(mode==="create"?"DRAFT":"OPEN"));
-  useEffect(()=>{if(state.savedRecordId)window.location.assign(`/returns/${state.savedRecordId}`);},[state.savedRecordId]);
+  useEffect(()=>{if(state.savedRecordId)window.location.assign(mode==="edit" && cancelHref ? cancelHref : `/returns/${state.savedRecordId}`);},[state.savedRecordId,mode,cancelHref]);
   const [receivedAt,setReceivedAt]=useState(defaults.receivedAt??"");
   const [context,setContext]=useState(returnContext(defaults));
   const [destination,setDestination]=useState(defaults.finalDestination??"");
@@ -175,6 +176,6 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
       </div>
     </section>
 
-    <div className="form-footer"><Link className="button" href={returnId?`/returns/${returnId}`:"/returns"}>Cancelar</Link><button className="button primary" disabled={pending}>{pending?"Guardando…":draft?"Guardar borrador":mode==="create"?"Guardar devolución":"Guardar cambios"}</button></div>
+    <div className="form-footer"><Link className="button" href={cancelHref ?? returnId?`/returns/${returnId}`:"/returns"}>Cancelar</Link><button className="button primary" disabled={pending}>{pending?"Guardando…":draft?"Guardar borrador":mode==="create"?"Guardar devolución":"Guardar cambios"}</button></div>
   </form>;
 }
