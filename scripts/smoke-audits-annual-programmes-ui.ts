@@ -62,7 +62,13 @@ async function main() {
       await submit(page, "Emitir Programa Anual en Word");
       await page.getByRole("alert").filter({ hasText: "cambiado" }).waitFor({ state: "visible" });
       assert.equal(await prisma.auditAnnualProgrammeVersion.count({ where: { planId: plan.id } }), 1);
-      await page.reload(); await page.waitForLoadState("networkidle");
+      // Verify the updated server preview after reload instead of waiting for all
+      // background network activity to become idle.
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.getByText(
+        "El contenido o la plantilla han cambiado desde la última emisión. El archivo histórico se conserva.",
+        { exact: true },
+      ).waitFor({ state: "visible", timeout: 30000 });
       const subsequent = page.locator('form').filter({ has: page.getByRole("button", { name: "Emitir Programa Anual en Word" }) });
       assert.equal(await subsequent.locator('[name="reason"]').getAttribute("required"), "");
       await subsequent.locator('[name="actor"]').fill(actor); await subsequent.locator('[name="reason"]').fill("Cambio documentado QA");
