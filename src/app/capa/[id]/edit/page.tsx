@@ -76,11 +76,11 @@ export default async function EditCapaPage({ params, searchParams }: { params: P
     })),
   };
 
-  const action = updateCapaAction.bind(null,id,qmsListingReturnTo("/capa",returnTo),qmsDetailTab("/capa",tab));
+  const action = updateCapaAction.bind(null,id);
   return (
     <section className="workspace">
       <div className="page-heading"><div><p className="eyebrow">CAPA</p><h1>Editar {capa.qmsRecord.businessCode}</h1><p>Los expedientes cerrados permanecen editables en V1 con historial de cambios.</p></div></div>
-      <CapaForm mode="edit" action={action} departments={lookups.departments} defaults={defaults} capaId={id} cancelHref={cancelHref} qmsRecordId={capa.qmsRecord.id} />
+      <CapaForm mode="edit" action={action} departments={lookups.departments} defaults={defaults} capaId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/capa",returnTo)} detailTab={qmsDetailTab("/capa",tab)} qmsRecordId={capa.qmsRecord.id} />
     </section>
   );
 }
