@@ -40,9 +40,11 @@ async function readPreview(tx: Prisma.TransactionClient, planId: string) {
     content.rows = [...groups.values()].flat();
   }
   const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-  const template = await tx.templateVersion.findFirst({ where: { module: "AUDIT", documentType: programmeDocumentTypes[plan.auditType], isActive: true, effectiveFrom: { lte: today }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: today } }] }, orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }, { id: "asc" }] });
+  const template = await tx.templateVersion.findFirst({ where: { module: "AUDIT", documentType: programmeDocumentTypes[plan.auditType], isActive: true, effectiveFrom: { lte: today }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: today } }] }, orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+    select: { id: true, versionCode: true, checksum: true, fileSize: true },
+  });
   const blockers: string[] = [];
-  if (!template?.fileData || !template.checksum) blockers.push("Plantilla oficial vigente no instalada.");
+  if (!template?.checksum || !template.fileSize) blockers.push("Plantilla oficial vigente no instalada.");
   if (!entries.length) blockers.push("El programa debe contener al menos una auditoría planificada.");
   if (!content.qualityApproverName || (plan.auditType === "INTERNAL" && !content.technicalApproverName)) blockers.push("Cumplimenta los nombres de los aprobadores; las firmas y fechas se completarán en Word.");
   content.rows.forEach((r, i) => { if (!r.target || !r.planned || !r.auditors) blockers.push(`Entrada ${i + 1}: faltan entidad/departamento, fecha/período o auditores previstos.`); });
@@ -84,7 +86,13 @@ export async function issueAnnualProgramme(planId: string, input: unknown) {
         const sequence = previous ? previous.sequenceNumber + 1 : 0;
         if (sequence > 0 && !v.reason) throw Error("Indica el motivo de la nueva emisión.");
         const template = preview.template!;
-        const source = Buffer.from(template.fileData!);
+        // Read the large binary only during issuance, never while rendering a plan preview.
+        const storedTemplate = await tx.templateVersion.findUnique({
+          where: { id: template.id },
+          select: { fileData: true, checksum: true },
+        });
+        if (!storedTemplate?.fileData || storedTemplate.checksum !== template.checksum) throw Error("La plantilla no coincide con su checksum registrado.");
+        const source = Buffer.from(storedTemplate.fileData);
         if (digest(source) !== template.checksum) throw Error("La plantilla no coincide con su checksum registrado.");
         const bytes = generateAnnualProgramme(source, preview.content);
         const generatedAt = new Date();

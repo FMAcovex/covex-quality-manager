@@ -21,3 +21,26 @@ export async function retirePlanEntryAction(planId:string,entryId:string,fd:Form
   await retirePlanEntry(planId,entryId,str(fd,"actor"),str(fd,"reason"));
   redirect("/audits/plans/"+planId);
 }
+
+export type PlanEntryActionState = { error?: string };
+const planEntryInput = (fd: FormData, updating: boolean) => ({
+  ...programmeFields(fd), subject: str(fd, "subject"), targetName: str(fd, "targetName"),
+  departmentId: str(fd, "departmentId"), plannedDate: str(fd, "plannedDate"),
+  notes: str(fd, "notes"), actor: str(fd, "actor"), reason: updating ? str(fd, "reason") : "",
+});
+const errorText = (e: unknown) => {
+  if (e && typeof e === "object" && "issues" in e && Array.isArray(e.issues)) {
+    return e.issues.map((issue: { message: string }) => issue.message).join(" ");
+  }
+  return e instanceof Error ? e.message : "No se pudo guardar la planificación.";
+};
+export async function addPlanEntryFormAction(planId: string, _state: PlanEntryActionState, fd: FormData): Promise<PlanEntryActionState> {
+  try { await addPlanEntry(planId, planEntryInput(fd, false)); }
+  catch (e) { return { error: errorText(e) }; }
+  redirect("/audits/plans/" + planId);
+}
+export async function updatePlanEntryFormAction(planId: string, entryId: string, _state: PlanEntryActionState, fd: FormData): Promise<PlanEntryActionState> {
+  try { await updatePlanEntry(planId, entryId, planEntryInput(fd, true)); }
+  catch (e) { return { error: errorText(e) }; }
+  redirect("/audits/plans/" + planId);
+}
