@@ -11,7 +11,8 @@ async function submit(page: Page, name: string) {
   const response = page.waitForResponse(r => r.request().method() === "POST" && Boolean(r.request().headers()["next-action"]));
   await page.getByRole("button", { name, exact: true }).click();
   assert.equal((await response).status(), 200);
-  await page.waitForLoadState("networkidle");
+  // Each caller asserts the relevant UI state (status, link or error).
+  // Do not block on unrelated background requests.
 }
 async function main() {
   if (!base || process.env.APP_ENV !== "test") throw Error("Smoke UI de programas requiere APP_ENV=test y ANNUAL_UI_BASE_URL.");
@@ -29,7 +30,8 @@ async function main() {
       const year = Array.from({ length: 101 }, (_, i) => 2100 - i).find(y => !occupied.some(p => p.year === y))!;
       const plan = await createAnnualPlan({ year, auditType: type, title: `Programa UI ${suffix}`, notes: "Ficticio", actor });
       const { entry } = await addPlanEntry(plan.id, { subject: "Objeto UI ficticio", targetName: "Entidad UI ficticia", departmentId: "", plannedDate: "", notes: "", actor, reason: "" });
-      await page.goto(`${base}/audits/plans/${plan.id}`); await page.waitForLoadState("networkidle");
+      await page.goto(`${base}/audits/plans/${plan.id}`, { waitUntil: "domcontentloaded" });
+      await page.getByRole("button", { name: "Emitir Programa Anual en Word" }).waitFor({ state: "visible" });
       assert(await page.getByRole("button", { name: "Emitir Programa Anual en Word" }).isDisabled());
       await page.getByText("Datos de aprobación del programa", { exact: true }).click();
       const approval = page.locator('form').filter({ has: page.getByRole("button", { name: "Guardar datos de aprobación" }) });
@@ -45,7 +47,8 @@ async function main() {
       await edit.locator('[name="actor"]').fill(actor); await edit.locator('[name="reason"]').fill("Completar planificación documental");
       const post = page.waitForResponse(r => r.request().method() === "POST" && Boolean(r.request().headers()["next-action"]));
       await page.getByRole("button", { name: "Guardar cambios", exact: true }).click(); assert([200, 303].includes((await post).status()));
-      await page.reload(); await page.waitForLoadState("networkidle");
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.getByText("Primer trimestre", { exact: true }).first().waitFor({ state: "visible" });
       const issue = page.locator('form').filter({ has: page.getByRole("button", { name: "Emitir Programa Anual en Word" }) });
       assert(!(await page.getByRole("button", { name: "Emitir Programa Anual en Word" }).isDisabled()));
       await issue.locator('[name="actor"]').fill(actor);
@@ -62,7 +65,13 @@ async function main() {
       await submit(page, "Emitir Programa Anual en Word");
       await page.getByRole("alert").filter({ hasText: "cambiado" }).waitFor({ state: "visible" });
       assert.equal(await prisma.auditAnnualProgrammeVersion.count({ where: { planId: plan.id } }), 1);
-      await page.reload(); await page.waitForLoadState("networkidle");
+      // Verify the updated server preview after reload instead of waiting for all
+      // background network activity to become idle.
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.getByText(
+        "El contenido o la plantilla han cambiado desde la última emisión. El archivo histórico se conserva.",
+        { exact: true },
+      ).waitFor({ state: "visible", timeout: 30000 });
       const subsequent = page.locator('form').filter({ has: page.getByRole("button", { name: "Emitir Programa Anual en Word" }) });
       assert.equal(await subsequent.locator('[name="reason"]').getAttribute("required"), "");
       await subsequent.locator('[name="actor"]').fill(actor); await subsequent.locator('[name="reason"]').fill("Cambio documentado QA");
