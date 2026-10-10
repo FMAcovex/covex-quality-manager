@@ -42,13 +42,14 @@ const categoryOptions=[["PRODUCT_QUALITY","Calidad del producto"],["SPECIFICATIO
 const containmentOptions=[["QUARANTINE","Bloqueo / cuarentena"],["SUSPEND_USE_DISTRIBUTION","Suspender uso / distribución"],["NOTIFY_PARTIES","Aviso a cliente / proveedor / titular / Autoridad"],["NONE","Ninguna"],["OTHER","Otra"]] as const;
 const resolutionOptions=[["RETURN","Devolución"],["CORRECTIVE_ACTION","Acc. correctora"],["PREVENTIVE_ACTION","Acc. preventiva"],["IMMEDIATE_ACTION","Acc. inmediata"],["RECALL","Retirada del mercado"],["CREDIT","Abono"],["REPLACEMENT","Reposición"],["OTHER","Otros"]] as const;
 
-export function ComplaintForm({mode,action,departments,defaults={},complaintId}:{mode:"create"|"edit";action:(s:ComplaintFormState,fd:FormData)=>Promise<ComplaintFormState>;departments:DepartmentOption[];defaults?:ComplaintFormDefaults;complaintId?:string}) {
+export function ComplaintForm({mode,action,departments,defaults={},complaintId,cancelHref}:{mode:"create"|"edit";action:(s:ComplaintFormState,fd:FormData)=>Promise<ComplaintFormState>;departments:DepartmentOption[];defaults?:ComplaintFormDefaults;complaintId?:string
+  cancelHref?: string;}) {
  const [state,formAction,pending]=useActionState(action,initial);
  useEffect(()=>{
   // Navigate after the committed action result; a streamed redirect to the
   // previously visited draft detail can leave this form pending in Next 15.
-  if(state.savedRecordId)window.location.assign(`/complaints/${state.savedRecordId}`);
- },[state.savedRecordId]);
+  if(state.savedRecordId)window.location.assign(mode==="edit" && cancelHref ? cancelHref : `/complaints/${state.savedRecordId}`);
+ },[state.savedRecordId,mode,cancelHref]);
  const formDefaults=submittedDefaults(defaults,state.submittedValues);
  const [capas,setCapas]=useState<ComplaintCapaPlanInput[]>(defaults.capaPlans??[]);
  const [derived,setDerived]=useState<ComplaintDerivedActionInput[]>(defaults.derivedActions??[]);
@@ -285,7 +286,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId}:
     <TextArea label="Motivo del cambio / seguimiento" name="changeReason"/>
   </div></section>:null}
 
-  <div className="form-footer"><Link className="button" href={complaintId?`/complaints/${complaintId}`:"/complaints"}>Cancelar</Link><div className="heading-actions">
+  <div className="form-footer"><Link className="button" href={cancelHref ?? complaintId?`/complaints/${complaintId}`:"/complaints"}>Cancelar</Link><div className="heading-actions">
    {recordStatus==="DRAFT"?<button className="button" name="saveStatus" value="DRAFT" disabled={pending}>{pending?"Guardando…":"Guardar borrador"}</button>:null}
    {mode==="edit"&&recordStatus!=="DRAFT"?<button className="button" name="saveMode" value="current" disabled={pending}>{pending?"Guardando…":"Guardar cambios"}</button>:null}
    {mode==="edit"&&recordStatus!=="DRAFT"?<button className="button primary" name="saveMode" value="new-version" disabled={pending}>{pending?"Guardando…":"Guardar como nueva versión / seguimiento"}</button>:null}
