@@ -22,7 +22,9 @@ function Tri({label,name,defaultValue,required=false}:{label:string;name:string;
 }
 
 export function ReturnForm({mode,action,departments,defaults={},returnId,fromComplaintId,cancelHref,returnTo,detailTab}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string;
-  cancelHref?: string;fromComplaintId?:string}){
+  cancelHref?: string;
+  returnTo?: string;
+  detailTab?: string;fromComplaintId?:string}){
   const [state,formAction,pending]=useActionState(action,initial);
   const formDefaults=submittedDefaults(defaults,state.submittedValues);
   const [products,setProducts]=useState(defaults.products?.length?defaults.products:[{...emptyProduct}]);
