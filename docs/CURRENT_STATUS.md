@@ -1085,3 +1085,7 @@ Implementada en rama sobre main tras PR #122: campos documentales de entradas/ap
 Fuentes oficiales contrastadas en SharePoint; instalador separado con hashes del original interno `.doc` y PMAE V05 `.docx`, sin binarios corporativos en Git ni cambios en SharePoint. Ver `AUDITS_ANNUAL_PROGRAMMES.md` para el mapeo y operación. CI incorpora smoke PostgreSQL y navegador con plantillas ficticias compatibles; QA local complementaria utiliza documentos reales.
 
 Pendiente de aceptación del usuario: edición y acabado en Microsoft Word, y preparación/revisión/aprobación documental por las vías existentes. No fusionada ni desplegada.
+
+## Diagnóstico CI de Programas Anuales — PR #123 (2026-10-10)
+
+CI #583: ambos intentos superan PostgreSQL y quality (494 pruebas); R4B UI termina en timeout al filtrar Externas (intento 1) o crear el plan externo (intento 2). Se añade evidencia del formulario, petición/respuesta de Server Actions, redirección y eventos de clic/envío al smoke existente. Se mantienen todos los recorridos y aserciones; no se modifica código funcional ni se sustituye navegación. Diagnóstico y validación final en curso, sin merge ni squash.
