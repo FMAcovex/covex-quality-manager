@@ -2508,3 +2508,81 @@ button[disabled] {
   .audit-summary-stats { grid-template-columns:minmax(0,1fr); }
   .audit-mini-facts,.audit-followup-entry .audit-mini-facts { grid-template-columns:minmax(0,1fr); }
 }
+
+
+/* V1 UX-B — lists only: preserve the existing QMS palette and controls. */
+.qms-list-ux-b .filter-panel.operational {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 168px), 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.qms-list-ux-b .filter-panel.operational.complaint-filter-panel {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 168px), 1fr)) !important;
+}
+.qms-list-ux-b .filter-panel.operational > .filter-placeholder,
+.qms-list-ux-b .filter-panel.operational > .multi-filter { min-width: 0; }
+.qms-list-ux-b .filter-panel.operational .filter-placeholder > span {
+  line-height: 1.35;
+}
+.qms-list-ux-b .filter-panel.operational .multi-filter > summary,
+.qms-list-ux-b .filter-panel.operational .filter-placeholder > input,
+.qms-list-ux-b .filter-panel.operational .filter-placeholder > select { min-height: 42px; }
+.qms-list-ux-b .filter-panel.operational .filter-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.qms-list-ux-b .status-strip,
+.qms-list-ux-b .summary-strip {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 10px;
+}
+.qms-list-ux-b .status-strip > div,
+.qms-list-ux-b .summary-strip > div {
+  min-width: 0;
+  min-height: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  padding: 12px 14px;
+}
+.qms-list-ux-b .status-strip strong,
+.qms-list-ux-b .summary-strip strong {
+  order: -1;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.qms-list-ux-b .status-strip span,
+.qms-list-ux-b .summary-strip span { white-space: normal; line-height: 1.35; }
+
+@media (max-width: 760px) {
+  .qms-list-ux-b .filter-panel.operational {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .qms-list-ux-b .filter-panel.operational.complaint-filter-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .qms-list-ux-b .status-strip,
+  .qms-list-ux-b .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 420px) {
+  .qms-list-ux-b .filter-panel.operational {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .qms-list-ux-b .filter-panel.operational.complaint-filter-panel {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .qms-list-ux-b .status-strip,
+  .qms-list-ux-b .summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .qms-list-ux-b .status-strip > div,
+  .qms-list-ux-b .summary-strip > div { padding: 11px; }
+}
