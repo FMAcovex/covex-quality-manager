@@ -58,6 +58,9 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      # Fail fast on syntax/lint errors before starting the long PostgreSQL suite.
+      - name: Fast lint gate
+        run: pnpm lint
       - name: Database smoke test
         run: |
           pnpm db:generate
