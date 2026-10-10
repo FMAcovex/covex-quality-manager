@@ -42,3 +42,23 @@ export function qmsWithReturnTo(path: string, root: QmsListRoot, value: unknown)
     return path;
   }
 }
+
+/** Known detail tabs only; never pass unchecked query strings to a redirect. */
+const detailTabs: Record<QmsListRoot, readonly string[]> = {
+  "/deviations": ["summary", "description", "investigation", "actions", "conclusion", "relations", "versions", "documents", "review", "history"],
+  "/capa": ["summary", "action-followups", "state", "relations", "versions", "documents", "review", "history"],
+  "/changes": ["information", "request", "dictamen", "followups", "documents", "relations", "review", "history"],
+  "/complaints": ["summary", "part-i", "part-ii", "relations", "documents", "versions", "review", "history"],
+  "/returns": ["summary", "checks", "followups", "relations", "documents", "review", "history"],
+};
+export type QmsReturnContext = { returnTo: string; tab: string };
+
+export function qmsDetailTab(root: QmsListRoot, value: unknown): string {
+  return typeof value === "string" && detailTabs[root].includes(value) ? value : "";
+}
+
+export function qmsDetailUrl(root: QmsListRoot, id: string, returnTo: unknown, tab: unknown): string {
+  const selectedTab = qmsDetailTab(root, tab);
+  const path = root + "/" + encodeURIComponent(id) + (selectedTab ? "?tab=" + selectedTab : "");
+  return qmsWithReturnTo(path, root, returnTo);
+}
