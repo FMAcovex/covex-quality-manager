@@ -49,7 +49,7 @@ async function main() {
       { returnRecordId: returnId, productType: "MEDICINE", productNameCode: marker + "B" },
     ] });
     const auditRec = await createRecord("AUDIT");
-    const audit = await prisma.audit.create({ data: { qmsRecordId: auditRec.id, status: "OPEN", auditType: "INTERNAL", title: marker } });
+    const audit = await prisma.audit.create({ data: { qmsRecordId: auditRec.id, status: "OPEN", auditType: "INTERNAL", scenario: "INTERNAL_COVEX", title: marker } });
     auditId = audit.id;
     await prisma.auditDepartment.createMany({ data: [
       { auditId, departmentId: gc.id, departmentCodeSnapshot: gc.code, departmentNameSnapshot: gc.name },
