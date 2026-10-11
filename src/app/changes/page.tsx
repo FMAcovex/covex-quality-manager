@@ -1,5 +1,6 @@
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
+import { QmsListPagination } from "@/components/qms-list-pagination";
 import { qmsListingUrl, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
@@ -34,6 +35,7 @@ export default async function ChangeControlPage({
   const query = await searchParams;
   const toDetail = (id: string) => qmsWithReturnTo("/changes/" + id, "/changes", qmsListingUrl("/changes", query));
   const filters = {
+    page: param(query.page),
     review: firstQueryValue(query.review),
     q: param(query.q),
     administrative: param(query.administrative),
@@ -44,11 +46,11 @@ export default async function ChangeControlPage({
     effectiveness: queryList(query.effectiveness),
     status: queryList(query.status),
   };
-  const { rows, departments, years, counters } = await getChangeControlList(filters);
+  const { rows, departments, years, counters, pagination } = await getChangeControlList(filters);
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.CHANGE_CONTROL, DocumentType.CHANGE_ANNEX_VII);
   const exportYear = filters.year[0] ?? String(new Date().getFullYear());
   const simpleParams = new URLSearchParams();
-  Object.entries(filters).forEach(([key, value]) => appendFilterValues(simpleParams, key, value));
+  Object.entries(filters).forEach(([key, value]) => { if (key !== "page") appendFilterValues(simpleParams, key, value); });
 
   return (
     <section className="workspace qms-list-ux-b">
@@ -177,7 +179,7 @@ export default async function ChangeControlPage({
                         aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "Control de Cambio"}`}
                       />
                     </td>
-                    <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ Revisar</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} basePath={`/changes/${row.id}`} /></td>
+                    <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ Revisar</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} returnTo={qmsListingUrl("/changes", query)} basePath={`/changes/${row.id}`} /></td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
                     <td data-column-key="code" className="sticky-code"><Link href={toDetail(row.id)}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                     <td data-column-key="description" className="long-cell">{row.description ?? "—"}</td>
@@ -206,6 +208,7 @@ export default async function ChangeControlPage({
           </table>
         </div>
       </div>
+      <QmsListPagination root="/changes" query={query} pagination={pagination} />
     </section>
   );
 }
