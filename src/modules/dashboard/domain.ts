@@ -29,7 +29,7 @@ export function normalizeDashboardFilters(raw: Record<string, string | string[] 
   const module = DASHBOARD_MODULES.some(m => m.key === moduleValue) ? moduleValue as DashboardModule : "DEVIATION";
   const yearText = first(raw.year), parsed = yearText && /^\d{4}$/.test(yearText) ? Number(yearText) : null;
   const year = parsed !== null && parsed >= 2000 && parsed <= 2100 ? parsed : undefined;
-  const dep = first(raw.department), departmentId = dep && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(dep) ? dep : undefined;
+  const dep = first(raw.department), departmentId = dep && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dep) ? dep : undefined;
   const taskValue = first(raw.taskView), taskView = taskValue === "overdue" || taskValue === "upcoming" ? taskValue : "all";
   const pageValue = first(raw.page), requestedPage = pageValue && /^[1-9]\d{0,5}$/.test(pageValue) ? Number(pageValue) : 1;
   return { year, departmentId, module, taskView, page: requestedPage };
