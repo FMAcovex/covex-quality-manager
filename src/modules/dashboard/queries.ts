@@ -26,6 +26,22 @@ function yearMetricUrl(module: DashboardModule, year: number, department?: strin
   return found.indicators + "?" + q.toString();
 }
 async function getTrend(module: DashboardModule, year: number, department?: string): Promise<DashboardTrend> {
+  if (module === "AUDIT") {
+    const rows = await prisma.audit.findMany({
+      where: { qmsRecord: { isActive: true },
+        ...(department ? { departments: { some: { isActive: true, departmentId: department } } } : {}) },
+      select: { status: true, qmsRecord: { select: { year: true } } },
+    });
+    const knownYears = new Set(rows.map(r => r.qmsRecord.year).filter((y): y is number => y !== null));
+    const points = Array.from({ length: 5 }, (_, i) => {
+      const y = year - 4 + i;
+      const matching = rows.filter(r => r.qmsRecord.year === y && r.status !== "DRAFT");
+      return { year: y, dataAvailable: knownYears.has(y), total: matching.length, open: matching.filter(r => r.status === "OPEN").length };
+    });
+    const p = new URLSearchParams({ year: String(year) });
+    if (department) p.set("department", department);
+    return { module, year, points, indicatorHref: "/audits?" + p.toString() };
+  }
   const filters = { year: String(year), ...(department ? { department } : {}) };
   const analytics = module === "DEVIATION" ? await getDeviationAnalytics(filters)
     : module === "CAPA" ? await getCapaAnalytics(filters)
