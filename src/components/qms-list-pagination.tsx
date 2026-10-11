@@ -8,7 +8,7 @@ export function QmsListPagination({ root, query, pagination }: {
   pagination: ReturnType<typeof qmsListPagination>;
 }) {
   const href = (page: number) => qmsListingUrl(root, { ...query, page: String(page) });
-  return <nav className="heading-actions" aria-label="Paginación de expedientes">
+  return <nav className="heading-actions qms-list-pagination" aria-label="Paginación de expedientes">
     <span>{pagination.total} resultados · Página {pagination.page} de {pagination.pageCount} · {pagination.pageSize} por página</span>
     {pagination.page > 1 && <Link className="button small" href={href(1)}>Primera</Link>}
     {pagination.page > 1 && <Link className="button small" href={href(pagination.page - 1)}>Anterior</Link>}

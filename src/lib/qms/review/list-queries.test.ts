@@ -12,6 +12,19 @@ describe("agregación transversal de revisión sin N+1", () => {
     expect(prisma.reviewThread.groupBy).not.toHaveBeenCalled();
   });
 
+  it("usa exclusivamente el cliente recibido dentro de una transacción", async () => {
+    const groupBy = vi.fn().mockResolvedValue([
+      { qmsRecordId: "record", status: "PENDING", _count: { _all: 2 } },
+      { qmsRecordId: "record", status: "ACCEPTED", _count: { _all: 1 } },
+    ]);
+    const tx = { reviewThread: { groupBy } } as unknown as NonNullable<Parameters<typeof withActiveReviewCounts>[1]>;
+    expect(await withActiveReviewCounts([{ qmsRecordId: "record" }], tx)).toEqual([
+      { qmsRecordId: "record", reviewCounts: { pending: 2, accepted: 1 } },
+    ]);
+    expect(groupBy).toHaveBeenCalledTimes(1);
+    expect(prisma.reviewThread.groupBy).not.toHaveBeenCalled();
+  });
+
   it("realiza una única consulta para todas las filas y limita estados/expedientes", async () => {
     vi.mocked(prisma.reviewThread.groupBy).mockResolvedValue([]);
     const rows = Array.from({ length: 300 }, (_, index) => ({ qmsRecordId: `record-${index}` }));
