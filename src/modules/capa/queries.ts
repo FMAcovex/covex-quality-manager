@@ -73,6 +73,10 @@ export async function getCapaList(filters: CapaListFilters) {
     }
   }
 
+  const now = new Date();
+  if (filters.followup === "due") and.push({ nextFollowupDate: { lte: now } });
+  if (filters.followup === "scheduled") and.push({ nextFollowupDate: { gt: now } });
+  if (filters.followup === "none") and.push({ nextFollowupDate: null });
   const where: Prisma.CapaWhereInput = and.length ? { AND: and } : {};
   const administrativeWhere: Prisma.CapaWhereInput =
     filters.administrative === "ANNULLED"
@@ -80,7 +84,6 @@ export async function getCapaList(filters: CapaListFilters) {
       : filters.administrative === "ALL"
         ? {}
         : { qmsRecord: { isActive: true } };
-  const now = new Date();
 
   const [rows, departments, years, origins, total, drafts, open, pendingEfficacy, overdueFollowups] =
     await Promise.all([
@@ -128,14 +131,7 @@ export async function getCapaList(filters: CapaListFilters) {
     ]);
 
   return {
-    rows: await withActiveReviewCounts(rows.filter((row) => {
-      if (!filters.followup) return true;
-      const next = row.nextFollowupDate;
-      if (filters.followup === "due") return Boolean(next && next <= now);
-      if (filters.followup === "scheduled") return Boolean(next && next > now);
-      if (filters.followup === "none") return !next;
-      return true;
-    })),
+    rows: await withActiveReviewCounts(rows),
     departments,
     years: years.map((row) => row.year).filter((value): value is number => value !== null),
     origins: origins.map((row) => row.originType).filter((value): value is string => Boolean(value)),
