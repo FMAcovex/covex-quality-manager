@@ -116,6 +116,7 @@ jobs:
           TZ=UTC pnpm start --port 3000 > /tmp/covex-r2c-next.log 2>&1 &
           review_server_pid=$!
           trap 'review_exit_code=$?; if [ "$review_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-r2c-next.log; fi; kill "$review_server_pid" 2>/dev/null || true' EXIT
+          C3_UI_BASE_URL=http://127.0.0.1:3000 pnpm ux-c3:ui:smoke
           R2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm review-r2c:ui:smoke
 
           R3A_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3a:ui:smoke
@@ -125,7 +126,6 @@ jobs:
           R3C_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3c:ui:smoke
           R4B_AUDITS_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r4b:ui:smoke
           ANNUAL_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-annual:ui:smoke
-          C3_UI_BASE_URL=http://127.0.0.1:3000 pnpm ux-c3:ui:smoke
 
   complaints-returns-final:
     if: github.head_ref == 'feature/complaints-returns-final-regression'
