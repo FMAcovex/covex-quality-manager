@@ -68,6 +68,8 @@ jobs:
         run: |
           pnpm db:deploy
           pnpm db:seed
+          # D1B first: fail quickly on dashboard data defects before legacy DB suite.
+          pnpm dashboard-d1b:smoke
           pnpm db:smoke
           pnpm import:smoke
           pnpm indicators:smoke
