@@ -13,6 +13,8 @@
     "pnt-p2a:smoke": "tsx scripts/smoke-pnt-p2a.ts",
     "pnt-p2a:ui:smoke": "tsx scripts/smoke-pnt-p2a-ui.ts",
     "ux-c3:ui:smoke": "tsx scripts/smoke-ux-c3-ui.ts",
+    "dashboard-d1b:ui:smoke": "tsx scripts/smoke-dashboard-d1b-ui.ts",
+    "dashboard-d1b:smoke": "node --conditions=react-server --import tsx scripts/smoke-dashboard-d1b.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

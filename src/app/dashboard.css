@@ -1,0 +1,51 @@
+/* Dashboard D1B: scoped additions; no changes to existing QMS module styles. */
+.dashboard-home { display:grid; gap:18px; }
+.dashboard-home .home-hero { margin-bottom:0; }
+.dashboard-filter-panel { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)) auto; gap:12px; align-items:end; padding:16px; border:1px solid var(--border); border-radius:12px; background:var(--surface); box-shadow:var(--shadow); }
+.dashboard-filter-panel label { min-width:0; display:grid; gap:7px; font-size:12px; font-weight:650; color:var(--muted); }
+.dashboard-filter-panel :is(select,input) { min-width:0; width:100%; height:40px; border:1px solid var(--border); border-radius:8px; background:white; padding:0 10px; color:var(--text); }
+.dashboard-filter-actions { display:flex; gap:7px; }
+.dashboard-summary { display:grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap:12px; }
+.dashboard-summary article { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:17px; min-width:0; display:flex; flex-direction:column; gap:8px; }
+.dashboard-summary article span { color:var(--muted); font-size:12px; line-height:1.4; }
+.dashboard-summary article strong { color:var(--blue-dark); font-size:30px; letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+.dashboard-summary article small { font-size:11px; color:var(--muted); line-height:1.4; }
+.dashboard-section { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; min-width:0; box-shadow:var(--shadow); }
+.dashboard-heading { display:flex; justify-content:space-between; gap:14px; align-items:end; margin-bottom:14px; }
+.dashboard-heading h2 { font-size:20px; margin:4px 0 0; }
+.dashboard-heading p:not(.eyebrow) { font-size:12px; color:var(--muted); max-width:440px; margin:0; line-height:1.5; }
+.dashboard-heading .eyebrow { margin:0; }
+.dashboard-module-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.dashboard-module-card { min-width:0; background:var(--surface-soft); border:1px solid var(--border); border-radius:10px; padding:15px; }
+.dashboard-module-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.dashboard-module-top > span { font-weight:750; font-size:14px; line-height:1.4; }
+.dashboard-module-top > strong { color:var(--blue-dark); font-size:26px; font-variant-numeric:tabular-nums; }
+.dashboard-module-card > p { color:var(--muted); font-size:12px; line-height:1.45; margin:9px 0 13px; }
+.dashboard-module-states { display:flex; flex-wrap:wrap; gap:6px 12px; margin:0 0 14px; padding-top:12px; border-top:1px solid var(--border); }
+.dashboard-module-states span { display:flex; gap:4px; align-items:baseline; font-size:11px; color:var(--muted); }
+.dashboard-module-states strong { color:var(--text); font-size:12px; }
+.dashboard-module-card a { font-size:12px; }
+.dashboard-two-col { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:18px; align-items:start; }
+.dashboard-hint { color:var(--muted); font-size:12px; line-height:1.6; margin:0 0 16px; }
+.dashboard-task-table { width:100%; overflow-x:auto; }
+.dashboard-task-table table { min-width:610px; width:100%; }
+.dashboard-task-table td { vertical-align:middle; }
+.dashboard-task-table td:nth-child(2) small { display:block; color:var(--muted); margin-top:4px; font-size:11px; }
+.dashboard-task-table td:nth-child(3) { white-space:normal; min-width:120px; }
+.dashboard-empty { text-align:center; white-space:normal; color:var(--muted); padding:28px!important; }
+.dashboard-pagination { display:flex; align-items:center; gap:10px; padding-top:12px; font-size:12px; color:var(--muted); flex-wrap:wrap; }
+.dashboard-trend-rows { display:grid; gap:14px; margin:22px 0; }
+.dashboard-trend-row { display:grid; grid-template-columns:48px minmax(0,1fr) 75px; align-items:center; gap:10px; min-width:0; }
+.dashboard-trend-row strong { font-size:12px; }
+.dashboard-trend-row > span { font-size:12px; text-align:right; font-variant-numeric:tabular-nums; color:var(--muted); }
+.dashboard-trend-track { background:var(--blue-soft); border-radius:5px; height:20px; overflow:hidden; }
+.dashboard-trend-track > span { display:block; height:100%; min-width:0; background:var(--blue); border-radius:5px; }
+.dashboard-footnote { border-top:1px solid var(--border); margin-top:18px; padding-top:14px; color:var(--muted); font-size:12px; line-height:1.55; }
+.dashboard-quick-links { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; }
+.dashboard-quick-links a { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; padding:12px; border:1px solid var(--border); border-radius:8px; text-decoration:none; font-weight:650; font-size:12px; color:var(--blue-dark); }
+.dashboard-quick-links a:hover,.dashboard-quick-links a:focus-visible { background:var(--blue-soft); border-color:#8bb8ee; }
+.dashboard-source-note { color:var(--muted); font-size:11px; margin:0; }
+@media(max-width:1350px) { .dashboard-filter-panel { grid-template-columns:repeat(3,minmax(0,1fr)); } .dashboard-filter-actions { align-self:end; } .dashboard-module-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:1000px) { .dashboard-two-col { grid-template-columns:1fr; } .dashboard-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .dashboard-quick-links { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:720px) { .dashboard-filter-panel { grid-template-columns:repeat(2,minmax(0,1fr)); } .dashboard-heading { align-items:start; flex-direction:column; } .dashboard-quick-links { grid-template-columns:repeat(2,minmax(0,1fr)); } .dashboard-home .home-hero h1 { font-size:28px; } }
+@media(max-width:470px) { .dashboard-filter-panel { grid-template-columns:1fr; } .dashboard-filter-actions { width:100%; } .dashboard-filter-actions > * { flex:1; justify-content:center; } .dashboard-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .dashboard-summary article { padding:12px; } .dashboard-summary article strong { font-size:24px; } .dashboard-module-grid { grid-template-columns:1fr; } .dashboard-section { padding:14px; } .dashboard-quick-links { grid-template-columns:1fr; } }

@@ -4,6 +4,11 @@ on:
   pull_request:
     branches: [main]
 
+# A new push cancels stale CI for the same PR only.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   scope:
     runs-on: ubuntu-22.04
@@ -29,7 +34,7 @@ jobs:
 
     services:
       postgres:
-        image: public.ecr.aws/docker/library/postgres:16-alpine
+        image: postgres:16-alpine
         env:
           POSTGRES_DB: covex_quality
           POSTGRES_USER: postgres
@@ -64,10 +69,13 @@ jobs:
           pnpm db:generate
           pnpm lint
           pnpm exec tsc --noEmit
+          pnpm exec vitest run src/modules/dashboard/domain.test.ts
       - name: Database smoke test
         run: |
           pnpm db:deploy
           pnpm db:seed
+          # D1B first: fail quickly on dashboard data defects before legacy DB suite.
+          pnpm dashboard-d1b:smoke
           pnpm db:smoke
           pnpm import:smoke
           pnpm indicators:smoke
@@ -116,6 +124,7 @@ jobs:
           TZ=UTC pnpm start --port 3000 > /tmp/covex-r2c-next.log 2>&1 &
           review_server_pid=$!
           trap 'review_exit_code=$?; if [ "$review_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-r2c-next.log; fi; kill "$review_server_pid" 2>/dev/null || true' EXIT
+          D1B_SCREENSHOT_DIR=/tmp/d1b-dashboard-captures D1B_UI_BASE_URL=http://127.0.0.1:3000 pnpm dashboard-d1b:ui:smoke
           C3_UI_BASE_URL=http://127.0.0.1:3000 pnpm ux-c3:ui:smoke
           R2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm review-r2c:ui:smoke
 
@@ -126,6 +135,14 @@ jobs:
           R3C_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3c:ui:smoke
           R4B_AUDITS_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r4b:ui:smoke
           ANNUAL_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-annual:ui:smoke
+
+      - name: D1B dashboard responsive evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d1b-dashboard-captures
+          path: /tmp/d1b-dashboard-captures
+          if-no-files-found: ignore
 
   complaints-returns-final:
     if: github.head_ref == 'feature/complaints-returns-final-regression'
