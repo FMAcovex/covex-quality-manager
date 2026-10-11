@@ -54,7 +54,7 @@ export default async function HomePage({
   const peak = Math.max(1, ...data.trend.map(x => x.total ?? 0));
   const active = data.metrics.reduce((sum, m) => sum + m.open, 0);
   const draft = data.metrics.reduce((sum, m) => sum + m.draft, 0);
-  const operational = data.metrics.reduce((sum, m) => sum + m.total, 0);
+  const operational = data.metrics.reduce((sum, m) => sum + m.total - m.cancelled, 0);
   const yearSuffix = year ? " · año " + year : " · todos los años";
 
   return (
@@ -109,9 +109,10 @@ export default async function HomePage({
       </form>
 
       <div className="dashboard-summary" aria-label="Resumen operativo">
-        <article><span>Expedientes operativos{yearSuffix}</span><strong>{number(operational - draft)}</strong><small>Seis módulos de expedientes, excluye anulados</small></article>
+        <article><span>Expedientes operativos{yearSuffix}</span><strong>{number(operational - draft)}</strong><small>Seis módulos; sin anulados, borradores ni cancelados</small></article>
         <article><span>Abiertos actualmente</span><strong>{number(active)}</strong><small>Según cohorte y módulo seleccionados</small></article>
         <article><span>Borradores</span><strong>{number(draft)}</strong><small>Contados aparte de los abiertos</small></article>
+        <article><span>Eficacia pendiente</span><strong>{number(data.pendingEffectiveness.total)}</strong><small>{data.pendingEffectiveness.capa} CAPA · {data.pendingEffectiveness.changes} cambios</small></article>
         <article><span>Obligaciones con fecha</span><strong>{number(data.taskCounts.total)}</strong><small>{data.taskCounts.overdue} vencidas · {data.taskCounts.upcoming} próximas</small></article>
       </div>
 
