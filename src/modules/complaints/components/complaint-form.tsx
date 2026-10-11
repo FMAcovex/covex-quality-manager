@@ -1,4 +1,5 @@
 "use client";
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 
 import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
@@ -87,7 +88,8 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
  };
 
  return <form key={state.formRevision??0} action={formAction} className="form-stack">
-    <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
+    <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
+      <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
   <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)}/>
   <input type="hidden" name="derivedActionsJson" value={JSON.stringify(derived)}/>

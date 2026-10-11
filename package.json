@@ -12,6 +12,7 @@
     "pnt-p2b:ui:smoke": "tsx scripts/smoke-pnt-p2b-ui.ts",
     "pnt-p2a:smoke": "tsx scripts/smoke-pnt-p2a.ts",
     "pnt-p2a:ui:smoke": "tsx scripts/smoke-pnt-p2a-ui.ts",
+    "ux-c3:ui:smoke": "tsx scripts/smoke-ux-c3-ui.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

@@ -1,4 +1,5 @@
 "use client";
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
@@ -225,7 +226,8 @@ export function CapaForm({
 
   return (
     <form key={state.formRevision ?? 0} action={formAction} className="record-form">
-    <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
+    <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
+      <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
       <input type="hidden" name="plannedActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="actionFollowupsJson" value={JSON.stringify(actionFollowups)} />

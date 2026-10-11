@@ -58,9 +58,14 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Database smoke test
+      # Fail fast on syntax, lint and type errors before the long PostgreSQL/browser suite.
+      - name: Fast source and TypeScript gate
         run: |
           pnpm db:generate
+          pnpm lint
+          pnpm exec tsc --noEmit
+      - name: Database smoke test
+        run: |
           pnpm db:deploy
           pnpm db:seed
           pnpm db:smoke
@@ -111,6 +116,7 @@ jobs:
           TZ=UTC pnpm start --port 3000 > /tmp/covex-r2c-next.log 2>&1 &
           review_server_pid=$!
           trap 'review_exit_code=$?; if [ "$review_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-r2c-next.log; fi; kill "$review_server_pid" 2>/dev/null || true' EXIT
+          C3_UI_BASE_URL=http://127.0.0.1:3000 pnpm ux-c3:ui:smoke
           R2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm review-r2c:ui:smoke
 
           R3A_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3a:ui:smoke
