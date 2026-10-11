@@ -78,8 +78,17 @@ async function main() {
     });
 
     // A later draft must not hide the revision still in force.
+    // Respect the PNT base-code format and use a free synthetic code for this department.
+    const codePrefix = departments[0].code + "/";
+    assert.match(codePrefix, /^[A-Z]{2}-[0-9]{2}\/$/, "Se requiere departamento PNT válido");
+    const occupied = new Set((await prisma.controlledDocument.findMany({
+      where: { baseCode: { startsWith: codePrefix } }, select: { baseCode: true },
+    })).map(r => r.baseCode));
+    const code = Array.from({ length: 1000 }, (_, i) => codePrefix + String(999 - i).padStart(3, "0"))
+      .find(candidate => !occupied.has(candidate));
+    assert(code, "Sin códigos PNT libres para la prueba D1B");
     const document = await prisma.controlledDocument.create({ data: {
-      baseCode: "D1B-" + randomUUID().slice(0, 8).toUpperCase(), title: prefix,
+      baseCode: code, title: prefix,
       documentType: "PNT", administrativeStatus: "ACTIVE", departmentId: dep, createdByText: "Prueba D1B",
     } });
     documentId = document.id;
