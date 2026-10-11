@@ -100,7 +100,7 @@ async function main() {
       beforeGc.grouped.find(x => x.module === "AUDIT")!.total, 1, "Multi-area audit counted once");
 
     const tasks = await dashboardTasks(dept.id, asOf);
-    const markerTasks = tasks.filter(t => t.code.includes(tag));
+    const markerTasks = tasks.filter(t => t.code.includes(tag) || t.href === "/controlled-documents/" + master.id);
     const expected = new Set(["DEVIATION", "AUDIT", "PNT"]);
     for (const t of markerTasks) {
       // CAPA efficacy can have a configured future due date; only these
