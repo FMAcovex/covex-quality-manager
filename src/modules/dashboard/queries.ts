@@ -88,8 +88,15 @@ export async function getDashboardData(filters: DashboardFilters, referenceDate 
     prisma.qmsRecord.findMany({ where: { isActive: true, year: { not: null } }, select: { year: true }, distinct: ["year"], orderBy: { year: "desc" } }),
   ]);
 
-  const make = (module: DashboardModule, rows: { status: string; count: number }[]) =>
-    summarizeStatuses(module, rows, DASHBOARD_MODULES.find(m => m.key === module)!.href);
+  // Drill-down carries only query arguments each real listing understands.
+  const filteredHref = (root: string) => {
+    const params = new URLSearchParams();
+    if (filters.year && root !== "/controlled-documents") params.set("year", String(filters.year));
+    if (dep) params.set("department", dep);
+    return root + (params.size ? "?" + params.toString() : "");
+  };
+  const make = (type: DashboardModule, rows: { status: string; count: number }[]) =>
+    summarizeStatuses(type, rows, filteredHref(DASHBOARD_MODULES.find(m => m.key === type)!.href));
   const distinctPnt = new Map<string, typeof revisions[number]>();
   for (const r of revisions) if (!distinctPnt.has(r.documentId)) distinctPnt.set(r.documentId, r);
   const pntDue = [...distinctPnt.values()].filter(r => {
@@ -103,7 +110,7 @@ export async function getDashboardData(filters: DashboardFilters, referenceDate 
     make("COMPLAINT", asRows(complaints)),
     make("RETURN", asRows(returns)),
     make("AUDIT", asRows(audits)),
-    { module: "PNT" as const, href: "/controlled-documents", total: masters, open: pntDue, draft: 0, closed: 0, other: masters - pntDue },
+    { module: "PNT" as const, href: filteredHref("/controlled-documents"), total: masters, open: pntDue, draft: 0, closed: 0, other: masters - pntDue },
   ];
   const tasks: DashboardTask[] = [];
   // Alert preview is authoritative for *configured* alert sources. Verify actual active
