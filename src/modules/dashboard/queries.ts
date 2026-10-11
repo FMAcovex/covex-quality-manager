@@ -46,7 +46,7 @@ export async function getDashboardData(filters: DashboardFilters) {
     deviations, capas, changes, complaints, returns, audits,
     departments, docs, revisionCount, alerts,
     availableCapa, availableChanges, availableComplaints, availableReturns,
-    deviationDue, auditDue, trend,
+    deviationDue, auditDue, trend, capaPending, changesPending,
   ] = await Promise.all([
     prisma.deviation.groupBy({ by: ["status"], where: { qmsRecord: qms, ...dep }, _count: { _all: true } }),
     prisma.capa.groupBy({ by: ["status"], where: { qmsRecord: qms, ...dep }, _count: { _all: true } }),
@@ -95,6 +95,8 @@ export async function getDashboardData(filters: DashboardFilters) {
       },
     }),
     existingTrend(filters.module === "ALL" ? "DEVIATION" : filters.module, year ?? filters.asOf.getUTCFullYear(), department),
+    prisma.capa.count({ where: { qmsRecord: qms, ...dep, status: "CLOSED", effectivenessStatus: "PENDING", effectiveClosedAt: null } }),
+    prisma.changeControl.count({ where: { qmsRecord: qms, ...dep, finalStatus: "OPEN", executionStatus: "EXECUTED", effectivenessStatus: "PENDING" } }),
   ]);
 
   const raw = [
@@ -191,6 +193,7 @@ export async function getDashboardData(filters: DashboardFilters) {
     pnt: { masters: docs.length, revisions: revisionCount, overdue: overdueDocs, upcoming: upcomingDocs, missingDates, unverified },
     tasks: sorted.slice((page - 1) * taskPageSize, page * taskPageSize),
     taskCounts, page, pageCount, trend,
+    pendingEffectiveness: { capa: capaPending, changes: changesPending, total: capaPending + changesPending },
     trendModule: filters.module === "ALL" ? "DEVIATION" : filters.module,
     ruleCoverage: alerts.rules.map(r => r.key),
     elapsedMs: Math.round(performance.now() - started),
