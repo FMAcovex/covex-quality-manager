@@ -39,14 +39,14 @@ async function getTrend(module: DashboardModule, year: number, department?: stri
 export async function getDashboardData(filters: DashboardFilters, referenceDate = new Date()) {
   const dep = filters.departmentId;
   const byDepartment = dep ? { departmentId: dep } : {};
-  const activeWhere = { qmsRecord: { isActive: true }, ...byDepartment };
-  const auditWhere = { qmsRecord: { isActive: true }, ...(dep ? { departments: { some: { isActive: true, departmentId: dep } } } : {}) };
+  const activeWhere = { qmsRecord: { isActive: true, ...(filters.year ? { year: filters.year } : {}) }, ...byDepartment };
+  const auditWhere = { qmsRecord: { isActive: true, ...(filters.year ? { year: filters.year } : {}) }, ...(dep ? { departments: { some: { isActive: true, departmentId: dep } } } : {}) };
   const documentWhere = { administrativeStatus: "ACTIVE" as const, ...byDepartment };
   const today = todayUtc(referenceDate);
   const upcomingLimit = new Date(today.getTime() + 30 * DAY);
 
   // Group by the actual module status: never count 1:N relations or displayed table rows.
-  const [deviations, capas, changes, complaints, returns, audits, masters, revisions, departments, alerts, deviationDue, auditDue] = await Promise.all([
+  const [deviations, capas, changes, complaints, returns, audits, masters, revisions, departments, alerts, deviationDue, auditDue, availableYears] = await Promise.all([
     prisma.deviation.groupBy({ by: ["status"], where: activeWhere, _count: { _all: true } }),
     prisma.capa.groupBy({ by: ["status"], where: activeWhere, _count: { _all: true } }),
     prisma.changeControl.groupBy({ by: ["finalStatus"], where: activeWhere, _count: { _all: true } }),
@@ -69,6 +69,7 @@ export async function getDashboardData(filters: DashboardFilters, referenceDate 
       select: { id: true, qmsRecord: { select: { businessCode: true } },
         findings: { where: { isActive: true }, select: { id: true } },
         followups: { orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }, { id: "desc" }], select: { findingId: true, nextReviewDate: true } } } }),
+    prisma.qmsRecord.findMany({ where: { isActive: true, year: { not: null } }, select: { year: true }, distinct: ["year"], orderBy: { year: "desc" } }),
   ]);
 
   const make = (module: DashboardModule, rows: { status: string; count: number }[]) =>
@@ -150,7 +151,8 @@ export async function getDashboardData(filters: DashboardFilters, referenceDate 
   const uniqueTasks = [...new Map(tasks.map(t => [t.key, t])).values()];
   const paged = splitTasks(uniqueTasks, filters.taskView, filters.page);
   const trend = await getTrend(filters.module, filters.year ?? referenceDate.getUTCFullYear(), dep);
-  return { asOf: today, filters, departments, cards, tasks: paged, totals: {
+  const years = [...new Set([referenceDate.getUTCFullYear(), ...(filters.year ? [filters.year] : []), ...availableYears.map(r => r.year).filter((y): y is number => y !== null)])].sort((a,b) => b-a);
+  return { asOf: today, filters, years, departments, cards, tasks: paged, totals: {
     overdue: uniqueTasks.filter(x => x.state === "OVERDUE").length,
     upcoming: uniqueTasks.filter(x => x.state === "UPCOMING").length,
     affectedRecords: new Set(uniqueTasks.map(x => x.module + ":" + x.href.split("?")[0])).size,
