@@ -26,13 +26,13 @@ export function summarizeStatuses(module: DashboardModule, values: readonly { st
 export function normalizeDashboardFilters(raw: Record<string, string | string[] | undefined>): DashboardFilters {
   const first = (v: string | string[] | undefined) => Array.isArray(v) ? v[0] : v;
   const moduleValue = first(raw.module);
-  const module = DASHBOARD_MODULES.some(m => m.key === moduleValue) ? moduleValue as DashboardModule : "DEVIATION";
+  const selectedModule = DASHBOARD_MODULES.some(m => m.key === moduleValue) ? moduleValue as DashboardModule : "DEVIATION";
   const yearText = first(raw.year), parsed = yearText && /^\d{4}$/.test(yearText) ? Number(yearText) : null;
   const year = parsed !== null && parsed >= 2000 && parsed <= 2100 ? parsed : undefined;
   const dep = first(raw.department), departmentId = dep && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dep) ? dep : undefined;
   const taskValue = first(raw.taskView), taskView = taskValue === "overdue" || taskValue === "upcoming" ? taskValue : "all";
   const pageValue = first(raw.page), requestedPage = pageValue && /^[1-9]\d{0,5}$/.test(pageValue) ? Number(pageValue) : 1;
-  return { year, departmentId, module, taskView, page: requestedPage };
+  return { year, departmentId, module: selectedModule, taskView, page: requestedPage };
 }
 export function splitTasks(items: DashboardTask[], view: DashboardFilters["taskView"], page: number, pageSize = 10) {
   const filtered = view === "all" ? items : items.filter(x => x.state === (view === "overdue" ? "OVERDUE" : "UPCOMING"));
