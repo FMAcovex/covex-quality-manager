@@ -8,7 +8,7 @@ import { getComplaintAnalytics } from "@/modules/complaints/analytics/queries";
 import { getReturnAnalytics } from "@/modules/returns/analytics/queries";
 import { matchesQuickFilter, operationalDates } from "@/modules/controlled-documents/listing";
 import {
-  DASHBOARD_MODULES, addUtcDays, classifyDue, countTrend, moduleCounts, uniqueSortedTasks, utcDay,
+  DASHBOARD_MODULES, classifyDue, countTrend, moduleCounts, uniqueSortedTasks, utcDay,
   type DashboardFilters, type DashboardTask, type DashboardModule,
 } from "./domain";
 
@@ -37,7 +37,6 @@ export async function getDashboardData(filters: DashboardFilters) {
   const qms = { isActive: true, ...(year ? { year } : {}) };
   const dep = department ? { departmentId: department } : {};
   const today = utcDay(filters.asOf);
-  const until = addUtcDays(today, 30);
   const docWhere = {
     administrativeStatus: { not: "ANNULLED" as const },
     ...(department ? { departmentId: department } : {}),
@@ -106,8 +105,7 @@ export async function getDashboardData(filters: DashboardFilters) {
     moduleCounts("RETURN", returns.map(r => ({ status: r.status, count: r._count._all })), filters.state),
     moduleCounts("AUDIT", audits.map(r => ({ status: r.status, count: r._count._all })), filters.state),
   ];
-  const metrics = filters.module === "ALL" || filters.module === "PNT"
-    ? raw : raw.filter(row => row.module === filters.module);
+  const metrics = filters.module === "ALL" ? raw : filters.module === "PNT" ? [] : raw.filter(row => row.module === filters.module);
 
   const allowed = new Map<DashboardModule, Set<string>>([
     ["CAPA", new Set(availableCapa.map(r => r.id))],
