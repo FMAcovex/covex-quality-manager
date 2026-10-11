@@ -1,7 +1,13 @@
 import Link from "next/link";
+import { DashboardOverview } from "@/modules/dashboard/components";
+import { getDashboardData } from "@/modules/dashboard/queries";
+import { normalizeDashboardFilters } from "@/modules/dashboard/domain";
+import "./dashboard.css";
+
+export const dynamic = "force-dynamic";
 
 const modules = [
-  { name: "Auditorías", eyebrow: "GC-00/033 · GC-00/034", description: "Expedientes de auditoría interna y externa, planificación, áreas y equipo auditor.", href: "/audits", status: "Expediente base", tone: "ready", sections: ["Expedientes", "Planificación", "Participantes", "Historial"] },
+  { name: "Auditorías", eyebrow: "GC-00/033 · GC-00/034", description: "Expedientes de auditoría interna y externa, planificación, áreas y equipo auditor.", href: "/audits", status: "Operativo", tone: "ready", sections: ["Expedientes", "Planificación", "Participantes", "Historial"] },
   {
     name: "Desviaciones",
     eyebrow: "GC-00/023",
@@ -47,9 +53,12 @@ const modules = [
     tone: "ready",
     sections: ["Datos generales", "Productos", "Comprobaciones", "Seguimientos", "Relaciones", "Indicadores"],
   },
+  { name: "PNT y documentación controlada", eyebrow: "GC-00/001", description: "Maestro documental, revisiones, revisión pendiente y consulta de evidencias.", href: "/controlled-documents", status: "Operativo", tone: "ready", sections: ["Procedimientos", "Revisiones", "Vigencia", "Verificación", "Documentos"] },
 ];
 
-export default function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<Record<string,string|string[]|undefined>> }) {
+  const filters = normalizeDashboardFilters(await searchParams);
+  const dashboard = await getDashboardData(filters);
   return (
     <section className="workspace home-workspace">
       <div className="home-hero">
@@ -67,6 +76,8 @@ export default function HomePage() {
         </div>
       </div>
 
+      <DashboardOverview data={dashboard} />
+      <div className="dashboard-module-heading"><p className="eyebrow">Acceso a los siete módulos</p><h2>Procesos de Calidad</h2></div>
       <div className="module-grid">
         {modules.map((module) => {
           const content = (
