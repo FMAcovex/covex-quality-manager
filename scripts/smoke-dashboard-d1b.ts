@@ -56,7 +56,8 @@ async function main() {
       { auditId, departmentId: lg.id, departmentCodeSnapshot: lg.code, departmentNameSnapshot: lg.name },
     ] });
     await prisma.auditFollowup.create({ data: { auditId, followupDate: date(-6), nextReviewDate: date(-1), completedByText: marker, createdByText: marker, description: marker } });
-    const document = await prisma.controlledDocument.create({ data: { baseCode: marker, title: marker, documentType: "PNT", administrativeStatus: "ACTIVE", departmentId: gc.id, createdByText: marker } });
+    const code = "GC-00/" + String(900 + (Number.parseInt(marker.slice(-4), 16) % 100));
+    const document = await prisma.controlledDocument.create({ data: { baseCode: code, title: marker, documentType: "PNT", administrativeStatus: "ACTIVE", departmentId: gc.id, createdByText: marker } });
     documentId = document.id;
     await prisma.controlledDocumentRevision.create({ data: { documentId, revisionCode: "00", status: "IN_FORCE", registeredByText: marker, effectiveFrom: date(-80), reviewDueAt: date(-1) } });
     await prisma.controlledDocumentRevision.create({ data: { documentId, revisionCode: "01", status: "DRAFT", registeredByText: marker } });
