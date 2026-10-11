@@ -50,11 +50,11 @@ export async function dashboardStatus(department: string) {
 }
 
 function newTask(
-  module: DashboardModule, id: string, code: string, label: string,
+  moduleId: DashboardModule, id: string, code: string, label: string,
   date: Date, href: string, source: DashboardTask["source"], asOf: Date,
   category: string,
 ): DashboardTask {
-  return { key: module + ":" + id + ":" + category, module, code, label,
+  return { key: moduleId + ":" + id + ":" + category, module: moduleId, code, label,
     dueDate: utcDay(date), state: dayState(date, asOf), href, source };
 }
 
@@ -130,14 +130,14 @@ export async function dashboardTasks(department: string, asOf: Date): Promise<Da
 }
 
 export async function dashboardTrend(filters: DashboardFilters): Promise<{ module: DashboardModule; trend: DashboardTrendPoint[] } | null> {
-  const module = filters.module === "ALL" ? "DEVIATION" : filters.module;
+  const selectedModule = filters.module === "ALL" ? "DEVIATION" : filters.module;
   const input = { year: String(filters.year), ...(filters.department ? { department: filters.department } : {}) };
-  switch (module) {
-    case "DEVIATION": return { module, trend: trendPoints((await getDeviationAnalytics(input)).trend) };
-    case "CAPA": return { module, trend: trendPoints((await getCapaAnalytics(input)).trend) };
-    case "CHANGE_CONTROL": return { module, trend: trendPoints((await getChangeAnalytics(input)).trend) };
-    case "COMPLAINT": return { module, trend: trendPoints((await getComplaintAnalytics(input)).trend) };
-    case "RETURN": return { module, trend: trendPoints((await getReturnAnalytics(input)).trend) };
+  switch (selectedModule) {
+    case "DEVIATION": return { module: selectedModule, trend: trendPoints((await getDeviationAnalytics(input)).trend) };
+    case "CAPA": return { module: selectedModule, trend: trendPoints((await getCapaAnalytics(input)).trend) };
+    case "CHANGE_CONTROL": return { module: selectedModule, trend: trendPoints((await getChangeAnalytics(input)).trend) };
+    case "COMPLAINT": return { module: selectedModule, trend: trendPoints((await getComplaintAnalytics(input)).trend) };
+    case "RETURN": return { module: selectedModule, trend: trendPoints((await getReturnAnalytics(input)).trend) };
     case "AUDIT": case "PNT": return null;
   }
 }
