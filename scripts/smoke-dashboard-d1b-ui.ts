@@ -70,12 +70,12 @@ async function main() {
     await page.locator(".dashboard-module-card a").click();
     await page.waitForURL(url => url.pathname === "/capa" && url.searchParams.get("status") === "OPEN");
 
-    await visit(page, "/?year=2099&module=DEVIATION");
+    await visit(page, "/?year=2100&module=DEVIATION");
     assert.equal(await page.locator(".dashboard-trend-row").count(), 5);
     const withoutCoverage = await page.locator(".dashboard-trend-row").allTextContents();
     assert(withoutCoverage.some(x => x.includes("Sin datos")), "Missing coverage must not render 0");
     const filtered = page.locator(".dashboard-module-card").first();
-    assert.equal(Number(await filtered.locator(".dashboard-module-top strong").textContent()), 0);
+    assert.equal(Number(await filtered.locator(".dashboard-module-top strong").textContent()), await prisma.deviation.count({ where: { qmsRecord: { isActive: true, year: 2100 } } }), "Total de cohorte comparado con Prisma; no asumir años sin registros");
 
     await visit(page, "/?module=PNT");
     assert.equal(await page.locator(".dashboard-pnt-card").count(), 1);
