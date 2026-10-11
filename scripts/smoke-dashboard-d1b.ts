@@ -103,8 +103,12 @@ async function main() {
     const markerTasks = tasks.filter(t => t.code.includes(tag));
     const expected = new Set(["DEVIATION", "AUDIT", "PNT"]);
     for (const t of markerTasks) {
-      assert.equal(t.state, "OVERDUE");
-      expected.delete(t.module);
+      // CAPA efficacy can have a configured future due date; only these
+      // three explicit dated fixtures are expected to be overdue.
+      if (expected.has(t.module)) {
+        assert.equal(t.state, "OVERDUE");
+        expected.delete(t.module);
+      }
       assert(t.href.startsWith("/"), "only internal links");
     }
     assert.equal(expected.size, 0, "all three new followup sources must appear");
