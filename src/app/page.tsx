@@ -35,21 +35,21 @@ export default async function HomePage({
   const query = await searchParams;
   const year = queryYear(query.year);
   const requestedDepartment = Array.isArray(query.department) ? query.department[0] : query.department;
-  const module = queryOption(query.module, moduleKeys, "ALL");
+  const selectedScope = queryOption(query.module, moduleKeys, "ALL");
   const state = queryOption(query.state, stateOptions, "ALL") as DashboardState;
   const taskView = queryOption(query.tasks, taskOptions, "all") as DashboardTaskView;
   const now = new Date();
   const data = await getDashboardData({
     year,
     department: requestedDepartment && /^[a-f0-9-]{36}$/i.test(requestedDepartment) ? requestedDepartment : "",
-    module,
+    module: selectedScope,
     state,
     taskView,
     page: queryPage(query.page),
     asOf: now,
   });
   const department = data.departments.some(d => d.id === requestedDepartment) ? requestedDepartment! : "";
-  const selectedModule = module === "ALL" ? "DEVIATION" : module;
+  const selectedModule = selectedScope === "ALL" ? "DEVIATION" : selectedScope;
   const moduleIndicators = DASHBOARD_MODULES.find(m => m.key === selectedModule);
   const peak = Math.max(1, ...data.trend.map(x => x.total ?? 0));
   const active = data.metrics.reduce((sum, m) => sum + m.open, 0);
@@ -73,7 +73,7 @@ export default async function HomePage({
 
       <form method="get" className="dashboard-filter-panel" aria-label="Filtros del panel">
         <label>Área funcional
-          <select name="module" defaultValue={module}>
+          <select name="module" defaultValue={selectedScope}>
             <option value="ALL">Todos los módulos</option>
             {modules.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
           </select>
@@ -134,7 +134,7 @@ export default async function HomePage({
               <Link href={moduleListHref(item.href, state, year, department)} className="summary-link">Abrir expedientes →</Link>
             </article>
           ))}
-          {(module === "ALL" || module === "PNT") && (
+          {(selectedScope === "ALL" || selectedScope === "PNT") && (
             <article className="dashboard-module-card dashboard-pnt-card">
               <div className="dashboard-module-top"><span>Documentación controlada</span><strong>{number(data.pnt.masters)}</strong></div>
               <p>Maestros documentales no anulados; el filtro de año no se aplica a PNT.</p>
@@ -197,7 +197,7 @@ export default async function HomePage({
             {moduleIndicators?.indicatorHref && <Link className="summary-link" href={moduleIndicators.indicatorHref + "?year=" + String(year ?? now.getUTCFullYear()) + (department ? "&department=" + encodeURIComponent(department) : "")}>Ver indicadores completos →</Link>}
           </> : <>
             <p className="dashboard-hint">Auditorías y PNT utilizan reglas documentales y estados específicos. No se representa una tendencia de expedientes QMS sin una definición histórica comparable.</p>
-            <Link className="summary-link" href={module === "PNT" ? "/controlled-documents" : "/audits"}>Consultar el módulo →</Link>
+            <Link className="summary-link" href={selectedScope === "PNT" ? "/controlled-documents" : "/audits"}>Consultar el módulo →</Link>
           </>}
           <div className="dashboard-footnote">Las cohortes de apertura y los KPI por fecha de cierre o eficacia son diferentes. Consulta el módulo para sus definiciones, numeradores y denominadores.</div>
         </section>
