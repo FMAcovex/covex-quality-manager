@@ -1,4 +1,5 @@
 import Link from "next/link";
+import "./dashboard.css";
 import { getDashboardData } from "@/modules/dashboard/queries";
 import {
   DASHBOARD_MODULES, moduleListHref, queryOption, queryPage, queryYear,
