@@ -4,6 +4,7 @@ import { Prisma, type AuditFindingCriticality } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { pendingActionStatuses } from "./finding-domain";
+import { nextReviewRange } from "./list-date-filters";
 import { auditTypeLabels, auditScenarioLabels, auditStatusLabels, auditModalityLabels, auditQualityLabels } from "./domain";
 
 export type AuditListFilters = {
@@ -62,6 +63,9 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
 }
 export async function getAuditList(filters: AuditListFilters) {
   const where = auditListWhere(filters), pageSize = 25;
+  const { from, to, errors } = nextReviewRange(filters);
+  // An invalid restrictive filter must never silently widen the result set.
+  if (errors.length) (where.AND as Prisma.AuditWhereInput[]).push({ id: { in: [] } });
   return prisma.$transaction(async tx => {
     if (filters.signedPdf === "yes" || filters.signedPdf === "no") {
       const signed = await tx.$queryRaw<{qmsRecordId:string}[]>(Prisma.sql`SELECT v."qmsRecordId" FROM (SELECT DISTINCT ON ("qmsRecordId") id, "qmsRecordId" FROM "QmsRecordVersion" ORDER BY "qmsRecordId", "sequenceNumber" DESC) v JOIN "RecordVersionDocument" d ON d."recordVersionId"=v.id AND d.kind='SIGNED_PDF'`);
@@ -69,9 +73,7 @@ export async function getAuditList(filters: AuditListFilters) {
     }
     // Latest followup per active scope (general or active finding), including an explicit blank.
     // An unrelated later general note must not hide a pending finding review.
-    const validDay = (value?: string) => value && /^\\d{4}-\\d{2}-\\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value ? new Date(value) : null;
-    const from = validDay(filters.nextReviewFrom), to = validDay(filters.nextReviewTo);
-    if (from || to) {
+    if (!errors.length && (from || to)) {
       const ids = await tx.$queryRaw<{auditId:string}[]>(Prisma.sql`SELECT DISTINCT latest."auditId" FROM (
         SELECT DISTINCT ON (f."auditId", f."findingId") f."auditId", f."findingId", f."nextReviewDate"
         FROM "AuditFollowup" f
@@ -91,7 +93,7 @@ export async function getAuditList(filters: AuditListFilters) {
       tx.department.findMany({ orderBy: { code: "asc" } }),
       tx.qmsRecord.findMany({ where: { recordType: "AUDIT", year: { not: null } }, distinct: ["year"], select: { year: true }, orderBy: { year: "desc" } }),
     ]);
-    return { rows: await withActiveReviewCounts(rows), departments, years: years.flatMap(r => r.year === null ? [] : [r.year]), total, page: Math.floor(page), pages: Math.max(1, Math.ceil(total / pageSize)) };
+    return { rows: await withActiveReviewCounts(rows, tx), departments, years: years.flatMap(r => r.year === null ? [] : [r.year]), total, page: Math.floor(page), pages: Math.max(1, Math.ceil(total / pageSize)), errors };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }
 export async function getAuditDetail(id: string) {

@@ -45,6 +45,8 @@ button, input, select { font: inherit; }
 .page-heading p { margin: 0; color: var(--muted); }
 .eyebrow { text-transform: uppercase; letter-spacing: .1em; font-size: 11px; font-weight: 800; color: var(--blue) !important; }
 .heading-actions { display: flex; gap: 10px; }
+.qms-list-pagination { flex-wrap: wrap; align-items: center; margin-top: 14px; }
+.qms-list-pagination > span { flex-basis: 100%; overflow-wrap: anywhere; }
 .button { min-height: 40px; padding: 0 16px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
 .button.primary { background: var(--blue); border-color: var(--blue); color: white; }
 .button:disabled { opacity: .55; cursor: not-allowed; }

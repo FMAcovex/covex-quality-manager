@@ -4,8 +4,11 @@ import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
+import { qmsListPagination } from "@/lib/qms/list-pagination";
+import { listRecordWithRelations } from "@/lib/qms/list-projections";
 
 export type CapaListFilters = {
+  page?: string;
   review?: string;
   q?: string;
   administrative?: string;
@@ -73,6 +76,10 @@ export async function getCapaList(filters: CapaListFilters) {
     }
   }
 
+  const now = new Date();
+  if (filters.followup === "due") and.push({ nextFollowupDate: { lte: now } });
+  if (filters.followup === "scheduled") and.push({ nextFollowupDate: { gt: now } });
+  if (filters.followup === "none") and.push({ nextFollowupDate: null });
   const where: Prisma.CapaWhereInput = and.length ? { AND: and } : {};
   const administrativeWhere: Prisma.CapaWhereInput =
     filters.administrative === "ANNULLED"
@@ -80,27 +87,28 @@ export async function getCapaList(filters: CapaListFilters) {
       : filters.administrative === "ALL"
         ? {}
         : { qmsRecord: { isActive: true } };
-  const now = new Date();
 
+  const pagination = qmsListPagination(await prisma.capa.count({ where }), filters.page);
   const [rows, departments, years, origins, total, drafts, open, pendingEfficacy, overdueFollowups] =
     await Promise.all([
       prisma.capa.findMany({
         where,
-        include: {
+        select: {
+          id: true, qmsRecordId: true, departmentCodeSnapshot: true, actionType: true,
+          status: true, effectivenessStatus: true, defectDescription: true, rootCause: true,
+          originCode: true, originType: true, openedAt: true, operationalClosedAt: true,
+          nextFollowupDate: true, effectiveClosedAt: true, internalObservations: true, dataQualityStatus: true,
           qmsRecord: {
-            include: {
-              sourceRelations: { where: { isActive: true }, include: { targetRecord: true } },
-              targetRelations: { where: { isActive: true }, include: { sourceRecord: true } },
-              versions: { orderBy: { sequenceNumber: "desc" }, take: 1 },
+            select: {
+              ...listRecordWithRelations,
+              versions: { orderBy: { sequenceNumber: "desc" }, take: 1, select: { sequenceNumber: true } },
             },
           },
-          department: true,
-          plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
-          actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
-          followups: { orderBy: [{ followupDate: "desc" }, { sequenceNumber: "desc" }] },
+          plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { description: true, plannedExecutionDate: true } },
         },
-        orderBy: [{ status: "asc" }, { openedAt: "desc" }, { createdAt: "desc" }],
-        take: 300,
+        orderBy: [{ status: "asc" }, { openedAt: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+        skip: (pagination.page - 1) * pagination.pageSize,
+        take: pagination.pageSize,
       }),
       prisma.department.findMany({ where: { isActive: true }, orderBy: { code: "asc" } }),
       prisma.qmsRecord.findMany({
@@ -121,21 +129,14 @@ export async function getCapaList(filters: CapaListFilters) {
           ],
         },
       }),
-      prisma.capa.findMany({
-        where: { AND: [administrativeWhere, { status: "OPEN" }] },
-        select: { nextFollowupDate: true },
+      prisma.capa.count({
+        where: { AND: [administrativeWhere, { status: "OPEN", nextFollowupDate: { lte: now } }] },
       }),
     ]);
 
   return {
-    rows: await withActiveReviewCounts(rows.filter((row) => {
-      if (!filters.followup) return true;
-      const next = row.nextFollowupDate;
-      if (filters.followup === "due") return Boolean(next && next <= now);
-      if (filters.followup === "scheduled") return Boolean(next && next > now);
-      if (filters.followup === "none") return !next;
-      return true;
-    })),
+    rows: await withActiveReviewCounts(rows),
+    pagination,
     departments,
     years: years.map((row) => row.year).filter((value): value is number => value !== null),
     origins: origins.map((row) => row.originType).filter((value): value is string => Boolean(value)),
@@ -144,9 +145,7 @@ export async function getCapaList(filters: CapaListFilters) {
       drafts,
       open,
       pendingEfficacy,
-      overdueFollowups: overdueFollowups.filter((row) => {
-        return Boolean(row.nextFollowupDate && row.nextFollowupDate <= now);
-      }).length,
+      overdueFollowups,
     },
   };
 }

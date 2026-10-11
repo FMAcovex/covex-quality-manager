@@ -4,8 +4,11 @@ import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
+import { qmsListPagination } from "@/lib/qms/list-pagination";
+import { listRecordWithRelations, listAdministrativeSql } from "@/lib/qms/list-projections";
 
 export type ChangeControlListFilters = {
+  page?: string;
   review?: string;
   q?: string;
   administrative?: string;
@@ -57,23 +60,26 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
       : filters.administrative === "ALL"
         ? {}
         : { qmsRecord: { isActive: true } };
+  const pagination = qmsListPagination(await prisma.changeControl.count({ where }), filters.page);
+  const now = new Date();
   const [rows, departments, years, total, drafts, open, executedPendingEfficacy, overdue] =
     await Promise.all([
       prisma.changeControl.findMany({
         where,
-        include: {
-          qmsRecord: {
-            include: {
-              sourceRelations: { where: { isActive: true }, include: { targetRecord: true } },
-              targetRelations: { where: { isActive: true }, include: { sourceRecord: true } },
-            },
-          },
-          department: true,
-          tasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
-          followups: { orderBy: [{ sequenceNumber: "desc" }, { followupDate: "desc" }] },
+        select: {
+          id: true, qmsRecordId: true, departmentCodeSnapshot: true, description: true,
+          justification: true, requesterName: true, requestDate: true, dictamenDate: true,
+          classification: true, plannedImplementationDate: true, executionStatus: true, executionDate: true,
+          effectivenessStatus: true, effectiveClosedAt: true, finalStatus: true,
+          requestDecision: true, dictamenResult: true, internalObservations: true, dataQualityStatus: true,
+          qmsRecord: { select: listRecordWithRelations },
+          tasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { description: true, plannedDate: true } },
+          followups: { orderBy: [{ sequenceNumber: "desc" }, { followupDate: "desc" }], take: 1,
+            select: { sequenceNumber: true, followupDate: true, nextFollowupDate: true } },
         },
-        orderBy: [{ finalStatus: "asc" }, { requestDate: "desc" }, { createdAt: "desc" }],
-        take: 300,
+        orderBy: [{ finalStatus: "asc" }, { requestDate: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+        skip: (pagination.page - 1) * pagination.pageSize,
+        take: pagination.pageSize,
       }),
       prisma.department.findMany({ where: { isActive: true }, orderBy: { code: "asc" } }),
       prisma.qmsRecord.findMany({
@@ -88,21 +94,16 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
       prisma.changeControl.count({
         where: { AND: [administrativeWhere, { executionStatus: "EXECUTED", effectivenessStatus: "PENDING", finalStatus: "OPEN" }] },
       }),
-      prisma.changeControl.findMany({
-        where: { AND: [administrativeWhere, { finalStatus: "OPEN" }] },
-        select: {
-          followups: {
-            orderBy: [{ sequenceNumber: "desc" }, { followupDate: "desc" }],
-            take: 1,
-            select: { nextFollowupDate: true },
-          },
-        },
-      }),
+      prisma.$queryRaw<Array<{ count: number }>>(Prisma.sql`
+        SELECT COUNT(*)::int AS count FROM "ChangeControl" c JOIN "QmsRecord" q ON q.id=c."qmsRecordId"
+        WHERE c."finalStatus"='OPEN' ${listAdministrativeSql(filters.administrative)}
+        AND (SELECT f."nextFollowupDate" FROM "ChangeControlFollowup" f WHERE f."changeControlId"=c.id
+             ORDER BY f."sequenceNumber" DESC, f."followupDate" DESC LIMIT 1) <= ${now}`),
     ]);
 
-  const now = new Date();
   return {
     rows: await withActiveReviewCounts(rows),
+    pagination,
     departments,
     years: years.map((row) => row.year).filter((value): value is number => value !== null),
     counters: {
@@ -110,10 +111,7 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
       drafts,
       open,
       executedPendingEfficacy,
-      overdue: overdue.filter((row) => {
-        const date = row.followups[0]?.nextFollowupDate;
-        return Boolean(date && date <= now);
-      }).length,
+      overdue: overdue[0].count,
     },
   };
 }

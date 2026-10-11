@@ -17,6 +17,10 @@ Esta consolidación es **solo documental**. No modifica módulos, esquema, códi
 
 ## Registro cronológico anterior (conservar para trazabilidad)
 
+## Fase 3B1 — Filtros y paginación SQL (2026-10-12)
+
+Desde D1C/main `aebf0c3`, rama `feature/phase3b1-list-fixes-pagination`, una única PR sin merge. Filtro CAPA previo a paginación, fechas estrictas/ámbitos de próxima revisión de Auditorías y recuentos Review con el cliente transaccional (pool=1). Desviaciones/CAPA/Cambios con páginas SQL de 25, total completo, orden estable/proyecciones de listado y retorno con filtros/página; exportaciones independientes y reglas/datos/GMP conservados. Regresiones PostgreSQL con 1.080 expedientes, Playwright 1440/768/390 y comparación equivalente main/3B1; alcance, resultados, suites adicionales PNT/R4C y operación segura en [PHASE_3B1.md](PHASE_3B1.md). CI final y artefactos en la PR/entrega. Sin Prisma/migraciones, formularios, dashboard ni reorganización general de CI.
+
 ## D1C — Rediseño visual del Dashboard (2026-10-11)
 
 Desde D1B/main `5a53949` (#133), rama `feature/dashboard-d1c-visual-redesign`. Cabecera/filtros compactos, jerarquía de los cinco KPI, siete tarjetas de módulos, tareas responsive y tendencia discreta. Consultas, cálculos, navegación global, Prisma, migraciones y seed conservados. Pruebas D1B y nueva regresión Chromium D1C con capturas 1440/768/390; CI completa y artifacts en la PR única, sin merge. Alcance y reproducción en [DASHBOARD_D1C.md](DASHBOARD_D1C.md).

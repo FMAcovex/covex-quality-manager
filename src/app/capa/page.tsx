@@ -1,5 +1,6 @@
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
+import { QmsListPagination } from "@/components/qms-list-pagination";
 import { qmsListingUrl, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
@@ -30,6 +31,7 @@ export default async function CapaPage({
   const query = await searchParams;
   const toDetail = (id: string) => qmsWithReturnTo("/capa/" + id, "/capa", qmsListingUrl("/capa", query));
   const filters = {
+    page: param(query.page),
     review: firstQueryValue(query.review),
     q: param(query.q),
     administrative: param(query.administrative),
@@ -41,12 +43,12 @@ export default async function CapaPage({
     origin: queryList(query.origin),
     followup: param(query.followup),
   };
-  const { rows, departments, years, origins, counters } = await getCapaList(filters);
+  const { rows, departments, years, origins, counters, pagination } = await getCapaList(filters);
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.CAPA, DocumentType.CAPA_ANNEX_IV);
 
   const exportParams = new URLSearchParams();
   Object.entries(filters).forEach(([key,value]) => {
-    if(key !== "q" && key !== "followup") appendFilterValues(exportParams,key,value);
+    if(key !== "q" && key !== "followup" && key !== "page") appendFilterValues(exportParams,key,value);
   });
 
 
@@ -169,7 +171,7 @@ export default async function CapaPage({
                         aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "CAPA"}`}
                       />
                     </td>
-                    <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} basePath={`/capa/${row.id}`} /></td>
+                    <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} returnTo={qmsListingUrl("/capa", query)} basePath={`/capa/${row.id}`} /></td>
                     <td data-column-key="type"><span className="badge neutral">{capaTypeLabel(row.actionType)}</span></td>
                     <td data-column-key="code" className="sticky-code"><Link href={toDetail(row.id)}><strong>{qmsRecordDisplayCode(row.qmsRecord)}</strong></Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
@@ -203,6 +205,7 @@ export default async function CapaPage({
           </table>
         </div>
       </div>
+      <QmsListPagination root="/capa" query={query} pagination={pagination} />
     </section>
   );
 }

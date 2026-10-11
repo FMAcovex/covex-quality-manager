@@ -1,5 +1,6 @@
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
+import { QmsListPagination } from "@/components/qms-list-pagination";
 import { qmsListingUrl, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { DocumentType, QmsRecordType } from "@prisma/client";
@@ -25,6 +26,7 @@ export default async function DeviationsPage({
   const query = await searchParams;
   const toDetail = (id: string) => qmsWithReturnTo("/deviations/" + id, "/deviations", qmsListingUrl("/deviations", query));
   const filters = {
+    page: param(query.page),
     review: firstQueryValue(query.review),
     q: param(query.q),
     administrative: param(query.administrative),
@@ -38,9 +40,9 @@ export default async function DeviationsPage({
     deadline: param(query.deadline),
   };
 
-  const { rows, departments, years, provenances, counters } = await getDeviationList(filters);
+  const { rows, departments, years, provenances, counters, pagination } = await getDeviationList(filters);
   const exportParams = new URLSearchParams();
-  Object.entries(filters).forEach(([key, value]) => appendFilterValues(exportParams, key, value));
+  Object.entries(filters).forEach(([key, value]) => { if (key !== "page") appendFilterValues(exportParams, key, value); });
   const currentYear = filters.year[0] ?? String(new Date().getFullYear());
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_V);
 
@@ -158,7 +160,7 @@ export default async function DeviationsPage({
                       aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "desviación"}`}
                     />
                   </td>
-                  <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} basePath={`/deviations/${row.id}`} /></td>
+                  <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} returnTo={qmsListingUrl("/deviations", query)} basePath={`/deviations/${row.id}`} /></td>
                   <td data-column-key="code"><Link className="summary-link" href={toDetail(row.id)}>{qmsRecordDisplayCode(row.qmsRecord)}</Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
                   <td data-column-key="department">{row.departmentCodeSnapshot ?? row.department?.code ?? "—"}</td>
                   <td data-column-key="material" className="table-cell-medium">{row.materialProcessAffected ?? "—"}</td>
@@ -190,6 +192,7 @@ export default async function DeviationsPage({
           </table>
         </div>
       </div>
+      <QmsListPagination root="/deviations" query={query} pagination={pagination} />
     </section>
   );
 }

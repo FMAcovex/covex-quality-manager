@@ -9,9 +9,10 @@ export function ReviewListFilter({ value }: { value?: string }) {
   </label>;
 }
 
-export function ReviewListIndicator({ counts, basePath }: { counts: ActiveReviewCounts; basePath: string }) {
+export function ReviewListIndicator({ counts, basePath, returnTo }: { counts: ActiveReviewCounts; basePath: string; returnTo?: string }) {
   if (!counts.pending && !counts.accepted) return <span className="muted-note">—</span>;
-  return <a className="review-list-indicator" href={reviewTabHref(basePath, "review", true)} aria-label="Abrir revisión del expediente">
+  const href = reviewTabHref(basePath, "review", true) + (returnTo ? "&" + new URLSearchParams({ returnTo }) : "");
+  return <a className="review-list-indicator" href={href} aria-label="Abrir revisión del expediente">
     {counts.pending ? <span className="badge review-pending">{counts.pending} {counts.pending === 1 ? "pendiente" : "pendientes"}</span> : null}
     {counts.accepted ? <span className="badge review-accepted">{counts.accepted} {counts.accepted === 1 ? "aceptado" : "aceptados"}</span> : null}
   </a>;

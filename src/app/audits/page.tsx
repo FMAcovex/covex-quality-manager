@@ -18,7 +18,7 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
   const filters: AuditListFilters = {};
   for (const key of ["year","type","scenario","department","status","modality","quality","criticality"] as const) filters[key] = queryList(query[key]);
   for (const key of ["q","administrative","plannedFrom","plannedTo","performedFrom","performedTo","page","findings","pendingActions","relatedDeviation","relatedCapa","nextReviewFrom","nextReviewTo","review","report","signedPdf","situation","planning","planId"] as const) filters[key] = firstQueryValue(query[key]);
-  const [{rows,departments,years,total,page,pages},annualPlans] = await Promise.all([getAuditList(filters),listAnnualPlans()]);
+  const [{rows,departments,years,total,page,pages,errors},annualPlans] = await Promise.all([getAuditList(filters),listAnnualPlans()]);
   const listParams = new URLSearchParams();
   Object.entries(query).forEach(([key, values]) => (Array.isArray(values) ? values : values ? [values] : []).forEach(value => listParams.append(key, value)));
   const returnTo = listParams.toString() ? "/audits?" + listParams : "/audits";
@@ -39,6 +39,7 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
   const typeTabs = [{type:"",label:"Todas las auditorías"},{type:"INTERNAL",label:"Internas"},{type:"EXTERNAL",label:"Externas"}];
   return <section className="workspace audits-workspace qms-list-ux-b"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Auditorías</h1><p>Expedientes, planificación, hallazgos y seguimiento.</p></div><div className="heading-actions"><Link className="button" href="/audits/plans">Planes anuales</Link><Link className="button primary" href="/audits/new">+ Nueva auditoría</Link><ColumnSelector tableId="audit-list-table" storageKey="qms.columns.audits" columns={auditColumns}/></div></div>
     <nav className="audit-type-nav" aria-label="Filtrar auditorías por tipo">{typeTabs.map(tab => <Link key={tab.type} className={`audit-type-option ${selectedType === tab.type ? "active" : ""}`} aria-current={selectedType === tab.type ? "page" : undefined} href={typeHref(tab.type)}>{tab.label}</Link>)}</nav>
+    {errors.length > 0 && <p className="form-errors" role="alert">{errors.join(" ")}</p>}
     <form method="get" className="toolbar-form"><div className="filter-panel operational">
       <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
       <label className="filter-placeholder"><span>Planificación</span><select name="planning" defaultValue={filters.planning??""}><option value="">Todas</option><option value="PLANNED">En plan anual</option><option value="OUT_OF_PLAN">Fuera de plan</option><option value="UNCLASSIFIED">Pendiente de clasificación</option></select></label>

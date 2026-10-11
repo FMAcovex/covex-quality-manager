@@ -4,8 +4,11 @@ import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
+import { qmsListPagination } from "@/lib/qms/list-pagination";
+import { listRecordWithRelations, listAdministrativeSql } from "@/lib/qms/list-projections";
 
 export type DeviationListFilters = {
+  page?: string;
   review?: string;
   q?: string;
   administrative?: string;
@@ -104,23 +107,26 @@ export async function getDeviationList(filters: DeviationListFilters) {
         ? {}
         : { qmsRecord: { isActive: true } };
 
+  const pagination = qmsListPagination(await prisma.deviation.count({ where }), filters.page);
+  const now = new Date();
   const [rows, departments, yearRows, provenanceRows, total, drafts, open, overdue, followupDue] =
     await Promise.all([
       prisma.deviation.findMany({
         where,
-        include: {
-          qmsRecord: {
-            include: {
-              sourceRelations: { where: { isActive: true }, include: { targetRecord: true } },
-              targetRelations: { where: { isActive: true }, include: { sourceRecord: true } },
-            },
-          },
-          department: true,
-          immediateActions: true,
-          capaPlans: true,
+        select: {
+          id: true, qmsRecordId: true, departmentCodeSnapshot: true,
+          materialProcessAffected: true, provenance: true, whatHappened: true,
+          classification: true, rootCause: true, issueDate: true, closedAt: true,
+          status: true, deadlineStatus: true, capaRequired: true, signedDocumentAvailable: true,
+          dataQualityStatus: true, internalObservations: true,
+          qmsRecord: { select: listRecordWithRelations },
+          department: { select: { code: true } },
+          immediateActions: { select: { id: true } },
+          capaPlans: { select: { description: true } },
         },
-        orderBy: [{ status: "asc" }, { issueDate: "desc" }, { createdAt: "desc" }],
-        take: 300,
+        orderBy: [{ status: "asc" }, { issueDate: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+        skip: (pagination.page - 1) * pagination.pageSize,
+        take: pagination.pageSize,
       }),
       prisma.department.findMany({ where: { isActive: true }, orderBy: { code: "asc" } }),
       prisma.qmsRecord.findMany({
@@ -139,20 +145,16 @@ export async function getDeviationList(filters: DeviationListFilters) {
       prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "DRAFT" }] } }),
       prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
       prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN", deadlineStatus: "OUT_OF_TIME" }] } }),
-      prisma.deviation.findMany({
-        where: { AND: [administrativeWhere, { status: "OPEN" }] },
-        select: {
-          followups: {
-            orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }],
-            take: 1,
-            select: { nextFollowupDate: true },
-          },
-        },
-      }),
+      prisma.$queryRaw<Array<{ count: number }>>(Prisma.sql`
+        SELECT COUNT(*)::int AS count FROM "Deviation" d JOIN "QmsRecord" q ON q.id=d."qmsRecordId"
+        WHERE d.status='OPEN' ${listAdministrativeSql(filters.administrative)}
+        AND (SELECT f."nextFollowupDate" FROM "DeviationFollowup" f WHERE f."deviationId"=d.id
+             ORDER BY f."followupDate" DESC, f."createdAt" DESC LIMIT 1) <= ${now}`),
     ]);
 
   return {
     rows: await withActiveReviewCounts(rows),
+    pagination,
     departments,
     years: yearRows.map((row) => row.year).filter((value): value is number => value !== null),
     provenances: provenanceRows
@@ -163,10 +165,7 @@ export async function getDeviationList(filters: DeviationListFilters) {
       drafts,
       open,
       overdue,
-      followupDue: followupDue.filter((row) => {
-        const nextDate = row.followups[0]?.nextFollowupDate;
-        return Boolean(nextDate && nextDate <= new Date());
-      }).length,
+      followupDue: followupDue[0].count,
     },
   };
 }
