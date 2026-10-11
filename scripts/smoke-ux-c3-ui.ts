@@ -40,7 +40,7 @@ async function main() {
 
       await page.goto(base + edit);
       await page.waitForLoadState("networkidle");
-      const field = page.locator(`[name="${scenario.field}"]`).first();
+      const field = page.locator(`form input[name="${scenario.field}"], form textarea[name="${scenario.field}"]`).first();
       assert(await field.count(), scenario.root + ": campo editable ausente");
       await field.fill("Prueba C3 de datos no guardados");
 
