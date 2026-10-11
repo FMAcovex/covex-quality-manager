@@ -41,12 +41,12 @@ export function normalizeDashboardFilters(
   };
   const year = Number(first("year"));
   const page = Number(first("page"));
-  const module = first("module");
+  const requestedModule = first("module");
   const taskView = first("taskView");
   return {
     year: Number.isInteger(year) && year >= 2000 && year <= 2100 ? year : asOf.getUTCFullYear(),
     department: first("department") || "",
-    module: DASHBOARD_MODULES.some(m => m.id === module) ? module as DashboardModule : "ALL",
+    module: DASHBOARD_MODULES.some(m => m.id === requestedModule) ? requestedModule as DashboardModule : "ALL",
     taskView: taskView === "overdue" || taskView === "upcoming" ? taskView : "all",
     page: Number.isSafeInteger(page) && page >= 1 ? Math.min(page, 100000) : 1,
   };
