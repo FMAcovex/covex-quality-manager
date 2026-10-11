@@ -32,6 +32,7 @@ async function main() {
   const dep2 = departments[1].id;
   const scoped = { ...flags, department: dep };
   let auditId: string | null = null;
+  let documentId: string | null = null;
   try {
     const before = await getDashboardData(scoped);
     const beforeDep2 = await getDashboardData({ ...scoped, department: dep2, module: "AUDIT" });
@@ -76,6 +77,17 @@ async function main() {
         description: "Revisión pendiente", completedByText: "Prueba D1B", createdByText: "Prueba D1B" },
     });
 
+    // A later draft must not hide the revision still in force.
+    const document = await prisma.controlledDocument.create({ data: {
+      baseCode: "D1B-" + randomUUID().slice(0, 8).toUpperCase(), title: prefix,
+      documentType: "PNT", administrativeStatus: "ACTIVE", departmentId: dep, createdByText: "Prueba D1B",
+    } });
+    documentId = document.id;
+    await prisma.controlledDocumentRevision.createMany({ data: [
+      { documentId, revisionCode: "00", status: "IN_FORCE", registeredByText: "Prueba D1B",
+        effectiveFrom: new Date("2025-01-01T00:00:00Z"), reviewDueAt: new Date("2026-10-10T00:00:00Z") },
+      { documentId, revisionCode: "01", status: "DRAFT", registeredByText: "Prueba D1B" },
+    ] });
     const after = await getDashboardData(scoped);
     assert.equal(activeCount(after, "DEVIATION") - activeCount(before, "DEVIATION"), 2, "Inactiva excluida");
     assert.equal(activeCount(after, "CAPA") - activeCount(before, "CAPA"), 1, "Dos relaciones no duplican CAPA");
@@ -85,7 +97,12 @@ async function main() {
     assert.equal(activeCount(dept2Result, "AUDIT") - activeCount(beforeDep2, "AUDIT"), 1, "Multiárea permite filtrar por ambos departamentos sin duplicar la auditoría");
     const auditTask = after.tasks.find(t => t.code.startsWith(prefix) && t.module === "AUDIT");
     assert(auditTask && auditTask.state === "OVERDUE", "La revisión de auditoría de ayer debe vencer");
-    assert(after.taskCounts.overdue >= before.taskCounts.overdue + 1);
+    assert(after.taskCounts.overdue >= before.taskCounts.overdue + 2, "Auditoría y PNT vencidos");
+    assert.equal(after.pnt.masters - before.pnt.masters, 1, "Dos revisiones no duplican maestro PNT");
+    assert.equal(after.pnt.revisions - before.pnt.revisions, 2, "Las revisiones constan por separado");
+    assert.equal(after.pnt.overdue - before.pnt.overdue, 1, "Borrador nuevo no oculta vencimiento en vigor");
+    assert(after.tasks.some(t => t.module === "PNT" && t.code === document.baseCode && t.state === "OVERDUE"),
+      "La bandeja debe mostrar la revisión en vigor vencida");
 
     const draft = await addRecord("CAPA", id => prisma.capa.create({
       data: { qmsRecordId: id, departmentId: dep, actionType: "PREVENTIVE", status: "DRAFT" },
@@ -96,6 +113,10 @@ async function main() {
     console.log("D1B PostgreSQL OK: anulados, borradores, CAPA de dos orígenes, devolución multiproducto, auditoría multidpto y revisión vencida.");
     void draft;
   } finally {
+    if (documentId) {
+      await prisma.controlledDocumentRevision.deleteMany({ where: { documentId } });
+      await prisma.controlledDocument.delete({ where: { id: documentId } });
+    }
     await prisma.qmsRelation.deleteMany({ where: { OR: [
       { sourceRecordId: { in: ids } }, { targetRecordId: { in: ids } },
     ] } });

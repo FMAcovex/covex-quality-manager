@@ -44,7 +44,7 @@ export async function getDashboardData(filters: DashboardFilters) {
 
   const [
     deviations, capas, changes, complaints, returns, audits,
-    departments, docs, revisionCount, alerts,
+    departments, docs, inForceRevisions, revisionCount, alerts,
     availableCapa, availableChanges, availableComplaints, availableReturns,
     deviationDue, auditDue, trend, capaPending, changesPending,
   ] = await Promise.all([
@@ -65,6 +65,14 @@ export async function getDashboardData(filters: DashboardFilters) {
             lifecycle: { select: { effectiveFrom: true, reviewDueAt: true } },
           },
         },
+      },
+    }),
+    prisma.controlledDocumentRevision.findMany({
+      where: { status: "IN_FORCE", document: docWhere },
+      orderBy: [{ revisionCode: "desc" }, { id: "desc" }],
+      select: {
+        documentId: true, status: true, verificationStatus: true, effectiveFrom: true, reviewDueAt: true,
+        lifecycle: { select: { effectiveFrom: true, reviewDueAt: true } },
       },
     }),
     prisma.controlledDocumentRevision.count({ where: { document: docWhere } }),
@@ -158,17 +166,26 @@ export async function getDashboardData(filters: DashboardFilters) {
     }
   }
 
+  // A newer draft must not conceal the still-effective PNT review deadline.
+  const inForceByMaster = new Map<string, typeof inForceRevisions[number]>();
+  for (const revision of inForceRevisions) {
+    if (!inForceByMaster.has(revision.documentId)) inForceByMaster.set(revision.documentId, revision);
+  }
   let overdueDocs = 0, upcomingDocs = 0, missingDates = 0, unverified = 0;
+  const dayText = today.toISOString().slice(0, 10);
   for (const doc of docs) {
     const revision = doc.revisions[0];
     if (!revision) { missingDates++; continue; }
     const dates = operationalDates(revision);
-    if (matchesQuickFilter(revision, dates, "missing", today.toISOString().slice(0, 10))) missingDates++;
-    if (matchesQuickFilter(revision, dates, "unverified", today.toISOString().slice(0, 10))) unverified++;
-    if (matchesQuickFilter(revision, dates, "overdue", today.toISOString().slice(0, 10))) overdueDocs++;
-    if (matchesQuickFilter(revision, dates, "dueSoon", today.toISOString().slice(0, 10))) upcomingDocs++;
-    if (revision.status === "IN_FORCE" && dates.reviewDueAt) {
-      const due = new Date(dates.reviewDueAt + "T00:00:00.000Z");
+    if (matchesQuickFilter(revision, dates, "missing", dayText)) missingDates++;
+    if (matchesQuickFilter(revision, dates, "unverified", dayText)) unverified++;
+    const activeRevision = inForceByMaster.get(doc.id);
+    if (!activeRevision) continue;
+    const activeDates = operationalDates(activeRevision);
+    if (matchesQuickFilter(activeRevision, activeDates, "overdue", dayText)) overdueDocs++;
+    if (matchesQuickFilter(activeRevision, activeDates, "dueSoon", dayText)) upcomingDocs++;
+    if (activeDates.reviewDueAt) {
+      const due = new Date(activeDates.reviewDueAt + "T00:00:00.000Z");
       const state = classifyDue(due, today);
       if (state) tasks.push({
         key: "PNT-R-" + doc.id, module: "PNT", code: doc.baseCode ?? "Sin código",
