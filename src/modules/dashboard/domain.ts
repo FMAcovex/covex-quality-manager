@@ -73,13 +73,13 @@ export function taskPage(tasks: DashboardTask[], filters: Pick<DashboardFilters,
   return { total: scoped.length, page, pages, items: scoped.slice((page - 1) * DASHBOARD_TASK_PAGE_SIZE, page * DASHBOARD_TASK_PAGE_SIZE) };
 }
 export function statusFromGroups(
-  module: DashboardModule, href: string, groups: readonly { status: string; _count: { _all: number } }[],
+  moduleId: DashboardModule, href: string, groups: readonly { status: string; _count: { _all: number } }[],
   options: { draft: string; open: string; closed: string; statusKey?: string },
 ): DashboardStatus {
   const count = (status: string) => groups.find(g => g.status === status)?._count._all ?? 0;
   const open = count(options.open), drafts = count(options.draft), closed = count(options.closed);
   const total = groups.reduce((sum, row) => sum + row._count._all, 0);
-  return { module, href, total, open, drafts, closed, other: total - open - drafts - closed,
+  return { module: moduleId, href, total, open, drafts, closed, other: total - open - drafts - closed,
     openHref: href + "?status=" + encodeURIComponent(options.open) };
 }
 export function trendPoints(items: readonly { year: number; total: number; dataAvailable: boolean }[]): DashboardTrendPoint[] {
