@@ -52,7 +52,7 @@ describe("D1B — Contratos del dashboard", () => {
     expect(queryYear("2e26")).toBeNull();
     expect(queryOption("BOGUS", ["ALL", "CAPA"] as const, "ALL")).toBe("ALL");
     expect(queryPage("-1")).toBe(1);
-    expect(queryPage("12000")).toBe(1);
+    expect(queryPage("12000")).toBe(10000);
     expect(moduleListHref("/capa", "OPEN", 2026, "abc")).toBe("/capa?year=2026&department=abc&status=OPEN");
   });
 });
