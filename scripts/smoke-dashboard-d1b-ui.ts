@@ -30,17 +30,24 @@ async function main() {
     await page.locator('select[name="module"]').selectOption("PNT");
     await page.locator('form.dashboard-filters button[type="submit"]').click();
     await page.waitForURL(url => url.searchParams.get("module") === "PNT");
+    await page.waitForLoadState("networkidle");
     assert(await page.getByText("Los PNT disponen de métricas de revisión actuales", { exact: false }).count(), "Sin inventar serie quinquenal PNT");
     for (const width of [1440, 768, 390]) {
       await page.setViewportSize({ width, height: 960 });
       await page.waitForTimeout(80);
-      for (const element of await page.locator(".dashboard-module-card").all()) {
+      // Next.js can retain hidden prior route trees during client navigation.
+      // Assert all seven CURRENT visible cards, never silently skip them.
+      const visibleCards = page.locator(".dashboard-module-card:visible");
+      assert.equal(await visibleCards.count(), 7, "Deben existir siete tarjetas visibles a " + width);
+      for (const element of await visibleCards.all()) {
         const rect = await element.boundingBox();
-        assert(rect && rect.x >= -1 && rect.x + rect.width <= width + 1, "Tarjeta fuera de viewport " + width);
+        assert(rect && rect.x >= -1 && rect.x + rect.width <= width + 1, "Tarjeta visible fuera de viewport " + width);
       }
-      for (const element of await page.locator(".dashboard-filters select").all()) {
+      const visibleSelects = page.locator(".dashboard-filters:visible select:visible");
+      assert.equal(await visibleSelects.count(), 3, "Los tres filtros deben ser visibles a " + width);
+      for (const element of await visibleSelects.all()) {
         const rect = await element.boundingBox();
-        assert(rect && rect.x >= -1 && rect.x + rect.width <= width + 1, "Filtro fuera de viewport " + width);
+        assert(rect && rect.x >= -1 && rect.x + rect.width <= width + 1, "Filtro visible fuera de viewport " + width);
       }
       assert.equal(await page.locator(".dashboard-task-table").count(), 1, "La bandeja permanece visible a " + width);
     }
