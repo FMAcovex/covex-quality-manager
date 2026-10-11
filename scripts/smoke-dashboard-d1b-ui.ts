@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { mkdir } from "node:fs/promises";
 import { chromium, type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 
@@ -81,6 +82,8 @@ async function main() {
     assert.equal(await page.locator(".dashboard-module-card").count(), 1);
     assert.equal(await page.locator(".dashboard-trend-row").count(), 0);
 
+    const captureDir = process.env.D1B_SCREENSHOT_DIR;
+    if (captureDir) await mkdir(captureDir, { recursive: true });
     for (const width of [1440, 768, 390]) {
       await page.setViewportSize({ width, height: 1000 });
       await visit(page, "/");
@@ -90,6 +93,7 @@ async function main() {
       }));
       assert(dimensions.scroll <= dimensions.viewport + 2, "Dashboard overflow at " + width + "px: " + JSON.stringify(dimensions));
       assert(await page.getByRole("button", { name: "Aplicar" }).isVisible(), "Filters hidden at " + width);
+      if (captureDir) await page.screenshot({ path: captureDir + "/dashboard-" + width + ".png", fullPage: true });
     }
     assert.deepEqual(errors, [], "Dashboard hydration or JavaScript errors");
     console.log("D1B Playwright OK: siete módulos, recuentos independientes, filtros, drill-down, sin cobertura y 1440/768/390 sin hidratación.");
