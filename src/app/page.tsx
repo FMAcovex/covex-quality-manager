@@ -8,7 +8,7 @@ function moduleHref(href: string, department: string, status?: string) {
   const params = new URLSearchParams();
   if (department) params.set("department", department);
   if (status) params.set("status", status);
-  return href + (params.size ? "?" + params.toString() : "");
+  return href + (params.size ? (href.includes("?") ? "&" : "?") + params.toString() : "");
 }
 function dashboardHref(filters: DashboardFilters, next: Partial<DashboardFilters>) {
   const values = { ...filters, ...next };
