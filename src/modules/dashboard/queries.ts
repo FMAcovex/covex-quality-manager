@@ -119,10 +119,10 @@ export async function getDashboardData(filters: DashboardFilters) {
   for (const alert of alerts.items) {
     const match = /^\/(capa|changes|complaints|returns)\/([0-9a-f-]{36})(?:[/?#]|$)/i.exec(alert.href);
     if (!match) continue;
-    const module = knownAlertRoutes[match[1]];
-    if (!allowed.get(module)?.has(match[2])) continue;
+    const alertModule = knownAlertRoutes[match[1]];
+    if (!allowed.get(alertModule)?.has(match[2])) continue;
     tasks.push({
-      key: alert.key, module, code: alert.businessCode, label: alert.label,
+      key: alert.key, module: alertModule, code: alert.businessCode, label: alert.label,
       dueDate: utcDay(alert.dueDate), state: alert.state, href: alert.href,
       source: "Regla configurada: " + alert.ruleKey,
     });
