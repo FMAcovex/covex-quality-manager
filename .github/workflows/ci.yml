@@ -116,6 +116,7 @@ jobs:
           TZ=UTC pnpm start --port 3000 > /tmp/covex-r2c-next.log 2>&1 &
           review_server_pid=$!
           trap 'review_exit_code=$?; if [ "$review_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-r2c-next.log; fi; kill "$review_server_pid" 2>/dev/null || true' EXIT
+          D1B_UI_BASE_URL=http://127.0.0.1:3000 pnpm dashboard-d1b:ui:smoke
           C3_UI_BASE_URL=http://127.0.0.1:3000 pnpm ux-c3:ui:smoke
           R2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm review-r2c:ui:smoke
 
