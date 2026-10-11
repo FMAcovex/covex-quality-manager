@@ -125,6 +125,7 @@ jobs:
           review_server_pid=$!
           trap 'review_exit_code=$?; if [ "$review_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-r2c-next.log; fi; kill "$review_server_pid" 2>/dev/null || true' EXIT
           D1B_SCREENSHOT_DIR=/tmp/d1b-dashboard-captures D1B_UI_BASE_URL=http://127.0.0.1:3000 pnpm dashboard-d1b:ui:smoke
+          D1C_SCREENSHOT_DIR=/tmp/d1c-dashboard-captures D1C_UI_BASE_URL=http://127.0.0.1:3000 pnpm dashboard-d1c:ui:smoke
           C3_UI_BASE_URL=http://127.0.0.1:3000 pnpm ux-c3:ui:smoke
           R2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm review-r2c:ui:smoke
 
@@ -142,6 +143,14 @@ jobs:
         with:
           name: d1b-dashboard-captures
           path: /tmp/d1b-dashboard-captures
+          if-no-files-found: ignore
+
+      - name: D1C dashboard responsive evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: d1c-dashboard-captures
+          path: /tmp/d1c-dashboard-captures
           if-no-files-found: ignore
 
   complaints-returns-final:
