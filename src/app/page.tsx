@@ -4,13 +4,6 @@ import { normalizeDashboardFilters } from "@/modules/dashboard/domain";
 import { getDashboardData } from "@/modules/dashboard/queries";
 
 export const dynamic = "force-dynamic";
-import { DashboardOverview } from "@/modules/dashboard/components";
-import { getDashboardData } from "@/modules/dashboard/queries";
-import { normalizeDashboardFilters } from "@/modules/dashboard/domain";
-import "./dashboard.css";
-
-export const dynamic = "force-dynamic";
-
 const modules = [
   { name: "PNT y documentación", eyebrow: "Documentación controlada", description: "Maestro documental, revisiones, vigencia, verificación y próximas revisiones.", href: "/controlled-documents", status: "Operativo", tone: "ready", sections: ["Maestro", "Revisiones", "Verificación", "Vencimientos"] },
   { name: "Auditorías", eyebrow: "GC-00/033 · GC-00/034", description: "Expedientes de auditoría interna y externa, planificación, áreas y equipo auditor.", href: "/audits", status: "Operativo", tone: "ready", sections: ["Expedientes", "Planificación", "Participantes", "Historial"] },
@@ -59,7 +52,6 @@ const modules = [
     tone: "ready",
     sections: ["Datos generales", "Productos", "Comprobaciones", "Seguimientos", "Relaciones", "Indicadores"],
   },
-  { name: "PNT y documentación controlada", eyebrow: "GC-00/001", description: "Maestro documental, revisiones, revisión pendiente y consulta de evidencias.", href: "/controlled-documents", status: "Operativo", tone: "ready", sections: ["Procedimientos", "Revisiones", "Vigencia", "Verificación", "Documentos"] },
 ];
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<Record<string,string|string[]|undefined>> }) {
@@ -82,8 +74,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         </div>
       </div>
 
-      <DashboardOverview data={dashboard} />
-      <div className="dashboard-module-heading"><p className="eyebrow">Acceso a los siete módulos</p><h2>Procesos de Calidad</h2></div>
       <DashboardPanel data={dashboard} />
       <div className="dashboard-directory-heading"><h2>Acceso a módulos y expedientes</h2><p>Conservamos el acceso directo a las siete áreas del sistema.</p></div>
       <div className="module-grid">
