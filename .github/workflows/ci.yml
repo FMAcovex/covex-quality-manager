@@ -125,6 +125,7 @@ jobs:
           R3C_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3c:ui:smoke
           R4B_AUDITS_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r4b:ui:smoke
           ANNUAL_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-annual:ui:smoke
+          C3_UI_BASE_URL=http://127.0.0.1:3000 pnpm ux-c3:ui:smoke
 
   complaints-returns-final:
     if: github.head_ref == 'feature/complaints-returns-final-regression'
