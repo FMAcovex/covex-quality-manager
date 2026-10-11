@@ -25,7 +25,7 @@ async function countFor(module: string) {
 
 async function main() {
   if (process.env.APP_ENV !== "test" || !base) throw new Error("APP_ENV=test y D1B_UI_BASE_URL obligatorios.");
-  const browser = await chromium.launch({ args: ["--no-sandbox"] });
+  const browser = await chromium.launch({ args: ["--no-sandbox"], executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, timezoneId: "Europe/Madrid" });
   const errors: string[] = [];
   page.on("pageerror", e => errors.push(e.message));

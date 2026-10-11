@@ -63,7 +63,7 @@ export default async function HomePage({
         <div>
           <p className="eyebrow">COVEX · Sistema de Calidad</p>
           <h1>Panel de Calidad</h1>
-          <p>Situación operativa, tareas con fecha, evolución de indicadores y acceso a los siete módulos.</p>
+          <p>Estado de los expedientes, próximos plazos y evolución del Sistema de Calidad.</p>
         </div>
         <div className="pilot-callout">
           <strong>Versión piloto</strong>
@@ -71,7 +71,7 @@ export default async function HomePage({
         </div>
       </div>
 
-      <form method="get" className="dashboard-filter-panel" aria-label="Filtros del panel">
+      <form id="dashboard-filters" method="get" className="dashboard-filter-panel" aria-label="Filtros del panel">
         <label>Área funcional
           <select name="module" defaultValue={selectedScope}>
             <option value="ALL">Todos los módulos</option>
@@ -108,18 +108,21 @@ export default async function HomePage({
         </div>
       </form>
 
-      <div className="dashboard-summary" aria-label="Resumen operativo">
-        <article><span>Expedientes operativos{yearSuffix}</span><strong>{number(operational - draft)}</strong><small>Seis módulos; sin anulados, borradores ni cancelados</small></article>
-        <article><span>Abiertos actualmente</span><strong>{number(active)}</strong><small>Según cohorte y módulo seleccionados</small></article>
-        <article><span>Borradores</span><strong>{number(draft)}</strong><small>Contados aparte de los abiertos</small></article>
-        <article><span>Eficacia pendiente</span><strong>{number(data.pendingEffectiveness.total)}</strong><small>{data.pendingEffectiveness.capa} CAPA · {data.pendingEffectiveness.changes} cambios</small></article>
-        <article><span>Obligaciones con fecha</span><strong>{number(data.taskCounts.total)}</strong><small>{data.taskCounts.overdue} vencidas · {data.taskCounts.upcoming} próximas</small></article>
-      </div>
+      <section className="dashboard-overview" aria-label="Resumen operativo">
+        <div className="dashboard-overview-context"><span>Visión general{yearSuffix}</span><span>{selectedScope === "ALL" ? "Todos los módulos" : moduleName(selectedScope)}</span></div>
+        <div className="dashboard-summary">
+          <article><span>Expedientes operativos</span><strong>{number(operational - draft)}</strong><small>Sin anulados, borradores ni cancelados · seis módulos QMS</small></article>
+          <article className="dashboard-kpi-open"><span>Abiertos actualmente</span><strong>{number(active)}</strong><small>En la cohorte y los módulos seleccionados</small></article>
+          <article><span>Borradores</span><strong>{number(draft)}</strong><small>Separados de los expedientes abiertos</small></article>
+          <article><span>Eficacia pendiente</span><strong>{number(data.pendingEffectiveness.total)}</strong><small>{data.pendingEffectiveness.capa} CAPA · {data.pendingEffectiveness.changes} cambios</small></article>
+          <article className={data.taskCounts.overdue ? "dashboard-kpi-attention" : ""}><span>Obligaciones con fecha</span><strong>{number(data.taskCounts.total)}</strong><small><span className={data.taskCounts.overdue ? "dashboard-overdue-text" : ""}>{data.taskCounts.overdue} vencidas</span> · {data.taskCounts.upcoming} próximas</small></article>
+        </div>
+      </section>
 
       <section className="dashboard-section" aria-labelledby="dashboard-modules-title">
         <div className="dashboard-heading">
           <div><p className="eyebrow">Estado actual</p><h2 id="dashboard-modules-title">Expedientes por módulo</h2></div>
-          <p>Los recuentos reflejan la población activa completa; no se calculan desde la página visible del listado.</p>
+          <p>Población activa completa según los filtros; independiente de la paginación de los listados.</p>
         </div>
         <div className="dashboard-module-grid">
           {data.metrics.map(item => (
@@ -137,7 +140,7 @@ export default async function HomePage({
           {(selectedScope === "ALL" || selectedScope === "PNT") && (
             <article className="dashboard-module-card dashboard-pnt-card">
               <div className="dashboard-module-top"><span>Documentación controlada</span><strong>{number(data.pnt.masters)}</strong></div>
-              <p>Maestros documentales no anulados; el filtro de año no se aplica a PNT.</p>
+              <p>Maestros no anulados · sin filtro de año</p>
               <div className="dashboard-module-states">
                 <span><strong>{data.pnt.revisions}</strong> Revisiones</span>
                 <span><strong>{data.pnt.overdue}</strong> Últimas vencidas</span>
@@ -155,34 +158,42 @@ export default async function HomePage({
             <div><p className="eyebrow">Acción y seguimiento</p><h2 id="dashboard-tasks-title">Tareas del sistema</h2></div>
             <Link href="/settings/alerts" className="summary-link">Reglas de alertas →</Link>
           </div>
-          <p className="dashboard-hint">Vista informativa, sin envío automático. Se muestran las reglas activas configuradas y revisiones/seguimientos con fecha hasta 30 días. No equivale a «mis tareas».</p>
+          <div className="dashboard-task-summary" aria-label="Resumen de plazos">
+            <span className="dashboard-deadline-count overdue"><strong>{number(data.taskCounts.overdue)}</strong> vencidas</span>
+            <span className="dashboard-deadline-count upcoming"><strong>{number(data.taskCounts.upcoming)}</strong> próximas · 30 días</span>
+            <a href="#dashboard-filters">Ajustar filtros ↑</a>
+          </div>
+          <p className="dashboard-hint">Reglas activas y revisiones/seguimientos con fecha. Vista informativa, sin envío automático; no equivale a «mis tareas».</p>
           <div className="dashboard-task-table">
             <table aria-label="Obligaciones y fechas próximas o vencidas">
               <thead><tr><th>Vencimiento</th><th>Expediente</th><th>Motivo</th><th>Estado</th></tr></thead>
               <tbody>
                 {data.tasks.map(task => (
-                  <tr key={task.key}>
-                    <td>{date(task.dueDate)}</td>
-                    <td><Link href={task.href} className="summary-link">{task.code}</Link><small>{moduleName(task.module)}</small></td>
-                    <td title={task.source}>{task.label}</td>
-                    <td><span className={"badge " + (task.state === "OVERDUE" ? "critical" : "warning")}>{task.state === "OVERDUE" ? "Vencida" : "Próxima"}</span></td>
+                  <tr key={task.key} className={"dashboard-task-row " + (task.state === "OVERDUE" ? "is-overdue" : "is-upcoming")}>
+                    <td className="dashboard-task-date" data-label="Vencimiento"><time dateTime={task.dueDate.toISOString().slice(0, 10)}>{date(task.dueDate)}</time></td>
+                    <td className="dashboard-task-record"><Link href={task.href} className="summary-link">{task.code}</Link><small>{moduleName(task.module)}</small></td>
+                    <td className="dashboard-task-reason" title={task.source}>{task.label}</td>
+                    <td className="dashboard-task-state"><span className={"badge " + (task.state === "OVERDUE" ? "critical" : "warning")}>{task.state === "OVERDUE" ? "Vencida" : "Próxima"}</span></td>
                   </tr>
                 ))}
                 {!data.tasks.length && <tr><td colSpan={4} className="dashboard-empty">No hay obligaciones con fecha para estos filtros. Esto no confirma que no existan otras acciones pendientes.</td></tr>}
               </tbody>
             </table>
           </div>
-          {data.pageCount > 1 && <nav className="dashboard-pagination" aria-label="Páginas de obligaciones">
-            <span>Página {data.page} de {data.pageCount}</span>
+          <nav className="dashboard-pagination" aria-label="Páginas de obligaciones">
+            <span>{number(data.taskCounts.total)} obligaciones · Página {data.page} de {data.pageCount}</span>
+            <div>
             {data.page > 1 && <Link className="button small" href={queryLink(query, data.page - 1)}>Anterior</Link>}
             {data.page < data.pageCount && <Link className="button small" href={queryLink(query, data.page + 1)}>Siguiente</Link>}
-          </nav>}
+            </div>
+          </nav>
         </section>
 
         <section className="dashboard-section dashboard-trend-section" aria-labelledby="dashboard-trend-title">
           <div className="dashboard-heading"><div><p className="eyebrow">KPI históricos</p><h2 id="dashboard-trend-title">Evolución de 5 años</h2></div></div>
           {data.trend.length ? <>
-            <p className="dashboard-hint">{moduleName(selectedModule as DashboardModule)} · total de expedientes por año de apertura · {year ?? now.getUTCFullYear()} como año final. Los años sin cobertura no equivalen a cero.</p>
+            <p className="dashboard-trend-module">{moduleName(selectedModule as DashboardModule)} <span>Expedientes por año de apertura</span></p>
+            <p className="dashboard-hint">Hasta {year ?? now.getUTCFullYear()} · los años sin cobertura no equivalen a cero.</p>
             <div className="dashboard-trend-rows" aria-label="Tendencia quinquenal">
               {data.trend.map(item => (
                 <div key={item.year} className="dashboard-trend-row">
@@ -206,7 +217,7 @@ export default async function HomePage({
       <section className="dashboard-section" aria-label="Accesos directos">
         <div className="dashboard-heading"><div><p className="eyebrow">Navegación</p><h2>Accesos a los módulos</h2></div></div>
         <nav className="dashboard-quick-links" aria-label="Módulos de Calidad">
-          {modules.map(item => <Link href={item.href} key={item.key}>{item.label} <span aria-hidden="true">↗</span></Link>)}
+          {modules.map(item => <Link href={item.href} key={item.key}>{item.label} <span aria-hidden="true">→</span></Link>)}
         </nav>
       </section>
       <p className="dashboard-source-note">Datos actuales de PostgreSQL · corte {date(data.asOf)} (UTC) · consulta {data.elapsedMs} ms. El panel no registra ni modifica expedientes.</p>

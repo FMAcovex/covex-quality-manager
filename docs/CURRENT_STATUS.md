@@ -17,6 +17,10 @@ Esta consolidación es **solo documental**. No modifica módulos, esquema, códi
 
 ## Registro cronológico anterior (conservar para trazabilidad)
 
+## D1C — Rediseño visual del Dashboard (2026-10-11)
+
+Desde D1B/main `5a53949` (#133), rama `feature/dashboard-d1c-visual-redesign`. Cabecera/filtros compactos, jerarquía de los cinco KPI, siete tarjetas de módulos, tareas responsive y tendencia discreta. Consultas, cálculos, navegación global, Prisma, migraciones y seed conservados. Pruebas D1B y nueva regresión Chromium D1C con capturas 1440/768/390; CI completa y artifacts en la PR única, sin merge. Alcance y reproducción en [DASHBOARD_D1C.md](DASHBOARD_D1C.md).
+
 
 ## P3C-1 — Maquetación responsive base PNT (2026-10-09)
 
