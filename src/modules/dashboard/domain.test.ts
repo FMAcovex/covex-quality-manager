@@ -3,11 +3,10 @@ import { normalizeDashboardFilters, summarizeStatuses, splitTasks, trendPoints, 
 
 describe("D1B dashboard contracts", () => {
   it("validates selectors rather than accepting arbitrary input", () => {
-    const now = new Date("2026-10-11T00:00:00Z");
-    expect(normalizeDashboardFilters({module:"RETURN",year:"2025",taskView:"overdue",page:"2"},now))
+    expect(normalizeDashboardFilters({module:"RETURN",year:"2025",taskView:"overdue",page:"2"}))
       .toMatchObject({module:"RETURN",year:2025,taskView:"overdue",page:2});
-    expect(normalizeDashboardFilters({module:"<script>",year:"209999",taskView:"ALL",page:"-4"},now))
-      .toMatchObject({module:"DEVIATION",year:2026,taskView:"all",page:1});
+    expect(normalizeDashboardFilters({module:"<script>",year:"209999",taskView:"ALL",page:"-4"}))
+      .toMatchObject({module:"DEVIATION",year:undefined,taskView:"all",page:1});
   });
   it("counts each status without treating draft or cancelled as open", () => {
     expect(summarizeStatuses("CAPA",[
