@@ -86,7 +86,7 @@ export function UnsavedChangesGuard({
     const onNavigationClick = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
       if (!(event.target instanceof Element)) return;
-      const link = event.target.closest("a[href]");
+      const link = event.target.closest<HTMLAnchorElement>("a[href]");
       if (!link || link.hasAttribute("download") || (link.getAttribute("target") && link.getAttribute("target") !== "_self")) return;
       const destination = new URL(link.href, window.location.href);
       if (destination.pathname.startsWith("/api/")) return; // Downloads do not leave the form.
