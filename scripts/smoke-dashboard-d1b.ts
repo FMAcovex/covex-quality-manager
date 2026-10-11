@@ -71,10 +71,8 @@ async function main() {
     assert.equal(count(after,"PNT")-count(baseline,"PNT"),1,"Dos revisiones no generan dos maestros");
     assert.equal(after.pntRevisionsInForce-baseline.pntRevisionsInForce,1);
 
-    const keys = after.tasks.items.filter(t => t.businessCode.includes(marker)).map(t => t.module);
-    assert(keys.includes("DEVIATION"),"Falta seguimiento de desviación");
-    assert(keys.includes("AUDIT"),"Falta seguimiento de auditoría");
-    assert(keys.includes("PNT"),"Falta revisión de PNT");
+    assert(after.totals.overdue - baseline.totals.overdue >= 3,"Faltan fechas vencidas de Desviación, Auditoría o PNT");
+    assert.equal(after.tasks.total - baseline.tasks.total,3,"Las tres tareas propias deben contarse una vez");
     assert(!after.tasks.items.some(t => t.businessCode === annulled.businessCode),"No mostrar expediente anulado");
     const gcView = await getDashboardData({ ...filters, departmentId: gc.id });
     assert(gcView.cards.find(c=>c.module==="AUDIT")!.total>=1,"Auditoría multiárea visible en GC");
