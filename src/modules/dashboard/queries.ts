@@ -136,7 +136,7 @@ export async function getDashboardData(filters: DashboardFilters, referenceDate 
     if (!group) continue;
     const id = i.href.slice(group.path.length).split(/[/?#]/)[0];
     if (!eligible.get(group.module)?.has(id)) continue;
-    const tab = group.module === "CAPA" ? (i.ruleKey === "CAPA_EFFECTIVENESS_PENDING" ? "state" : "versions")
+    const tab = group.module === "CAPA" ? (i.ruleKey === "CAPA_EFFECTIVENESS_PENDING" ? "state" : "action-followups")
       : group.module === "COMPLAINT" ? "part-ii" : "followups";
     tasks.push(toTask(group.module, i.key, group.path + encodeURIComponent(id) + "?tab=" + tab,
       i.businessCode, i.label, i.dueDate, i.detail, today));
