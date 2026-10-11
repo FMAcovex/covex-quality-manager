@@ -34,6 +34,7 @@ async function main() {
   let auditId: string | null = null;
   try {
     const before = await getDashboardData(scoped);
+    const beforeDep2 = await getDashboardData({ ...scoped, department: dep2, module: "AUDIT" });
     const first = await addRecord("DEVIATION", id => prisma.deviation.create({
       data: { qmsRecordId: id, departmentId: dep, status: "OPEN", whatHappened: prefix },
     }));
@@ -81,7 +82,7 @@ async function main() {
     assert.equal(activeCount(after, "RETURN") - activeCount(before, "RETURN"), 1, "Dos productos no duplican devolución");
     assert.equal(activeCount(after, "AUDIT") - activeCount(before, "AUDIT"), 1, "Dos áreas no duplican auditoría");
     const dept2Result = await getDashboardData({ ...scoped, department: dep2, module: "AUDIT" });
-    assert.equal(activeCount(dept2Result, "AUDIT") - activeCount(await getDashboardData({ ...scoped, department: dep2, module: "AUDIT" }), "AUDIT"), 0);
+    assert.equal(activeCount(dept2Result, "AUDIT") - activeCount(beforeDep2, "AUDIT"), 1, "Multiárea permite filtrar por ambos departamentos sin duplicar la auditoría");
     const auditTask = after.tasks.find(t => t.code.startsWith(prefix) && t.module === "AUDIT");
     assert(auditTask && auditTask.state === "OVERDUE", "La revisión de auditoría de ayer debe vencer");
     assert(after.taskCounts.overdue >= before.taskCounts.overdue + 1);
