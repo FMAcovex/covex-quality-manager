@@ -16,9 +16,6 @@ env:
   PHASE3B2_SYNTHETIC_DATABASE: "1"
   PHASE3B3_SYNTHETIC_DATABASE: "1"
   PHASE3B2_OUTPUT: ci-evidence/phase3b2
-  PNT_DOCUMENT_ACCESS_MODE: demo
-  PNT_LIFECYCLE_TEST_PERMISSIONS: verify,record-approval,accept-approval,activate,retire,correct,legacy-register,manage-state
-  PNT_DOCUMENT_ALLOWED_ORIGIN: http://127.0.0.1:3000
 jobs:
   scope:
     runs-on: ubuntu-22.04
@@ -118,6 +115,9 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
+      PNT_DOCUMENT_ACCESS_MODE: demo
+      PNT_LIFECYCLE_TEST_PERMISSIONS: verify,record-approval,accept-approval,activate,retire,correct,legacy-register,manage-state
+      PNT_DOCUMENT_ALLOWED_ORIGIN: http://127.0.0.1:3000
     steps:
       - uses: actions/checkout@v4
         with:

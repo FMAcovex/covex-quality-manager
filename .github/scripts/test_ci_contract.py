@@ -2,6 +2,9 @@ import copy
 import importlib.util
 import json
 import pathlib
+import os
+import subprocess
+import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -71,6 +74,23 @@ class Contract(unittest.TestCase):
         required = {name for name in scripts if name.endswith(":smoke")}
         self.assertEqual(required - listed, set())
         self.assertEqual(listed - set(scripts), set())
+
+    def test_real_gate_process_returns_red_for_failures(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / ".github").mkdir(); (root / "ci-evidence").mkdir()
+            (root / ".github/ci-suites.json").write_text(json.dumps(groups))
+            for name, row in self.evidence.items():
+                (root / "ci-evidence" / (name + ".json")).write_text(json.dumps({**row, "group": name}))
+            for status in ["success", "failure", "skipped", "cancelled"]:
+                needs = copy.deepcopy(self.needs); needs["regression"]["result"] = status
+                env = {**os.environ, "TESTED_SHA": "head", "CLASSIFIED_SHA": "head", "DOCS_ONLY": "false", "NEEDS_JSON": json.dumps(needs)}
+                process = subprocess.run(["python3", str(ROOT / ".github/scripts/ci_gate.py")], cwd=root, env=env, capture_output=True, text=True)
+                self.assertEqual(process.returncode, 0 if status == "success" else 1)
+            (root / "ci-evidence/pnt.json").unlink()
+            env["NEEDS_JSON"] = json.dumps(self.needs)
+            process = subprocess.run(["python3", str(ROOT / ".github/scripts/ci_gate.py")], cwd=root, env=env, capture_output=True, text=True)
+            self.assertEqual(process.returncode, 1, "Absent group cannot yield a green process")
 
 if __name__ == "__main__":
     unittest.main()
