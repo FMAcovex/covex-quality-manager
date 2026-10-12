@@ -57,6 +57,7 @@ with tempfile.TemporaryDirectory(prefix="covex4b2-container-") as temporary:
         run(["docker", "volume", "create", volume])
         run(compose + ["up", "-d"], env)
         app_id = run(compose + ["ps", "-q", "app"], env).stdout.strip()
+        pg_id = run(compose + ["ps", "-q", "postgres"], env).stdout.strip()
         def healthy():
             return run(["docker", "exec", app_id, "node", "ops/runtime/health.mjs"], check=False).returncode == 0
         for _ in range(60):
@@ -66,6 +67,8 @@ with tempfile.TemporaryDirectory(prefix="covex4b2-container-") as temporary:
         else:
             raise RuntimeError("Synthetic production TLS readiness failed")
         assert run(["docker", "exec", app_id, "id", "-u"]).stdout.strip() == "10001"
+        sentinel = uuid.uuid4().hex
+        run(["docker", "exec", "--user", "postgres", pg_id, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-d", "covex_quality", "-c", "CREATE TABLE synthetic_persistence(id text PRIMARY KEY); INSERT INTO synthetic_persistence VALUES ('" + sentinel + "');"])
         ctx = ssl.create_default_context(cafile=str(root / "web.crt"))
         request = urllib.request.Request("https://127.0.0.1:8443/login", headers={"Host": "example.org"})
         with urllib.request.urlopen(request, context=ctx, timeout=10) as response:
@@ -107,12 +110,14 @@ with tempfile.TemporaryDirectory(prefix="covex4b2-container-") as temporary:
         assert run(["docker", "volume", "inspect", "--format", "{{.Name}}", volume]).stdout.strip() == volume
         run(compose + ["up", "-d"], env)
         app_id = run(compose + ["ps", "-q", "app"], env).stdout.strip()
+        pg_id = run(compose + ["ps", "-q", "postgres"], env).stdout.strip()
         for _ in range(60):
             if healthy():
                 break
             time.sleep(0.5)
         else:
             raise RuntimeError("Synthetic persistent volume restart failed")
+        assert run(["docker", "exec", "--user", "postgres", pg_id, "psql", "-XAt", "-d", "covex_quality", "-c", "SELECT id FROM synthetic_persistence;"]).stdout.strip() == sentinel
         print("4B2 Docker/HTTPS/TLS OK: production UID/config/health; strict PostgreSQL certificate validation; proxy HTTPS/security headers/internal health denial; supervised restart; external volume persistence. Fictitious only.")
     finally:
         run(compose + ["down"], env, check=False)

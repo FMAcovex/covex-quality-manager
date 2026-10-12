@@ -8,8 +8,22 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import { isolatedTestEnvironment } from "../src/lib/auth/config";
 import { fixtureUsers } from "./auth-fixtures/constants";
 import { fixtureLogin, cookieHeader } from "./auth-fixtures/http";
+import { writeZip, readZip } from "../src/lib/ooxml/zip";
 
 const sha256 = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
+function officeFixture(kind: "word" | "sheet") {
+  const main = kind === "word" ? "word/document.xml" : "xl/workbook.xml";
+  const mime = kind === "word" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml";
+  const entries = [
+    { name: "[Content_Types].xml", data: Buffer.from(`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/${main}" ContentType="${mime}"/>${kind === "sheet" ? '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' : ""}</Types>`) },
+    { name: "_rels/.rels", data: Buffer.from(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="${main}"/></Relationships>`) },
+    { name: main, data: Buffer.from(kind === "word" ? '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Documento totalmente ficticio de recuperacion 4B2</w:t></w:r></w:p></w:body></w:document>' : '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Ficticio" sheetId="1" r:id="rId1"/></sheets></workbook>') },
+  ];
+  if (kind === "sheet") entries.push({ name: "xl/_rels/workbook.xml.rels", data: Buffer.from('<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>') }, { name: "xl/worksheets/sheet1.xml", data: Buffer.from('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Ficticio 4B2</t></is></c></row></sheetData></worksheet>') });
+  const bytes = writeZip(entries);
+  readZip(bytes, { maxExpandedBytes: 100000, verifyIntegrity: true });
+  return Buffer.from(bytes);
+}
 function command(binary: string, args: string[], env = process.env) {
   const result = spawnSync(binary, args, { env, encoding: "utf8", timeout: 120000, maxBuffer: 4 * 1024 * 1024 });
   if (result.status !== 0) throw new Error(`Synthetic operation failed: ${binary} (${result.status}); ${result.stdout?.slice(-1800) ?? ""}`);
@@ -49,7 +63,8 @@ async function main() {
     // Seed has template location metadata, not fixture bytes. No GMP originals are read.
     await source.templateVersion.updateMany({ data: { filePath: null } });
     mkdirSync(assetRoot, { mode: 0o700 }); mkdirSync(join(root, "plain"), { mode: 0o700 });
-    const asset = Buffer.from("Fictitious external template binary\0\xff", "latin1"); writeFileSync(join(assetRoot, "fixture.docx"), asset, { mode: 0o600 });
+    const word = officeFixture("word"), sheet = officeFixture("sheet"), asset = word;
+    writeFileSync(join(assetRoot, "fixture.docx"), asset, { mode: 0o600 });
     for (const key of keys) writeFileSync(join(root, key), randomBytes(32).toString("hex"), { mode: 0o600 });
     const passfile = join(root, "test.pgpass");
     writeFileSync(passfile, `*:*:*:${decodeURIComponent(base.username)}:${decodeURIComponent(base.password)}\n*:*:*:${role}:${roleSecret}\n`, { mode: 0o600 });
@@ -67,9 +82,9 @@ async function main() {
     const version = await source.qmsRecordVersion.findFirstOrThrow({ where: { qmsRecordId: deviation.qmsRecordId! } });
     await source.changeHistory.create({ data: { qmsRecordId: deviation.qmsRecordId!, changedByText: "Autor histórico sintético", fieldPath: "whatHappened", oldValue: "Anterior", newValue: "Ficticio", reason: "Evidencia sintética" } });
     const binary = Buffer.from("%PDF-1.4\nFictitious recovery evidence\x00\xff\n%%EOF", "latin1"), checksum = sha256(binary);
-    const template = await source.templateVersion.create({ data: { module: "AUDIT", documentType: "AUDIT_ANNUAL_INTERNAL_PROGRAMME", versionCode: "4B2-" + id, effectiveFrom: new Date("2026-01-01"), fileData: binary, fileName: "synthetic.docx", fileSize: binary.length, mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", checksum } });
+    const template = await source.templateVersion.create({ data: { module: "AUDIT", documentType: "AUDIT_ANNUAL_INTERNAL_PROGRAMME", versionCode: "4B2-" + id, effectiveFrom: new Date("2026-01-01"), fileData: word, fileName: "synthetic.docx", fileSize: word.length, mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", checksum: sha256(word) } });
     await source.templateVersion.create({ data: { module: "DEVIATION", documentType: "DEVIATION_ANNEX_III", versionCode: "4B2-file-" + id, effectiveFrom: new Date("2026-01-01"), filePath: "templates/fixture.docx", checksum: sha256(asset) } });
-    await source.generatedDocument.create({ data: { qmsRecordId: deviation.qmsRecordId!, recordVersionId: version.id, documentType: "DEVIATION_ANNEX_III", fileData: binary, checksum, fileName: "synthetic.docx" } });
+    await source.generatedDocument.create({ data: { qmsRecordId: deviation.qmsRecordId!, recordVersionId: version.id, documentType: "DEVIATION_ANNEX_III", fileData: word, checksum: sha256(word), fileName: "synthetic.docx" } });
     await source.recordVersionDocument.create({ data: { recordVersionId: version.id, kind: "SIGNED_PDF", fileName: "synthetic-signed.pdf", fileData: binary, fileSize: binary.length, checksum, uploadedByText: "Firmante externo ficticio" } });
     const master = await source.controlledDocument.create({ data: { baseCode: department.code + "/999", title: "PNT ficticio de restauración", departmentId: department.id, departmentCodeSnapshot: department.code, departmentNameSnapshot: department.name, createdByText: "Autor sintético", revisions: { create: { revisionCode: "00", baseCodeSnapshot: department.code + "/999", titleSnapshot: "PNT ficticio de restauración", departmentCodeSnapshot: department.code, departmentNameSnapshot: department.name, registeredByText: "Autor sintético" } } }, include: { revisions: true } });
     const objectId = randomUUID();
@@ -77,7 +92,7 @@ async function main() {
     const externalId = randomUUID();
     await source.controlledRevisionDocument.create({ data: { id: externalId, documentId: master.id, revisionId: master.revisions[0].id, originalName: "Referencia sin custodia", kind: "APPROVAL_EVIDENCE", state: "RECORDED_UNVERIFIED", storageReference: "external:" + externalId, externalReference: "https://example.invalid/synthetic-evidence", incorporatedBy: "Autor sintético", identitySource: "CORPORATE_SESSION" } });
     const plan = await source.auditAnnualPlan.create({ data: { year: 2026, auditType: "INTERNAL", title: "Programa ficticio", createdByText: "Autor sintético" } });
-    await source.auditAnnualProgrammeVersion.create({ data: { planId: plan.id, sequenceNumber: 0, requestId: randomUUID(), requestHash: checksum, contentFingerprint: checksum, snapshot: { synthetic: true }, templateVersionId: template.id, templateChecksum: checksum, reference: "4B2-FICTITIOUS", generatedBy: "Autor sintético", reason: "Prueba", fileName: "synthetic.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileData: binary, fileSize: binary.length, checksum } });
+    await source.auditAnnualProgrammeVersion.create({ data: { planId: plan.id, sequenceNumber: 0, requestId: randomUUID(), requestHash: sha256(sheet), contentFingerprint: sha256(sheet), snapshot: { synthetic: true }, templateVersionId: template.id, templateChecksum: sha256(word), reference: "4B2-FICTITIOUS", generatedBy: "Autor sintético", reason: "Prueba", fileName: "synthetic.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileData: sheet, fileSize: sheet.length, checksum: sha256(sheet) } });
     const oldToken = randomBytes(32).toString("base64url");
     await source.authSession.create({ data: { userId: fixtureUsers.qa.id, tokenHash: sha256(oldToken), csrfHash: sha256("synthetic-csrf"), expiresAt: new Date(Date.now() + 3600000) } });
     await source.authLoginAttempt.create({ data: { id: randomUUID(), state: "synthetic", nonce: "synthetic", verifier: "synthetic", returnTo: "/", expiresAt: new Date(Date.now() + 60000) } });
@@ -131,8 +146,8 @@ async function main() {
     assert.equal(await restored.qmsRelation.count(), 2);
     assert.equal(await restored.authSession.count({ where: { revokedAt: null } }), 0);
     assert.equal(await restored.authLoginAttempt.count(), 0);
-    for (const rows of [await restored.templateVersion.findMany({ where: { fileData: { not: null } } }), await restored.generatedDocument.findMany({ where: { fileData: { not: null } } }), await restored.recordVersionDocument.findMany(), await restored.controlledRevisionDocument.findMany({ where: { fileData: { not: null } } }), await restored.auditAnnualProgrammeVersion.findMany()]) {
-      for (const row of rows) assert.equal(sha256(Buffer.from(row.fileData!)), checksum, "SHA-256 binario en cada familia documental");
+    for (const [rows, expected] of [[await restored.templateVersion.findMany({ where: { fileData: { not: null } } }), sha256(word)], [await restored.generatedDocument.findMany({ where: { fileData: { not: null } } }), sha256(word)], [await restored.recordVersionDocument.findMany(), checksum], [await restored.controlledRevisionDocument.findMany({ where: { fileData: { not: null } } }), checksum], [await restored.auditAnnualProgrammeVersion.findMany(), sha256(sheet)]] as const) {
+      for (const row of rows) assert.equal(sha256(Buffer.from(row.fileData!)), expected, "SHA-256 binario en cada familia documental");
     }
     assert.deepEqual(readFileSync(join(root, "restored-assets/templates/fixture.docx")), asset);
     const release = join(root, "release"); command("python3", ["ops/release.py", "--sha", cfg.release_sha, "--out", release]);

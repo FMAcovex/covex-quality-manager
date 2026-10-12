@@ -19,7 +19,7 @@ No cambia ningún archivo `src/`, modelo Prisma, migración ni regla de los siet
 | Transporte BD | TLS, certificado con SAN del nombre de conexión | TLS y CA administrada por IT |
 | Entrada | Nginx HTTPS, puerto 443 ligado a la IP aprobada | Nginx HTTPS; Node solo en `127.0.0.1:3000` |
 | Identidad | Microsoft Entra OIDC existente | La misma implementación de 4B1 |
-| Backup | Contenedor de herramientas ejecutado por scheduler de IT | Python 3.12+, OpenSSL 3, clientes PostgreSQL 16 y timer systemd |
+| Backup | Contenedor de herramientas ejecutado por scheduler de IT | Python 3.10+, OpenSSL 3, clientes PostgreSQL 16 y timer systemd |
 | Recuperación | Servidor/cluster separado y artefactos/keys custodiados | Servidor/cluster separado y artefactos/keys custodiados |
 
 No se escoge una plataforma definitiva. Un ordenador dedicado puede servir si IT acepta disponibilidad, soporte, UPS, almacenamiento, reinicio automático, cifrado y capacidad. No usar suspensión, sesión interactiva ni Docker Desktop como plataforma de operación regulada.
@@ -28,7 +28,7 @@ No se escoge una plataforma definitiva. Un ordenador dedicado puede servir si IT
 
 Propuesta inicial, pendiente de carga/documentos reales: mínimo candidato 4 vCPU, 8 GiB RAM; recomendado 8 vCPU, 16 GiB RAM y SSD. Separar capacidad para sistema/releases, PostgreSQL/WAL, temporales y backups. Dimensionar por datos y binarios existentes, crecimiento, índices, WAL, espacio de restauración y al menos dos releases; estos valores no sustituyen una prueba de carga ni garantizan RTO.
 
-Linux mantenido por IT (por ejemplo Debian/Ubuntu/RHEL compatible), Node 22 LTS con parche vigente, PostgreSQL/clientes 16, Python 3.12+, OpenSSL 3, CA, Nginx y, si se escoge, Docker Engine/Compose v2. Restringir administración y acceso al socket Docker: equivale a privilegios de sistema. Mantener reloj/NTP, parches, protección del endpoint, cifrado de discos, UPS y reinicio tras fallo eléctrico. No se ha instalado systemd ni probado una VM corporativa.
+Linux mantenido por IT (por ejemplo Debian/Ubuntu/RHEL compatible), Node 22 LTS con parche vigente, PostgreSQL/clientes 16, Python 3.10+, OpenSSL 3, CA, Nginx y, si se escoge, Docker Engine/Compose v2. Restringir administración y acceso al socket Docker: equivale a privilegios de sistema. Mantener reloj/NTP, parches, protección del endpoint, cifrado de discos, UPS y reinicio tras fallo eléctrico. No se ha instalado systemd ni probado una VM corporativa.
 
 Windows permanece pendiente: Node `standalone` y PostgreSQL pueden ejecutarse como servicios con un supervisor aprobado por IT, proxy/certificados y ACL NTFS; otra opción es una VM Linux supervisada sobre Windows Server. Los scripts Python usan comandos estándar, pero las garantías POSIX de permisos, unidades systemd y Docker Linux no prueban seguridad de NTFS, supervisión Windows ni recuperación corporativa. Hace falta ensayo y aceptación específicos antes de afirmar compatibilidad productiva.
 

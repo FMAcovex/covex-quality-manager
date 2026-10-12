@@ -37,7 +37,10 @@ def canonical(value):
 
 def digest(path):
     with Path(path).open("rb") as stream:
-        return hashlib.file_digest(stream, "sha256").hexdigest()
+        hasher = hashlib.sha256()
+        while block := stream.read(1024 * 1024):
+            hasher.update(block)
+        return hasher.hexdigest()
 
 
 def private_file(path):
