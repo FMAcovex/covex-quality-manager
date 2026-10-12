@@ -1,17 +1,17 @@
-# Estado vigente — corte 2026-10-10
+# Estado vigente — corte 2026-10-12
 
-**Fuente de verdad para estado presente:** [V1_BASELINE_AND_BACKLOG.md](V1_BASELINE_AND_BACKLOG.md). El histórico a continuación NO representa el estado actual de PR, a menos que su fecha coincida con este corte.
+**Baseline y cautelas de desarrollo:** [V1_BASELINE_AND_BACKLOG.md](V1_BASELINE_AND_BACKLOG.md). Los avances posteriores se recogen en este corte y en el registro fechado a continuación; las entradas antiguas conservan el estado de PR en su fecha, no su estado actual.
 
-- **main:** 5194afe5fb672b33e299a0d9b1bb6a90bbd07647; PR #123 integrada mediante squash. CI #585 (38065843516), quality verde con 496 pruebas unitarias y regresiones PostgreSQL/navegador.
+- **main:** `09ac7ce62e29abaa7103b288f6e9a39b97106eb5`, tras integración de 3B2 / PR #137; 3B1 y Dashboard D1C integrados. 3B3 se entrega en PR #138 abierta para revisión, sin fusionar; CI integral comprobada con 536 pruebas unitarias y regresiones PostgreSQL/Chromium obligatorias, incluido PNT/R4C. SHA y ejecución final en Checks de la PR.
 - **7 módulos integrados como desarrollo:** Desviaciones, CAPA, Controles de Cambios, Reclamaciones, Devoluciones, Auditorías y PNT. Cierre técnico y funcional no implica validación GMP.
 - **Auditorías:** la PR #123 añadió emisión Word PMAI V04 y PMAE V05 Anexo I, previsualización, versiones 00/01+, snapshot/bytes históricos. Se utilizaron plantillas oficiales para pruebas, pero **no está confirmada** la instalación en el entorno final ni aceptación visual/editable en Microsoft Word.
 - **PNT:** pruebas con índice de 817 códigos únicos; importador/maestro/documentos integrados, sin prueba de que los 817 PNT reales estén importados, conciliados y verificados.
-- **Pendientes V1:** UX puntual en filtros/indicadores (sin rediseño), mejora funcional de navegación, dashboard global, backend/CI, identidad/autorización/IT, datos/plantillas, alertas autorizadas y validación.
+- **Fase 3:** cierre técnico comprobado de backend/CI en el alcance autorizado; integración de 3B3 pendiente de revisión. Dashboard D1C y mejoras 3B1/3B2 preservados. **Pendientes V1:** aceptación de UX/documentos, identidad/autorización/IT, datos/plantillas, alertas autorizadas y validación. No se inicia una nueva fase.
 - **Compatibilidad:** seguimiento requerido del parche de Next/React incorporado en #123, conforme a [CI_583_R4B_DIAGNOSIS.md](CI_583_R4B_DIAGNOSIS.md).
 - **PR antiguas abiertas identificadas:** #11, #16, #17, #19, #20, #21, #76 y #112. Cierre separado, sin merge y solo tras verificar sustituciones.
 - **Arquitectura futura:** modularidad, flujos versionados, inicio de sesión, firmas electrónicas y audit trail según riesgos son objetivos, no funcionalidades actualmente validadas o implantadas.
 
-Esta consolidación es **solo documental**. No modifica módulos, esquema, código de producción, CI, datos ni estado GMP.
+El baseline de consolidación fue documental. Los avances fechados posteriores describen su alcance propio; 3B3 modifica únicamente CI, instrumentación y documentación, sin cambiar lógica funcional, datos ni estado GMP.
 
 ---
 
