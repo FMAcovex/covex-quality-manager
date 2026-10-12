@@ -1,37 +1,107 @@
 name: CI
-
 on:
   pull_request:
     branches: [main]
-
-# A new push cancels stale CI for the same PR only.
+permissions:
+  contents: read
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
-
+env:
+  TESTED_SHA: ${{ github.event.pull_request.head.sha }}
+  APP_ENV: test
+  DEFAULT_ACTOR_NAME: Usuario CI
+  ALLOW_DEMO_DATA: "true"
+  PHASE3B1_SYNTHETIC_DATABASE: "1"
+  PHASE3B2_SYNTHETIC_DATABASE: "1"
+  PHASE3B3_SYNTHETIC_DATABASE: "1"
+  PHASE3B2_OUTPUT: ci-evidence/phase3b2
+  PNT_DOCUMENT_ACCESS_MODE: demo
+  PNT_LIFECYCLE_TEST_PERMISSIONS: verify,record-approval,accept-approval,activate,retire,correct,legacy-register,manage-state
+  PNT_DOCUMENT_ALLOWED_ORIGIN: http://127.0.0.1:3000
 jobs:
   scope:
     runs-on: ubuntu-22.04
     outputs:
-      documentation_only: ${{ steps.scope.outputs.documentation_only }}
       docs_only: ${{ steps.scope.outputs.docs_only }}
+      head_sha: ${{ steps.scope.outputs.head_sha }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+      - name: Test CI contracts
+        run: python3 .github/scripts/test_ci_contract.py
       - id: scope
-        name: Select validation by changed files
+        name: Classify changed paths
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: python3 .github/scripts/controlled_document_scope.py
-
   quality:
     needs: scope
-    if: github.head_ref != 'feature/complaints-returns-final-regression' && needs.scope.outputs.documentation_only != 'true' && needs.scope.outputs.docs_only != 'true'
+    if: needs.scope.outputs.docs_only != 'true'
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
-
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Prisma validate and generate
+        run: pnpm db:validate && pnpm db:generate
+      - name: Full Vitest
+        run: pnpm test
+      - uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**', 'next.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
+      # Next 15's build runs ESLint and TypeScript as mandatory gates; neither is disabled.
+      - name: ESLint TypeScript and Next build
+        run: pnpm build
+      - name: Package build and SHA evidence
+        run: |
+          tar --exclude=.next/cache -cf next-build.tar .next
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib
+          sha=os.environ["TESTED_SHA"]
+          digest=hashlib.sha256(pathlib.Path("next-build.tar").read_bytes()).hexdigest()
+          pathlib.Path("build-manifest.json").write_text(json.dumps({"sha":sha,"sha256":digest}))
+          pathlib.Path("ci-evidence").mkdir(exist_ok=True)
+          pathlib.Path("ci-evidence/quality.json").write_text(json.dumps({"group":"quality","sha":sha,"status":"success"}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: next-build-${{ github.event.pull_request.head.sha }}
+          path: |
+            next-build.tar
+            build-manifest.json
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-results-quality
+          path: ci-evidence/quality.json
+          if-no-files-found: error
+  regression:
+    needs: [scope, quality]
+    if: needs.scope.outputs.docs_only != 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [postgresql, browser-qms, browser-audits, records-r4c, pnt]
     services:
       postgres:
         image: postgres:16-alpine
@@ -46,285 +116,77 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
-      APP_ENV: test
-      DEFAULT_ACTOR_NAME: Usuario CI
-      ALLOW_DEMO_DATA: "true"
-      PHASE3B1_SYNTHETIC_DATABASE: "1"
-      PHASE3B2_SYNTHETIC_DATABASE: "1"
-      PHASE3B2_OUTPUT: /tmp/phase3b2-captures
-
     steps:
       - uses: actions/checkout@v4
-      - name: Enable Corepack
-        run: corepack enable
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "pnpm"
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      # Fail fast on syntax, lint and type errors before the long PostgreSQL/browser suite.
-      - name: Fast source and TypeScript gate
+      - name: Generate runner-local Prisma client
+        run: pnpm db:generate
+      - uses: actions/download-artifact@v4
+        if: matrix.group != 'postgresql'
+        with:
+          name: next-build-${{ github.event.pull_request.head.sha }}
+      - name: Extract verified build
+        if: matrix.group != 'postgresql'
         run: |
-          pnpm db:generate
-          pnpm lint
-          pnpm exec tsc --noEmit
-          pnpm exec vitest run src/modules/dashboard/domain.test.ts
-      - name: Database smoke test
-        run: |
-          pnpm db:deploy
-          pnpm db:seed
-          # D1B first: fail quickly on dashboard data defects before legacy DB suite.
-          pnpm dashboard-d1b:smoke
-          pnpm phase3b1:smoke
-          pnpm phase3b2:smoke
-          pnpm db:smoke
-          pnpm import:smoke
-          pnpm indicators:smoke
-          pnpm capa:import:smoke
-          pnpm capa:smoke
-          pnpm versions:smoke
-          pnpm changes:smoke
-          pnpm hito8:smoke
-          pnpm hito9:smoke
-          pnpm demo:seed
-          pnpm create-save:smoke
-          pnpm relations:smoke
-          pnpm b2-3:smoke
-          pnpm b3-3:smoke
-          pnpm b4-3:smoke
-          pnpm c3:smoke
-          pnpm d3:smoke
-          pnpm d6:smoke
-          pnpm d5-3:smoke
-          pnpm d5-6:smoke
-          pnpm r1-capa:smoke
-          pnpm r2b-documents:smoke
-          pnpm r3-capa:smoke
-          pnpm r3-complaints:smoke
-          pnpm complaints-r4a:smoke
-          pnpm r2-returns-documents:smoke
-          pnpm r3-returns:smoke
-          pnpm returns-r4b:smoke
-          pnpm review-r1:smoke
-          pnpm review-r2a:smoke
-          pnpm review-r2b1:smoke
-          pnpm review-r2b2:smoke
-          pnpm review-r2b3:smoke
-          pnpm audits-r3a:smoke
-          pnpm audits-r3b:smoke
-          pnpm audits-r3c:smoke
-          pnpm audits-r4b:smoke
-          pnpm audits-annual:smoke
-          pnpm review-r2c:smoke
-          pnpm hito10:smoke
-      - name: Quality checks
-        run: pnpm quality
-      - name: R2C browser regression
-        run: |
-          pnpm exec playwright install --with-deps chromium
-          TZ=UTC pnpm start --port 3000 > /tmp/covex-r2c-next.log 2>&1 &
-          review_server_pid=$!
-          trap 'review_exit_code=$?; if [ "$review_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-r2c-next.log; fi; kill "$review_server_pid" 2>/dev/null || true' EXIT
-          D1B_SCREENSHOT_DIR=/tmp/d1b-dashboard-captures D1B_UI_BASE_URL=http://127.0.0.1:3000 pnpm dashboard-d1b:ui:smoke
-          D1C_SCREENSHOT_DIR=/tmp/d1c-dashboard-captures D1C_UI_BASE_URL=http://127.0.0.1:3000 pnpm dashboard-d1c:ui:smoke
-          PHASE3B1_SCREENSHOT_DIR=/tmp/phase3b1-captures PHASE3B1_UI_BASE_URL=http://127.0.0.1:3000 pnpm phase3b1:ui:smoke
-          PHASE3B2_SCREENSHOT_DIR=/tmp/phase3b2-captures PHASE3B2_UI_BASE_URL=http://127.0.0.1:3000 pnpm phase3b2:ui:smoke
-          C3_UI_BASE_URL=http://127.0.0.1:3000 pnpm ux-c3:ui:smoke
-          R2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm review-r2c:ui:smoke
-
-          R3A_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3a:ui:smoke
-          R3B_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3b:ui:smoke
-          R4A_UI_BASE_URL=http://127.0.0.1:3000 pnpm complaints-r4a:ui:smoke
-          R4B_UI_BASE_URL=http://127.0.0.1:3000 pnpm returns-r4b:ui:smoke
-          R3C_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r3c:ui:smoke
-          R4B_AUDITS_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-r4b:ui:smoke
-          ANNUAL_UI_BASE_URL=http://127.0.0.1:3000 pnpm audits-annual:ui:smoke
-
-      - name: D1B dashboard responsive evidence
+          python3 - <<'PY'
+          import json,os,pathlib,hashlib
+          m=json.loads(pathlib.Path("build-manifest.json").read_text())
+          assert m["sha"]==os.environ["TESTED_SHA"]
+          assert m["sha256"]==hashlib.sha256(pathlib.Path("next-build.tar").read_bytes()).hexdigest()
+          PY
+          tar -xf next-build.tar
+      - uses: actions/cache@v4
+        if: matrix.group != 'postgresql'
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-chromium-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Chromium and system dependencies
+        if: matrix.group != 'postgresql'
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Isolated regression suites
+        run: python3 .github/scripts/run_ci_group.py ${{ matrix.group }}
+      - name: Preserve suite results logs and captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: d1b-dashboard-captures
-          path: /tmp/d1b-dashboard-captures
-          if-no-files-found: ignore
-
-      - name: D1C dashboard responsive evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: d1c-dashboard-captures
-          path: /tmp/d1c-dashboard-captures
-          if-no-files-found: ignore
-
-      - name: 3B1 list responsive evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: phase3b1-list-captures
-          path: /tmp/phase3b1-captures
-          if-no-files-found: ignore
-
-      - name: 3B2 responsive and document evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: phase3b2-dashboard-pnt-documents-captures
-          path: /tmp/phase3b2-captures
-          if-no-files-found: ignore
-
-  complaints-returns-final:
-    if: github.head_ref == 'feature/complaints-returns-final-regression'
+          name: ci-results-${{ matrix.group }}
+          path: ci-evidence/
+          if-no-files-found: error
+  final-gate:
+    name: QMS final gate
+    needs: [scope, quality, regression]
+    if: always()
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: covex_quality
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d covex_quality"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
-      APP_ENV: test
-      DEFAULT_ACTOR_NAME: Usuario CI
-      ALLOW_DEMO_DATA: "true"
-
     steps:
       - uses: actions/checkout@v4
-      - name: Enable Corepack
-        run: corepack enable
-      - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: R4C PostgreSQL regression
-        run: |
-          pnpm db:generate
-          pnpm db:deploy
-          pnpm db:seed
-          pnpm complaints-r4a:smoke
-          pnpm returns-r4b:smoke
-          pnpm hito8:smoke
-          pnpm complaints-returns-r4c:smoke
-      - name: R4A and R4B joint browser regression
-        run: |
-          pnpm exec playwright install --with-deps chromium
-          pnpm build
-          TZ=UTC pnpm start --port 3000 > /tmp/covex-r4c-next.log 2>&1 &
-          r4c_server_pid=$!
-          trap 'r4c_exit_code=$?; if [ "$r4c_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-r4c-next.log; fi; kill "$r4c_server_pid" 2>/dev/null || true' EXIT
-          R4C_UI_BASE_URL=http://127.0.0.1:3000 pnpm complaints-returns-r4c:smoke
-          R4A_UI_BASE_URL=http://127.0.0.1:3000 pnpm complaints-r4a:ui:smoke
-          R4B_UI_BASE_URL=http://127.0.0.1:3000 pnpm returns-r4b:ui:smoke
-      - name: Final quality checks
-        run: |
-          # The prior Next build rewrites this generated file; lint the tracked source.
-          git restore next-env.d.ts
-          pnpm quality
-
-  pnt-p1a:
-    needs: scope
-    if: needs.scope.outputs.documentation_only == 'true'
-    runs-on: ubuntu-22.04
-    timeout-minutes: 30
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: covex_quality
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d covex_quality"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
-    env:
-      PNT_FINAL_SCREENSHOT_DIR: /tmp/pnt-final-captures
-      PNT_DOCUMENT_ACCESS_MODE: demo
-      PNT_LIFECYCLE_TEST_PERMISSIONS: verify,record-approval,accept-approval,activate,retire,correct,legacy-register,manage-state
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/covex_quality?schema=public
-      APP_ENV: test
-      DEFAULT_ACTOR_NAME: Usuario CI
-      ALLOW_DEMO_DATA: "true"
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Enable Corepack
-        run: corepack enable
-      - uses: actions/setup-node@v4
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/download-artifact@v4
+        if: needs.scope.outputs.docs_only != 'true'
         with:
-          node-version: "22"
-          cache: "pnpm"
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Controlled documentation PostgreSQL smokes
-        run: |
-          pnpm db:generate
-          pnpm db:deploy
-          pnpm db:seed
-          pnpm pnt-p1a:smoke
-          pnpm pnt-p1b1:smoke
-          pnpm pnt-p1b2:smoke
-          pnpm pnt-p2a:smoke
-          pnpm pnt-p2b:smoke
-          pnpm pnt-p2c:smoke
-          pnpm pnt-p3c2:smoke
-          pnpm pnt-final:smoke
-      - name: Controlled documentation browser smokes
-        run: |
-          export PNT_DOCUMENT_ALLOWED_ORIGIN=http://127.0.0.1:3000
-          pnpm exec playwright install --with-deps chromium
-          pnpm build
-          node node_modules/next/dist/bin/next start --port 3000 > /tmp/covex-p1a-next.log 2>&1 &
-          pnt_server_pid=$!
-          trap 'pnt_exit_code=$?; if [ "$pnt_exit_code" -ne 0 ]; then tail -n 100 /tmp/covex-p1a-next.log; fi; kill "$pnt_server_pid" 2>/dev/null || true' EXIT
-          P1A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1a:ui:smoke
-          P1B1_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b1:ui:smoke
-          P1B2_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p1b2:ui:smoke
-          P2A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2a:ui:smoke
-          P2B_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2b:ui:smoke
-          P2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2c:ui:smoke
-          P3C1_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p3c1:ui:smoke
-          PNT_FINAL_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-final:ui:smoke
-          # Restart the application with a synthetic authenticated gateway configuration.
-          kill "$pnt_server_pid"
-          wait "$pnt_server_pid" || true
-          export PNT_DOCUMENT_ACCESS_MODE=trusted-proxy
-          export PNT_DOCUMENT_PROXY_SECRET=synthetic-test-key-not-a-real-secret
-          node node_modules/next/dist/bin/next start --port 3000 > /tmp/covex-p2a-restart.log 2>&1 &
-          pnt_server_pid=$!
-          P2A_VERIFY_RESTART=true P2A_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2a:ui:smoke
-          P2B_VERIFY_ACCESS=true P2B_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2b:ui:smoke
-          P2C_VERIFY_RESTART=true P2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm pnt-p2c:ui:smoke
-      - name: Final quality checks
-        run: |
-          git restore next-env.d.ts
-          pnpm quality
-
-      - name: PNT final browser evidence
+          pattern: ci-results-*
+          path: ci-evidence
+          merge-multiple: true
+      - name: Enforce complete same-SHA coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        env:
+          CLASSIFIED_SHA: ${{ needs.scope.outputs.head_sha }}
+          DOCS_ONLY: ${{ needs.scope.outputs.docs_only }}
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python3 .github/scripts/ci_gate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: pnt-final-browser-captures
-          path: /tmp/pnt-final-captures
-          if-no-files-found: ignore
+          name: qms-final-gate
+          path: gate-result.json
+          if-no-files-found: error
