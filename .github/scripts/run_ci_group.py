@@ -80,8 +80,9 @@ def main():
             start()
             base = "http://127.0.0.1:3000"
             ui_env = {prefix + "_UI_BASE_URL": base for prefix in ["D1B", "D1C", "PHASE3B1", "PHASE3B2", "C3", "R2C", "R3A", "R3B", "R3C", "R4A", "R4B", "R4B_AUDITS", "ANNUAL", "R4C", "P1A", "P1B1", "P1B2", "P2A", "P2B", "P2C", "P3C1", "PNT_FINAL"]}
-            for prefix in ["D1B", "D1C", "PHASE3B1", "PHASE3B2", "PNT_FINAL"]:
+            for prefix in ["D1B", "D1C", "PHASE3B1", "PHASE3B2", "PNT_FINAL", "P3C1"]:
                 ui_env[prefix + "_SCREENSHOT_DIR"] = str(output / (group + "-" + prefix))
+            ui_env["ANNUAL_UI_CAPTURE_DIR"] = str(output / (group + "-ANNUAL"))
             phase = "functional"
             for command in suites["ui"]:
                 run(command, ui_env)

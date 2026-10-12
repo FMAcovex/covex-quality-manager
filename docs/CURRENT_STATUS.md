@@ -17,6 +17,12 @@ Esta consolidación es **solo documental**. No modifica módulos, esquema, códi
 
 ## Registro cronológico anterior (conservar para trazabilidad)
 
+## Fase 3B3 — CI y regresión integral final (2026-10-12)
+
+Base main `09ac7ce` tras #137; rama `feature/phase3b3-ci-final-regression`, única PR #138 abierta sin merge/squash. **Cierre técnico de Fase 3 comprobado**, pendiente de revisión e integración de esta PR: quality (536 tests/91 archivos), cinco grupos PostgreSQL/Chromium aislados —incluidos PNT con reinicio/autorización simulada y R4C— y `QMS final gate` verdes en run 38242113349 / `68ad7db`. El commit documental final también exige verificar nuevamente la CI completa; SHA y evidencia final en Checks/PR y artefacto del gate.
+
+Regresión integral medida 7:31 frente a 14:04 de 3B2, ahora con mayor cobertura; inventario, matriz, comparación equivalente, contratos negativos del gate, benchmarks 3B1/3B2 reutilizados por identidad de código y configuración del check obligatorio en [PHASE_3B3.md](PHASE_3B3.md). Solo CI/instrumentación/documentación, sin cambios funcionales, datos reales, modelos/migraciones, GMP, plantillas ni D1C. No se modifican protecciones del repositorio ni se inicia IT, seguridad o implantación; no validación GMP ni autorización productiva.
+
 ## Fase 3B2 — Dashboard, PNT y metadatos documentales (2026-10-12)
 
 Desde 3B1/main `6745212`, rama `feature/phase3b2-dashboard-pnt-documents`, una única PR para revisión sin squash ni merge. Alertas acotadas/últimos seguimientos/tendencia agregada, filtros y recuentos PNT en PostgreSQL con claves compactas/orden español conservado y metadatos sin binarios en Reclamaciones/Devoluciones. Comparaciones completas con main, cohortes sintéticas hasta 20.000, 2.000 maestros PNT, descargas/hashes históricos, calidad y regresiones QMS/documentales. Alcance, resultados y límites deliberados de orden/paginación en [PHASE_3B2.md](PHASE_3B2.md). Sin datos reales, cambios de modelos/migraciones, reglas GMP ni diseño D1C; CI y evidencias finales en la PR. No se inicia 3B3.
