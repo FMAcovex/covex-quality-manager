@@ -14,18 +14,18 @@ export type PntCandidate = {
 export function pntCandidatesSql(f: PntListingFilters, today: string) {
   const options = normalizedListOptions(f);
   const master: Prisma.Sql[] = [], revision: Prisma.Sql[] = [];
-  if (f.q?.trim()) {
+  if (typeof f.q === "string" && f.q.trim()) {
     const search = "%" + f.q.trim().slice(0, 500) + "%";
     master.push(Prisma.sql`(m."baseCode" ILIKE ${search} OR m.title ILIKE ${search} OR m."departmentNameSnapshot" ILIKE ${search}
       OR EXISTS (SELECT 1 FROM "ControlledDocumentRevision" s WHERE s."documentId" = m.id AND s."sourceReference" ILIKE ${search}))`);
   }
-  if (f.department) master.push(Prisma.sql`m."departmentId" = ${f.department}`);
-  if (f.state && Object.hasOwn(administrativeLabels, f.state)) master.push(Prisma.sql`m."administrativeStatus"::text = ${f.state}`);
+  if (typeof f.department === "string" && f.department) master.push(Prisma.sql`m."departmentId" = ${f.department}`);
+  if (typeof f.state === "string" && f.state && Object.hasOwn(administrativeLabels, f.state)) master.push(Prisma.sql`m."administrativeStatus"::text = ${f.state}`);
   const effective = Prisma.sql`CASE WHEN l."revisionId" IS NOT NULL THEN l."effectiveFrom" ELSE r."effectiveFrom" END`;
   const due = Prisma.sql`CASE WHEN l."revisionId" IS NOT NULL THEN l."reviewDueAt" ELSE r."reviewDueAt" END`;
   const date = new Date(today + "T00:00:00Z");
-  if (f.revision) revision.push(Prisma.sql`r."revisionCode" = ${f.revision}`);
-  if (f.revisionState) revision.push(Prisma.sql`r.status::text = ${f.revisionState}`);
+  if (f.revision) revision.push(typeof f.revision === "string" ? Prisma.sql`r."revisionCode" = ${f.revision}` : Prisma.sql`false`);
+  if (f.revisionState) revision.push(typeof f.revisionState === "string" ? Prisma.sql`r.status::text = ${f.revisionState}` : Prisma.sql`false`);
   if (f.validity === "current") revision.push(Prisma.sql`r.status = 'IN_FORCE' AND ${effective} <= ${date}`);
   if (f.validity === "due") revision.push(Prisma.sql`r.status = 'IN_FORCE' AND ${due} <= ${date}`);
   if (f.validity === "missing") revision.push(Prisma.sql`(${effective} IS NULL OR ${due} IS NULL)`);

@@ -53,6 +53,8 @@ jobs:
       DEFAULT_ACTOR_NAME: Usuario CI
       ALLOW_DEMO_DATA: "true"
       PHASE3B1_SYNTHETIC_DATABASE: "1"
+      PHASE3B2_SYNTHETIC_DATABASE: "1"
+      PHASE3B2_OUTPUT: /tmp/phase3b2-captures
 
     steps:
       - uses: actions/checkout@v4
@@ -78,6 +80,7 @@ jobs:
           # D1B first: fail quickly on dashboard data defects before legacy DB suite.
           pnpm dashboard-d1b:smoke
           pnpm phase3b1:smoke
+          pnpm phase3b2:smoke
           pnpm db:smoke
           pnpm import:smoke
           pnpm indicators:smoke
@@ -129,6 +132,7 @@ jobs:
           D1B_SCREENSHOT_DIR=/tmp/d1b-dashboard-captures D1B_UI_BASE_URL=http://127.0.0.1:3000 pnpm dashboard-d1b:ui:smoke
           D1C_SCREENSHOT_DIR=/tmp/d1c-dashboard-captures D1C_UI_BASE_URL=http://127.0.0.1:3000 pnpm dashboard-d1c:ui:smoke
           PHASE3B1_SCREENSHOT_DIR=/tmp/phase3b1-captures PHASE3B1_UI_BASE_URL=http://127.0.0.1:3000 pnpm phase3b1:ui:smoke
+          PHASE3B2_SCREENSHOT_DIR=/tmp/phase3b2-captures PHASE3B2_UI_BASE_URL=http://127.0.0.1:3000 pnpm phase3b2:ui:smoke
           C3_UI_BASE_URL=http://127.0.0.1:3000 pnpm ux-c3:ui:smoke
           R2C_UI_BASE_URL=http://127.0.0.1:3000 pnpm review-r2c:ui:smoke
 
@@ -162,6 +166,14 @@ jobs:
         with:
           name: phase3b1-list-captures
           path: /tmp/phase3b1-captures
+          if-no-files-found: ignore
+
+      - name: 3B2 responsive and document evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase3b2-dashboard-pnt-documents-captures
+          path: /tmp/phase3b2-captures
           if-no-files-found: ignore
 
   complaints-returns-final:

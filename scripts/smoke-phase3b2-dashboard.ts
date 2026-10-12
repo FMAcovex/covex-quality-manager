@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { prisma } from "../src/lib/db";
 import { getDashboardData } from "../src/modules/dashboard/queries";
 import { getDashboardData as reference } from "./phase3b2-reference/dashboard";
-import { createPhase3b2Fixtures } from "./phase3b2-fixtures";
+import { phase3b2ComparisonFixtures } from "./phase3b2-fixtures";
 import type { DashboardFilters } from "../src/modules/dashboard/domain";
 import { getAlertPreview } from "../src/modules/configuration/admin-queries";
 import { getAlertPreview as referenceAlerts } from "./phase3b2-reference/alerts";
@@ -15,7 +15,7 @@ const normalize = (value: Awaited<ReturnType<typeof reference>>) => {
   return result;
 };
 async function main() {
-  const fixture = await createPhase3b2Fixtures(Number(process.env.PHASE3B2_SIZE) || 1000);
+  const fixture = await phase3b2ComparisonFixtures(Number(process.env.PHASE3B2_SIZE) || 1000);
   let comparisons = 0;
   try {
     const base: DashboardFilters = { module: "ALL", department: "", year: null, state: "ALL", taskView: "all", page: 1, asOf: new Date("2026-10-11T12:00:00Z") };
@@ -39,7 +39,7 @@ async function main() {
       mkdirSync(output, { recursive: true });
       writeFileSync(output + "/dashboard-equivalence.json", JSON.stringify({ reference: "6745212383b1ab8def20dca418ee417115036acc", size: fixture.qmsIds.length, comparisons, asOf: base.asOf, completeResult: true, excludedField: "elapsedMs", snapshotsUnchanged: true }, null, 2));
     }
-    console.log(`3B2 Dashboard: ${comparisons} complete-result comparisons passed, same filters/date/data; frozen snapshots unchanged.`);
+    console.log(`3B2 Dashboard: ${comparisons} complete-result comparisons passed, same filters/date/data; version snapshots unchanged.`);
   } finally { await fixture.cleanup(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());

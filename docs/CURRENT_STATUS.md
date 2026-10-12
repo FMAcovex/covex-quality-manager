@@ -17,6 +17,10 @@ Esta consolidación es **solo documental**. No modifica módulos, esquema, códi
 
 ## Registro cronológico anterior (conservar para trazabilidad)
 
+## Fase 3B2 — Dashboard, PNT y metadatos documentales (2026-10-12)
+
+Desde 3B1/main `6745212`, rama `feature/phase3b2-dashboard-pnt-documents`, una única PR para revisión sin squash ni merge. Alertas acotadas/últimos seguimientos/tendencia agregada, filtros y recuentos PNT en PostgreSQL con claves compactas/orden español conservado y metadatos sin binarios en Reclamaciones/Devoluciones. Comparaciones completas con main, cohortes sintéticas hasta 20.000, 2.000 maestros PNT, descargas/hashes históricos, calidad y regresiones QMS/documentales. Alcance, resultados y límites deliberados de orden/paginación en [PHASE_3B2.md](PHASE_3B2.md). Sin datos reales, cambios de modelos/migraciones, reglas GMP ni diseño D1C; CI y evidencias finales en la PR. No se inicia 3B3.
+
 ## Fase 3B1 — Filtros y paginación SQL (2026-10-12)
 
 Desde D1C/main `aebf0c3`, rama `feature/phase3b1-list-fixes-pagination`, una única PR sin merge. Filtro CAPA previo a paginación, fechas estrictas/ámbitos de próxima revisión de Auditorías y recuentos Review con el cliente transaccional (pool=1). Desviaciones/CAPA/Cambios con páginas SQL de 25, total completo, orden estable/proyecciones de listado y retorno con filtros/página; exportaciones independientes y reglas/datos/GMP conservados. Regresiones PostgreSQL con 1.080 expedientes, Playwright 1440/768/390 y comparación equivalente main/3B1; alcance, resultados, suites adicionales PNT/R4C y operación segura en [PHASE_3B1.md](PHASE_3B1.md). CI final y artefactos en la PR/entrega. Sin Prisma/migraciones, formularios, dashboard ni reorganización general de CI.

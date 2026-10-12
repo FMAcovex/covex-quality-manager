@@ -1,9 +1,10 @@
 import "server-only";
 import assert from "node:assert/strict";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { prisma } from "../src/lib/db";
 import { queryPntListing, PNT_SORTS, type PntListingFilters } from "../src/modules/controlled-documents/listing";
 import { queryPntListing as reference } from "./phase3b2-reference/pnt";
-import { createPhase3b2Fixtures } from "./phase3b2-fixtures";
+import { phase3b2ComparisonFixtures } from "./phase3b2-fixtures";
 
 function visible(result: Awaited<ReturnType<typeof reference>> | Awaited<ReturnType<typeof queryPntListing>>) {
   return { ...result, rows: result.rows.map(({ master, revision }) => ({
@@ -12,10 +13,11 @@ function visible(result: Awaited<ReturnType<typeof reference>> | Awaited<ReturnT
   })) };
 }
 async function main() {
-  const fixture = await createPhase3b2Fixtures(Number(process.env.PHASE3B2_SIZE) || 1000);
+  const fixture = await phase3b2ComparisonFixtures(Number(process.env.PHASE3B2_SIZE) || 1000);
   let comparisons = 0;
   try {
     const base = { q: fixture.prefix };
+    const searchIndex = Array.from({ length: fixture.masterSize }, (_, i) => i).filter(i => i % 11 !== 0).at(-1)!;
     const filters: PntListingFilters[] = [];
     for (const view of ["all", "latest"]) for (const sort of PNT_SORTS) for (const direction of ["asc", "desc"])
       filters.push({ ...base, view, sort, direction });
@@ -29,8 +31,14 @@ async function main() {
       { ...base, view: "latest", revision: "00", revisionState: "IN_FORCE" },
       { ...base, effectiveFromStart: "2025-01-01", effectiveFromEnd: "2026-01-01", reviewDueStart: "2026-10-10", reviewDueEnd: "2026-11-10" },
       { ...base, effectiveFromStart: "2026-02-30" }, { ...base, reviewDueStart: "2027-01-01", reviewDueEnd: "2020-01-01" },
-      { q: fixture.prefix + "-source-" + (fixture.masterSize - 1) }, { ...base, revision: "invalid" },
+      { q: fixture.prefix + "-source-" + searchIndex }, { ...base, revision: "invalid" },
       { q: "Árbol" }, { q: "%" }, { q: "_" }, { ...base, sort: "bad", direction: "bad", view: "bad", quick: "bad" },
+    );
+    // Next searchParams can contain arrays for repeated scalar parameters; retain the previous behavior.
+    filters.push(
+      { q: [fixture.prefix, "repeated"] } as unknown as PntListingFilters,
+      { ...base, department: fixture.departments, state: ["ACTIVE", "DRAFT"] } as unknown as PntListingFilters,
+      { ...base, revision: ["00", "01"], revisionState: ["IN_FORCE", "DRAFT"] } as unknown as PntListingFilters,
     );
     for (const filter of filters) {
       const old = await reference(filter, false);
@@ -49,8 +57,13 @@ async function main() {
     assert.equal(first.rowCount, exported.rowCount);
     assert.equal(last.rowCount, exported.rowCount);
     assert(first.rows.some(row => row.revision === null), "Master without revisions stays visible");
+    assert((await queryPntListing({ q: fixture.prefix + "-source-" + searchIndex })).rows.length > 0, "Search beyond the first page targets a real revision source");
     assert((await queryPntListing({ ...base, quick: "overdue" }, false)).rows.every(row => row.revision?.status === "IN_FORCE"));
     assert((await queryPntListing({ ...base, view: "latest", quick: "overdue" }, false)).rows.length < (await queryPntListing({ ...base, quick: "overdue" }, false)).rows.length, "Latest draft does not become in-force");
+    if (process.env.PHASE3B2_OUTPUT) {
+      mkdirSync(process.env.PHASE3B2_OUTPUT, { recursive: true });
+      writeFileSync(process.env.PHASE3B2_OUTPUT + "/pnt-equivalence.json", JSON.stringify({ reference: "6745212383b1ab8def20dca418ee417115036acc", comparisons, masters: fixture.masterSize, exportRows: exported.rows.length, sorts: PNT_SORTS, directions: ["asc", "desc"], views: ["all", "latest"], lifecycleNullsPreserved: true, pagesAndCountsEquivalent: true }, null, 2));
+    }
     console.log(`3B2 PNT: ${comparisons} comparisons passed; all eight sorts, both directions/views, date/null lifecycle, filters, counts, full export and first/middle/last pages.`);
   } finally { await fixture.cleanup(); }
 }

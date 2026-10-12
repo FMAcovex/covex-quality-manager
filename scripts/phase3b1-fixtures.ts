@@ -8,7 +8,8 @@ export function assertSyntheticDatabase() {
   const githubService = process.env.GITHUB_ACTIONS === "true" && process.env.CI === "true" && database === "covex_quality";
   assert.equal(process.env.APP_ENV, "test", "APP_ENV=test obligatorio");
   assert.equal(process.env.PHASE3B1_SYNTHETIC_DATABASE, "1", "Confirmar PostgreSQL sintético aislado con PHASE3B1_SYNTHETIC_DATABASE=1");
-  assert(database.startsWith("covex_phase3b1_") || githubService, "Nunca ejecutar sobre la base habitual: usar covex_phase3b1_* o el servicio desechable de GitHub Actions");
+  const phase3b2Database = database.startsWith("covex_phase3b2_") && process.env.PHASE3B2_SYNTHETIC_DATABASE === "1";
+  assert(database.startsWith("covex_phase3b1_") || phase3b2Database || githubService, "Nunca ejecutar sobre la base habitual: usar una base 3B1/3B2 explícitamente sintética o el servicio desechable de GitHub Actions");
   console.log(JSON.stringify({ phase3b1Isolation: { database, host: url.hostname, githubDisposableService: githubService } }));
 }
 

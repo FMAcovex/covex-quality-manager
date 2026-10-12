@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID, createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../src/lib/db";
 
@@ -17,7 +18,19 @@ async function insert<T>(rows: T[], create: (batch: T[]) => Promise<unknown>) {
   for (let i = 0; i < rows.length; i += 400) await create(rows.slice(i, i + 400));
 }
 
-export async function createPhase3b2Fixtures(size = 1000) {
+export async function phase3b2ComparisonFixtures(size = 1000) {
+  const path = process.env.PHASE3B2_EXISTING_FIXTURE;
+  if (!path) return createPhase3b2Fixtures(size);
+  assertPhase3b2Database();
+  const fixture = JSON.parse(readFileSync(path, "utf8")) as { prefix: string; departments: string[]; masters: number; size: number };
+  assert.match(fixture.prefix, /^P3B2-[0-9a-f]{8}$/);
+  const qmsIds = (await prisma.qmsRecord.findMany({ where: { businessCode: { startsWith: fixture.prefix + "-" } }, select: { id: true } })).map(row => row.id);
+  assert.equal(qmsIds.length, fixture.size);
+  assert.equal(fixture.departments.length, 2);
+  return { prefix: fixture.prefix, departments: fixture.departments, qmsIds, masterSize: fixture.masters, cleanup: async () => {} };
+}
+
+export async function createPhase3b2Fixtures(size = 1000, freezeHistory = false, documentarySnapshots = false) {
   assertPhase3b2Database();
   const prefix = "P3B2-" + randomUUID().slice(0, 8);
   const departments = [randomUUID(), randomUUID()];
@@ -33,7 +46,10 @@ export async function createPhase3b2Fixtures(size = 1000) {
   const ccf: Prisma.ChangeControlFollowupCreateManyInput[] = [], rf: Prisma.ComplaintFollowupCreateManyInput[] = [];
   const rtf: Prisma.ReturnFollowupCreateManyInput[] = [], af: Prisma.AuditFollowupCreateManyInput[] = [];
   const ad: Prisma.AuditDepartmentCreateManyInput[] = [];
-  await prisma.department.createMany({ data: departments.map((id, i) => ({ id, code: prefix + "-" + i, name: "Ficticio " + i })) });
+  const occupiedCodes = new Set((await prisma.department.findMany({ where: { code: { startsWith: "ZZ-" } }, select: { code: true } })).map(row => row.code));
+  const departmentCodes = Array.from({ length: 100 }, (_, i) => "ZZ-" + String(i).padStart(2, "0")).filter(code => !occupiedCodes.has(code)).slice(0, 2);
+  assert.equal(departmentCodes.length, 2, "Two unused synthetic PNT departments required");
+  await prisma.department.createMany({ data: departments.map((id, i) => ({ id, code: departmentCodes[i], name: prefix + " Ficticio " + i })) });
   const rules = [
     ["CAPA_FOLLOWUP_DUE", "CAPA", "FOLLOWUP_DUE"], ["CAPA_EFFECTIVENESS_PENDING", "CAPA", "EFFECTIVENESS_PENDING"],
     ["CHANGE_FOLLOWUP_DUE", "CHANGE_CONTROL", "FOLLOWUP_DUE"], ["CHANGE_PLANNED_EXECUTION_DUE", "CHANGE_CONTROL", "PLANNED_EXECUTION_DUE"],
@@ -61,7 +77,13 @@ export async function createPhase3b2Fixtures(size = 1000) {
       aud.push({ id, qmsRecordId, status, auditType: "INTERNAL", scenario: "INTERNAL_COVEX", title: prefix, plannedDate: date });
       for (const departmentId of departments) ad.push({ auditId: id, departmentId, departmentCodeSnapshot: prefix, departmentNameSnapshot: "Sintético", isActive: departmentId === departments[0] || i % 3 !== 0 });
     }
-    for (let v = 0; v < 3; v++) versions.push({ id: randomUUID(), qmsRecordId, sequenceNumber: v, kind: v ? "FOLLOWUP" : "INITIAL", snapshot: { fictitious: prefix, payload: "X".repeat(2048), sequence: v } });
+    for (let v = 0; v < 3; v++) {
+      const snapshotKey = ["deviation", "capa", "changeControl", "complaint", "returnRecord", "audit"][m];
+      const snapshot: Prisma.InputJsonObject = { fictitious: prefix, payload: "X".repeat(2048), sequence: v };
+      if (documentarySnapshots) Object.assign(snapshot, { recordType: kinds[m], businessCode: prefix + "-" + kinds[m] + "-" + i, year,
+        [snapshotKey]: { status, finalStatus: status, openedAt: date.toISOString(), communicationDate: date.toISOString(), versionFollowupDate: new Date("2026-10-01").toISOString(), nextFollowupDate: due?.toISOString() ?? null, followups: [], products: [], capaPlans: [], derivedActions: [] } });
+      versions.push({ id: randomUUID(), qmsRecordId, sequenceNumber: v, kind: v ? "FOLLOWUP" : "INITIAL", frozenAt: freezeHistory && v < 2 ? new Date("2026-01-01") : null, snapshot });
+    }
     for (let f = 0; f < 5; f++) {
       const followupDate = new Date(Date.UTC(2026, 9, 1 + f));
       const nextFollowupDate = f === 4 ? due : new Date("2020-01-01");
@@ -103,8 +125,8 @@ export async function createPhase3b2Fixtures(size = 1000) {
   const masterSize = Math.max(90, Math.floor(size / 10));
   for (let i = 0; i < masterSize; i++) {
     const id = randomUUID(); docIds.push(id);
-    masters.push({ id, baseCode: prefix + "/" + i, title: ["Árbol 2", "arbol 10", "Ñandú", "Nandu", "Texto"][i % 5] + " " + i,
-      departmentId: departments[i % 2], departmentCodeSnapshot: i % 2 ? "GC-10" : "GC-2", departmentNameSnapshot: "Ficticio",
+    masters.push({ id, baseCode: departmentCodes[i % 2] + "/" + String(Math.floor(i / 2)).padStart(3, "0"), title: prefix + " " + ["Árbol 2", "arbol 10", "Ñandú", "Nandu", "Texto"][i % 5] + " " + i,
+      departmentId: departments[i % 2], departmentCodeSnapshot: departmentCodes[i % 2], departmentNameSnapshot: "Ficticio",
       administrativeStatus: i % 9 === 0 ? "ANNULLED" : i % 7 === 0 ? "DRAFT" : "ACTIVE", createdByText: actor, sourceMetadata: { fictitious: prefix, payload: "M".repeat(2048) } });
     const count = i % 11 === 0 ? 0 : i % 13 === 0 ? 1 : 3;
     for (let v = 0; v < count; v++) {

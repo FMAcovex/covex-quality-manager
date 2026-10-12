@@ -1,6 +1,7 @@
 import "server-only";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient({ log: [{ emit: "event", level: "query" }] });
@@ -29,7 +30,7 @@ async function main() {
   const templateDownload = await import("../src/app/api/settings/templates/[id]/download/route");
   const { serializeReturnVersion, serializeComplaintVersion } = await import("../src/lib/qms/versioning");
   
-  const fixture = await createPhase3b2Fixtures(100);
+  const fixture = await createPhase3b2Fixtures(100, true, true);
   let downloads = 0;
   const request = new Request("http://127.0.0.1/synthetic-download");
   async function verify(response: Response) {
@@ -49,6 +50,8 @@ async function main() {
     const complaint = await complaints.getComplaintDetail(complaintId);
     const returned = await returns.getReturnDetail(returnId);
     assert(complaint && returned);
+    assert.equal(complaint.qmsRecord.versions.filter(version => version.frozenAt).length, 2);
+    assert.equal(returned.qmsRecord.versions.filter(version => version.frozenAt).length, 2);
     assert(!hasBinary(complaint) && !hasBinary(returned));
     assert(!sql.some(query => query.includes('"fileData"')), "Opening a detail must not select any fileData column");
     assert.deepEqual(complaint, withoutBinary(oldComplaint));
@@ -72,6 +75,10 @@ async function main() {
     for (const document of await prisma.recordVersionDocument.findMany({ where: { id: { in: fixture.binaryIds } } })) {
       assert.deepEqual(document.fileData, new Uint8Array(fixture.bytes));
       assert.equal(document.checksum, fixture.checksum);
+    }
+    if (process.env.PHASE3B2_OUTPUT) {
+      mkdirSync(process.env.PHASE3B2_OUTPUT, { recursive: true });
+      writeFileSync(process.env.PHASE3B2_OUTPUT + "/document-integrity.json", JSON.stringify({ downloads, binarySize: fixture.bytes.length, sha256: fixture.checksum, metadataSqlWithoutBinary: true, metadataEquivalent: true, historicalVersionsFrozen: 2, snapshotsAndBytesUnchanged: true, ownershipChecksPreserved: true }, null, 2));
     }
     console.log(`3B2 documents: no binary SQL in detail/lookups; complete metadata/snapshot equivalence; ${downloads} downloads byte-for-byte/SHA-256 identical; historical ownership and invalid selections preserved.`);
   } finally { await fixture.cleanup(); }
