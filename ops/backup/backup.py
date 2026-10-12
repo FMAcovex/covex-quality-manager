@@ -21,6 +21,11 @@ import tarfile
 import tempfile
 import uuid
 
+try:
+    from storage import StorageUnavailable, destination
+except ModuleNotFoundError:
+    from ops.backup.storage import StorageUnavailable, destination
+
 
 class Refused(Exception):
     pass
@@ -218,11 +223,14 @@ def verify(bundle, value):
 
 
 def backup(value):
+    with destination(value) as (output, descriptor, check):
+        return backup_at_destination(value, output, descriptor, check)
+
+
+def backup_at_destination(value, output, descriptor, check):
     source = value["source"]
     pg_version(source)
-    output = Path(value["backup_directory"])
-    output.mkdir(parents=True, exist_ok=True, mode=0o700)
-    require(not output.is_symlink() and not output.stat().st_mode & 0o077, "backup-directory-must-be-private")
+    check()
     identifier = "covex-" + dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex
     with tempfile.TemporaryDirectory(prefix="covex-plain-", dir=value["temporary_directory"]) as scratch, tempfile.TemporaryDirectory(prefix=".pending-", dir=output) as staging:
         scratch, staging = Path(scratch), Path(staging)
@@ -247,7 +255,15 @@ def backup(value):
         (staging / "manifest.mac").write_text(signature(manifest, value) + "\n")
         os.chmod(staging / "manifest.mac", 0o600)
         verify(staging, value)
-        os.rename(staging, output / identifier)
+        check()
+        os.rename(staging.name, identifier, src_dir_fd=descriptor, dst_dir_fd=descriptor)
+        try:
+            os.fsync(descriptor)
+            check()
+        except Exception:
+            # Remove only the unpublished success candidate on the pinned volume.
+            shutil.rmtree(output / identifier)
+            raise
     return {"status": "success", "operation": "backup", "bundle": identifier, "release_sha": value["release_sha"], "external_references_without_custody": contents["external_references_without_custody"]}
 
 
@@ -310,7 +326,11 @@ def restore(value, bundle, name, confirmation, assets_destination):
 
 def prune(value, keep, days, confirmation):
     require(confirmation == "approved-local-retention" and keep >= 2 and days > 0, "retention-approval-required")
-    root = Path(value["backup_directory"])
+    with destination(value) as (root, _, check):
+        return prune_at_destination(value, keep, days, root, check)
+
+
+def prune_at_destination(value, keep, days, root, check):
     # Authenticated bundles only; unknown/pending files are never deleted.
     bundles = []
     for path in root.glob("covex-*"):
@@ -322,7 +342,9 @@ def prune(value, keep, days, confirmation):
     threshold = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days)
     for created, path in bundles[keep:]:
         if created < threshold:
+            check()
             shutil.rmtree(path)
+    check()
     return {"status": "success", "operation": "prune", "scope": "local-only"}
 
 
@@ -353,7 +375,7 @@ def main():
             require(args.keep is not None and args.older_than_days is not None, "retention-policy-required")
             result = prune(value, args.keep, args.older_than_days, args.confirm)
     except Exception as error:
-        result = {"status": "failure", "operation": args.operation, "reason": str(error) if isinstance(error, Refused) else "operation-failed-review-privately", "access": "quarantined"}
+        result = {"status": "failure", "operation": args.operation, "reason": str(error) if isinstance(error, (Refused, StorageUnavailable)) else "operation-failed-review-privately", "access": "quarantined"}
     if value and value.get("status_directory"):
         directory = Path(value["status_directory"])
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)

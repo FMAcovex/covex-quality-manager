@@ -71,11 +71,12 @@ class Deployment(unittest.TestCase):
 
     def test_monitor_failure_is_red_without_sensitive_output(self):
         with tempfile.TemporaryDirectory() as temporary:
-            result = subprocess.run(["python3", str(ROOT / "ops/monitor.py"), "--health-url", "http://127.0.0.1:1/api/health", "--backup-status", str(Path(temporary) / "absent"), "--max-backup-age-seconds", "3600", "--disk", temporary, "--min-free-bytes", "1"], capture_output=True, text=True)
+            result = subprocess.run(["python3", str(ROOT / "ops/monitor.py"), "--health-url", "http://127.0.0.1:1/api/health", "--backup-status", str(Path(temporary) / "absent"), "--backup-config", str(Path(temporary) / "absent-config"), "--max-backup-age-seconds", "3600", "--disk", temporary, "--min-free-bytes", "1"], capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
             value = json.loads(result.stdout)
             self.assertFalse(value["checks"]["application_database"])
             self.assertFalse(value["checks"]["backup_recent_success"])
+            self.assertFalse(value["checks"]["backup_storage_available"])
             self.assertTrue(value["checks"]["disk_capacity"])
             self.assertNotIn(temporary, result.stdout)
             self.assertNotIn("127.0.0.1", result.stdout)

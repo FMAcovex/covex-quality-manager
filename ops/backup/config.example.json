@@ -7,6 +7,14 @@
   "application_root": "/opt/covex/current",
   "assets": [{"label": "templates", "path": "/opt/covex/assets/templates"}],
   "backup_directory": "/mnt/approved-offsite/covex",
+  "backup_storage": {
+    "mode": "mounted-filesystem",
+    "root": "/mnt/approved-offsite",
+    "source": "PENDING-IT-APPROVED-SOURCE",
+    "filesystem_type": "PENDING-IT-FILESYSTEM-TYPE",
+    "mount_root": "PENDING-IT-MOUNT-ROOT",
+    "marker_sha256": "PENDING-IT-INDEPENDENTLY-RECORDED-SHA256"
+  },
   "temporary_directory": "/run/covex-backup",
   "encryption_key": "/etc/covex/backup-encryption.key",
   "manifest_key": "/etc/covex/backup-manifest.key",

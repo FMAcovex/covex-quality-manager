@@ -7,10 +7,12 @@ from pathlib import Path
 import shutil
 import subprocess
 import urllib.request
+from backup.storage import inspect
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--health-url", default="http://127.0.0.1:3000/api/health")
 parser.add_argument("--backup-status", required=True)
+parser.add_argument("--backup-config", required=True)
 parser.add_argument("--max-backup-age-seconds", type=int, required=True)
 parser.add_argument("--disk", required=True)
 parser.add_argument("--min-free-bytes", type=int, required=True)
@@ -19,6 +21,11 @@ parser.add_argument("--min-cert-seconds", type=int, default=2592000)
 parser.add_argument("--service", action="append", default=[])
 args = parser.parse_args()
 checks = {}
+try:
+    inspect(json.loads(Path(args.backup_config).read_text()))
+    checks["backup_storage_available"] = True
+except Exception:
+    checks["backup_storage_available"] = False
 for service in args.service:
     checks["supervised_service_" + service] = subprocess.run(["systemctl", "is-active", "--quiet", service], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
 try:

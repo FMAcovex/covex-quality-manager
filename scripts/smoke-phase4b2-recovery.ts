@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
@@ -114,15 +114,31 @@ async function main() {
       for (const tool of ["psql", "pg_dump", "pg_restore"]) { const file = join(bins, tool); writeFileSync(file, "#!/usr/bin/env node\n" + adapter, { mode: 0o700 }); chmodSync(file, 0o700); }
     }
     const pgEnv = { ...env, PATH: bins + ":" + process.env.PATH };
-    const cfg = { environment: "test", approval_reference: "SYNTHETIC-4B2", release_sha: command("git", ["rev-parse", "HEAD"]), assets_consistency: "immutable-release", external_reference_policy: "references-only-accepted", application_root: root, assets: [{ label: "templates", path: assetRoot }], backup_directory: join(root, "backups"), temporary_directory: join(root, "plain"), encryption_key: join(root, keys[0]), manifest_key: join(root, keys[1]), status_directory: join(root, "status"), approved_recovery_hosts: [base.hostname], source: { host: base.hostname, port: Number(base.port || 5432), database: sourceName, user: role, passfile, sslmode: "disable" }, recovery: { host: base.hostname, port: Number(base.port || 5432), database: "postgres", user: decodeURIComponent(base.username), passfile, sslmode: "disable" } };
+    // Explicitly enroll disposable storage; production cannot use this test mode.
+    const storageRoot = join(root, "storage"), marker = randomBytes(64);
+    mkdirSync(storageRoot, { mode: 0o700 }); mkdirSync(join(storageRoot, "backups"), { mode: 0o700 });
+    writeFileSync(join(storageRoot, ".covex-backup-storage"), marker, { mode: 0o600 });
+    const storageInfo = statSync(storageRoot);
+    const cfg = { environment: "test", approval_reference: "SYNTHETIC-4B2", release_sha: command("git", ["rev-parse", "HEAD"]), assets_consistency: "immutable-release", external_reference_policy: "references-only-accepted", application_root: root, assets: [{ label: "templates", path: assetRoot }], backup_directory: join(storageRoot, "backups"), backup_storage: { mode: "test-directory-identity", root: storageRoot, device: storageInfo.dev, inode: storageInfo.ino, marker_sha256: sha256(marker) }, temporary_directory: join(root, "plain"), encryption_key: join(root, keys[0]), manifest_key: join(root, keys[1]), status_directory: join(root, "status"), approved_recovery_hosts: [base.hostname], source: { host: base.hostname, port: Number(base.port || 5432), database: sourceName, user: role, passfile, sslmode: "disable" }, recovery: { host: base.hostname, port: Number(base.port || 5432), database: "postgres", user: decodeURIComponent(base.username), passfile, sslmode: "disable" } };
     const configFile = join(root, "config.json"); writeFileSync(configFile, JSON.stringify(cfg), { mode: 0o600 });
     const args = (operation: string, ...extra: string[]) => ["ops/backup/backup.py", operation, "--config", configFile, ...extra];
+    function refused(extra: string[]) { const result = spawnSync("python3", extra, { env: pgEnv, encoding: "utf8", timeout: 120000 }); assert.notEqual(result.status, 0); assert.equal(JSON.parse(result.stdout.trim()).status, "failure"); }
+    renameSync(storageRoot, storageRoot + "-absent");
+    refused(args("backup")); assert(!readdirSync(root).includes("storage"), "El almacenamiento ausente no se recrea");
+    renameSync(storageRoot + "-absent", storageRoot);
+    writeFileSync(join(storageRoot, ".covex-backup-storage"), "substituted"); refused(args("backup"));
+    assert.equal(readdirSync(cfg.backup_directory).length, 0, "El almacenamiento sustituido no recibe copias");
+    writeFileSync(join(storageRoot, ".covex-backup-storage"), marker);
+    const enrolled = cfg.backup_storage;
+    Object.assign(cfg, { backup_storage: { mode: "mounted-filesystem", root: storageRoot, source: "synthetic", filesystem_type: "tmpfs", mount_root: "/", marker_sha256: sha256(marker) } });
+    writeFileSync(configFile, JSON.stringify(cfg)); refused(args("backup"));
+    assert.equal(JSON.parse(readFileSync(join(cfg.status_directory, "backup.json"), "utf8")).status, "failure", "El directorio sin montaje no registra éxito");
+    cfg.backup_storage = enrolled; writeFileSync(configFile, JSON.stringify(cfg));
     command("python3", args("backup"), pgEnv);
     const bundle = join(cfg.backup_directory, readdirSync(cfg.backup_directory).find(n => n.startsWith("covex-"))!);
     const manifest = JSON.parse(readFileSync(join(bundle, "manifest.json"), "utf8"));
     assert.equal(manifest.database.external_references_without_custody, 1, "Una URL sigue sin ser un binario conservado");
     command("python3", args("verify", "--bundle", bundle), pgEnv);
-    function refused(extra: string[]) { const result = spawnSync("python3", extra, { env: pgEnv, encoding: "utf8", timeout: 120000 }); assert.notEqual(result.status, 0); assert.equal(JSON.parse(result.stdout.trim()).status, "failure"); }
     refused(args("restore", "--bundle", bundle, "--target", "covex_quality", "--confirm", "covex_quality", "--assets-out", join(root, "unsafe")));
     const changed = join(root, "changed"); cpSync(bundle, changed, { recursive: true });
     writeFileSync(join(changed, "database.dump.enc"), Buffer.from("altered"));
@@ -136,9 +152,11 @@ async function main() {
     // The source is unavailable: recovery relies only on artifact, keys and recovery server.
     cfg.source.port = 1; writeFileSync(configFile, JSON.stringify(cfg), { mode: 0o600 });
     refused(args("backup"));
+    const recoveryBundle = join(root, "offline-recovery-bundle"); cpSync(bundle, recoveryBundle, { recursive: true });
+    renameSync(storageRoot, storageRoot + "-disconnected");
     databases.push(targetName);
-    command("python3", args("restore", "--bundle", bundle, "--target", targetName, "--confirm", targetName, "--assets-out", join(root, "restored-assets")), pgEnv);
-    refused(args("restore", "--bundle", bundle, "--target", targetName, "--confirm", targetName, "--assets-out", join(root, "repeat")));
+    command("python3", args("restore", "--bundle", recoveryBundle, "--target", targetName, "--confirm", targetName, "--assets-out", join(root, "restored-assets")), pgEnv);
+    refused(args("restore", "--bundle", recoveryBundle, "--target", targetName, "--confirm", targetName, "--assets-out", join(root, "repeat")));
     const restoredUrl = new URL(base); restoredUrl.pathname = "/" + targetName;
     restored = new PrismaClient({ datasourceUrl: restoredUrl.href });
     assert.deepEqual((await restored.qmsRecord.findMany({ orderBy: { id: "asc" }, select: { id: true } })).map(r => r.id), records.map(r => r.id), "UUID sin expedientes duplicados");
@@ -169,7 +187,7 @@ async function main() {
     command("node", [resolve("ops/runtime/health.mjs"), env.AUTH_ORIGIN + "/api/health"]);
     await stop(app); app = undefined;
     await assert.rejects(fetch(env.AUTH_ORIGIN + "/api/health"), "Parada efectiva del servicio aislado");
-    console.log("4B2 recovery OK: PostgreSQL16 consistent encrypted backup; all tables/schema, seven modules, relationships, frozen versions/history, five binary families and external files; tamper/unsafe target/existing target/failure rejected; unavailable source recovery; session revocation, fresh OIDC/global read and access revocation; standalone health/start/stop. Synthetic only, pending corporate IT/QA acceptance.");
+    console.log("4B2 recovery OK: absent/unmounted/substituted storage refused without creating backups; enrolled test storage positive; PostgreSQL16 consistent encrypted backup; all tables/schema, seven modules, relationships, frozen versions/history, five binary families and external files; tamper/unsafe target/existing target/failure rejected; unavailable source and backup storage recovery; session revocation, fresh OIDC/global read and access revocation; standalone health/start/stop. Synthetic only, pending corporate IT/QA acceptance.");
   } finally {
     await stop(app); await stop(provider); await restored?.$disconnect(); await source.$disconnect();
     for (const database of databases.reverse()) {
