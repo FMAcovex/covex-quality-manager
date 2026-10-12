@@ -1,3 +1,4 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { QmsRecordType, QmsRelationType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
@@ -20,7 +21,7 @@ function normalized(value: string) {
     .toLocaleLowerCase("es");
 }
 
-export async function GET(request: Request) {
+async function GETAuthenticatedContent(request: Request) {
   const url = new URL(request.url);
   const currentRecordId = url.searchParams.get("currentRecordId")?.trim() || "";
   const currentType = asRecordType(url.searchParams.get("currentType"));
@@ -154,4 +155,8 @@ export async function GET(request: Request) {
     }));
 
   return NextResponse.json({ suggestions });
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/qms/relation-suggestions/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

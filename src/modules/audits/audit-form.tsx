@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
@@ -41,7 +43,7 @@ export function AuditForm({ id, defaults, departments, plans=[], returnTo }: { i
   const error = (key: string) => state.fieldErrors?.[key] ? <small className="audit-field-error" role="alert">{state.fieldErrors[key]}</small> : null;
   const text = (name: keyof AuditInput, label: string, long = false) => <label className={`field ${long ? "full" : ""}`} data-field={name} key={name}><span>{label}</span>{long ? <textarea name={name} rows={3} value={values[name] ?? ""} onChange={e => setValues(v => ({...v, [name]:e.target.value}))} aria-invalid={Boolean(state.fieldErrors?.[name])}/> : <input name={name} value={values[name] ?? ""} onChange={e => setValues(v => ({...v, [name]:e.target.value}))} aria-invalid={Boolean(state.fieldErrors?.[name])}/>}{error(name)}</label>;
   const changeDepartments = (ids: string[]) => { setSelected(ids); if (!locked && ids.length === 1 && type === "INTERNAL") setCoding(ids[0]); };
-  return <form key={state.formRevision ?? 0} action={action} ref={form} className="audit-form">
+  return <form key={state.formRevision ?? 0} action={action} ref={form} className="audit-form"><CsrfField />
     {state.error ? <div className="form-errors" tabIndex={-1} role="alert"><strong>{state.error}</strong><ul>{Object.entries(state.fieldErrors ?? {}).map(([key,value]) => <li key={key}>{value}</li>)}</ul></div> : null}
     <input type="hidden" name="expectedUpdatedAt" value={defaults?.expectedUpdatedAt ?? ""}/>
     <section className="card"><h2>Identificación</h2><div className="form-grid">

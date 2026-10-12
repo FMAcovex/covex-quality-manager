@@ -1,3 +1,6 @@
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
@@ -55,7 +58,7 @@ function complaintFollowupLabel(sequenceNumber: number) {
     : `${versionLabel(sequenceNumber)} · Seguimiento`;
 }
 
-export default async function ComplaintDetailPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string;returnTo?:string}>}){
+async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string;returnTo?:string}>}){
  const {id}=await params;const {tab:raw,review,thread, returnTo}=await searchParams;const tab=tabs.some(([k])=>k===raw)?raw!:"summary";
  const r=await getComplaintDetail(id);if(!r)notFound();
  const situation=complaintOperationalSituation(r);
@@ -229,7 +232,7 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
   </div>:null}
 
   {tab==="relations"?(r.status==="DRAFT"?<div className="empty-panel">Las relaciones operativas estarán disponibles cuando la reclamación pase a estado Abierta.</div>:<div className="card"><div className="section-title-row"><div><h2>Relaciones QMS</h2><p className="section-help">Una reclamación puede generar CAPA y devoluciones. La relación canónica se conserva sin duplicar relaciones inversas.</p></div><div className="heading-actions"><Link className="button small" href={`/capa/new?fromComplaintId=${id}`}>Crear CAPA</Link><Link className="button small" href={`/returns/new?fromComplaintId=${id}`}>Crear devolución</Link></div></div>
-   {derived.length?<div className="relation-list">{derived.map(x=><div className="relation-card" key={x.id}><span>{x.recordType==="CAPA"?"CAPA derivada":"Devolución derivada"}</span><Link href={qmsRecordHref(x.recordType,x.id)}><strong>{qmsRecordDisplayCode(x,qmsRecordTypeLabel(x.recordType))}{!x.isActive?" · Anulado":""}</strong></Link><small>{qmsRecordTypeLabel(x.recordType)}</small><form action={unlinkComplaintRelationAction.bind(null,id,x.id)}><input type="hidden" name="actor" value={r.createdByText??process.env.DEFAULT_ACTOR_NAME??"Usuario demo"}/><button className="button danger small" type="submit">Desvincular</button></form></div>)}</div>:<div className="empty-panel">Todavía no hay CAPA ni devoluciones vinculadas.</div>}
+   {derived.length?<div className="relation-list">{derived.map(x=><div className="relation-card" key={x.id}><span>{x.recordType==="CAPA"?"CAPA derivada":"Devolución derivada"}</span><Link href={qmsRecordHref(x.recordType,x.id)}><strong>{qmsRecordDisplayCode(x,qmsRecordTypeLabel(x.recordType))}{!x.isActive?" · Anulado":""}</strong></Link><small>{qmsRecordTypeLabel(x.recordType)}</small><form action={unlinkComplaintRelationAction.bind(null,id,x.id)}><CsrfField /><input type="hidden" name="actor" value={r.createdByText??process.env.DEFAULT_ACTOR_NAME??"Usuario demo"}/><button className="button danger small" type="submit">Desvincular</button></form></div>)}</div>:<div className="empty-panel">Todavía no hay CAPA ni devoluciones vinculadas.</div>}
    <OperationalRelationForm action={addComplaintRelationAction.bind(null,id)} title="Vincular expediente existente" codeLabel="Codificación" buttonLabel="Vincular expediente" defaultActor={process.env.DEFAULT_ACTOR_NAME||"Usuario demo"} targetOptions={[{value:"CAPA",label:"CAPA"},{value:"RETURN",label:"Devolución"}]} currentRecordId={r.qmsRecord.id} currentRecordType="COMPLAINT"/>
   </div>):null}
 
@@ -257,4 +260,8 @@ export default async function ComplaintDetailPage({params,searchParams}:{params:
  </section>
  <ReviewDrawer/>
  </ReviewWorkspaceProvider>;
+}
+
+export default async function ComplaintDetailPage(...args: Parameters<typeof ComplaintDetailPageAuthenticatedContent>) {
+  return authorizedPage("src/app/complaints/[id]/page.tsx", () => ComplaintDetailPageAuthenticatedContent(...args));
 }

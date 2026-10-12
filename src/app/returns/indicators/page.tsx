@@ -1,9 +1,10 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { CapaDistributionCard,CapaKpiCard } from "@/modules/capa/analytics/components";
 import { getReturnAnalytics } from "@/modules/returns/analytics/queries";
 export const dynamic="force-dynamic";
 const p=(v:string|string[]|undefined)=>Array.isArray(v)?v[0]:v;
-export default async function ReturnIndicatorsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+async function ReturnIndicatorsPageAuthenticatedContent({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  const q=await searchParams,f={year:p(q.year),department:p(q.department),type:p(q.type),decision:p(q.decision),status:p(q.status)};const d=await getReturnAnalytics(f),m=d.current;
  return <section className="workspace analytics-workspace"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Devoluciones · Indicadores</h1><p>Volumen, decisión, tiempos, origen y tendencia desde los expedientes.</p></div><div className="heading-actions"><Link className="button" href="/returns">Ver expedientes</Link></div></div>
  <div className="tabs"><Link className="tab muted" href="/returns">Expedientes</Link><Link className="tab active" href="/returns/indicators">Indicadores</Link></div>
@@ -13,4 +14,8 @@ export default async function ReturnIndicatorsPage({searchParams}:{searchParams:
  <div className="analytics-grid"><CapaDistributionCard title="Tipo de devolución" items={m.types}/><CapaDistributionCard title="Decisión" items={m.decisions}/><CapaDistributionCard title="Área" items={m.departments}/><CapaDistributionCard title="Tipo de producto" items={m.productTypes}/></div>
  <section className="trend-section"><div className="trend-section-heading"><div><p className="eyebrow">Tendencia</p><h2>Últimos 5 años hasta {d.selectedYear}</h2></div></div><article className="chart-card wide-chart"><div className="analytics-table-wrap"><table className="analytics-table"><thead><tr><th>Año</th><th>Total</th><th>Abiertas</th><th>Aceptadas</th><th>Rechazadas</th><th>Pendientes</th><th>Mediana cierre</th></tr></thead><tbody>{d.trend.map(x=><tr key={x.year} className={!x.dataAvailable?"analytics-no-data":undefined}><td><strong>{x.year}</strong></td>{x.dataAvailable?<><td>{x.total}</td><td>{x.open}</td><td>{x.accepted}</td><td>{x.rejected}</td><td>{x.pending}</td><td>{x.medianClosure===null?"—":`${x.medianClosure} d`}</td></>:<td colSpan={6}>Sin datos cargados</td>}</tr>)}</tbody></table></div></article></section>
  </section>;
+}
+
+export default async function ReturnIndicatorsPage(...args: Parameters<typeof ReturnIndicatorsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/returns/indicators/page.tsx", () => ReturnIndicatorsPageAuthenticatedContent(...args));
 }

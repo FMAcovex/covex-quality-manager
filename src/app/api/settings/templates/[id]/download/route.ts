@@ -1,3 +1,4 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { loadStoredTemplateAsset,StoredTemplateIntegrityError } from "@/modules/configuration/template-assets";
@@ -6,7 +7,7 @@ export const runtime="nodejs";
 
 function safe(value:string){return value.replace(/[^a-zA-Z0-9._-]+/g,"_");}
 
-export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
+async function GETAuthenticatedContent(_request:Request,{params}:{params:Promise<{id:string}>}){
   const {id}=await params;
   const template=await prisma.templateVersion.findUnique({where:{id},select:{module:true,documentType:true,versionCode:true,fileName:true,mimeType:true,filePath:true}});
   if(!template)return NextResponse.json({error:"Plantilla no encontrada."},{status:404});
@@ -23,4 +24,8 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string}>
     if(error instanceof StoredTemplateIntegrityError)return NextResponse.json({error:error.message},{status:409});
     throw error;
   }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/settings/templates/[id]/download/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

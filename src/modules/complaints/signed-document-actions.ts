@@ -1,5 +1,6 @@
 "use server";
 
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { prisma } from "@/lib/db";
 import {
   signedDocumentActor,
@@ -11,7 +12,7 @@ import type { SignedVersionDocumentState } from "@/lib/qms/signed-version-docume
 
 export type { SignedVersionDocumentState } from "@/lib/qms/signed-version-document-types";
 
-export async function uploadComplaintSignedPdfAction(
+async function uploadComplaintSignedPdfActionAuthenticatedContent(
   complaintId: string,
   recordVersionId: string,
   _state: SignedVersionDocumentState,
@@ -53,4 +54,8 @@ export async function uploadComplaintSignedPdfAction(
     error: null,
     success: `PDF firmado vinculado a V${String(result.sequenceNumber).padStart(2, "0")}.`,
   };
+}
+
+export async function uploadComplaintSignedPdfAction(...args: Parameters<typeof uploadComplaintSignedPdfActionAuthenticatedContent>) {
+  return authorizedAction("uploadComplaintSignedPdfAction", args, authenticated => uploadComplaintSignedPdfActionAuthenticatedContent(...authenticated as Parameters<typeof uploadComplaintSignedPdfActionAuthenticatedContent>));
 }

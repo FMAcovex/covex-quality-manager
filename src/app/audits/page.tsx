@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { listAnnualPlans } from "@/modules/audits/plans";
@@ -13,7 +14,7 @@ import { auditWithReturnTo } from "@/modules/audits/navigation";
 import { pendingAuditReviewDate } from "@/modules/audits/followup-review";
 import { firstQueryValue, queryList } from "@/lib/qms/list-filters";
 export const dynamic = "force-dynamic";
-export default async function AuditsPage({ searchParams }: { searchParams: Promise<Record<string,string|string[]|undefined>> }) {
+async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: Promise<Record<string,string|string[]|undefined>> }) {
   const query = await searchParams;
   const filters: AuditListFilters = {};
   for (const key of ["year","type","scenario","department","status","modality","quality","criticality"] as const) filters[key] = queryList(query[key]);
@@ -68,4 +69,8 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
     })}</tbody></table>{!rows.length ? <p className="empty-state">No hay auditorías con estos filtros.</p> : null}</div>
     <nav className="heading-actions" aria-label="Paginación">{page > 1 ? <Link className="button small" href={pageHref(page-1)}>Anterior</Link> : null}{page < pages ? <Link className="button small" href={pageHref(page+1)}>Siguiente</Link> : null}</nav>
   </section>;
+}
+
+export default async function AuditsPage(...args: Parameters<typeof AuditsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/audits/page.tsx", () => AuditsPageAuthenticatedContent(...args));
 }

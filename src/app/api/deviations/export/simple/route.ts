@@ -1,9 +1,10 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { generateSimpleList } from "@/modules/deviations/documents/xlsx";
 import { getDeviationExportRows } from "@/modules/deviations/documents/export-data";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+async function GETAuthenticatedContent(request: Request) {
   const url = new URL(request.url);
   const filters = {
     q: url.searchParams.get("q") || undefined,
@@ -27,4 +28,8 @@ export async function GET(request: Request) {
       "Cache-Control": "no-store",
     },
   });
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/deviations/export/simple/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

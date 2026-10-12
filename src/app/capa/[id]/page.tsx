@@ -1,3 +1,6 @@
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { AuditOriginPanel } from "@/modules/audits/origin-panel";
 import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
@@ -63,7 +66,7 @@ function followupLabel(sequenceNumber: number) {
     : `Seguimiento ${String(sequenceNumber).padStart(2, "0")}`;
 }
 
-export default async function CapaDetailPage({
+async function CapaDetailPageAuthenticatedContent({
   params,
   searchParams,
 }: {
@@ -402,7 +405,7 @@ export default async function CapaDetailPage({
                     <strong>{qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))}{!record.isActive ? " · Anulado" : ""}</strong>
                   </Link>
                   <small>Relación QMS canónica.</small>
-                  {record.recordType !== "AUDIT" ? <form action={unlinkCapaOriginAction.bind(null, id, record.id)}>
+                  {record.recordType !== "AUDIT" ? <form action={unlinkCapaOriginAction.bind(null, id, record.id)}><CsrfField />
                     <input type="hidden" name="actor" value={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
                     <button className="button danger small" type="submit">Desvincular</button>
                   </form> : <small>Gestionar atribuciones desde la Auditoría.</small>}
@@ -620,4 +623,8 @@ export default async function CapaDetailPage({
     <ReviewDrawer />
     </ReviewWorkspaceProvider>
   );
+}
+
+export default async function CapaDetailPage(...args: Parameters<typeof CapaDetailPageAuthenticatedContent>) {
+  return authorizedPage("src/app/capa/[id]/page.tsx", () => CapaDetailPageAuthenticatedContent(...args));
 }

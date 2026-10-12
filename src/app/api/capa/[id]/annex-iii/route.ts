@@ -1,3 +1,5 @@
+import { currentIdentity } from "@/lib/auth/context";
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCapaDetail } from "@/modules/capa/queries";
@@ -18,7 +20,7 @@ function safe(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "_");
 }
 
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+async function GETAuthenticatedContent(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const capa = await getCapaDetail(id);
   if (!capa) return NextResponse.json({ error: "CAPA no encontrada." }, { status: 404 });
@@ -70,7 +72,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         templateVersionId: storedVersion
           ? recordVersionTemplateId("CAPA", storedVersion.snapshot)
           : capa.annexIIITemplateVersionId,
-        generatedByText: process.env.DEFAULT_ACTOR_NAME || capa.createdByText,
+        generatedByText: (currentIdentity()?.principal.name ?? process.env.DEFAULT_ACTOR_NAME) || capa.createdByText,
         metadata: {
           source: "download",
           templateVersion:
@@ -97,4 +99,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     }
     throw error;
   }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/capa/[id]/annex-iii/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

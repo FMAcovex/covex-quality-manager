@@ -1,3 +1,6 @@
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SettingsNav } from "@/components/settings-nav";
@@ -7,7 +10,7 @@ import { prisma } from "@/lib/db";
 
 export const dynamic="force-dynamic";
 
-export default async function FormVersionDetailPage({params}:{params:Promise<{id:string}>}){
+async function FormVersionDetailPageAuthenticatedContent({params}:{params:Promise<{id:string}>}){
  const {id}=await params;
  const form=await prisma.formVersion.findUnique({where:{id},include:{fieldConfigs:{orderBy:[{sectionKey:"asc"},{sortOrder:"asc"}]}}});
  if(!form)notFound();
@@ -19,8 +22,12 @@ export default async function FormVersionDetailPage({params}:{params:Promise<{id
   <section className="card">
    <div className="section-title-row"><div><p className="eyebrow">Campos</p><h2>{form.fieldConfigs.length} definiciones</h2></div><span className={`badge ${editable?"warning":"neutral"}`}>{form.status}</span></div>
    <div className="table-scroll"><table className="records-table compact-table field-admin-table"><thead><tr><th>Clave</th><th>Definición</th><th>Tipo</th><th>Listado</th><th>Visible</th><th>Filtro</th><th>Exportación</th><th></th></tr></thead><tbody>
-    {form.fieldConfigs.map(f=><tr key={f.id}><td><code>{f.fieldKey}</code><br/><small>{f.kind}</small></td><td colSpan={7}>{editable?<form action={updateFormFieldConfigAction.bind(null,f.id)} className="field-config-form"><input name="label" defaultValue={f.label}/><input name="sectionLabel" defaultValue={f.sectionLabel}/><input name="sortOrder" type="number" defaultValue={f.sortOrder}/><select name="listAvailable" defaultValue={String(f.listAvailable)}><option value="true">Sí listado</option><option value="false">No listado</option></select><select name="listVisibleByDefault" defaultValue={String(f.listVisibleByDefault)}><option value="true">Visible</option><option value="false">Oculta</option></select><select name="filterable" defaultValue={String(f.filterable)}><option value="true">Filtrable</option><option value="false">No filtrable</option></select><select name="simpleExport" defaultValue={String(f.simpleExport)}><option value="true">Exportar</option><option value="false">No exportar</option></select><input type="hidden" name="actor" value={process.env.DEFAULT_ACTOR_NAME||"Usuario demo"}/><button className="button small">Guardar</button></form>:<div className="field-config-readonly"><span>{f.label}</span><span>{f.sectionLabel}</span><span>{f.valueType}</span><span>{f.listAvailable?"Listado":"—"}</span><span>{f.listVisibleByDefault?"Visible":"Oculta"}</span><span>{f.filterable?"Filtrable":"—"}</span><span>{f.simpleExport?"Exporta":"—"}</span></div>}</td></tr>)}
+    {form.fieldConfigs.map(f=><tr key={f.id}><td><code>{f.fieldKey}</code><br/><small>{f.kind}</small></td><td colSpan={7}>{editable?<form action={updateFormFieldConfigAction.bind(null,f.id)} className="field-config-form"><CsrfField /><input name="label" defaultValue={f.label}/><input name="sectionLabel" defaultValue={f.sectionLabel}/><input name="sortOrder" type="number" defaultValue={f.sortOrder}/><select name="listAvailable" defaultValue={String(f.listAvailable)}><option value="true">Sí listado</option><option value="false">No listado</option></select><select name="listVisibleByDefault" defaultValue={String(f.listVisibleByDefault)}><option value="true">Visible</option><option value="false">Oculta</option></select><select name="filterable" defaultValue={String(f.filterable)}><option value="true">Filtrable</option><option value="false">No filtrable</option></select><select name="simpleExport" defaultValue={String(f.simpleExport)}><option value="true">Exportar</option><option value="false">No exportar</option></select><input type="hidden" name="actor" value={process.env.DEFAULT_ACTOR_NAME||"Usuario demo"}/><button className="button small">Guardar</button></form>:<div className="field-config-readonly"><span>{f.label}</span><span>{f.sectionLabel}</span><span>{f.valueType}</span><span>{f.listAvailable?"Listado":"—"}</span><span>{f.listVisibleByDefault?"Visible":"Oculta"}</span><span>{f.filterable?"Filtrable":"—"}</span><span>{f.simpleExport?"Exporta":"—"}</span></div>}</td></tr>)}
    </tbody></table></div>
   </section>
  </section>;
+}
+
+export default async function FormVersionDetailPage(...args: Parameters<typeof FormVersionDetailPageAuthenticatedContent>) {
+  return authorizedPage("src/app/settings/versions/[id]/page.tsx", () => FormVersionDetailPageAuthenticatedContent(...args));
 }

@@ -1,4 +1,5 @@
 "use server";
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { withReturnTo } from "./navigation";
 import { parseMasterForm, parseRevisionForm } from "./domain";
 import { saveMaster, saveRevision } from "./service";
@@ -17,7 +18,7 @@ function errorMessage(error: unknown) {
         return "No se ha podido guardar el registro. Recarga la página y comprueba los valores seleccionados.";
     return error instanceof Error ? error.message : "No se ha podido guardar el registro.";
 }
-export async function masterAction(id: string | null, _state: SaveState, fd: FormData): Promise<SaveState> {
+async function masterActionAuthenticatedContent(id: string | null, _state: SaveState, fd: FormData): Promise<SaveState> {
     try {
         const input = parseMasterForm(fd);
         if (input.existingDocument) { const principal = lifecyclePrincipal(await headers()); requireLifecyclePermission(principal, "legacy-register"); input.actor = principal.name; }
@@ -28,7 +29,7 @@ export async function masterAction(id: string | null, _state: SaveState, fd: For
         return preserveFormState(_state, fd, { error: errorMessage(error) });
     }
 }
-export async function revisionAction(documentId: string, id: string | null, _state: SaveState, fd: FormData): Promise<SaveState> {
+async function revisionActionAuthenticatedContent(documentId: string, id: string | null, _state: SaveState, fd: FormData): Promise<SaveState> {
     try {
         const input = parseRevisionForm(fd);
         if (input.existingDocument) { const principal = lifecyclePrincipal(await headers()); requireLifecyclePermission(principal, "legacy-register"); input.actor = principal.name; }
@@ -38,4 +39,12 @@ export async function revisionAction(documentId: string, id: string | null, _sta
     catch (error) {
         return preserveFormState(_state, fd, { error: errorMessage(error) });
     }
+}
+
+export async function masterAction(...args: Parameters<typeof masterActionAuthenticatedContent>) {
+  return authorizedAction("masterAction", args, authenticated => masterActionAuthenticatedContent(...authenticated as Parameters<typeof masterActionAuthenticatedContent>));
+}
+
+export async function revisionAction(...args: Parameters<typeof revisionActionAuthenticatedContent>) {
+  return authorizedAction("revisionAction", args, authenticated => revisionActionAuthenticatedContent(...authenticated as Parameters<typeof revisionActionAuthenticatedContent>));
 }

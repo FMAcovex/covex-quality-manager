@@ -1,4 +1,5 @@
 "use server";
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { preserveFormState } from "@/lib/forms/preserved-state";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { auditFormInput } from "./validation";
@@ -6,7 +7,7 @@ import { saveAudit, AuditValidationError } from "./service";
 import { OperationalBusinessCodeError } from "@/lib/qms/business-code";
 
 export type AuditFormState = { error: string | null; fieldErrors?: Record<string, string>; submittedValues?: Record<string, string | string[]>; formRevision?: number; savedHref?: string };
-export async function saveAuditAction(id: string | null, previous: AuditFormState, fd: FormData): Promise<AuditFormState> {
+async function saveAuditActionAuthenticatedContent(id: string | null, previous: AuditFormState, fd: FormData): Promise<AuditFormState> {
   let saved;
   try { saved = await saveAudit(auditFormInput(fd), id ?? undefined); }
   catch (error) {
@@ -17,4 +18,8 @@ export async function saveAuditAction(id: string | null, previous: AuditFormStat
   // Dynamic routes read fresh data after the client receives this completed action.
   // Avoid coupling its result to a concurrent RSC invalidation/redirect transition.
   return { error: null, savedHref: `/audits/${saved.id}` };
+}
+
+export async function saveAuditAction(...args: Parameters<typeof saveAuditActionAuthenticatedContent>) {
+  return authorizedAction("saveAuditAction", args, authenticated => saveAuditActionAuthenticatedContent(...authenticated as Parameters<typeof saveAuditActionAuthenticatedContent>));
 }

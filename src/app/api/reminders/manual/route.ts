@@ -1,3 +1,5 @@
+import { currentIdentity } from "@/lib/auth/context";
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -11,7 +13,7 @@ const payloadSchema = z.object({
   message: z.string().max(20000).default(""),
 });
 
-export async function POST(request: Request) {
+async function POSTAuthenticatedContent(request: Request) {
   const parsed = payloadSchema.safeParse(await request.json().catch(() => null));
 
   if (!parsed.success) {
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
   }
 
   const batchId = randomUUID();
-  const createdByText = process.env.DEFAULT_ACTOR_NAME || "Usuario demo";
+  const createdByText = (currentIdentity()?.principal.name ?? process.env.DEFAULT_ACTOR_NAME) || "Usuario demo";
 
   await prisma.reminderLog.createMany({
     data: uniqueRecordIds.map((qmsRecordId) => ({
@@ -62,4 +64,8 @@ export async function POST(request: Request) {
     records: uniqueRecordIds.length,
     status: "PREPARED",
   });
+}
+
+export async function POST(...args: Parameters<typeof POSTAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/reminders/manual/route.ts", "POST", args, authenticated => POSTAuthenticatedContent(...authenticated as Parameters<typeof POSTAuthenticatedContent>));
 }

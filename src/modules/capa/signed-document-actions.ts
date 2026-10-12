@@ -1,5 +1,6 @@
 "use server";
 
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import {
@@ -11,7 +12,7 @@ import {
 import type { SignedVersionDocumentState } from "@/lib/qms/signed-version-document-types";
 import { capaSignedPdfUploadError } from "@/modules/capa/signed-document-policy";
 
-export async function uploadCapaSignedPdfAction(
+async function uploadCapaSignedPdfActionAuthenticatedContent(
   capaId: string,
   recordVersionId: string,
   _state: SignedVersionDocumentState,
@@ -56,4 +57,8 @@ export async function uploadCapaSignedPdfAction(
     error: null,
     success: `PDF firmado vinculado a Seguimiento ${String(result.sequenceNumber).padStart(2, "0")}.`,
   };
+}
+
+export async function uploadCapaSignedPdfAction(...args: Parameters<typeof uploadCapaSignedPdfActionAuthenticatedContent>) {
+  return authorizedAction("uploadCapaSignedPdfAction", args, authenticated => uploadCapaSignedPdfActionAuthenticatedContent(...authenticated as Parameters<typeof uploadCapaSignedPdfActionAuthenticatedContent>));
 }

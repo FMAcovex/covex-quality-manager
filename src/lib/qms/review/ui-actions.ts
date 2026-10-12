@@ -1,5 +1,6 @@
 "use server";
 
+import { authorizedAction } from "@/lib/auth/action-guard";
 import {
   createCurrentVersionReviewThread,
   type CreateCurrentVersionReviewThreadInput,
@@ -9,7 +10,7 @@ import { invalidateReviewRecord } from "@/lib/qms/review/invalidation";
 import { ReviewThreadError } from "@/lib/qms/review/service";
 import type { ReviewActionState } from "@/lib/qms/review/types";
 
-export async function createCurrentVersionReviewThreadAction(
+async function createCurrentVersionReviewThreadActionAuthenticatedContent(
   input: CreateCurrentVersionReviewThreadInput,
 ): Promise<ReviewActionState> {
   try {
@@ -39,4 +40,8 @@ export async function createCurrentVersionReviewThreadAction(
       status: null,
     };
   }
+}
+
+export async function createCurrentVersionReviewThreadAction(...args: Parameters<typeof createCurrentVersionReviewThreadActionAuthenticatedContent>) {
+  return authorizedAction("createCurrentVersionReviewThreadAction", args, authenticated => createCurrentVersionReviewThreadActionAuthenticatedContent(...authenticated as Parameters<typeof createCurrentVersionReviewThreadActionAuthenticatedContent>));
 }

@@ -1,4 +1,7 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
+import { csrfToken } from "@/lib/auth/client";
 
 import { useState, type FormEvent } from "react";
 import {
@@ -40,6 +43,7 @@ export function ReviewCreateForm({ target }: { target: ReviewTargetInstance }) {
     event.preventDefault();
     void runMutation(async () => {
       const input = {
+        _covexCsrf: csrfToken(),
         qmsRecordId,
         targetKind: target.targetKind,
         tabKey: target.tabKey,
@@ -64,7 +68,7 @@ export function ReviewCreateForm({ target }: { target: ReviewTargetInstance }) {
     });
   }
   return (
-    <form className="review-form" onSubmit={submit}>
+    <form className="review-form" onSubmit={submit}><CsrfField />
       <label>
         <span>Crear observación</span>
         <textarea value={message} onChange={(event) => setMessage(event.target.value)} required />
@@ -86,6 +90,7 @@ export function ReviewReplyForm({ reviewThreadId }: { reviewThreadId: string }) 
     event.preventDefault();
     void runMutation(async () => {
       const result = await replyToReviewThreadAction({
+        _covexCsrf: csrfToken(),
         qmsRecordId,
         reviewThreadId,
         message,
@@ -99,7 +104,7 @@ export function ReviewReplyForm({ reviewThreadId }: { reviewThreadId: string }) 
     });
   }
   return (
-    <form className="review-form compact" onSubmit={submit}>
+    <form className="review-form compact" onSubmit={submit}><CsrfField />
       <label>
         <span>Responder</span>
         <textarea value={message} onChange={(event) => setMessage(event.target.value)} required />
@@ -117,7 +122,7 @@ export function ReviewAcceptButton({ reviewThreadId }: { reviewThreadId: string 
   const [error, setError] = useState<string | null>(null);
   const [pending, runMutation] = useReviewMutation(setError);
   return <div><button className="button small" type="button" disabled={pending} onClick={() => void runMutation(async () => {
-    const result = await acceptReviewThreadAction({ qmsRecordId, reviewThreadId, acceptedByText: defaultActor });
+    const result = await acceptReviewThreadAction({ _covexCsrf: csrfToken(), qmsRecordId, reviewThreadId, acceptedByText: defaultActor });
     setError(result.error);
     if (!result.error) refresh(reviewThreadId, result.threads);
   })}>{pending ? "Aceptando…" : "Aceptar observación"}</button><ActionFeedback error={error} /></div>;
@@ -132,6 +137,7 @@ export function ReviewResolveForm({ reviewThreadId }: { reviewThreadId: string }
     event.preventDefault();
     void runMutation(async () => {
       const result = await resolveReviewThreadAction({
+        _covexCsrf: csrfToken(),
         qmsRecordId,
         reviewThreadId,
         resolvedByText: defaultActor,
@@ -141,5 +147,5 @@ export function ReviewResolveForm({ reviewThreadId }: { reviewThreadId: string }
       if (!result.error) refresh(reviewThreadId, result.threads);
     });
   }
-  return <form className="review-resolve-form" onSubmit={submit}><input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Nota de resolución (opcional)"/><button className="button primary small" type="submit" disabled={pending}>{pending ? "Resolviendo…" : "Resolver"}</button><ActionFeedback error={error}/></form>;
+  return <form className="review-resolve-form" onSubmit={submit}><CsrfField /><input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Nota de resolución (opcional)"/><button className="button primary small" type="submit" disabled={pending}>{pending ? "Resolviendo…" : "Resolver"}</button><ActionFeedback error={error}/></form>;
 }

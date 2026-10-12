@@ -1,3 +1,4 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCapaExportRows } from "@/modules/capa/documents/export-data";
@@ -7,7 +8,7 @@ import { templateUnavailableResponse } from "@/lib/http/template-error-response"
 
 export const runtime="nodejs";
 
-export async function GET(request:Request) {
+async function GETAuthenticatedContent(request:Request) {
   const url=new URL(request.url);
   const year=Number(url.searchParams.get("year"));
   if(!Number.isInteger(year)||year<2000||year>2100) {
@@ -39,4 +40,8 @@ export async function GET(request:Request) {
     }
     throw error;
   }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/capa/export/annex-iv/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

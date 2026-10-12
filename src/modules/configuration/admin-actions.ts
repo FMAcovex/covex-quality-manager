@@ -1,5 +1,6 @@
 "use server";
 
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { createHash } from "node:crypto";
 
 import { AlertRuleKind,AlertSeverity,DocumentType,FormVersionStatus,ParameterValueType,Prisma,QmsRecordType } from "@prisma/client";
@@ -20,7 +21,7 @@ async function logChange(entityType:string,entityKey:string,action:string,oldVal
   revalidatePath("/settings");
 }
 
-export async function createDepartmentAction(fd:FormData){
+async function createDepartmentActionAuthenticatedContent(fd:FormData){
   const code=text(fd,"code").toUpperCase(),name=text(fd,"name");
   if(!code||!name)throw new Error("Código y nombre son obligatorios.");
   const created=await prisma.department.create({data:{code,name,isActive:true,validFrom:dateOrNull(text(fd,"validFrom"))}});
@@ -28,14 +29,14 @@ export async function createDepartmentAction(fd:FormData){
   revalidatePath("/settings/catalogs");
 }
 
-export async function updateDepartmentAction(id:string,fd:FormData){
+async function updateDepartmentActionAuthenticatedContent(id:string,fd:FormData){
   const current=await prisma.department.findUniqueOrThrow({where:{id}});
   const updated=await prisma.department.update({where:{id},data:{name:text(fd,"name")||current.name,isActive:bool(fd,"isActive"),validFrom:dateOrNull(text(fd,"validFrom")),validTo:dateOrNull(text(fd,"validTo"))}});
   await logChange("Department",current.code,"UPDATE",current,updated,fd);
   revalidatePath("/settings/catalogs");
 }
 
-export async function createCatalogAction(fd:FormData){
+async function createCatalogActionAuthenticatedContent(fd:FormData){
   const key=text(fd,"key").toUpperCase().replace(/[^A-Z0-9_]/g,"_"),label=text(fd,"label");
   if(!key||!label)throw new Error("Clave y nombre son obligatorios.");
   const rawModule=text(fd,"module");
@@ -45,14 +46,14 @@ export async function createCatalogAction(fd:FormData){
   revalidatePath("/settings/catalogs");
 }
 
-export async function updateCatalogAction(id:string,fd:FormData){
+async function updateCatalogActionAuthenticatedContent(id:string,fd:FormData){
   const current=await prisma.lookupCatalog.findUniqueOrThrow({where:{id}});
   const updated=await prisma.lookupCatalog.update({where:{id},data:{label:text(fd,"label")||current.label,description:text(fd,"description")||null,isActive:bool(fd,"isActive")}});
   await logChange("LookupCatalog",current.key,"UPDATE",current,updated,fd);
   revalidatePath("/settings/catalogs");
 }
 
-export async function createCatalogItemAction(catalogId:string,fd:FormData){
+async function createCatalogItemActionAuthenticatedContent(catalogId:string,fd:FormData){
   const catalog=await prisma.lookupCatalog.findUniqueOrThrow({where:{id:catalogId}});
   const key=text(fd,"key").toUpperCase().replace(/[^A-Z0-9_]/g,"_"),label=text(fd,"label");
   if(!key||!label)throw new Error("Clave y etiqueta son obligatorias.");
@@ -61,14 +62,14 @@ export async function createCatalogItemAction(catalogId:string,fd:FormData){
   revalidatePath("/settings/catalogs");
 }
 
-export async function updateCatalogItemAction(id:string,fd:FormData){
+async function updateCatalogItemActionAuthenticatedContent(id:string,fd:FormData){
   const current=await prisma.lookupCatalogItem.findUniqueOrThrow({where:{id},include:{catalog:true}});
   const updated=await prisma.lookupCatalogItem.update({where:{id},data:{label:text(fd,"label")||current.label,sortOrder:Number(text(fd,"sortOrder")||String(current.sortOrder)),isActive:bool(fd,"isActive"),validFrom:dateOrNull(text(fd,"validFrom")),validTo:dateOrNull(text(fd,"validTo")),notes:text(fd,"notes")||null}});
   await logChange("LookupCatalogItem",`${current.catalog.key}:${current.key}`,"UPDATE",current,updated,fd);
   revalidatePath("/settings/catalogs");
 }
 
-export async function cloneFormVersionAction(formId:string,fd:FormData){
+async function cloneFormVersionActionAuthenticatedContent(formId:string,fd:FormData){
   const source=await prisma.formVersion.findUniqueOrThrow({where:{id:formId},include:{fieldConfigs:true}});
   const versionCode=text(fd,"versionCode"),effectiveFrom=text(fd,"effectiveFrom");
   if(!versionCode||!effectiveFrom)throw new Error("Versión y fecha de vigencia son obligatorias.");
@@ -81,7 +82,7 @@ export async function cloneFormVersionAction(formId:string,fd:FormData){
   revalidatePath("/settings/versions");
 }
 
-export async function activateFormVersionAction(id:string,fd:FormData){
+async function activateFormVersionActionAuthenticatedContent(id:string,fd:FormData){
   const target=await prisma.formVersion.findUniqueOrThrow({where:{id}});
   if(target.status!=="DRAFT")throw new Error("Solo puede activarse una versión en borrador.");
   const currentActive=await prisma.formVersion.findFirst({where:{module:target.module,status:"ACTIVE",isActive:true,id:{not:id}},orderBy:{effectiveFrom:"desc"}});
@@ -96,7 +97,7 @@ export async function activateFormVersionAction(id:string,fd:FormData){
   revalidatePath("/settings/versions");
 }
 
-export async function registerTemplateVersionAction(fd:FormData){
+async function registerTemplateVersionActionAuthenticatedContent(fd:FormData){
   const moduleRaw=text(fd,"module"),docRaw=text(fd,"documentType");
   if(!Object.values(QmsRecordType).includes(moduleRaw as QmsRecordType))throw new Error("Módulo no válido.");
   if(!Object.values(DocumentType).includes(docRaw as DocumentType))throw new Error("Tipo documental no válido.");
@@ -122,7 +123,7 @@ export async function registerTemplateVersionAction(fd:FormData){
   revalidatePath("/settings/versions");
 }
 
-export async function activateTemplateVersionAction(id:string,fd:FormData){
+async function activateTemplateVersionActionAuthenticatedContent(id:string,fd:FormData){
   const target=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
   const currentActive=await prisma.templateVersion.findFirst({where:{module:target.module,documentType:target.documentType,isActive:true,id:{not:id}},orderBy:{effectiveFrom:"desc"}});
   if(currentActive&&target.effectiveFrom<=currentActive.effectiveFrom)throw new Error("La nueva plantilla debe tener una vigencia posterior a la plantilla activa.");
@@ -144,7 +145,7 @@ function parseParameter(type:ParameterValueType,raw:string){
   try{return JSON.parse(raw);}catch{throw new Error("JSON no válido.");}
 }
 
-export async function updateParameterAction(id:string,fd:FormData){
+async function updateParameterActionAuthenticatedContent(id:string,fd:FormData){
   const current=await prisma.appParameter.findUniqueOrThrow({where:{id}});
   const value=parseParameter(current.valueType,text(fd,"value"));
   const updated=await prisma.appParameter.update({where:{id},data:{value:json(value),isActive:bool(fd,"isActive")}});
@@ -152,7 +153,7 @@ export async function updateParameterAction(id:string,fd:FormData){
   revalidatePath("/settings/parameters");
 }
 
-export async function updateAlertRuleAction(id:string,fd:FormData){
+async function updateAlertRuleActionAuthenticatedContent(id:string,fd:FormData){
   const current=await prisma.alertRule.findUniqueOrThrow({where:{id}});
   const leadDays=Number(text(fd,"leadDays"));
   if(!Number.isInteger(leadDays)||leadDays<0||leadDays>365)throw new Error("Los días de preaviso deben estar entre 0 y 365.");
@@ -165,7 +166,7 @@ export async function updateAlertRuleAction(id:string,fd:FormData){
 }
 
 
-export async function updateFormFieldConfigAction(id:string,fd:FormData){
+async function updateFormFieldConfigActionAuthenticatedContent(id:string,fd:FormData){
   const current=await prisma.formFieldConfig.findUniqueOrThrow({where:{id},include:{formVersion:true}});
   if(current.formVersion.status!=="DRAFT")throw new Error("Solo pueden editarse campos de una versión en borrador.");
   const updated=await prisma.formFieldConfig.update({
@@ -183,4 +184,56 @@ export async function updateFormFieldConfigAction(id:string,fd:FormData){
   await logChange("FormFieldConfig",`${current.formVersion.module}:${current.formVersion.versionCode}:${current.fieldKey}`,"UPDATE",current,updated,fd);
   revalidatePath("/settings/versions");
   revalidatePath(`/settings/versions/${current.formVersionId}`);
+}
+
+export async function createDepartmentAction(...args: Parameters<typeof createDepartmentActionAuthenticatedContent>) {
+  return authorizedAction("createDepartmentAction", args, authenticated => createDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof createDepartmentActionAuthenticatedContent>));
+}
+
+export async function updateDepartmentAction(...args: Parameters<typeof updateDepartmentActionAuthenticatedContent>) {
+  return authorizedAction("updateDepartmentAction", args, authenticated => updateDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof updateDepartmentActionAuthenticatedContent>));
+}
+
+export async function createCatalogAction(...args: Parameters<typeof createCatalogActionAuthenticatedContent>) {
+  return authorizedAction("createCatalogAction", args, authenticated => createCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogActionAuthenticatedContent>));
+}
+
+export async function updateCatalogAction(...args: Parameters<typeof updateCatalogActionAuthenticatedContent>) {
+  return authorizedAction("updateCatalogAction", args, authenticated => updateCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogActionAuthenticatedContent>));
+}
+
+export async function createCatalogItemAction(...args: Parameters<typeof createCatalogItemActionAuthenticatedContent>) {
+  return authorizedAction("createCatalogItemAction", args, authenticated => createCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogItemActionAuthenticatedContent>));
+}
+
+export async function updateCatalogItemAction(...args: Parameters<typeof updateCatalogItemActionAuthenticatedContent>) {
+  return authorizedAction("updateCatalogItemAction", args, authenticated => updateCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogItemActionAuthenticatedContent>));
+}
+
+export async function cloneFormVersionAction(...args: Parameters<typeof cloneFormVersionActionAuthenticatedContent>) {
+  return authorizedAction("cloneFormVersionAction", args, authenticated => cloneFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof cloneFormVersionActionAuthenticatedContent>));
+}
+
+export async function activateFormVersionAction(...args: Parameters<typeof activateFormVersionActionAuthenticatedContent>) {
+  return authorizedAction("activateFormVersionAction", args, authenticated => activateFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateFormVersionActionAuthenticatedContent>));
+}
+
+export async function registerTemplateVersionAction(...args: Parameters<typeof registerTemplateVersionActionAuthenticatedContent>) {
+  return authorizedAction("registerTemplateVersionAction", args, authenticated => registerTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof registerTemplateVersionActionAuthenticatedContent>));
+}
+
+export async function activateTemplateVersionAction(...args: Parameters<typeof activateTemplateVersionActionAuthenticatedContent>) {
+  return authorizedAction("activateTemplateVersionAction", args, authenticated => activateTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateTemplateVersionActionAuthenticatedContent>));
+}
+
+export async function updateParameterAction(...args: Parameters<typeof updateParameterActionAuthenticatedContent>) {
+  return authorizedAction("updateParameterAction", args, authenticated => updateParameterActionAuthenticatedContent(...authenticated as Parameters<typeof updateParameterActionAuthenticatedContent>));
+}
+
+export async function updateAlertRuleAction(...args: Parameters<typeof updateAlertRuleActionAuthenticatedContent>) {
+  return authorizedAction("updateAlertRuleAction", args, authenticated => updateAlertRuleActionAuthenticatedContent(...authenticated as Parameters<typeof updateAlertRuleActionAuthenticatedContent>));
+}
+
+export async function updateFormFieldConfigAction(...args: Parameters<typeof updateFormFieldConfigActionAuthenticatedContent>) {
+  return authorizedAction("updateFormFieldConfigAction", args, authenticated => updateFormFieldConfigActionAuthenticatedContent(...authenticated as Parameters<typeof updateFormFieldConfigActionAuthenticatedContent>));
 }

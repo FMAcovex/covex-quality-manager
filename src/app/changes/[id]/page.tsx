@@ -1,3 +1,6 @@
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
@@ -54,7 +57,7 @@ function relationLabel(type: string) {
   return "Relacionado";
 }
 
-export default async function ChangeControlDetailPage({
+async function ChangeControlDetailPageAuthenticatedContent({
   params,
   searchParams,
 }: {
@@ -621,7 +624,7 @@ export default async function ChangeControlDetailPage({
             </div>
           ) : <div className="empty-panel">Sin expedientes relacionados.</div>}
           {relationError ? <p className="form-error">{relationError}</p> : null}
-          <form action={addChangeControlRelationAction.bind(null, id)} className="relation-form inline-form">
+          <form action={addChangeControlRelationAction.bind(null, id)} className="relation-form inline-form"><CsrfField />
             <label className="field"><span>Codificación relacionada</span><input name="businessCode" required /></label>
             <label className="field"><span>Tipo de relación</span><select name="relationType"><option value="RELATED_TO">Relacionada</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implantada por</option><option value="ASSOCIATED_WITH">Asociada</option></select></label>
             <label className="field"><span>Registrado por</span><input name="actor" defaultValue={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"} /></label>
@@ -656,4 +659,8 @@ export default async function ChangeControlDetailPage({
     <ReviewDrawer />
     </ReviewWorkspaceProvider>
   );
+}
+
+export default async function ChangeControlDetailPage(...args: Parameters<typeof ChangeControlDetailPageAuthenticatedContent>) {
+  return authorizedPage("src/app/changes/[id]/page.tsx", () => ChangeControlDetailPageAuthenticatedContent(...args));
 }

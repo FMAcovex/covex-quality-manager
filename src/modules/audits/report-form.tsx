@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 import { auditWithReturnTo } from "./navigation";
 import { useActionState, useEffect } from "react";
 import type { AuditReportActionState } from "./report-actions";
@@ -7,7 +9,7 @@ export function AuditCloseNavigation({id,disabled}:{id:string;disabled:boolean})
 export function AuditReportForm({ action, fields, label, disabled = false }: { action:(s:AuditReportActionState,fd:FormData)=>Promise<AuditReportActionState>; fields:AuditReportFormField[]; label:string; disabled?:boolean }) {
   const [state,submit,pending]=useActionState(action,{error:null} as AuditReportActionState);
   useEffect(()=>{if(state.savedHref){const target=new URL(auditWithReturnTo(state.savedHref,new URL(window.location.href).searchParams.get("returnTo")),window.location.href);if(target.href===window.location.href)window.location.reload();else window.location.assign(target.href);}},[state.savedHref]);
-  return <form action={submit} key={state.revision ?? 0} className="audit-child-form">
+  return <form action={submit} key={state.revision ?? 0} className="audit-child-form"><CsrfField />
     {state.error?<p className="form-errors full" role="alert">{state.error}</p>:null}
     {fields.map(f=>{const value=f.type==='checkbox'&&state.values ? state.values[f.name] ?? '' : state.values?.[f.name] ?? f.value ?? '';
       if(f.type==='hidden')return <input key={f.name} name={f.name} type="hidden" value={value}/>;

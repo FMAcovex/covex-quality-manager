@@ -1,23 +1,24 @@
 "use server";
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { redirect } from "next/navigation";
 import { addPlanEntry, createAnnualPlan, retirePlanEntry, updatePlanEntry } from "./plans";
 const programmeFields=(fd:FormData)=>Object.fromEntries(["plannedPeriodText","plannedAuditorsText","productService","plannedScope","plannedModality","programmeArea"].map(k=>[k,String(fd.get(k)??"").trim()]));
 const str=(fd:FormData,key:string)=>String(fd.get(key)??"").trim();
-export async function createPlanAction(fd:FormData) {
+async function createPlanActionAuthenticatedContent(fd:FormData) {
   let id:string;
   try{const plan=await createAnnualPlan({year:str(fd,"year"),auditType:str(fd,"auditType"),title:str(fd,"title"),notes:str(fd,"notes"),actor:str(fd,"actor")});id=plan.id;}
   catch(e){throw new Error(e instanceof Error?e.message:"No se pudo crear el plan.");}
   redirect("/audits/plans/"+id);
 }
-export async function addPlanEntryAction(planId:string,fd:FormData){
+async function addPlanEntryActionAuthenticatedContent(planId:string,fd:FormData){
   await addPlanEntry(planId,{...programmeFields(fd),subject:str(fd,"subject"),targetName:str(fd,"targetName"),departmentId:str(fd,"departmentId"),plannedDate:str(fd,"plannedDate"),notes:str(fd,"notes"),actor:str(fd,"actor"),reason:""});
   redirect("/audits/plans/"+planId);
 }
-export async function updatePlanEntryAction(planId:string,entryId:string,fd:FormData){
+async function updatePlanEntryActionAuthenticatedContent(planId:string,entryId:string,fd:FormData){
   await updatePlanEntry(planId,entryId,{...programmeFields(fd),subject:str(fd,"subject"),targetName:str(fd,"targetName"),departmentId:str(fd,"departmentId"),plannedDate:str(fd,"plannedDate"),notes:str(fd,"notes"),actor:str(fd,"actor"),reason:str(fd,"reason")});
   redirect("/audits/plans/"+planId);
 }
-export async function retirePlanEntryAction(planId:string,entryId:string,fd:FormData){
+async function retirePlanEntryActionAuthenticatedContent(planId:string,entryId:string,fd:FormData){
   await retirePlanEntry(planId,entryId,str(fd,"actor"),str(fd,"reason"));
   redirect("/audits/plans/"+planId);
 }
@@ -34,13 +35,37 @@ const errorText = (e: unknown) => {
   }
   return e instanceof Error ? e.message : "No se pudo guardar la planificación.";
 };
-export async function addPlanEntryFormAction(planId: string, _state: PlanEntryActionState, fd: FormData): Promise<PlanEntryActionState> {
+async function addPlanEntryFormActionAuthenticatedContent(planId: string, _state: PlanEntryActionState, fd: FormData): Promise<PlanEntryActionState> {
   try { await addPlanEntry(planId, planEntryInput(fd, false)); }
   catch (e) { return { error: errorText(e) }; }
   redirect("/audits/plans/" + planId);
 }
-export async function updatePlanEntryFormAction(planId: string, entryId: string, _state: PlanEntryActionState, fd: FormData): Promise<PlanEntryActionState> {
+async function updatePlanEntryFormActionAuthenticatedContent(planId: string, entryId: string, _state: PlanEntryActionState, fd: FormData): Promise<PlanEntryActionState> {
   try { await updatePlanEntry(planId, entryId, planEntryInput(fd, true)); }
   catch (e) { return { error: errorText(e) }; }
   redirect("/audits/plans/" + planId);
+}
+
+export async function createPlanAction(...args: Parameters<typeof createPlanActionAuthenticatedContent>) {
+  return authorizedAction("createPlanAction", args, authenticated => createPlanActionAuthenticatedContent(...authenticated as Parameters<typeof createPlanActionAuthenticatedContent>));
+}
+
+export async function addPlanEntryAction(...args: Parameters<typeof addPlanEntryActionAuthenticatedContent>) {
+  return authorizedAction("addPlanEntryAction", args, authenticated => addPlanEntryActionAuthenticatedContent(...authenticated as Parameters<typeof addPlanEntryActionAuthenticatedContent>));
+}
+
+export async function updatePlanEntryAction(...args: Parameters<typeof updatePlanEntryActionAuthenticatedContent>) {
+  return authorizedAction("updatePlanEntryAction", args, authenticated => updatePlanEntryActionAuthenticatedContent(...authenticated as Parameters<typeof updatePlanEntryActionAuthenticatedContent>));
+}
+
+export async function retirePlanEntryAction(...args: Parameters<typeof retirePlanEntryActionAuthenticatedContent>) {
+  return authorizedAction("retirePlanEntryAction", args, authenticated => retirePlanEntryActionAuthenticatedContent(...authenticated as Parameters<typeof retirePlanEntryActionAuthenticatedContent>));
+}
+
+export async function addPlanEntryFormAction(...args: Parameters<typeof addPlanEntryFormActionAuthenticatedContent>) {
+  return authorizedAction("addPlanEntryFormAction", args, authenticated => addPlanEntryFormActionAuthenticatedContent(...authenticated as Parameters<typeof addPlanEntryFormActionAuthenticatedContent>));
+}
+
+export async function updatePlanEntryFormAction(...args: Parameters<typeof updatePlanEntryFormActionAuthenticatedContent>) {
+  return authorizedAction("updatePlanEntryFormAction", args, authenticated => updatePlanEntryFormActionAuthenticatedContent(...authenticated as Parameters<typeof updatePlanEntryFormActionAuthenticatedContent>));
 }

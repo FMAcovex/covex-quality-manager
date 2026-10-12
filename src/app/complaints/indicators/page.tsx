@@ -1,10 +1,11 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { CapaDistributionCard,CapaKpiCard } from "@/modules/capa/analytics/components";
 import { getComplaintAnalytics } from "@/modules/complaints/analytics/queries";
 export const dynamic="force-dynamic";
 const p=(v:string|string[]|undefined)=>Array.isArray(v)?v[0]:v;
 const pct=(v:number|null)=>v===null?"—":`${v.toLocaleString("es-ES",{maximumFractionDigits:1})} %`;
-export default async function ComplaintIndicatorsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+async function ComplaintIndicatorsPageAuthenticatedContent({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  const q=await searchParams,f={year:p(q.year),department:p(q.department),type:p(q.type),classification:p(q.classification),status:p(q.status)};const d=await getComplaintAnalytics(f),m=d.current;
  return <section className="workspace analytics-workspace"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Reclamaciones · Indicadores</h1><p>Volumen, recurrencia, tiempos, origen y tendencia calculados desde los expedientes.</p></div><div className="heading-actions"><Link className="button" href="/complaints">Ver expedientes</Link></div></div>
  <div className="tabs"><Link className="tab muted" href="/complaints">Expedientes</Link><Link className="tab active" href="/complaints/indicators">Indicadores</Link></div>
@@ -14,4 +15,8 @@ export default async function ComplaintIndicatorsPage({searchParams}:{searchPara
  <div className="analytics-grid"><CapaDistributionCard title="Cliente / Proveedor" items={m.types}/><CapaDistributionCard title="Clasificación" items={m.classifications}/><CapaDistributionCard title="Departamento" items={m.departments}/></div>
  <section className="trend-section"><div className="trend-section-heading"><div><p className="eyebrow">Tendencia</p><h2>Últimos 5 años hasta {d.selectedYear}</h2></div></div><article className="chart-card wide-chart"><div className="analytics-table-wrap"><table className="analytics-table"><thead><tr><th>Año</th><th>Total</th><th>Abiertas</th><th>Cliente</th><th>Proveedor</th><th>Recurrencia</th><th>Mediana cierre</th></tr></thead><tbody>{d.trend.map(x=><tr key={x.year} className={!x.dataAvailable?"analytics-no-data":undefined}><td><strong>{x.year}</strong></td>{x.dataAvailable?<><td>{x.total}</td><td>{x.open}</td><td>{x.customer}</td><td>{x.provider}</td><td>{pct(x.recurrent.rate)}</td><td>{x.medianClosure===null?"—":`${x.medianClosure} d`}</td></>:<td colSpan={6}>Sin datos cargados</td>}</tr>)}</tbody></table></div></article></section>
  </section>;
+}
+
+export default async function ComplaintIndicatorsPage(...args: Parameters<typeof ComplaintIndicatorsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/complaints/indicators/page.tsx", () => ComplaintIndicatorsPageAuthenticatedContent(...args));
 }

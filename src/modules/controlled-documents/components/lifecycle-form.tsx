@@ -1,4 +1,8 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
+
+import { authenticatedFetch } from "@/lib/auth/client";
 import { withReturnTo } from "../navigation";
 import { useState } from "react";
 import { permissions, assertTransition, type LifecycleCommand } from "../lifecycle/domain";
@@ -24,10 +28,10 @@ export function LifecycleForm(p: LifecycleFormProps) {
     if (selected === "ACTIVATE") input.previousRevisionId = p.previousId;
     if (selected === "PLAN") input.separationConfirmed = fd.get("separationConfirmed") === "on";
     try {
-      const res = await fetch(`/api/controlled-documents/${p.documentId}/revisions/${p.revisionId}/lifecycle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+      const res = await authenticatedFetch(`/api/controlled-documents/${p.documentId}/revisions/${p.revisionId}/lifecycle`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
       const result = await res.json(); if (!res.ok) { setError(result.error || "La decisión no se ha registrado. Compruebe las evidencias y los datos indicados."); setRequestId(null); } else window.location.assign(withReturnTo(`/controlled-documents/${p.documentId}?tab=verification`, p.returnTo));
     } catch { setError("No se pudo confirmar el resultado. Reintente sin cambiar datos para evitar duplicación."); } finally { setBusy(false); }
-  }}>
+  }}><CsrfField />
     <h4>Registrar una decisión sobre esta revisión</h4><label className="field"><span>Operación</span><select aria-label="Operación" value={selected} onChange={e => setOperation(e.target.value as LifecycleCommand["operation"])}>{available.map(op => <option key={op} value={op}>{labels[op]}</option>)}</select></label>
     <fieldset className="pnt-evidence-fieldset"><legend>Evidencias concretas de esta revisión (seleccione al menos una)</legend>{p.objects.length === 0 && <p role="note">No hay documentos incorporados. Añada primero un documento en la pestaña Documentos.</p>}{p.objects.map(o => <label className="pnt-check" key={o.id}><input type="checkbox" name="evidenceIds" value={o.id}/><span>{o.originalName} ({o.kind}) {o.externalReference && "— referencia externa, sin custodia/hash"}</span></label>)}</fieldset><div className="pnt-inner-grid">
     <label className="field"><span>Motivo</span><textarea name="reason" required maxLength={4000}/></label><label className="field"><span>Observaciones del contraste / fundamento de la operación</span><textarea name="notes" required maxLength={8000}/></label>

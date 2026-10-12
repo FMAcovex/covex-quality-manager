@@ -1,12 +1,14 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
+import { expectedDocumentOrigin } from "@/modules/controlled-documents/documents/session-access";
 import { lifecyclePrincipal } from "@/modules/controlled-documents/lifecycle/access";
 import { lifecycleDecision } from "@/modules/controlled-documents/lifecycle/service";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const responseHeaders = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
-export async function POST(request: Request, { params }: { params: Promise<{ id: string; revisionId: string }> }) {
+async function POSTAuthenticatedContent(request: Request, { params }: { params: Promise<{ id: string; revisionId: string }> }) {
   let principal;
   try { principal = lifecyclePrincipal(request.headers); } catch { return Response.json({ error: "Acceso documental no autorizado." }, { status: 403, headers: responseHeaders }); }
-  const expectedOrigin = process.env.PNT_DOCUMENT_ALLOWED_ORIGIN || `${new URL(request.url).protocol}//${request.headers.get("host") || new URL(request.url).host}`;
+  const expectedOrigin = expectedDocumentOrigin(request);
   if (request.headers.get("origin") !== expectedOrigin) return Response.json({ error: "Origen no autorizado." }, { status: 403, headers: responseHeaders });
   try {
     if (!request.headers.get("content-type")?.startsWith("application/json") || !request.body) throw new Error("Solicitud inválida.");
@@ -21,4 +23,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const message = error instanceof Error && !error.name.startsWith("Prisma") && error.name !== "ZodError" ? error.message : "No se pudo registrar la decisión; compruebe datos, evidencias y concurrencia.";
     return Response.json({ error: message }, { status: 400, headers: responseHeaders });
   }
+}
+
+export async function POST(...args: Parameters<typeof POSTAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/controlled-documents/[id]/revisions/[revisionId]/lifecycle/route.ts", "POST", args, authenticated => POSTAuthenticatedContent(...authenticated as Parameters<typeof POSTAuthenticatedContent>));
 }

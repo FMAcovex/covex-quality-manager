@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { prisma } from "@/lib/db";
 import { DocumentLink as Link } from "@/modules/controlled-documents/components/document-link";
 import { administrativeLabels, displayDate, revisionLabels } from "@/modules/controlled-documents/domain";
@@ -9,7 +10,7 @@ import { dateFilterErrors } from "@/modules/controlled-documents/queries";
 import { queryPntListing, operationalDates, type PntListingFilters } from "@/modules/controlled-documents/listing";
 export const dynamic = "force-dynamic";
 
-export default async function ListPage({ searchParams }: { searchParams: Promise<PntListingFilters> }) {
+async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Promise<PntListingFilters> }) {
  const f = await searchParams;
  const [result, departments] = await Promise.all([queryPntListing(f), prisma.department.findMany({ orderBy: { code: "asc" } })]);
  const params = (changes: Record<string,string>, resetPage = true) => listingQuery(f, changes, resetPage);
@@ -63,4 +64,8 @@ export default async function ListPage({ searchParams }: { searchParams: Promise
    <nav className="pnt-pagination" aria-label="Paginación"><span>Página {result.page} de {result.pages} · 25 filas por página</span><div>{result.page>1 && <Link className="button" href={link({page:String(result.page-1)})}>Anterior</Link>}{result.page<result.pages && <Link className="button" href={link({page:String(result.page+1)})}>Siguiente</Link>}</div></nav>
   </section>
  </section>;
+}
+
+export default async function ListPage(...args: Parameters<typeof ListPageAuthenticatedContent>) {
+  return authorizedPage("src/app/controlled-documents/page.tsx", () => ListPageAuthenticatedContent(...args));
 }

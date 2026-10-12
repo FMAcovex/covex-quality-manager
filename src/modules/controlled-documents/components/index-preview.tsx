@@ -1,4 +1,8 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
+
+import { authenticatedFetch } from "@/lib/auth/client";
 import { useMemo, useState, useRef, type FormEvent } from "react";
 import { type PreviewReport, issueLabels, declaredStateLabels, reconciliationLabels } from "../preview/types";
 import { DocumentLink } from "./document-link";
@@ -10,7 +14,7 @@ export function IndexPreview() {
         if (!fileRef.current || !actor.trim()) { setError("Indica el responsable del lote."); return; }
         setPending(true); setError("");
         try { const form = new FormData(); form.set("file", fileRef.current); form.set("actor", actor); form.set("saveBatch", "on");
-            const response = await fetch("/api/controlled-documents/index-preview", { method: "POST", body: form }); const value = await response.json();
+            const response = await authenticatedFetch("/api/controlled-documents/index-preview", { method: "POST", body: form }); const value = await response.json();
             if (!response.ok) throw new Error(value.error || "No se pudo guardar el lote.");
             window.location.assign(`/controlled-documents/import-index/${value.batchId}`);
         } catch(e) { setError(e instanceof Error ? e.message : "No se pudo guardar el lote."); setPending(false); }
@@ -28,7 +32,7 @@ export function IndexPreview() {
         setPending(true);
         setReport(null);
         try {
-            const response = await fetch("/api/controlled-documents/index-preview", { method: "POST", body: form, cache: "no-store" });
+            const response = await authenticatedFetch("/api/controlled-documents/index-preview", { method: "POST", body: form, cache: "no-store" });
             const value = await response.json();
             if (!response.ok || !value.report)
                 throw new Error(value.error || "No se ha podido analizar el archivo.");
@@ -49,7 +53,7 @@ export function IndexPreview() {
  <DocumentLink href="/controlled-documents/import-index/batches">Recuperar lote / resultados</DocumentLink>
  <p>Previsualización de solo lectura. El índice declara datos; no acredita la verificación del Word/PDF firmado. Ningún PNT, revisión o departamento se crea ni modifica.</p>
  <p>Fuente GC-00: se utiliza exclusivamente <strong>GC-00(</strong>, con departamento GC-00. La hoja <strong>GC-00 queda descartada</strong> del análisis, estadísticas y conciliación.</p>
- <form onSubmit={analyze} className="inline-form"><label>Excel del índice maestro<input name="file" type="file" accept=".xlsx" required disabled={pending}/></label><button disabled={pending}>{pending ? "Analizando…" : "Analizar Excel"}</button></form>
+ <form onSubmit={analyze} className="inline-form"><CsrfField /><label>Excel del índice maestro<input name="file" type="file" accept=".xlsx" required disabled={pending}/></label><button disabled={pending}>{pending ? "Analizando…" : "Analizar Excel"}</button></form>
  <p>Hasta 8 MiB. El archivo no se guarda permanentemente. La previsualización permanece en esta página hasta recargarla o analizar otro archivo.</p>
  {error && <p role="alert">{error}</p>}
  {report && <>

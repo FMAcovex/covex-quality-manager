@@ -1,10 +1,11 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { createChangeControlAction } from "@/modules/change-control/actions";
 import { ChangeControlForm } from "@/modules/change-control/components/change-control-form";
 import { getChangeControlLookups } from "@/modules/change-control/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewChangeControlPage() {
+async function NewChangeControlPageAuthenticatedContent() {
   const { departments } = await getChangeControlLookups();
   return (
     <section className="workspace">
@@ -27,4 +28,8 @@ export default async function NewChangeControlPage() {
       />
     </section>
   );
+}
+
+export default async function NewChangeControlPage(...args: Parameters<typeof NewChangeControlPageAuthenticatedContent>) {
+  return authorizedPage("src/app/changes/new/page.tsx", () => NewChangeControlPageAuthenticatedContent(...args));
 }

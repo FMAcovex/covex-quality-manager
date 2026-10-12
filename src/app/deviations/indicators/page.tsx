@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import {
   AnnualSummaryTable,
@@ -17,7 +18,7 @@ function param(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function DeviationIndicatorsPage({
+async function DeviationIndicatorsPageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -161,4 +162,8 @@ export default async function DeviationIndicatorsPage({
       </div>
     </section>
   );
+}
+
+export default async function DeviationIndicatorsPage(...args: Parameters<typeof DeviationIndicatorsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/deviations/indicators/page.tsx", () => DeviationIndicatorsPageAuthenticatedContent(...args));
 }

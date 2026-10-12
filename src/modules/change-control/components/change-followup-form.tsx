@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 
 import { useActionState, useMemo, useState } from "react";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -86,7 +88,7 @@ export function ChangeFollowupForm({
     setRows((current) => current.map((item, i) => (i === index ? { ...item, ...value } : item)));
 
   return (
-    <form action={formAction} className="followup-form">
+    <form action={formAction} className="followup-form"><CsrfField />
       {state.error ? <div className="form-feedback error">{state.error}</div> : null}
       {state.success ? <div className="form-feedback success">{state.success}</div> : null}
       <input type="hidden" name="tasksJson" value={JSON.stringify(rows)} />

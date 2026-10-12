@@ -1,5 +1,6 @@
 "use server";
 
+import { authorizedAction } from "@/lib/auth/action-guard";
 import type { FollowupActionState } from "@/components/basic-followup-form";
 import { Prisma,QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -80,7 +81,7 @@ function extraData(existing:Prisma.JsonValue|null|undefined,v:ReturnType<typeof 
  delete data.pendingComplaintId;
  return {...data,pendingReturnType:v.returnType===null,r4b:v.context,...(pendingComplaintId?{pendingComplaintId}:{})} as Prisma.InputJsonObject;
 }
-export async function createReturnAction(previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
+async function createReturnActionAuthenticatedContent(previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
  const parsed=parseReturnForm(fd);if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors});
  const v=parsed.values;let createdId:string;
  try{
@@ -141,7 +142,7 @@ export async function createReturnAction(previous:ReturnFormState,fd:FormData):P
  }
  return {error:null,savedRecordId:createdId};
 }
-export async function updateReturnAction(id:string,previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
+async function updateReturnActionAuthenticatedContent(id:string,previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
  const existing=await prisma.returnRecord.findUnique({where:{id},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"},{id:"desc"}],take:1}}});if(!existing)return preserveFormState(previous,fd,{error:"La devolución ya no existe."});
  const parsed=parseReturnForm(fd,existing.followups[0]?.nextFollowupDate?.toISOString().slice(0,10));if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors});
  const v=parsed.values;
@@ -191,7 +192,7 @@ export async function updateReturnAction(id:string,previous:ReturnFormState,fd:F
 }
  return {error:null,savedRecordId:id};
 }
-export async function addReturnFollowupAction(id:string,_state:FollowupActionState,fd:FormData):Promise<FollowupActionState>{
+async function addReturnFollowupActionAuthenticatedContent(id:string,_state:FollowupActionState,fd:FormData):Promise<FollowupActionState>{
  const rec=await prisma.returnRecord.findUnique({where:{id}});if(!rec)return{error:"Devolución no encontrada."};
  if(rec.status!=="OPEN")return{error:"La devolución debe estar abierta antes de registrar seguimientos."};
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
@@ -210,7 +211,7 @@ await prisma.$transaction(async tx=>{
  return{success:"Seguimiento guardado correctamente."};
 }
 
-export async function unlinkReturnComplaintAction(
+async function unlinkReturnComplaintActionAuthenticatedContent(
  id:string,
  complaintQmsRecordId:string,
  fd:FormData
@@ -233,7 +234,7 @@ export async function unlinkReturnComplaintAction(
  revalidatePath(`/returns/${id}`);
 }
 
-export async function addReturnRelationAction(
+async function addReturnRelationActionAuthenticatedContent(
  id:string,
  _state:RelationActionState,
  fd:FormData
@@ -264,4 +265,24 @@ export async function addReturnRelationAction(
  }catch(error){
   return{error:error instanceof Error?error.message:"No se ha podido vincular la reclamación."};
  }
+}
+
+export async function createReturnAction(...args: Parameters<typeof createReturnActionAuthenticatedContent>) {
+  return authorizedAction("createReturnAction", args, authenticated => createReturnActionAuthenticatedContent(...authenticated as Parameters<typeof createReturnActionAuthenticatedContent>));
+}
+
+export async function updateReturnAction(...args: Parameters<typeof updateReturnActionAuthenticatedContent>) {
+  return authorizedAction("updateReturnAction", args, authenticated => updateReturnActionAuthenticatedContent(...authenticated as Parameters<typeof updateReturnActionAuthenticatedContent>));
+}
+
+export async function addReturnFollowupAction(...args: Parameters<typeof addReturnFollowupActionAuthenticatedContent>) {
+  return authorizedAction("addReturnFollowupAction", args, authenticated => addReturnFollowupActionAuthenticatedContent(...authenticated as Parameters<typeof addReturnFollowupActionAuthenticatedContent>));
+}
+
+export async function unlinkReturnComplaintAction(...args: Parameters<typeof unlinkReturnComplaintActionAuthenticatedContent>) {
+  return authorizedAction("unlinkReturnComplaintAction", args, authenticated => unlinkReturnComplaintActionAuthenticatedContent(...authenticated as Parameters<typeof unlinkReturnComplaintActionAuthenticatedContent>));
+}
+
+export async function addReturnRelationAction(...args: Parameters<typeof addReturnRelationActionAuthenticatedContent>) {
+  return authorizedAction("addReturnRelationAction", args, authenticated => addReturnRelationActionAuthenticatedContent(...authenticated as Parameters<typeof addReturnRelationActionAuthenticatedContent>));
 }

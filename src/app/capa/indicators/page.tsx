@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { CapaDistributionCard,CapaKpiCard,CapaTrend,num,pct } from "@/modules/capa/analytics/components";
 import { getCapaAnalytics } from "@/modules/capa/analytics/queries";
@@ -5,7 +6,7 @@ import { getCapaAnalytics } from "@/modules/capa/analytics/queries";
 export const dynamic="force-dynamic";
 function p(v:string|string[]|undefined){return Array.isArray(v)?v[0]:v;}
 
-export default async function CapaIndicatorsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {
+async function CapaIndicatorsPageAuthenticatedContent({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {
   const q=await searchParams;
   const filters={year:p(q.year),department:p(q.department),type:p(q.type),origin:p(q.origin),status:p(q.status)};
   const d=await getCapaAnalytics(filters),m=d.current;
@@ -38,4 +39,8 @@ export default async function CapaIndicatorsPage({searchParams}:{searchParams:Pr
     <div className="analytics-grid"><CapaDistributionCard title="CAPA por departamento" items={m.departments}/><CapaDistributionCard title="CAPA por origen" items={m.origins}/><CapaDistributionCard title="Correctivas / Preventivas" items={m.types}/></div>
     <section className="trend-section"><div className="trend-section-heading"><div><p className="eyebrow">Tendencia</p><h2>Últimos 5 años hasta {d.selectedYear}</h2></div></div><CapaTrend trend={d.trend}/></section>
   </section>;
+}
+
+export default async function CapaIndicatorsPage(...args: Parameters<typeof CapaIndicatorsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/capa/indicators/page.tsx", () => CapaIndicatorsPageAuthenticatedContent(...args));
 }

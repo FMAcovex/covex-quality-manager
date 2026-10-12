@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { QmsListPagination } from "@/components/qms-list-pagination";
@@ -27,7 +28,7 @@ export const dynamic = "force-dynamic";
 
 const param = firstQueryValue;
 
-export default async function ChangeControlPage({
+async function ChangeControlPageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -211,4 +212,8 @@ export default async function ChangeControlPage({
       <QmsListPagination root="/changes" query={query} pagination={pagination} />
     </section>
   );
+}
+
+export default async function ChangeControlPage(...args: Parameters<typeof ChangeControlPageAuthenticatedContent>) {
+  return authorizedPage("src/app/changes/page.tsx", () => ChangeControlPageAuthenticatedContent(...args));
 }

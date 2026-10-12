@@ -1,3 +1,4 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import {
@@ -6,7 +7,7 @@ import {
   safeSignedPdfFileName,
 } from "@/lib/qms/signed-version-document";
 
-export async function GET(
+async function GETAuthenticatedContent(
   _request: Request,
   context: { params: Promise<{ id: string; sequence: string }> },
 ) {
@@ -47,4 +48,8 @@ export async function GET(
       "Cache-Control": "no-store",
     },
   });
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/deviations/[id]/versions/[sequence]/signed-pdf/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

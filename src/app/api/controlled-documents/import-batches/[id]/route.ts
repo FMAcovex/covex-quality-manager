@@ -1,3 +1,4 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { z } from "zod";
 import { getBatch, decide, prepare, confirm } from "@/modules/controlled-documents/import/service";
 import { decisionSchema, actorSchema } from "@/modules/controlled-documents/import/domain";
@@ -9,10 +10,10 @@ function failure(error: unknown) {
     const message = error instanceof z.ZodError ? "Datos de conciliación incompletas o inválidas." : error instanceof Error && !error.name.startsWith("Prisma") ? error.message : "No se ha podido completar la operación. Recupera el lote y revisa la propuesta.";
     return Response.json({ error: message }, { status: 400, headers });
 }
-export async function GET(_: Request, { params }: {params: Promise<{id: string}>}) {
+async function GETAuthenticatedContent(_: Request, { params }: {params: Promise<{id: string}>}) {
     try { return Response.json({ batch: await getBatch(await idValue(params)) }, { headers }); } catch (e) { return failure(e); }
 }
-export async function POST(request: Request, { params }: {params: Promise<{id: string}>}) {
+async function POSTAuthenticatedContent(request: Request, { params }: {params: Promise<{id: string}>}) {
     try {
         // Bound JSON reads independently of Content-Length; never accept browser-supplied workbook reports.
         if (!request.body) throw new Error("Falta la solicitud.");
@@ -24,4 +25,12 @@ export async function POST(request: Request, { params }: {params: Promise<{id: s
         if (v.operation === "CONFIRM") return Response.json({ result: await confirm(id, confirmation.parse(v.input)), batch: await getBatch(id) }, { headers });
         throw new Error("Operación desconocida.");
     } catch (e) { return failure(e); }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/controlled-documents/import-batches/[id]/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
+}
+
+export async function POST(...args: Parameters<typeof POSTAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/controlled-documents/import-batches/[id]/route.ts", "POST", args, authenticated => POSTAuthenticatedContent(...authenticated as Parameters<typeof POSTAuthenticatedContent>));
 }

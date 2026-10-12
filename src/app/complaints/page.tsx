@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { qmsListingUrl, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
@@ -34,7 +35,7 @@ function efficacyTone(value:string){
  return "neutral";
 }
 
-export default async function ComplaintsPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  const q=await searchParams;
   const toDetail = (id: string) => qmsWithReturnTo("/complaints/" + id, "/complaints", qmsListingUrl("/complaints", q));
  const filters={page:p(q.page),recurrent:p(q.recurrent),capa:p(q.capa),returns:p(q.returns),review:p(q.review),
@@ -132,4 +133,8 @@ export default async function ComplaintsPage({searchParams}:{searchParams:Promis
   </tbody></table></div></div>
  <nav className="heading-actions" aria-label="Paginación de reclamaciones"><span>{pagination.total} resultados · Página {pagination.page} de {pagination.pageCount}</span>{pagination.page>1?<Link className="button small" href={pageHref(pagination.page-1)}>Anterior</Link>:null}{pagination.page<pagination.pageCount?<Link className="button small" href={pageHref(pagination.page+1)}>Siguiente</Link>:null}</nav>
  </section>;
+}
+
+export default async function ComplaintsPage(...args: Parameters<typeof ComplaintsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/complaints/page.tsx", () => ComplaintsPageAuthenticatedContent(...args));
 }

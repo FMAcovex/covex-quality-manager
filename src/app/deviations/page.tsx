@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { QmsListPagination } from "@/components/qms-list-pagination";
@@ -18,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 const param = firstQueryValue;
 
-export default async function DeviationsPage({
+async function DeviationsPageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -195,4 +196,8 @@ export default async function DeviationsPage({
       <QmsListPagination root="/deviations" query={query} pagination={pagination} />
     </section>
   );
+}
+
+export default async function DeviationsPage(...args: Parameters<typeof DeviationsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/deviations/page.tsx", () => DeviationsPageAuthenticatedContent(...args));
 }

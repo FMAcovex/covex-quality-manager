@@ -1,3 +1,6 @@
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
@@ -58,7 +61,7 @@ const tabs = [
 
 const txt = (value: string | null | undefined) => value || "—";
 
-export default async function ReturnDetailPage({
+async function ReturnDetailPageAuthenticatedContent({
   params,
   searchParams,
 }: {
@@ -690,7 +693,7 @@ export default async function ReturnDetailPage({
                           id,
                           record.id,
                         )}
-                      >
+                      ><CsrfField />
                         <input
                           type="hidden"
                           name="actor"
@@ -1001,4 +1004,8 @@ export default async function ReturnDetailPage({
       <ReviewDrawer />
     </ReviewWorkspaceProvider>
   );
+}
+
+export default async function ReturnDetailPage(...args: Parameters<typeof ReturnDetailPageAuthenticatedContent>) {
+  return authorizedPage("src/app/returns/[id]/page.tsx", () => ReturnDetailPageAuthenticatedContent(...args));
 }

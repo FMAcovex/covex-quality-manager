@@ -1,4 +1,8 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
+
+import { authenticatedFetch } from "@/lib/auth/client";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { deviationVersionLabel } from "@/modules/deviations/version-mode";
 import { deviationProvenanceOptions } from "@/modules/deviations/domain";
@@ -210,7 +214,7 @@ export function DeviationForm({
     }
 
     const controller = new AbortController();
-    fetch(`/api/deviations/code-suggestion?departmentId=${encodeURIComponent(departmentId)}&year=${issueYear}`, {
+    authenticatedFetch(`/api/deviations/code-suggestion?departmentId=${encodeURIComponent(departmentId)}&year=${issueYear}`, {
       signal: controller.signal,
       cache: "no-store",
     })
@@ -240,7 +244,7 @@ export function DeviationForm({
       action={formAction}
       className={`form-stack ${openingAttempted ? "show-required-errors" : ""}`}
       onInvalid={() => setOpeningAttempted(true)}
-    >
+    ><CsrfField />
       <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""} />
       <input type="hidden" name="detailTab" value={detailTab ?? ""} />

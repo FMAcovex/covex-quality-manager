@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { auditListingReturnTo, auditWithReturnTo } from "@/modules/audits/navigation";
 import { notFound } from "next/navigation";
@@ -17,7 +18,7 @@ import { reviewTabHref, reviewModeHref } from "@/lib/qms/review/ui-model";
 import { auditClosureChecklist } from "@/modules/audits/closure-policy";
 import { AuditCloseNavigation } from "@/modules/audits/report-form";
 export const dynamic = "force-dynamic";
-export default async function AuditPage({ params, searchParams }: { params: Promise<{id:string}>; searchParams: Promise<{tab?:string;retired?:string;review?:string;thread?:string;reviewVersion?:string;returnTo?:string}> }) {
+async function AuditPageAuthenticatedContent({ params, searchParams }: { params: Promise<{id:string}>; searchParams: Promise<{tab?:string;retired?:string;review?:string;thread?:string;reviewVersion?:string;returnTo?:string}> }) {
   const {id} = await params, query = await searchParams, tab = ["information","findings","followup","relations","report","documents","versions","review","history"].includes(query.tab ?? "") ? query.tab : "information";
   const work = await getAuditWork(id); if (!work) notFound();
   const audit = await getAuditDetail(id); if (!audit) notFound();
@@ -62,4 +63,8 @@ function auditHistoryLabel(path: string) {
   if (path.startsWith("audit.attributions.")) return "Atribución a hallazgo";
   if (path === "relations") return "Relación QMS";
   return labels[path] ?? "Cambio del expediente";
+}
+
+export default async function AuditPage(...args: Parameters<typeof AuditPageAuthenticatedContent>) {
+  return authorizedPage("src/app/audits/[id]/page.tsx", () => AuditPageAuthenticatedContent(...args));
 }

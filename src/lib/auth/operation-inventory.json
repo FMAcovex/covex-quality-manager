@@ -1,0 +1,1375 @@
+{
+  "actions": [
+    {
+      "file": "src/lib/qms/review/actions.ts",
+      "name": "createReviewThreadAction",
+      "params": [
+        "input"
+      ],
+      "module": "QMS",
+      "permission": "REVIEW",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/qms/review/actions.ts",
+      "name": "replyToReviewThreadAction",
+      "params": [
+        "input"
+      ],
+      "module": "QMS",
+      "permission": "REVIEW",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/qms/review/actions.ts",
+      "name": "acceptReviewThreadAction",
+      "params": [
+        "input"
+      ],
+      "module": "QMS",
+      "permission": "REVIEW",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/qms/review/actions.ts",
+      "name": "resolveReviewThreadAction",
+      "params": [
+        "input"
+      ],
+      "module": "QMS",
+      "permission": "REVIEW",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/qms/review/ui-actions.ts",
+      "name": "createCurrentVersionReviewThreadAction",
+      "params": [
+        "input"
+      ],
+      "module": "QMS",
+      "permission": "REVIEW",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/actions.ts",
+      "name": "saveAuditAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": true
+    },
+    {
+      "file": "src/modules/audits/annual-programme/actions.ts",
+      "name": "saveProgrammeApproversAction",
+      "params": [
+        "planId",
+        "_state",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "AUDIT_PLAN",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/annual-programme/actions.ts",
+      "name": "issueAnnualProgrammeAction",
+      "params": [
+        "planId",
+        "_state",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "AUDIT_ISSUE_PROGRAMME",
+      "resourceArg": 0,
+      "resourceKind": "AUDIT_PLAN",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/finding-actions.ts",
+      "name": "saveAuditChildAction",
+      "params": [
+        "auditId",
+        "kind",
+        "findingId",
+        "entityId",
+        "state",
+        "form"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/finding-actions.ts",
+      "name": "linkAuditFindingAction",
+      "params": [
+        "auditId",
+        "findingId",
+        "_state",
+        "form"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/finding-actions.ts",
+      "name": "retireAuditChildAction",
+      "params": [
+        "auditId",
+        "findingId",
+        "actionId",
+        "_state",
+        "form"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/finding-actions.ts",
+      "name": "retireAuditAttributionAction",
+      "params": [
+        "auditId",
+        "findingId",
+        "attributionId",
+        "_state",
+        "form"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/finding-actions.ts",
+      "name": "unlinkAuditRecordAction",
+      "params": [
+        "auditId",
+        "targetRecordId",
+        "_state",
+        "form"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/plan-actions.ts",
+      "name": "createPlanAction",
+      "params": [
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "CREATE",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/plan-actions.ts",
+      "name": "addPlanEntryAction",
+      "params": [
+        "planId",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "CREATE",
+      "resourceArg": 0,
+      "resourceKind": "AUDIT_PLAN",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/plan-actions.ts",
+      "name": "updatePlanEntryAction",
+      "params": [
+        "planId",
+        "entryId",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "AUDIT_PLAN",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/plan-actions.ts",
+      "name": "retirePlanEntryAction",
+      "params": [
+        "planId",
+        "entryId",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "AUDIT_PLAN",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/plan-actions.ts",
+      "name": "addPlanEntryFormAction",
+      "params": [
+        "planId",
+        "_state",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "CREATE",
+      "resourceArg": 0,
+      "resourceKind": "AUDIT_PLAN",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/plan-actions.ts",
+      "name": "updatePlanEntryFormAction",
+      "params": [
+        "planId",
+        "entryId",
+        "_state",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "AUDIT_PLAN",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/report-actions.ts",
+      "name": "saveAuditReportAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/report-actions.ts",
+      "name": "issueAuditReportAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "AUDIT_ISSUE_REPORT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/report-actions.ts",
+      "name": "closeAuditAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "CLOSE",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/report-actions.ts",
+      "name": "registerAuditAttachmentAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/report-actions.ts",
+      "name": "storeAuditSignedPdfAction",
+      "params": [
+        "id",
+        "versionId",
+        "previous",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/capa/actions.ts",
+      "name": "createCapaAction",
+      "params": [
+        "previous",
+        "formData"
+      ],
+      "module": "CAPA",
+      "permission": "CREATE",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/capa/actions.ts",
+      "name": "updateCapaAction",
+      "params": [
+        "id",
+        "previous",
+        "formData"
+      ],
+      "module": "CAPA",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/capa/actions.ts",
+      "name": "addCapaFollowupAction",
+      "params": [
+        "id",
+        "_state",
+        "formData"
+      ],
+      "module": "CAPA",
+      "permission": "FOLLOWUP",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/capa/actions.ts",
+      "name": "addCapaRelationAction",
+      "params": [
+        "id",
+        "_state",
+        "formData"
+      ],
+      "module": "CAPA",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/capa/actions.ts",
+      "name": "unlinkCapaOriginAction",
+      "params": [
+        "capaId",
+        "sourceQmsRecordId",
+        "formData"
+      ],
+      "module": "CAPA",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/capa/signed-document-actions.ts",
+      "name": "uploadCapaSignedPdfAction",
+      "params": [
+        "capaId",
+        "recordVersionId",
+        "_state",
+        "formData"
+      ],
+      "module": "CAPA",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/change-control/actions.ts",
+      "name": "createChangeControlAction",
+      "params": [
+        "previous",
+        "formData"
+      ],
+      "module": "CHANGE_CONTROL",
+      "permission": "CREATE",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/change-control/actions.ts",
+      "name": "updateChangeControlAction",
+      "params": [
+        "id",
+        "previous",
+        "formData"
+      ],
+      "module": "CHANGE_CONTROL",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/change-control/actions.ts",
+      "name": "addChangeControlFollowupAction",
+      "params": [
+        "id",
+        "_state",
+        "formData"
+      ],
+      "module": "CHANGE_CONTROL",
+      "permission": "FOLLOWUP",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/change-control/actions.ts",
+      "name": "updateChangeControlFollowupAction",
+      "params": [
+        "id",
+        "followupId",
+        "_state",
+        "formData"
+      ],
+      "module": "CHANGE_CONTROL",
+      "permission": "FOLLOWUP",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/change-control/actions.ts",
+      "name": "addChangeControlRelationAction",
+      "params": [
+        "id",
+        "formData"
+      ],
+      "module": "CHANGE_CONTROL",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/change-control/signed-document-actions.ts",
+      "name": "uploadChangeControlSignedPdfAction",
+      "params": [
+        "changeControlId",
+        "recordVersionId",
+        "_state",
+        "formData"
+      ],
+      "module": "CHANGE_CONTROL",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/complaints/actions.ts",
+      "name": "createComplaintAction",
+      "params": [
+        "previous",
+        "fd"
+      ],
+      "module": "COMPLAINT",
+      "permission": "CREATE",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/complaints/actions.ts",
+      "name": "updateComplaintAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "COMPLAINT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/complaints/actions.ts",
+      "name": "addComplaintFollowupAction",
+      "params": [
+        "id",
+        "_state",
+        "fd"
+      ],
+      "module": "COMPLAINT",
+      "permission": "FOLLOWUP",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/complaints/actions.ts",
+      "name": "unlinkComplaintRelationAction",
+      "params": [
+        "id",
+        "relatedQmsRecordId",
+        "fd"
+      ],
+      "module": "COMPLAINT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/complaints/actions.ts",
+      "name": "addComplaintRelationAction",
+      "params": [
+        "id",
+        "_state",
+        "fd"
+      ],
+      "module": "COMPLAINT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/complaints/signed-document-actions.ts",
+      "name": "uploadComplaintSignedPdfAction",
+      "params": [
+        "complaintId",
+        "recordVersionId",
+        "_state",
+        "formData"
+      ],
+      "module": "COMPLAINT",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "createDepartmentAction",
+      "params": [
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "updateDepartmentAction",
+      "params": [
+        "id",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "createCatalogAction",
+      "params": [
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "updateCatalogAction",
+      "params": [
+        "id",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "createCatalogItemAction",
+      "params": [
+        "catalogId",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "updateCatalogItemAction",
+      "params": [
+        "id",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "cloneFormVersionAction",
+      "params": [
+        "formId",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "activateFormVersionAction",
+      "params": [
+        "id",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "registerTemplateVersionAction",
+      "params": [
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "activateTemplateVersionAction",
+      "params": [
+        "id",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "updateParameterAction",
+      "params": [
+        "id",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "updateAlertRuleAction",
+      "params": [
+        "id",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
+      "name": "updateFormFieldConfigAction",
+      "params": [
+        "id",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/actions.ts",
+      "name": "masterAction",
+      "params": [
+        "id",
+        "_state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": true
+    },
+    {
+      "file": "src/modules/controlled-documents/actions.ts",
+      "name": "revisionAction",
+      "params": [
+        "documentId",
+        "id",
+        "_state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": true
+    },
+    {
+      "file": "src/modules/deviations/actions.ts",
+      "name": "createDeviationAction",
+      "params": [
+        "previous",
+        "formData"
+      ],
+      "module": "DEVIATION",
+      "permission": "CREATE",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/deviations/actions.ts",
+      "name": "updateDeviationAction",
+      "params": [
+        "id",
+        "previous",
+        "formData"
+      ],
+      "module": "DEVIATION",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/deviations/actions.ts",
+      "name": "addDeviationFollowupAction",
+      "params": [
+        "deviationId",
+        "_state",
+        "formData"
+      ],
+      "module": "DEVIATION",
+      "permission": "FOLLOWUP",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/deviations/actions.ts",
+      "name": "addDeviationRelationAction",
+      "params": [
+        "id",
+        "_state",
+        "formData"
+      ],
+      "module": "DEVIATION",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/deviations/actions.ts",
+      "name": "unlinkDeviationCapaAction",
+      "params": [
+        "deviationId",
+        "capaQmsRecordId",
+        "formData"
+      ],
+      "module": "DEVIATION",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/deviations/signed-document-actions.ts",
+      "name": "uploadDeviationSignedPdfAction",
+      "params": [
+        "deviationId",
+        "recordVersionId",
+        "_state",
+        "formData"
+      ],
+      "module": "DEVIATION",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/returns/actions.ts",
+      "name": "createReturnAction",
+      "params": [
+        "previous",
+        "fd"
+      ],
+      "module": "RETURN",
+      "permission": "CREATE",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/returns/actions.ts",
+      "name": "updateReturnAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "RETURN",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/returns/actions.ts",
+      "name": "addReturnFollowupAction",
+      "params": [
+        "id",
+        "_state",
+        "fd"
+      ],
+      "module": "RETURN",
+      "permission": "FOLLOWUP",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/returns/actions.ts",
+      "name": "unlinkReturnComplaintAction",
+      "params": [
+        "id",
+        "complaintQmsRecordId",
+        "fd"
+      ],
+      "module": "RETURN",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/returns/actions.ts",
+      "name": "addReturnRelationAction",
+      "params": [
+        "id",
+        "_state",
+        "fd"
+      ],
+      "module": "RETURN",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/returns/signed-document-actions.ts",
+      "name": "uploadReturnSignedPdfAction",
+      "params": [
+        "returnId",
+        "annex",
+        "_state",
+        "formData"
+      ],
+      "module": "RETURN",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/app/settings/users/actions.ts",
+      "name": "saveUserAuthorization",
+      "params": [
+        "form"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_USERS",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false,
+      "guard": "AUTH_ADMINISTRATION"
+    },
+    {
+      "file": "src/app/settings/users/actions.ts",
+      "name": "saveRolePolicy",
+      "params": [
+        "form"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_USERS",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false,
+      "guard": "AUTH_ADMINISTRATION"
+    }
+  ],
+  "routes": [
+    {
+      "file": "src/app/api/audits/[id]/documents/route.ts",
+      "method": "GET",
+      "module": "AUDIT",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/audits/plans/[id]/programmes/[versionId]/route.ts",
+      "method": "GET",
+      "module": "AUDIT",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/capa/[id]/annex-iii/route.ts",
+      "method": "GET",
+      "module": "CAPA",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/capa/[id]/versions/[sequence]/signed-pdf/route.ts",
+      "method": "GET",
+      "module": "CAPA",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/capa/export/annex-iv/route.ts",
+      "method": "GET",
+      "module": "CAPA",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/capa/export/simple/route.ts",
+      "method": "GET",
+      "module": "CAPA",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/changes/[id]/annex-iii/route.ts",
+      "method": "GET",
+      "module": "CHANGE_CONTROL",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/changes/[id]/annex-iv/route.ts",
+      "method": "GET",
+      "module": "CHANGE_CONTROL",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/changes/[id]/annex-v/route.ts",
+      "method": "GET",
+      "module": "CHANGE_CONTROL",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/changes/[id]/versions/[sequence]/signed-pdf/route.ts",
+      "method": "GET",
+      "module": "CHANGE_CONTROL",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/changes/export/annex-vii/route.ts",
+      "method": "GET",
+      "module": "CHANGE_CONTROL",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/changes/export/simple/route.ts",
+      "method": "GET",
+      "module": "CHANGE_CONTROL",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/complaints/[id]/annex-iii/route.ts",
+      "method": "GET",
+      "module": "COMPLAINT",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/complaints/[id]/annex-iv/route.ts",
+      "method": "GET",
+      "module": "COMPLAINT",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/complaints/[id]/versions/[sequence]/signed-pdf/route.ts",
+      "method": "GET",
+      "module": "COMPLAINT",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/complaints/export/annex-v/route.ts",
+      "method": "GET",
+      "module": "COMPLAINT",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/complaints/export/simple/route.ts",
+      "method": "GET",
+      "module": "COMPLAINT",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/controlled-documents/[id]/revisions/[revisionId]/documents/[objectId]/route.ts",
+      "method": "GET",
+      "module": "PNT",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/controlled-documents/[id]/revisions/[revisionId]/documents/route.ts",
+      "method": "POST",
+      "module": "PNT",
+      "permission": "EDIT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/controlled-documents/[id]/revisions/[revisionId]/lifecycle/route.ts",
+      "method": "POST",
+      "module": "PNT",
+      "permission": "EDIT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/controlled-documents/[id]/revisions/[revisionId]/manual-status/route.ts",
+      "method": "POST",
+      "module": "PNT",
+      "permission": "EDIT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/controlled-documents/export/route.ts",
+      "method": "GET",
+      "module": "PNT",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/controlled-documents/import-batches/[id]/route.ts",
+      "method": "GET",
+      "module": "PNT",
+      "permission": "IMPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/controlled-documents/import-batches/[id]/route.ts",
+      "method": "POST",
+      "module": "PNT",
+      "permission": "IMPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/controlled-documents/import-batches/route.ts",
+      "method": "GET",
+      "module": "PNT",
+      "permission": "IMPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/controlled-documents/index-preview/route.ts",
+      "method": "POST",
+      "module": "PNT",
+      "permission": "IMPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/deviations/[id]/annex-iii/route.ts",
+      "method": "GET",
+      "module": "DEVIATION",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/deviations/[id]/versions/[sequence]/signed-pdf/route.ts",
+      "method": "GET",
+      "module": "DEVIATION",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/deviations/code-suggestion/route.ts",
+      "method": "GET",
+      "module": "DEVIATION",
+      "permission": "READ",
+      "public": false
+    },
+    {
+      "file": "src/app/api/deviations/export/annex-v/route.ts",
+      "method": "GET",
+      "module": "DEVIATION",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/deviations/export/simple/route.ts",
+      "method": "GET",
+      "module": "DEVIATION",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/health/route.ts",
+      "method": "GET",
+      "module": "QMS",
+      "permission": "READ",
+      "public": true
+    },
+    {
+      "file": "src/app/api/qms/[id]/administrative-status/route.ts",
+      "method": "POST",
+      "module": "QMS",
+      "permission": "ANNUL",
+      "public": false
+    },
+    {
+      "file": "src/app/api/qms/business-code-suggestion/route.ts",
+      "method": "GET",
+      "module": "QMS",
+      "permission": "READ",
+      "public": false
+    },
+    {
+      "file": "src/app/api/qms/relation-suggestions/route.ts",
+      "method": "GET",
+      "module": "QMS",
+      "permission": "READ",
+      "public": false
+    },
+    {
+      "file": "src/app/api/reminders/manual/route.ts",
+      "method": "POST",
+      "module": "QMS",
+      "permission": "EDIT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/returns/[id]/annex-iii/route.ts",
+      "method": "GET",
+      "module": "RETURN",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/returns/[id]/annex-iv/route.ts",
+      "method": "GET",
+      "module": "RETURN",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/returns/[id]/annex-v/route.ts",
+      "method": "GET",
+      "module": "RETURN",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/returns/[id]/documents/[documentId]/route.ts",
+      "method": "GET",
+      "module": "RETURN",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/returns/[id]/signed-pdf/[annex]/route.ts",
+      "method": "GET",
+      "module": "RETURN",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/returns/export/annex-vi/route.ts",
+      "method": "GET",
+      "module": "RETURN",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/returns/export/simple/route.ts",
+      "method": "GET",
+      "module": "RETURN",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
+      "file": "src/app/api/settings/templates/[id]/download/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/auth/login/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "READ",
+      "public": true,
+      "guard": "OIDC_START"
+    },
+    {
+      "file": "src/app/auth/callback/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "READ",
+      "public": true,
+      "guard": "OIDC_CALLBACK"
+    },
+    {
+      "file": "src/app/auth/logout/route.ts",
+      "method": "POST",
+      "module": "SYSTEM",
+      "permission": "READ",
+      "public": false,
+      "guard": "SELF_SESSION_CSRF"
+    },
+    {
+      "file": "src/app/api/auth/session/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "READ",
+      "public": false,
+      "guard": "SELF_SESSION"
+    }
+  ],
+  "pages": [
+    "src/app/audits/[id]/edit/page.tsx",
+    "src/app/audits/[id]/page.tsx",
+    "src/app/audits/new/page.tsx",
+    "src/app/audits/page.tsx",
+    "src/app/audits/plans/[id]/page.tsx",
+    "src/app/audits/plans/page.tsx",
+    "src/app/capa/[id]/edit/page.tsx",
+    "src/app/capa/[id]/page.tsx",
+    "src/app/capa/indicators/page.tsx",
+    "src/app/capa/new/page.tsx",
+    "src/app/capa/page.tsx",
+    "src/app/changes/[id]/edit/page.tsx",
+    "src/app/changes/[id]/followups/[sequence]/edit/page.tsx",
+    "src/app/changes/[id]/page.tsx",
+    "src/app/changes/indicators/page.tsx",
+    "src/app/changes/new/page.tsx",
+    "src/app/changes/page.tsx",
+    "src/app/complaints/[id]/edit/page.tsx",
+    "src/app/complaints/[id]/page.tsx",
+    "src/app/complaints/indicators/page.tsx",
+    "src/app/complaints/new/page.tsx",
+    "src/app/complaints/page.tsx",
+    "src/app/controlled-documents/[id]/edit/page.tsx",
+    "src/app/controlled-documents/[id]/page.tsx",
+    "src/app/controlled-documents/[id]/revisions/[revisionId]/edit/page.tsx",
+    "src/app/controlled-documents/[id]/revisions/new/page.tsx",
+    "src/app/controlled-documents/import-index/[id]/page.tsx",
+    "src/app/controlled-documents/import-index/batches/page.tsx",
+    "src/app/controlled-documents/import-index/page.tsx",
+    "src/app/controlled-documents/new/page.tsx",
+    "src/app/controlled-documents/page.tsx",
+    "src/app/deviations/[id]/edit/page.tsx",
+    "src/app/deviations/[id]/page.tsx",
+    "src/app/deviations/indicators/page.tsx",
+    "src/app/deviations/new/page.tsx",
+    "src/app/deviations/page.tsx",
+    "src/app/page.tsx",
+    "src/app/qms/[id]/page.tsx",
+    "src/app/returns/[id]/edit/page.tsx",
+    "src/app/returns/[id]/page.tsx",
+    "src/app/returns/indicators/page.tsx",
+    "src/app/returns/new/page.tsx",
+    "src/app/returns/page.tsx",
+    "src/app/settings/alerts/page.tsx",
+    "src/app/settings/catalogs/page.tsx",
+    "src/app/settings/history/page.tsx",
+    "src/app/settings/page.tsx",
+    "src/app/settings/parameters/page.tsx",
+    "src/app/settings/versions/[id]/page.tsx",
+    "src/app/settings/versions/page.tsx",
+    "src/app/login/page.tsx",
+    "src/app/settings/users/page.tsx"
+  ]
+}

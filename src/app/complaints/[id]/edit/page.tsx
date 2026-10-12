@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import { updateComplaintAction } from "@/modules/complaints/actions";
@@ -7,7 +8,7 @@ import type { ComplaintFormDefaults } from "@/modules/complaints/types";
 export const dynamic="force-dynamic";
 const b=(v:boolean|null):""|"true"|"false"=>v===true?"true":v===false?"false":"";
 const partII=(v:boolean|null):"pending"|"true"|"false"=>v===true?"true":v===false?"false":"pending";
-export default async function EditComplaintPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{returnTo?:string;tab?:string}>}){
+async function EditComplaintPageAuthenticatedContent({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{returnTo?:string;tab?:string}>}){
  const {id}=await params;
  const {returnTo,tab}=await searchParams;
  const cancelHref=qmsDetailUrl("/complaints",id,returnTo,tab);const [r,l]=await Promise.all([getComplaintDetail(id),getComplaintLookups()]);if(!r)notFound();
@@ -45,4 +46,8 @@ export default async function EditComplaintPage({params,searchParams}:{params:Pr
   derivedActions:r.derivedActions.map(x=>({id:x.id,actionType:x.actionType,businessCode:x.businessCode??"",description:x.description??"",responsible:x.responsible??"",plannedExecutionDate:x.plannedExecutionDate?.toISOString().slice(0,10)??"",sortOrder:x.sortOrder}))
  };
  return <section className="workspace"><div className="page-heading"><div><p className="eyebrow">Reclamaciones</p><h1>Editar {r.qmsRecord.businessCode}</h1></div></div><ComplaintForm mode="edit" action={updateComplaintAction.bind(null,id)} departments={l.departments} defaults={defaults} complaintId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/complaints",returnTo)} detailTab={qmsDetailTab("/complaints",tab)}/></section>;
+}
+
+export default async function EditComplaintPage(...args: Parameters<typeof EditComplaintPageAuthenticatedContent>) {
+  return authorizedPage("src/app/complaints/[id]/edit/page.tsx", () => EditComplaintPageAuthenticatedContent(...args));
 }

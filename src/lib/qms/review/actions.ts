@@ -1,5 +1,6 @@
 "use server";
 
+import { authorizedAction } from "@/lib/auth/action-guard";
 import type { ReviewActionState } from "@/lib/qms/review/types";
 import { ReviewThreadError } from "@/lib/qms/review/service";
 import { createValidatedReviewThread, replyToValidatedReviewThread, acceptValidatedReviewThread, resolveValidatedReviewThread } from "@/lib/qms/review/mutation-service";
@@ -30,7 +31,7 @@ function controlledError(error: unknown): ReviewActionState {
   };
 }
 
-export async function createReviewThreadAction(
+async function createReviewThreadActionAuthenticatedContent(
   input: CreateReviewThreadInput,
 ): Promise<ReviewActionState> {
   try {
@@ -48,7 +49,7 @@ export async function createReviewThreadAction(
   }
 }
 
-export async function replyToReviewThreadAction(
+async function replyToReviewThreadActionAuthenticatedContent(
   input: ReplyToReviewThreadInput & { qmsRecordId: string },
 ): Promise<ReviewActionState> {
   try {
@@ -66,7 +67,7 @@ export async function replyToReviewThreadAction(
   }
 }
 
-export async function acceptReviewThreadAction(
+async function acceptReviewThreadActionAuthenticatedContent(
   input: AcceptReviewThreadInput & { qmsRecordId: string },
 ): Promise<ReviewActionState> {
   try {
@@ -84,7 +85,7 @@ export async function acceptReviewThreadAction(
   }
 }
 
-export async function resolveReviewThreadAction(
+async function resolveReviewThreadActionAuthenticatedContent(
   input: ResolveReviewThreadInput & { qmsRecordId: string },
 ): Promise<ReviewActionState> {
   try {
@@ -100,4 +101,20 @@ export async function resolveReviewThreadAction(
   } catch (error) {
     return controlledError(error);
   }
+}
+
+export async function createReviewThreadAction(...args: Parameters<typeof createReviewThreadActionAuthenticatedContent>) {
+  return authorizedAction("createReviewThreadAction", args, authenticated => createReviewThreadActionAuthenticatedContent(...authenticated as Parameters<typeof createReviewThreadActionAuthenticatedContent>));
+}
+
+export async function replyToReviewThreadAction(...args: Parameters<typeof replyToReviewThreadActionAuthenticatedContent>) {
+  return authorizedAction("replyToReviewThreadAction", args, authenticated => replyToReviewThreadActionAuthenticatedContent(...authenticated as Parameters<typeof replyToReviewThreadActionAuthenticatedContent>));
+}
+
+export async function acceptReviewThreadAction(...args: Parameters<typeof acceptReviewThreadActionAuthenticatedContent>) {
+  return authorizedAction("acceptReviewThreadAction", args, authenticated => acceptReviewThreadActionAuthenticatedContent(...authenticated as Parameters<typeof acceptReviewThreadActionAuthenticatedContent>));
+}
+
+export async function resolveReviewThreadAction(...args: Parameters<typeof resolveReviewThreadActionAuthenticatedContent>) {
+  return authorizedAction("resolveReviewThreadAction", args, authenticated => resolveReviewThreadActionAuthenticatedContent(...authenticated as Parameters<typeof resolveReviewThreadActionAuthenticatedContent>));
 }

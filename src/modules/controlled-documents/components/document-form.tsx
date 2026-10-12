@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 import { useActionState, useEffect, useState } from "react";
 import type { ControlledDocument, ControlledDocumentRevision, Department } from "@prisma/client";
 import { masterAction, revisionAction, SaveState } from "../actions";
@@ -25,7 +27,7 @@ export function DocumentForm({ returnTo, allowExistingRegistration = true, depar
         const submitted = state.submittedValues?.[name];
         return typeof submitted === "string" ? submitted : fallback;
     };
-    return <form key={state.formRevision ?? 0} action={submit} className="form-stack">
+    return <form key={state.formRevision ?? 0} action={submit} className="form-stack"><CsrfField />
  <input type="hidden" name="returnTo" value={returnTo || ""}/>
  <input type="hidden" name="updatedAt" value={revisionOnly ? revision?.updatedAt.toISOString() || "" : master?.updatedAt.toISOString() || ""}/>
  {state.error && <div className="form-errors" role="alert">{state.error}</div>}

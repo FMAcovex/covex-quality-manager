@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 
 import { useActionState, useEffect } from "react";
 import type { SignedVersionDocumentState } from "@/lib/qms/signed-version-document-types";
@@ -24,7 +26,7 @@ export function SignedVersionDocumentForm({
   useEffect(()=>{if(reloadOnSuccess&&state.success)window.location.reload();},[reloadOnSuccess,state.success]);
 
   return (
-    <form action={formAction} className="inline-form">
+    <form action={formAction} className="inline-form"><CsrfField />
       {state.error ? <div className="form-errors full"><strong>{state.error}</strong></div> : null}
       {state.success ? <div className="form-success full"><strong>{state.success}</strong></div> : null}
       <label className="field">

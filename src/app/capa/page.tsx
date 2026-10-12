@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { QmsListPagination } from "@/components/qms-list-pagination";
@@ -23,7 +24,7 @@ export const dynamic = "force-dynamic";
 
 const param = firstQueryValue;
 
-export default async function CapaPage({
+async function CapaPageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -208,4 +209,8 @@ export default async function CapaPage({
       <QmsListPagination root="/capa" query={query} pagination={pagination} />
     </section>
   );
+}
+
+export default async function CapaPage(...args: Parameters<typeof CapaPageAuthenticatedContent>) {
+  return authorizedPage("src/app/capa/page.tsx", () => CapaPageAuthenticatedContent(...args));
 }

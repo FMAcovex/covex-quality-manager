@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/auth/client";
+
 import { useState } from "react";
 import { formatAdministrativeDate } from "@/lib/qms/administrative-date";
 
@@ -44,7 +46,7 @@ export function QmsAdministrativeStatus({
     setPending(true);
     setError(null);
     try {
-      const response = await fetch(`/api/qms/${qmsRecordId}/administrative-status`, {
+      const response = await authenticatedFetch(`/api/qms/${qmsRecordId}/administrative-status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

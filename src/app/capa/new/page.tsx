@@ -1,10 +1,11 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { createCapaAction } from "@/modules/capa/actions";
 import { CapaForm } from "@/modules/capa/components/capa-form";
 import { getCapaLookups, getComplaintPlanPrefill, getComplaintPrefill, getDeviationPlanPrefill } from "@/modules/capa/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewCapaPage({
+async function NewCapaPageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -113,4 +114,8 @@ export default async function NewCapaPage({
       />
     </section>
   );
+}
+
+export default async function NewCapaPage(...args: Parameters<typeof NewCapaPageAuthenticatedContent>) {
+  return authorizedPage("src/app/capa/new/page.tsx", () => NewCapaPageAuthenticatedContent(...args));
 }

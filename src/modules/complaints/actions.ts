@@ -1,6 +1,7 @@
 "use server";
 
 
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
@@ -94,7 +95,7 @@ async function replaceDerivedActions(tx:Prisma.TransactionClient,complaintId:str
  }
 }
 
-export async function createComplaintAction(previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
+async function createComplaintActionAuthenticatedContent(previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values; let createdId:string;
  try{
@@ -143,7 +144,7 @@ export async function createComplaintAction(previous:ComplaintFormState,fd:FormD
  return {error:null,savedRecordId:createdId};
 }
 
-export async function updateComplaintAction(id:string,previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
+async function updateComplaintActionAuthenticatedContent(id:string,previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
  const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}}}}}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
  const linked={capa:existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="CAPA"),returns:existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="RETURN")};
  const parsed=parseComplaintForm(fd,linked); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
@@ -260,7 +261,7 @@ export async function updateComplaintAction(id:string,previous:ComplaintFormStat
 }
 
 // Legacy technical entry point; functional followups use QmsRecordVersion in the main UI.
-export async function addComplaintFollowupAction(id:string,_state:FollowupActionState,fd:FormData):Promise<FollowupActionState>{
+async function addComplaintFollowupActionAuthenticatedContent(id:string,_state:FollowupActionState,fd:FormData):Promise<FollowupActionState>{
  const rec=await prisma.complaint.findUnique({where:{id}});if(!rec)return{error:"Reclamación no encontrada."};
  if(rec.status==="DRAFT")return{error:"La reclamación debe estar abierta antes de registrar seguimientos."};
  const followupDate=String(fd.get("followupDate")??""),completedByText=String(fd.get("completedByText")??"").trim(),comment=String(fd.get("comment")??"").trim();
@@ -278,7 +279,7 @@ await prisma.$transaction(async tx=>{
 }
 
 
-export async function unlinkComplaintRelationAction(
+async function unlinkComplaintRelationActionAuthenticatedContent(
  id:string,
  relatedQmsRecordId:string,
  fd:FormData
@@ -302,7 +303,7 @@ export async function unlinkComplaintRelationAction(
  revalidatePath(`/complaints/${id}`);
 }
 
-export async function addComplaintRelationAction(
+async function addComplaintRelationActionAuthenticatedContent(
  id:string,
  _state:RelationActionState,
  fd:FormData
@@ -348,4 +349,24 @@ export async function addComplaintRelationAction(
  }catch(error){
   return{error:error instanceof Error?error.message:"No se ha podido vincular el expediente."};
  }
+}
+
+export async function createComplaintAction(...args: Parameters<typeof createComplaintActionAuthenticatedContent>) {
+  return authorizedAction("createComplaintAction", args, authenticated => createComplaintActionAuthenticatedContent(...authenticated as Parameters<typeof createComplaintActionAuthenticatedContent>));
+}
+
+export async function updateComplaintAction(...args: Parameters<typeof updateComplaintActionAuthenticatedContent>) {
+  return authorizedAction("updateComplaintAction", args, authenticated => updateComplaintActionAuthenticatedContent(...authenticated as Parameters<typeof updateComplaintActionAuthenticatedContent>));
+}
+
+export async function addComplaintFollowupAction(...args: Parameters<typeof addComplaintFollowupActionAuthenticatedContent>) {
+  return authorizedAction("addComplaintFollowupAction", args, authenticated => addComplaintFollowupActionAuthenticatedContent(...authenticated as Parameters<typeof addComplaintFollowupActionAuthenticatedContent>));
+}
+
+export async function unlinkComplaintRelationAction(...args: Parameters<typeof unlinkComplaintRelationActionAuthenticatedContent>) {
+  return authorizedAction("unlinkComplaintRelationAction", args, authenticated => unlinkComplaintRelationActionAuthenticatedContent(...authenticated as Parameters<typeof unlinkComplaintRelationActionAuthenticatedContent>));
+}
+
+export async function addComplaintRelationAction(...args: Parameters<typeof addComplaintRelationActionAuthenticatedContent>) {
+  return authorizedAction("addComplaintRelationAction", args, authenticated => addComplaintRelationActionAuthenticatedContent(...authenticated as Parameters<typeof addComplaintRelationActionAuthenticatedContent>));
 }

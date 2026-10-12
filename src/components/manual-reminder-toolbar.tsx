@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/auth/client";
+
 import { useEffect, useState } from "react";
 
 type ReminderRecord = {
@@ -184,7 +186,7 @@ export function ManualReminderToolbar({
     setError(null);
 
     try {
-      const response = await fetch("/api/reminders/manual", {
+      const response = await authenticatedFetch("/api/reminders/manual", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

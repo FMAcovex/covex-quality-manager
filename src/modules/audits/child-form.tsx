@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 import { useActionState, useEffect } from "react";
 import { auditWithReturnTo } from "./navigation";
 import { actionStatusLabels, criticalityLabels, findingTypeLabels } from "./finding-domain";
@@ -20,7 +22,7 @@ export function AuditChildForm({ action, kind, defaults = {}, findings = [], but
   const values = { ...defaults, ...state.values };
   const field = (name: string, label: string, type = "text", required = false) => <label className={`field ${type === "textarea" ? "full" : ""}`} key={name}><span>{label}</span>{type === "textarea" ? <textarea name={name} defaultValue={values[name] ?? ""} required={required} rows={3}/> : <input name={name} type={type} defaultValue={values[name] ?? (name === "actor" ? "Usuario demo" : name === "sortOrder" ? "0" : "")} required={required}/>}</label>;
   const select = (name: string, label: string, labels: Record<string,string>, initial: string) => <label className="field"><span>{label}</span><select name={name} defaultValue={values[name] ?? initial}>{Object.entries(labels).map(([value,text]) => <option key={value} value={value}>{text}</option>)}</select></label>;
-  return <form action={formAction} key={state.revision ?? 0} className="audit-child-form">
+  return <form action={formAction} key={state.revision ?? 0} className="audit-child-form"><CsrfField />
     {state.error ? <div className="form-errors full" role="alert">{state.error}</div> : null}
     <input type="hidden" name="expectedUpdatedAt" value={values.expectedUpdatedAt ?? ""}/>
     {kind === "finding" ? <><h3 className="full">Identificación</h3><p className="full">Referencia: <strong>{defaults.reference || "Se asignará al guardar (OBS / Rk)"}</strong></p>{select("findingType", "Tipo", findingTypeLabels, "FINDING")}{select("criticality", "Criticidad", criticalityLabels, "NA")}{field("sortOrder", "Orden visual", "number")}
@@ -35,5 +37,5 @@ export function AuditChildForm({ action, kind, defaults = {}, findings = [], but
 export function AuditRetirementForm({ action, label }: { action: (state: AuditRetirementFormState, form: FormData) => Promise<AuditRetirementFormState>; label: string }) {
   const [state, formAction, pending] = useActionState(action, { error: null } as AuditRetirementFormState);
   useSavedAuditNavigation(state.savedHref);
-  return <form action={formAction} className="audit-child-form"><p className="full">{label}</p>{state.error ? <p className="form-errors full" role="alert">{state.error}</p> : null}{state.success ? <p className="form-success full">{state.success}</p> : null}<label className="field"><span>Motivo</span><input name="reason" required/></label><label className="field"><span>Registrado por</span><input name="actor" required defaultValue="Usuario demo"/></label><div className="full"><button className="button danger small" disabled={pending}>{label}</button></div></form>;
+  return <form action={formAction} className="audit-child-form"><CsrfField /><p className="full">{label}</p>{state.error ? <p className="form-errors full" role="alert">{state.error}</p> : null}{state.success ? <p className="form-success full">{state.success}</p> : null}<label className="field"><span>Motivo</span><input name="reason" required/></label><label className="field"><span>Registrado por</span><input name="actor" required defaultValue="Usuario demo"/></label><div className="full"><button className="button danger small" disabled={pending}>{label}</button></div></form>;
 }

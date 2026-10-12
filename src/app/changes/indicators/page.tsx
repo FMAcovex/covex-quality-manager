@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import {
   ChangeDistributionCard,
@@ -14,7 +15,7 @@ function param(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function ChangeControlIndicatorsPage({
+async function ChangeControlIndicatorsPageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -158,4 +159,8 @@ export default async function ChangeControlIndicatorsPage({
       </div>
     </section>
   );
+}
+
+export default async function ChangeControlIndicatorsPage(...args: Parameters<typeof ChangeControlIndicatorsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/changes/indicators/page.tsx", () => ChangeControlIndicatorsPageAuthenticatedContent(...args));
 }

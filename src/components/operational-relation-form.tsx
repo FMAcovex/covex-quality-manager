@@ -1,4 +1,8 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
+
+import { authenticatedFetch } from "@/lib/auth/client";
 
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import type {
@@ -83,7 +87,7 @@ export function OperationalRelationForm({
           q: query,
         });
         if (findingId) params.set("findingId", findingId);
-        const response = await fetch(`/api/qms/relation-suggestions?${params.toString()}`, {
+        const response = await authenticatedFetch(`/api/qms/relation-suggestions?${params.toString()}`, {
           signal: controller.signal,
         });
         if (!response.ok) {
@@ -134,7 +138,7 @@ export function OperationalRelationForm({
       <h3>{title}</h3>
       {state.error ? <div className="form-errors"><strong>{state.error}</strong></div> : null}
       {state.success ? <div className="form-success"><strong>{state.success}</strong></div> : null}
-      <form action={formAction} className="inline-form relation-form">
+      <form action={formAction} className="inline-form relation-form"><CsrfField />
         <input type="hidden" name="targetRecordId" value={targetRecordId} />
         {showType ? (
           <label className="field">

@@ -1,3 +1,5 @@
+import { currentIdentity } from "@/lib/auth/context";
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getChangeControlDetail } from "@/modules/change-control/queries";
@@ -16,7 +18,7 @@ function safe(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "_");
 }
 
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+async function GETAuthenticatedContent(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const record = await getChangeControlDetail(id);
   if (!record) return NextResponse.json({ error: "Control de Cambio no encontrado." }, { status: 404 });
@@ -68,7 +70,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         recordVersionId: storedVersion.id,
         documentType: "CHANGE_ANNEX_V",
         templateVersionId: changeControlSnapshotTemplateId(storedVersion.snapshot, "V"),
-        generatedByText: process.env.DEFAULT_ACTOR_NAME || record.requesterName,
+        generatedByText: (currentIdentity()?.principal.name ?? process.env.DEFAULT_ACTOR_NAME) || record.requesterName,
         metadata: {
           source: "download",
           recordVersion: sequenceNumber,
@@ -90,4 +92,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     }
     throw error;
   }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/changes/[id]/annex-v/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

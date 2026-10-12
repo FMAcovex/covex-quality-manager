@@ -1,3 +1,6 @@
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { SettingsNav } from "@/components/settings-nav";
@@ -14,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 const docLabel = (value: DocumentType) => value.replaceAll("_", " ");
 
-export default async function VersionsPage() {
+async function VersionsPageAuthenticatedContent() {
   const data = await getAdministrationOverview();
   const readiness = evaluateRequiredTemplateReadiness(data.templates);
 
@@ -127,7 +130,7 @@ export default async function VersionsPage() {
                         </Link>
 
                         {form.status === "DRAFT" ? (
-                          <form action={activateFormVersionAction.bind(null, form.id)}>
+                          <form action={activateFormVersionAction.bind(null, form.id)}><CsrfField />
                             <input
                               type="hidden"
                               name="actor"
@@ -147,7 +150,7 @@ export default async function VersionsPage() {
                           <form
                             action={cloneFormVersionAction.bind(null, form.id)}
                             className="admin-pop-form"
-                          >
+                          ><CsrfField />
                             <label>
                               Nuevo código
                               <input name="versionCode" placeholder="DEV-07" required />
@@ -254,7 +257,7 @@ export default async function VersionsPage() {
                       ) : null}
 
                       {!template.isActive ? (
-                        <form action={activateTemplateVersionAction.bind(null, template.id)}>
+                        <form action={activateTemplateVersionAction.bind(null, template.id)}><CsrfField />
                           <input
                             type="hidden"
                             name="actor"
@@ -283,7 +286,7 @@ export default async function VersionsPage() {
           <form
             action={registerTemplateVersionAction}
             className="form-grid admin-template-form"
-          >
+          ><CsrfField />
             <label className="field">
               <span>Módulo</span>
               <select name="module" required>
@@ -367,4 +370,8 @@ export default async function VersionsPage() {
       </section>
     </section>
   );
+}
+
+export default async function VersionsPage(...args: Parameters<typeof VersionsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/settings/versions/page.tsx", () => VersionsPageAuthenticatedContent(...args));
 }

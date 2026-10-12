@@ -1,3 +1,5 @@
+import { currentIdentity } from "@/lib/auth/context";
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getDeviationDetail } from "@/modules/deviations/queries";
@@ -16,7 +18,7 @@ function safe(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "_");
 }
 
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+async function GETAuthenticatedContent(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const deviation = await getDeviationDetail(id);
   if (!deviation) return NextResponse.json({ error: "Desviación no encontrada." }, { status: 404 });
@@ -60,7 +62,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         templateVersionId: storedVersion
           ? recordVersionTemplateId("DEVIATION", storedVersion.snapshot)
           : deviation.anexoIIITemplateVersionId,
-        generatedByText: process.env.DEFAULT_ACTOR_NAME || deviation.createdByText,
+        generatedByText: (currentIdentity()?.principal.name ?? process.env.DEFAULT_ACTOR_NAME) || deviation.createdByText,
         metadata: {
           source: "download",
           templateVersion:
@@ -86,4 +88,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     }
     throw error;
   }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/deviations/[id]/annex-iii/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

@@ -1,3 +1,4 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import {createHash} from "node:crypto";
 import { NextResponse } from "next/server";
 import { RecordVersionDocumentKind } from "@prisma/client";
@@ -15,7 +16,7 @@ const annexConfig = {
   },
 } as const;
 
-export async function GET(
+async function GETAuthenticatedContent(
   _request: Request,
   context: { params: Promise<{ id: string; annex: string }> },
 ) {
@@ -67,4 +68,8 @@ export async function GET(
       "Cache-Control": "no-store",
     },
   });
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/returns/[id]/signed-pdf/[annex]/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

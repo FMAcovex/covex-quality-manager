@@ -1,4 +1,5 @@
 "use server";
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import { Prisma, QmsRecordType, RecordVersionKind } from "@prisma/client";
@@ -122,7 +123,7 @@ async function relatePrimaryOrigin(
   });
 }
 
-export async function createCapaAction(
+async function createCapaActionAuthenticatedContent(
   previous: CapaFormState,
   formData: FormData,
 ): Promise<CapaFormState> {
@@ -384,7 +385,7 @@ export async function createCapaAction(
   redirect(`/capa/${capaId}`);
 }
 
-export async function updateCapaAction(
+async function updateCapaActionAuthenticatedContent(
   id: string,
   previous: CapaFormState,
   formData: FormData,
@@ -805,7 +806,7 @@ export async function updateCapaAction(
   redirect(qmsDetailUrl("/capa", id, formData.get("returnTo"), formData.get("detailTab")));
 }
 
-export async function addCapaFollowupAction(
+async function addCapaFollowupActionAuthenticatedContent(
   id: string,
   _state: FollowupActionState,
   formData: FormData,
@@ -818,7 +819,7 @@ export async function addCapaFollowupAction(
   return result;
 }
 
-export async function addCapaRelationAction(
+async function addCapaRelationActionAuthenticatedContent(
   id: string,
   _state: RelationActionState,
   formData: FormData,
@@ -868,7 +869,7 @@ export async function addCapaRelationAction(
 }
 
 
-export async function unlinkCapaOriginAction(
+async function unlinkCapaOriginActionAuthenticatedContent(
   capaId: string,
   sourceQmsRecordId: string,
   formData: FormData,
@@ -897,4 +898,24 @@ export async function unlinkCapaOriginAction(
   revalidatePath("/complaints");
   revalidatePath("/capa");
   revalidatePath(`/capa/${capaId}`);
+}
+
+export async function createCapaAction(...args: Parameters<typeof createCapaActionAuthenticatedContent>) {
+  return authorizedAction("createCapaAction", args, authenticated => createCapaActionAuthenticatedContent(...authenticated as Parameters<typeof createCapaActionAuthenticatedContent>));
+}
+
+export async function updateCapaAction(...args: Parameters<typeof updateCapaActionAuthenticatedContent>) {
+  return authorizedAction("updateCapaAction", args, authenticated => updateCapaActionAuthenticatedContent(...authenticated as Parameters<typeof updateCapaActionAuthenticatedContent>));
+}
+
+export async function addCapaFollowupAction(...args: Parameters<typeof addCapaFollowupActionAuthenticatedContent>) {
+  return authorizedAction("addCapaFollowupAction", args, authenticated => addCapaFollowupActionAuthenticatedContent(...authenticated as Parameters<typeof addCapaFollowupActionAuthenticatedContent>));
+}
+
+export async function addCapaRelationAction(...args: Parameters<typeof addCapaRelationActionAuthenticatedContent>) {
+  return authorizedAction("addCapaRelationAction", args, authenticated => addCapaRelationActionAuthenticatedContent(...authenticated as Parameters<typeof addCapaRelationActionAuthenticatedContent>));
+}
+
+export async function unlinkCapaOriginAction(...args: Parameters<typeof unlinkCapaOriginActionAuthenticatedContent>) {
+  return authorizedAction("unlinkCapaOriginAction", args, authenticated => unlinkCapaOriginActionAuthenticatedContent(...authenticated as Parameters<typeof unlinkCapaOriginActionAuthenticatedContent>));
 }

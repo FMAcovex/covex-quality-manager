@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 
 import Link from "next/link";
@@ -44,7 +46,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
   const closed=recordStatus==="CLOSED";
   const patch=(i:number,p:Partial<ReturnProductInput>)=>setProducts(x=>x.map((v,n)=>n===i?{...v,...p}:v));
 
-  return <form key={state.formRevision??0} action={formAction} className="form-stack return-form-stack">
+  return <form key={state.formRevision??0} action={formAction} className="form-stack return-form-stack"><CsrfField />
     <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>

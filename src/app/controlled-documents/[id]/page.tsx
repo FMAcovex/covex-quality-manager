@@ -1,8 +1,9 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { indexMetadata, importStates } from "@/modules/controlled-documents/import/domain";
 import { RevisionDocuments } from "@/modules/controlled-documents/components/revision-documents";
 import { RevisionLifecycle } from "@/modules/controlled-documents/components/revision-lifecycle";
 import { ManualRevisionStatus } from "@/modules/controlled-documents/components/manual-revision-status";
-import { lifecyclePrincipal } from "@/modules/controlled-documents/lifecycle/access";
+import { sessionLifecyclePrincipal, sessionDocumentPrincipal } from "@/modules/controlled-documents/documents/session-access";
 import { DocumentStateBadge } from "@/modules/controlled-documents/components/document-state-badge";
 import { canEditRevision } from "@/modules/controlled-documents/revision-editability";
 import { revisionProvenance } from "@/modules/controlled-documents/presentation";
@@ -10,7 +11,6 @@ import { listingReturnTo, withReturnTo } from "@/modules/controlled-documents/na
 import { DocumentLink as Link } from "@/modules/controlled-documents/components/document-link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { documentPrincipal } from "@/modules/controlled-documents/documents/access";
 import { documentHistoryActions } from "@/modules/controlled-documents/documents/history";
 import { prisma } from "@/lib/db";
 import { administrativeLabels, revisionLabels, verificationLabels, displayDate } from "@/modules/controlled-documents/domain";
@@ -22,7 +22,7 @@ function historyValue(value: unknown) {
     const s = String(value);
     return administrativeLabels[s as keyof typeof administrativeLabels] || revisionLabels[s as keyof typeof revisionLabels] || verificationLabels[s as keyof typeof verificationLabels] || s;
 }
-export default async function DetailPage({ params, searchParams }: {
+async function DetailPageAuthenticatedContent({ params, searchParams }: {
     params: Promise<{
         id: string;
     }>;
@@ -37,10 +37,10 @@ export default async function DetailPage({ params, searchParams }: {
     const returnQuery = backUrl === "/controlled-documents" ? "" : "&returnTo=" + encodeURIComponent(backUrl);
     const tab = requestedTab && ["information", "revisions", "documents", "verification", "history"].includes(requestedTab) ? requestedTab : "information";
     let canManageState = false;
-    try { const principal = lifecyclePrincipal(await headers()); canManageState = principal.capabilities.includes("manage-state"); } catch { /* Read-only by default. */ }
+    try { const principal = await sessionLifecyclePrincipal(id, await headers()); canManageState = principal.capabilities.includes("manage-state"); } catch { /* Read-only by default. */ }
     let canReadDocumentHistory = false;
     if (tab === "history") {
-        try { documentPrincipal(await headers()); canReadDocumentHistory = true; }
+        try { await sessionDocumentPrincipal(id, await headers()); canReadDocumentHistory = true; }
         catch { /* Keep ordinary P1A/P1B history available; documentary history fails closed. */ }
     }
     const m = await prisma.controlledDocument.findUnique({ where: { id }, include: { revisions: { orderBy: { revisionCode: "desc" }, include: { lifecycle: { select: { version: true, effectiveFrom: true, reviewDueAt: true, obsoletedAt: true, legacyOrigin: true, approvalAt: true } }, decisions: true } }, changes: { where: canReadDocumentHistory ? {} : { action: { notIn: Object.values(documentHistoryActions) } }, orderBy: [{ changedAt: "desc" }, { id: "desc" }] } } });
@@ -57,4 +57,8 @@ export default async function DetailPage({ params, searchParams }: {
  {tab === "verification" && <RevisionLifecycle returnTo={backUrl} documentId={id} />}
  {tab === "history" && <div className="pnt-history-panel"><h2>Historial operativo</h2>{m.changes.map(c => { const old = (c.oldValue || {}) as Record<string, unknown>; const next = (c.newValue || {}) as Record<string, unknown>; return <article className="form-section pnt-history-item" key={c.id}><h3>{c.action}</h3><p>{displayDate(c.changedAt)} — {c.changedByText}</p><p>{c.reason}</p><ul>{Object.entries(fields).filter(([key]) => JSON.stringify(old[key]) !== JSON.stringify(next[key]) && (key in old || key in next)).map(([key, label]) => <li key={key}>{label}: {historyValue(old[key])} → {historyValue(next[key])}</li>)}</ul></article>; })}</div>}
  </div></section>;
+}
+
+export default async function DetailPage(...args: Parameters<typeof DetailPageAuthenticatedContent>) {
+  return authorizedPage("src/app/controlled-documents/[id]/page.tsx", () => DetailPageAuthenticatedContent(...args));
 }

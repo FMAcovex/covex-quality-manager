@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 
 import Link from "next/link";
@@ -225,7 +227,7 @@ export function CapaForm({
   };
 
   return (
-    <form key={state.formRevision ?? 0} action={formAction} className="record-form">
+    <form key={state.formRevision ?? 0} action={formAction} className="record-form"><CsrfField />
     <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>

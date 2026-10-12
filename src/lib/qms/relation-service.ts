@@ -1,4 +1,18 @@
 import { Prisma, QmsRecordType, QmsRelationType } from "@prisma/client";
+import { currentIdentity } from "@/lib/auth/context";
+import { assertPermission } from "@/lib/auth/policy";
+import { qmsScope } from "@/lib/auth/resources";
+import type { PrismaClient } from "@prisma/client";
+
+async function authorizeEndpoints(client: QmsRelationClient, ids: string[]) {
+  const context = currentIdentity();
+  if (!context || context.unitTest) return;
+  for (const id of new Set(ids)) {
+    if (context.createdRecords?.has(id)) continue;
+    const target = await qmsScope(id, client as unknown as PrismaClient);
+    assertPermission(context.principal, target.module, "EDIT", target.scope);
+  }
+}
 import {
   canRelate,
   operationalRelationLabel,
@@ -114,6 +128,7 @@ export async function createQmsRelation(
   client: QmsRelationClient,
   input: CreateQmsRelationInput,
 ) {
+  await authorizeEndpoints(client, [input.sourceRecordId, input.targetRecordId]);
   if (!input.sourceRecordId || !input.targetRecordId) {
     throw new QmsRelationValidationError(
       "Los identificadores QMS de origen y destino son obligatorios.",
@@ -277,6 +292,7 @@ export async function deactivateQmsRelation(
     relationType?: QmsRelationType;
   },
 ) {
+  await authorizeEndpoints(client, [input.sourceRecordId, input.targetRecordId]);
   const relationType = input.relationType ?? QmsRelationType.GENERATES;
   const relation = await client.qmsRelation.findUnique({
     where: {
@@ -323,6 +339,7 @@ export async function deactivateOperationalRelation(
   client: QmsRelationHistoryClient,
   input: DeactivateOperationalRelationInput,
 ) {
+  await authorizeEndpoints(client, [input.currentRecordId, input.relatedRecordId]);
   const [current, related] = await Promise.all([
     client.qmsRecord.findUnique({
       where: { id: input.currentRecordId },

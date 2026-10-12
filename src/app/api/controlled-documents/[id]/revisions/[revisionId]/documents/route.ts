@@ -1,13 +1,15 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
+import { expectedDocumentOrigin } from "@/modules/controlled-documents/documents/session-access";
 import { documentPrincipal, requireDocumentWrite } from "@/modules/controlled-documents/documents/access";
 import { MAX_DOCUMENT_SIZE, uuid } from "@/modules/controlled-documents/documents/domain";
 import { incorporateDocument } from "@/modules/controlled-documents/documents/service";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
-export async function POST(request: Request, { params }: { params: Promise<{ id: string; revisionId: string }> }) {
+async function POSTAuthenticatedContent(request: Request, { params }: { params: Promise<{ id: string; revisionId: string }> }) {
   let principal;
   try { principal = documentPrincipal(request.headers); requireDocumentWrite(principal); } catch { return Response.json({ error: "Acceso documental de escritura no autorizado." }, { status: 403, headers }); }
-  const expectedOrigin = process.env.PNT_DOCUMENT_ALLOWED_ORIGIN || `${new URL(request.url).protocol}//${request.headers.get("host") || new URL(request.url).host}`;
+  const expectedOrigin = expectedDocumentOrigin(request);
   if (request.headers.get("origin") !== expectedOrigin) return Response.json({ error: "Origen de solicitud no autorizado." }, { status: 403, headers });
   try {
     const { id, revisionId } = await params; uuid(id); uuid(revisionId);
@@ -32,4 +34,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const message = error instanceof Error && !error.name.startsWith("Prisma") ? error.message : "No se pudo incorporar el documento; compruebe si ya fue sustituido.";
     return Response.json({ error: message }, { status: 400, headers });
   }
+}
+
+export async function POST(...args: Parameters<typeof POSTAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/controlled-documents/[id]/revisions/[revisionId]/documents/route.ts", "POST", args, authenticated => POSTAuthenticatedContent(...authenticated as Parameters<typeof POSTAuthenticatedContent>));
 }

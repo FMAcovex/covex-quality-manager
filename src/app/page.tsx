@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import "./dashboard.css";
 import { getDashboardData } from "@/modules/dashboard/queries";
@@ -27,7 +28,7 @@ function queryLink(query: Query, page: number): string {
   return "/?" + params.toString();
 }
 
-export default async function HomePage({
+async function HomePageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Query>;
@@ -223,4 +224,8 @@ export default async function HomePage({
       <p className="dashboard-source-note">Datos actuales de PostgreSQL · corte {date(data.asOf)} (UTC) · consulta {data.elapsedMs} ms. El panel no registra ni modifica expedientes.</p>
     </section>
   );
+}
+
+export default async function HomePage(...args: Parameters<typeof HomePageAuthenticatedContent>) {
+  return authorizedPage("src/app/page.tsx", () => HomePageAuthenticatedContent(...args));
 }

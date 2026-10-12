@@ -1,3 +1,6 @@
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { AuditOriginPanel } from "@/modules/audits/origin-panel";
 import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
@@ -104,7 +107,7 @@ function investigationResultLabel(value: string | null) {
   return "No informado";
 }
 
-export default async function DeviationDetailPage({
+async function DeviationDetailPageAuthenticatedContent({
   params,
   searchParams,
 }: {
@@ -556,7 +559,7 @@ export default async function DeviationDetailPage({
                     <strong>{record.businessCode ?? "CAPA"}</strong>
                   </Link>
                   <small>CAPA</small>
-                  <form action={unlinkDeviationCapaAction.bind(null, id, record.id)}>
+                  <form action={unlinkDeviationCapaAction.bind(null, id, record.id)}><CsrfField />
                     <input type="hidden" name="actor" value={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
                     <button className="button danger small" type="submit">Desvincular</button>
                   </form>
@@ -757,4 +760,8 @@ export default async function DeviationDetailPage({
     <ReviewDrawer />
     </ReviewWorkspaceProvider>
   );
+}
+
+export default async function DeviationDetailPage(...args: Parameters<typeof DeviationDetailPageAuthenticatedContent>) {
+  return authorizedPage("src/app/deviations/[id]/page.tsx", () => DeviationDetailPageAuthenticatedContent(...args));
 }

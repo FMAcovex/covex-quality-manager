@@ -1,3 +1,6 @@
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { AnnualProgrammePanel } from "@/modules/audits/annual-programme/panel";
 import { ProgrammeEntryFields } from "@/modules/audits/annual-programme/entry-fields";
 import Link from "next/link";
@@ -8,7 +11,7 @@ import { retirePlanEntryAction } from "@/modules/audits/plan-actions";
 import { PlanEntryForm } from "@/modules/audits/plan-entry-form";
 export const dynamic="force-dynamic";
 const format=(d:Date|null)=>d?.toISOString().slice(0,10)??"";
-export default async function PlanDetailPage({params}:{params:Promise<{id:string}>}){
+async function PlanDetailPageAuthenticatedContent({params}:{params:Promise<{id:string}>}){
  const {id}=await params;const [plan,departments]=await Promise.all([getAnnualPlan(id),getAuditDepartments()]);if(!plan)notFound();
  const intern=plan.auditType==="INTERNAL";
  return <section className="workspace"><div className="page-heading"><div><Link href="/audits/plans">← Planes anuales</Link><p className="eyebrow">Plan {intern?"interno":"externo"} · {plan.year}</p><h1>{plan.title}</h1><p>{plan.entries.filter(e=>e.isActive).length} auditorías previstas · {plan.entries.filter(e=>e.isActive&&e.audit).length} con expediente</p></div><Link className="button" href="/audits">Ver auditorías</Link></div>
@@ -28,9 +31,13 @@ export default async function PlanDetailPage({params}:{params:Promise<{id:string
  <label className="field"><span>Fecha prevista</span><input type="date" name="plannedDate" defaultValue={format(e.plannedDate)}/></label>
  {intern?<label className="field"><span>Departamento</span><select name="departmentId" defaultValue={e.departmentId??""}><option value="">Sin especificar</option>{departments.filter(d=>d.isActive||d.id===e.departmentId).map(d=><option key={d.id} value={d.id}>{d.code} · {d.name}</option>)}</select></label>:<input type="hidden" name="departmentId" value=""/>}
  <ProgrammeEntryFields internal={intern} entry={e}/><label className="field full"><span>Observaciones</span><textarea name="notes" defaultValue={e.notes??""}/></label><label className="field"><span>Responsable del cambio</span><input name="actor" defaultValue="Usuario demo" required/></label><label className="field full"><span>Motivo de actualización</span><input name="reason" required/></label></PlanEntryForm></details>:null}
- {e.isActive&&!e.audit?<details className="audit-editor"><summary>Retirar de la planificación</summary><form action={retirePlanEntryAction.bind(null,id,e.id)} className="audit-child-form"><label className="field"><span>Responsable</span><input name="actor" defaultValue="Usuario demo" required/></label><label className="field full"><span>Motivo de retirada</span><input name="reason" required/></label><button className="button">Confirmar retirada</button></form></details>:null}
+ {e.isActive&&!e.audit?<details className="audit-editor"><summary>Retirar de la planificación</summary><form action={retirePlanEntryAction.bind(null,id,e.id)} className="audit-child-form"><CsrfField /><label className="field"><span>Responsable</span><input name="actor" defaultValue="Usuario demo" required/></label><label className="field full"><span>Motivo de retirada</span><input name="reason" required/></label><button className="button">Confirmar retirada</button></form></details>:null}
  </article>)}</div>{!plan.entries.length?<p>Sin entradas planificadas.</p>:null}</section>
  <AnnualProgrammePanel planId={id}/>
  <details className="card"><summary><strong>Historial de cambios del plan</strong></summary><ol className="audit-history">{plan.changes.map(c=><li key={c.id}><strong>{c.event}</strong><p>{c.reason}</p><small>{c.actor} · {c.createdAt.toISOString().slice(0,10)}</small></li>)}</ol></details>
  </section>;
+}
+
+export default async function PlanDetailPage(...args: Parameters<typeof PlanDetailPageAuthenticatedContent>) {
+  return authorizedPage("src/app/audits/plans/[id]/page.tsx", () => PlanDetailPageAuthenticatedContent(...args));
 }

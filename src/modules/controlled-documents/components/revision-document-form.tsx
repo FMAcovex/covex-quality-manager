@@ -1,4 +1,8 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
+
+import { authenticatedFetch } from "@/lib/auth/client";
 import { withReturnTo } from "../navigation";
 import { FormEvent, useState } from "react";
 import { documentKinds } from "../documents/types";
@@ -15,14 +19,14 @@ export function RevisionDocumentForm({ returnTo, documentId, revisionId, documen
         setPending(false);
         return;
       }
-      const response = await fetch("/api/controlled-documents/" + documentId + "/revisions/" + revisionId + "/documents", { method: "POST", body: form });
+      const response = await authenticatedFetch("/api/controlled-documents/" + documentId + "/revisions/" + revisionId + "/documents", { method: "POST", body: form });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "No se pudo incorporar el documento.");
       window.location.assign(withReturnTo("/controlled-documents/" + documentId + "?tab=documents", returnTo));
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudo incorporar el documento."); }
     finally { setPending(false); }
   }
-  return <form onSubmit={submit} className="form-section pnt-document-form">
+  return <form onSubmit={submit} className="form-section pnt-document-form"><CsrfField />
     <h4>Incorporar documento o evidencia</h4>
     {error && <p role="alert" className="form-errors">{error}</p>}
     <div className="pnt-inner-grid">
