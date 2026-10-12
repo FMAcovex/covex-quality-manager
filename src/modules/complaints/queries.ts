@@ -1,3 +1,4 @@
+import { versionDocumentMetadata, templateMetadata, generatedDocumentMetadata } from "@/lib/qms/document-metadata";
 import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
@@ -50,13 +51,13 @@ export async function getComplaintDetail(id:string){
     sourceRelations:{where:{isActive:true},include:{targetRecord:true}},
     targetRelations:{where:{isActive:true},include:{sourceRecord:true}},
     history:{orderBy:{changedAt:"desc"},take:100},
-    versions:{orderBy:{sequenceNumber:"asc"},include:{documents:{orderBy:{uploadedAt:"desc"}}}},
-    generatedDocuments:{orderBy:{generatedAt:"desc"}}
+    versions:{orderBy:{sequenceNumber:"asc"},include:{documents:{orderBy:{uploadedAt:"desc"},select:versionDocumentMetadata}}},
+    generatedDocuments:{orderBy:{generatedAt:"desc"},select:generatedDocumentMetadata}
   }},
   department:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}]},
   capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:{include:{capa:true}}}},
   derivedActions:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},
-  formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true
+  formVersion:true,annexIIITemplateVersion:{select:templateMetadata},annexIVTemplateVersion:{select:templateMetadata},annexVTemplateVersion:{select:templateMetadata}
  }});
 }
 
@@ -64,7 +65,7 @@ export async function getComplaintLookups(){
  const [departments,forms,templates]=await Promise.all([
   prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
   prisma.formVersion.findMany({where:{module:"COMPLAINT",isActive:true},orderBy:{effectiveFrom:"desc"}}),
-  prisma.templateVersion.findMany({where:{module:"COMPLAINT",isActive:true},orderBy:{effectiveFrom:"desc"}})
+  prisma.templateVersion.findMany({select:templateMetadata,where:{module:"COMPLAINT",isActive:true},orderBy:{effectiveFrom:"desc"}})
  ]);
  return {departments,forms,templates};
 }

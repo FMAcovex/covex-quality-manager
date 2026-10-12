@@ -1,5 +1,5 @@
 import "server-only";
-import { QmsRecordType } from "@prisma/client";
+import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 export function moduleLabel(module:QmsRecordType){
@@ -47,80 +47,69 @@ export type AlertPreviewItem={
   detail:string;
 };
 
-export async function getAlertPreview(referenceDate=new Date()){
-  const rules=await prisma.alertRule.findMany({where:{isActive:true},orderBy:[{severity:"desc"},{module:"asc"}]});
-  if(!rules.length)return {rules,items:[] as AlertPreviewItem[]};
-  const today=day(referenceDate);
-  const maxLead=Math.max(...rules.map(r=>r.leadDays),0);
-  const horizon=addDays(today,maxLead);
-  const items:AlertPreviewItem[]=[];
+export type AlertPreviewScope = { year?: number | null; department?: string; module?: QmsRecordType | "PNT" | "ALL" };
 
-  const rule=(key:string)=>rules.find(r=>r.key===key);
-
-  const capaFollow=rule("CAPA_FOLLOWUP_DUE");
-  if(capaFollow){
-    const rows=await prisma.capa.findMany({
-      where:{status:{in:["OPEN","CLOSED"]}},
-      include:{qmsRecord:true,followups:{orderBy:[{sequenceNumber:"desc"}],take:1}},
+export async function getAlertPreview(referenceDate = new Date(), scope?: AlertPreviewScope) {
+  const rules = await prisma.alertRule.findMany({ where: { isActive: true }, orderBy: [{ severity: "desc" }, { module: "asc" }] });
+  const today = day(referenceDate);
+  const horizon = addDays(today, Math.max(...rules.map(r => r.leadDays), 0));
+  const items: AlertPreviewItem[] = [];
+  const sources = [
+    { key: "CAPA_FOLLOWUP_DUE", module: "CAPA", table: "Capa", child: "CapaFollowup", parent: "capaId", order: '"sequenceNumber" DESC', detail: 'COALESCE(f.description, f.observations)', status: "status", label: "Seguimiento CAPA", prefix: "CAPA-F-", route: "capa", tab: "?tab=followups" },
+    { key: "CHANGE_FOLLOWUP_DUE", module: "CHANGE_CONTROL", table: "ChangeControl", child: "ChangeControlFollowup", parent: "changeControlId", order: '"sequenceNumber" DESC', detail: 'f."remainOpenReason"', status: "finalStatus", label: "Seguimiento de cambio", prefix: "CC-F-", route: "changes", tab: "?tab=followups" },
+    { key: "COMPLAINT_FOLLOWUP_DUE", module: "COMPLAINT", table: "Complaint", child: "ComplaintFollowup", parent: "complaintId", order: '"followupDate" DESC, "createdAt" DESC', detail: "f.comment", status: "status", label: "Seguimiento de reclamación", prefix: "REC-F-", route: "complaints", tab: "?tab=followups" },
+    { key: "RETURN_FOLLOWUP_DUE", module: "RETURN", table: "ReturnRecord", child: "ReturnFollowup", parent: "returnRecordId", order: '"followupDate" DESC, "createdAt" DESC', detail: "f.comment", status: "status", label: "Seguimiento de devolución", prefix: "RET-F-", route: "returns", tab: "?tab=followups" },
+  ] as const;
+  const restriction = () => Prisma.sql`
+    ${scope ? Prisma.sql`AND q."isActive" = true` : Prisma.empty}
+    ${scope?.year ? Prisma.sql`AND q.year = ${scope.year}` : Prisma.empty}
+    ${scope?.department ? Prisma.sql`AND r."departmentId" = ${scope.department}` : Prisma.empty}
+  `;
+  const included = (module: QmsRecordType) => !scope?.module || scope.module === "ALL" || scope.module === module;
+  for (const source of sources) {
+    const rule = rules.find(r => r.key === source.key);
+    if (!rule || !included(source.module)) continue;
+    const rows = await prisma.$queryRaw<Array<{ id: string; businessCode: string | null; due: Date; detail: string | null }>>(Prisma.sql`
+      SELECT r.id, q."businessCode", f."nextFollowupDate" AS due, f.detail
+      FROM ${Prisma.raw('"' + source.table + '"')} r JOIN "QmsRecord" q ON q.id = r."qmsRecordId"
+      JOIN LATERAL (SELECT f."nextFollowupDate", ${Prisma.raw(source.detail)} AS detail FROM ${Prisma.raw('"' + source.child + '"')} f
+        WHERE f.${Prisma.raw('"' + source.parent + '"')} = r.id ORDER BY ${Prisma.raw(source.order)} LIMIT 1) f ON true
+      WHERE r.${Prisma.raw('"' + source.status + '"')}::text IN (${Prisma.join(source.module === "CAPA" ? ["OPEN", "CLOSED"] : ["OPEN"])})
+        ${restriction()} AND f."nextFollowupDate" < ${addDays(today, rule.leadDays + 1)}
+    `);
+    for (const row of rows) items.push({
+      key: source.prefix + row.id, ruleKey: rule.key, module: source.module, businessCode: row.businessCode ?? "Sin código",
+      label: source.label, dueDate: day(row.due), state: dueState(day(row.due), today),
+      href: "/" + source.route + "/" + row.id + source.tab, detail: row.detail ?? "Seguimiento programado",
     });
-    for(const r of rows){
-      const due=r.followups[0]?.nextFollowupDate;
-      if(!due)continue;
-      const limit=addDays(today,capaFollow.leadDays);
-      if(day(due)<=limit)items.push({key:`CAPA-F-${r.id}`,ruleKey:capaFollow.key,module:"CAPA",businessCode:r.qmsRecord.businessCode??"Sin código",label:"Seguimiento CAPA",dueDate:day(due),state:dueState(day(due),today),href:`/capa/${r.id}?tab=followups`,detail:r.followups[0]?.description??r.followups[0]?.observations??"Seguimiento programado"});
+  }
+  const capaEff = rules.find(r => r.key === "CAPA_EFFECTIVENESS_PENDING");
+  if (capaEff && included("CAPA")) {
+    const rows = await prisma.$queryRaw<Array<{ id: string; businessCode: string | null; due: Date }>>(Prisma.sql`
+      SELECT r.id, q."businessCode", r."operationalClosedAt" AS due FROM "Capa" r JOIN "QmsRecord" q ON q.id = r."qmsRecordId"
+      WHERE r.status = 'CLOSED' AND r."effectivenessStatus" = 'PENDING' ${restriction()}
+        AND r."operationalClosedAt" < ${addDays(horizon, 1 - capaEff.leadDays)}
+    `);
+    for (const row of rows) {
+      const due = addDays(row.due, capaEff.leadDays);
+      items.push({ key: "CAPA-E-" + row.id, ruleKey: capaEff.key, module: "CAPA", businessCode: row.businessCode ?? "Sin código",
+        label: "Eficacia CAPA pendiente", dueDate: due, state: dueState(due, today),
+        href: "/capa/" + row.id + "?tab=effectiveness", detail: "CAPA cerrada operativamente con eficacia pendiente" });
     }
   }
-
-  const capaEff=rule("CAPA_EFFECTIVENESS_PENDING");
-  if(capaEff){
-    const rows=await prisma.capa.findMany({where:{status:"CLOSED",effectivenessStatus:"PENDING",operationalClosedAt:{not:null}},include:{qmsRecord:true}});
-    for(const r of rows){
-      if(!r.operationalClosedAt)continue;
-      const due=addDays(r.operationalClosedAt,capaEff.leadDays);
-      if(due<=horizon)items.push({key:`CAPA-E-${r.id}`,ruleKey:capaEff.key,module:"CAPA",businessCode:r.qmsRecord.businessCode??"Sin código",label:"Eficacia CAPA pendiente",dueDate:due,state:dueState(due,today),href:`/capa/${r.id}?tab=effectiveness`,detail:"CAPA cerrada operativamente con eficacia pendiente"});
-    }
+  const changeExec = rules.find(r => r.key === "CHANGE_PLANNED_EXECUTION_DUE");
+  if (changeExec && included("CHANGE_CONTROL")) {
+    const rows = await prisma.$queryRaw<Array<{ id: string; businessCode: string | null; due: Date }>>(Prisma.sql`
+      SELECT r.id, q."businessCode", r."plannedImplementationDate" AS due FROM "ChangeControl" r JOIN "QmsRecord" q ON q.id = r."qmsRecordId"
+      WHERE r."finalStatus" = 'OPEN' AND r."executionStatus" = 'NOT_EXECUTED' ${restriction()}
+        AND r."plannedImplementationDate" < ${addDays(today, changeExec.leadDays + 1)}
+    `);
+    for (const row of rows) items.push({ key: "CC-E-" + row.id, ruleKey: changeExec.key, module: "CHANGE_CONTROL", businessCode: row.businessCode ?? "Sin código",
+      label: "Ejecución de cambio", dueDate: day(row.due), state: dueState(day(row.due), today),
+      href: "/changes/" + row.id, detail: "Fecha prevista de ejecución próxima o vencida" });
   }
-
-  const changeFollow=rule("CHANGE_FOLLOWUP_DUE");
-  if(changeFollow){
-    const rows=await prisma.changeControl.findMany({where:{finalStatus:"OPEN"},include:{qmsRecord:true,followups:{orderBy:{sequenceNumber:"desc"},take:1}}});
-    for(const r of rows){
-      const due=r.followups[0]?.nextFollowupDate;
-      if(!due)continue;
-      if(day(due)<=addDays(today,changeFollow.leadDays))items.push({key:`CC-F-${r.id}`,ruleKey:changeFollow.key,module:"CHANGE_CONTROL",businessCode:r.qmsRecord.businessCode??"Sin código",label:"Seguimiento de cambio",dueDate:day(due),state:dueState(day(due),today),href:`/changes/${r.id}?tab=followups`,detail:r.followups[0]?.remainOpenReason??"Seguimiento programado"});
-    }
-  }
-
-  const changeExec=rule("CHANGE_PLANNED_EXECUTION_DUE");
-  if(changeExec){
-    const rows=await prisma.changeControl.findMany({where:{finalStatus:"OPEN",executionStatus:"NOT_EXECUTED",plannedImplementationDate:{not:null}},include:{qmsRecord:true}});
-    for(const r of rows){
-      if(!r.plannedImplementationDate)continue;
-      const due=day(r.plannedImplementationDate);
-      if(due<=addDays(today,changeExec.leadDays))items.push({key:`CC-E-${r.id}`,ruleKey:changeExec.key,module:"CHANGE_CONTROL",businessCode:r.qmsRecord.businessCode??"Sin código",label:"Ejecución de cambio",dueDate:due,state:dueState(due,today),href:`/changes/${r.id}`,detail:"Fecha prevista de ejecución próxima o vencida"});
-    }
-  }
-
-  const complaintFollow=rule("COMPLAINT_FOLLOWUP_DUE");
-  if(complaintFollow){
-    const rows=await prisma.complaint.findMany({where:{status:"OPEN"},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}}});
-    for(const r of rows){
-      const due=r.followups[0]?.nextFollowupDate;
-      if(!due)continue;
-      if(day(due)<=addDays(today,complaintFollow.leadDays))items.push({key:`REC-F-${r.id}`,ruleKey:complaintFollow.key,module:"COMPLAINT",businessCode:r.qmsRecord.businessCode??"Sin código",label:"Seguimiento de reclamación",dueDate:day(due),state:dueState(day(due),today),href:`/complaints/${r.id}?tab=followups`,detail:r.followups[0]?.comment??"Seguimiento programado"});
-    }
-  }
-
-  const returnFollow=rule("RETURN_FOLLOWUP_DUE");
-  if(returnFollow){
-    const rows=await prisma.returnRecord.findMany({where:{status:"OPEN"},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}],take:1}}});
-    for(const r of rows){
-      const due=r.followups[0]?.nextFollowupDate;
-      if(!due)continue;
-      if(day(due)<=addDays(today,returnFollow.leadDays))items.push({key:`RET-F-${r.id}`,ruleKey:returnFollow.key,module:"RETURN",businessCode:r.qmsRecord.businessCode??"Sin código",label:"Seguimiento de devolución",dueDate:day(due),state:dueState(day(due),today),href:`/returns/${r.id}?tab=followups`,detail:r.followups[0]?.comment??"Seguimiento programado"});
-    }
-  }
-
-  items.sort((a,b)=>a.dueDate.getTime()-b.dueDate.getTime()||a.businessCode.localeCompare(b.businessCode));
-  return {rules,items};
+  // Preserve the previous stable rule-group order when the public preview comparator ties.
+  const groupOrder = ["CAPA_FOLLOWUP_DUE", "CAPA_EFFECTIVENESS_PENDING", "CHANGE_FOLLOWUP_DUE", "CHANGE_PLANNED_EXECUTION_DUE", "COMPLAINT_FOLLOWUP_DUE", "RETURN_FOLLOWUP_DUE"];
+  items.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime() || a.businessCode.localeCompare(b.businessCode) || groupOrder.indexOf(a.ruleKey) - groupOrder.indexOf(b.ruleKey));
+  return { rules, items };
 }

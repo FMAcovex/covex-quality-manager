@@ -1,3 +1,4 @@
+import { versionDocumentMetadata, templateMetadata } from "@/lib/qms/document-metadata";
 import { reviewListWhere } from "@/lib/qms/review/list-domain";
 import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
@@ -26,17 +27,17 @@ export async function getReturnList(filters:ReturnListFilters){
 
 export async function getReturnDetail(id:string){
  return prisma.returnRecord.findUnique({where:{id},include:{
-  qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}},history:{orderBy:{changedAt:"desc"},take:100},versions:{orderBy:{sequenceNumber:"asc"},include:{documents:{orderBy:{uploadedAt:"desc"}}}},generatedDocuments:{orderBy:{generatedAt:"desc"},select:{id:true,documentType:true,generatedAt:true,generatedByText:true,fileName:true,checksum:true,mimeType:true}}}},
+  qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}},history:{orderBy:{changedAt:"desc"},take:100},versions:{orderBy:{sequenceNumber:"asc"},include:{documents:{orderBy:{uploadedAt:"desc"},select:versionDocumentMetadata}}},generatedDocuments:{orderBy:{generatedAt:"desc"},select:{id:true,documentType:true,generatedAt:true,generatedByText:true,fileName:true,checksum:true,mimeType:true}}}},
   department:true,products:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}],include:{department:true}},
   followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"},{id:"desc"}]},
-  formVersion:true,annexIIITemplateVersion:true,annexIVTemplateVersion:true,annexVTemplateVersion:true,annexVITemplateVersion:true
+  formVersion:true,annexIIITemplateVersion:{select:templateMetadata},annexIVTemplateVersion:{select:templateMetadata},annexVTemplateVersion:{select:templateMetadata},annexVITemplateVersion:{select:templateMetadata}
  }});
 }
 export async function getReturnLookups(){
  const [departments,forms,templates]=await Promise.all([
   prisma.department.findMany({where:{isActive:true,code:{in:[...RETURN_DEPARTMENT_CODES]}},orderBy:{code:"asc"}}),
   prisma.formVersion.findMany({where:{module:"RETURN",isActive:true},orderBy:{effectiveFrom:"desc"}}),
-  prisma.templateVersion.findMany({where:{module:"RETURN",isActive:true},orderBy:{effectiveFrom:"desc"}})
+  prisma.templateVersion.findMany({select:templateMetadata,where:{module:"RETURN",isActive:true},orderBy:{effectiveFrom:"desc"}})
  ]);
  return {departments,forms,templates};
 }

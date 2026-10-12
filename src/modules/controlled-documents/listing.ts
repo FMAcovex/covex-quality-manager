@@ -1,6 +1,8 @@
+import { Prisma } from "@prisma/client";
+import { pntCandidatesSql, sortPntCandidates, type PntCandidate } from "./listing-selection";
 import { prisma } from "@/lib/db";
 import type { Filters } from "./queries";
-import { dateFilterErrors, listWhere } from "./queries";
+import { dateFilterErrors } from "./queries";
 import { iso } from "./domain";
 
 // Listing-only projection. No documentary binaries, approval evidence or history are loaded.
@@ -47,95 +49,45 @@ export function matchesQuickFilter(revision: {
   const max = dateString(new Date(Date.parse(today + "T00:00:00Z") + 30 * 86400000));
   return dates.reviewDueAt >= today && dates.reviewDueAt <= max;
 }
-function revisionMatches(revision: {
-  revisionCode: string; status: string; verificationStatus: string;
-  effectiveFrom: Date | null; reviewDueAt: Date | null;
-  lifecycle: { effectiveFrom: Date | null; reviewDueAt: Date | null } | null;
-}, f: PntListingFilters, quick: PntQuick | null, today: string) {
-  const dates = operationalDates(revision);
-  if (f.revision && revision.revisionCode !== f.revision) return false;
-  if (f.revisionState && revision.status !== f.revisionState) return false;
-  if (f.validity === "current" && !(revision.status === "IN_FORCE" && dates.effectiveFrom && dates.effectiveFrom <= today)) return false;
-  if (f.validity === "due" && !(revision.status === "IN_FORCE" && dates.reviewDueAt && dates.reviewDueAt <= today)) return false;
-  if (f.validity === "missing" && dates.effectiveFrom && dates.reviewDueAt) return false;
-  if (!dateInRange(dates.effectiveFrom, f.effectiveFromStart, f.effectiveFromEnd)) return false;
-  if (!dateInRange(dates.reviewDueAt, f.reviewDueStart, f.reviewDueEnd)) return false;
-  return matchesQuickFilter(revision, dates, quick, today);
-}
-const collator = new Intl.Collator("es", { numeric: true, sensitivity: "base" });
-function compareText(a: string, b: string) { return collator.compare(a, b); }
-function compareDates(a: string, b: string, direction: 1 | -1) {
-  if (!a) return b ? 1 : 0;
-  if (!b) return -1;
-  return direction * compareText(a, b);
-}
+const revisionSelect = {
+  id: true, revisionCode: true, status: true, verificationStatus: true,
+  effectiveFrom: true, reviewDueAt: true, sourceMetadata: true,
+  lifecycle: { select: { effectiveFrom: true, reviewDueAt: true } },
+} satisfies Prisma.ControlledDocumentRevisionSelect;
+const masterSelect = {
+  id: true, baseCode: true, title: true, departmentCodeSnapshot: true, departmentNameSnapshot: true,
+  administrativeStatus: true, sourceMetadata: true,
+} satisfies Prisma.ControlledDocumentSelect;
 
-// Page and XLSX share the same selector: the export is never limited to the visible page.
+// Selection/counts in SQL; exact Spanish ordering over compact keys; hydrate one page only.
+// The same SQL selection serves the complete export independently of the visible page.
 export async function queryPntListing(f: PntListingFilters, paginate = true) {
   const options = normalizedListOptions(f);
-  const now = iso(new Date());
   const errors = dateFilterErrors(f);
-  const masters = errors.length ? [] : await prisma.controlledDocument.findMany({
-    where: listWhere({ q: f.q, department: f.department, state: f.state }),
-    orderBy: [{ baseCode: "asc" }, { id: "asc" }],
-    include: {
-      revisions: {
-        orderBy: [{ revisionCode: "desc" }, { id: "desc" }],
-        select: {
-          id: true, revisionCode: true, status: true, verificationStatus: true,
-          effectiveFrom: true, reviewDueAt: true, sourceMetadata: true,
-          lifecycle: { select: { effectiveFrom: true, reviewDueAt: true } },
-        },
-      },
-    },
-  });
-  type Master = typeof masters[number];
-  type Revision = Master["revisions"][number];
-  const matches: { master: Master; revision: Revision | null }[] = [];
-  for (const master of masters) {
-    const candidates = options.view === "latest" ? master.revisions.slice(0, 1) : master.revisions;
-    if (!candidates.length) {
-      // Draft masters without a revision are visible only without revision-level restrictions.
-      if (!f.revision && !f.revisionState && !f.validity && !f.effectiveFromStart &&
-          !f.effectiveFromEnd && !f.reviewDueStart && !f.reviewDueEnd && !options.quick)
-        matches.push({ master, revision: null });
-    } else {
-      for (const revision of candidates)
-        if (revisionMatches(revision, f, options.quick, now))
-          matches.push({ master, revision });
-    }
-  }
-  const factor: 1 | -1 = options.direction === "desc" ? -1 : 1;
-  matches.sort((a, b) => {
-    const aDates = a.revision ? operationalDates(a.revision) : { effectiveFrom: "", reviewDueAt: "" };
-    const bDates = b.revision ? operationalDates(b.revision) : { effectiveFrom: "", reviewDueAt: "" };
-    if (options.sort === "effectiveFrom" || options.sort === "reviewDueAt") {
-      const result = compareDates(aDates[options.sort], bDates[options.sort], factor);
-      if (result) return result;
-    } else {
-      const key = (row: typeof a): string => {
-        if (options.sort === "title") return row.master.title || "";
-        if (options.sort === "department") return row.master.departmentCodeSnapshot || "";
-        if (options.sort === "masterState") return row.master.administrativeStatus;
-        if (options.sort === "revision") return row.revision?.revisionCode || "";
-        if (options.sort === "status") return row.revision?.status || "";
-        return row.master.baseCode || "";
-      };
-      const result = factor * compareText(key(a), key(b));
-      if (result) return result;
-    }
-    return compareText(a.master.baseCode || "", b.master.baseCode || "") ||
-      compareText(b.revision?.revisionCode || "", a.revision?.revisionCode || "") ||
-      compareText(a.master.id, b.master.id);
-  });
-  const rowCount = matches.length;
-  const masterCount = new Set(matches.map(r => r.master.id)).size;
-  const revisionCount = matches.filter(r => r.revision !== null).length;
-  const pages = Math.max(1, Math.ceil(rowCount / PNT_PAGE_SIZE));
-  const requested = Number.parseInt(f.page || "1", 10) || 1;
-  const page = Math.min(pages, Math.max(1, requested));
-  return {
-    rows: paginate ? matches.slice((page - 1) * PNT_PAGE_SIZE, page * PNT_PAGE_SIZE) : matches,
-    rowCount, masterCount, revisionCount, page, pages, options, errors,
-  };
+  return prisma.$transaction(async tx => {
+    const selection = pntCandidatesSql(f, iso(new Date()));
+    const totals = errors.length ? { rowCount: 0, masterCount: 0, revisionCount: 0 } :
+      (await tx.$queryRaw<Array<{ rowCount: number; masterCount: number; revisionCount: number }>>(Prisma.sql`
+        SELECT COUNT(*)::int AS "rowCount", COUNT(DISTINCT "masterId")::int AS "masterCount", COUNT("revisionId")::int AS "revisionCount"
+        FROM (${selection}) selected
+      `))[0];
+    const pages = Math.max(1, Math.ceil(totals.rowCount / PNT_PAGE_SIZE));
+    const requested = Number.parseInt(f.page || "1", 10) || 1;
+    const page = Math.min(pages, Math.max(1, requested));
+    const candidates = errors.length ? [] : sortPntCandidates(await tx.$queryRaw<PntCandidate[]>(selection), f);
+    const selected = paginate ? candidates.slice((page - 1) * PNT_PAGE_SIZE, page * PNT_PAGE_SIZE) : candidates;
+    const masterIds = [...new Set(selected.map(row => row.masterId))];
+    const revisionIds = selected.flatMap(row => row.revisionId ? [row.revisionId] : []);
+    const [masters, revisions] = await Promise.all([
+      masterIds.length ? tx.controlledDocument.findMany({ where: { id: { in: masterIds } }, select: masterSelect }) : [],
+      revisionIds.length ? tx.controlledDocumentRevision.findMany({ where: { id: { in: revisionIds } }, select: revisionSelect }) : [],
+    ]);
+    const masterById = new Map(masters.map(master => [master.id, master]));
+    const revisionById = new Map(revisions.map(revision => [revision.id, revision]));
+    const rows = selected.map(row => ({
+      master: masterById.get(row.masterId)!,
+      revision: row.revisionId ? revisionById.get(row.revisionId)! : null,
+    }));
+    return { rows, ...totals, page, pages, options, errors };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
 }

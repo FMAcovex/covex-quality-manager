@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+// The listing now imports a server-only SQL selector; these tests exercise its pure date/options exports.
+vi.mock("server-only", () => ({}));
 import { dateInRange, matchesQuickFilter, normalizedListOptions, operationalDates } from "./listing";
 
 describe("PNT P3C-4 — listado operativo", () => {
