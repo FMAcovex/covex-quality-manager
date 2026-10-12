@@ -1,0 +1,28 @@
+[Unit]
+Description=COVEX Quality Manager candidate production service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=covex
+Group=covex
+WorkingDirectory=/opt/covex/current
+EnvironmentFile=/etc/covex/production.env
+Environment=HOSTNAME=127.0.0.1 PORT=3000 NODE_ENV=production
+ExecStart=/usr/bin/node /opt/covex/current/ops/runtime/start.mjs
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/covex/current/.next/cache
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=covex-quality
+
+[Install]
+WantedBy=multi-user.target

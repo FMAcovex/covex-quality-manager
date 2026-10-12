@@ -1,0 +1,18 @@
+{
+  "environment": "production",
+  "approval_reference": "PENDING-IT-QA-APPROVAL",
+  "release_sha": "dc0f8f85fae988b40b52b4e471e0dc4a56adcee8",
+  "assets_consistency": "immutable-release",
+  "external_reference_policy": "references-only-accepted",
+  "application_root": "/opt/covex/current",
+  "assets": [{"label": "templates", "path": "/opt/covex/assets/templates"}],
+  "backup_directory": "/mnt/approved-offsite/covex",
+  "temporary_directory": "/run/covex-backup",
+  "encryption_key": "/etc/covex/backup-encryption.key",
+  "manifest_key": "/etc/covex/backup-manifest.key",
+  "status_directory": "/var/lib/covex-backup",
+  "command_timeout_seconds": 3600,
+  "approved_recovery_hosts": ["recovery.example.invalid"],
+  "source": {"host": "database.example.invalid", "port": 5432, "database": "covex_quality", "user": "covex_backup", "passfile": "/etc/covex/backup.pgpass", "sslmode": "verify-full", "sslrootcert": "/etc/covex/database-ca.pem"},
+  "recovery": {"host": "recovery.example.invalid", "port": 5432, "database": "postgres", "user": "covex_recovery", "passfile": "/etc/covex/recovery.pgpass", "sslmode": "verify-full", "sslrootcert": "/etc/covex/database-ca.pem"}
+}

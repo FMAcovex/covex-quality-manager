@@ -43,3 +43,15 @@ reports/complaints/
 templates/returns/v03/
 reports/returns/
 *.tsbuildinfo
+ops/local/
+ops/**/__pycache__/
+release-manifest.json
+*.pgpass
+*.dump
+*.enc
+*.key
+*.pem
+*.env
+!*.env.example
+.env.*
+!.env.example

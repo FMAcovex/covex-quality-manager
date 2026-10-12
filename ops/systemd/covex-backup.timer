@@ -1,0 +1,12 @@
+[Unit]
+Description=COVEX backup schedule example; replace after IT/QA approval
+
+[Timer]
+# Daily is a proposal, not an approved RPO. No automatic installation/enabling.
+OnCalendar=*-*-* 02:00:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+Unit=covex-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,73 @@
+# Candidate for an IT-managed Linux Docker Engine. Never reuse compose.yaml.
+name: ${COVEX_STACK_NAME:?approved stack name required}
+services:
+  postgres:
+    image: ${COVEX_POSTGRES_IMAGE:?approved PostgreSQL 16 image required}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: covex_quality
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    command: [postgres, -c, ssl=on, -c, ssl_cert_file=/run/secrets/pg_server_cert, -c, ssl_key_file=/run/secrets/pg_server_key, -c, ssl_ca_file=/run/secrets/pg_ca_cert, -c, hba_file=/etc/postgresql/pg_hba.conf, -c, password_encryption=scram-sha-256]
+    secrets: [postgres_password, pg_server_cert, pg_server_key, pg_ca_cert]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+    networks: [database]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d covex_quality']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: &logging
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+  app:
+    image: ${COVEX_APP_IMAGE:?approved application image by SHA required}
+    restart: unless-stopped
+    env_file: ['${COVEX_APP_ENV_FILE:?private production environment file required}']
+    environment:
+      DATABASE_URL_FILE: /run/secrets/database_url
+      AUTH_ENTRA_CLIENT_SECRET_FILE: /run/secrets/entra_secret
+      HOSTNAME: 0.0.0.0
+      PORT: '3000'
+    secrets: [database_url, entra_secret, pg_ca_cert]
+    volumes:
+      - ${COVEX_ASSETS_DIR:?controlled assets directory required}:/app/templates:ro
+    networks: [database, frontend]
+    depends_on:
+      postgres: {condition: service_healthy}
+    read_only: true
+    tmpfs: ['/tmp', '/app/.next/cache:uid=10001,gid=10001,mode=0700']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: *logging
+  proxy:
+    image: ${COVEX_PROXY_IMAGE:?approved nginx image required}
+    restart: unless-stopped
+    ports: ['${COVEX_LISTEN_IP:?approved LAN address required}:443:443']
+    environment:
+      COVEX_DNS: ${COVEX_DNS:?approved DNS required}
+      COVEX_UPSTREAM: app:3000
+      NGINX_ENVSUBST_FILTER: '^COVEX_'
+    volumes:
+      - ./nginx/covex.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ${COVEX_TLS_DIR:?certificate directory required}:/etc/nginx/tls:ro
+    networks: [frontend]
+    depends_on: [app]
+    logging: *logging
+networks:
+  database: {internal: true}
+  frontend: {}
+volumes:
+  postgres_data:
+    external: true
+    name: ${COVEX_PG_VOLUME:?existing durable volume required}
+secrets:
+  postgres_password: {file: '${COVEX_POSTGRES_PASSWORD_FILE:?private secret required}'}
+  database_url: {file: '${COVEX_DATABASE_URL_FILE:?private secret required}'}
+  entra_secret: {file: '${COVEX_ENTRA_SECRET_FILE:?private secret required}'}
+  pg_server_cert: {file: '${COVEX_PG_CERT_FILE:?database certificate required}'}
+  pg_server_key: {file: '${COVEX_PG_KEY_FILE:?private database key required}'}
+  pg_ca_cert: {file: '${COVEX_PG_CA_FILE:?database CA required}'}
