@@ -1,0 +1,120 @@
+{
+  "postgresql": {
+    "db": [
+      "dashboard-d1b:smoke",
+      "phase3b1:smoke",
+      "phase3b2:smoke",
+      "db:smoke",
+      "import:smoke",
+      "indicators:smoke",
+      "capa:import:smoke",
+      "capa:smoke",
+      "versions:smoke",
+      "changes:smoke",
+      "hito8:smoke",
+      "hito9:smoke",
+      "demo:seed",
+      "create-save:smoke",
+      "relations:smoke",
+      "b2-3:smoke",
+      "b3-3:smoke",
+      "b4-3:smoke",
+      "c3:smoke",
+      "d3:smoke",
+      "d6:smoke",
+      "d5-3:smoke",
+      "d5-6:smoke",
+      "r1-capa:smoke",
+      "r2b-documents:smoke",
+      "r3-capa:smoke",
+      "r3-complaints:smoke",
+      "complaints-r4a:smoke",
+      "r2-returns-documents:smoke",
+      "r3-returns:smoke",
+      "returns-r4b:smoke",
+      "review-r1:smoke",
+      "review-r2a:smoke",
+      "review-r2b1:smoke",
+      "review-r2b2:smoke",
+      "review-r2b3:smoke",
+      "audits-r3a:smoke",
+      "audits-r3b:smoke",
+      "audits-r3c:smoke",
+      "audits-r4b:smoke",
+      "audits-annual:smoke",
+      "review-r2c:smoke",
+      "hito10:smoke"
+    ],
+    "ui": []
+  },
+  "browser-qms": {
+    "db": [],
+    "ui": [
+      "dashboard-d1b:ui:smoke",
+      "dashboard-d1c:ui:smoke",
+      "phase3b1:ui:smoke",
+      "phase3b2:ui:smoke",
+      "ux-c3:ui:smoke",
+      "review-r2c:ui:smoke"
+    ]
+  },
+  "browser-audits": {
+    "db": [],
+    "ui": [
+      "audits-r3a:ui:smoke",
+      "audits-r3b:ui:smoke",
+      "audits-r3c:ui:smoke",
+      "audits-r4b:ui:smoke",
+      "audits-annual:ui:smoke"
+    ]
+  },
+  "records-r4c": {
+    "db": [
+      "complaints-r4a:smoke",
+      "returns-r4b:smoke",
+      "hito8:smoke",
+      "complaints-returns-r4c:smoke"
+    ],
+    "ui": [
+      "complaints-r4a:ui:smoke",
+      "returns-r4b:ui:smoke",
+      "complaints-returns-r4c:smoke"
+    ]
+  },
+  "pnt": {
+    "db": [
+      "pnt-p1a:smoke",
+      "pnt-p1b1:smoke",
+      "pnt-p1b2:smoke",
+      "pnt-p2a:smoke",
+      "pnt-p2b:smoke",
+      "pnt-p2c:smoke",
+      "pnt-p3c2:smoke",
+      "pnt-final:smoke"
+    ],
+    "ui": [
+      "pnt-p1a:ui:smoke",
+      "pnt-p1b1:ui:smoke",
+      "pnt-p1b2:ui:smoke",
+      "pnt-p2a:ui:smoke",
+      "pnt-p2b:ui:smoke",
+      "pnt-p2c:ui:smoke",
+      "pnt-p3c1:ui:smoke",
+      "pnt-final:ui:smoke"
+    ],
+    "auth": [
+      [
+        "pnt-p2a:ui:smoke",
+        "P2A_VERIFY_RESTART"
+      ],
+      [
+        "pnt-p2b:ui:smoke",
+        "P2B_VERIFY_ACCESS"
+      ],
+      [
+        "pnt-p2c:ui:smoke",
+        "P2C_VERIFY_RESTART"
+      ]
+    ]
+  }
+}
