@@ -7,6 +7,12 @@ dist
 *.log
 .DS_Store
 
+# Disposable CI evidence and build transport, never business data.
+.github/scripts/__pycache__/
+ci-evidence/
+next-build.tar
+build-manifest.json
+
 # Plantillas GMP controladas: se instalan localmente y no se versionan como binarios.
 templates/deviations/v06/*.docx
 templates/deviations/v06/*.xlsx

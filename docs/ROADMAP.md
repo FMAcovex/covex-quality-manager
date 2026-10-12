@@ -27,6 +27,8 @@
 
 **Dependencias:** IT y seguridad deben diseñarse desde fases 0–3, no esperar a la fase 4. La producción GMP queda bloqueada hasta completar seguridad, datos, controles y validación pertinentes. UX/KPI/CI pueden avanzar en paralelo con preparación IT.
 
+**Cierre técnico de Fase 3 (2026-10-12):** 3B1 y 3B2 integradas; 3B3 completa la CI modular y la regresión integral obligatoria, con PostgreSQL aislado, Chromium, PNT/R4C y gate por SHA satisfactorios. Evidencia, inventario y mediciones en [PHASE_3B3.md](PHASE_3B3.md), PR #138 abierta para revisión e integración, sin merge automático. Este cierre técnico no declara validación GMP ni uso productivo; no se inicia la Fase 4 ni implantación.
+
 ## Primeras PR acordadas
 
 - **PR A (ahora):** consolidación documental y gobernanza, sin código, schema, migraciones, plantillas, workflows, dependencias ni acciones administrativas sobre PR antiguas.
