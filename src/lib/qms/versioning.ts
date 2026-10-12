@@ -37,9 +37,9 @@ type ComplaintVersionSource = Prisma.ComplaintGetPayload<{
     capaPlans: { include: { linkedCapaRecord: true } };
     derivedActions: true;
     formVersion: true;
-    annexIIITemplateVersion: true;
-    annexIVTemplateVersion: true;
-    annexVTemplateVersion: true;
+    annexIIITemplateVersion: { select: { id: true; versionCode: true; checksum: true } };
+    annexIVTemplateVersion: { select: { id: true; versionCode: true; checksum: true } };
+    annexVTemplateVersion: { select: { id: true; versionCode: true; checksum: true } };
   };
 }>;
 
@@ -49,10 +49,10 @@ type ReturnVersionSource = Prisma.ReturnRecordGetPayload<{
     products: true;
     followups: true;
     formVersion: true;
-    annexIIITemplateVersion: true;
-    annexIVTemplateVersion: true;
-    annexVTemplateVersion: true;
-    annexVITemplateVersion: true;
+    annexIIITemplateVersion: { select: { id: true; versionCode: true; checksum: true } };
+    annexIVTemplateVersion: { select: { id: true; versionCode: true; checksum: true } };
+    annexVTemplateVersion: { select: { id: true; versionCode: true; checksum: true } };
+    annexVITemplateVersion: { select: { id: true; versionCode: true; checksum: true } };
   };
 }> & {qmsRecord: {targetRelations?:Array<{id:string;sourceRecordId:string;sourceRecord:{businessCode:string|null;annulledBusinessCode:string|null}}>}};
 

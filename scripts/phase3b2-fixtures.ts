@@ -118,13 +118,26 @@ export async function createPhase3b2Fixtures(size = 1000) {
   await insert(revisions, data => prisma.controlledDocumentRevision.createMany({ data }));
   await insert(lifecycle, data => prisma.controlledRevisionLifecycle.createMany({ data }));
   const bytes = randomBytes(1048576), checksum = createHash("sha256").update(bytes).digest("hex");
-  const binaryIds: string[] = [];
+  const binaryIds: string[] = [], templateIds: string[] = [];
   for (const m of [3, 4]) {
     const record = await (m === 3 ? prisma.complaint.findUniqueOrThrow({ where: { id: ids[m][1] } }) : prisma.returnRecord.findUniqueOrThrow({ where: { id: ids[m][1] } }));
     const recordVersions = await prisma.qmsRecordVersion.findMany({ where: { qmsRecordId: record.qmsRecordId }, orderBy: { sequenceNumber: "asc" } });
+    const template = await prisma.templateVersion.create({ data: {
+      module: m === 3 ? "COMPLAINT" : "RETURN", documentType: m === 3 ? "COMPLAINT_ANNEX_III" : "RETURN_ANNEX_III",
+      versionCode: prefix, effectiveFrom: new Date("1990-01-01"), isActive: false,
+      fileName: "fictitious-template.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      fileData: bytes, fileSize: bytes.length, checksum,
+    } });
+    templateIds.push(template.id);
+    if (m === 3) await prisma.complaint.update({ where: { id: record.id }, data: { annexIIITemplateVersionId: template.id } });
+    else await prisma.returnRecord.update({ where: { id: record.id }, data: { annexIIITemplateVersionId: template.id } });
     for (const version of recordVersions) {
-      const document = await prisma.recordVersionDocument.create({ data: { recordVersionId: version.id, kind: "SIGNED_PDF", fileName: "fictitious-" + version.sequenceNumber + ".pdf", fileData: bytes, fileSize: bytes.length, checksum, uploadedByText: actor } });
-      binaryIds.push(document.id);
+      const kinds = m === 3 ? ["SIGNED_PDF"] as const : ["RETURN_ANNEX_III_SIGNED", "RETURN_ANNEX_V_SIGNED"] as const;
+      for (const kind of kinds) {
+        const document = await prisma.recordVersionDocument.create({ data: { recordVersionId: version.id, kind, fileName: "fictitious-" + kind + "-" + version.sequenceNumber + ".pdf", fileData: bytes, fileSize: bytes.length, checksum, uploadedByText: actor } });
+        binaryIds.push(document.id);
+        if (m === 4) await prisma.generatedDocument.create({ data: { qmsRecordId: record.qmsRecordId, recordVersionId: version.id, documentType: kind === "RETURN_ANNEX_III_SIGNED" ? "RETURN_ANNEX_III" : "RETURN_ANNEX_V", fileName: document.fileName, mimeType: "application/pdf", fileData: bytes, checksum, generatedByText: actor, metadata: { fictitious: true, kind } } });
+      }
     }
     await prisma.generatedDocument.create({ data: { qmsRecordId: record.qmsRecordId, recordVersionId: recordVersions[0].id, documentType: m === 3 ? "COMPLAINT_ANNEX_III" : "RETURN_ANNEX_III", fileName: "fictitious-history.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileData: bytes, checksum, metadata: { fictitious: true }, generatedByText: actor } });
   }
@@ -146,6 +159,7 @@ export async function createPhase3b2Fixtures(size = 1000) {
     await prisma.complaint.deleteMany({ where: { id: { in: ids[3] } } });
     await prisma.returnRecord.deleteMany({ where: { id: { in: ids[4] } } });
     await prisma.audit.deleteMany({ where: { id: { in: ids[5] } } });
+    await prisma.templateVersion.deleteMany({ where: { id: { in: templateIds } } });
     await prisma.qmsRecord.deleteMany({ where: { id: { in: qmsIds } } });
     await prisma.controlledRevisionLifecycle.deleteMany({ where: { documentId: { in: docIds } } });
     await prisma.controlledDocumentRevision.deleteMany({ where: { documentId: { in: docIds } } });
@@ -153,5 +167,5 @@ export async function createPhase3b2Fixtures(size = 1000) {
     await prisma.alertRule.deleteMany({ where: { key: { in: ruleKeys } } });
     await prisma.department.deleteMany({ where: { id: { in: departments } } });
   }
-  return { prefix, departments, ids, qmsIds, docIds, binaryIds, bytes, checksum, masterSize, cleanup };
+  return { prefix, departments, ids, qmsIds, docIds, binaryIds, templateIds, bytes, checksum, masterSize, cleanup };
 }
