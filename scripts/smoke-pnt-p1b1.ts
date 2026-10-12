@@ -1,3 +1,4 @@
+import "./auth-fixtures/context";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { prisma } from "../src/lib/db";

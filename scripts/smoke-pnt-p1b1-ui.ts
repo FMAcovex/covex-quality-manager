@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chromium } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
 import { prisma } from "../src/lib/db";
 import { previewFixture } from "../src/modules/controlled-documents/preview/synthetic-workbook";
 const base = process.env.P1B1_UI_BASE_URL || "http://127.0.0.1:3000";

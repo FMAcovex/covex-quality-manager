@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { chromium, type Page, type Locator } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Page, type Locator } from "playwright";
 import { prisma } from "../src/lib/db";
 import { createPhase3b2Fixtures } from "./phase3b2-fixtures";
 import { readZip, getZipEntryText } from "../src/lib/ooxml/zip";

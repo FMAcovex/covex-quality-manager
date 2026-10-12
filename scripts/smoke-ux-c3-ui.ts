@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { chromium, type Dialog } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Dialog } from "playwright";
 import { prisma } from "../src/lib/db";
 
 const base = process.env.C3_UI_BASE_URL;

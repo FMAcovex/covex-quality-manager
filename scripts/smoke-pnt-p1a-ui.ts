@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { chromium } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
 import { prisma } from "../src/lib/db";
 const base = process.env.P1A_UI_BASE_URL || "http://127.0.0.1:3000";
 async function main() {
@@ -39,6 +39,7 @@ async function main() {
         await page.waitForURL(/controlled-documents\/[a-f0-9-]+$/);
         const id = page.url().split("/").pop()!;
         assert.equal((await prisma.controlledDocument.findUniqueOrThrow({ where: { id } })).baseCode, null);
+        assert.equal((await prisma.controlledDocument.findUniqueOrThrow({ where: { id } })).createdByText, "Usuario sintético QA 4B1", "El nombre escrito no sustituye al actor autenticado");
         await page.getByRole("link", { name: "Editar maestro", exact: true }).click();
         await page.getByLabel("Título", { exact: true }).fill(title);
         await page.getByLabel("Código base", { exact: true }).fill("QU-99/001");
@@ -75,12 +76,12 @@ async function main() {
         console.log("P1A navegador OK: rechazo sin perder datos, borrador incompleto, registro posterior, revisión original, edición UUID estable, documentos reales, historial y búsqueda; sin errores de hidratación.");
     }
     catch (error) {
-        console.error("P1A diagnostic", page.url(), (await page.locator("main").innerText()).slice(0, 1500));
+        console.error("P1A diagnostic", page.url(), (await page.locator("body").innerText()).slice(0, 1500));
         throw error;
     }
     finally {
         await browser.close();
-        const rows = await prisma.controlledDocument.findMany({ where: { createdByText: actor }, select: { id: true } });
+        const rows = await prisma.controlledDocument.findMany({ where: { departmentId: dep.id }, select: { id: true } });
         const ids = rows.map(r => r.id);
         await prisma.controlledDocumentChange.deleteMany({ where: { documentId: { in: ids } } });
         await prisma.controlledDocumentRevision.deleteMany({ where: { documentId: { in: ids } } });

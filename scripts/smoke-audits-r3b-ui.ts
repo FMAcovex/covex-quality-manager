@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { chromium, type Page, type Locator } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Page, type Locator } from "playwright";
 import { prisma } from "../src/lib/db";
 import { saveAudit } from "../src/modules/audits/service";
 const base = process.env.R3B_UI_BASE_URL, marker = `R3B-UI-${randomUUID()}`, records:string[]=[];

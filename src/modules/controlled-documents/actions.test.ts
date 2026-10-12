@@ -27,7 +27,7 @@ describe("P2C P1A Server Actions y registro histórico", () => {
   it("el borrador ordinario P1A mantiene su funcionamiento anterior", async () => {
     const fd = new FormData(); fd.set("operation", "DRAFT"); fd.set("actor", "P1A sintético");
     expect((await masterAction(null, {}, fd)).url).toBe("/controlled-documents/master");
-    expect(mocks.headers).not.toHaveBeenCalled(); expect(mocks.master.mock.calls[0][0].actor).toBe("P1A sintético");
+    expect(mocks.headers).not.toHaveBeenCalled(); expect(mocks.master.mock.calls[0][0].actor).toBe("Usuario sintético QA 4B1");
   });
 });
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
 import { mkdir } from "node:fs/promises";
-import { chromium } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
 import { prisma } from "../src/lib/db";
 import { readZip } from "../src/lib/ooxml/zip";
 import { manualMaster, qaOnly, pdf, today, offset } from "../src/modules/controlled-documents/testing/p2c";

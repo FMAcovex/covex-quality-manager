@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { chromium, type Locator, type Page } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Locator, type Page } from "playwright";
 import { prisma } from "@/lib/db";
 import { serializeChangeControlVersion, snapshotJson } from "@/lib/qms/versioning";
 

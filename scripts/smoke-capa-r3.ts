@@ -1,3 +1,4 @@
+import "./auth-fixtures/context";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import {
@@ -29,7 +30,7 @@ import { parseCapaFollowupTransition } from "../src/modules/capa/followup-transi
 import { capaSignedPdfUploadError } from "../src/modules/capa/signed-document-policy";
 
 const prisma = new PrismaClient();
-const actor = "CI R3 CAPA";
+const actor = "Usuario sintético QA 4B1";
 const stamp = Date.now();
 const year = 2096;
 const devCode = `D/R3/${stamp}/${year}`;

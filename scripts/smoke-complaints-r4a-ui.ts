@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
-import { chromium, type Page } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 import { readZip, getZipEntryText } from "../src/lib/ooxml/zip";
 import { syntheticComplaintDoc } from "./complaints-r4a-doc-fixtures";

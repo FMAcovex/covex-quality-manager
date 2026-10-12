@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
-import { chromium, type Page } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 import { createAnnualPlan, addPlanEntry } from "../src/modules/audits/plans";
 import { syntheticAnnualProgramme } from "./audits-annual-programme-fixtures";

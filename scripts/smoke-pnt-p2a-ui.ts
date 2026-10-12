@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { chromium } from "playwright";
+import { chromium, authenticateContext, anonymousPage } from "./auth-fixtures/browser";
+import { fixtureLogin, fixtureRequest } from "./auth-fixtures/http";
 import { prisma } from "../src/lib/db";
 const base = process.env.P2A_UI_BASE_URL || "http://127.0.0.1:3000";
 const pdf = Buffer.from("%PDF-1.4\nSynthetic browser fixture\n%%EOF");
@@ -11,26 +12,27 @@ async function main() {
     const secret = process.env.PNT_DOCUMENT_PROXY_SECRET!;
     const headers = { "x-pnt-proxy-secret": secret, "x-pnt-user": "QA proxy autenticado", "x-pnt-permissions": "read" };
     let response: Response | undefined;
-    for (let i = 0; i < 60; i++) { try { response = await fetch(url, { headers }); if (response.ok) break; } catch {} if (i === 59) throw new Error("Descarga tras reinicio no disponible"); await new Promise(resolve => setTimeout(resolve, 1000)); }
+    const login = await fixtureLogin("reader");
+    for (let i = 0; i < 60; i++) { try { response = await fixtureRequest(login.jar, url, { headers }); if (response.ok) break; } catch {} if (i === 59) throw new Error("Descarga tras reinicio no disponible"); await new Promise(resolve => setTimeout(resolve, 1000)); }
     assert.deepEqual(Buffer.from(await response!.arrayBuffer()), pdf);
-    assert.equal((await fetch(url)).status, 403);
-    assert.equal((await fetch(url, { headers: { ...headers, "x-pnt-proxy-secret": "wrong" } })).status, 403);
+    assert.equal((await fetch(url)).status, 401);
+    assert.equal((await fetch(url, { headers: { ...headers, "x-pnt-proxy-secret": "wrong" } })).status, 401);
     const browser = await chromium.launch({ headless: true });
     try {
       const reader = await browser.newPage({ extraHTTPHeaders: headers });
+      await authenticateContext(reader.context(), "reader");
       await reader.goto(`${base}/controlled-documents/${d.documentId}?tab=documents`);
       await reader.getByRole("link", { name: "Descargar first.pdf", exact: true }).waitFor();
       assert.equal(await reader.getByRole("button", { name: "Añadir documento", exact: true }).count(), 0);
-      const denied = await browser.newPage(); await denied.goto(`${base}/controlled-documents/${d.documentId}?tab=documents`);
-      await denied.getByRole("alert").filter({ hasText: "Acceso documental no autorizado" }).waitFor(); assert.equal(await denied.getByRole("link", { name: "Descargar first.pdf", exact: true }).count(), 0);
+      const denied = await anonymousPage(browser); await denied.goto(`${base}/controlled-documents/${d.documentId}?tab=documents`);
+      await denied.waitForURL(/\/login/); assert.equal(await denied.getByRole("link", { name: "Descargar first.pdf", exact: true }).count(), 0);
       const historyUrl = `${base}/controlled-documents/${d.documentId}?tab=history`;
       await reader.goto(historyUrl);
       await reader.getByRole("heading", { name: "Sustitución documental (original conservado)", exact: true }).waitFor();
       assert.ok(await reader.getByRole("heading", { name: "Incorporación documental", exact: true }).count() > 0);
       await reader.getByText("Copia corregida QA", { exact: true }).waitFor();
       await denied.goto(historyUrl);
-      await denied.getByRole("heading", { name: "Historial operativo", exact: true }).waitFor();
-      await denied.getByText("Motivo ordinario QA", { exact: true }).waitFor();
+      await denied.waitForURL(/\/login/);
       const publicHistory = await denied.locator("body").innerText();
       for (const text of ["Incorporación documental", "Sustitución documental (original conservado)", "Usuario de prueba documental", "Copia corregida QA", d.id, d.sha256!]) assert.equal(publicHistory.includes(text), false);
     } finally { await browser.close(); }
