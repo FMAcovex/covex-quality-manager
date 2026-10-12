@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { SessionControls } from "./session-controls";
 
 const modules = [
   { label: "Inicio", href: "/", enabled: true, match: "/" },
@@ -63,13 +64,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="actor pilot-mode">
-          <span className="avatar">V1</span>
-          <span>
-            <strong>Modo piloto</strong>
-            <small>Identificación manual</small>
-          </span>
-        </div>
+        <SessionControls />
       </header>
       <main className="page-shell">{children}</main>
     </div>

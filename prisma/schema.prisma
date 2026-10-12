@@ -401,6 +401,7 @@ model QmsRelation {
 }
 
 model Department {
+  authorizedUsers AuthUserDepartment[]
   id         String      @id @default(uuid())
   code       String      @unique
   name       String
@@ -1190,6 +1191,8 @@ model ReturnFollowup {
 }
 
 model ChangeHistory {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id            String        @id @default(uuid())
   qmsRecordId   String
   qmsRecord     QmsRecord     @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
@@ -1206,6 +1209,8 @@ model ChangeHistory {
 }
 
 model QmsRecordVersion {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id                 String            @id @default(uuid())
   qmsRecordId        String
   qmsRecord          QmsRecord         @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
@@ -1229,6 +1234,8 @@ model QmsRecordVersion {
 }
 
 model ReviewThread {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id                 String             @id @default(uuid())
   qmsRecordId        String
   qmsRecord          QmsRecord          @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
@@ -1261,6 +1268,8 @@ model ReviewThread {
 }
 
 model ReviewMessage {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id             String       @id @default(uuid())
   reviewThreadId String
   reviewThread   ReviewThread @relation(fields: [reviewThreadId], references: [id], onDelete: Restrict)
@@ -1290,6 +1299,8 @@ model RecordVersionDocument {
 }
 
 model GeneratedDocument {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   fileData          Bytes?
   fileName          String?
   mimeType          String?
@@ -1378,6 +1389,8 @@ model AlertRule {
 }
 
 model ConfigurationChange {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id            String   @id @default(uuid())
   entityType    String
   entityKey     String
@@ -1613,6 +1626,8 @@ model AuditPlanEntry {
 }
 
 model AuditPlanChange {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id          String         @id @default(uuid())
   planId      String
   plan        AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
@@ -1879,6 +1894,8 @@ model ControlledDocumentRevision {
 }
 
 model ControlledDocumentChange {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id String @id @default(uuid())
   documentId String
   document ControlledDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
@@ -1898,6 +1915,8 @@ model ControlledDocumentChange {
 
 // P2A: immutable documentary objects, separate from revision snapshots.
 model ControlledRevisionDocument {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id String @id @default(uuid())
   documentId String
   revisionId String
@@ -1941,6 +1960,8 @@ model ControlledRevisionLifecycle {
 }
 
 model ControlledRevisionDecision {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id String @id @default(uuid())
   documentId String
   revisionId String
@@ -2017,6 +2038,8 @@ model ControlledDocumentImportRow {
 }
 
 model ControlledDocumentImportEvent {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id String @id @default(uuid())
   batchId String
   batch ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
@@ -2029,6 +2052,8 @@ model ControlledDocumentImportEvent {
 
 // Programme issuance is independent from individual audit record versions.
 model AuditAnnualProgrammeVersion {
+  authenticatedUserId String? @db.Uuid
+  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id String @id @default(uuid())
   planId String
   plan AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
@@ -2053,4 +2078,150 @@ model AuditAnnualProgrammeVersion {
   @@unique([planId, sequenceNumber])
   @@unique([planId, requestId])
   @@index([planId, generatedAt])
+}
+
+enum AccessModule {
+ DEVIATION
+ CAPA
+ CHANGE_CONTROL
+ COMPLAINT
+ RETURN
+ AUDIT
+ PNT
+ SYSTEM
+}
+enum AccessPermission {
+ READ
+ CREATE
+ EDIT
+ FOLLOWUP
+ REVIEW
+ CLOSE
+ ANNUL
+ DOWNLOAD
+ EXPORT
+ IMPORT
+ MANAGE_CONFIGURATION
+ MANAGE_USERS
+ ATTACH_DOCUMENT
+ GENERATE_DOCUMENT
+ AUDIT_ISSUE_REPORT
+ AUDIT_ISSUE_PROGRAMME
+ PNT_VERIFY
+ PNT_RECORD_APPROVAL
+ PNT_ACCEPT_APPROVAL
+ PNT_ACTIVATE
+ PNT_RETIRE
+ PNT_CORRECT
+ PNT_LEGACY_REGISTER
+ PNT_MANAGE_STATE
+}
+enum AccessScope {
+ ALL
+ ASSIGNED
+}
+model AuthUser {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ objectId String @db.Uuid
+ displayName String
+ email String
+ active Boolean @default(false)
+ authorizedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ roles AuthUserRole[]
+ departments AuthUserDepartment[]
+ assignments AuthRecordAssignment[]
+ sessions AuthSession[]
+ administrativeChanges AuthAuthorizationChange[]
+ authoredChangeHistory ChangeHistory[]
+ authoredQmsRecordVersion QmsRecordVersion[]
+ authoredReviewThread ReviewThread[]
+ authoredReviewMessage ReviewMessage[]
+ authoredGeneratedDocument GeneratedDocument[]
+ authoredConfigurationChange ConfigurationChange[]
+ authoredAuditPlanChange AuditPlanChange[]
+ authoredControlledDocumentChange ControlledDocumentChange[]
+ authoredControlledRevisionDocument ControlledRevisionDocument[]
+ authoredControlledRevisionDecision ControlledRevisionDecision[]
+ authoredControlledDocumentImportEvent ControlledDocumentImportEvent[]
+ authoredAuditAnnualProgrammeVersion AuditAnnualProgrammeVersion[]
+ @@unique([tenantId, objectId])
+}
+model AuthRole {
+ id String @id @default(uuid()) @db.Uuid
+ key String @unique
+ name String
+ qaAcceptedAt DateTime?
+ qaAcceptedBy String?
+ createdAt DateTime @default(now())
+ users AuthUserRole[]
+ permissions AuthRolePermission[]
+}
+model AuthRolePermission {
+ id String @id @default(uuid()) @db.Uuid
+ roleId String @db.Uuid
+ role AuthRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
+ module AccessModule
+ permission AccessPermission
+ scope AccessScope
+ @@unique([roleId, module, permission])
+}
+model AuthUserRole {
+ userId String @db.Uuid
+ roleId String @db.Uuid
+ user AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+ role AuthRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
+ assignedAt DateTime @default(now())
+ @@id([userId, roleId])
+}
+model AuthUserDepartment {
+ userId String @db.Uuid
+ departmentId String
+ user AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+ department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+ @@id([userId, departmentId])
+}
+model AuthRecordAssignment {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid
+ user AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+ module AccessModule
+ recordId String @db.Uuid
+ @@unique([userId, module, recordId])
+}
+model AuthSession {
+ id String @id @default(uuid()) @db.Uuid
+ tokenHash String @unique
+ csrfHash String
+ userId String @db.Uuid
+ user AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+ createdAt DateTime @default(now())
+ expiresAt DateTime
+ lastSeenAt DateTime @default(now())
+ revokedAt DateTime?
+ @@index([userId, revokedAt])
+ @@index([expiresAt])
+}
+model AuthLoginAttempt {
+ id String @id
+ state String
+ nonce String
+ verifier String
+ returnTo String
+ expiresAt DateTime
+ @@index([expiresAt])
+}
+model AuthAuthorizationChange {
+ id String @id @default(uuid()) @db.Uuid
+ actorUserId String? @db.Uuid
+ actorUser AuthUser? @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+ source String
+ targetUserId String?
+ action String
+ oldValue Json?
+ newValue Json?
+ reason String
+ createdAt DateTime @default(now())
 }

@@ -4,6 +4,8 @@
   "private": true,
   "packageManager": "pnpm@11.19.0",
   "scripts": {
+    "auth:fixtures": "tsx scripts/auth-fixtures/install.ts",
+    "phase4b1:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase4b1-auth.ts",
     "phase3b2:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase3b2-dashboard.ts && node --conditions=react-server --import tsx scripts/smoke-phase3b2-pnt.ts && node --conditions=react-server --import tsx scripts/smoke-phase3b2-documents.ts",
     "phase3b2:ui:smoke": "tsx scripts/smoke-phase3b2-ui.ts",
     "phase3b1:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase3b1.ts",
@@ -107,6 +109,7 @@
   "dependencies": {
     "@prisma/client": "^6.16.2",
     "next": "^15.5.4",
+    "openid-client": "6.8.8",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "server-only": "0.0.1",
@@ -119,6 +122,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.5.4",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "jose": "6.2.12",
     "playwright": "1.62.1",
     "prisma": "^6.16.2",
     "tsx": "^4.19.2",
