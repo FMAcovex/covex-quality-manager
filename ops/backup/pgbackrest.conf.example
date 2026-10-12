@@ -1,0 +1,15 @@
+# Optional PITR design, NOT installed or tested by 4B2. Fill approved placeholders.
+# Secret PGBACKREST_REPO1_CIPHER_PASS is supplied privately by IT; never in Git.
+[global]
+repo1-path=/mnt/approved-offsite/pgbackrest
+repo1-cipher-type=aes-256-cbc
+repo1-retention-full=@APPROVED_FULL_RETENTION_COUNT@
+repo1-retention-diff=@APPROVED_DIFFERENTIAL_RETENTION_COUNT@
+compress-type=zst
+log-level-console=warn
+log-level-file=warn
+
+[covex]
+pg1-path=@APPROVED_POSTGRES_DATA_DIRECTORY@
+pg1-port=5432
+pg1-user=@APPROVED_PHYSICAL_BACKUP_ROLE@

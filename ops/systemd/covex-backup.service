@@ -1,0 +1,21 @@
+[Unit]
+Description=COVEX encrypted PostgreSQL backup (candidate, IT approval required)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=covex-backup
+Group=covex-backup
+ExecStart=/usr/bin/python3 /opt/covex/operations/backup/backup.py backup --config /etc/covex/backup.json
+RuntimeDirectory=covex-backup
+RuntimeDirectoryMode=0700
+StateDirectory=covex-backup
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/mnt/approved-offsite/covex /run/covex-backup /var/lib/covex-backup
+StandardOutput=journal
+StandardError=journal
