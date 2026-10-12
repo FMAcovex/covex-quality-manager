@@ -9,6 +9,7 @@ describe("securityHeaders", () => {
     expect(names.has("Referrer-Policy")).toBe(true);
     expect(names.has("Permissions-Policy")).toBe(true);
     expect(names.has("X-Robots-Tag")).toBe(true);
+    expect(securityHeaders.find(header => header.key === "Referrer-Policy")?.value).toBe("same-origin");
   });
 
   it("does not contain duplicate header names", () => {

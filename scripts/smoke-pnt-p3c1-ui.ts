@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
-import { chromium, type Page } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 import { qaOnly, manualMaster, evidence, planRevision, decideLifecycle, nextRevision } from "../src/modules/controlled-documents/testing/p2c";
 

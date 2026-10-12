@@ -1,3 +1,9 @@
+import { ActorField } from "@/components/permissions";
+import { PermissionGate } from "@/components/permissions";
+import { currentActor } from "@/lib/auth/presentation";
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
@@ -54,7 +60,7 @@ function relationLabel(type: string) {
   return "Relacionado";
 }
 
-export default async function ChangeControlDetailPage({
+async function ChangeControlDetailPageAuthenticatedContent({
   params,
   searchParams,
 }: {
@@ -164,7 +170,7 @@ export default async function ChangeControlDetailPage({
   return (
     <ReviewWorkspaceProvider qmsRecordId={record.qmsRecord.id} module="CHANGE_CONTROL" basePath={basePath}
       currentVersionLabel={reviewVersionLabel(currentVersion?.sequenceNumber ?? null, "FOLLOWUP")}
-      versionLabelMode="FOLLOWUP" defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+      versionLabelMode="FOLLOWUP" defaultActor={currentActor()}
       reviewMode={reviewMode} targets={reviewTargets} threads={reviewThreads} initialThreadId={thread}>
     <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
       <div className="record-header">
@@ -192,10 +198,10 @@ export default async function ChangeControlDetailPage({
           </p>
         </div>
         <div className="record-actions">
-          <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/changes", returnTo)} />
-          <Link className="button primary" href={qmsWithReturnTo(`/changes/${id}/edit?tab=${activeTab}`, "/changes", returnTo)}>Editar Solicitud / Dictamen</Link>
+          <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/changes", returnTo)} /></PermissionGate>
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/changes/${id}/edit?tab=${activeTab}`, "/changes", returnTo)}>Editar Solicitud / Dictamen</Link></PermissionGate>
           {record.dictamenResult === "APPROVED" && record.finalStatus === "OPEN" ? (
-            <Link className="button" href={qmsWithReturnTo(`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`, "/changes", returnTo)}>+ Seguimiento</Link>
+            <PermissionGate permission="FOLLOWUP"><Link className="button" href={qmsWithReturnTo(`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`, "/changes", returnTo)}>+ Seguimiento</Link></PermissionGate>
           ) : null}
         </div>
       </div>
@@ -213,7 +219,7 @@ export default async function ChangeControlDetailPage({
         annulledAt={record.qmsRecord.annulledAt?.toISOString() ?? null}
         annulledByText={record.qmsRecord.annulledByText}
         annulledReason={record.qmsRecord.annulledReason}
-        defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+        defaultActor={currentActor()}
       />
 
       <nav className="record-tabs">
@@ -417,16 +423,16 @@ export default async function ChangeControlDetailPage({
                         {item.remainOpenReason ? <p><strong>Motivo abierto:</strong> {item.remainOpenReason}</p> : null}
                         {item.conclusion ? <p><strong>Conclusión:</strong> {item.conclusion}</p> : null}
                         <div className="document-actions">
-                          <Link className="button small" href={`/changes/${id}/followups/${item.sequenceNumber}/edit`}>
+                          <PermissionGate permission={item.closeChange ? ["FOLLOWUP", "CLOSE"] : "FOLLOWUP"}><Link className="button small" href={`/changes/${id}/followups/${item.sequenceNumber}/edit`}>
                             Editar seguimiento
-                          </Link>
-                          <a className="button small" href={`/api/changes/${id}/annex-v?version=${item.sequenceNumber}`}>
+                          </Link></PermissionGate>
+                          <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button small" href={`/api/changes/${id}/annex-v?version=${item.sequenceNumber}`}>
                             Descargar Anexo V · {String(item.sequenceNumber).padStart(2,"0")}
-                          </a>
+                          </a></PermissionGate>
                           {signedDocument ? (
-                            <a className="button small" href={`/api/changes/${id}/versions/${item.sequenceNumber}/signed-pdf`}>
+                            <PermissionGate permission="DOWNLOAD"><a className="button small" href={`/api/changes/${id}/versions/${item.sequenceNumber}/signed-pdf`}>
                               Descargar PDF firmado
-                            </a>
+                            </a></PermissionGate>
                           ) : null}
                         </div>
                         {version ? (
@@ -439,14 +445,14 @@ export default async function ChangeControlDetailPage({
                             ) : (
                               <small className="muted-note">La carga es documental; no se añade una nueva regla de cierre.</small>
                             )}
-                            <details className="signed-pdf-details">
+                            <PermissionGate permission="ATTACH_DOCUMENT"><details className="signed-pdf-details">
                               <summary>{signedDocument ? "Sustituir PDF firmado" : "Adjuntar PDF firmado"}</summary>
-                              <SignedVersionDocumentForm
+                              <PermissionGate permission="ATTACH_DOCUMENT"><SignedVersionDocumentForm
                                 action={uploadChangeControlSignedPdfAction.bind(null, id, version.id)}
-                                defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                                defaultActor={currentActor()}
                                 replace={Boolean(signedDocument)}
-                              />
-                            </details>
+                              /></PermissionGate>
+                            </details></PermissionGate>
                           </div>
                         ) : null}
                         <div className="table-scroll followup-state-table">
@@ -502,12 +508,12 @@ export default async function ChangeControlDetailPage({
           {record.dictamenResult === "APPROVED" && record.finalStatus === "OPEN" ? (
             <div className="card" id="new-followup">
               <h2>Nuevo seguimiento</h2>
-              <ChangeFollowupForm
+              <PermissionGate permission="FOLLOWUP"><ChangeFollowupForm
                 action={addChangeControlFollowupAction.bind(null, id)}
                 departments={lookups.departments}
                 tasks={followupTasks}
                 defaultResponsible={record.followupResponsible}
-              />
+              /></PermissionGate>
             </div>
           ) : null}
         </>
@@ -529,30 +535,30 @@ export default async function ChangeControlDetailPage({
               <div className="change-document-heading"><h3>Anexo III · Solicitud</h3><span className="badge neutral">{record.annexIIITemplateVersion?.versionCode ?? "Sin plantilla"}</span></div>
               <p>Plantilla oficial y solicitud cumplimentada del Control de Cambio.</p>
               <div className="document-actions">
-                {record.annexIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${record.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
-                <a className="button primary" href={documentUrls.annexIII}>Generar Anexo III</a>
+                {record.annexIIITemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="CHANGE_CONTROL"><a className="button" href={`/api/settings/templates/${record.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
+                <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={documentUrls.annexIII}>Generar Anexo III</a></PermissionGate>
               </div>
             </div>
             <div className="document-block">
               <div className="change-document-heading"><h3>Anexo IV · Dictamen</h3><span className="badge neutral">{record.annexIVTemplateVersion?.versionCode ?? "Sin plantilla"}</span></div>
               <p>Plantilla oficial y Dictamen cumplimentado.</p>
               <div className="document-actions">
-                {record.annexIVTemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${record.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
-                <a className="button primary" href={documentUrls.annexIV}>Generar Anexo IV</a>
+                {record.annexIVTemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="CHANGE_CONTROL"><a className="button" href={`/api/settings/templates/${record.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
+                <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={documentUrls.annexIV}>Generar Anexo IV</a></PermissionGate>
               </div>
             </div>
             <div className="document-block">
               <div className="change-document-heading"><h3>Anexo V · Seguimiento</h3><span className="badge neutral">{record.annexVTemplateVersion?.versionCode ?? "Sin plantilla"}</span></div>
               <p>Cada seguimiento se genera con su versión histórica correspondiente.</p>
               <div className="document-actions">
-                {record.annexVTemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${record.annexVTemplateVersion.id}/download`}>Descargar plantilla oficial</a> : null}
-                {currentVersion ? <a className="button primary" href={changeControlVersionDocumentUrls(id, currentVersion.sequenceNumber).annexV}>Generar Anexo V · {versionLabel(currentVersion.sequenceNumber)}</a> : <span className="badge neutral">Disponible tras Seguimiento 00</span>}
+                {record.annexVTemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="CHANGE_CONTROL"><a className="button" href={`/api/settings/templates/${record.annexVTemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : null}
+                {currentVersion ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={changeControlVersionDocumentUrls(id, currentVersion.sequenceNumber).annexV}>Generar Anexo V · {versionLabel(currentVersion.sequenceNumber)}</a></PermissionGate> : <span className="badge neutral">Disponible tras Seguimiento 00</span>}
               </div>
             </div>
             <div className="document-block">
               <div className="change-document-heading"><h3>Anexo VII · Listado maestro</h3><span className="badge neutral">Anual</span></div>
               <p>Listado oficial anual de Controles de Cambios.</p>
-              <Link className="button" href={documentUrls.annexVII}>Ir al listado y descargar Anexo VII</Link>
+              <PermissionGate permission="EXPORT"><Link className="button" href={documentUrls.annexVII}>Ir al listado y descargar Anexo VII</Link></PermissionGate>
             </div>
           </div>
           {record.qmsRecord.versions.length ? (
@@ -568,15 +574,15 @@ export default async function ChangeControlDetailPage({
                         <span className="badge neutral">{version.frozenAt ? "Histórica" : "Vigente"}</span>
                       </div>
                       <div className="document-actions">
-                        <a className="button small" href={urls.annexV}>
+                        <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button small" href={urls.annexV}>
                           Descargar Anexo V histórico
-                        </a>
-                        <a className="button small" href={urls.annexIII}>
+                        </a></PermissionGate>
+                        <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button small" href={urls.annexIII}>
                           Solicitud en esta versión
-                        </a>
-                        <a className="button small" href={urls.annexIV}>
+                        </a></PermissionGate>
+                        <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button small" href={urls.annexIV}>
                           Dictamen en esta versión
-                        </a>
+                        </a></PermissionGate>
                       </div>
                     </article>
                   );
@@ -621,12 +627,12 @@ export default async function ChangeControlDetailPage({
             </div>
           ) : <div className="empty-panel">Sin expedientes relacionados.</div>}
           {relationError ? <p className="form-error">{relationError}</p> : null}
-          <form action={addChangeControlRelationAction.bind(null, id)} className="relation-form inline-form">
+          <PermissionGate permission="EDIT"><form action={addChangeControlRelationAction.bind(null, id)} className="relation-form inline-form"><CsrfField />
             <label className="field"><span>Codificación relacionada</span><input name="businessCode" required /></label>
             <label className="field"><span>Tipo de relación</span><select name="relationType"><option value="RELATED_TO">Relacionada</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implantada por</option><option value="ASSOCIATED_WITH">Asociada</option></select></label>
-            <label className="field"><span>Registrado por</span><input name="actor" defaultValue={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"} /></label>
+            <label className="field"><span>Registrado por</span><ActorField name="actor" defaultValue={currentActor()} /></label>
             <div className="full"><button className="button primary" type="submit">Añadir relación</button></div>
-          </form>
+          </form></PermissionGate>
         </div>
       ) : null}
 
@@ -656,4 +662,8 @@ export default async function ChangeControlDetailPage({
     <ReviewDrawer />
     </ReviewWorkspaceProvider>
   );
+}
+
+export default async function ChangeControlDetailPage(...args: Parameters<typeof ChangeControlDetailPageAuthenticatedContent>) {
+  return authorizedPage("src/app/changes/[id]/page.tsx", () => ChangeControlDetailPageAuthenticatedContent(...args), args);
 }

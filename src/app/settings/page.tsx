@@ -1,10 +1,12 @@
+import { PermissionGate } from "@/components/permissions";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { SettingsNav } from "@/components/settings-nav";
 import { getAdministrationOverview,getAlertPreview,moduleLabel } from "@/modules/configuration/admin-queries";
 
 export const dynamic="force-dynamic";
 
-export default async function SettingsPage(){
+async function SettingsPageAuthenticatedContent(){
   const [data,preview]=await Promise.all([getAdministrationOverview(),getAlertPreview()]);
   const activeForms=data.forms.filter(x=>x.status==="ACTIVE"&&x.isActive);
   const activeTemplates=data.templates.filter(x=>x.isActive);
@@ -14,7 +16,7 @@ export default async function SettingsPage(){
   return <section className="workspace">
     <div className="page-heading">
       <div><p className="eyebrow">Hito 9 · Administración funcional</p><h1>Administración y evolución</h1><p>Catálogos, versiones, plantillas, parámetros y preparación de vencimientos.</p></div>
-      <span className="badge warning">Modo piloto · sin roles todavía</span>
+      <span className="badge warning">Políticas operativas sujetas a aceptación QA/DT</span>
     </div>
     <SettingsNav active="/settings"/>
     <div className="analytics-note"><strong>Principio:</strong> la configuración nunca reescribe el histórico de expedientes. Las nuevas versiones se aplican por vigencia y los elementos usados se conservan aunque después se retiren.</div>
@@ -26,6 +28,7 @@ export default async function SettingsPage(){
       <div><strong>{overdue}</strong><span>Elementos vencidos ahora</span></div>
     </div>
     <div className="settings-grid admin-hub-grid">
+      <PermissionGate permission="MANAGE_USERS" module="SYSTEM"><Link className="card settings-card admin-link-card" href="/settings/users"><h2>Usuarios y autorizaciones</h2><p>Acceso corporativo, roles y ámbitos de actuación.</p><strong>Abrir →</strong></Link></PermissionGate>
       <Link className="card settings-card admin-link-card" href="/settings/catalogs"><p className="eyebrow">Catálogos</p><h2>Departamentos y valores auxiliares</h2><p>Alta, vigencia y desactivación sin borrado físico.</p><strong>Abrir →</strong></Link>
       <Link className="card settings-card admin-link-card" href="/settings/versions"><p className="eyebrow">Versionado</p><h2>Formularios y plantillas</h2><p>Clonar versiones, preparar borradores y activar por fecha de vigencia.</p><strong>Abrir →</strong></Link>
       <Link className="card settings-card admin-link-card" href="/settings/parameters"><p className="eyebrow">Parámetros</p><h2>Comportamiento configurable</h2><p>Parámetros no estructurales sin duplicar lógica en los módulos.</p><strong>Abrir →</strong></Link>
@@ -38,4 +41,8 @@ export default async function SettingsPage(){
       </tbody></table></div>
     </section>
   </section>;
+}
+
+export default async function SettingsPage(...args: Parameters<typeof SettingsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/settings/page.tsx", () => SettingsPageAuthenticatedContent(...args), args);
 }

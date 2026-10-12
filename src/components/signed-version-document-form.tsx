@@ -1,4 +1,8 @@
 "use client";
+import { ActorField } from "@/components/permissions";
+
+import { CsrfField } from "@/components/csrf";
+
 
 import { useActionState, useEffect } from "react";
 import type { SignedVersionDocumentState } from "@/lib/qms/signed-version-document-types";
@@ -24,7 +28,7 @@ export function SignedVersionDocumentForm({
   useEffect(()=>{if(reloadOnSuccess&&state.success)window.location.reload();},[reloadOnSuccess,state.success]);
 
   return (
-    <form action={formAction} className="inline-form">
+    <form action={formAction} className="inline-form"><CsrfField />
       {state.error ? <div className="form-errors full"><strong>{state.error}</strong></div> : null}
       {state.success ? <div className="form-success full"><strong>{state.success}</strong></div> : null}
       <label className="field">
@@ -33,7 +37,7 @@ export function SignedVersionDocumentForm({
       </label>
       <label className="field">
         <span>Cargado por</span>
-        <input name="actor" defaultValue={defaultActor} required />
+        <ActorField name="actor" defaultValue={defaultActor} required />
       </label>
       {replace ? (
         <label className="field full">

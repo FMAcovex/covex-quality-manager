@@ -1,3 +1,5 @@
+import { PermissionGate } from "@/components/permissions";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateChangeControlFollowupAction } from "@/modules/change-control/actions";
@@ -8,7 +10,7 @@ import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditChangeControlFollowupPage({
+async function EditChangeControlFollowupPageAuthenticatedContent({
   params,
 }: {
   params: Promise<{ id: string; sequence: string }>;
@@ -53,7 +55,7 @@ export default async function EditChangeControlFollowupPage({
       </div>
 
       <div className="card">
-        <ChangeFollowupForm
+        <PermissionGate permission="FOLLOWUP"><ChangeFollowupForm
           action={updateChangeControlFollowupAction.bind(null, id, followup.id)}
           departments={lookups.departments}
           tasks={tasks}
@@ -79,8 +81,12 @@ export default async function EditChangeControlFollowupPage({
               evidenceComment: state.evidenceComment,
             })),
           }}
-        />
+        /></PermissionGate>
       </div>
     </section>
   );
+}
+
+export default async function EditChangeControlFollowupPage(...args: Parameters<typeof EditChangeControlFollowupPageAuthenticatedContent>) {
+  return authorizedPage("src/app/changes/[id]/followups/[sequence]/edit/page.tsx", () => EditChangeControlFollowupPageAuthenticatedContent(...args), args);
 }

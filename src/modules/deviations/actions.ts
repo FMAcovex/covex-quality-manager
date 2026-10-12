@@ -1,4 +1,5 @@
 "use server";
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
@@ -75,7 +76,7 @@ function formError(
   };
 }
 
-export async function createDeviationAction(
+async function createDeviationActionAuthenticatedContent(
   previous: FormState,
   formData: FormData,
 ): Promise<FormState> {
@@ -263,7 +264,7 @@ export async function createDeviationAction(
   redirect(`/deviations/${deviationId}`);
 }
 
-export async function updateDeviationAction(
+async function updateDeviationActionAuthenticatedContent(
   id: string,
   previous: FormState,
   formData: FormData,
@@ -656,7 +657,7 @@ export async function updateDeviationAction(
   redirect(qmsDetailUrl("/deviations", id, formData.get("returnTo"), formData.get("detailTab")));
 }
 
-export async function addDeviationFollowupAction(deviationId: string, _state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
+async function addDeviationFollowupActionAuthenticatedContent(deviationId: string, _state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
   const followupDate = formData.get("followupDate")?.toString();
   const completedByText = formData.get("completedByText")?.toString().trim();
   const comment = formData.get("comment")?.toString().trim();
@@ -737,7 +738,7 @@ export async function addDeviationFollowupAction(deviationId: string, _state: Fo
 }
 
 
-export async function addDeviationRelationAction(
+async function addDeviationRelationActionAuthenticatedContent(
   id: string,
   _state: RelationActionState,
   formData: FormData,
@@ -777,7 +778,7 @@ export async function addDeviationRelationAction(
 }
 
 
-export async function unlinkDeviationCapaAction(
+async function unlinkDeviationCapaActionAuthenticatedContent(
   deviationId: string,
   capaQmsRecordId: string,
   formData: FormData,
@@ -804,4 +805,24 @@ export async function unlinkDeviationCapaAction(
   revalidatePath("/deviations");
   revalidatePath("/capa");
   revalidatePath(`/deviations/${deviationId}`);
+}
+
+export async function createDeviationAction(...args: Parameters<typeof createDeviationActionAuthenticatedContent>) {
+  return authorizedAction("createDeviationAction", args, authenticated => createDeviationActionAuthenticatedContent(...authenticated as Parameters<typeof createDeviationActionAuthenticatedContent>));
+}
+
+export async function updateDeviationAction(...args: Parameters<typeof updateDeviationActionAuthenticatedContent>) {
+  return authorizedAction("updateDeviationAction", args, authenticated => updateDeviationActionAuthenticatedContent(...authenticated as Parameters<typeof updateDeviationActionAuthenticatedContent>));
+}
+
+export async function addDeviationFollowupAction(...args: Parameters<typeof addDeviationFollowupActionAuthenticatedContent>) {
+  return authorizedAction("addDeviationFollowupAction", args, authenticated => addDeviationFollowupActionAuthenticatedContent(...authenticated as Parameters<typeof addDeviationFollowupActionAuthenticatedContent>));
+}
+
+export async function addDeviationRelationAction(...args: Parameters<typeof addDeviationRelationActionAuthenticatedContent>) {
+  return authorizedAction("addDeviationRelationAction", args, authenticated => addDeviationRelationActionAuthenticatedContent(...authenticated as Parameters<typeof addDeviationRelationActionAuthenticatedContent>));
+}
+
+export async function unlinkDeviationCapaAction(...args: Parameters<typeof unlinkDeviationCapaActionAuthenticatedContent>) {
+  return authorizedAction("unlinkDeviationCapaAction", args, authenticated => unlinkDeviationCapaActionAuthenticatedContent(...authenticated as Parameters<typeof unlinkDeviationCapaActionAuthenticatedContent>));
 }

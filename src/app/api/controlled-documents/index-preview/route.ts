@@ -1,10 +1,12 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { createBatch } from "@/modules/controlled-documents/import/service";
 import { previewIndex } from "@/modules/controlled-documents/preview/service";
 import { MAX_FILE_BYTES } from "@/modules/controlled-documents/preview/workbook";
+import { currentIdentity } from "@/lib/auth/context";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
-export async function POST(request: Request) {
+async function POSTAuthenticatedContent(request: Request) {
     try {
         const contentType = request.headers.get("content-type") || "";
         if (!contentType.startsWith("multipart/form-data;") || !request.body)
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
         const name = file.name.split(/[\\/]/).pop()!.slice(0, 255);
         const buffer = Buffer.from(await file.arrayBuffer());
         if (form.get("saveBatch") === "on") {
-            const actor = form.get("actor");
+            const actor = currentIdentity()?.principal.name;
             if (typeof actor !== "string") throw new Error("Indica el responsable del lote.");
             return Response.json({ batchId: await createBatch(buffer, name, actor) }, { headers });
         }
@@ -51,4 +53,8 @@ export async function POST(request: Request) {
         const message = error instanceof Error && !error.name.startsWith("Prisma") ? error.message : "No se ha podido consultar el registro maestro. No se ha importado ningún dato.";
         return Response.json({ error: message }, { status: 400, headers });
     }
+}
+
+export async function POST(...args: Parameters<typeof POSTAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/controlled-documents/index-preview/route.ts", "POST", args, authenticated => POSTAuthenticatedContent(...authenticated as Parameters<typeof POSTAuthenticatedContent>));
 }

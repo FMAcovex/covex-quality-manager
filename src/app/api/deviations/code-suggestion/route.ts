@@ -1,10 +1,11 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { suggestDeviationBusinessCode } from "@/lib/qms/business-code";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
+async function GETAuthenticatedContent(request: Request) {
   const url = new URL(request.url);
   const departmentId = url.searchParams.get("departmentId")?.trim() || "";
   const year = Number(url.searchParams.get("year"));
@@ -30,4 +31,8 @@ export async function GET(request: Request) {
       { status: 409 },
     );
   }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/deviations/code-suggestion/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

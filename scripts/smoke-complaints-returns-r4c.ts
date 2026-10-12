@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { chromium, type Page } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 import { createQmsRelation, deactivateQmsRelation } from "../src/lib/qms/relation-service";
 import { ensureInitialVersion, serializeComplaintVersion, serializeReturnVersion, snapshotJson, startNextVersion } from "../src/lib/qms/versioning";

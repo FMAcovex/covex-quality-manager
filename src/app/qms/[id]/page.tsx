@@ -1,9 +1,10 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function QmsRecordResolverPage({
+async function QmsRecordResolverPageAuthenticatedContent({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -30,4 +31,8 @@ export default async function QmsRecordResolverPage({
   if (record.returnRecord) redirect(`/returns/${record.returnRecord.id}`);
 
   notFound();
+}
+
+export default async function QmsRecordResolverPage(...args: Parameters<typeof QmsRecordResolverPageAuthenticatedContent>) {
+  return authorizedPage("src/app/qms/[id]/page.tsx", () => QmsRecordResolverPageAuthenticatedContent(...args), args);
 }

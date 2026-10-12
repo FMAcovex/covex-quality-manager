@@ -1,4 +1,7 @@
 "use client";
+import { usePresentationAccess, PermissionGate } from "@/components/permissions";
+import { CsrfField } from "@/components/csrf";
+
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 
 import Link from "next/link";
@@ -26,6 +29,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
   cancelHref?: string;
   returnTo?: string;
   detailTab?: string;fromComplaintId?:string}){
+  const access = usePresentationAccess();
   const [state,formAction,pending]=useActionState(action,initial);
   const formDefaults=submittedDefaults(defaults,state.submittedValues);
   const [products,setProducts]=useState(defaults.products?.length?defaults.products:[{...emptyProduct}]);
@@ -44,7 +48,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
   const closed=recordStatus==="CLOSED";
   const patch=(i:number,p:Partial<ReturnProductInput>)=>setProducts(x=>x.map((v,n)=>n===i?{...v,...p}:v));
 
-  return <form key={state.formRevision??0} action={formAction} className="form-stack return-form-stack">
+  return <form key={state.formRevision??0} action={formAction} className="form-stack return-form-stack"><CsrfField />
     <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
@@ -58,11 +62,11 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
       <div className="form-grid return-form-grid">
         <ControlledBusinessCodeField recordType="RETURN" label="N.º devolución" initialValue={formDefaults.businessCode} mode={mode} yearSource={receivedAt||communicationDate} departmentId={departmentId} locked={mode==="edit"&&(!draft||!!defaults.businessCode)}/>
         {mode==="edit"&&defaults.businessCode?<input type="hidden" name="departmentId" value={departmentId}/>:null}
-        <label className="field"><span>Almacén / área{draft?"":" *"}</span><select disabled={mode==="edit"&&!!defaults.businessCode} name="departmentId" value={departmentId} onChange={e=>setDepartmentId(e.target.value)} required={!draft}><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select><small className="muted-note">Solo departamentos LG autorizados para Devoluciones.</small></label>
+        <label className="field"><span>Almacén / área{draft?"":" *"}</span><select disabled={mode==="edit"&&!!defaults.businessCode} name="departmentId" value={departmentId} onChange={e=>setDepartmentId(e.target.value)} required={!draft}><option value="">Seleccionar…</option>{departments.filter(d => access?.departments[d.id]).map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select><small className="muted-note">Solo departamentos LG autorizados para Devoluciones.</small></label>
         <label className="field"><span>Fecha comunicación{draft?"":" *"}</span><input name="communicationDate" type="date" value={communicationDate} onChange={e=>setCommunicationDate(e.target.value)} required={!draft}/></label>
         <label className="field"><span>Fecha recepción{draft?"":" *"}</span><input type="date" name="receivedAt" value={receivedAt} onChange={e=>setReceivedAt(e.target.value)} required={!draft}/></label>
         <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required={!draft}/>
-        {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText}/>:null}
+        {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={access?.actor ?? ""}/>:null}
         {fromComplaintId?<><input type="hidden" name="returnType" value="COMPLAINT"/><label className="field"><span>Tipo *</span><select value="COMPLAINT" disabled><option value="COMPLAINT">Reclamación</option></select><small className="muted-note">Fijado por la Reclamación de origen.</small></label></>:<label className="field"><span>Tipo{draft?"":" *"}</span><select name="returnType" defaultValue={formDefaults.returnType??""} required={!draft}><option value="">Seleccionar…</option><option value="COMMERCIAL">Comercial</option><option value="COMPLAINT">Reclamación</option><option value="RECALL">Retirada</option><option value="EXPIRY">Caducidad</option><option value="TRANSPORT">Transporte</option><option value="OTHER">Otra</option></select></label>}
         <Field label="Otra · especificar" name="otherReturnType" defaultValue={formDefaults.otherReturnType}/>
         <Field label="Cliente / entidad" name="customerEntity" defaultValue={formDefaults.customerEntity} required={!draft}/>
@@ -167,7 +171,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
         <TextArea label="Plan del seguimiento" name="followupComment"/>
         <Tri label="Trazabilidad actualizada" name="traceabilityUpdated" defaultValue={formDefaults.traceabilityUpdated} required={closed}/>
         <Field label="Fecha cierre" name="closedAt" type="date" defaultValue={formDefaults.closedAt} required={closed}/>
-        <label className="field"><span>Estado</span><select name="status" value={recordStatus} onChange={e=>setRecordStatus(e.target.value as "DRAFT"|"OPEN"|"CLOSED")}>{(mode==="create"||formDefaults.status==="DRAFT")?<option value="DRAFT">Borrador</option>:null}<option value="OPEN">Abierta</option><option value="CLOSED">Cerrada</option></select><small className="muted-note">{draft?"En borrador pueden quedar campos pendientes.":"La devolución se edita siempre sobre el mismo expediente; no crea revisiones."}</small></label>
+        <label className="field"><span>Estado</span><select name="status" value={recordStatus} onChange={e=>setRecordStatus(e.target.value as "DRAFT"|"OPEN"|"CLOSED")}>{(mode==="create"||formDefaults.status==="DRAFT")?<option value="DRAFT">Borrador</option>:null}<option value="OPEN">Abierta</option><PermissionGate permission="CLOSE"><option value="CLOSED">Cerrada</option></PermissionGate></select><small className="muted-note">{draft?"En borrador pueden quedar campos pendientes.":"La devolución se edita siempre sobre el mismo expediente; no crea revisiones."}</small></label>
       </div>
     </section>
 

@@ -1,7 +1,11 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { QmsRecordType, QmsRelationType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { canRelate } from "@/lib/qms/relation-rules";
+import { currentIdentity } from "@/lib/auth/context";
+import { canPresent } from "@/lib/auth/presentation";
+import { qmsScope } from "@/lib/auth/resources";
 
 export const runtime = "nodejs";
 
@@ -20,7 +24,7 @@ function normalized(value: string) {
     .toLocaleLowerCase("es");
 }
 
-export async function GET(request: Request) {
+async function GETAuthenticatedContent(request: Request) {
   const url = new URL(request.url);
   const currentRecordId = url.searchParams.get("currentRecordId")?.trim() || "";
   const currentType = asRecordType(url.searchParams.get("currentType"));
@@ -153,5 +157,19 @@ export async function GET(request: Request) {
       displayLabel,
     }));
 
+  if (url.searchParams.get("editable") === "1") {
+    const user = currentIdentity()?.principal;
+    const permitted = await Promise.all(suggestions.map(async record => {
+      if (!user) return false;
+      if (canPresent(user, record.recordType, "EDIT")) return true;
+      const target = await qmsScope(record.id);
+      return canPresent(user, target.module, "EDIT", target.scope);
+    }));
+    return NextResponse.json({ suggestions: suggestions.filter((_, i) => permitted[i]) });
+  }
   return NextResponse.json({ suggestions });
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/qms/relation-suggestions/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

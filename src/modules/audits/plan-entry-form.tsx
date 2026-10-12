@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 import { useActionState, type ReactNode } from "react";
 import { addPlanEntryFormAction, updatePlanEntryFormAction } from "./plan-actions";
 
@@ -15,7 +17,7 @@ export function PlanEntryForm({ planId, entryId, children }: {
     ? updatePlanEntryFormAction.bind(null, planId, entryId)
     : addPlanEntryFormAction.bind(null, planId);
   const [state, action, pending] = useActionState(serverAction, {});
-  return <form action={action} className="audit-child-form">
+  return <form action={action} className="audit-child-form"><CsrfField />
     {children}
     <div className="full">
       {state.error ? <p role="alert">{state.error}</p> : null}

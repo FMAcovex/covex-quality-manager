@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 
 import { useActionState,useEffect } from "react";
 
@@ -21,7 +23,7 @@ export function BasicFollowupForm({
   const [state, formAction, pending] = useActionState(action, {});
   useEffect(()=>{if(reloadOnSuccess&&state.success)window.location.reload();},[reloadOnSuccess,state.success]);
   return (
-    <form action={formAction} className="inline-form followup-form">
+    <form action={formAction} className="inline-form followup-form"><CsrfField />
       {state.error ? <div className="form-feedback error">{state.error}</div> : null}
       {state.success ? <div className="form-feedback success">{state.success}</div> : null}
       <label className="field"><span>Fecha *</span><input type="date" name="followupDate" required /></label>

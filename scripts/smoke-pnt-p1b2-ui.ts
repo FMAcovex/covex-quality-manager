@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chromium } from "playwright";
+import { assertCorporateActor, chromium } from "./auth-fixtures/browser";
 import { prisma } from "../src/lib/db";
 import { previewFixture } from "../src/modules/controlled-documents/preview/synthetic-workbook";
 const base = process.env.P1B2_UI_BASE_URL || "http://127.0.0.1:3000", actor = "P1B-2 navegador QA ficticio";
@@ -13,7 +13,7 @@ async function main() {
         await page.goto(`${base}/controlled-documents/import-index`);
         await page.getByLabel("Excel del índice maestro",{exact:true}).setInputFiles({name:"synthetic.xlsx",mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",buffer:previewFixture()});
         await page.getByRole("button",{name:"Analizar Excel",exact:true}).click(); await page.getByRole("heading",{name:"Resumen",exact:true}).waitFor();
-        await page.getByLabel("Responsable del lote",{exact:true}).fill(actor); await page.getByRole("button",{name:"Guardar previsualización como lote pendiente",exact:true}).click();
+        await assertCorporateActor(page.getByLabel("Responsable del lote",{exact:true})); await page.getByRole("button",{name:"Guardar previsualización como lote pendiente",exact:true}).click();
         await page.waitForURL(/\/import-index\/[a-f0-9-]{36}$/); batchId = page.url().split("/").pop()!;
         await page.getByRole("heading",{name:"Conciliación del lote",exact:true}).waitFor();
         assert.equal((await prisma.controlledDocumentImportBatch.findUniqueOrThrow({where:{id:batchId}})).state,"PENDING");

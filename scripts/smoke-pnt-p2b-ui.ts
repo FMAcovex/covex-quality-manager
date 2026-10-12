@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { chromium } from "playwright";
+import { chromium, authenticateContext, anonymousPage } from "./auth-fixtures/browser";
+import { fixtureLogin, fixtureRequest } from "./auth-fixtures/http";
 import { prisma } from "../src/lib/db";
 const base = process.env.P2B_UI_BASE_URL || "http://127.0.0.1:3000";
 const today = new Date().toISOString().slice(0, 10), due = `${Number(today.slice(0, 4)) + 1}${today.slice(4)}`;
@@ -12,26 +13,28 @@ async function main() {
     if (process.env.P2B_VERIFY_ACCESS === "true") {
       const m = await prisma.controlledDocument.findFirstOrThrow({ where: { createdByText: "P2B UI QA" }, orderBy: { createdAt: "desc" }, include: { revisions: { include: { decisions: true } } } });
       const secret = process.env.PNT_DOCUMENT_PROXY_SECRET!, h = { "x-pnt-proxy-secret": secret, "x-pnt-user": "Lector QA autenticado", "x-pnt-permissions": "read" };
-      const reader = await browser.newPage({ extraHTTPHeaders: h }), denied = await browser.newPage();
+      const reader = await browser.newPage({ extraHTTPHeaders: h }), denied = await anonymousPage(browser);
+      await authenticateContext(reader.context(), "reader");
       await reader.goto(`${base}/controlled-documents/${m.id}?tab=verification`); await reader.getByRole("heading", { name: "Verificación y aprobaciones", exact: true }).waitFor();
       for (const detail of await reader.locator("article[data-lifecycle-revision] > details").all()) await detail.locator(":scope > summary").click();
       assert.ok((await reader.locator("body").innerText()).includes("Persona aprobación UI")); assert.equal(await reader.locator(".pnt-lifecycle-form button").count(), 0);
-      await denied.goto(`${base}/controlled-documents/${m.id}?tab=verification`); await denied.getByRole("alert").filter({ hasText: "Acceso documental no autorizado" }).waitFor();
+      await denied.goto(`${base}/controlled-documents/${m.id}?tab=verification`); await denied.waitForURL(/\/login/);
       assert.equal((await denied.content()).includes("Persona aprobación UI"), false);
-      await denied.goto(`${base}/controlled-documents/${m.id}?tab=history`); await denied.getByRole("heading", { name: "Historial operativo" }).waitFor();
+      await denied.goto(`${base}/controlled-documents/${m.id}?tab=history`); await denied.waitForURL(/\/login/);
       assert.equal((await denied.locator("body").innerText()).includes("Decisión documental P2B"), false);
       await reader.goto(`${base}/controlled-documents/${m.id}?tab=history`);
       await reader.getByRole("heading", { name: "Decisión documental P2B", exact: true }).first().waitFor();
       await reader.getByText("Motivo humano sintético UI", { exact: true }).first().waitFor();
       assert.ok(await reader.getByRole("heading", { name: "Decisión documental P2B", exact: true }).count() > 0);
       const writeOnly = await browser.newPage({ extraHTTPHeaders: { ...h, "x-pnt-permissions": "read,write" } });
+      await authenticateContext(writeOnly.context(), "documentWriter");
       await writeOnly.goto(`${base}/controlled-documents/${m.id}?tab=verification`);
       await writeOnly.getByText("Sin operaciones autorizadas en este estado.", { exact: true }).waitFor();
       assert.equal(await writeOnly.locator(".pnt-lifecycle-form button").count(), 0);
       const decision = m.revisions[0].decisions[0], d = decision.details as Record<string, unknown>;
       const payload = { ...d, requestId: randomUUID() };
       assert.equal((await writeOnly.request.post(`${base}/api/controlled-documents/${m.id}/revisions/${m.revisions[0].id}/lifecycle`, { headers: { origin: base }, data: payload })).ok(), false);
-      assert.equal((await denied.request.post(`${base}/api/controlled-documents/${m.id}/revisions/${m.revisions[0].id}/lifecycle`, { headers: { origin: base }, data: payload })).status(), 403);
+      assert.equal((await denied.request.post(`${base}/api/controlled-documents/${m.id}/revisions/${m.revisions[0].id}/lifecycle`, { headers: { origin: base }, data: payload })).status(), 401);
       console.log("P2B Chromium reinicio/acceso OK: lectura autorizada completa, anónimos sin consulta/metadatos/historial sensible; read/write sin capacidad no concede decisiones."); return;
     }
     const gc = await prisma.department.findUniqueOrThrow({ where: { code: "GC-00" } }); let code = "";
@@ -45,7 +48,8 @@ async function main() {
     const url = `${base}/controlled-documents/${m.id}?tab=verification`;
     for (let attempt = 0; attempt < 60; attempt++) { try { if ((await page.request.get(url)).ok()) break; } catch {} if (attempt === 59) throw new Error("Servidor no disponible"); await new Promise(resolve => setTimeout(resolve, 1000)); }
     const fd = new FormData(); fd.set("mode", "file"); fd.set("kind", "EXTERNAL_SIGNED_PDF"); fd.set("file", new Blob([pdf], { type: "application/pdf" }), "p2b-ui.pdf");
-    const response = await fetch(`${base}/api/controlled-documents/${m.id}/revisions/${r.id}/documents`, { method: "POST", headers: { origin: base }, body: fd }); assert.equal(response.status, 201);
+    const login = await fixtureLogin();
+    const response = await fixtureRequest(login.jar, `${base}/api/controlled-documents/${m.id}/revisions/${r.id}/documents`, { method: "POST", headers: { origin: base }, body: fd }); assert.equal(response.status, 201);
     await page.goto(url); const article = page.locator(`article[data-lifecycle-revision="${r.id}"]`);
     await article.getByText(/Estado declarado por el índice:/).waitFor(); await article.getByText(/Falta contraste documental favorable/).waitFor();
     // Regression for the manual failure: submitting without a checked evidence

@@ -1,3 +1,5 @@
+import { PermissionGate } from "@/components/permissions";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { createDeviationAction } from "@/modules/deviations/actions";
 import { DeviationForm } from "@/modules/deviations/components/deviation-form";
@@ -5,7 +7,7 @@ import { getDeviationFormLookups } from "@/modules/deviations/queries";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewDeviationPage() {
+async function NewDeviationPageAuthenticatedContent() {
   const { departments } = await getDeviationFormLookups();
 
   return (
@@ -18,7 +20,11 @@ export default async function NewDeviationPage() {
         </div>
         <Link className="button" href="/deviations">← Volver</Link>
       </div>
-      <DeviationForm action={createDeviationAction} departments={departments} mode="create" />
+      <PermissionGate permission="CREATE"><DeviationForm action={createDeviationAction} departments={departments} mode="create" /></PermissionGate>
     </section>
   );
+}
+
+export default async function NewDeviationPage(...args: Parameters<typeof NewDeviationPageAuthenticatedContent>) {
+  return authorizedPage("src/app/deviations/new/page.tsx", () => NewDeviationPageAuthenticatedContent(...args), args);
 }

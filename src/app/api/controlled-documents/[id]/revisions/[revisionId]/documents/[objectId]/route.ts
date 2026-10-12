@@ -1,8 +1,9 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { documentPrincipal } from "@/modules/controlled-documents/documents/access";
 import { downloadDocument } from "@/modules/controlled-documents/documents/service";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export async function GET(request: Request, { params }: { params: Promise<{ id: string; revisionId: string; objectId: string }> }) {
+async function GETAuthenticatedContent(request: Request, { params }: { params: Promise<{ id: string; revisionId: string; objectId: string }> }) {
   try { documentPrincipal(request.headers); } catch { return new Response("No autorizado", { status: 403 }); }
   const { id, revisionId, objectId } = await params;
   try {
@@ -14,4 +15,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
     } });
   } catch { return new Response("Documento no disponible", { status: 404 }); }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/controlled-documents/[id]/revisions/[revisionId]/documents/[objectId]/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

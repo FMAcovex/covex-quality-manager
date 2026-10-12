@@ -1,3 +1,4 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { QmsRecordType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
@@ -24,7 +25,7 @@ function recordType(value: string | null) {
   return supportedTypes.has(candidate) ? candidate : null;
 }
 
-export async function GET(request: Request) {
+async function GETAuthenticatedContent(request: Request) {
   const url = new URL(request.url);
   const type = recordType(url.searchParams.get("recordType"));
   const year = Number(url.searchParams.get("year"));
@@ -92,4 +93,8 @@ export async function GET(request: Request) {
         : "No se ha podido calcular la codificación.";
     return NextResponse.json({ error: message }, { status: 409 });
   }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/qms/business-code-suggestion/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

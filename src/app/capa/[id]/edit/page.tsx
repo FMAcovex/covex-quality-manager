@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import { updateCapaAction } from "@/modules/capa/actions";
@@ -6,7 +7,7 @@ import { getCapaDetail, getCapaLookups, getCapaOriginRecords } from "@/modules/c
 
 export const dynamic = "force-dynamic";
 
-export default async function EditCapaPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{returnTo?:string;tab?:string}> }) {
+async function EditCapaPageAuthenticatedContent({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{returnTo?:string;tab?:string}> }) {
   const { id } = await params;
  const {returnTo,tab}=await searchParams;
  const cancelHref=qmsDetailUrl("/capa",id,returnTo,tab);
@@ -83,4 +84,8 @@ export default async function EditCapaPage({ params, searchParams }: { params: P
       <CapaForm mode="edit" action={action} departments={lookups.departments} defaults={defaults} capaId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/capa",returnTo)} detailTab={qmsDetailTab("/capa",tab)} qmsRecordId={capa.qmsRecord.id} />
     </section>
   );
+}
+
+export default async function EditCapaPage(...args: Parameters<typeof EditCapaPageAuthenticatedContent>) {
+  return authorizedPage("src/app/capa/[id]/edit/page.tsx", () => EditCapaPageAuthenticatedContent(...args), args);
 }

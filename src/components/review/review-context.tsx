@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { highlightReviewTarget } from "@/lib/qms/review/navigation";
+import { usePresentationAccess } from "@/components/permissions";
 import type { QmsRecordType } from "@prisma/client";
 import type { ReviewTargetInstance } from "@/lib/qms/review/targets/types";
 import {
@@ -54,7 +55,7 @@ export function ReviewWorkspaceProvider({
   versionLabelMode = "VERSION",
   showVersionContext = true,
   recordVersionAssociation = "CURRENT",
-  defaultActor,
+  defaultActor: suppliedActor,
   reviewMode,
   targets,
   threads: serverThreads,
@@ -74,6 +75,9 @@ export function ReviewWorkspaceProvider({
   threads: ReviewThreadView[];
   initialThreadId?: string | null;
 }) {
+  const access = usePresentationAccess();
+  const defaultActor = access?.actor ?? suppliedActor;
+  const canReview = Boolean(access?.current.REVIEW);
   const [threads, setThreads] = useState(serverThreads);
   useEffect(() => setThreads(serverThreads), [serverThreads]);
   const [selectedTargetKey, setSelectedTargetKey] = useState<string | null>(null);
@@ -166,7 +170,7 @@ export function ReviewWorkspaceProvider({
       threads,
       selectedTarget,
       selectedThread,
-      drawerOpen: reviewMode && Boolean(selectedTarget || selectedThread),
+      drawerOpen: (!canReview || reviewMode) && Boolean(selectedTarget || selectedThread),
       openTarget,
       openThread,
       closeDrawer,
@@ -184,6 +188,7 @@ export function ReviewWorkspaceProvider({
       recordVersionAssociation,
       defaultActor,
       reviewMode,
+      canReview,
       targets,
       threads,
       selectedTarget,

@@ -1,3 +1,9 @@
+import { ActorField } from "@/components/permissions";
+import { PermissionGate } from "@/components/permissions";
+import { currentActor } from "@/lib/auth/presentation";
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { SettingsNav } from "@/components/settings-nav";
 import { updateAlertRuleAction } from "@/modules/configuration/admin-actions";
@@ -6,7 +12,7 @@ import { getAlertPreview,moduleLabel } from "@/modules/configuration/admin-queri
 export const dynamic="force-dynamic";
 const fmt=(d:Date)=>d.toLocaleDateString("es-ES");
 
-export default async function AlertsPage(){
+async function AlertsPageAuthenticatedContent(){
  const data=await getAlertPreview();
  const overdue=data.items.filter(x=>x.state==="OVERDUE");
  const upcoming=data.items.filter(x=>x.state==="UPCOMING");
@@ -18,7 +24,7 @@ export default async function AlertsPage(){
 
   <section className="card"><div className="section-title-row"><div><p className="eyebrow">Reglas</p><h2>Configuración de preaviso</h2></div></div>
    <div className="table-scroll"><table className="records-table compact-table alert-rule-table"><thead><tr><th>Módulo</th><th>Regla</th><th>Tipo</th><th>Preaviso</th><th>Severidad</th><th>Estado</th><th></th></tr></thead><tbody>
-    {data.rules.map(r=><tr key={r.id}><td>{moduleLabel(r.module)}</td><td><strong>{r.label}</strong><br/><small>{r.description??r.key}</small></td><td>{r.kind}</td><td colSpan={4}><form action={updateAlertRuleAction.bind(null,r.id)} className="alert-rule-form"><input type="hidden" name="kind" value={r.kind}/><label><input name="leadDays" type="number" min="0" max="365" defaultValue={r.leadDays}/> días</label><select name="severity" defaultValue={r.severity}><option value="INFO">Informativa</option><option value="WARNING">Aviso</option><option value="CRITICAL">Crítica</option></select><select name="isActive" defaultValue={String(r.isActive)}><option value="true">Activa</option><option value="false">Inactiva</option></select><input name="reason" placeholder="Motivo"/><input type="hidden" name="actor" value={process.env.DEFAULT_ACTOR_NAME||"Usuario demo"}/><button className="button small">Guardar</button></form></td></tr>)}
+    {data.rules.map(r=><tr key={r.id}><td>{moduleLabel(r.module)}</td><td><strong>{r.label}</strong><br/><small>{r.description??r.key}</small></td><td>{r.kind}</td><td colSpan={4}><PermissionGate permission="MANAGE_CONFIGURATION" module={r.module} fallback={<span>{r.leadDays} días · {r.severity} · {r.isActive?"Activa":"Inactiva"}</span>}><form action={updateAlertRuleAction.bind(null,r.id)} className="alert-rule-form"><CsrfField /><input type="hidden" name="kind" value={r.kind}/><label><input name="leadDays" type="number" min="0" max="365" defaultValue={r.leadDays}/> días</label><select name="severity" defaultValue={r.severity}><option value="INFO">Informativa</option><option value="WARNING">Aviso</option><option value="CRITICAL">Crítica</option></select><select name="isActive" defaultValue={String(r.isActive)}><option value="true">Activa</option><option value="false">Inactiva</option></select><input name="reason" placeholder="Motivo"/><ActorField type="hidden" name="actor" value={currentActor()}/><button className="button small">Guardar</button></form></PermissionGate></td></tr>)}
    </tbody></table></div>
   </section>
 
@@ -28,4 +34,8 @@ export default async function AlertsPage(){
    </tbody></table></div>:<div className="empty-panel">No hay elementos dentro de las ventanas de preaviso configuradas.</div>}
   </section>
  </section>;
+}
+
+export default async function AlertsPage(...args: Parameters<typeof AlertsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/settings/alerts/page.tsx", () => AlertsPageAuthenticatedContent(...args), args);
 }

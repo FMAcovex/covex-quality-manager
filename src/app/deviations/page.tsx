@@ -1,3 +1,6 @@
+import { canPresentRecord } from "@/lib/auth/presentation";
+import { PermissionGate } from "@/components/permissions";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { QmsListPagination } from "@/components/qms-list-pagination";
@@ -18,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 const param = firstQueryValue;
 
-export default async function DeviationsPage({
+async function DeviationsPageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -55,9 +58,9 @@ export default async function DeviationsPage({
           <p>Registro, seguimiento e investigación de expedientes.</p>
         </div>
         <div className="heading-actions">
-          <Link href="/deviations/new" className="button primary">+ Nueva desviación</Link>
+          <PermissionGate permission="CREATE" module="DEVIATION"><Link href="/deviations/new" className="button primary">+ Nueva desviación</Link></PermissionGate>
           <ColumnSelector tableId="deviation-list-table" storageKey="qms.columns.deviations" columns={[...deviationColumns]} />
-          <details className="export-menu">
+          <PermissionGate permission="EXPORT"><details className="export-menu">
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones</strong>
@@ -73,14 +76,14 @@ export default async function DeviationsPage({
                 </label>
                 {officialTemplateReady ? <button className="button small" type="submit">Descargar</button> : <><button className="button small" type="button" disabled>Descargar</button><span className="template-missing-note">Plantilla oficial pendiente de cargar.</span></>}
               </form>
-              <a className="export-link" href={`/api/deviations/export/simple?${exportParams.toString()}`}>
+              <PermissionGate permission="EXPORT"><a className="export-link" href={`/api/deviations/export/simple?${exportParams.toString()}`}>
                 Listado simple · filtros actuales
-              </a>
-              <a className="export-link" href={`/api/deviations/export/simple?year=${encodeURIComponent(currentYear)}`}>
+              </a></PermissionGate>
+              <PermissionGate permission="EXPORT"><a className="export-link" href={`/api/deviations/export/simple?year=${encodeURIComponent(currentYear)}`}>
                 Listado simple · año {currentYear}
-              </a>
+              </a></PermissionGate>
             </div>
-          </details>
+          </details></PermissionGate>
         </div>
       </div>
 
@@ -136,19 +139,19 @@ export default async function DeviationsPage({
         <div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div>
       </div>
 
-      <ManualReminderToolbar tableId="deviation-list-table" moduleLabel="Desviaciones" />
+      <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="deviation-list-table" moduleLabel="Desviaciones" /></PermissionGate>
 
       <div className="table-card">
         <div className="table-scroll">
           <table id="deviation-list-table">
             <thead><tr>
-<th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las desviaciones visibles" /></th><th data-column-key="control">Control</th><th data-column-key="review">Revisión</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
+<th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las desviaciones visibles" /></PermissionGate></th><th data-column-key="control">Control</th><th data-column-key="review">Revisión</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
             </tr></thead>
             <tbody>
               {rows.length ? rows.map((row) => (
                 <tr key={row.id}>
                   <td className="reminder-select-column">
-                    <input
+                    <PermissionGate permission="FOLLOWUP" allowed={canPresentRecord("DEVIATION", "FOLLOWUP", { id: row.qmsRecord.id, departmentIds: row.departmentId ? [row.departmentId] : [] })}><input
                       type="checkbox"
                       data-reminder-record="true"
                       data-reminder-id={row.qmsRecord.id}
@@ -158,7 +161,7 @@ export default async function DeviationsPage({
                       data-reminder-meta={row.departmentCodeSnapshot ?? row.department?.code ?? ""}
                       data-reminder-href={toDetail(row.id)}
                       aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "desviación"}`}
-                    />
+                    /></PermissionGate>
                   </td>
                   <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} returnTo={qmsListingUrl("/deviations", query)} basePath={`/deviations/${row.id}`} /></td>
                   <td data-column-key="code"><Link className="summary-link" href={toDetail(row.id)}>{qmsRecordDisplayCode(row.qmsRecord)}</Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
@@ -195,4 +198,8 @@ export default async function DeviationsPage({
       <QmsListPagination root="/deviations" query={query} pagination={pagination} />
     </section>
   );
+}
+
+export default async function DeviationsPage(...args: Parameters<typeof DeviationsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/deviations/page.tsx", () => DeviationsPageAuthenticatedContent(...args), args);
 }

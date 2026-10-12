@@ -1,3 +1,5 @@
+import { currentIdentity } from "@/lib/auth/context";
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getComplaintDetail } from "@/modules/complaints/queries";
@@ -7,7 +9,7 @@ import { templateUnavailableResponse } from "@/lib/http/template-error-response"
 import { complaintSnapshotToAnnexRecord, versionLabel } from "@/lib/qms/versioning";
 export const runtime="nodejs";
 const safe=(v:string)=>v.replace(/[^a-zA-Z0-9._-]+/g,"_");
-export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
+async function GETAuthenticatedContent(request:Request,{params}:{params:Promise<{id:string}>}){
  const {id}=await params, r=await getComplaintDetail(id);
  if(!r)return NextResponse.json({error:"Reclamación no encontrada."},{status:404});
  if(r.status==="DRAFT")return NextResponse.json({error:"Los documentos oficiales no se generan mientras la reclamación esté en borrador."},{status:409});
@@ -21,7 +23,11 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
  try{
   const buffer=await generateComplaintAnnexIV(source);
   const sourceTemplateId=version?(version.snapshot as {complaint?:{annexIVTemplateVersionId?:string|null}}).complaint?.annexIVTemplateVersionId:r.annexIVTemplateVersionId;
-  await prisma.generatedDocument.create({data:{qmsRecordId:r.qmsRecordId,recordVersionId:version?.id??null,documentType:"COMPLAINT_ANNEX_IV",templateVersionId:sourceTemplateId??null,generatedByText:process.env.DEFAULT_ACTOR_NAME||r.createdByText,metadata:{source:"download",recordVersion:version?.sequenceNumber??null}}});
+  await prisma.generatedDocument.create({data:{qmsRecordId:r.qmsRecordId,recordVersionId:version?.id??null,documentType:"COMPLAINT_ANNEX_IV",templateVersionId:sourceTemplateId??null,generatedByText:(currentIdentity()?.principal.name ?? process.env.DEFAULT_ACTOR_NAME)||r.createdByText,metadata:{source:"download",recordVersion:version?.sequenceNumber??null}}});
   return new Response(new Uint8Array(buffer),{headers:{"Content-Type":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","Content-Disposition":`attachment; filename="Anexo_IV_Respuesta_Reclamacion_${safe(r.qmsRecord.businessCode||id)}_${recordVersionLabel}.docx"`,"Cache-Control":"no-store"}});
  }catch(e){if(e instanceof TemplateAssetError)return templateUnavailableResponse(e.message);throw e;}
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/complaints/[id]/annex-iv/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

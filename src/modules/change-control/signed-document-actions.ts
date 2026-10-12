@@ -1,5 +1,6 @@
 "use server";
 
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import {
@@ -10,7 +11,7 @@ import {
 } from "@/lib/qms/signed-version-document";
 import type { SignedVersionDocumentState } from "@/lib/qms/signed-version-document-types";
 
-export async function uploadChangeControlSignedPdfAction(
+async function uploadChangeControlSignedPdfActionAuthenticatedContent(
   changeControlId: string,
   recordVersionId: string,
   _state: SignedVersionDocumentState,
@@ -58,4 +59,8 @@ export async function uploadChangeControlSignedPdfAction(
     error: null,
     success: `PDF firmado vinculado a Seguimiento ${String(result.sequenceNumber).padStart(2, "0")}.`,
   };
+}
+
+export async function uploadChangeControlSignedPdfAction(...args: Parameters<typeof uploadChangeControlSignedPdfActionAuthenticatedContent>) {
+  return authorizedAction("uploadChangeControlSignedPdfAction", args, authenticated => uploadChangeControlSignedPdfActionAuthenticatedContent(...authenticated as Parameters<typeof uploadChangeControlSignedPdfActionAuthenticatedContent>));
 }

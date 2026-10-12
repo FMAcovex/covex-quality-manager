@@ -42,3 +42,4 @@ reports/complaints/
 # R4B controlled sources and disposable QA output
 templates/returns/v03/
 reports/returns/
+*.tsbuildinfo

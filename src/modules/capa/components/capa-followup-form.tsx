@@ -1,4 +1,6 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
 
 import { useActionState, useState } from "react";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -28,7 +30,7 @@ export function CapaFollowupForm({
   );
 
   return (
-    <form action={formAction} className="inline-form followup-form">
+    <form action={formAction} className="inline-form followup-form"><CsrfField />
       {state.error ? <div className="form-feedback error">{state.error}</div> : null}
       {state.success ? <div className="form-feedback success">{state.success}</div> : null}
 

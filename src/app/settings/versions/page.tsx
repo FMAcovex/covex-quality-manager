@@ -1,3 +1,9 @@
+import { ActorField } from "@/components/permissions";
+import { PermissionGate } from "@/components/permissions";
+import { currentActor } from "@/lib/auth/presentation";
+
+import { CsrfField } from "@/components/csrf";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { SettingsNav } from "@/components/settings-nav";
@@ -14,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 const docLabel = (value: DocumentType) => value.replaceAll("_", " ");
 
-export default async function VersionsPage() {
+async function VersionsPageAuthenticatedContent() {
   const data = await getAdministrationOverview();
   const readiness = evaluateRequiredTemplateReadiness(data.templates);
 
@@ -127,11 +133,11 @@ export default async function VersionsPage() {
                         </Link>
 
                         {form.status === "DRAFT" ? (
-                          <form action={activateFormVersionAction.bind(null, form.id)}>
-                            <input
+                          <PermissionGate permission="MANAGE_CONFIGURATION" module={form.module}><form action={activateFormVersionAction.bind(null, form.id)}><CsrfField />
+                            <ActorField
                               type="hidden"
                               name="actor"
-                              value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                              value={currentActor()}
                             />
                             <input
                               type="hidden"
@@ -139,15 +145,15 @@ export default async function VersionsPage() {
                               value="Activación de nueva versión de formulario"
                             />
                             <button className="button small primary">Activar</button>
-                          </form>
+                          </form></PermissionGate>
                         ) : null}
 
-                        <details>
+                        <PermissionGate permission="MANAGE_CONFIGURATION" module={form.module}><details>
                           <summary className="button small">Clonar</summary>
-                          <form
+                          <PermissionGate permission="MANAGE_CONFIGURATION" module={form.module}><form
                             action={cloneFormVersionAction.bind(null, form.id)}
                             className="admin-pop-form"
-                          >
+                          ><CsrfField />
                             <label>
                               Nuevo código
                               <input name="versionCode" placeholder="DEV-07" required />
@@ -167,14 +173,14 @@ export default async function VersionsPage() {
                               Motivo
                               <input name="reason" />
                             </label>
-                            <input
+                            <ActorField
                               type="hidden"
                               name="actor"
-                              value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                              value={currentActor()}
                             />
                             <button className="button small primary">Crear borrador</button>
-                          </form>
-                        </details>
+                          </form></PermissionGate>
+                        </details></PermissionGate>
                       </div>
                     </td>
                   </tr>
@@ -245,20 +251,20 @@ export default async function VersionsPage() {
                   <td>
                     <div className="admin-action-stack">
                       {template.fileName || template.filePath ? (
-                        <a
+                        <PermissionGate permission="DOWNLOAD" module={template.module}><a
                           className="button small"
                           href={`/api/settings/templates/${template.id}/download`}
                         >
                           Descargar
-                        </a>
+                        </a></PermissionGate>
                       ) : null}
 
                       {!template.isActive ? (
-                        <form action={activateTemplateVersionAction.bind(null, template.id)}>
-                          <input
+                        <PermissionGate permission="MANAGE_CONFIGURATION" module={template.module}><form action={activateTemplateVersionAction.bind(null, template.id)}><CsrfField />
+                          <ActorField
                             type="hidden"
                             name="actor"
-                            value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                            value={currentActor()}
                           />
                           <input
                             type="hidden"
@@ -266,7 +272,7 @@ export default async function VersionsPage() {
                             value="Activación de plantilla controlada"
                           />
                           <button className="button small primary">Activar</button>
-                        </form>
+                        </form></PermissionGate>
                       ) : (
                         <span className="muted-note">Aplicable</span>
                       )}
@@ -278,19 +284,19 @@ export default async function VersionsPage() {
           </table>
         </div>
 
-        <details className="admin-create-panel">
+        <PermissionGate permission="MANAGE_CONFIGURATION" anyModule><details className="admin-create-panel">
           <summary className="button">+ Registrar nueva plantilla</summary>
-          <form
+          <PermissionGate permission="MANAGE_CONFIGURATION" anyModule><form
             action={registerTemplateVersionAction}
             className="form-grid admin-template-form"
-          >
+          ><CsrfField />
             <label className="field">
               <span>Módulo</span>
               <select name="module" required>
                 {Object.values(QmsRecordType).map((module) => (
-                  <option key={module} value={module}>
+                  <PermissionGate permission="MANAGE_CONFIGURATION" module={module} key={module}><option key={module} value={module}>
                     {moduleLabel(module)}
-                  </option>
+                  </option></PermissionGate>
                 ))}
               </select>
             </label>
@@ -344,17 +350,17 @@ export default async function VersionsPage() {
               <input name="reason" />
             </label>
 
-            <input
+            <ActorField
               type="hidden"
               name="actor"
-              value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+              value={currentActor()}
             />
 
             <div className="full">
               <button className="button primary">Registrar como inactiva</button>
             </div>
-          </form>
-        </details>
+          </form></PermissionGate>
+        </details></PermissionGate>
 
         <div className="analytics-note">
           <strong>Importante:</strong> si adjuntas el archivo, la aplicación calcula y
@@ -367,4 +373,8 @@ export default async function VersionsPage() {
       </section>
     </section>
   );
+}
+
+export default async function VersionsPage(...args: Parameters<typeof VersionsPageAuthenticatedContent>) {
+  return authorizedPage("src/app/settings/versions/page.tsx", () => VersionsPageAuthenticatedContent(...args), args);
 }

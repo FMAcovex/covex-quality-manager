@@ -1,16 +1,21 @@
 "use client";
+import { ActorField, usePresentationAccess } from "@/components/permissions";
+import { CsrfField } from "@/components/csrf";
+
+
+import { authenticatedFetch } from "@/lib/auth/client";
 import { useMemo, useState, useRef, type FormEvent } from "react";
 import { type PreviewReport, issueLabels, declaredStateLabels, reconciliationLabels } from "../preview/types";
 import { DocumentLink } from "./document-link";
 import { displayDate } from "../domain";
 export function IndexPreview() {
     const fileRef = useRef<File | null>(null);
-    const [actor, setActor] = useState("");
+    const actor = usePresentationAccess()?.actor ?? "";
     async function saveBatch() {
         if (!fileRef.current || !actor.trim()) { setError("Indica el responsable del lote."); return; }
         setPending(true); setError("");
         try { const form = new FormData(); form.set("file", fileRef.current); form.set("actor", actor); form.set("saveBatch", "on");
-            const response = await fetch("/api/controlled-documents/index-preview", { method: "POST", body: form }); const value = await response.json();
+            const response = await authenticatedFetch("/api/controlled-documents/index-preview", { method: "POST", body: form }); const value = await response.json();
             if (!response.ok) throw new Error(value.error || "No se pudo guardar el lote.");
             window.location.assign(`/controlled-documents/import-index/${value.batchId}`);
         } catch(e) { setError(e instanceof Error ? e.message : "No se pudo guardar el lote."); setPending(false); }
@@ -28,7 +33,7 @@ export function IndexPreview() {
         setPending(true);
         setReport(null);
         try {
-            const response = await fetch("/api/controlled-documents/index-preview", { method: "POST", body: form, cache: "no-store" });
+            const response = await authenticatedFetch("/api/controlled-documents/index-preview", { method: "POST", body: form, cache: "no-store" });
             const value = await response.json();
             if (!response.ok || !value.report)
                 throw new Error(value.error || "No se ha podido analizar el archivo.");
@@ -49,11 +54,11 @@ export function IndexPreview() {
  <DocumentLink href="/controlled-documents/import-index/batches">Recuperar lote / resultados</DocumentLink>
  <p>Previsualización de solo lectura. El índice declara datos; no acredita la verificación del Word/PDF firmado. Ningún PNT, revisión o departamento se crea ni modifica.</p>
  <p>Fuente GC-00: se utiliza exclusivamente <strong>GC-00(</strong>, con departamento GC-00. La hoja <strong>GC-00 queda descartada</strong> del análisis, estadísticas y conciliación.</p>
- <form onSubmit={analyze} className="inline-form"><label>Excel del índice maestro<input name="file" type="file" accept=".xlsx" required disabled={pending}/></label><button disabled={pending}>{pending ? "Analizando…" : "Analizar Excel"}</button></form>
+ <form onSubmit={analyze} className="inline-form"><CsrfField /><label>Excel del índice maestro<input name="file" type="file" accept=".xlsx" required disabled={pending}/></label><button disabled={pending}>{pending ? "Analizando…" : "Analizar Excel"}</button></form>
  <p>Hasta 8 MiB. El archivo no se guarda permanentemente. La previsualización permanece en esta página hasta recargarla o analizar otro archivo.</p>
  {error && <p role="alert">{error}</p>}
  {report && <>
- <div className="inline-form"><label>Responsable del lote<input value={actor} maxLength={200} onChange={e => setActor(e.target.value)}/></label><button disabled={pending} onClick={saveBatch}>Guardar previsualización como lote pendiente</button></div><p>El staging dura 30 días y no conserva el binario XLSX. Las decisiones y resultados confirmados conservan su historial mínimo.</p>
+ <div className="inline-form"><label>Responsable del lote<ActorField maxLength={200}/></label><button disabled={pending} onClick={saveBatch}>Guardar previsualización como lote pendiente</button></div><p>El staging dura 30 días y no conserva el binario XLSX. Las decisiones y resultados confirmados conservan su historial mínimo.</p>
  <h2>Resumen</h2><p>{report.fileName} · {report.interpretedSheets.length} hojas interpretadas de {report.sheetCount}</p><p>SHA-256: <code>{report.sha256}</code> · Referencia temporal: {displayDate(report.asOf)}</p>
  <dl>{([
                 ["Filas analizadas", report.summary.analyzedRows], ["PNT candidatos (formato y clasificación)", report.summary.pntCandidates], ["Códigos únicos", report.summary.uniqueCodes], ["Grupos duplicados", report.summary.duplicateGroups], ["Apariciones adicionales", report.summary.additionalAppearances], ["Grupos con discrepancias", report.summary.discrepancyGroups], ["Grupos con revisiones distintas", report.summary.revisionDiscrepancyGroups], ["Otros documentos", report.summary.otherDocuments], ["Datos incompletos del índice", report.summary.incompleteRows], ["Correspondencia departamental a revisar", report.summary.departmentReviewRows], ["Anulados según índice", report.summary.annulledRows], ["En elaboración", report.summary.inPreparationRows], ["Revisión prevista vencida", report.summary.overdueRows], ["Pendientes de verificación documental", report.summary.pendingVerification], ["Documentos nuevos", report.summary.newDocuments], ["Maestros existentes / revisión no registrada", report.summary.existingDocuments], ["Revisiones ya existentes", report.summary.existingRevisions], ["Conflictos con datos persistidos", report.summary.persistedConflicts], ["No importables sin resolver incidencias", report.summary.notImportable]

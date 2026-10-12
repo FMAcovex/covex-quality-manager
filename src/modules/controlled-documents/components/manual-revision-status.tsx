@@ -1,4 +1,8 @@
 "use client";
+import { CsrfField } from "@/components/csrf";
+
+
+import { authenticatedFetch } from "@/lib/auth/client";
 import { withReturnTo } from "../navigation";
 import { useState, type FormEvent } from "react";
 import { manualStateLabels, type ManualState } from "../manual-state/domain";
@@ -32,7 +36,7 @@ export function ManualRevisionStatus({ returnTo, documentId, revisionId, revisio
         targetStatus: target, reason: reason.trim(),
         ...(target === "IN_FORCE" ? { effectiveFrom: effective, ...(due ? { reviewDueAt: due } : {}), previousRevisionId } : {}),
       };
-      const res = await fetch("/api/controlled-documents/" + documentId + "/revisions/" + revisionId + "/manual-status", {
+      const res = await authenticatedFetch("/api/controlled-documents/" + documentId + "/revisions/" + revisionId + "/manual-status", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request),
       });
       const value = await res.json();
@@ -41,7 +45,7 @@ export function ManualRevisionStatus({ returnTo, documentId, revisionId, revisio
     } catch (caught) { setError(caught instanceof Error ? caught.message : "No se pudo cambiar el estado."); }
     finally { setPending(false); }
   }
-  return <form className="pnt-manual-status" onSubmit={submit}>
+  return <form className="pnt-manual-status" onSubmit={submit}><CsrfField />
     <div className="pnt-manual-status-row">
       <label className="field"><span>Estado de la revisión {revisionCode}</span><select aria-label={"Estado de la revisión " + revisionCode} value={target} onChange={e => { setTarget(e.target.value as ManualState); setError(""); }} disabled={readonly}>{options.map(value => <option key={value} value={value}>{manualStateLabels[value]}</option>)}</select></label>
       {target === "IN_FORCE" && status !== "IN_FORCE" && <>

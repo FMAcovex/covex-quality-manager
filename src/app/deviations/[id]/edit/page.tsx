@@ -1,3 +1,4 @@
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import Link from "next/link";
@@ -15,7 +16,7 @@ function dateTime(value: Date | null) {
   return value ? value.toISOString().slice(0, 16) : "";
 }
 
-export default async function EditDeviationPage({
+async function EditDeviationPageAuthenticatedContent({
   params, searchParams,
 }: {
   params: Promise<{ id: string }>;
@@ -118,4 +119,8 @@ export default async function EditDeviationPage({
       />
     </section>
   );
+}
+
+export default async function EditDeviationPage(...args: Parameters<typeof EditDeviationPageAuthenticatedContent>) {
+  return authorizedPage("src/app/deviations/[id]/edit/page.tsx", () => EditDeviationPageAuthenticatedContent(...args), args);
 }

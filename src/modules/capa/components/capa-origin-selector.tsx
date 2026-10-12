@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/auth/client";
+
 import { useEffect, useId, useRef, useState } from "react";
 import type { CapaOriginInput } from "@/modules/capa/types";
 
@@ -38,12 +40,13 @@ export function CapaOriginSelector({
       setLoading(true);
       try {
         const params = new URLSearchParams({
+          editable: "1",
           currentType: "CAPA",
           relatedType: selectedType,
           q,
         });
         if (currentRecordId) params.set("currentRecordId", currentRecordId);
-        const response = await fetch(`/api/qms/relation-suggestions?${params.toString()}`, { signal: controller.signal });
+        const response = await authenticatedFetch(`/api/qms/relation-suggestions?${params.toString()}`, { signal: controller.signal });
         if (!response.ok) {
           setSuggestions([]);
           return;

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
-import { chromium, type Page } from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 import { readZip, getZipEntryText } from "../src/lib/ooxml/zip";
 import { assertSyntheticDatabase, createListFixtures } from "./phase3b1-fixtures";

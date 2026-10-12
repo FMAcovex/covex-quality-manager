@@ -7,6 +7,7 @@ export const versionDocumentMetadata = {
   checksum: true, uploadedByText: true, uploadedAt: true,
 } satisfies Prisma.RecordVersionDocumentSelect;
 export const generatedDocumentMetadata = {
+  authenticatedUserId: true,
   id: true, qmsRecordId: true, recordVersionId: true, documentType: true, templateVersionId: true,
   generatedAt: true, generatedByText: true, fileName: true, mimeType: true, checksum: true, metadata: true,
 } satisfies Prisma.GeneratedDocumentSelect;

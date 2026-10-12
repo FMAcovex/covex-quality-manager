@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
-import { chromium, type Page } from "playwright";
+import { assertCorporateActor, chromium } from "./auth-fixtures/browser";
+import { type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 import { createAnnualPlan, addPlanEntry } from "../src/modules/audits/plans";
 import { syntheticAnnualProgramme } from "./audits-annual-programme-fixtures";
@@ -37,21 +38,21 @@ async function main() {
       const approval = page.locator('form').filter({ has: page.getByRole("button", { name: "Guardar datos de aprobación" }) });
       if (internal) await approval.locator('[name="technicalApproverName"]').fill("Técnico QA ficticio");
       await approval.locator('[name="qualityApproverName"]').fill("Calidad QA ficticia");
-      await approval.locator('[name="actor"]').fill(actor); await approval.locator('[name="reason"]').fill("Preparación QA");
+      await assertCorporateActor(approval.locator('[name="actor"]')); await approval.locator('[name="reason"]').fill("Preparación QA");
       await submit(page, "Guardar datos de aprobación");
       await page.getByRole("status").filter({ hasText: "guardados" }).waitFor({ state: "visible" });
       await page.getByText("Editar planificación", { exact: true }).click();
       const edit = page.locator('form').filter({ has: page.getByRole("button", { name: "Guardar cambios", exact: true }) });
       await edit.locator('[name="plannedPeriodText"]').fill("Primer trimestre"); await edit.locator('[name="plannedAuditorsText"]').fill("Auditor UI ficticio");
       if (!internal) { await edit.locator('[name="programmeArea"]').fill("Calidad"); await edit.locator('[name="productService"]').fill("Servicio QA"); await edit.locator('[name="plannedScope"]').fill("Alcance QA"); await edit.locator('[name="plannedModality"]').selectOption("REMOTE"); }
-      await edit.locator('[name="actor"]').fill(actor); await edit.locator('[name="reason"]').fill("Completar planificación documental");
+      await assertCorporateActor(edit.locator('[name="actor"]')); await edit.locator('[name="reason"]').fill("Completar planificación documental");
       const post = page.waitForResponse(r => r.request().method() === "POST" && Boolean(r.request().headers()["next-action"]));
       await page.getByRole("button", { name: "Guardar cambios", exact: true }).click(); assert([200, 303].includes((await post).status()));
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.getByText("Primer trimestre", { exact: true }).first().waitFor({ state: "visible" });
       const issue = page.locator('form').filter({ has: page.getByRole("button", { name: "Emitir Programa Anual en Word" }) });
       assert(!(await page.getByRole("button", { name: "Emitir Programa Anual en Word" }).isDisabled()));
-      await issue.locator('[name="actor"]').fill(actor);
+      await assertCorporateActor(issue.locator('[name="actor"]'));
       await submit(page, "Emitir Programa Anual en Word");
       await page.getByRole("link", { name: /Descargar .*R00.docx/ }).waitFor();
       const version = await prisma.auditAnnualProgrammeVersion.findFirstOrThrow({ where: { planId: plan.id, sequenceNumber: 0 } });
@@ -60,7 +61,7 @@ async function main() {
       assert.equal((await page.request.get(`${base}/api/audits/plans/${randomUUID()}/programmes/${version.id}`)).status(), 404);
       assert.equal(await prisma.auditAnnualProgrammeVersion.count({ where: { planId: plan.id } }), 1);
       // Submit a real stale browser preview; the action must return an inline error without issuing.
-      await issue.locator('[name="actor"]').fill(actor); await issue.locator('[name="reason"]').fill("Vista obsoleta QA");
+      await assertCorporateActor(issue.locator('[name="actor"]')); await issue.locator('[name="reason"]').fill("Vista obsoleta QA");
       await prisma.auditPlanEntry.update({ where: { id: entry.id }, data: { notes: "Cambio posterior QA" } });
       await submit(page, "Emitir Programa Anual en Word");
       await page.getByRole("alert").filter({ hasText: "cambiado" }).waitFor({ state: "visible" });
@@ -74,7 +75,7 @@ async function main() {
       ).waitFor({ state: "visible", timeout: 30000 });
       const subsequent = page.locator('form').filter({ has: page.getByRole("button", { name: "Emitir Programa Anual en Word" }) });
       assert.equal(await subsequent.locator('[name="reason"]').getAttribute("required"), "");
-      await subsequent.locator('[name="actor"]').fill(actor); await subsequent.locator('[name="reason"]').fill("Cambio documentado QA");
+      await assertCorporateActor(subsequent.locator('[name="actor"]')); await subsequent.locator('[name="reason"]').fill("Cambio documentado QA");
       await submit(page, "Emitir Programa Anual en Word");
       await page.getByRole("link", { name: /Descargar .*R01.docx/ }).waitFor();
       assert.deepEqual(await (await page.request.get(url)).body(), Buffer.from(version.fileData));

@@ -1,6 +1,9 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/auth/client";
+
 import { useState } from "react";
+import { ActorField, useCanAct, usePresentationAccess } from "./permissions";
 import { formatAdministrativeDate } from "@/lib/qms/administrative-date";
 
 export function QmsAdministrativeStatus({
@@ -24,7 +27,8 @@ export function QmsAdministrativeStatus({
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const [actor, setActor] = useState(defaultActor);
+  const actor = usePresentationAccess()?.actor ?? defaultActor;
+  const canAnnul = useCanAct("ANNUL");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -44,7 +48,7 @@ export function QmsAdministrativeStatus({
     setPending(true);
     setError(null);
     try {
-      const response = await fetch(`/api/qms/${qmsRecordId}/administrative-status`, {
+      const response = await authenticatedFetch(`/api/qms/${qmsRecordId}/administrative-status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -79,12 +83,12 @@ export function QmsAdministrativeStatus({
             </span>
             {annulledReason ? <small>Motivo: {annulledReason}</small> : null}
           </div>
-          <button type="button" className="button" onClick={() => setOpen(true)}>
+          {canAnnul && <button type="button" className="button" onClick={() => setOpen(true)}>
             Reactivar expediente
-          </button>
+          </button>}
         </div>
       ) : (
-        <button type="button" className="button danger" onClick={() => setOpen(true)}>
+        canAnnul && <button type="button" className="button danger" onClick={() => setOpen(true)}>
           Anular expediente
         </button>
       )}
@@ -119,7 +123,7 @@ export function QmsAdministrativeStatus({
               </label>
               <label className="field full">
                 <span>Realizado por</span>
-                <input value={actor} onChange={(event) => setActor(event.target.value)} />
+                <ActorField />
               </label>
               {error ? <div className="form-errors full">{error}</div> : null}
             </div>

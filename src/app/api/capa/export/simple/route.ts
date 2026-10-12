@@ -1,9 +1,10 @@
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { getCapaExportRows } from "@/modules/capa/documents/export-data";
 import { generateCapaSimpleList } from "@/modules/capa/documents/xlsx";
 
 export const runtime="nodejs";
 
-export async function GET(request:Request) {
+async function GETAuthenticatedContent(request:Request) {
   const url=new URL(request.url);
   const filters={
     administrative:url.searchParams.get("administrative")??undefined,
@@ -23,4 +24,8 @@ export async function GET(request:Request) {
       "Cache-Control":"no-store",
     },
   });
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/capa/export/simple/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

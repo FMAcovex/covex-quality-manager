@@ -1,3 +1,6 @@
+import { canPresentRecord } from "@/lib/auth/presentation";
+import { PermissionGate } from "@/components/permissions";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
 import { QmsListPagination } from "@/components/qms-list-pagination";
@@ -23,7 +26,7 @@ export const dynamic = "force-dynamic";
 
 const param = firstQueryValue;
 
-export default async function CapaPage({
+async function CapaPageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -61,9 +64,9 @@ export default async function CapaPage({
           <p>Acciones correctivas y preventivas · seguimiento, eficacia y cierre.</p>
         </div>
         <div className="heading-actions">
-          <Link href="/capa/new" className="button primary">+ Nueva CAPA</Link>
+          <PermissionGate permission="CREATE" module="CAPA"><Link href="/capa/new" className="button primary">+ Nueva CAPA</Link></PermissionGate>
           <ColumnSelector tableId="capa-list-table" storageKey="qms.columns.capa" columns={[...capaColumns]} />
-          <details className="export-menu">
+          <PermissionGate permission="EXPORT"><details className="export-menu">
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones CAPA</strong>
@@ -73,10 +76,10 @@ export default async function CapaPage({
                 </select></label>
                 {officialTemplateReady ? <button className="button small" type="submit">Descargar</button> : <><button className="button small" type="button" disabled>Descargar</button><span className="template-missing-note">Plantilla oficial pendiente de cargar.</span></>}
               </form>
-              <a className="export-link" href={`/api/capa/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a>
-              <a className="export-link" href="/api/capa/export/simple">Listado simple completo</a>
+              <PermissionGate permission="EXPORT"><a className="export-link" href={`/api/capa/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a></PermissionGate>
+              <PermissionGate permission="EXPORT"><a className="export-link" href="/api/capa/export/simple">Listado simple completo</a></PermissionGate>
             </div>
-          </details>
+          </details></PermissionGate>
         </div>
       </div>
 
@@ -131,14 +134,14 @@ export default async function CapaPage({
         <div><span>Seguimiento vencido</span><strong>{counters.overdueFollowups}</strong></div>
       </div>
 
-      <ManualReminderToolbar tableId="capa-list-table" moduleLabel="CAPA" />
+      <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="capa-list-table" moduleLabel="CAPA" /></PermissionGate>
 
       <div className="table-card">
         <div className="table-scroll">
           <table id="capa-list-table" className="records-table capa-table">
             <thead>
               <tr>
-<th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las CAPA visibles" /></th><th data-column-key="control">Control</th><th data-column-key="review">Revisión</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre y ejecución</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Verificación final</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
+<th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las CAPA visibles" /></PermissionGate></th><th data-column-key="control">Control</th><th data-column-key="review">Revisión</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre y ejecución</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Verificación final</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
               </tr>
             </thead>
             <tbody>
@@ -159,7 +162,7 @@ export default async function CapaPage({
                 return (
                   <tr key={row.id}>
                     <td className="reminder-select-column">
-                      <input
+                      <PermissionGate permission="FOLLOWUP" allowed={canPresentRecord("CAPA", "FOLLOWUP", { id: row.qmsRecord.id, departmentIds: row.departmentId ? [row.departmentId] : [] })}><input
                         type="checkbox"
                         data-reminder-record="true"
                         data-reminder-id={row.qmsRecord.id}
@@ -169,7 +172,7 @@ export default async function CapaPage({
                         data-reminder-meta={row.departmentCodeSnapshot ?? ""}
                         data-reminder-href={toDetail(row.id)}
                         aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "CAPA"}`}
-                      />
+                      /></PermissionGate>
                     </td>
                     <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {row.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Revisar"}</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} returnTo={qmsListingUrl("/capa", query)} basePath={`/capa/${row.id}`} /></td>
                     <td data-column-key="type"><span className="badge neutral">{capaTypeLabel(row.actionType)}</span></td>
@@ -208,4 +211,8 @@ export default async function CapaPage({
       <QmsListPagination root="/capa" query={query} pagination={pagination} />
     </section>
   );
+}
+
+export default async function CapaPage(...args: Parameters<typeof CapaPageAuthenticatedContent>) {
+  return authorizedPage("src/app/capa/page.tsx", () => CapaPageAuthenticatedContent(...args), args);
 }

@@ -1,3 +1,4 @@
+import "./auth-fixtures/context";
 import "server-only";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -38,7 +39,7 @@ async function main() {
     const bytes = Buffer.from(await response.arrayBuffer());
     assert.deepEqual(bytes, fixture.bytes);
     assert.equal(createHash("sha256").update(bytes).digest("hex"), fixture.checksum);
-    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.match(response.headers.get("cache-control")!, /no-store/);
     downloads++;
   }
   try {

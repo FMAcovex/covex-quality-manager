@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { chromium, type Page } from "playwright";
+import { assertCorporateActor, chromium, authenticateContext, capabilityPage } from "./auth-fixtures/browser";
+import type { AccessPermission } from "../src/lib/auth/context";
+import { type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 import { lifecyclePermissions } from "../src/modules/controlled-documents/lifecycle/access";
 import { permissions, type LifecycleCommand } from "../src/modules/controlled-documents/lifecycle/domain";
@@ -57,20 +59,21 @@ async function authenticated(page: Page) {
   const secret = process.env.PNT_DOCUMENT_PROXY_SECRET!;
   const headers = (capabilities: string) => ({ "x-pnt-proxy-secret": secret, "x-pnt-user": "P2C proxy autenticado", "x-pnt-permissions": `read,${capabilities}` });
   const browser = page.context().browser()!, reader = await browser.newPage({ extraHTTPHeaders: headers("") });
-  const persisted = await prisma.controlledDocument.findFirstOrThrow({ where: { createdByText: actor }, orderBy: { createdAt: "desc" }, include: { revisions: { orderBy: { revisionCode: "desc" }, include: { documents: true } } } });
+  await authenticateContext(reader.context(), "reader"); await page.context().clearCookies();
+  const persisted = await prisma.controlledDocument.findFirstOrThrow({ where: { revisions: { some: { documents: { some: { originalName: "p2c-ui-signed.pdf" } } } } }, orderBy: { createdAt: "desc" }, include: { revisions: { orderBy: { revisionCode: "desc" }, include: { documents: true } } } });
   const revision = persisted.revisions[0], file = revision.documents.find(d => d.kind === "EXTERNAL_SIGNED_PDF")!;
   const fileUrl = `${base}/api/controlled-documents/${persisted.id}/revisions/${revision.id}/documents/${file.id}`;
-  assert.deepEqual(await (await reader.request.get(fileUrl)).body(), pdf); assert.equal((await page.request.get(fileUrl)).status(), 403);
+  assert.deepEqual(await (await reader.request.get(fileUrl)).body(), pdf); assert.equal((await page.request.get(fileUrl)).status(), 401);
   for (const tab of ["documents", "verification", "history", "information", "revisions"]) {
     await reader.goto(`${base}/controlled-documents/${persisted.id}?tab=${tab}`); await reader.locator("main h2").first().waitFor();
     await page.goto(`${base}/controlled-documents/${persisted.id}?tab=${tab}`);
-    if (["documents", "verification"].includes(tab)) await page.getByRole("alert").filter({ hasText: "Acceso documental no autorizado" }).waitFor();
-    else await page.locator("main h2").first().waitFor();
+    await page.waitForURL(/\/login/);
     for (const privateValue of [file.id, file.sha256!, reason, "P2C UI APPROVAL", "example.invalid/sharepoint/pnt"]) assert.equal((await page.content()).includes(privateValue), false, `filtración ${tab}: ${privateValue}`);
     if (tab === "history") { await reader.getByRole("heading", { name: "Decisión documental P2B", exact: true }).first().waitFor(); await reader.getByText(reason, { exact: true }).first().waitFor(); }
   }
   const m = (await manualMaster()).master, r = m.revisions[0], docs = await evidence(m.id, r.id), ids = docs.map(d => d.id);
   const writer = await browser.newPage({ extraHTTPHeaders: headers("write") });
+  await authenticateContext(writer.context(), "documentWriter");
   await writer.goto(`${base}/controlled-documents/${m.id}?tab=documents`); await writer.getByRole("button", { name: "Añadir documento", exact: true }).waitFor();
   await reader.goto(`${base}/controlled-documents/${m.id}?tab=documents`); await reader.getByRole("heading", { name: "Documentos por revisión", exact: true }).waitFor(); assert.equal(await reader.getByRole("button", { name: "Añadir documento", exact: true }).count(), 0);
   async function execute(extra: Partial<LifecycleCommand>) {
@@ -78,10 +81,10 @@ async function authenticated(page: Page) {
     const count = await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } });
     await writer.goto(`${base}/controlled-documents/${m.id}?tab=verification`); await writer.getByText("Sin operaciones autorizadas en este estado.", { exact: true }).waitFor();
     assert.equal(await writer.locator(".pnt-lifecycle-form button").count(), 0);
-    assert.equal((await page.request.post(endpoint, { headers: { origin: base }, data: c })).status(), 403);
+    assert.equal((await page.request.post(endpoint, { headers: { origin: base }, data: c })).status(), 401);
     assert.equal((await writer.request.post(endpoint, { headers: { origin: base }, data: c })).ok(), false);
     assert.equal(await prisma.controlledRevisionDecision.count({ where: { revisionId: r.id } }), count);
-    const authorized = await browser.newPage({ extraHTTPHeaders: headers(cap) });
+    const authorized = await capabilityPage(browser, [("PNT_" + cap.replaceAll("-", "_").toUpperCase()) as AccessPermission]);
     try {
       await authorized.goto(`${base}/controlled-documents/${m.id}?tab=verification`);
       const article = authorized.locator(`article[data-lifecycle-revision="${r.id}"]`); await article.getByLabel("Operación", { exact: true }).waitFor();
@@ -99,19 +102,28 @@ async function authenticated(page: Page) {
   await execute({ operation: "ACTIVATE", previousRevisionId: null }); await execute({ operation: "RETIRE" }); await execute({ operation: "RECTIFY", rectifiesId: verified });
   assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: r.id } })).status, "OBSOLETE");
   const legacyCode = await freeCode();
-  const legacy = await browser.newPage({ extraHTTPHeaders: headers("legacy-register") });
-  async function historicalForm(target: Page) {
+  const legacy = await capabilityPage(browser, ["CREATE", "PNT_LEGACY_REGISTER"]);
+  async function historicalForm(target: Page, forge = false) {
     await target.goto(`${base}/controlled-documents/new`);
-    for (const [label, value] of [["Código base", legacyCode], ["Título", "P2C registro histórico sintético"], ["Revisión explícita", "00"], ["Responsable del registro", "Nombre escrito no autenticado"], ["Motivo del registro o cambio", "Registro histórico QA contrastado"], ["Fecha de vigencia", offset(-30)], ["Fecha prevista de revisión", offset(365)], ["Referencia documental", "Fuente histórica sintética contrastada"]]) await target.getByLabel(label, { exact: true }).fill(value);
+    for (const [label, value] of [["Código base", legacyCode], ["Título", "P2C registro histórico sintético"], ["Revisión explícita", "00"], ["Responsable del registro", "Nombre escrito no autenticado"], ["Motivo del registro o cambio", "Registro histórico QA contrastado"], ["Fecha de vigencia", offset(-30)], ["Fecha prevista de revisión", offset(365)], ["Referencia documental", "Fuente histórica sintética contrastada"]]) { const field = target.getByLabel(label, { exact: true }); if (label === "Responsable del registro") await assertCorporateActor(field); else await field.fill(value); }
     await target.getByLabel(/^Departamento responsable/).selectOption((await prisma.department.findUniqueOrThrow({ where: { code: "GC-00" } })).id);
-    await target.getByRole("checkbox", { name: "Registrar revisión documental ya existente", exact: true }).check();
-    await target.getByRole("checkbox", { name: "He contrastado la revisión y su estado con la fuente documental", exact: true }).check();
+    if (forge) {
+      assert.equal(await target.getByRole("checkbox", { name: "Registrar revisión documental ya existente", exact: true }).count(), 0);
+      await target.locator("form.form-stack").evaluate(form => {
+        for (const name of ["existingDocument", "verified"]) { const field = document.createElement("input"); field.type = "hidden"; field.name = name; field.value = "on"; form.appendChild(field); }
+      });
+    } else {
+      await target.getByRole("checkbox", { name: "Registrar revisión documental ya existente", exact: true }).check();
+      await target.getByRole("checkbox", { name: "He contrastado la revisión y su estado con la fuente documental", exact: true }).check();
+    }
     await target.getByRole("button", { name: "Registrar PNT", exact: true }).click();
   }
-  await historicalForm(reader); await reader.getByRole("alert").filter({ hasText: "legacy-register" }).waitFor(); assert.equal(await prisma.controlledDocument.count({ where: { baseCode: legacyCode } }), 0);
+  const creatorWithoutLegacy = await capabilityPage(browser, ["CREATE"]);
+  await historicalForm(creatorWithoutLegacy, true); await creatorWithoutLegacy.getByRole("alert").filter({ hasText: "legacy-register" }).waitFor(); assert.equal(await prisma.controlledDocument.count({ where: { baseCode: legacyCode } }), 0);
+  await creatorWithoutLegacy.close();
   await historicalForm(legacy); await legacy.waitForURL(/controlled-documents\/[a-f0-9-]+$/);
   const historical = await prisma.controlledDocument.findUniqueOrThrow({ where: { baseCode: legacyCode }, include: { revisions: true } });
-  assert.equal(historical.createdByText, "P2C proxy autenticado"); assert.equal(historical.revisions[0].verifiedByText, "P2C proxy autenticado"); assert.equal(await prisma.controlledRevisionLifecycle.count({ where: { documentId: historical.id } }), 0);
+  assert.equal(historical.createdByText, "Usuario sintético de capacidad 4B1"); assert.equal(historical.revisions[0].verifiedByText, "Usuario sintético de capacidad 4B1"); assert.equal(await prisma.controlledRevisionLifecycle.count({ where: { documentId: historical.id } }), 0);
   await legacy.close();
   assert.ok(lifecyclePermissions.includes("manage-state"), "La gestión manual de estados requiere una capacidad independiente.");
    assert.deepEqual(lifecyclePermissions.filter(p => p !== "legacy-register" && p !== "manage-state").sort(), [...new Set(Object.values(permissions))].sort());
@@ -127,7 +139,7 @@ async function main() {
     await page.goto(`${base}/controlled-documents/import-index`);
     await page.getByLabel("Excel del índice maestro", { exact: true }).setInputFiles({ name: "p2c-ui.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: bytes });
     await page.getByRole("button", { name: "Analizar Excel", exact: true }).click(); await page.getByRole("heading", { name: "Resumen", exact: true }).waitFor();
-    await page.getByLabel("Responsable del lote", { exact: true }).fill(actor); await page.getByRole("button", { name: "Guardar previsualización como lote pendiente", exact: true }).click(); await page.waitForURL(/\/import-index\/[a-f0-9-]{36}$/);
+    await assertCorporateActor(page.getByLabel("Responsable del lote", { exact: true })); await page.getByRole("button", { name: "Guardar previsualización como lote pendiente", exact: true }).click(); await page.waitForURL(/\/import-index\/[a-f0-9-]{36}$/);
     const batchId = page.url().split("/").pop()!; await page.getByLabel("Buscar candidatos", { exact: true }).fill(code);
     const candidate = page.locator("article.form-section").first();
     await candidate.getByLabel(/^Correspondencia de departamento/).selectOption(gc.id); await candidate.getByLabel(/^Decisión de la fila/).selectOption("INCLUDE"); await candidate.getByLabel(/^Alcance de la decisión/).selectOption("GROUP");
@@ -139,7 +151,7 @@ async function main() {
     const imported = await prisma.controlledDocument.findUniqueOrThrow({ where: { baseCode: code }, include: { revisions: true } });
     await candidate.getByRole("link", { name: "Consultar PNT", exact: true }).click(); await page.getByRole("heading", { level: 1 }).waitFor();
     const manualCode = await freeCode(); await page.goto(`${base}/controlled-documents/new`);
-    for (const [label, value] of [["Código base", manualCode], ["Título", "P2C UI manual sin Excel"], ["Revisión explícita", "00"], ["Responsable del registro", actor], ["Motivo del registro o cambio", "Alta sintética P2C por navegador"], ["Fecha de vigencia", offset(30)], ["Fecha prevista de revisión", offset(365)]]) await page.getByLabel(label, { exact: true }).fill(value);
+    for (const [label, value] of [["Código base", manualCode], ["Título", "P2C UI manual sin Excel"], ["Revisión explícita", "00"], ["Responsable del registro", actor], ["Motivo del registro o cambio", "Alta sintética P2C por navegador"], ["Fecha de vigencia", offset(30)], ["Fecha prevista de revisión", offset(365)]]) { const field = page.getByLabel(label, { exact: true }); if (label === "Responsable del registro") await assertCorporateActor(field); else await field.fill(value); }
     await page.getByLabel(/^Departamento responsable/).selectOption(gc.id); await page.getByRole("button", { name: "Registrar PNT", exact: true }).click(); await page.waitForURL(/controlled-documents\/[a-f0-9-]+$/);
     const manual = await prisma.controlledDocument.findUniqueOrThrow({ where: { baseCode: manualCode }, include: { revisions: true } });
     for (const master of [imported, manual]) {
@@ -149,7 +161,7 @@ async function main() {
     }
     await page.goto(`${base}/controlled-documents/${manual.id}/edit`);
     const evolvedTitle = "P2C UI título B para nueva revisión";
-    await page.getByLabel("Título", { exact: true }).fill(evolvedTitle); await page.getByLabel("Responsable del registro", { exact: true }).fill(actor);
+    await page.getByLabel("Título", { exact: true }).fill(evolvedTitle); await assertCorporateActor(page.getByLabel("Responsable del registro", { exact: true }));
     await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Evolución legítima hacia revisión 01 sin reescribir 00");
     await page.getByRole("button", { name: "Guardar cambios", exact: true }).click(); await page.waitForURL(`${base}/controlled-documents/${manual.id}`);
     assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: manual.revisions[0].id } })).titleSnapshot, manual.title);

@@ -1,5 +1,7 @@
 "use client";
 
+import { authenticatedFetch } from "@/lib/auth/client";
+
 import { useEffect, useState } from "react";
 export function ControlledBusinessCodeField({
   recordType,
@@ -85,7 +87,7 @@ export function ControlledBusinessCodeField({
     if (complaintType) params.set("complaintType", complaintType);
 
     const controller = new AbortController();
-    fetch(`/api/qms/business-code-suggestion?${params.toString()}`, {
+    authenticatedFetch(`/api/qms/business-code-suggestion?${params.toString()}`, {
       cache: "no-store",
       signal: controller.signal,
     })

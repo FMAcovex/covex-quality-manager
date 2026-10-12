@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { SessionControls } from "./session-controls";
+import { useCanAct } from "./permissions";
 
 const modules = [
   { label: "Inicio", href: "/", enabled: true, match: "/" },
@@ -18,6 +20,7 @@ const modules = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const canReadSettings = useCanAct("READ", "SYSTEM");
 
   return (
     <div className="app-frame">
@@ -32,6 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <nav className="module-nav" aria-label="Módulos QMS">
           {modules.map((module) => {
+            if (module.href === "/settings" && !canReadSettings) return null;
             const active =
               module.match === "/"
                 ? pathname === "/"
@@ -63,13 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <div className="actor pilot-mode">
-          <span className="avatar">V1</span>
-          <span>
-            <strong>Modo piloto</strong>
-            <small>Identificación manual</small>
-          </span>
-        </div>
+        <SessionControls />
       </header>
       <main className="page-shell">{children}</main>
     </div>

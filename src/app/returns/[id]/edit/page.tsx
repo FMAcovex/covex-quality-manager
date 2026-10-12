@@ -1,3 +1,5 @@
+import { PermissionGate } from "@/components/permissions";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import { updateReturnAction } from "@/modules/returns/actions";
@@ -9,7 +11,7 @@ const s=(v:string|null)=>v??"";
 const t=(v:string|null)=>v??undefined;
 const tri=(v:string|null)=>v??"";
 const b=(v:boolean|null)=>v===true?"true":v===false?"false":"";
-export default async function EditReturnPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{returnTo?:string;tab?:string}>}){const {id}=await params;
+async function EditReturnPageAuthenticatedContent({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{returnTo?:string;tab?:string}>}){const {id}=await params;
  const {returnTo,tab}=await searchParams;
  const cancelHref=qmsDetailUrl("/returns",id,returnTo,tab);const [r,l]=await Promise.all([getReturnDetail(id),getReturnLookups()]);if(!r)notFound();
  const pendingComplaintId=r.status==="DRAFT"&&r.extraData&&typeof r.extraData==="object"&&!Array.isArray(r.extraData)&&typeof r.extraData.pendingComplaintId==="string"?r.extraData.pendingComplaintId:undefined;
@@ -22,4 +24,8 @@ export default async function EditReturnPage({params,searchParams}:{params:Promi
  decision:r.decision,finalDestination:t(r.finalDestination),decisionObservations:t(r.decisionObservations),qaApprovalName:t(r.qaApprovalName),technicalApprovalName:t(r.technicalApprovalName),decisionDate:r.decisionDate?.toISOString().slice(0,10),destructionManagedBy:t(r.destructionManagedBy),destructionCertificate:t(r.destructionCertificate),traceabilityUpdated:tri(r.traceabilityUpdated),closedAt:r.closedAt?.toISOString().slice(0,10),status:r.status,internalObservations:t(r.internalObservations),signedDocumentAvailable:b(r.signedDocumentAvailable),dataQualityStatus:r.dataQualityStatus,
  products:r.products.map(x=>({id:x.id,departmentId:x.departmentId??"",productType:x.productType,otherProductType:s(x.otherProductType),productNameCode:x.productNameCode,format:s(x.format),lot:s(x.lot),expiryReanalysis:s(x.expiryReanalysis),quantity:s(x.quantity),unit:s(x.unit),netWeight:s(x.netWeight),grossWeight:s(x.grossWeight),receptionObservations:s(x.receptionObservations),receivedBy:s(x.receivedBy),receivedByDate:x.receivedByDate?.toISOString().slice(0,10)??"",
  verifiedBy:s(x.verifiedBy),verifiedByDate:x.verifiedByDate?.toISOString().slice(0,10)??""}))};
- return <section className="workspace"><div className="page-heading"><div><p className="eyebrow">Devoluciones</p><h1>Editar {r.qmsRecord.businessCode}</h1></div></div><ReturnForm mode="edit" action={updateReturnAction.bind(null,id)} departments={l.departments} defaults={defaults} returnId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/returns",returnTo)} detailTab={qmsDetailTab("/returns",tab)} fromComplaintId={pendingComplaintId}/></section>;}
+ return <section className="workspace"><div className="page-heading"><div><p className="eyebrow">Devoluciones</p><h1>Editar {r.qmsRecord.businessCode}</h1></div></div><PermissionGate permission="EDIT"><ReturnForm mode="edit" action={updateReturnAction.bind(null,id)} departments={l.departments} defaults={defaults} returnId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/returns",returnTo)} detailTab={qmsDetailTab("/returns",tab)} fromComplaintId={pendingComplaintId}/></PermissionGate></section>;}
+
+export default async function EditReturnPage(...args: Parameters<typeof EditReturnPageAuthenticatedContent>) {
+  return authorizedPage("src/app/returns/[id]/edit/page.tsx", () => EditReturnPageAuthenticatedContent(...args), args);
+}

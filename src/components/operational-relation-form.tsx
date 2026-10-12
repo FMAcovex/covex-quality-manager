@@ -1,4 +1,10 @@
 "use client";
+import { ActorField } from "@/components/permissions";
+
+import { CsrfField } from "@/components/csrf";
+
+
+import { authenticatedFetch } from "@/lib/auth/client";
 
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import type {
@@ -77,13 +83,14 @@ export function OperationalRelationForm({
       setLoading(true);
       try {
         const params = new URLSearchParams({
+          editable: "1",
           currentRecordId,
           currentType: currentRecordType,
           relatedType: selectedType,
           q: query,
         });
         if (findingId) params.set("findingId", findingId);
-        const response = await fetch(`/api/qms/relation-suggestions?${params.toString()}`, {
+        const response = await authenticatedFetch(`/api/qms/relation-suggestions?${params.toString()}`, {
           signal: controller.signal,
         });
         if (!response.ok) {
@@ -134,7 +141,7 @@ export function OperationalRelationForm({
       <h3>{title}</h3>
       {state.error ? <div className="form-errors"><strong>{state.error}</strong></div> : null}
       {state.success ? <div className="form-success"><strong>{state.success}</strong></div> : null}
-      <form action={formAction} className="inline-form relation-form">
+      <form action={formAction} className="inline-form relation-form"><CsrfField />
         <input type="hidden" name="targetRecordId" value={targetRecordId} />
         {showType ? (
           <label className="field">
@@ -227,10 +234,10 @@ export function OperationalRelationForm({
         </label>
         <label className="field">
           <span>Registrado por</span>
-          <input name="actor" defaultValue={defaultActor} required />
+          <ActorField name="actor" defaultValue={defaultActor} required />
         </label>
         <div className="full">
-          <button className="button primary" type="submit" disabled={pending}>
+          <button className="button primary" type="submit" disabled={pending || !targetRecordId}>
             {pending ? "Guardando…" : buttonLabel}
           </button>
         </div>

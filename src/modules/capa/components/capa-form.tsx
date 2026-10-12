@@ -1,4 +1,7 @@
 "use client";
+import { usePresentationAccess, PermissionGate } from "@/components/permissions";
+import { CsrfField } from "@/components/csrf";
+
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 
 import Link from "next/link";
@@ -137,6 +140,7 @@ export function CapaForm({
   fromComplaintPlanId?: string;
   fromComplaintId?: string;
 }) {
+  const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, initialState);
   const formDefaults = submittedDefaults(defaults, state.submittedValues);
 
@@ -225,7 +229,7 @@ export function CapaForm({
   };
 
   return (
-    <form key={state.formRevision ?? 0} action={formAction} className="record-form">
+    <form key={state.formRevision ?? 0} action={formAction} className="record-form"><CsrfField />
     <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
@@ -285,7 +289,7 @@ export function CapaForm({
               aria-invalid={issues.departmentId?.length ? true : undefined}
             >
               <option value="">Seleccionar…</option>
-              {departments.map((department) => (
+              {departments.filter(d => access?.departments[d.id]).map((department) => (
                 <option key={department.id} value={department.id}>
                   {department.code} — {department.name}
                 </option>
@@ -329,7 +333,7 @@ export function CapaForm({
             <Field
               label="Modificado por"
               name="modifiedByText"
-              defaultValue={formDefaults.createdByText}
+              defaultValue={access?.actor ?? ""}
             />
           ) : null}
 
@@ -527,8 +531,8 @@ export function CapaForm({
             >
               {(mode === "create" || draftExisting) ? <option value="DRAFT">Borrador</option> : null}
               <option value="OPEN">Abierta</option>
-              <option value="CLOSED">Cerrada</option>
-              <option value="CANCELLED">Cancelada</option>
+              <PermissionGate permission="CLOSE"><option value="CLOSED">Cerrada</option></PermissionGate>
+              <PermissionGate permission="ANNUL"><option value="CANCELLED">Cancelada</option></PermissionGate>
             </select>
           </label>
 

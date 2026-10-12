@@ -1,4 +1,9 @@
 "use client";
+import { usePresentationAccess, PermissionGate } from "@/components/permissions";
+import { CsrfField } from "@/components/csrf";
+
+
+import { authenticatedFetch } from "@/lib/auth/client";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { deviationVersionLabel } from "@/modules/deviations/version-mode";
 import { deviationProvenanceOptions } from "@/modules/deviations/domain";
@@ -159,6 +164,7 @@ export function DeviationForm({
   detailTab?: string;
   currentVersionSequence?: number;
 }) {
+  const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, { error: null });
   const submitted = state.submittedValues;
   const formDefaults = new Proxy(defaults, {
@@ -210,7 +216,7 @@ export function DeviationForm({
     }
 
     const controller = new AbortController();
-    fetch(`/api/deviations/code-suggestion?departmentId=${encodeURIComponent(departmentId)}&year=${issueYear}`, {
+    authenticatedFetch(`/api/deviations/code-suggestion?departmentId=${encodeURIComponent(departmentId)}&year=${issueYear}`, {
       signal: controller.signal,
       cache: "no-store",
     })
@@ -240,7 +246,7 @@ export function DeviationForm({
       action={formAction}
       className={`form-stack ${openingAttempted ? "show-required-errors" : ""}`}
       onInvalid={() => setOpeningAttempted(true)}
-    >
+    ><CsrfField />
       <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""} />
       <input type="hidden" name="detailTab" value={detailTab ?? ""} />
@@ -290,7 +296,7 @@ export function DeviationForm({
               aria-invalid={issues.departmentId?.length ? true : undefined}
             >
               <option value="">Seleccionar…</option>
-              {departments.map((department) => (
+              {departments.filter(d => access?.departments[d.id]).map((department) => (
                 <option key={department.id} value={department.id}>
                   {department.code} — {department.name}
                 </option>
@@ -312,7 +318,7 @@ export function DeviationForm({
           </label>
           <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={formDefaults.eventDateTime} required issues={issues.eventDateTime} />
           <Field label="Detectado por" name="detectedBy" defaultValue={formDefaults.detectedBy} required issues={issues.detectedBy} />
-          <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required issues={issues.createdByText} />
+          <Field label="Cumplimentado por" name="createdByText" defaultValue={mode === "create" ? access?.actor ?? "" : formDefaults.createdByText} required issues={issues.createdByText} />
           <Field label="Breve descripción del proceso/equipo/sistema afectado" name="materialProcessAffected" defaultValue={formDefaults.materialProcessAffected} span="span-2" required issues={issues.materialProcessAffected} />
         </div>
       </section>
@@ -597,7 +603,7 @@ export function DeviationForm({
             >
               {(mode === "create" || formDefaults.status === "DRAFT") ? <option value="DRAFT">Borrador</option> : null}
               <option value="OPEN">Abierta</option>
-              {mode !== "create" && formDefaults.status !== "DRAFT" ? <option value="CLOSED">Cerrada</option> : null}
+              {mode !== "create" && formDefaults.status !== "DRAFT" ? <PermissionGate permission="CLOSE"><option value="CLOSED">Cerrada</option></PermissionGate> : null}
             </select>
             <FieldIssue messages={issues.status} />
           </label>
@@ -630,7 +636,7 @@ export function DeviationForm({
           <h2>Edición / nueva versión</h2>
           <p className="section-help">Campos propios de la modificación y del versionado. Se mantienen separados de los apartados A-L.</p>
           <div className="form-grid">
-            <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.modifiedByText ?? formDefaults.createdByText} />
+            <Field label="Modificado por" name="modifiedByText" defaultValue={access?.actor ?? ""} />
             <TextArea
               label="Motivo del cambio / seguimiento"
               name="changeReason"

@@ -1,4 +1,5 @@
 "use server";
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -180,7 +181,7 @@ async function createOpeningFollowup00(
   return followup;
 }
 
-export async function createChangeControlAction(
+async function createChangeControlActionAuthenticatedContent(
   previous: ChangeControlFormState,
   formData: FormData,
 ): Promise<ChangeControlFormState> {
@@ -365,7 +366,7 @@ export async function createChangeControlAction(
   redirect(`/changes/${createdId}`);
 }
 
-export async function updateChangeControlAction(
+async function updateChangeControlActionAuthenticatedContent(
   id: string,
   previous: ChangeControlFormState,
   formData: FormData,
@@ -709,7 +710,7 @@ function parseFollowupTasks(raw: string): ChangeFollowupTaskInput[] {
   }
 }
 
-export async function addChangeControlFollowupAction(id: string, _state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
+async function addChangeControlFollowupActionAuthenticatedContent(id: string, _state: FollowupActionState, formData: FormData): Promise<FollowupActionState> {
   const change = await prisma.changeControl.findUnique({
     where: { id },
     include: {
@@ -905,7 +906,7 @@ export async function addChangeControlFollowupAction(id: string, _state: Followu
 }
 
 
-export async function updateChangeControlFollowupAction(
+async function updateChangeControlFollowupActionAuthenticatedContent(
   id: string,
   followupId: string,
   _state: FollowupActionState,
@@ -1125,7 +1126,7 @@ export async function updateChangeControlFollowupAction(
   redirect(`/changes/${id}?tab=followups`);
 }
 
-export async function addChangeControlRelationAction(id: string, formData: FormData) {
+async function addChangeControlRelationActionAuthenticatedContent(id: string, formData: FormData) {
   const change = await prisma.changeControl.findUnique({ where: { id } });
   if (!change) {
     redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("Control de Cambio no encontrado.")}`);
@@ -1164,4 +1165,24 @@ export async function addChangeControlRelationAction(id: string, formData: FormD
 
   revalidatePath(`/changes/${id}`);
   redirect(`/changes/${id}?tab=relations`);
+}
+
+export async function createChangeControlAction(...args: Parameters<typeof createChangeControlActionAuthenticatedContent>) {
+  return authorizedAction("createChangeControlAction", args, authenticated => createChangeControlActionAuthenticatedContent(...authenticated as Parameters<typeof createChangeControlActionAuthenticatedContent>));
+}
+
+export async function updateChangeControlAction(...args: Parameters<typeof updateChangeControlActionAuthenticatedContent>) {
+  return authorizedAction("updateChangeControlAction", args, authenticated => updateChangeControlActionAuthenticatedContent(...authenticated as Parameters<typeof updateChangeControlActionAuthenticatedContent>));
+}
+
+export async function addChangeControlFollowupAction(...args: Parameters<typeof addChangeControlFollowupActionAuthenticatedContent>) {
+  return authorizedAction("addChangeControlFollowupAction", args, authenticated => addChangeControlFollowupActionAuthenticatedContent(...authenticated as Parameters<typeof addChangeControlFollowupActionAuthenticatedContent>));
+}
+
+export async function updateChangeControlFollowupAction(...args: Parameters<typeof updateChangeControlFollowupActionAuthenticatedContent>) {
+  return authorizedAction("updateChangeControlFollowupAction", args, authenticated => updateChangeControlFollowupActionAuthenticatedContent(...authenticated as Parameters<typeof updateChangeControlFollowupActionAuthenticatedContent>));
+}
+
+export async function addChangeControlRelationAction(...args: Parameters<typeof addChangeControlRelationActionAuthenticatedContent>) {
+  return authorizedAction("addChangeControlRelationAction", args, authenticated => addChangeControlRelationActionAuthenticatedContent(...authenticated as Parameters<typeof addChangeControlRelationActionAuthenticatedContent>));
 }

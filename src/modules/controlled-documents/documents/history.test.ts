@@ -2,7 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { findUnique, requestHeaders } = vi.hoisted(() => ({ findUnique: vi.fn(), requestHeaders: vi.fn() }));
-vi.mock("@/lib/db", () => ({ prisma: { controlledDocument: { findUnique } } }));
+vi.mock("@/lib/db", () => ({ prisma: { controlledDocument: { findUnique }, department: { findMany: async () => [] } } }));
 vi.mock("next/headers", () => ({ headers: requestHeaders }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("Not found"); } }));
 vi.mock("@/modules/controlled-documents/components/document-link", () => ({ DocumentLink: ({ children, href }: { children: React.ReactNode; href: string }) => React.createElement("a", { href }, children) }));
@@ -23,6 +23,7 @@ beforeEach(() => {
   vi.stubGlobal("React", React);
   vi.stubEnv("PNT_DOCUMENT_ACCESS_MODE", "trusted-proxy"); vi.stubEnv("PNT_DOCUMENT_PROXY_SECRET", secret);
   findUnique.mockImplementation(async ({ include }) => {
+    if (!include) return { id: "master", departmentId: null };
     const excluded: string[] = include.changes.where.action?.notIn || [];
     return { id: "master", baseCode: "GC-00/900", title: "PNT sintético", administrativeStatus: "DRAFT", sourceMetadata: null, revisions: [], changes: events.filter(e => !excluded.includes(e.action)) };
   });
@@ -35,8 +36,9 @@ describe("P2A permiso de lectura del historial documental", () => {
   it.each([new Headers(), new Headers({ "x-pnt-user": "Suplantado", "x-pnt-permissions": "read", "x-pnt-proxy-secret": "incorrecto" }), new Headers({ "x-pnt-user": "Sin lectura", "x-pnt-permissions": "write", "x-pnt-proxy-secret": secret })])("sin acceso no consulta ni presenta eventos documentales; conserva P1A/P1B", async h => {
     requestHeaders.mockResolvedValue(h);
     const html = await history();
-    expect(findUnique.mock.calls[0][0].include.changes.where).toEqual({ action: { notIn: Object.values(documentHistoryActions) } });
-    expect((await findUnique.mock.results[0].value).changes).toEqual(events.slice(0, 2));
+    const historyCall = findUnique.mock.calls.findIndex(([args]) => args.include?.changes);
+    expect(findUnique.mock.calls[historyCall][0].include.changes.where).toEqual({ action: { notIn: Object.values(documentHistoryActions) } });
+    expect((await findUnique.mock.results[historyCall].value).changes).toEqual(events.slice(0, 2));
     for (const text of ["Responsable P1A", "Motivo ordinario P1A", "Título P1A", "Responsable P1B", "Motivo ordinario P1B", "Fuente ordinaria P1B"]) expect(html).toContain(text);
     for (const text of [documentHistoryActions.incorporation, documentHistoryActions.replacement, "Responsable documental privado", "Sustituidor documental privado", "Motivo de incorporación privado", "Motivo de sustitución privado", "uuid-privado", "uuid-sustituto", "archivo-privado.pdf", "hash-privado"]) expect(html).not.toContain(text);
     for (const text of [documentHistoryActions.lifecycle, "Decisor P2B privado", "Motivo P2B privado", "decision-p2b-privada"]) expect(html).not.toContain(text);
@@ -44,8 +46,9 @@ describe("P2A permiso de lectura del historial documental", () => {
   it("con permiso read (sin write) conserva todos los eventos y sus datos sin redacción", async () => {
     requestHeaders.mockResolvedValue(new Headers({ "x-pnt-user": "Lector autenticado", "x-pnt-permissions": "read", "x-pnt-proxy-secret": secret }));
     const html = await history();
-    expect(findUnique.mock.calls[0][0].include.changes.where).toEqual({});
-    expect((await findUnique.mock.results[0].value).changes).toEqual(events);
+    const historyCall = findUnique.mock.calls.findIndex(([args]) => args.include?.changes);
+    expect(findUnique.mock.calls[historyCall][0].include.changes.where).toEqual({});
+    expect((await findUnique.mock.results[historyCall].value).changes).toEqual(events);
     for (const text of ["Responsable P1A", "Responsable P1B", documentHistoryActions.incorporation, documentHistoryActions.replacement, "Responsable documental privado", "Sustituidor documental privado", "Motivo de incorporación privado", "Motivo de sustitución privado"]) expect(html).toContain(text);
     for (const text of [documentHistoryActions.lifecycle, "Decisor P2B privado", "Motivo P2B privado"]) expect(html).toContain(text);
   });

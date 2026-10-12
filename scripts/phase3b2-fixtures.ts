@@ -3,6 +3,7 @@ import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../src/lib/db";
+import { isolatedTestEnvironment } from "../src/lib/auth/config";
 
 export function assertPhase3b2Database() {
   const url = new URL(process.env.DATABASE_URL ?? "");
@@ -10,7 +11,7 @@ export function assertPhase3b2Database() {
   const disposableCI = process.env.GITHUB_ACTIONS === "true" && process.env.CI === "true" && database === "covex_quality";
   assert.equal(process.env.APP_ENV, "test");
   assert.equal(process.env.PHASE3B2_SYNTHETIC_DATABASE, "1");
-  assert(database.startsWith("covex_phase3b2_") || disposableCI, "Only a new disposable synthetic database is allowed");
+  assert(database.startsWith("covex_phase3b2_") || disposableCI || isolatedTestEnvironment(), "Only a new disposable synthetic database is allowed");
   return { database, host: url.hostname, disposableCI };
 }
 

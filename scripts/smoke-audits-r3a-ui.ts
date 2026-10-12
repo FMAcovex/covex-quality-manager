@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { chromium, type Page } from "playwright";
+import { assertCorporateActor, chromium } from "./auth-fixtures/browser";
+import { type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 
 const base = process.env.R3A_UI_BASE_URL, marker = `R3A-UI-${randomUUID()}`;
@@ -34,7 +35,7 @@ async function main() {
     await page.getByRole("button",{name:"+ Participante",exact:true}).click();
     await page.getByLabel("Nombre y apellidos").fill("Auditor UI ficticio");
     await page.getByLabel("Fecha prevista",{exact:true}).fill("2096-11-10");
-    await page.getByLabel("Realizado por",{exact:true}).fill("Actor UI conservado");
+    await assertCorporateActor(page.getByLabel("Realizado por",{exact:true}));
     await page.locator('select[name="modality"]').selectOption("REMOTE");
     await page.locator('select[name="status"]').selectOption("OPEN");
     await submit(page); await page.locator(".form-errors").waitFor();
@@ -42,7 +43,7 @@ async function main() {
     assert.equal(await page.getByLabel("Nombre y apellidos").inputValue(),"Auditor UI ficticio");
     assert(await page.locator(`input[name=departmentIds][value="${department.id}"]`).isChecked());
     assert.equal(await page.getByLabel("Fecha prevista",{exact:true}).inputValue(),"2096-11-10");
-    assert.equal(await page.getByLabel("Realizado por",{exact:true}).inputValue(),"Actor UI conservado");
+    await assertCorporateActor(page.getByLabel("Realizado por",{exact:true}));
     assert.equal(await page.locator('select[name="modality"]').inputValue(),"REMOTE");
     await page.locator('textarea[name="scope"]').fill("Alcance UI ficticio");
     await submit(page); await page.waitForURL(new RegExp(`/audits/${audit.id}$`));

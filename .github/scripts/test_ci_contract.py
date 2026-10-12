@@ -23,7 +23,7 @@ class Contract(unittest.TestCase):
         self.needs = {name: {"result": "success"} for name in ["scope", "quality", "regression"]}
         self.evidence = {"quality": {"sha": "head", "status": "success"}}
         for name, suite in groups.items():
-            commands = ["db:deploy", "db:seed"] + suite["db"] + suite["ui"] + [x[0] for x in suite.get("auth", [])]
+            commands = ["db:deploy", "db:seed", "auth:fixtures"] + suite["db"] + suite.get("security", []) + suite["ui"] + [x[0] for x in suite.get("auth", [])]
             self.evidence[name] = {"sha": "head", "status": "success", "commands": [{"command": c, "status": 0} for c in commands]}
 
     def check(self, evidence=None, needs=None, docs=False, classified="head"):
@@ -70,7 +70,7 @@ class Contract(unittest.TestCase):
 
     def test_inventory_does_not_drop_any_existing_smoke(self):
         scripts = json.loads((ROOT / "package.json").read_text())["scripts"]
-        listed = {command for suite in groups.values() for command in suite["db"] + suite["ui"] + [x[0] for x in suite.get("auth", [])]}
+        listed = {command for suite in groups.values() for command in suite["db"] + suite.get("security", []) + suite["ui"] + [x[0] for x in suite.get("auth", [])]}
         required = {name for name in scripts if name.endswith(":smoke")}
         self.assertEqual(required - listed, set())
         self.assertEqual(listed - set(scripts), set())

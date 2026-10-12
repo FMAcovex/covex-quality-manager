@@ -1,3 +1,5 @@
+import { currentIdentity } from "@/lib/auth/context";
+import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getComplaintDetail } from "@/modules/complaints/queries";
@@ -13,7 +15,7 @@ import {
 export const runtime="nodejs";
 const safe=(v:string)=>v.replace(/[^a-zA-Z0-9._-]+/g,"_");
 
-export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
+async function GETAuthenticatedContent(request:Request,{params}:{params:Promise<{id:string}>}){
  const {id}=await params;
  const r=await getComplaintDetail(id);
  if(!r)return NextResponse.json({error:"Reclamación no encontrada."},{status:404});
@@ -40,7 +42,7 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
    recordVersionId:storedVersion?.id??null,
    documentType:"COMPLAINT_ANNEX_III",
    templateVersionId:storedVersion?recordVersionTemplateId("COMPLAINT",storedVersion.snapshot):r.annexIIITemplateVersionId,
-   generatedByText:process.env.DEFAULT_ACTOR_NAME||r.createdByText,
+   generatedByText:(currentIdentity()?.principal.name ?? process.env.DEFAULT_ACTOR_NAME)||r.createdByText,
    metadata:{
     source:"download",
     templateVersion:annexRecord.annexIIITemplateVersion?.versionCode??r.annexIIITemplateVersion?.versionCode??"03",
@@ -57,4 +59,8 @@ export async function GET(request:Request,{params}:{params:Promise<{id:string}>}
   if(e instanceof TemplateAssetError)return templateUnavailableResponse(e.message);
   throw e;
  }
+}
+
+export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {
+  return authorizedRoute("src/app/api/complaints/[id]/annex-iii/route.ts", "GET", args, authenticated => GETAuthenticatedContent(...authenticated as Parameters<typeof GETAuthenticatedContent>));
 }

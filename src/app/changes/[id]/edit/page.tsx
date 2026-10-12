@@ -1,3 +1,5 @@
+import { PermissionGate } from "@/components/permissions";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import { updateChangeControlAction } from "@/modules/change-control/actions";
@@ -11,7 +13,7 @@ function boolValue(value: boolean | null): "" | "true" | "false" {
   return value === true ? "true" : value === false ? "false" : "";
 }
 
-export default async function EditChangeControlPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{returnTo?:string;tab?:string}> }) {
+async function EditChangeControlPageAuthenticatedContent({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{returnTo?:string;tab?:string}> }) {
   const { id } = await params;
  const {returnTo,tab}=await searchParams;
  const cancelHref=qmsDetailUrl("/changes",id,returnTo,tab);
@@ -81,14 +83,18 @@ export default async function EditChangeControlPage({ params, searchParams }: { 
       <div className="page-heading">
         <div><p className="eyebrow">Controles de Cambios</p><h1>Editar {record.qmsRecord.businessCode}</h1><p>La línea base del Dictamen se bloquea tras su aprobación.</p></div>
       </div>
-      <ChangeControlForm
+      <PermissionGate permission="EDIT"><ChangeControlForm
         mode="edit"
         action={updateChangeControlAction.bind(null,id)}
         departments={lookups.departments}
         defaults={defaults}
         changeId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/changes",returnTo)} detailTab={qmsDetailTab("/changes",tab)}
         baselineLocked={record.dictamenResult === "APPROVED"}
-      />
+      /></PermissionGate>
     </section>
   );
+}
+
+export default async function EditChangeControlPage(...args: Parameters<typeof EditChangeControlPageAuthenticatedContent>) {
+  return authorizedPage("src/app/changes/[id]/edit/page.tsx", () => EditChangeControlPageAuthenticatedContent(...args), args);
 }

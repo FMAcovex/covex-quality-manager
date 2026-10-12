@@ -1,3 +1,6 @@
+import { PermissionGate } from "@/components/permissions";
+import { currentActor } from "@/lib/auth/presentation";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { auditListingReturnTo, auditWithReturnTo } from "@/modules/audits/navigation";
 import { notFound } from "next/navigation";
@@ -17,7 +20,7 @@ import { reviewTabHref, reviewModeHref } from "@/lib/qms/review/ui-model";
 import { auditClosureChecklist } from "@/modules/audits/closure-policy";
 import { AuditCloseNavigation } from "@/modules/audits/report-form";
 export const dynamic = "force-dynamic";
-export default async function AuditPage({ params, searchParams }: { params: Promise<{id:string}>; searchParams: Promise<{tab?:string;retired?:string;review?:string;thread?:string;reviewVersion?:string;returnTo?:string}> }) {
+async function AuditPageAuthenticatedContent({ params, searchParams }: { params: Promise<{id:string}>; searchParams: Promise<{tab?:string;retired?:string;review?:string;thread?:string;reviewVersion?:string;returnTo?:string}> }) {
   const {id} = await params, query = await searchParams, tab = ["information","findings","followup","relations","report","documents","versions","review","history"].includes(query.tab ?? "") ? query.tab : "information";
   const work = await getAuditWork(id); if (!work) notFound();
   const audit = await getAuditDetail(id); if (!audit) notFound();
@@ -43,8 +46,8 @@ export default async function AuditPage({ params, searchParams }: { params: Prom
     { key: "entities", heading: "Entidades y áreas", subtitle: "Organizaciones, contactos y departamentos", labels: ["Entidad auditada", "Dirección / lugar", "Entidad auditora / organismo", "Contacto externo", "Código entidad", "Departamentos / áreas", "Área de referencia para codificación"] },
     { key: "dates", heading: "Fechas y control", subtitle: "Planificación, realización y datos administrativos", labels: ["Fecha prevista", "Fecha realizada", "Fecha apertura", "Fecha cierre", "Modalidad", "Control del dato", "Observaciones internas"] },
   ];
-  return <ReviewWorkspaceProvider qmsRecordId={audit.qmsRecordId} module="AUDIT" basePath={basePath} currentVersionLabel={view.versions[0]?`V${String(view.versions[0].sequenceNumber).padStart(2,"0")}`:"Sin versión"} defaultActor={audit.createdByText || "Usuario demo"} reviewMode={reviewMode} targets={reviewTargets} threads={reviewThreads} initialThreadId={query.thread}><section className="workspace audit-detail-workspace"><div className="page-heading"><div><Link href={auditListingReturnTo(query.returnTo)}>← Auditorías</Link><p className="eyebrow">Expediente de auditoría</p><h1>{code === "Sin código" ? audit.title || "Auditoría sin código" : code}</h1><p>{auditStatusLabels[audit.status]} · {auditSituation({...audit, findings:work.findings, followups:work.followups, reportIssued:view.versions.length>0})}</p></div><div className="heading-actions">{qms.isActive ? <a className="button primary" href={auditWithReturnTo(`/audits/${id}/edit`, query.returnTo)}>Editar</a> : null}<AuditCloseNavigation id={id} disabled={checklist.blockers.length>0 || audit.status === "CLOSED"}/><ReviewModeToggle active={reviewMode} href={modeHref}/></div></div>
-    <QmsAdministrativeStatus qmsRecordId={qms.id} isActive={qms.isActive} code={code} annulledAt={qms.annulledAt?.toISOString()} annulledByText={qms.annulledByText} annulledReason={qms.annulledReason} defaultActor="Usuario demo" reservesHistoricalCode/>
+  return <ReviewWorkspaceProvider qmsRecordId={audit.qmsRecordId} module="AUDIT" basePath={basePath} currentVersionLabel={view.versions[0]?`V${String(view.versions[0].sequenceNumber).padStart(2,"0")}`:"Sin versión"} defaultActor={currentActor()} reviewMode={reviewMode} targets={reviewTargets} threads={reviewThreads} initialThreadId={query.thread}><section className="workspace audit-detail-workspace"><div className="page-heading"><div><Link href={auditListingReturnTo(query.returnTo)}>← Auditorías</Link><p className="eyebrow">Expediente de auditoría</p><h1>{code === "Sin código" ? audit.title || "Auditoría sin código" : code}</h1><p>{auditStatusLabels[audit.status]} · {auditSituation({...audit, findings:work.findings, followups:work.followups, reportIssued:view.versions.length>0})}</p></div><div className="heading-actions">{qms.isActive ? <PermissionGate permission="EDIT" form><a className="button primary" href={auditWithReturnTo(`/audits/${id}/edit`, query.returnTo)}>Editar</a></PermissionGate> : null}<PermissionGate permission="CLOSE"><AuditCloseNavigation id={id} disabled={checklist.blockers.length>0 || audit.status === "CLOSED"}/></PermissionGate><PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={modeHref}/></PermissionGate></div></div>
+    <QmsAdministrativeStatus qmsRecordId={qms.id} isActive={qms.isActive} code={code} annulledAt={qms.annulledAt?.toISOString()} annulledByText={qms.annulledByText} annulledReason={qms.annulledReason} defaultActor={currentActor()} reservesHistoricalCode/>
     <nav className="tabs">{[["information","Información"],["findings","Hallazgos"],["followup","Seguimiento"],["relations","Relaciones"],["report","Informe y cierre"],["documents","Documentos"],["versions","Versiones"],["review","Revisión"],["history","Historial"]].map(([key,label]) => <a className={`tab ${tab === key ? "active" : ""}`} key={key} href={tabHref(key)}>{label}</a>)}</nav>
     {tab === "information" ? <div className="audit-info-layout">{fieldGroups.map((group,index) => <section key={group.key} className={`card audit-info-section ${index===0?"audit-info-primary":""} ${index===0?"review-target":""}`} id={index===0?target("identification").anchorId:undefined}>
       <div className="audit-section-heading"><div><h2>{group.heading}</h2><p className="muted-note">{group.subtitle}</p></div>{index===0?<ReviewMarker target={target("identification")}/>:null}</div>
@@ -62,4 +65,8 @@ function auditHistoryLabel(path: string) {
   if (path.startsWith("audit.attributions.")) return "Atribución a hallazgo";
   if (path === "relations") return "Relación QMS";
   return labels[path] ?? "Cambio del expediente";
+}
+
+export default async function AuditPage(...args: Parameters<typeof AuditPageAuthenticatedContent>) {
+  return authorizedPage("src/app/audits/[id]/page.tsx", () => AuditPageAuthenticatedContent(...args), args);
 }

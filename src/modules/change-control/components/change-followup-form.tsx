@@ -1,4 +1,7 @@
 "use client";
+import { PermissionGate } from "@/components/permissions";
+import { CsrfField } from "@/components/csrf";
+
 
 import { useActionState, useMemo, useState } from "react";
 import type { FollowupActionState } from "@/components/basic-followup-form";
@@ -86,7 +89,7 @@ export function ChangeFollowupForm({
     setRows((current) => current.map((item, i) => (i === index ? { ...item, ...value } : item)));
 
   return (
-    <form action={formAction} className="followup-form">
+    <form action={formAction} className="followup-form"><CsrfField />
       {state.error ? <div className="form-feedback error">{state.error}</div> : null}
       {state.success ? <div className="form-feedback success">{state.success}</div> : null}
       <input type="hidden" name="tasksJson" value={JSON.stringify(rows)} />
@@ -198,7 +201,7 @@ export function ChangeFollowupForm({
           <span>¿Se cierra el cambio?</span>
           <select name="closeChange" defaultValue={defaults?.closeChange ? "true" : "false"}>
             <option value="false">No</option>
-            <option value="true">Sí</option>
+            <PermissionGate permission="CLOSE"><option value="true">Sí</option></PermissionGate>
           </select>
         </label>
         <label className="field"><span>Próximo seguimiento</span><input type="date" name="nextFollowupDate" defaultValue={dateInput(defaults?.nextFollowupDate)} /></label>

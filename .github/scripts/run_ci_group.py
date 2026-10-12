@@ -17,13 +17,14 @@ def main():
     env = dict(os.environ)
     database = urlparse(env["DATABASE_URL"]).path.lstrip("/")
     disposable_ci = env.get("GITHUB_ACTIONS") == "true" and env.get("CI") == "true" and database == "covex_quality"
-    assert env.get("APP_ENV") == "test" and (disposable_ci or (database.startswith("covex_phase3b2_ci3b3_") and env.get("PHASE3B3_SYNTHETIC_DATABASE") == "1")), "Isolated synthetic PostgreSQL required"
+    assert env.get("APP_ENV") == "test" and (disposable_ci or ((database.startswith("covex_phase3b2_ci3b3_") or database.startswith("covex_phase4b1_test_")) and env.get("PHASE3B3_SYNTHETIC_DATABASE") == "1")), "Isolated synthetic PostgreSQL required"
     sha = env["TESTED_SHA"]
     assert subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip() == sha
     output = ROOT / "ci-evidence"
     output.mkdir(exist_ok=True)
     result = {"group": group, "sha": sha, "status": "running", "commands": [], "failureKind": None}
     server = None
+    provider = None
     server_log = None
     phase = "infrastructure"
 
@@ -71,10 +72,28 @@ def main():
 
     try:
         persist()
-        run("db:deploy"); run("db:seed")
+        run("db:deploy"); run("db:seed"); run("auth:fixtures")
+        provider = subprocess.Popen(["node", "--import", "tsx", "scripts/auth-fixtures/provider.ts"], cwd=ROOT, env=env, stdout=(output / (group + "-oidc.log")).open("w"), stderr=subprocess.STDOUT)
+        deadline = time.monotonic() + 30
+        while True:
+            if provider.poll() is not None or time.monotonic() > deadline:
+                raise RuntimeError("Synthetic OIDC readiness failed")
+            try:
+                with urllib.request.urlopen(env["AUTH_TEST_ISSUER"] + "/.well-known/openid-configuration", timeout=2) as response:
+                    if response.status == 200:
+                        break
+            except (OSError, TimeoutError):
+                time.sleep(0.2)
         phase = "functional"
         for command in suites["db"]:
             run(command)
+        if suites.get("security"):
+            phase = "infrastructure"
+            start()
+            phase = "functional"
+            for command in suites["security"]:
+                run(command)
+            stop()
         if suites["ui"]:
             phase = "infrastructure"
             start()
@@ -106,6 +125,9 @@ def main():
         try:
             stop()
         finally:
+            if provider:
+                provider.terminate()
+                provider.wait(timeout=30)
             persist()
 
 if __name__ == "__main__":

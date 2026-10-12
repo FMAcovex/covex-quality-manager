@@ -1,7 +1,8 @@
 import {Prisma} from "@prisma/client";
 import assert from "node:assert/strict";
 import {createHash,randomUUID} from "node:crypto";
-import {chromium,type Page} from "playwright";
+import { chromium } from "./auth-fixtures/browser";
+import { type Page } from "playwright";
 import {ensureInitialVersion,serializeComplaintVersion,snapshotJson} from "../src/lib/qms/versioning";
 import {complaintVersionSource} from "../src/modules/complaints/version-service";
 import {prisma} from "../src/lib/db";

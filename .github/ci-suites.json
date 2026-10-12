@@ -45,7 +45,8 @@
       "review-r2c:smoke",
       "hito10:smoke"
     ],
-    "ui": []
+    "ui": [],
+    "security": ["phase4b1:smoke"]
   },
   "browser-qms": {
     "db": [],
@@ -55,7 +56,8 @@
       "phase3b1:ui:smoke",
       "phase3b2:ui:smoke",
       "ux-c3:ui:smoke",
-      "review-r2c:ui:smoke"
+      "review-r2c:ui:smoke",
+      "phase4b1:ui:smoke"
     ]
   },
   "browser-audits": {

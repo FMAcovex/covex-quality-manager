@@ -6,6 +6,7 @@ import type {
 import type { ReviewThreadView } from "@/lib/qms/review/ui-model";
 
 export type CreateReviewThreadInput = {
+  _covexCsrf?: string;
   qmsRecordId: string;
   recordVersionId?: string | null;
   targetKind: ReviewTargetKind;
@@ -21,17 +22,20 @@ export type CreateReviewThreadInput = {
 };
 
 export type ReplyToReviewThreadInput = {
+  _covexCsrf?: string;
   reviewThreadId: string;
   message: string;
   createdByText?: string | null;
 };
 
 export type AcceptReviewThreadInput = {
+  _covexCsrf?: string;
   reviewThreadId: string;
   acceptedByText?: string | null;
 };
 
 export type ResolveReviewThreadInput = {
+  _covexCsrf?: string;
   reviewThreadId: string;
   resolvedByText?: string | null;
   resolutionNote?: string | null;

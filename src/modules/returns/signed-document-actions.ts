@@ -1,5 +1,6 @@
 "use server";
 
+import { authorizedAction } from "@/lib/auth/action-guard";
 import { RecordVersionDocumentKind } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
@@ -25,7 +26,7 @@ const config = {
   },
 } as const;
 
-export async function uploadReturnSignedPdfAction(
+async function uploadReturnSignedPdfActionAuthenticatedContent(
   returnId: string,
   annex: ReturnSignedAnnex,
   _state: SignedVersionDocumentState,
@@ -89,4 +90,8 @@ export async function uploadReturnSignedPdfAction(
     error: null,
     success: `PDF firmado del ${annexConfig.label} guardado correctamente.`,
   };
+}
+
+export async function uploadReturnSignedPdfAction(...args: Parameters<typeof uploadReturnSignedPdfActionAuthenticatedContent>) {
+  return authorizedAction("uploadReturnSignedPdfAction", args, authenticated => uploadReturnSignedPdfActionAuthenticatedContent(...authenticated as Parameters<typeof uploadReturnSignedPdfActionAuthenticatedContent>));
 }

@@ -67,6 +67,7 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
       prisma.changeControl.findMany({
         where,
         select: {
+          departmentId: true,
           id: true, qmsRecordId: true, departmentCodeSnapshot: true, description: true,
           justification: true, requesterName: true, requestDate: true, dictamenDate: true,
           classification: true, plannedImplementationDate: true, executionStatus: true, executionDate: true,

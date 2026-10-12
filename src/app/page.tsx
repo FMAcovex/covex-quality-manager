@@ -1,3 +1,5 @@
+import { PermissionGate } from "@/components/permissions";
+import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import "./dashboard.css";
 import { getDashboardData } from "@/modules/dashboard/queries";
@@ -27,7 +29,7 @@ function queryLink(query: Query, page: number): string {
   return "/?" + params.toString();
 }
 
-export default async function HomePage({
+async function HomePageAuthenticatedContent({
   searchParams,
 }: {
   searchParams: Promise<Query>;
@@ -156,7 +158,7 @@ export default async function HomePage({
         <section className="dashboard-section dashboard-task-section" aria-labelledby="dashboard-tasks-title">
           <div className="dashboard-heading">
             <div><p className="eyebrow">Acción y seguimiento</p><h2 id="dashboard-tasks-title">Tareas del sistema</h2></div>
-            <Link href="/settings/alerts" className="summary-link">Reglas de alertas →</Link>
+            <PermissionGate permission="READ" module="SYSTEM"><Link href="/settings/alerts" className="summary-link">Reglas de alertas →</Link></PermissionGate>
           </div>
           <div className="dashboard-task-summary" aria-label="Resumen de plazos">
             <span className="dashboard-deadline-count overdue"><strong>{number(data.taskCounts.overdue)}</strong> vencidas</span>
@@ -223,4 +225,8 @@ export default async function HomePage({
       <p className="dashboard-source-note">Datos actuales de PostgreSQL · corte {date(data.asOf)} (UTC) · consulta {data.elapsedMs} ms. El panel no registra ni modifica expedientes.</p>
     </section>
   );
+}
+
+export default async function HomePage(...args: Parameters<typeof HomePageAuthenticatedContent>) {
+  return authorizedPage("src/app/page.tsx", () => HomePageAuthenticatedContent(...args), args);
 }
