@@ -20,6 +20,7 @@ export function requestCookie(request: Request, name: string) {
 export async function principalById(id: string): Promise<Principal> {
   const user = await prisma.authUser.findUnique({ where: { id }, include: { roles: { include: { role: { include: { permissions: true } } } }, departments: true, assignments: true } });
   if (!user?.active || !user.authorizedAt) throw new AccessError(403, "Usuario sin autorización activa.");
+  if (user.tenantId !== authConfiguration().tenantId) throw new AccessError(403, "Usuario fuera del tenant autorizado.");
   return { id: user.id, tenantId: user.tenantId, objectId: user.objectId, name: user.displayName, email: user.email, active: user.active, authorized: Boolean(user.authorizedAt),
     roles: user.roles.map(r => r.role.key), grants: user.roles.flatMap(r => r.role.qaAcceptedAt ? r.role.permissions : []).map(g => ({ module: g.module, permission: g.permission, scope: g.scope })),
     departmentIds: user.departments.map(d => d.departmentId), assignments: user.assignments.map(a => ({ module: a.module, recordId: a.recordId })) };

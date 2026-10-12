@@ -100,6 +100,11 @@ async function main() {
   const beforeCsrf = await prisma.authAuthorizationChange.count();
   const invalid = await fetch(authConfiguration().origin + "/auth/logout", { method: "POST", headers: { cookie: [...qaLogin.jar].map(([k, v]) => k + "=" + v).join("; "), origin: authConfiguration().origin } }); assert.equal(invalid.status, 403); assert.equal(await prisma.authAuthorizationChange.count(), beforeCsrf);
   const token = qaLogin.jar.get("covex-session")!, where = { tokenHash: hash(token) };
+  const configuredTenant = process.env.AUTH_ENTRA_TENANT_ID;
+  try {
+    process.env.AUTH_ENTRA_TENANT_ID = "55555555-5555-4555-8555-555555555555";
+    await assert.rejects(sessionFromToken(token), /tenant autorizado/, "Server sessions also remain bound to the configured tenant");
+  } finally { process.env.AUTH_ENTRA_TENANT_ID = configuredTenant; }
   await prisma.authSession.update({ where, data: { expiresAt: new Date(Date.now() - 1) } }); await assert.rejects(sessionFromToken(token), /vigente/);
   await prisma.authSession.update({ where, data: { expiresAt: new Date(Date.now() + 60000), lastSeenAt: new Date(Date.now() - 31 * 60000) } }); await assert.rejects(sessionFromToken(token), /vigente/);
   await prisma.authSession.update({ where, data: { lastSeenAt: new Date(), revokedAt: new Date() } }); await assert.rejects(sessionFromToken(token), /vigente/);
