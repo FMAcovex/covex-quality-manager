@@ -23,7 +23,7 @@ def evaluate(sha, classified_sha, documentation, needs, evidence, groups):
             errors.append(f"{name}: stale, missing or failed evidence")
         if name in groups:
             suite = groups[name]
-            commands = ["db:deploy", "db:seed"] + suite["db"] + suite["ui"] + [item[0] for item in suite.get("auth", [])]
+            commands = ["db:deploy", "db:seed", "auth:fixtures"] + suite["db"] + suite.get("security", []) + suite["ui"] + [item[0] for item in suite.get("auth", [])]
             if [item.get("command") for item in row.get("commands", [])] != commands:
                 errors.append(f"{name}: suite inventory incomplete")
             if any(item.get("status") != 0 for item in row.get("commands", [])):
