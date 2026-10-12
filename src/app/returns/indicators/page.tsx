@@ -17,5 +17,5 @@ async function ReturnIndicatorsPageAuthenticatedContent({searchParams}:{searchPa
 }
 
 export default async function ReturnIndicatorsPage(...args: Parameters<typeof ReturnIndicatorsPageAuthenticatedContent>) {
-  return authorizedPage("src/app/returns/indicators/page.tsx", () => ReturnIndicatorsPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/returns/indicators/page.tsx", () => ReturnIndicatorsPageAuthenticatedContent(...args), args);
 }

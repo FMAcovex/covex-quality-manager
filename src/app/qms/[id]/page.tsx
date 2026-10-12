@@ -34,5 +34,5 @@ async function QmsRecordResolverPageAuthenticatedContent({
 }
 
 export default async function QmsRecordResolverPage(...args: Parameters<typeof QmsRecordResolverPageAuthenticatedContent>) {
-  return authorizedPage("src/app/qms/[id]/page.tsx", () => QmsRecordResolverPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/qms/[id]/page.tsx", () => QmsRecordResolverPageAuthenticatedContent(...args), args);
 }

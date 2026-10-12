@@ -1,3 +1,4 @@
+import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { createDeviationAction } from "@/modules/deviations/actions";
@@ -19,11 +20,11 @@ async function NewDeviationPageAuthenticatedContent() {
         </div>
         <Link className="button" href="/deviations">← Volver</Link>
       </div>
-      <DeviationForm action={createDeviationAction} departments={departments} mode="create" />
+      <PermissionGate permission="CREATE"><DeviationForm action={createDeviationAction} departments={departments} mode="create" /></PermissionGate>
     </section>
   );
 }
 
 export default async function NewDeviationPage(...args: Parameters<typeof NewDeviationPageAuthenticatedContent>) {
-  return authorizedPage("src/app/deviations/new/page.tsx", () => NewDeviationPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/deviations/new/page.tsx", () => NewDeviationPageAuthenticatedContent(...args), args);
 }

@@ -1,4 +1,5 @@
 import { sessionDocumentPrincipal } from "../documents/session-access";
+import { PermissionGate } from "@/components/permissions";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { displayDate, verificationLabels } from "../domain";
@@ -23,7 +24,7 @@ export async function RevisionDocuments({ returnTo, documentId, revisions, annul
           <p>{displayDate(d.incorporatedAt)} — {d.incorporatedBy} ({d.identitySource})</p>
           <details className="pnt-technical-data"><summary>Detalles técnicos del documento</summary><dl><dt>UUID</dt><dd>{d.id}</dd><dt>Revisión UUID</dt><dd>{d.revisionId}</dd><dt>MIME / tamaño</dt><dd>{d.mimeType || "Referencia externa (sin binario custodiado)"} / {d.sizeBytes ?? "No comprobado"}</dd><dt>SHA-256</dt><dd>{d.sha256 || "No comprobado: referencia externa"}</dd><dt>Referencia de almacenamiento</dt><dd>{d.storageReference}</dd><dt>Contexto</dt><dd>{d.description || "—"}</dd></dl></details>
           {d.replacesId && <p>Sustituye a {d.replacesId}. Motivo: {d.replacementReason}</p>}
-          {d.externalReference ? <a href={d.externalReference} target="_blank" rel="noopener noreferrer">Abrir referencia externa</a> : <a href={`/api/controlled-documents/${documentId}/revisions/${r.id}/documents/${d.id}`}>Descargar {d.originalName}</a>}
+          <PermissionGate permission="DOWNLOAD">{d.externalReference ? <a href={d.externalReference} target="_blank" rel="noopener noreferrer">Abrir referencia externa</a> : <a href={`/api/controlled-documents/${documentId}/revisions/${r.id}/documents/${d.id}`}>Descargar {d.originalName}</a>}</PermissionGate>
         </section>)}
         {principal.canWrite && !annulled && <RevisionDocumentForm returnTo={returnTo} documentId={documentId} revisionId={r.id} documents={docs.filter(d => !d.replacement)} />}
       </article>;

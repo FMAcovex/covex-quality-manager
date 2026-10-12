@@ -40,6 +40,7 @@ export function CapaOriginSelector({
       setLoading(true);
       try {
         const params = new URLSearchParams({
+          editable: "1",
           currentType: "CAPA",
           relatedType: selectedType,
           q,

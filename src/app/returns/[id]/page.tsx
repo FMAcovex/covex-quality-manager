@@ -1,3 +1,6 @@
+import { ActorField } from "@/components/permissions";
+import { PermissionGate } from "@/components/permissions";
+import { currentActor } from "@/lib/auth/presentation";
 
 import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -229,9 +232,7 @@ async function ReturnDetailPageAuthenticatedContent({
       currentVersionLabel=""
       showVersionContext={false}
       recordVersionAssociation="NONE"
-      defaultActor={
-        process.env.DEFAULT_ACTOR_NAME?.trim() || r.createdByText || "Usuario demo"
-      }
+      defaultActor={currentActor()}
       reviewMode={reviewMode}
       targets={reviewTargets}
       threads={reviewThreads}
@@ -264,20 +265,20 @@ async function ReturnDetailPageAuthenticatedContent({
             </p>
           </div>
           <div className="record-actions">
-            <ReviewModeToggle
+            <PermissionGate permission="REVIEW"><ReviewModeToggle
               active={reviewMode}
               href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/returns", returnTo)}
-            />
-            {r.qmsRecord.isActive?<Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit?tab=${tab}`, "/returns", returnTo)}>
+            /></PermissionGate>
+            {r.qmsRecord.isActive?<PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit?tab=${tab}`, "/returns", returnTo)}>
               Editar
-            </Link>:null}
+            </Link></PermissionGate>:null}
             {r.qmsRecord.isActive&&r.status === "OPEN" ? (
-              <Link
+              <PermissionGate permission="FOLLOWUP"><Link
                 className="button"
                 href={`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`}
               >
                 + Seguimiento
-              </Link>
+              </Link></PermissionGate>
             ) : null}
           </div>
         </div>
@@ -297,7 +298,7 @@ async function ReturnDetailPageAuthenticatedContent({
           annulledAt={r.qmsRecord.annulledAt?.toISOString() ?? null}
           annulledByText={r.qmsRecord.annulledByText}
           annulledReason={r.qmsRecord.annulledReason}
-          defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+          defaultActor={currentActor()}
         />
 
         <nav className="record-tabs">
@@ -643,12 +644,10 @@ async function ReturnDetailPageAuthenticatedContent({
               {r.qmsRecord.isActive&&r.status === "OPEN" ? (
                 <div className="card" id="new-followup">
                   <h2>Nuevo seguimiento</h2>
-                  <BasicFollowupForm reloadOnSuccess nextFollowupRequired={contextFromExtraData(r.extraData).requiresFollowup}
+                  <PermissionGate permission="FOLLOWUP"><BasicFollowupForm reloadOnSuccess nextFollowupRequired={contextFromExtraData(r.extraData).requiresFollowup}
                     action={addReturnFollowupAction.bind(null, id)}
-                    defaultActor={
-                      process.env.DEFAULT_ACTOR_NAME || "Usuario demo"
-                    }
-                  />
+                    defaultActor={currentActor()}
+                  /></PermissionGate>
                 </div>
               ) : null}
             </>
@@ -687,26 +686,25 @@ async function ReturnDetailPageAuthenticatedContent({
                         </strong>
                       </Link>
                       <small>Vista inversa de la relación QMS.</small>
-                      <form
+                      <PermissionGate permission="EDIT" recordId={record.id}><form
                         action={unlinkReturnComplaintAction.bind(
                           null,
                           id,
                           record.id,
                         )}
                       ><CsrfField />
-                        <input
+                        <ActorField
                           type="hidden"
                           name="actor"
                           value={
                             r.createdByText ??
-                            process.env.DEFAULT_ACTOR_NAME ??
-                            "Usuario demo"
+                            currentActor()
                           }
                         />
                         <button className="button danger small" type="submit">
                           Desvincular
                         </button>
-                      </form>
+                      </form></PermissionGate>
                     </div>
                   ))}
                 </div>
@@ -715,17 +713,17 @@ async function ReturnDetailPageAuthenticatedContent({
                   Esta devolución no tiene una reclamación de origen vinculada.
                 </div>
               )}
-              <OperationalRelationForm
+              <PermissionGate permission="EDIT"><OperationalRelationForm
                 action={addReturnRelationAction.bind(null, id)}
                 title="Vincular reclamación existente"
                 codeLabel="Codificación de reclamación"
                 codePlaceholder="R/GC-00/001/2026"
                 buttonLabel="Vincular reclamación"
-                defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                defaultActor={currentActor()}
                 targetOptions={[{ value: "COMPLAINT", label: "Reclamación" }]}
                 currentRecordId={r.qmsRecord.id}
                 currentRecordType="RETURN"
-              />
+              /></PermissionGate>
             </div>
           )
         ) : null}
@@ -768,30 +766,30 @@ async function ReturnDetailPageAuthenticatedContent({
                   </p>
                   <div className="document-actions">
                     {r.annexIIITemplateVersion?.id ? (
-                      <a
+                      <PermissionGate permission="DOWNLOAD" module="RETURN"><a
                         className="button"
                         href={`/api/settings/templates/${r.annexIIITemplateVersion.id}/download`}
                       >
                         Descargar plantilla oficial
-                      </a>
+                      </a></PermissionGate>
                     ) : (
                       <span className="muted-note">
                         Plantilla pendiente de cargar.
                       </span>
                     )}
-                    <a
+                    <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a
                       className="button primary"
                       href={`/api/returns/${id}/annex-iii`}
                     >
                       Generar Anexo III cumplimentado
-                    </a>
+                    </a></PermissionGate>
                     {signedAnnexIII ? (
-                      <a
+                      <PermissionGate permission="DOWNLOAD"><a
                         className="button"
                         href={`/api/returns/${id}/signed-pdf/annex-iii`}
                       >
                         Descargar PDF firmado
-                      </a>
+                      </a></PermissionGate>
                     ) : null}
                   </div>
                   <div className="return-signed-document">
@@ -812,19 +810,15 @@ async function ReturnDetailPageAuthenticatedContent({
                         Adjunta el PDF firmado del Anexo III cuando esté disponible.
                       </small>
                     )}
-                    <SignedVersionDocumentForm reloadOnSuccess
+                    <PermissionGate permission="ATTACH_DOCUMENT"><SignedVersionDocumentForm reloadOnSuccess
                       action={uploadReturnSignedPdfAction.bind(
                         null,
                         id,
                         "annex-iii",
                       )}
-                      defaultActor={
-                        r.createdByText ??
-                        process.env.DEFAULT_ACTOR_NAME ??
-                        "Usuario demo"
-                      }
+                      defaultActor={currentActor()}
                       replace={Boolean(signedAnnexIII)}
-                    />
+                    /></PermissionGate>
                   </div>
                 </div>
                 <div className="document-block return-document-block featured">
@@ -835,26 +829,26 @@ async function ReturnDetailPageAuthenticatedContent({
                   </p>
                   <div className="document-actions">
                     {r.annexVTemplateVersion?.id ? (
-                      <a
+                      <PermissionGate permission="DOWNLOAD" module="RETURN"><a
                         className="button"
                         href={`/api/settings/templates/${r.annexVTemplateVersion.id}/download`}
                       >
                         Descargar plantilla oficial
-                      </a>
+                      </a></PermissionGate>
                     ) : null}
-                    <a
+                    <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a
                       className="button primary"
                       href={`/api/returns/${id}/annex-v`}
                     >
                       Generar Anexo V
-                    </a>
+                    </a></PermissionGate>
                     {signedAnnexV ? (
-                      <a
+                      <PermissionGate permission="DOWNLOAD"><a
                         className="button"
                         href={`/api/returns/${id}/signed-pdf/annex-v`}
                       >
                         Descargar PDF devuelto
-                      </a>
+                      </a></PermissionGate>
                     ) : null}
                   </div>
                   <div className="return-signed-document">
@@ -875,15 +869,11 @@ async function ReturnDetailPageAuthenticatedContent({
                         Adjunta el PDF del Anexo V devuelto por el cliente.
                       </small>
                     )}
-                    <SignedVersionDocumentForm reloadOnSuccess
+                    <PermissionGate permission="ATTACH_DOCUMENT"><SignedVersionDocumentForm reloadOnSuccess
                       action={uploadReturnSignedPdfAction.bind(null, id, "annex-v")}
-                      defaultActor={
-                        r.createdByText ??
-                        process.env.DEFAULT_ACTOR_NAME ??
-                        "Usuario demo"
-                      }
+                      defaultActor={currentActor()}
                       replace={Boolean(signedAnnexV)}
-                    />
+                    /></PermissionGate>
                   </div>
                 </div>
                 <div className="document-block return-document-block">
@@ -891,22 +881,22 @@ async function ReturnDetailPageAuthenticatedContent({
                   <p>Se genera una hoja vertical por producto/lote registrado.</p>
                   <div className="document-actions">
                     {r.annexIVTemplateVersion?.id ? (
-                      <a
+                      <PermissionGate permission="DOWNLOAD" module="RETURN"><a
                         className="button"
                         href={`/api/settings/templates/${r.annexIVTemplateVersion.id}/download`}
                       >
                         Descargar plantilla oficial
-                      </a>
+                      </a></PermissionGate>
                     ) : null}
                     {r.products.map((product) => (
-                      <a
+                      <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]} key={product.id}><a
                         key={product.id}
                         className="button small primary"
                         href={`/api/returns/${id}/annex-iv?product=${product.id}`}
                       >
                         Generar · {product.productNameCode}
                         {product.lot ? ` · ${product.lot}` : ""}
-                      </a>
+                      </a></PermissionGate>
                     ))}
                   </div>
                 </div>
@@ -933,7 +923,7 @@ async function ReturnDetailPageAuthenticatedContent({
                         <strong className="document-generation-type">
                           {item.documentType}
                         </strong>
-                        {item.fileName?<a className="button small" href={`/api/returns/${id}/documents/${item.id}`}>Descargar archivo histórico</a>:null}
+                        {item.fileName?<PermissionGate permission="DOWNLOAD"><a className="button small" href={`/api/returns/${id}/documents/${item.id}`}>Descargar archivo histórico</a></PermissionGate>:null}
                         <small className="muted-note document-generation-meta">
                           Generado {formatDate(item.generatedAt)} ·{" "}
                           {item.generatedByText ?? "Usuario no informado"}
@@ -958,10 +948,10 @@ async function ReturnDetailPageAuthenticatedContent({
                     utiliza versiones funcionales de usuario.
                   </p>
                 </div>
-                <ReviewModeToggle
+                <PermissionGate permission="REVIEW"><ReviewModeToggle
                   active={reviewMode}
                   href={qmsWithReturnTo(reviewModeHref(basePath, "review", reviewMode), "/returns", returnTo)}
-                />
+                /></PermissionGate>
               </div>
               <ReviewStatusSummary />
             </div>
@@ -1007,5 +997,5 @@ async function ReturnDetailPageAuthenticatedContent({
 }
 
 export default async function ReturnDetailPage(...args: Parameters<typeof ReturnDetailPageAuthenticatedContent>) {
-  return authorizedPage("src/app/returns/[id]/page.tsx", () => ReturnDetailPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/returns/[id]/page.tsx", () => ReturnDetailPageAuthenticatedContent(...args), args);
 }

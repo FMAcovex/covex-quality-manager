@@ -16,5 +16,5 @@ async function EditAuditPageAuthenticatedContent({ params, searchParams }: { par
 }
 
 export default async function EditAuditPage(...args: Parameters<typeof EditAuditPageAuthenticatedContent>) {
-  return authorizedPage("src/app/audits/[id]/edit/page.tsx", () => EditAuditPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/audits/[id]/edit/page.tsx", () => EditAuditPageAuthenticatedContent(...args), args);
 }

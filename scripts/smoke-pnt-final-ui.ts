@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID, createHash } from "node:crypto";
 import { mkdir } from "node:fs/promises";
-import { chromium } from "./auth-fixtures/browser";
+import { assertCorporateActor, chromium } from "./auth-fixtures/browser";
 import { prisma } from "../src/lib/db";
 import { readZip } from "../src/lib/ooxml/zip";
 import { manualMaster, qaOnly, pdf, today, offset } from "../src/modules/controlled-documents/testing/p2c";
@@ -57,7 +57,7 @@ async function main() {
     const infoStyle = await page.locator(".pnt-manual-heading .pnt-state").first().evaluate(el => ({ text: el.textContent, bg: getComputedStyle(el).backgroundColor, color: getComputedStyle(el).color }));
     assert.deepEqual(infoStyle, listStyle);
     await click("Editar maestro"); await page.getByLabel("Observaciones (opcional)", { exact: true }).fill("Observaciones QA final");
-    await page.getByLabel("Responsable del registro", { exact: true }).fill("QA final"); await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Corrección QA"); await save("Guardar cambios");
+    await assertCorporateActor(page.getByLabel("Responsable del registro", { exact: true })); await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Corrección QA"); await save("Guardar cambios");
     await state("IN_REVIEW"); await state("DRAFT");
     const archive = async () => { const result = { documents: await prisma.controlledRevisionDocument.findMany({ where: { revisionId: revision.id } }), decisions: await prisma.controlledRevisionDecision.findMany({ where: { revisionId: revision.id }, orderBy: { sequence: "asc" } }) }; await prisma.$disconnect(); return result; };
     const before = await archive();
@@ -68,7 +68,7 @@ async function main() {
     assert.deepEqual(revisionStyle, listStyle);
     await capture("1440-borrador-devuelto"); await click("Editar revisión en elaboración");
     await page.getByLabel("Motivo de revisión", { exact: true }).fill("Corrección después de devolución QA");
-    await page.getByLabel("Responsable del registro", { exact: true }).fill("QA final"); await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Corregir borrador QA"); await save("Guardar revisión");
+    await assertCorporateActor(page.getByLabel("Responsable del registro", { exact: true })); await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Corregir borrador QA"); await save("Guardar revisión");
     assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: revision.id } })).revisionReason, "Corrección después de devolución QA"); assert.deepEqual(await archive(), before);
     await click("Documentos"); const form = page.locator(`[data-revision-id="${revision.id}"] form`);
     await form.getByLabel("Tipo documental", { exact: true }).selectOption("DOCUMENT_PDF");
@@ -86,7 +86,7 @@ async function main() {
     assert.equal(await page.locator('input[name="revisionCode"]').count(), 0);
     await go(detail + "?tab=information&returnTo=" + encodeURIComponent(back)); await state("IN_FORCE");
     await click("Revisiones"); await click("Añadir revisión");
-    await page.getByLabel("Revisión explícita", { exact: true }).fill("01"); await page.getByLabel("Responsable del registro", { exact: true }).fill("QA final");
+    await page.getByLabel("Revisión explícita", { exact: true }).fill("01"); await assertCorporateActor(page.getByLabel("Responsable del registro", { exact: true }));
     await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Nueva revisión QA preserva 00"); await save("Guardar revisión");
     const second = await prisma.controlledDocumentRevision.findFirstOrThrow({ where: { documentId: master.id, revisionCode: "01" } });
     await prisma.$disconnect();

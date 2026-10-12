@@ -42,5 +42,5 @@ async function CapaIndicatorsPageAuthenticatedContent({searchParams}:{searchPara
 }
 
 export default async function CapaIndicatorsPage(...args: Parameters<typeof CapaIndicatorsPageAuthenticatedContent>) {
-  return authorizedPage("src/app/capa/indicators/page.tsx", () => CapaIndicatorsPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/capa/indicators/page.tsx", () => CapaIndicatorsPageAuthenticatedContent(...args), args);
 }

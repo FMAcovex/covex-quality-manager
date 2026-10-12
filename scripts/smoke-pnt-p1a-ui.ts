@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { chromium } from "./auth-fixtures/browser";
+import { assertCorporateActor, chromium } from "./auth-fixtures/browser";
 import { prisma } from "../src/lib/db";
 const base = process.env.P1A_UI_BASE_URL || "http://127.0.0.1:3000";
 async function main() {
@@ -27,12 +27,12 @@ async function main() {
             await new Promise(r => setTimeout(r, 1000));
         }
         await page.goto(`${base}/controlled-documents/new`);
-        await page.getByLabel("Responsable del registro", { exact: true }).fill(actor);
+        await assertCorporateActor(page.getByLabel("Responsable del registro", { exact: true }));
         await page.getByLabel("Título", { exact: true }).fill(title);
         await page.getByRole("button", { name: "Registrar PNT", exact: true }).click();
         await page.getByRole("alert").waitFor();
         assert.equal(await page.getByLabel("Título", { exact: true }).inputValue(), title);
-        assert.equal(await page.getByLabel("Responsable del registro", { exact: true }).inputValue(), actor);
+        await assertCorporateActor(page.getByLabel("Responsable del registro", { exact: true }));
         assert.equal(await prisma.controlledDocument.count({ where: { createdByText: actor } }), 0);
         await page.getByLabel("Título", { exact: true }).fill("");
         await page.getByRole("button", { name: "Guardar borrador", exact: true }).click();
@@ -44,7 +44,7 @@ async function main() {
         await page.getByLabel("Título", { exact: true }).fill(title);
         await page.getByLabel("Código base", { exact: true }).fill("QU-99/001");
         await page.getByLabel(/^Departamento responsable/).selectOption(dep.id);
-        await page.getByLabel("Responsable del registro", { exact: true }).fill(actor);
+        await assertCorporateActor(page.getByLabel("Responsable del registro", { exact: true }));
         await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Completar borrador ficticio");
         await page.getByRole("button", { name: "Completar y registrar PNT", exact: true }).click();
         await page.waitForURL(`${base}/controlled-documents/${id}`);
@@ -52,7 +52,7 @@ async function main() {
         await page.getByRole("link", { name: "Añadir revisión", exact: true }).click();
         await page.getByLabel("Revisión explícita", { exact: true }).fill("00");
         await page.getByLabel("Motivo de revisión", { exact: true }).fill("Original ficticio");
-        await page.getByLabel("Responsable del registro", { exact: true }).fill(actor);
+        await assertCorporateActor(page.getByLabel("Responsable del registro", { exact: true }));
         await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Alta revisión");
         await page.getByRole("button", { name: "Guardar revisión", exact: true }).click();
         await page.waitForURL(`${base}/controlled-documents/${id}?tab=revisions`);
@@ -61,7 +61,7 @@ async function main() {
         assert.equal(r.status, "DRAFT");
         await page.getByRole("link", { name: "Editar revisión en elaboración", exact: true }).click();
         await page.getByLabel("Referencia documental", { exact: true }).fill("Referencia ficticia en preparación");
-        await page.getByLabel("Responsable del registro", { exact: true }).fill(actor);
+        await assertCorporateActor(page.getByLabel("Responsable del registro", { exact: true }));
         await page.getByLabel("Motivo del registro o cambio", { exact: true }).fill("Actualizar borrador");
         await page.getByRole("button", { name: "Guardar revisión", exact: true }).click();
         await page.waitForURL(`${base}/controlled-documents/${id}?tab=revisions`);

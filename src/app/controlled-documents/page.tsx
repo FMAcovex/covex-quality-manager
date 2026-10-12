@@ -1,3 +1,4 @@
+import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { prisma } from "@/lib/db";
 import { DocumentLink as Link } from "@/modules/controlled-documents/components/document-link";
@@ -24,7 +25,7 @@ async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Pr
    ["revision","Revisión"], ["status","Estado documental"], ["effectiveFrom","Fecha de vigencia"], ["reviewDueAt","Próxima revisión"],
  ];
  return <section className="workspace pnt-workspace pnt-p3c4 qms-list-ux-b">
-  <header className="page-heading pnt-hero"><div><p className="eyebrow">GESTIÓN DOCUMENTAL · PNT</p><h1>Biblioteca de procedimientos</h1><p className="muted-note">Consulta de revisiones, estados, fechas y documentos controlados.</p></div><div className="heading-actions"><Link className="button primary" href={withReturnTo("/controlled-documents/new", returnTo)}>Nuevo PNT</Link><Link className="button" href="/controlled-documents/import-index">Importar índice maestro</Link></div></header>
+  <header className="page-heading pnt-hero"><div><p className="eyebrow">GESTIÓN DOCUMENTAL · PNT</p><h1>Biblioteca de procedimientos</h1><p className="muted-note">Consulta de revisiones, estados, fechas y documentos controlados.</p></div><div className="heading-actions"><PermissionGate permission="CREATE" module="PNT"><Link className="button primary" href={withReturnTo("/controlled-documents/new", returnTo)}>Nuevo PNT</Link></PermissionGate><PermissionGate permission="IMPORT"><Link className="button" href="/controlled-documents/import-index">Importar índice maestro</Link></PermissionGate></div></header>
   <div className="pnt-summary" aria-label="Resumen del listado">
     <div><span>Procedimientos</span><strong>{result.masterCount}</strong></div>
     <div><span>Revisiones</span><strong>{result.revisionCount}</strong></div>
@@ -53,7 +54,7 @@ async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Pr
     </div></details>
    </form>{errors.length>0 && <p className="form-errors" role="alert">{errors.join(" ")}</p>}
   </section>
-  <section className="pnt-results"><div className="pnt-section-heading"><div><h2>Resultados</h2><p>{result.rowCount} filas · {result.masterCount} PNT diferentes · {result.revisionCount} revisiones</p></div><Link className="button" href={exportLink}>Descargar .xlsx</Link></div>
+  <section className="pnt-results"><div className="pnt-section-heading"><div><h2>Resultados</h2><p>{result.rowCount} filas · {result.masterCount} PNT diferentes · {result.revisionCount} revisiones</p></div><PermissionGate permission="EXPORT"><Link className="button" href={exportLink}>Descargar .xlsx</Link></PermissionGate></div>
    <div className="table-card"><div className="table-wrap table-scroll pnt-table-scroll" tabIndex={0} role="region" aria-label="Listado maestro PNT; desplazamiento horizontal"><table className="data-table pnt-list-table"><thead><tr>{headings.map(([key,label])=><th scope="col" key={key}><Link href={link({sort:key,direction:result.options.sort===key&&result.options.direction==="asc"?"desc":"asc"})}>{label}{result.options.sort===key ? result.options.direction==="asc"?" ↑":" ↓":""}</Link></th>)}</tr></thead><tbody>{result.rows.map(({master,revision}) => {
      const dates=revision ? operationalDates(revision) : null;
      const origin=revision ? indexMetadata(revision.sourceMetadata) : null;
@@ -67,5 +68,5 @@ async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Pr
 }
 
 export default async function ListPage(...args: Parameters<typeof ListPageAuthenticatedContent>) {
-  return authorizedPage("src/app/controlled-documents/page.tsx", () => ListPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/controlled-documents/page.tsx", () => ListPageAuthenticatedContent(...args), args);
 }

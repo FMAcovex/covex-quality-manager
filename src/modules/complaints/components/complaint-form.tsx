@@ -1,4 +1,5 @@
 "use client";
+import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
@@ -49,6 +50,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
   cancelHref?: string;
   returnTo?: string;
   detailTab?: string;}) {
+  const access = usePresentationAccess();
  const [state,formAction,pending]=useActionState(action,initial);
  useEffect(()=>{
   // Navigate after the committed action result; a streamed redirect to the
@@ -106,12 +108,12 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
    </div>
    <div className="form-grid">
     <ControlledBusinessCodeField recordType="COMPLAINT" label="N.º reclamación" initialValue={formDefaults.businessCode} mode={mode} yearSource={openedAt} complaintType={complaintType||undefined} locked={mode==="edit"&&!draft}/>
-    <label className="field"><span>Departamento{draft?"":" *"}</span><select name="departmentId" value={departmentId} onChange={e=>setDepartmentId(e.target.value)} required={!draft}><option value="">Seleccionar…</option>{departments.map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
+    <label className="field"><span>Departamento{draft?"":" *"}</span><select name="departmentId" value={departmentId} onChange={e=>setDepartmentId(e.target.value)} required={!draft}><option value="">Seleccionar…</option>{departments.filter(d => access?.departments[d.id]).map(d=><option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
     <label className="field"><span>Fecha de apertura{draft?"":" *"}</span><input name="openedAt" type="date" value={openedAt} onChange={e=>setOpenedAt(e.target.value)} required={!draft}/></label>
     <Field label="Fecha de detección" name="detectionDate" type="date" defaultValue={formDefaults.detectionDate} required={fullRequired}/>
     <Field label="Fecha de recepción" name="receptionDate" type="date" defaultValue={formDefaults.receptionDate} required={fullRequired}/>
     <Field label="Cumplimentado por" name="createdByText" defaultValue={formDefaults.createdByText} required={!draft}/>
-    {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.createdByText}/>:null}
+    {mode==="edit"?<Field label="Modificado por" name="modifiedByText" defaultValue={access?.actor ?? ""}/>:null}
     <Checks label="Origen / fuente de detección o evento desencadenante" name="sourceTypes" options={sourceOptions} defaults={formDefaults.sourceTypes} required={fullRequired} onChange={groupChanged("sourceTypes")}/>
     <Field label="Especificar / cliente o proveedor" name="partyName" defaultValue={formDefaults.partyName} required={fullRequired} span="span-2"/>
     <Field label="Otro origen · especificar" name="sourceOther" hidden={!groups.sourceTypes.includes("OTHER")} defaultValue={formDefaults.sourceOther} span="span-2"/>
@@ -280,7 +282,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
   </section>
 
   <section className="form-section"><h2>Estado del expediente</h2><div className="form-grid">
-   <label className="field"><span>Estado final</span><select name="status" value={recordStatus} onChange={e=>setRecordStatus(e.target.value as "DRAFT"|"OPEN"|"CLOSED")}>{(mode==="create"||formDefaults.status==="DRAFT")?<option value="DRAFT">Borrador</option>:null}<option value="OPEN">Abierta / en seguimiento</option><option value="CLOSED">Cerrada</option></select><small className="muted-note">{draft?"En borrador pueden quedar campos pendientes. Al abrir se validarán todos los campos aplicables.":"Expediente en ciclo operativo."}</small></label>
+   <label className="field"><span>Estado final</span><select name="status" value={recordStatus} onChange={e=>setRecordStatus(e.target.value as "DRAFT"|"OPEN"|"CLOSED")}>{(mode==="create"||formDefaults.status==="DRAFT")?<option value="DRAFT">Borrador</option>:null}<option value="OPEN">Abierta / en seguimiento</option><PermissionGate permission="CLOSE"><option value="CLOSED">Cerrada</option></PermissionGate></select><small className="muted-note">{draft?"En borrador pueden quedar campos pendientes. Al abrir se validarán todos los campos aplicables.":"Expediente en ciclo operativo."}</small></label>
    {recordStatus==="CLOSED"?<Field label="Fecha de cierre" name="closedAt" type="date" defaultValue={formDefaults.closedAt} required/>:null}
   </div></section>
 

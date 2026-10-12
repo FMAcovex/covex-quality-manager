@@ -87,5 +87,5 @@ async function EditCapaPageAuthenticatedContent({ params, searchParams }: { para
 }
 
 export default async function EditCapaPage(...args: Parameters<typeof EditCapaPageAuthenticatedContent>) {
-  return authorizedPage("src/app/capa/[id]/edit/page.tsx", () => EditCapaPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/capa/[id]/edit/page.tsx", () => EditCapaPageAuthenticatedContent(...args), args);
 }

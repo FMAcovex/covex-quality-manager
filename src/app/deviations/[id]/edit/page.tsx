@@ -122,5 +122,5 @@ async function EditDeviationPageAuthenticatedContent({
 }
 
 export default async function EditDeviationPage(...args: Parameters<typeof EditDeviationPageAuthenticatedContent>) {
-  return authorizedPage("src/app/deviations/[id]/edit/page.tsx", () => EditDeviationPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/deviations/[id]/edit/page.tsx", () => EditDeviationPageAuthenticatedContent(...args), args);
 }

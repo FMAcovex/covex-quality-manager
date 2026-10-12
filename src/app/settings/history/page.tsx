@@ -13,5 +13,5 @@ async function SettingsHistoryPageAuthenticatedContent(){
 }
 
 export default async function SettingsHistoryPage(...args: Parameters<typeof SettingsHistoryPageAuthenticatedContent>) {
-  return authorizedPage("src/app/settings/history/page.tsx", () => SettingsHistoryPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/settings/history/page.tsx", () => SettingsHistoryPageAuthenticatedContent(...args), args);
 }

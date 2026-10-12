@@ -1,3 +1,4 @@
+import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
@@ -38,7 +39,7 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
     return suffix ? `/audits?${suffix}` : "/audits";
   };
   const typeTabs = [{type:"",label:"Todas las auditorías"},{type:"INTERNAL",label:"Internas"},{type:"EXTERNAL",label:"Externas"}];
-  return <section className="workspace audits-workspace qms-list-ux-b"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Auditorías</h1><p>Expedientes, planificación, hallazgos y seguimiento.</p></div><div className="heading-actions"><Link className="button" href="/audits/plans">Planes anuales</Link><Link className="button primary" href="/audits/new">+ Nueva auditoría</Link><ColumnSelector tableId="audit-list-table" storageKey="qms.columns.audits" columns={auditColumns}/></div></div>
+  return <section className="workspace audits-workspace qms-list-ux-b"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Auditorías</h1><p>Expedientes, planificación, hallazgos y seguimiento.</p></div><div className="heading-actions"><Link className="button" href="/audits/plans">Planes anuales</Link><PermissionGate permission="CREATE" module="AUDIT"><Link className="button primary" href="/audits/new">+ Nueva auditoría</Link></PermissionGate><ColumnSelector tableId="audit-list-table" storageKey="qms.columns.audits" columns={auditColumns}/></div></div>
     <nav className="audit-type-nav" aria-label="Filtrar auditorías por tipo">{typeTabs.map(tab => <Link key={tab.type} className={`audit-type-option ${selectedType === tab.type ? "active" : ""}`} aria-current={selectedType === tab.type ? "page" : undefined} href={typeHref(tab.type)}>{tab.label}</Link>)}</nav>
     {errors.length > 0 && <p className="form-errors" role="alert">{errors.join(" ")}</p>}
     <form method="get" className="toolbar-form"><div className="filter-panel operational">
@@ -72,5 +73,5 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
 }
 
 export default async function AuditsPage(...args: Parameters<typeof AuditsPageAuthenticatedContent>) {
-  return authorizedPage("src/app/audits/page.tsx", () => AuditsPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/audits/page.tsx", () => AuditsPageAuthenticatedContent(...args), args);
 }

@@ -6,6 +6,7 @@
   "scripts": {
     "auth:fixtures": "tsx scripts/auth-fixtures/install.ts",
     "phase4b1:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase4b1-auth.ts",
+    "phase4b1:ui:smoke": "tsx scripts/smoke-phase4b1-permissions-ui.ts",
     "phase3b2:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase3b2-dashboard.ts && node --conditions=react-server --import tsx scripts/smoke-phase3b2-pnt.ts && node --conditions=react-server --import tsx scripts/smoke-phase3b2-documents.ts",
     "phase3b2:ui:smoke": "tsx scripts/smoke-phase3b2-ui.ts",
     "phase3b1:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase3b1.ts",

@@ -1,3 +1,5 @@
+import { canPresentRecord } from "@/lib/auth/presentation";
+import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
@@ -52,8 +54,8 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
 
  return <section className="workspace qms-list-ux-b">
   <div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Reclamaciones</h1><p>Registro, investigación, resolución, seguimiento, eficacia y cierre.</p></div>
-   <div className="heading-actions"><Link href="/complaints/new" className="button primary">+ Nueva reclamación</Link><ColumnSelector tableId="complaint-list-table" storageKey="qms.columns.complaints.r1" columns={[...complaintColumns]}/>
-    <details className="export-menu"><summary className="button">Exportar ▾</summary><div className="export-popover"><strong>Exportaciones</strong>{officialTemplateReady?<a className="export-link" href={`/api/complaints/export/annex-v?year=${currentYear}`}>Anexo V oficial · año {currentYear}</a>:<span className="template-missing-note">Anexo V bloqueado · plantilla oficial pendiente de cargar.</span>}<a className="export-link" href={`/api/complaints/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a><a className="export-link" href={`/api/complaints/export/simple?year=${currentYear}`}>Listado simple · año {currentYear}</a></div></details>
+   <div className="heading-actions"><PermissionGate permission="CREATE" module="COMPLAINT"><Link href="/complaints/new" className="button primary">+ Nueva reclamación</Link></PermissionGate><ColumnSelector tableId="complaint-list-table" storageKey="qms.columns.complaints.r1" columns={[...complaintColumns]}/>
+    <PermissionGate permission="EXPORT"><details className="export-menu"><summary className="button">Exportar ▾</summary><div className="export-popover"><strong>Exportaciones</strong>{officialTemplateReady?<PermissionGate permission="EXPORT"><a className="export-link" href={`/api/complaints/export/annex-v?year=${currentYear}`}>Anexo V oficial · año {currentYear}</a></PermissionGate>:<span className="template-missing-note">Anexo V bloqueado · plantilla oficial pendiente de cargar.</span>}<PermissionGate permission="EXPORT"><a className="export-link" href={`/api/complaints/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a></PermissionGate><PermissionGate permission="EXPORT"><a className="export-link" href={`/api/complaints/export/simple?year=${currentYear}`}>Listado simple · año {currentYear}</a></PermissionGate></div></details></PermissionGate>
    </div>
   </div>
 
@@ -103,16 +105,16 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
    <div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div>
   </div>
 
-  <ManualReminderToolbar tableId="complaint-list-table" moduleLabel="Reclamaciones" />
+  <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="complaint-list-table" moduleLabel="Reclamaciones" /></PermissionGate>
 
-  <div className="table-card"><div className="table-scroll"><table id="complaint-list-table"><thead><tr><th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las reclamaciones visibles"/></th>{complaintColumns.map(c=><th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>
+  <div className="table-card"><div className="table-scroll"><table id="complaint-list-table"><thead><tr><th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las reclamaciones visibles"/></PermissionGate></th>{complaintColumns.map(c=><th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>
    {rows.length?rows.map(r=>{
     const situation=complaintOperationalSituation(r);
     const followupState=complaintFollowupState(r,today);
     const currentVersion=r.qmsRecord.versions[0]?.sequenceNumber;
     const related=[...r.qmsRecord.sourceRelations.map(x=>x.targetRecord),...r.qmsRecord.targetRelations.map(x=>x.sourceRecord)];
     return <tr key={r.id} className={followupState==="OVERDUE"?"complaint-followup-overdue":undefined}>
-     <td className="reminder-select-column"><input type="checkbox" data-reminder-record="true" data-reminder-id={r.qmsRecord.id} data-reminder-code={qmsRecordDisplayCode(r.qmsRecord)} data-reminder-summary={r.description??r.partyName??"Sin descripción"} data-reminder-status={complaintOperationalSituationLabel(situation)} data-reminder-meta={r.departmentCodeSnapshot??""} data-reminder-href={toDetail(r.id)} aria-label={`Seleccionar ${r.qmsRecord.businessCode??"reclamación"}`}/></td>
+     <td className="reminder-select-column"><PermissionGate permission="FOLLOWUP" allowed={canPresentRecord("COMPLAINT", "FOLLOWUP", { id: r.qmsRecord.id, departmentIds: r.departmentId ? [r.departmentId] : [] })}><input type="checkbox" data-reminder-record="true" data-reminder-id={r.qmsRecord.id} data-reminder-code={qmsRecordDisplayCode(r.qmsRecord)} data-reminder-summary={r.description??r.partyName??"Sin descripción"} data-reminder-status={complaintOperationalSituationLabel(situation)} data-reminder-meta={r.departmentCodeSnapshot??""} data-reminder-href={toDetail(r.id)} aria-label={`Seleccionar ${r.qmsRecord.businessCode??"reclamación"}`}/></PermissionGate></td>
      <td data-column-key="control">{r.dataQualityStatus!=="COMPLETE"?<span className="control-flag">⚠ Revisar</span>:"—"}</td><td data-column-key="review"><ReviewListIndicator counts={r.reviewCounts} basePath={`/complaints/${r.id}`} /></td>
      <td data-column-key="code"><Link className="summary-link" href={toDetail(r.id)}>{qmsRecordDisplayCode(r.qmsRecord)}</Link>{!r.qmsRecord.isActive?<span className="badge neutral">Anulado</span>:null}</td>
      <td data-column-key="version">{currentVersion===undefined?"—":versionLabel(currentVersion)}</td>
@@ -136,5 +138,5 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
 }
 
 export default async function ComplaintsPage(...args: Parameters<typeof ComplaintsPageAuthenticatedContent>) {
-  return authorizedPage("src/app/complaints/page.tsx", () => ComplaintsPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/complaints/page.tsx", () => ComplaintsPageAuthenticatedContent(...args), args);
 }

@@ -1,4 +1,7 @@
 "use client";
+import { PermissionGate, usePresentationAccess } from "@/components/permissions";
+import { ActorField } from "@/components/permissions";
+
 import { CsrfField } from "@/components/csrf";
 
 import { useActionState, useEffect, useRef, useState } from "react";
@@ -12,6 +15,9 @@ import { auditTypeLabels, auditScenarioLabels, auditModalityLabels, auditRoleLab
 import type { PlanOption } from "./plans";
 type DepartmentOption = { id: string; code: string; name: string; isActive: boolean };
 export function AuditForm({ id, defaults, departments, plans=[], returnTo }: { id?: string; defaults?: Partial<AuditInput>; departments: DepartmentOption[]; plans?: PlanOption[];returnTo?:string }) {
+  const access = usePresentationAccess();
+  departments = departments.filter(d => access?.departments[d.id]);
+  plans = plans.filter(p => access?.plans[p.id]);
   const [state, action, pending] = useActionState(saveAuditAction.bind(null, id ?? null), { error: null } as import("./actions").AuditFormState);
   const [values, setValues] = useState<Record<string, string>>(Object.fromEntries(Object.entries(defaults ?? {}).flatMap(([k,v]) => typeof v === "string" ? [[k,v]] : [])));
   const [businessCode, setBusinessCode] = useState(defaults?.businessCode ?? "");
@@ -47,7 +53,7 @@ export function AuditForm({ id, defaults, departments, plans=[], returnTo }: { i
     {state.error ? <div className="form-errors" tabIndex={-1} role="alert"><strong>{state.error}</strong><ul>{Object.entries(state.fieldErrors ?? {}).map(([key,value]) => <li key={key}>{value}</li>)}</ul></div> : null}
     <input type="hidden" name="expectedUpdatedAt" value={defaults?.expectedUpdatedAt ?? ""}/>
     <section className="card"><h2>Identificación</h2><div className="form-grid">
-      <label className="field" data-field="status"><span>Estado</span><select name="status" value={status} onChange={e => setStatus(e.target.value as typeof status)}><option value="DRAFT" disabled={locked}>Borrador</option><option value="OPEN" disabled={defaults?.status === "CLOSED"}>Abierta</option>{defaults?.status === "CLOSED" ? <option value="CLOSED">Cerrada</option> : null}</select>{error("status")}</label>
+      <label className="field" data-field="status"><span>Estado</span><select name="status" value={status} onChange={e => setStatus(e.target.value as typeof status)}><option value="DRAFT" disabled={locked}>Borrador</option><option value="OPEN" disabled={defaults?.status === "CLOSED"}>Abierta</option>{defaults?.status === "CLOSED" ? <PermissionGate permission="CLOSE"><option value="CLOSED">Cerrada</option></PermissionGate> : null}</select>{error("status")}</label>
       <label className="field" data-field="auditType"><span>Tipo</span><select name="auditType" value={type} onChange={e => { const next = e.target.value as typeof type; setType(next); if (!locked && next === "INTERNAL" && selected.length === 1) setCoding(selected[0]); }} disabled={locked}><option value="">Seleccionar</option>{Object.entries(auditTypeLabels).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>{locked ? <input type="hidden" name="auditType" value={type}/> : null}{error("auditType")}</label>
       <label className="field" data-field="scenario"><span>Escenario</span><select name="scenario" value={scenario} onChange={e => setScenario(e.target.value as typeof scenario)} disabled={locked}><option value="">Seleccionar</option>{Object.entries(auditScenarioLabels).filter(([value]) => !type || compatibleAuditScenario(type, value as Exclude<typeof scenario, "">) || value === scenario).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>{locked ? <input type="hidden" name="scenario" value={scenario}/> : null}{error("scenario")}</label>
       {series ? <div data-field="businessCode"><ControlledBusinessCodeField recordType="AUDIT" label="Código" initialValue={businessCode} onValueChange={setBusinessCode} mode={id ? "edit" : "create"} locked={locked} yearSource={planned || opened || performed} departmentId={coding} auditType={type || null} auditScenario={scenario || null} entityCode={entityCode}/>{error("businessCode")}</div> : <><input type="hidden" name="businessCode" value={businessCode}/><p className="muted-note">Identificación por expediente QMS. La referencia externa no se sustituye por una serie generada.</p></>}
@@ -81,7 +87,7 @@ export function AuditForm({ id, defaults, departments, plans=[], returnTo }: { i
     <section className="card"><h2>Control y observaciones</h2><div className="form-grid">
       {text("internalObservations", "Observaciones internas", true)}
       <label className="field"><span>Control / calidad del dato</span><select name="dataQualityStatus" value={values.dataQualityStatus ?? "INCOMPLETE"} onChange={e => setValues(v => ({...v, dataQualityStatus:e.target.value}))}>{Object.entries(auditQualityLabels).map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-      <label className="field" data-field="actor"><span>Realizado por</span><input name="actor" value={values.actor ?? "Usuario demo"} onChange={e => setValues(v => ({...v, actor:e.target.value}))}/>{error("actor")}</label>{text("changeReason", "Motivo del cambio")}
+      <label className="field" data-field="actor"><span>Realizado por</span><ActorField name="actor" value={values.actor ?? "Usuario demo"} onChange={e => setValues(v => ({...v, actor:e.target.value}))}/>{error("actor")}</label>{text("changeReason", "Motivo del cambio")}
     </div></section>
     <p className="muted-note">El cierre definitivo se confirma desde Informe y cierre, según los hallazgos, las acciones y la verificación del expediente.</p>
     <div className="heading-actions"><button className="button primary" disabled={pending}>{pending ? "Guardando…" : "Guardar auditoría"}</button><Link className="button" href={id ? auditWithReturnTo(`/audits/${id}`,returnTo) : "/audits"}>Cancelar</Link></div>

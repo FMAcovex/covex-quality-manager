@@ -114,6 +114,7 @@ export async function getDeviationList(filters: DeviationListFilters) {
       prisma.deviation.findMany({
         where,
         select: {
+          departmentId: true,
           id: true, qmsRecordId: true, departmentCodeSnapshot: true,
           materialProcessAffected: true, provenance: true, whatHappened: true,
           classification: true, rootCause: true, issueDate: true, closedAt: true,

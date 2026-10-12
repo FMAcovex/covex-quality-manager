@@ -165,5 +165,5 @@ async function DeviationIndicatorsPageAuthenticatedContent({
 }
 
 export default async function DeviationIndicatorsPage(...args: Parameters<typeof DeviationIndicatorsPageAuthenticatedContent>) {
-  return authorizedPage("src/app/deviations/indicators/page.tsx", () => DeviationIndicatorsPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/deviations/indicators/page.tsx", () => DeviationIndicatorsPageAuthenticatedContent(...args), args);
 }

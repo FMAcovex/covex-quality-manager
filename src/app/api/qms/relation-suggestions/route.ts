@@ -3,6 +3,9 @@ import { QmsRecordType, QmsRelationType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { canRelate } from "@/lib/qms/relation-rules";
+import { currentIdentity } from "@/lib/auth/context";
+import { canPresent } from "@/lib/auth/presentation";
+import { qmsScope } from "@/lib/auth/resources";
 
 export const runtime = "nodejs";
 
@@ -154,6 +157,16 @@ async function GETAuthenticatedContent(request: Request) {
       displayLabel,
     }));
 
+  if (url.searchParams.get("editable") === "1") {
+    const user = currentIdentity()?.principal;
+    const permitted = await Promise.all(suggestions.map(async record => {
+      if (!user) return false;
+      if (canPresent(user, record.recordType, "EDIT")) return true;
+      const target = await qmsScope(record.id);
+      return canPresent(user, target.module, "EDIT", target.scope);
+    }));
+    return NextResponse.json({ suggestions: suggestions.filter((_, i) => permitted[i]) });
+  }
   return NextResponse.json({ suggestions });
 }
 

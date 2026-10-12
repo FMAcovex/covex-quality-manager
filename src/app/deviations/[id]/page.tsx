@@ -1,3 +1,6 @@
+import { ActorField } from "@/components/permissions";
+import { PermissionGate } from "@/components/permissions";
+import { currentActor } from "@/lib/auth/presentation";
 
 import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -257,7 +260,7 @@ async function DeviationDetailPageAuthenticatedContent({
       module="DEVIATION"
       basePath={basePath}
       currentVersionLabel={reviewVersionLabel(currentVersion?.sequenceNumber ?? null)}
-      defaultActor={process.env.DEFAULT_ACTOR_NAME?.trim() || deviation.createdByText || "Usuario demo"}
+      defaultActor={currentActor()}
       reviewMode={reviewMode}
       targets={reviewTargets}
       threads={reviewThreads}
@@ -277,11 +280,11 @@ async function DeviationDetailPageAuthenticatedContent({
           <p className="muted-note">Apertura {formatDate(deviation.issueDate)} · Cumplimentado por {text(deviation.createdByText)}</p>
         </div>
         <div className="record-actions">
-          <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/deviations", returnTo)} />
-          <Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${activeTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link>
+          <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/deviations", returnTo)} /></PermissionGate>
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${activeTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link></PermissionGate>
           {deviation.status === "DRAFT"
             ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
-            : <a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a>}
+            : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate>}
         </div>
       </div>
 
@@ -292,7 +295,7 @@ async function DeviationDetailPageAuthenticatedContent({
         annulledAt={deviation.qmsRecord.annulledAt?.toISOString() ?? null}
         annulledByText={deviation.qmsRecord.annulledByText}
         annulledReason={deviation.qmsRecord.annulledReason}
-        defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+        defaultActor={currentActor()}
       />
 
       <nav className="record-tabs">
@@ -378,7 +381,7 @@ async function DeviationDetailPageAuthenticatedContent({
                             {navigation.kind === "OPEN" ? (
                               <Link className="button small" href={qmsRecordHref("CAPA", navigation.recordId)}>Abrir CAPA</Link>
                             ) : navigation.kind === "CREATE" ? (
-                              <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
+                              <PermissionGate permission="EDIT"><PermissionGate permission="CREATE" module="CAPA"><Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link></PermissionGate></PermissionGate>
                             ) : (
                               <span className="muted-note">{plan.proposalStatus === "CANCELLED" ? "Cancelada" : "Sin vínculo"}</span>
                             )}
@@ -516,7 +519,7 @@ async function DeviationDetailPageAuthenticatedContent({
                             {navigation.kind === "OPEN" ? (
                               <Link className="button small" href={qmsRecordHref("CAPA", navigation.recordId)}>Abrir CAPA</Link>
                             ) : navigation.kind === "CREATE" ? (
-                              <Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link>
+                              <PermissionGate permission="EDIT"><PermissionGate permission="CREATE" module="CAPA"><Link className="button small primary" href={`/capa/new?fromDeviationPlanId=${plan.id}`}>Crear CAPA</Link></PermissionGate></PermissionGate>
                             ) : null}
                           </td>
                         </tr>
@@ -559,25 +562,25 @@ async function DeviationDetailPageAuthenticatedContent({
                     <strong>{record.businessCode ?? "CAPA"}</strong>
                   </Link>
                   <small>CAPA</small>
-                  <form action={unlinkDeviationCapaAction.bind(null, id, record.id)}><CsrfField />
-                    <input type="hidden" name="actor" value={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
+                  <PermissionGate permission="EDIT" recordId={record.id}><form action={unlinkDeviationCapaAction.bind(null, id, record.id)}><CsrfField />
+                    <ActorField type="hidden" name="actor" value={deviation.createdByText ?? currentActor()} />
                     <button className="button danger small" type="submit">Desvincular</button>
-                  </form>
+                  </form></PermissionGate>
                 </div>
               ))}
             </div>
           ) : <div className="empty-panel">Esta desviación todavía no tiene CAPA vinculadas.</div>}
-          <OperationalRelationForm
+          <PermissionGate permission="EDIT"><OperationalRelationForm
             action={addDeviationRelationAction.bind(null, id)}
             title="Vincular CAPA existente"
             codeLabel="Codificación CAPA"
             codePlaceholder="AC/GC-00/001/2026"
             buttonLabel="Vincular CAPA"
-            defaultActor={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+            defaultActor={currentActor()}
             targetOptions={[{ value: "CAPA", label: "CAPA" }]}
             currentRecordId={deviation.qmsRecord.id}
             currentRecordType="DEVIATION"
-          />
+          /></PermissionGate>
         </div>
       ) : null}
 
@@ -632,16 +635,16 @@ async function DeviationDetailPageAuthenticatedContent({
                       return (
                         <>
                           <div className="document-actions">
-                            <a className="button small" href={`/api/deviations/${id}/annex-iii?version=${item.sequenceNumber}`}>
+                            <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button small" href={`/api/deviations/${id}/annex-iii?version=${item.sequenceNumber}`}>
                               Descargar Anexo III {versionLabel(item.sequenceNumber)}
-                            </a>
+                            </a></PermissionGate>
                             {signedDocument ? (
-                              <a
+                              <PermissionGate permission="DOWNLOAD"><a
                                 className="button small"
                                 href={`/api/deviations/${id}/versions/${item.sequenceNumber}/signed-pdf`}
                               >
                                 Descargar PDF firmado {versionLabel(item.sequenceNumber)}
-                              </a>
+                              </a></PermissionGate>
                             ) : null}
                           </div>
                           <div className="version-signed-document">
@@ -655,11 +658,11 @@ async function DeviationDetailPageAuthenticatedContent({
                                 Carga aquí el documento firmado correspondiente exclusivamente a {versionLabel(item.sequenceNumber)}.
                               </small>
                             )}
-                            <SignedVersionDocumentForm
+                            <PermissionGate permission="ATTACH_DOCUMENT"><SignedVersionDocumentForm
                               action={uploadDeviationSignedPdfAction.bind(null, id, item.id)}
-                              defaultActor={deviation.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+                              defaultActor={currentActor()}
                               replace={Boolean(signedDocument)}
-                            />
+                            /></PermissionGate>
                           </div>
                         </>
                       );
@@ -689,8 +692,8 @@ async function DeviationDetailPageAuthenticatedContent({
               <h3>Anexo III · Informe de desviación</h3>
               <p>Plantilla oficial asociada al expediente y documento Word cumplimentado con los datos vigentes.</p>
               <div className="document-actions">
-                {deviation.anexoIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${deviation.anexoIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
-                <a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>
+                {deviation.anexoIIITemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="DEVIATION"><a className="button" href={`/api/settings/templates/${deviation.anexoIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
+                <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>
               </div>
             </div>
             <div className="document-block">
@@ -725,7 +728,7 @@ async function DeviationDetailPageAuthenticatedContent({
                 <h2>Revisión del expediente</h2>
                 <p className="muted-note">Observaciones vinculadas a objetivos estables y a la versión del expediente revisada cuando exista.</p>
               </div>
-              <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, "review", reviewMode), "/deviations", returnTo)} />
+              <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, "review", reviewMode), "/deviations", returnTo)} /></PermissionGate>
             </div>
             <ReviewStatusSummary />
           </div>
@@ -763,5 +766,5 @@ async function DeviationDetailPageAuthenticatedContent({
 }
 
 export default async function DeviationDetailPage(...args: Parameters<typeof DeviationDetailPageAuthenticatedContent>) {
-  return authorizedPage("src/app/deviations/[id]/page.tsx", () => DeviationDetailPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/deviations/[id]/page.tsx", () => DeviationDetailPageAuthenticatedContent(...args), args);
 }

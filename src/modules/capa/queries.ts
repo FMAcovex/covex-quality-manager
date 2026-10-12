@@ -94,6 +94,7 @@ export async function getCapaList(filters: CapaListFilters) {
       prisma.capa.findMany({
         where,
         select: {
+          departmentId: true,
           id: true, qmsRecordId: true, departmentCodeSnapshot: true, actionType: true,
           status: true, effectivenessStatus: true, defectDescription: true, rootCause: true,
           originCode: true, originType: true, openedAt: true, operationalClosedAt: true,

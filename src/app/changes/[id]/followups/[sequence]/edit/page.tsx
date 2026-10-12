@@ -1,3 +1,4 @@
+import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -54,7 +55,7 @@ async function EditChangeControlFollowupPageAuthenticatedContent({
       </div>
 
       <div className="card">
-        <ChangeFollowupForm
+        <PermissionGate permission="FOLLOWUP"><ChangeFollowupForm
           action={updateChangeControlFollowupAction.bind(null, id, followup.id)}
           departments={lookups.departments}
           tasks={tasks}
@@ -80,12 +81,12 @@ async function EditChangeControlFollowupPageAuthenticatedContent({
               evidenceComment: state.evidenceComment,
             })),
           }}
-        />
+        /></PermissionGate>
       </div>
     </section>
   );
 }
 
 export default async function EditChangeControlFollowupPage(...args: Parameters<typeof EditChangeControlFollowupPageAuthenticatedContent>) {
-  return authorizedPage("src/app/changes/[id]/followups/[sequence]/edit/page.tsx", () => EditChangeControlFollowupPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/changes/[id]/followups/[sequence]/edit/page.tsx", () => EditChangeControlFollowupPageAuthenticatedContent(...args), args);
 }

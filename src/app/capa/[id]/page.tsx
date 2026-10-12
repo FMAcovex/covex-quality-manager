@@ -1,3 +1,6 @@
+import { ActorField } from "@/components/permissions";
+import { PermissionGate } from "@/components/permissions";
+import { currentActor } from "@/lib/auth/presentation";
 
 import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -195,9 +198,7 @@ async function CapaDetailPageAuthenticatedContent({
         currentVersion ? followupLabel(currentVersion.sequenceNumber) : "Sin versión"
       }
       versionLabelMode="FOLLOWUP"
-      defaultActor={
-        process.env.DEFAULT_ACTOR_NAME?.trim() || capa.createdByText || "Usuario demo"
-      }
+      defaultActor={currentActor()}
       reviewMode={reviewMode}
       targets={reviewTargets}
       threads={reviewThreads}
@@ -226,9 +227,9 @@ async function CapaDetailPageAuthenticatedContent({
           </p>
         </div>
         <div className="record-actions">
-          <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/capa", returnTo)} />
-          <Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit?tab=${activeTab}`, "/capa", returnTo)}>Editar / nuevo seguimiento</Link>
-          {capa.status !== "DRAFT" ? <a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a> : null}
+          <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/capa", returnTo)} /></PermissionGate>
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit?tab=${activeTab}`, "/capa", returnTo)}>Editar / nuevo seguimiento</Link></PermissionGate>
+          {capa.status !== "DRAFT" ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate> : null}
         </div>
       </div>
 
@@ -245,7 +246,7 @@ async function CapaDetailPageAuthenticatedContent({
         annulledAt={capa.qmsRecord.annulledAt?.toISOString() ?? null}
         annulledByText={capa.qmsRecord.annulledByText}
         annulledReason={capa.qmsRecord.annulledReason}
-        defaultActor={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+        defaultActor={currentActor()}
       />
 
       <nav className="record-tabs">
@@ -405,10 +406,10 @@ async function CapaDetailPageAuthenticatedContent({
                     <strong>{qmsRecordDisplayCode(record, qmsRecordTypeLabel(record.recordType))}{!record.isActive ? " · Anulado" : ""}</strong>
                   </Link>
                   <small>Relación QMS canónica.</small>
-                  {record.recordType !== "AUDIT" ? <form action={unlinkCapaOriginAction.bind(null, id, record.id)}><CsrfField />
-                    <input type="hidden" name="actor" value={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"} />
+                  {record.recordType !== "AUDIT" ? <PermissionGate permission="EDIT" recordId={record.id}><form action={unlinkCapaOriginAction.bind(null, id, record.id)}><CsrfField />
+                    <ActorField type="hidden" name="actor" value={capa.createdByText ?? currentActor()} />
                     <button className="button danger small" type="submit">Desvincular</button>
-                  </form> : <small>Gestionar atribuciones desde la Auditoría.</small>}
+                  </form></PermissionGate> : <small>Gestionar atribuciones desde la Auditoría.</small>}
                 </div>
               ))}
             </div>
@@ -416,20 +417,20 @@ async function CapaDetailPageAuthenticatedContent({
           {capa.status === "DRAFT" ? (
             <div className="empty-panel">Las relaciones operativas se activan al abrir la CAPA.</div>
           ) : (
-            <OperationalRelationForm
+            <PermissionGate permission="EDIT"><OperationalRelationForm
               action={addCapaRelationAction.bind(null, id)}
               title="Vincular otro expediente de origen"
               codeLabel="Codificación de origen"
               codePlaceholder="Buscar expediente"
               buttonLabel="Vincular origen"
-              defaultActor={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+              defaultActor={currentActor()}
               targetOptions={[
                 { value: "DEVIATION", label: "Desviación" },
                 { value: "COMPLAINT", label: "Reclamación" },
               ]}
               currentRecordId={capa.qmsRecord.id}
               currentRecordType="CAPA"
-            />
+            /></PermissionGate>
           )}
         </div>
       ) : null}
@@ -484,17 +485,17 @@ async function CapaDetailPageAuthenticatedContent({
                         {capa.status === "DRAFT" ? (
                           <span className="muted-note">El Anexo III estará disponible al abrir la CAPA.</span>
                         ) : (
-                          <a className="button small" href={`/api/capa/${id}/annex-iii?version=${item.sequenceNumber}`}>
+                          <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button small" href={`/api/capa/${id}/annex-iii?version=${item.sequenceNumber}`}>
                             Descargar Anexo III · {followupLabel(item.sequenceNumber)}
-                          </a>
+                          </a></PermissionGate>
                         )}
                         {signedDocument ? (
-                          <a
+                          <PermissionGate permission="DOWNLOAD"><a
                             className="button small"
                             href={`/api/capa/${id}/versions/${item.sequenceNumber}/signed-pdf`}
                           >
                             Descargar PDF firmado · {followupLabel(item.sequenceNumber)}
-                          </a>
+                          </a></PermissionGate>
                         ) : null}
                       </div>
                       <div className="version-signed-document">
@@ -513,11 +514,11 @@ async function CapaDetailPageAuthenticatedContent({
                             La carga de PDF firmado se habilita cuando la CAPA deja de estar en Borrador.
                           </small>
                         ) : (
-                          <SignedVersionDocumentForm
+                          <PermissionGate permission="ATTACH_DOCUMENT"><SignedVersionDocumentForm
                             action={uploadCapaSignedPdfAction.bind(null, id, item.id)}
-                            defaultActor={capa.createdByText ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo"}
+                            defaultActor={currentActor()}
                             replace={Boolean(signedDocument)}
-                          />
+                          /></PermissionGate>
                         )}
                       </div>
                     </div>
@@ -555,8 +556,8 @@ async function CapaDetailPageAuthenticatedContent({
               <h3>Anexo III · Informe CAPA</h3>
               <p>Plantilla oficial y versión Word cumplimentada del informe/seguimiento CAPA.</p>
               <div className="document-actions">
-                {capa.annexIIITemplateVersion?.id ? <a className="button" href={`/api/settings/templates/${capa.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
-                {capa.status === "DRAFT" ? <span className="muted-note">Disponible al abrir la CAPA.</span> : <a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a>}
+                {capa.annexIIITemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="CAPA"><a className="button" href={`/api/settings/templates/${capa.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
+                {capa.status === "DRAFT" ? <span className="muted-note">Disponible al abrir la CAPA.</span> : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>}
               </div>
             </div>
             <div className="document-block">
@@ -591,7 +592,7 @@ async function CapaDetailPageAuthenticatedContent({
                 <h2>Revisión del expediente</h2>
                 <p className="muted-note">Observaciones vinculadas al seguimiento funcional revisado cuando exista.</p>
               </div>
-              <ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, "review", reviewMode), "/capa", returnTo)} />
+              <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, "review", reviewMode), "/capa", returnTo)} /></PermissionGate>
             </div>
             <ReviewStatusSummary />
           </div>
@@ -626,5 +627,5 @@ async function CapaDetailPageAuthenticatedContent({
 }
 
 export default async function CapaDetailPage(...args: Parameters<typeof CapaDetailPageAuthenticatedContent>) {
-  return authorizedPage("src/app/capa/[id]/page.tsx", () => CapaDetailPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/capa/[id]/page.tsx", () => CapaDetailPageAuthenticatedContent(...args), args);
 }

@@ -20,5 +20,5 @@ async function RevisionPageAuthenticatedContent({ params, searchParams }: {
 }
 
 export default async function RevisionPage(...args: Parameters<typeof RevisionPageAuthenticatedContent>) {
-  return authorizedPage("src/app/controlled-documents/[id]/revisions/new/page.tsx", () => RevisionPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/controlled-documents/[id]/revisions/new/page.tsx", () => RevisionPageAuthenticatedContent(...args), args);
 }

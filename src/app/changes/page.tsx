@@ -1,3 +1,5 @@
+import { canPresentRecord } from "@/lib/auth/presentation";
+import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { ReviewListFilter, ReviewListIndicator } from "@/components/review/review-list-controls";
 import Link from "next/link";
@@ -62,25 +64,25 @@ async function ChangeControlPageAuthenticatedContent({
           <p>Solicitud, Dictamen, ejecución, seguimientos, eficacia y cierre.</p>
         </div>
         <div className="heading-actions">
-          <Link href="/changes/new" className="button primary">+ Nuevo Control de Cambio</Link>
+          <PermissionGate permission="CREATE" module="CHANGE_CONTROL"><Link href="/changes/new" className="button primary">+ Nuevo Control de Cambio</Link></PermissionGate>
           <ColumnSelector
             tableId="change-control-list-table"
             storageKey="qms.columns.change-control"
             columns={[...changeControlColumns]}
           />
-          <details className="export-menu">
+          <PermissionGate permission="EXPORT"><details className="export-menu">
             <summary className="button">Exportar ▾</summary>
             <div className="export-popover">
               <strong>Exportaciones de Controles de Cambios</strong>
-              {officialTemplateReady ? <a href={`/api/changes/export/annex-vii?year=${exportYear}`}>Anexo VII oficial · {exportYear}</a> : <span className="template-missing-note">Anexo VII bloqueado · plantilla oficial pendiente de cargar.</span>}
-              <a href={`/api/changes/export/simple?${simpleParams.toString()}`}>
+              {officialTemplateReady ? <PermissionGate permission="EXPORT"><a href={`/api/changes/export/annex-vii?year=${exportYear}`}>Anexo VII oficial · {exportYear}</a></PermissionGate> : <span className="template-missing-note">Anexo VII bloqueado · plantilla oficial pendiente de cargar.</span>}
+              <PermissionGate permission="EXPORT"><a href={`/api/changes/export/simple?${simpleParams.toString()}`}>
                 Listado simple · filtros actuales
-              </a>
+              </a></PermissionGate>
               <span className="muted-note">
                 El Anexo VII conserva solo las columnas oficiales. El listado simple incluye el seguimiento operativo ampliado.
               </span>
             </div>
-          </details>
+          </details></PermissionGate>
         </div>
       </div>
 
@@ -132,14 +134,14 @@ async function ChangeControlPageAuthenticatedContent({
         <div><span>Seguimiento vencido</span><strong>{counters.overdue}</strong></div>
       </div>
 
-      <ManualReminderToolbar tableId="change-control-list-table" moduleLabel="Controles de Cambios" />
+      <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="change-control-list-table" moduleLabel="Controles de Cambios" /></PermissionGate>
 
       <div className="table-card">
         <div className="table-scroll">
           <table id="change-control-list-table" className="records-table change-table">
             <thead>
               <tr>
-                <th className="reminder-select-column" aria-label="Seleccionar"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todos los Controles de Cambios visibles" /></th>
+                <th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todos los Controles de Cambios visibles" /></PermissionGate></th>
                 <th data-column-key="control">Control</th><th data-column-key="review">Revisión</th>
                 <th data-column-key="department">Departamento</th>
                 <th data-column-key="code">Codificación</th>
@@ -168,7 +170,7 @@ async function ChangeControlPageAuthenticatedContent({
                 return (
                   <tr key={row.id}>
                     <td className="reminder-select-column">
-                      <input
+                      <PermissionGate permission="FOLLOWUP" allowed={canPresentRecord("CHANGE_CONTROL", "FOLLOWUP", { id: row.qmsRecord.id, departmentIds: row.departmentId ? [row.departmentId] : [] })}><input
                         type="checkbox"
                         data-reminder-record="true"
                         data-reminder-id={row.qmsRecord.id}
@@ -178,7 +180,7 @@ async function ChangeControlPageAuthenticatedContent({
                         data-reminder-meta={row.departmentCodeSnapshot ?? ""}
                         data-reminder-href={toDetail(row.id)}
                         aria-label={`Seleccionar ${row.qmsRecord.businessCode ?? "Control de Cambio"}`}
-                      />
+                      /></PermissionGate>
                     </td>
                     <td data-column-key="control">{row.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ Revisar</span> : "—"}</td><td data-column-key="review"><ReviewListIndicator counts={row.reviewCounts} returnTo={qmsListingUrl("/changes", query)} basePath={`/changes/${row.id}`} /></td>
                     <td data-column-key="department">{row.departmentCodeSnapshot ?? "—"}</td>
@@ -215,5 +217,5 @@ async function ChangeControlPageAuthenticatedContent({
 }
 
 export default async function ChangeControlPage(...args: Parameters<typeof ChangeControlPageAuthenticatedContent>) {
-  return authorizedPage("src/app/changes/page.tsx", () => ChangeControlPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/changes/page.tsx", () => ChangeControlPageAuthenticatedContent(...args), args);
 }

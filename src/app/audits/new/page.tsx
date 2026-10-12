@@ -11,5 +11,5 @@ async function NewAuditPageAuthenticatedContent({searchParams}:{searchParams:Pro
 }
 
 export default async function NewAuditPage(...args: Parameters<typeof NewAuditPageAuthenticatedContent>) {
-  return authorizedPage("src/app/audits/new/page.tsx", () => NewAuditPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/audits/new/page.tsx", () => NewAuditPageAuthenticatedContent(...args), args);
 }

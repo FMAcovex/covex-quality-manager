@@ -1,4 +1,6 @@
 "use client";
+import { ActorField } from "@/components/permissions";
+
 import { CsrfField } from "@/components/csrf";
 
 
@@ -81,6 +83,7 @@ export function OperationalRelationForm({
       setLoading(true);
       try {
         const params = new URLSearchParams({
+          editable: "1",
           currentRecordId,
           currentType: currentRecordType,
           relatedType: selectedType,
@@ -231,10 +234,10 @@ export function OperationalRelationForm({
         </label>
         <label className="field">
           <span>Registrado por</span>
-          <input name="actor" defaultValue={defaultActor} required />
+          <ActorField name="actor" defaultValue={defaultActor} required />
         </label>
         <div className="full">
-          <button className="button primary" type="submit" disabled={pending}>
+          <button className="button primary" type="submit" disabled={pending || !targetRecordId}>
             {pending ? "Guardando…" : buttonLabel}
           </button>
         </div>

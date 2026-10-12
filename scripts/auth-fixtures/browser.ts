@@ -1,4 +1,4 @@
-import { chromium as realChromium, type Browser, type BrowserContext, type Page } from "playwright";
+import { chromium as realChromium, type Browser, type BrowserContext, type Page, type Locator } from "playwright";
 import { fixtureLogin } from "./http";
 import { fixtureUsers } from "./constants";
 import { authConfiguration } from "../../src/lib/auth/config";
@@ -7,6 +7,11 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/lib/db";
 import type { AccessPermission } from "../../src/lib/auth/context";
 const preparedRequests = new WeakSet<object>();
+export async function assertCorporateActor(field: Locator) {
+  const response = await field.page().request.get(authConfiguration().origin + "/api/auth/session");
+  const user = await response.json();
+  if (!response.ok() || await field.inputValue() !== user.name || await field.getAttribute("readonly") === null) throw new Error("El ejecutor visible debe ser la identidad autenticada y no editable.");
+}
 function prepareDirectApiRequests(context: BrowserContext) {
   if (preparedRequests.has(context.request)) return;
   preparedRequests.add(context.request);

@@ -1,4 +1,6 @@
 "use client";
+import { PermissionGate } from "@/components/permissions";
+
 
 import { navigateToReviewTarget } from "@/lib/qms/review/navigation";
 import {
@@ -63,10 +65,10 @@ export function ReviewThreadCard({
       }}>Ir al campo</a> : null}
       {showGoToField ? <button className="review-thread-focus" type="button" onClick={() => openThread(thread.id)}>Ver hilo</button> : null}
       {!capabilities.readOnly ? <div className="review-thread-actions">
-        {capabilities.canReply ? <ReviewReplyForm reviewThreadId={thread.id} /> : null}
+        {capabilities.canReply ? <PermissionGate permission="REVIEW"><ReviewReplyForm reviewThreadId={thread.id} /></PermissionGate> : null}
         <div className="review-state-actions">
-          {capabilities.canAccept ? <ReviewAcceptButton reviewThreadId={thread.id} /> : null}
-          {capabilities.canResolve ? <ReviewResolveForm reviewThreadId={thread.id} /> : null}
+          {capabilities.canAccept ? <PermissionGate permission="REVIEW"><ReviewAcceptButton reviewThreadId={thread.id} /></PermissionGate> : null}
+          {capabilities.canResolve ? <PermissionGate permission="REVIEW"><ReviewResolveForm reviewThreadId={thread.id} /></PermissionGate> : null}
         </div>
       </div> : <p className="review-read-only">Hilo resuelto · solo lectura</p>}
     </article>

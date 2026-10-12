@@ -1,4 +1,6 @@
 "use client";
+import { ActorField } from "@/components/permissions";
+
 import { CsrfField } from "@/components/csrf";
 
 
@@ -35,7 +37,7 @@ export function SignedVersionDocumentForm({
       </label>
       <label className="field">
         <span>Cargado por</span>
-        <input name="actor" defaultValue={defaultActor} required />
+        <ActorField name="actor" defaultValue={defaultActor} required />
       </label>
       {replace ? (
         <label className="field full">

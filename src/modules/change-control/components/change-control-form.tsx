@@ -1,4 +1,5 @@
 "use client";
+import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
@@ -154,6 +155,7 @@ export function ChangeControlForm({
   detailTab?: string;
   baselineLocked?: boolean;
 }) {
+  const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, initialState);
   const formDefaults = submittedDefaults(defaults, state.submittedValues);
   const [tasks, setTasks] = useState<ChangeTaskInput[]>(
@@ -229,7 +231,7 @@ export function ChangeControlForm({
             <span>Departamento / Área solicitante{draft ? "" : " *"}</span>
             <select name="departmentId" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} required={!draft}>
               <option value="">Seleccionar…</option>
-              {departments.map((item) => (
+              {departments.filter(d => access?.departments[d.id]).map((item) => (
                 <option key={item.id} value={item.id}>{item.code} — {item.name}</option>
               ))}
             </select>
@@ -472,7 +474,7 @@ export function ChangeControlForm({
             <select name="finalStatus" value={recordStatus} onChange={(event) => setRecordStatus(event.target.value as "DRAFT" | "OPEN" | "CLOSED")}>
               {(mode === "create" || formDefaults.finalStatus === "DRAFT") ? <option value="DRAFT">Borrador</option> : null}
               <option value="OPEN">Abierto</option>
-              {formDefaults.finalStatus === "CLOSED" ? <option value="CLOSED">Cerrado</option> : null}
+              {formDefaults.finalStatus === "CLOSED" ? <PermissionGate permission="CLOSE"><option value="CLOSED">Cerrado</option></PermissionGate> : null}
             </select>
             <small className="muted-note">{draft ? "En borrador pueden quedar campos pendientes. Al abrir se validarán los obligatorios." : "El expediente está en ciclo operativo."}</small>
           </label>
@@ -488,7 +490,7 @@ export function ChangeControlForm({
           </label>
           {mode === "edit" ? (
             <>
-              <Field label="Modificado por" name="modifiedByText" defaultValue={formDefaults.requesterName} />
+              <Field label="Modificado por" name="modifiedByText" defaultValue={access?.actor ?? ""} />
               <TextArea label="Motivo del cambio" name="changeReason" />
             </>
           ) : null}

@@ -1,4 +1,5 @@
 "use client";
+import { useCanAct } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 
 
@@ -11,9 +12,11 @@ export type LifecycleFormProps = { returnTo?: string; documentId: string; revisi
   decisions: { id: string; operation: string; label: string; evidenceIds: string[] }[]; previousId: string | null };
 const labels: Record<LifecycleCommand["operation"], string> = { VERIFY: "Verificar documentos", REGISTER_EXTERNAL: "Registrar función/ aprobación externa", CONTRAST_EXTERNAL: "Contrastar evidencia externa", SUBMIT: "Pasar a pendiente de aprobación", PLAN: "Registrar aprobación y planificar vigencia", ACTIVATE: "Activar vigencia explícitamente", RETIRE: "Declarar obsoleta", ANNUL: "Anular revisión", RECTIFY: "Rectificar decisión (sin eliminarla)" };
 export function LifecycleForm(p: LifecycleFormProps) {
+  const canAnnul = useCanAct("ANNUL");
   const [operation, setOperation] = useState<LifecycleCommand["operation"]>("VERIFY"), [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string | null>(null);
   const available = (Object.keys(labels) as LifecycleCommand["operation"][]).filter(op => {
+    if (op === "ANNUL" && !canAnnul) return false;
     if (!p.capabilities.includes(permissions[op])) return false;
     try { assertTransition(op, p.state, p.state === "PENDING_APPROVAL" ? "APPROVAL" : "PREPARATION"); return true; } catch { return false; }
   });

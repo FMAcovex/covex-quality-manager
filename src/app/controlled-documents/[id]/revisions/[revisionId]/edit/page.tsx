@@ -23,5 +23,5 @@ async function EditRevisionPageAuthenticatedContent({ params, searchParams }: {
 }
 
 export default async function EditRevisionPage(...args: Parameters<typeof EditRevisionPageAuthenticatedContent>) {
-  return authorizedPage("src/app/controlled-documents/[id]/revisions/[revisionId]/edit/page.tsx", () => EditRevisionPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/controlled-documents/[id]/revisions/[revisionId]/edit/page.tsx", () => EditRevisionPageAuthenticatedContent(...args), args);
 }

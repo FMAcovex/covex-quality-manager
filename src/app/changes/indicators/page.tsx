@@ -162,5 +162,5 @@ async function ChangeControlIndicatorsPageAuthenticatedContent({
 }
 
 export default async function ChangeControlIndicatorsPage(...args: Parameters<typeof ChangeControlIndicatorsPageAuthenticatedContent>) {
-  return authorizedPage("src/app/changes/indicators/page.tsx", () => ChangeControlIndicatorsPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/changes/indicators/page.tsx", () => ChangeControlIndicatorsPageAuthenticatedContent(...args), args);
 }

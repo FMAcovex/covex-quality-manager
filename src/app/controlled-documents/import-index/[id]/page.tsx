@@ -15,5 +15,5 @@ async function BatchPageAuthenticatedContent({params}: {params: Promise<{id: str
 }
 
 export default async function BatchPage(...args: Parameters<typeof BatchPageAuthenticatedContent>) {
-  return authorizedPage("src/app/controlled-documents/import-index/[id]/page.tsx", () => BatchPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/controlled-documents/import-index/[id]/page.tsx", () => BatchPageAuthenticatedContent(...args), args);
 }

@@ -1,3 +1,4 @@
+import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { SettingsNav } from "@/components/settings-nav";
@@ -27,7 +28,7 @@ async function SettingsPageAuthenticatedContent(){
       <div><strong>{overdue}</strong><span>Elementos vencidos ahora</span></div>
     </div>
     <div className="settings-grid admin-hub-grid">
-      <Link className="card settings-card admin-link-card" href="/settings/users"><h2>Usuarios y autorizaciones</h2><p>Acceso corporativo, roles y ámbitos de actuación.</p><strong>Abrir →</strong></Link>
+      <PermissionGate permission="MANAGE_USERS" module="SYSTEM"><Link className="card settings-card admin-link-card" href="/settings/users"><h2>Usuarios y autorizaciones</h2><p>Acceso corporativo, roles y ámbitos de actuación.</p><strong>Abrir →</strong></Link></PermissionGate>
       <Link className="card settings-card admin-link-card" href="/settings/catalogs"><p className="eyebrow">Catálogos</p><h2>Departamentos y valores auxiliares</h2><p>Alta, vigencia y desactivación sin borrado físico.</p><strong>Abrir →</strong></Link>
       <Link className="card settings-card admin-link-card" href="/settings/versions"><p className="eyebrow">Versionado</p><h2>Formularios y plantillas</h2><p>Clonar versiones, preparar borradores y activar por fecha de vigencia.</p><strong>Abrir →</strong></Link>
       <Link className="card settings-card admin-link-card" href="/settings/parameters"><p className="eyebrow">Parámetros</p><h2>Comportamiento configurable</h2><p>Parámetros no estructurales sin duplicar lógica en los módulos.</p><strong>Abrir →</strong></Link>
@@ -43,5 +44,5 @@ async function SettingsPageAuthenticatedContent(){
 }
 
 export default async function SettingsPage(...args: Parameters<typeof SettingsPageAuthenticatedContent>) {
-  return authorizedPage("src/app/settings/page.tsx", () => SettingsPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/settings/page.tsx", () => SettingsPageAuthenticatedContent(...args), args);
 }

@@ -20,5 +20,5 @@ async function EditPageAuthenticatedContent({ params, searchParams }: {
 }
 
 export default async function EditPage(...args: Parameters<typeof EditPageAuthenticatedContent>) {
-  return authorizedPage("src/app/controlled-documents/[id]/edit/page.tsx", () => EditPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/controlled-documents/[id]/edit/page.tsx", () => EditPageAuthenticatedContent(...args), args);
 }

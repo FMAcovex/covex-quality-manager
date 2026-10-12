@@ -1,3 +1,6 @@
+import { ActorField } from "@/components/permissions";
+import { PermissionGate } from "@/components/permissions";
+import { currentActor } from "@/lib/auth/presentation";
 
 import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -130,11 +133,11 @@ async function VersionsPageAuthenticatedContent() {
                         </Link>
 
                         {form.status === "DRAFT" ? (
-                          <form action={activateFormVersionAction.bind(null, form.id)}><CsrfField />
-                            <input
+                          <PermissionGate permission="MANAGE_CONFIGURATION" module={form.module}><form action={activateFormVersionAction.bind(null, form.id)}><CsrfField />
+                            <ActorField
                               type="hidden"
                               name="actor"
-                              value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                              value={currentActor()}
                             />
                             <input
                               type="hidden"
@@ -142,12 +145,12 @@ async function VersionsPageAuthenticatedContent() {
                               value="Activación de nueva versión de formulario"
                             />
                             <button className="button small primary">Activar</button>
-                          </form>
+                          </form></PermissionGate>
                         ) : null}
 
-                        <details>
+                        <PermissionGate permission="MANAGE_CONFIGURATION" module={form.module}><details>
                           <summary className="button small">Clonar</summary>
-                          <form
+                          <PermissionGate permission="MANAGE_CONFIGURATION" module={form.module}><form
                             action={cloneFormVersionAction.bind(null, form.id)}
                             className="admin-pop-form"
                           ><CsrfField />
@@ -170,14 +173,14 @@ async function VersionsPageAuthenticatedContent() {
                               Motivo
                               <input name="reason" />
                             </label>
-                            <input
+                            <ActorField
                               type="hidden"
                               name="actor"
-                              value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                              value={currentActor()}
                             />
                             <button className="button small primary">Crear borrador</button>
-                          </form>
-                        </details>
+                          </form></PermissionGate>
+                        </details></PermissionGate>
                       </div>
                     </td>
                   </tr>
@@ -248,20 +251,20 @@ async function VersionsPageAuthenticatedContent() {
                   <td>
                     <div className="admin-action-stack">
                       {template.fileName || template.filePath ? (
-                        <a
+                        <PermissionGate permission="DOWNLOAD" module={template.module}><a
                           className="button small"
                           href={`/api/settings/templates/${template.id}/download`}
                         >
                           Descargar
-                        </a>
+                        </a></PermissionGate>
                       ) : null}
 
                       {!template.isActive ? (
-                        <form action={activateTemplateVersionAction.bind(null, template.id)}><CsrfField />
-                          <input
+                        <PermissionGate permission="MANAGE_CONFIGURATION" module={template.module}><form action={activateTemplateVersionAction.bind(null, template.id)}><CsrfField />
+                          <ActorField
                             type="hidden"
                             name="actor"
-                            value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+                            value={currentActor()}
                           />
                           <input
                             type="hidden"
@@ -269,7 +272,7 @@ async function VersionsPageAuthenticatedContent() {
                             value="Activación de plantilla controlada"
                           />
                           <button className="button small primary">Activar</button>
-                        </form>
+                        </form></PermissionGate>
                       ) : (
                         <span className="muted-note">Aplicable</span>
                       )}
@@ -281,9 +284,9 @@ async function VersionsPageAuthenticatedContent() {
           </table>
         </div>
 
-        <details className="admin-create-panel">
+        <PermissionGate permission="MANAGE_CONFIGURATION" anyModule><details className="admin-create-panel">
           <summary className="button">+ Registrar nueva plantilla</summary>
-          <form
+          <PermissionGate permission="MANAGE_CONFIGURATION" anyModule><form
             action={registerTemplateVersionAction}
             className="form-grid admin-template-form"
           ><CsrfField />
@@ -291,9 +294,9 @@ async function VersionsPageAuthenticatedContent() {
               <span>Módulo</span>
               <select name="module" required>
                 {Object.values(QmsRecordType).map((module) => (
-                  <option key={module} value={module}>
+                  <PermissionGate permission="MANAGE_CONFIGURATION" module={module} key={module}><option key={module} value={module}>
                     {moduleLabel(module)}
-                  </option>
+                  </option></PermissionGate>
                 ))}
               </select>
             </label>
@@ -347,17 +350,17 @@ async function VersionsPageAuthenticatedContent() {
               <input name="reason" />
             </label>
 
-            <input
+            <ActorField
               type="hidden"
               name="actor"
-              value={process.env.DEFAULT_ACTOR_NAME || "Usuario demo"}
+              value={currentActor()}
             />
 
             <div className="full">
               <button className="button primary">Registrar como inactiva</button>
             </div>
-          </form>
-        </details>
+          </form></PermissionGate>
+        </details></PermissionGate>
 
         <div className="analytics-note">
           <strong>Importante:</strong> si adjuntas el archivo, la aplicación calcula y
@@ -373,5 +376,5 @@ async function VersionsPageAuthenticatedContent() {
 }
 
 export default async function VersionsPage(...args: Parameters<typeof VersionsPageAuthenticatedContent>) {
-  return authorizedPage("src/app/settings/versions/page.tsx", () => VersionsPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/settings/versions/page.tsx", () => VersionsPageAuthenticatedContent(...args), args);
 }

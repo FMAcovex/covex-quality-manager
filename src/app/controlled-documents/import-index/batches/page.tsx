@@ -9,5 +9,5 @@ async function BatchesPageAuthenticatedContent() {
 }
 
 export default async function BatchesPage(...args: Parameters<typeof BatchesPageAuthenticatedContent>) {
-  return authorizedPage("src/app/controlled-documents/import-index/batches/page.tsx", () => BatchesPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/controlled-documents/import-index/batches/page.tsx", () => BatchesPageAuthenticatedContent(...args), args);
 }

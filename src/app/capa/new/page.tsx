@@ -1,3 +1,5 @@
+import { PermissionGate } from "@/components/permissions";
+import { currentActor } from "@/lib/auth/presentation";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { createCapaAction } from "@/modules/capa/actions";
 import { CapaForm } from "@/modules/capa/components/capa-form";
@@ -46,7 +48,7 @@ async function NewCapaPageAuthenticatedContent({
           plannedExecutionDate: deviationPlan.plannedExecutionDate?.toISOString().slice(0,10) ?? "",
           impact: "",
         }],
-        createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
+        createdByText: currentActor(),
       }
     : complaintPlan
       ? {
@@ -70,7 +72,7 @@ async function NewCapaPageAuthenticatedContent({
             plannedExecutionDate: complaintPlan.plannedExecutionDate?.toISOString().slice(0,10) ?? "",
             impact: "",
           }],
-          createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
+          createdByText: currentActor(),
         }
       : complaint
         ? {
@@ -88,11 +90,11 @@ async function NewCapaPageAuthenticatedContent({
             applicableTo: complaint.reference ?? complaint.affectedScope ?? undefined,
             defectDescription: complaint.description ?? undefined,
             rootCause: complaint.rootCause ?? undefined,
-            createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
+            createdByText: currentActor(),
           }
         : {
           openedAt: new Date().toISOString().slice(0, 10),
-          createdByText: process.env.DEFAULT_ACTOR_NAME || "Usuario demo",
+          createdByText: currentActor(),
         };
 
   return (
@@ -103,7 +105,7 @@ async function NewCapaPageAuthenticatedContent({
       {deviationPlan ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde una propuesta de la desviación {deviationPlan.deviation.qmsRecord.businessCode}.</div> : null}
       {complaintPlan ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde una propuesta de la reclamación {complaintPlan.complaint.qmsRecord.businessCode}.</div> : null}
       {complaint ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando directamente desde la reclamación {complaint.qmsRecord.businessCode}.</div> : null}
-      <CapaForm
+      <PermissionGate permission="CREATE"><CapaForm
         mode="create"
         action={createCapaAction}
         departments={departments}
@@ -111,11 +113,11 @@ async function NewCapaPageAuthenticatedContent({
         fromDeviationPlanId={fromDeviationPlanId}
         fromComplaintPlanId={fromComplaintPlanId}
         fromComplaintId={fromComplaintId}
-      />
+      /></PermissionGate>
     </section>
   );
 }
 
 export default async function NewCapaPage(...args: Parameters<typeof NewCapaPageAuthenticatedContent>) {
-  return authorizedPage("src/app/capa/new/page.tsx", () => NewCapaPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/capa/new/page.tsx", () => NewCapaPageAuthenticatedContent(...args), args);
 }

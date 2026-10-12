@@ -1,4 +1,5 @@
 "use client";
+import { PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 
 
@@ -200,7 +201,7 @@ export function ChangeFollowupForm({
           <span>¿Se cierra el cambio?</span>
           <select name="closeChange" defaultValue={defaults?.closeChange ? "true" : "false"}>
             <option value="false">No</option>
-            <option value="true">Sí</option>
+            <PermissionGate permission="CLOSE"><option value="true">Sí</option></PermissionGate>
           </select>
         </label>
         <label className="field"><span>Próximo seguimiento</span><input type="date" name="nextFollowupDate" defaultValue={dateInput(defaults?.nextFollowupDate)} /></label>

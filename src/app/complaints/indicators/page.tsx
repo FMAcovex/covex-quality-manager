@@ -18,5 +18,5 @@ async function ComplaintIndicatorsPageAuthenticatedContent({searchParams}:{searc
 }
 
 export default async function ComplaintIndicatorsPage(...args: Parameters<typeof ComplaintIndicatorsPageAuthenticatedContent>) {
-  return authorizedPage("src/app/complaints/indicators/page.tsx", () => ComplaintIndicatorsPageAuthenticatedContent(...args));
+  return authorizedPage("src/app/complaints/indicators/page.tsx", () => ComplaintIndicatorsPageAuthenticatedContent(...args), args);
 }

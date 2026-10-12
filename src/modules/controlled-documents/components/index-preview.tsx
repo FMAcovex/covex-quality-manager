@@ -1,4 +1,5 @@
 "use client";
+import { ActorField, usePresentationAccess } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 
 
@@ -9,7 +10,7 @@ import { DocumentLink } from "./document-link";
 import { displayDate } from "../domain";
 export function IndexPreview() {
     const fileRef = useRef<File | null>(null);
-    const [actor, setActor] = useState("");
+    const actor = usePresentationAccess()?.actor ?? "";
     async function saveBatch() {
         if (!fileRef.current || !actor.trim()) { setError("Indica el responsable del lote."); return; }
         setPending(true); setError("");
@@ -57,7 +58,7 @@ export function IndexPreview() {
  <p>Hasta 8 MiB. El archivo no se guarda permanentemente. La previsualización permanece en esta página hasta recargarla o analizar otro archivo.</p>
  {error && <p role="alert">{error}</p>}
  {report && <>
- <div className="inline-form"><label>Responsable del lote<input value={actor} maxLength={200} onChange={e => setActor(e.target.value)}/></label><button disabled={pending} onClick={saveBatch}>Guardar previsualización como lote pendiente</button></div><p>El staging dura 30 días y no conserva el binario XLSX. Las decisiones y resultados confirmados conservan su historial mínimo.</p>
+ <div className="inline-form"><label>Responsable del lote<ActorField maxLength={200}/></label><button disabled={pending} onClick={saveBatch}>Guardar previsualización como lote pendiente</button></div><p>El staging dura 30 días y no conserva el binario XLSX. Las decisiones y resultados confirmados conservan su historial mínimo.</p>
  <h2>Resumen</h2><p>{report.fileName} · {report.interpretedSheets.length} hojas interpretadas de {report.sheetCount}</p><p>SHA-256: <code>{report.sha256}</code> · Referencia temporal: {displayDate(report.asOf)}</p>
  <dl>{([
                 ["Filas analizadas", report.summary.analyzedRows], ["PNT candidatos (formato y clasificación)", report.summary.pntCandidates], ["Códigos únicos", report.summary.uniqueCodes], ["Grupos duplicados", report.summary.duplicateGroups], ["Apariciones adicionales", report.summary.additionalAppearances], ["Grupos con discrepancias", report.summary.discrepancyGroups], ["Grupos con revisiones distintas", report.summary.revisionDiscrepancyGroups], ["Otros documentos", report.summary.otherDocuments], ["Datos incompletos del índice", report.summary.incompleteRows], ["Correspondencia departamental a revisar", report.summary.departmentReviewRows], ["Anulados según índice", report.summary.annulledRows], ["En elaboración", report.summary.inPreparationRows], ["Revisión prevista vencida", report.summary.overdueRows], ["Pendientes de verificación documental", report.summary.pendingVerification], ["Documentos nuevos", report.summary.newDocuments], ["Maestros existentes / revisión no registrada", report.summary.existingDocuments], ["Revisiones ya existentes", report.summary.existingRevisions], ["Conflictos con datos persistidos", report.summary.persistedConflicts], ["No importables sin resolver incidencias", report.summary.notImportable]
