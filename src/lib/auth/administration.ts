@@ -1,12 +1,21 @@
 import { z } from "zod";
 import { prisma } from "../db";
-import { accessModules, permissions, AccessError, identityContext } from "./context";
+import { accessModules, permissions, AccessError, identityContext, currentIdentity, type Principal } from "./context";
 import { assertPermission } from "./policy";
 import { requireCsrf, requireUser } from "./session";
 import { authConfiguration } from "./config";
 import { qmsScope } from "./resources";
 
 const reason = z.string().trim().min(10).max(2000);
+
+async function administrationCommand<T>(name: "administerUser" | "configureRole", input: unknown, actor: Principal, form: FormData | undefined, execute: () => Promise<T>) {
+  const context = currentIdentity();
+  return identityContext.run({ ...context, principal: actor, auditClaims: [...(context?.auditClaims ?? []), { module: "SYSTEM", permission: "MANAGE_USERS", resource: {} }] }, async () => {
+    if (context?.unitTest && process.env.VITEST === "true" && process.env.APP_ENV === "test") return execute();
+    const { actionAuditBoundary } = await import("../audit/action-boundary");
+    return actionAuditBoundary(name, [input, ...(form ? [form] : [])], "SYSTEM", "MANAGE_USERS", execute);
+  });
+}
 export const userChangeSchema = z.object({
   id: z.string().uuid().optional(), objectId: z.string().uuid(), displayName: z.string().trim().min(1).max(200), email: z.string().email().max(254),
   active: z.boolean(), roleIds: z.array(z.string().uuid()).max(6), departmentIds: z.array(z.string().min(1)).max(100),
@@ -29,7 +38,7 @@ export async function administerUser(raw: unknown, form?: FormData) {
   const roles = await prisma.authRole.findMany({ where: { id: { in: input.roleIds } }, select: { id: true } });
   const departments = await prisma.department.findMany({ where: { id: { in: input.departmentIds }, isActive: true }, select: { id: true } });
   if (new Set(input.roleIds).size !== roles.length || new Set(input.departmentIds).size !== departments.length) throw new AccessError(403);
-  return identityContext.run({ principal: actor }, () => prisma.$transaction(async tx => {
+  return administrationCommand("administerUser", input, actor, form, () => prisma.$transaction(async tx => {
     const before = input.id ? await tx.authUser.findUniqueOrThrow({ where: { id: input.id }, include: { roles: true, departments: true, assignments: true } }) : null;
     if (before && (before.tenantId !== config.tenantId || before.objectId !== input.objectId)) throw new AccessError(403, "La identidad estable no se puede cambiar.");
     const user = before
@@ -49,7 +58,7 @@ export async function administerUser(raw: unknown, form?: FormData) {
 export async function configureRole(raw: unknown, form?: FormData) {
   const actor = await requireUser(); await requireCsrf(undefined, form); assertPermission(actor, "SYSTEM", "MANAGE_USERS");
   const input = roleChangeSchema.parse(raw);
-  return prisma.$transaction(async tx => {
+  return administrationCommand("configureRole", input, actor, form, () => prisma.$transaction(async tx => {
     const before = await tx.authRole.findUniqueOrThrow({ where: { id: input.roleId }, include: { permissions: true, users: true } });
     if (before.key === "TECHNICAL_ADMIN" || before.users.some(u => u.userId === actor.id)) throw new AccessError(403, "No puede cambiar su propio rol ni el rol técnico reservado.");
     if (input.grants.some(g => g.permission === "MANAGE_USERS" || (g.module === "SYSTEM" && !["READ", "MANAGE_CONFIGURATION"].includes(g.permission)) || (g.scope === "ASSIGNED" && ["EXPORT", "IMPORT", "MANAGE_CONFIGURATION"].includes(g.permission)))) throw new AccessError(403);
@@ -59,7 +68,7 @@ export async function configureRole(raw: unknown, form?: FormData) {
     await tx.authRole.update({ where: { id: before.id }, data: { qaAcceptedAt: null, qaAcceptedBy: null } });
     await tx.authSession.updateMany({ where: { userId: { in: before.users.map(u => u.userId) }, revokedAt: null }, data: { revokedAt: new Date() } });
     await tx.authAuthorizationChange.create({ data: { actorUserId: actor.id, source: "CORPORATE_SESSION", action: "ROLE_POLICY_PROPOSED", oldValue: JSON.parse(JSON.stringify(before)), newValue: input.grants, reason: input.reason } });
-  });
+  }));
 }
 export async function requireUserAdministration() {
   const user = await requireUser(); assertPermission(user, "SYSTEM", "MANAGE_USERS"); return user;

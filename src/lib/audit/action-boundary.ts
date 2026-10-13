@@ -19,6 +19,7 @@ const operations: Record<string, string> = {
   saveAuditReportAction: "AU06", issueAuditReportAction: "AU06", closeAuditAction: "AU07", registerAuditAttachmentAction: "AU06", storeAuditSignedPdfAction: "AU06",
   masterAction: "PN01", revisionAction: "PN01",
   createReviewThreadAction: "TR01", replyToReviewThreadAction: "TR01", acceptReviewThreadAction: "TR01", resolveReviewThreadAction: "TR01", createCurrentVersionReviewThreadAction: "TR01",
+  administerUser: "TR05", configureRole: "TR05",
 };
 
 export async function actionCommand(name: string, args: unknown[]) {
@@ -33,7 +34,7 @@ export async function actionCommand(name: string, args: unknown[]) {
         fields.push([key, typeof value === "string" ? value : { name: value.name, mimeType: value.type, size: value.size, sha256: createHash("sha256").update(new Uint8Array(await value.arrayBuffer())).digest("hex") }]);
       }
     } else if (typeof arg === "string" || arg === null) fields.push(["resource", arg]);
-    else if (arg && typeof arg === "object" && ("qmsRecordId" in arg || "reviewThreadId" in arg)) {
+    else if (arg && typeof arg === "object" && ("qmsRecordId" in arg || "reviewThreadId" in arg || "objectId" in arg || "roleId" in arg)) {
       const input = arg as Record<string, unknown>;
       requestId ||= String(input._covexAuditRequestId ?? "");
       reason ||= typeof input.reason === "string" ? input.reason.trim() || null : null;

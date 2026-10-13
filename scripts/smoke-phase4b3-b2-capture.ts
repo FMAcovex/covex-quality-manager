@@ -43,6 +43,8 @@ async function main() {
     await owner.$transaction(tx=>assertAuditProtection(tx));
     const department=await owner.department.findFirstOrThrow();
     if (!await owner.department.findUnique({where:{code:"LG-00"}})) await owner.department.create({data:{code:"LG-00",name:"Synthetic returns fixture department"}});
+    if (!await owner.department.findUnique({where:{code:"GC-00"}})) await owner.department.create({data:{code:"GC-00",name:"Synthetic PNT fixture department"}});
+    await owner.authRole.create({data:{key:"B2_CANDIDATE_ROLE_FIXTURE",name:"Synthetic unaccepted policy candidate"}});
     const records: Record<string,{id:string;qmsRecordId:string}>={};
     const definitions=[
       ["DEVIATION","deviation",{}], ["CAPA","capa",{actionType:"CORRECTIVE"}],

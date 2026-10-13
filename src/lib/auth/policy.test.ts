@@ -1,10 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { accessModules, type Principal, type AccessPermission } from "./context";
+import { accessModules, identityContext, type IdentityContext, type Principal, type AccessPermission } from "./context";
+import { canPresent } from "./presentation";
 import { assertPermission } from "./policy";
 import { authConfiguration, isolatedTestEnvironment, safeReturnTo } from "./config";
 const modules = accessModules.filter(m => m !== "SYSTEM");
 const base: Principal = { id: "user", tenantId: "tenant", objectId: "oid", name: "Sintético", email: "test@example.invalid", active: true, authorized: true, roles: ["READER"], grants: [], departmentIds: ["own"], assignments: [] };
 describe("4B1 consulta global y permisos separados en los siete módulos", () => {
+  it("records executed authorization checks without turning capability probes into command requirements", () => {
+    const user: Principal = { ...base, grants: [{ module: "PNT", permission: "EDIT", scope: "ALL" }, { module: "PNT", permission: "PNT_VERIFY", scope: "ALL" }] };
+    const context: IdentityContext = { principal: user, auditClaims: [] };
+    identityContext.run(context, () => {
+      expect(canPresent(user, "PNT", "PNT_VERIFY")).toBe(true);
+      expect(context.auditClaims).toEqual([]);
+      assertPermission(user, "PNT", "EDIT", { id: "synthetic-document" });
+      expect(context.auditClaims).toEqual([{ module: "PNT", permission: "EDIT", resource: { id: "synthetic-document" } }]);
+    });
+  });
   it.each(modules)("%s: consulta global, sin escritura/exportación/cierre implícitos", module => {
     expect(() => assertPermission(base, module, "READ", { id: "foreign", departmentIds: ["other"] })).not.toThrow();
     for (const permission of ["CREATE", "EDIT", "FOLLOWUP", "REVIEW", "CLOSE", "ANNUL", "DOWNLOAD", "EXPORT", "IMPORT", "MANAGE_CONFIGURATION"] as AccessPermission[]) expect(() => assertPermission(base, module, permission, { departmentIds: ["own"] })).toThrow();

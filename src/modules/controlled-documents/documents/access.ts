@@ -8,7 +8,7 @@ export function documentPrincipal(headers: Pick<Headers, "get">, env: Record<str
   if (context && !context.unitTest) {
     assertPermission(context.principal, "PNT", "READ");
     let canWrite = false;
-    try { assertPermission(context.principal, "PNT", "ATTACH_DOCUMENT", context.resource); canWrite = true; } catch { /* Ordinary global consultation grants no documentary write. */ }
+    try { assertPermission(context.principal, "PNT", "ATTACH_DOCUMENT", context.resource, false); canWrite = true; } catch { /* Ordinary global consultation grants no documentary write. */ }
     return { name: context.principal.name, source: "CORPORATE_SESSION", canWrite };
   }
   // Legacy proxy fixtures are retained only in explicit automated unit tests.
@@ -24,4 +24,6 @@ export function documentPrincipal(headers: Pick<Headers, "get">, env: Record<str
 }
 export function requireDocumentWrite(principal: DocumentPrincipal) {
   if (!principal.canWrite) throw new Error("No tiene permiso para incorporar documentos.");
+  const context = currentIdentity();
+  if (principal.source === "CORPORATE_SESSION" && context && !context.unitTest) assertPermission(context.principal, "PNT", "ATTACH_DOCUMENT", context.resource);
 }

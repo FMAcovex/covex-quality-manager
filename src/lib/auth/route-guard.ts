@@ -12,7 +12,7 @@ async function boundedJson(request: Request) {
   finally { reader.releaseLock(); }
   try { return JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch { return null; }
 }
-export async function authorizedRoute<T extends Response>(file: string, method: string, args: unknown[], run: (authenticated: unknown[]) => Promise<T>): Promise<T | Response> {
+async function authorizeAndRunRoute<T extends Response>(file: string, method: string, args: unknown[], run: (authenticated: unknown[]) => Promise<T>): Promise<T | Response> {
   const entry = inventory.routes.find(r => r.file === file && r.method === method);
   if (!entry) return Response.json({ error: "Operación no autorizada." }, { status: 403 });
   if (entry.public) return run(args);
@@ -53,9 +53,25 @@ export async function authorizedRoute<T extends Response>(file: string, method: 
     if (body?.input && typeof body.input === "object") body.input = { ...body.input, actor: user.name };
     const authenticated = [...args];
     if (body) authenticated[0] = new Request(request.url, { method, headers: request.headers, body: JSON.stringify(body) });
-    const response = await identityContext.run({ principal: user, ...(unit ? { unitTest: true } : {}), resource: scope, module: accessModule, createdRecords: new Set<string>() }, () => run(authenticated));
+    const response = await identityContext.run({ principal: user, ...(unit ? { unitTest: true } : {}), ...(context?.testHarness ? { testHarness: true } : {}), auditClaims: context?.auditClaims, resource: scope, module: accessModule, createdRecords: new Set<string>() }, async () => {
+      if (unit) return run(authenticated);
+      const { routeAuditBoundary } = await import("../audit/route-boundary");
+      return routeAuditBoundary(file, method, authenticated[0] as Request, params, accessModule, permission, body, () => run(authenticated));
+    });
     response.headers.set("Cache-Control", "private, no-store");
     return response;
+  } catch (error) {
+    if (error instanceof AccessError) return Response.json({ error: error.message }, { status: error.status, headers: { "Cache-Control": "private, no-store" } });
+    throw error;
+  }
+}
+
+export async function authorizedRoute<T extends Response>(file: string, method: string, args: unknown[], run: (authenticated: unknown[]) => Promise<T>): Promise<T | Response> {
+  const entry = inventory.routes.find(r => r.file === file && r.method === method);
+  if (!entry || entry.public) return authorizeAndRunRoute(file, method, args, run);
+  try {
+    const context = currentIdentity(), principal = await requireUser(args[0] as Request);
+    return await identityContext.run({ ...context, principal, auditClaims: [] }, () => authorizeAndRunRoute(file, method, args, run));
   } catch (error) {
     if (error instanceof AccessError) return Response.json({ error: error.message }, { status: error.status, headers: { "Cache-Control": "private, no-store" } });
     throw error;

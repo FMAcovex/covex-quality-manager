@@ -9,7 +9,7 @@ export function lifecyclePrincipal(headers: Pick<Headers, "get">, env: Record<st
   if (base.source === "CORPORATE_SESSION") {
     const context = currentIdentity()!;
     const capabilities = lifecyclePermissions.filter(capability => {
-      try { assertPermission(context.principal, "PNT", ("PNT_" + capability.replaceAll("-", "_").toUpperCase()) as AccessPermission, context.resource); return true; } catch { return false; }
+      try { assertPermission(context.principal, "PNT", ("PNT_" + capability.replaceAll("-", "_").toUpperCase()) as AccessPermission, context.resource, false); return true; } catch { return false; }
     });
     return { ...base, capabilities };
   }
@@ -20,4 +20,6 @@ export function lifecyclePrincipal(headers: Pick<Headers, "get">, env: Record<st
 }
 export function requireLifecyclePermission(principal: LifecyclePrincipal, permission: LifecyclePermission) {
   if (!principal.name || !principal.capabilities.includes(permission)) throw new Error(`Operación no autorizada: ${permission}.`);
+  const context = currentIdentity();
+  if (principal.source === "CORPORATE_SESSION" && context && !context.unitTest) assertPermission(context.principal, "PNT", ("PNT_" + permission.replaceAll("-", "_").toUpperCase()) as AccessPermission, context.resource);
 }
