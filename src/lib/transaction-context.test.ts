@@ -1,8 +1,24 @@
 import { describe, expect, it } from "vitest";
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { contextualDatabase, withDatabaseTransaction } from "./transaction-context";
+import { contextualDatabase, withDatabaseTransaction, inBusinessTransaction } from "./transaction-context";
 
 describe("server transaction composition", () => {
+  it("explicitly composes native callbacks and refuses weaker outer isolation or arrays", async () => {
+    let opened = 0;
+    const tx = { department: { count: async () => 7 } } as unknown as Prisma.TransactionClient;
+    const db = contextualDatabase({ $transaction: async () => { opened++; } } as unknown as PrismaClient);
+    await inBusinessTransaction(tx, undefined, async () => {
+      expect(await db.$transaction(inner => inner.department.count())).toBe(7);
+      await expect(db.$transaction(inner => inner.department.count(), { isolationLevel: "Serializable" })).rejects.toThrow("isolation");
+      await expect(db.$transaction([])).rejects.toThrow("Array");
+    });
+    await inBusinessTransaction(tx, "Serializable", async () => {
+      expect(await db.$transaction(inner => inner.department.count(), { isolationLevel: "RepeatableRead" })).toBe(7);
+    });
+    expect(opened).toBe(0);
+    await db.$transaction(inner => inner.department.count());
+    expect(opened).toBe(1);
+  });
   it("routes business writes and history together and preserves the outer failure", async () => {
     const committed: string[] = [];
     const db = {

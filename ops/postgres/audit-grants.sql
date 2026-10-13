@@ -11,7 +11,7 @@ DO $$
 DECLARE object_name TEXT; function_id regprocedure;
 BEGIN
   FOR object_name IN SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN (
-    'AuditPolicyRequirement','AuditAdministrationRoot','AuditEventAdditionalTarget','AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditCaptureTablePolicy','AuditCaptureFieldPolicy','AuditOperationEvidence') LOOP
+    'AuditPolicyRequirement','AuditAdministrationRoot','AuditEventAdditionalTarget','AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditCaptureTablePolicy','AuditCaptureFieldPolicy','AuditOperationEvidence','AuditCommandResult') LOOP
     EXECUTE format('REVOKE ALL ON public.%I FROM covex_app',object_name);
     IF object_name NOT IN ('AuditBusinessContext','AuditMutationWitness','AuditRootBinding') THEN EXECUTE format('GRANT SELECT ON public.%I TO covex_app',object_name); END IF;
   END LOOP;
@@ -20,6 +20,9 @@ BEGIN
   END LOOP;
   IF to_regprocedure('public.covex_b2_begin(uuid,uuid,text,text,text,text,text)') IS NOT NULL THEN
     GRANT EXECUTE ON FUNCTION covex_b2_begin(UUID,UUID,TEXT,TEXT,TEXT,TEXT,TEXT) TO covex_app;
+  END IF;
+  IF to_regprocedure('public.covex_b2_command_outcome(jsonb,jsonb)') IS NOT NULL THEN
+    GRANT EXECUTE ON FUNCTION covex_b2_command_outcome(JSONB,JSONB),covex_b2_check_claims(UUID,JSONB) TO covex_app;
   END IF;
 END;
 $$;

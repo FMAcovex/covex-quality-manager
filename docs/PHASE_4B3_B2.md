@@ -2,11 +2,23 @@
 
 Base verificada: main `70d6a1348a93a9dd51d9beb75a32e2014f375ed3`, B1 / #142 integrado. Rama única `feature/phase4b3-b2-qms-audit-integration`; checkout existente, sin worktrees. Referencias: [4B3-A](PHASE_4B3_A.md), [B1](PHASE_4B3_B1.md), [4B2](PHASE_4B2.md), [4B1](PHASE_4B1.md), [DECISIONS](DECISIONS.md) e inventario de autorización 4B1.
 
-**Estado de este corte: motor de captura SQL B2 ensayado e integración de configuración; no entrega B2 completa.** Se conserva el requisito durable. OLD/NEW, testigo independiente, cobertura diferida y 13 acciones reales de configuración se prueban en PostgreSQL aislado. El RPC de esta preparación sigue limitado a bases efímeras; ninguna política corporativa está preparada/activada. Faltan los servicios de los siete módulos, otras operaciones transversales, custodia D05 y regresión integral. No se ha demostrado cobertura completa de las 63 operaciones ni se abre la PR de entrega.
+**Estado de este corte: motor SQL, configuración y alta/edición en borrador mediante las acciones originales de los siete módulos; no entrega B2 completa.** Se conserva el requisito durable. OLD/NEW, testigo independiente, cobertura diferida, 13 acciones reales de configuración y las acciones originales de alta/edición se prueban en PostgreSQL aislado. El RPC sigue limitado a bases efímeras; ninguna política corporativa está preparada/activada. Faltan otros escenarios de negocio, transversales, custodia D05 y regresión integral. No se ha demostrado cobertura completa de las 63 operaciones ni se abre la PR de entrega. El nuevo encargo autoriza terminar B2 y C conjuntamente, en esta rama y una única PR final, tras un checkpoint técnico interno satisfactorio de B2 (D-082).
 
 ## 1. Integración inicial
 
 Se conserva la atomicidad probada de configuración e historial y se añade un sobre SQL a sus 13 acciones cuando existe requisito durable. Una instalación sin requisito mantiene la composición anterior; con requisito no existe fallback si falla captura/protección. Las activaciones incluyen las retiradas anteriores y el historial en una sola transacción. No se cambian ciclos, codificación ni matriz de permisos.
+
+### Continuación desde `3982220`: composición de acciones
+
+La migración aditiva `20261013000400_b2_command_composition` conserva las publicadas. Añade `AuditCommandResult`, inmutable y sin escritura directa del rol operativo, y resultado/permisos transitorios en el contexto privado. Las respuestas exitosas y redirecciones locales se conservan para reintentos; no se almacenan formularios enviados, credenciales ni bytes en esos recibos. Un resultado de error de la acción aborta la transacción, conservando el estado de formulario; una redirección Next se emite después del commit. Las transacciones nativas por callback se componen **solo** en el sobre explícito B2: arrays anidados o aislamiento incompatible se rechazan; Auditorías/PNT usan un sobre SERIALIZABLE. El API ordinario permanece intacto fuera de esa composición.
+
+Las autorizaciones adicionales efectivamente comprobadas por 4B1 se conservan como claims de servidor y se revalidan en PostgreSQL al finalizar y al recuperar un recibo. Se bloquean las filas observadas de autorización, sin nuevos permisos para el rol de aplicación. BEFORE comprueba el ámbito anterior real antes de cambios de departamento/relación, además del ámbito final y el testigo diferido. Sigue pendiente ampliar escenarios y probar las rutas/servicios transversales originales.
+
+Las pruebas focalizadas pasan **183 casos / 13 archivos**, TypeScript sin errores, lint focalizado y **26 pruebas operativas de backup**. El smoke PostgreSQL conserva todas las negativas del motor y B1; añade **11 casos de acciones originales**, incluidos alta/edición en borrador de los siete módulos, consulta sin modificación para lector, identidad, OLD/NEW, FKs a historial, recibos y rollback completo de padres/hijos/versiones/journal ante fallo de historial **o de persistencia de eventos capturados**. Se demuestra conservación íntegra de motivos mayores de500 caracteres: B2 admite hasta20000 sin truncarlos; el piloto B1 conserva su límite500. La consulta mutable de hilos Review se recarga después del commit, sin copiarla completa al recibo. Pasa también la regresión HTTP/OIDC completa4B1 con instancia local y DB nuevas. Estos casos no acreditan todavía todos los ciclos de cada módulo ni el checkpoint completo B2. Evidencias locales: `/tmp/covex-b2-compose-verified-focal.log`, `/tmp/covex-b2-compose-verified-types.log`, `/tmp/covex-b2-compose-backup-tests.log`, `/tmp/covex-b2-compose-pg11.log`, `/tmp/covex-b2-compose-auth.log`.
+
+Defecto previo demostrado por la acción original: actualización de Controles de Cambios ejecutaba `redirect` dentro del `try` de persistencia; el `catch` absorbía la señal y devolvía error después del guardado. Se mueve la navegación fuera del bloque, manteniendo su destino y reglas. Los motivos SQL de rectificación crítica se traducen a error inline sin imprimir diagnósticos. Los formularios hidratados conservan nonce de envío explícito para un mismo contenido y generan uno nuevo al cambiarlo; antes de hidratación el servidor conserva su fallback por petición, sin prometer idempotencia de red de ese caso.
+
+El contrato `audit-contract-b2-integration.json` añade protección del recibo y funciones nuevas; preflight y backup reconocen el release y rechazan pérdida de su tabla cuando la migración consta instalada. Docker/grants candidatos incluyen el nuevo contrato. La prueba Docker/recuperación completa debe repetirse sobre el checkpoint B2 y SHA final; no se hereda como evidencia la del contenedor construido sobre `3982220`.
 
 ## 2. Criterios funcionales confirmados por el proyecto
 
@@ -18,7 +30,7 @@ Formalización del uso previsto, clasificación y riesgo residual, custodia exte
 
 ## 4. Arquitectura inicial aplicada
 
-`transaction-context.ts` conserva la composición AsyncLocalStorage ya probada. `inDatabaseTransaction` vincula el sobre B2 a esa composición y rechaza una transacción independiente anidada. Los tres bloques internos de configuración siguen reutilizando `withDatabaseTransaction`. No se interceptan indiscriminadamente `$transaction`, opciones SERIALIZABLE ni arrays Prisma: los demás servicios requieren adaptación explícita. La captura ocurre en PostgreSQL, independientemente de delegates Prisma.
+`transaction-context.ts` conserva AsyncLocalStorage. `inDatabaseTransaction` vincula el sobre B2 y rechaza una transacción independiente anidada. Los tres bloques internos de configuración reutilizan `withDatabaseTransaction`. La continuación §1 añade `inBusinessTransaction` para componer explícitamente callbacks nativos bajo B2, con control del aislamiento y rechazo de arrays anidados. Fuera del sobre no se intercepta ese API. Los clientes independientes y las importaciones por fila siguen requiriendo adaptación. La captura ocurre en PostgreSQL, independientemente de delegates Prisma.
 
 La migración aditiva `20261013000300_b2_sql_capture` incorpora políticas fijas de tablas/campos, contexto privado, testigos transitorios y raíces administrativas tipadas. Un cambio de relación produce un evento por campo y enlaces a ambas raíces. Los cinco historiales operativos se enlazan mediante `AuditOperationEvidence` con FKs específicas; no se copian sus snapshots al journal ni se emite un evento de negocio por el mero INSERT del historial. Los originales binarios siguen fuera de los eventos.
 
@@ -134,7 +146,7 @@ Defecto previo demostrado y corregido en metadatos del inventario 4B1: `createCa
 
 ## 12. Integración por módulo
 
-Se demuestra captura SQL sobre tablas reales de Desviaciones, CAPA, Cambios, Reclamaciones, Devoluciones, Auditorías y PNT, además de relaciones e hijos. **Es una prueba del motor, no de sus servicios originales:** los writers de esos módulos siguen pendientes de composición, motivos/recibos/errores y pruebas del comportamiento completo. Ninguna de sus filas se marca demostrada por instalar un trigger o invocar un helper.
+La evidencia inicial sobre tablas reales se amplía con **alta y edición en borrador de los siete módulos mediante sus acciones originales** (§1). Se prueban actor, OLD/NEW, historial, recibo y rechazo del lector. Siguen pendientes ciclos operativos completos, documentos y servicios transversales. Ninguna fila de la matriz63 se acredita solo por instalar un trigger o invocar un helper; el catálogo conserva el estado incompleto hasta reconciliar todos sus escenarios.
 
 ## 13. Administración
 

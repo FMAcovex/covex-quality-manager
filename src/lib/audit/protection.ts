@@ -3,11 +3,16 @@ import type { Prisma } from "@prisma/client";
 import b1Contract from "../../../ops/backup/audit-contract.json";
 import b2Contract from "../../../ops/backup/audit-contract-b2.json";
 import captureContract from "../../../ops/backup/audit-contract-b2-capture.json";
+import integrationContract from "../../../ops/backup/audit-contract-b2-integration.json";
 import { AuditEngineError } from "./domain";
 import { canonicalAuditJson } from "./canonical-json";
 
 export async function assertAuditProtection(tx: Prisma.TransactionClient) {
-  const [version] = await tx.$queryRaw<{ present: boolean; capture: boolean; migrations: boolean }[]>`SELECT to_regclass('public."AuditPolicyRequirement"') IS NOT NULL AS present,to_regclass('public."AuditBusinessContext"') IS NOT NULL AS capture,to_regclass('public._prisma_migrations') IS NOT NULL AS migrations`;
+  const [version] = await tx.$queryRaw<{ present: boolean; capture: boolean; composition: boolean; migrations: boolean }[]>`SELECT to_regclass('public."AuditPolicyRequirement"') IS NOT NULL AS present,to_regclass('public."AuditBusinessContext"') IS NOT NULL AS capture,to_regclass('public."AuditCommandResult"') IS NOT NULL AS composition,to_regclass('public._prisma_migrations') IS NOT NULL AS migrations`;
+  if (!version?.composition && version?.migrations) {
+    const [installed] = await tx.$queryRaw<{ count: bigint }[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261013000400_b2_command_composition' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
+    if (installed?.count) throw new AuditEngineError("PROTECTION");
+  }
   if (!version?.present && version?.migrations) {
     const [installed] = await tx.$queryRaw<{ count: bigint }[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261013000200_b2_audit_requirement' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     if (installed?.count) throw new AuditEngineError("PROTECTION");
@@ -16,7 +21,7 @@ export async function assertAuditProtection(tx: Prisma.TransactionClient) {
     const [installed] = await tx.$queryRaw<{ count: bigint }[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261013000300_b2_sql_capture' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     if (installed?.count) throw new AuditEngineError("PROTECTION");
   }
-  const contract = version?.capture ? captureContract : version?.present ? b2Contract : b1Contract;
+  const contract = version?.composition ? integrationContract : version?.capture ? captureContract : version?.present ? b2Contract : b1Contract;
   const guardTables = version?.present ? b2Contract.guardTables : [];
   const tables = await tx.$queryRaw<{ name: string; owner: string }[]>`SELECT c.relname AS name,pg_get_userbyid(c.relowner) AS owner FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=ANY(${contract.tables}::text[])`;
   if (tables.length !== contract.tables.length || new Set(tables.map(t=>t.owner)).size !== 1) throw new AuditEngineError("PROTECTION");
@@ -40,7 +45,7 @@ export async function assertAuditProtection(tx: Prisma.TransactionClient) {
 }
 
 export async function assertAuditApplicationRole(tx: Prisma.TransactionClient) {
-  const protectedTables = captureContract.tables.filter(table => table!=="AuditPilotRecord");
+  const protectedTables = integrationContract.tables.filter(table => table!=="AuditPilotRecord");
   const [result] = await tx.$queryRaw<{ unsafe: boolean }[]>`SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=current_user AND (rolsuper OR rolcreaterole)) OR has_schema_privilege(current_user,'public','CREATE') OR EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=ANY(${protectedTables}::text[]) AND (pg_has_role(current_user,c.relowner,'USAGE') OR has_table_privilege(current_user,c.oid,'DELETE,TRUNCATE') OR has_any_column_privilege(current_user,c.oid,'INSERT') OR has_any_column_privilege(current_user,c.oid,'UPDATE') OR c.relname=ANY(${captureContract.privateTables}::text[]) AND has_any_column_privilege(current_user,c.oid,'SELECT'))) AS unsafe`;
   if (!result || result.unsafe) throw new AuditEngineError("PROTECTION");
 }

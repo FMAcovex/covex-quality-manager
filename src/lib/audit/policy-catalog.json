@@ -92,7 +92,8 @@
     "AuditRootBinding",
     "AuditCaptureTablePolicy",
     "AuditCaptureFieldPolicy",
-    "AuditOperationEvidence"
+    "AuditOperationEvidence",
+    "AuditCommandResult"
   ],
   "secretFields": [
     "tokenHash",

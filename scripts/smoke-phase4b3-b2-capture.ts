@@ -7,7 +7,7 @@ import { identityContext } from "../src/lib/auth/context";
 import { fixtureUsers } from "./auth-fixtures/constants";
 import { auditApplicationFixture, auditedSqlFixture } from "./audit-fixtures/database";
 import { assertAuditProtection } from "../src/lib/audit/protection";
-import contract from "../ops/backup/audit-contract-b2-capture.json";
+import contract from "../ops/backup/audit-contract-b2-integration.json";
 import type { BusinessAuditDescriptor, BusinessAuditCommand } from "../src/lib/audit/business-service";
 
 async function main() {
@@ -39,8 +39,10 @@ async function main() {
     await owner.$executeRawUnsafe(`GRANT INSERT,UPDATE,DELETE ON ${contract.guardTables.map(table=>'"'+table+'"').join(",")} TO "${appRole}"`);
     await owner.$executeRawUnsafe(`GRANT INSERT,UPDATE,DELETE ON "AuthSession","AuthLoginAttempt" TO "${appRole}"`);
     await owner.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_b2_begin(UUID,UUID,TEXT,TEXT,TEXT,TEXT,TEXT) TO "${appRole}"`);
+    await owner.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_b2_command_outcome(JSONB,JSONB),covex_b2_check_claims(UUID,JSONB) TO "${appRole}"`);
     await owner.$transaction(tx=>assertAuditProtection(tx));
     const department=await owner.department.findFirstOrThrow();
+    if (!await owner.department.findUnique({where:{code:"LG-00"}})) await owner.department.create({data:{code:"LG-00",name:"Synthetic returns fixture department"}});
     const records: Record<string,{id:string;qmsRecordId:string}>={};
     const definitions=[
       ["DEVIATION","deviation",{}], ["CAPA","capa",{actionType:"CORRECTIVE"}],
@@ -228,4 +230,4 @@ async function main() {
     await parent.$disconnect();
   }
 }
-main().catch(error=>{console.error("Isolated B2 capture proof failed",error?.name,error?.code,error?.stack?.split("\n").filter((line:string)=>line.trim().startsWith("at ")&&!line.includes("node_modules")).slice(0,4));process.exitCode=1;});
+main().catch(error=>{console.error("Isolated B2 capture proof failed",error?.name,error?.code,error?.cause?.name,error?.cause?.message?.match(/(?:PostgresError|SqlState|ERROR)[^\n]*/g),error?.cause?.code,Object.keys(error?.cause??{}),error?.cause?.meta?.code,error?.cause?.meta?.message?.split("\n").filter((line:string)=>/^ERROR: (permission denied|column |relation |record |invalid|insert |Business|Invalid|Independent|Mandatory)/i.test(line)).slice(0,1),error?.stack?.split("\n").filter((line:string)=>line.trim().startsWith("at ")&&!line.includes("node_modules")).slice(0,4));process.exitCode=1;});

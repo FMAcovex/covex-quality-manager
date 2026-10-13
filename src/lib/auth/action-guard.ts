@@ -32,7 +32,7 @@ async function configurationModule(entry: typeof inventory.actions[number], args
   const createsModuleResource = ["createCatalogAction", "registerTemplateVersionAction"].includes(entry.name);
   return createsModuleResource && raw && ["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT"].includes(String(raw)) ? String(raw) as AccessModule : "SYSTEM";
 }
-export async function authorizedAction<T>(name: string, args: unknown[], run: (authenticated: unknown[]) => Promise<T>): Promise<T> {
+async function authorizeAndRun<T>(name: string, args: unknown[], run: (authenticated: unknown[]) => Promise<T>): Promise<T> {
   const entry = inventory.actions.find(a => a.name === name); if (!entry) throw new AccessError(403);
   const user = await requireUser(), form = args.find(a => a instanceof FormData) as FormData | undefined;
   const csrfInput = args.find(a => a && typeof a === "object" && "_covexCsrf" in a) as { _covexCsrf?: string } | undefined;
@@ -102,5 +102,16 @@ export async function authorizedAction<T>(name: string, args: unknown[], run: (a
     for (const target of candidates) { const other = await qmsScope(String(target)); assertPermission(user, other.module, "EDIT", other.scope); }
   }
   const context = currentIdentity();
-  return identityContext.run({ principal: user, ...(context?.unitTest ? { unitTest: true } : {}), ...(context?.testHarness ? { testHarness: true } : {}), resource: scope, module: accessModule, createdRecords: context?.createdRecords ?? new Set<string>() }, () => run(authenticatedArguments(args, user.name, permission === "CREATE", name)));
+  return identityContext.run({ principal: user, ...(context?.unitTest ? { unitTest: true } : {}), ...(context?.testHarness ? { testHarness: true } : {}), auditClaims: context?.auditClaims, resource: scope, module: accessModule, createdRecords: context?.createdRecords ?? new Set<string>() }, async () => {
+    const execute = () => run(authenticatedArguments(args, user.name, permission === "CREATE", name));
+    if (unit) return execute();
+    const { actionAuditBoundary } = await import("../audit/action-boundary");
+    return actionAuditBoundary(name, args, accessModule, permission, execute);
+  });
+}
+
+export async function authorizedAction<T>(name: string, args: unknown[], run: (authenticated: unknown[]) => Promise<T>): Promise<T> {
+  const context = currentIdentity();
+  const principal = await requireUser();
+  return identityContext.run({ ...context, principal, auditClaims: [] }, () => authorizeAndRun(name, args, run));
 }

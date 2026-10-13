@@ -18,7 +18,7 @@ export function commandDigest(command: PilotCommand) {
   return createHash("sha256").update(JSON.stringify({ policy: "SYNTHETIC_PILOT_V1", reason: command.reason, changes: [...command.changes].sort((a,b) => a.qmsRecordId.localeCompare(b.qmsRecordId)) })).digest("hex");
 }
 export class AuditEngineError extends Error {
-  constructor(public readonly code: "CONTEXT" | "PROTECTION" | "CONFLICT" | "WRITE_FAILED") {
-    super("No se ha confirmado la operación de auditoría."); this.name = "AuditEngineError";
+  constructor(public readonly code: "CONTEXT" | "PROTECTION" | "CONFLICT" | "WRITE_FAILED", options?: ErrorOptions) {
+    super("No se ha confirmado la operación de auditoría.", options); this.name = "AuditEngineError";
   }
 }

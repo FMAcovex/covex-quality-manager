@@ -4,5 +4,5 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   root: fileURLToPath(new URL("../../",import.meta.url)),
   resolve: { alias: { "@": fileURLToPath(new URL("../../src",import.meta.url)) } },
-  test: { environment: "node", include: ["scripts/audit-fixtures/configuration-capture.test.ts"] },
+  test: { environment: "node", fileParallelism: false, include: ["scripts/audit-fixtures/configuration-capture.test.ts", "scripts/audit-fixtures/module-actions-capture.test.ts"] },
 });

@@ -2258,6 +2258,7 @@ model AuditOperation {
   targets AuditOperationTarget[]
   events AuditEvent[]
   evidence AuditOperationEvidence[]
+  commandResult AuditCommandResult?
   context AuditRuntimeContext?
   @@unique([actorUserId, origin, requestId])
   @@index([occurredAt, id])
@@ -2372,6 +2373,16 @@ model AuditBusinessContext {
   accessPermission String
   reason String?
   operationId String? @db.Uuid
+  authorizationClaims Json @default("[]")
+  commandOutcome Json?
+}
+
+model AuditCommandResult {
+  operationId String @id @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  outcome Json
+  authorizationClaims Json
+  recordedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
 }
 
 model AuditMutationWitness {

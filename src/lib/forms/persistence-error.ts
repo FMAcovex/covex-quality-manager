@@ -11,6 +11,11 @@ export function persistenceFormError(
   entityLabel: string,
   options: { duplicateField?: string } = {},
 ): PersistenceFormError {
+  if ((error instanceof Prisma.PrismaClientKnownRequestError || error instanceof Prisma.PrismaClientUnknownRequestError) &&
+      /Reason required for (established critical correction|official version activation\/retirement)/.test(error.message)) {
+    const message = "Indica el motivo de esta modificación crítica antes de guardar.";
+    return { error: message, fieldErrors: [message], fieldIssues: { changeReason: [message] } };
+  }
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
       const message = "La codificación ya está utilizada por otro expediente del mismo tipo.";

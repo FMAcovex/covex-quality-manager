@@ -3,6 +3,12 @@ import { Prisma } from "@prisma/client";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 
 describe("persistenceFormError", () => {
+  it("maps the fixed SQL critical-reason condition without exposing database details", () => {
+    const error = new Prisma.PrismaClientUnknownRequestError("Reason required for established critical correction; private diagnostic", { clientVersion: "test" });
+    const result = persistenceFormError(error, "la desviación");
+    expect(result.fieldIssues?.changeReason).toHaveLength(1);
+    expect(JSON.stringify(result)).not.toContain("private diagnostic");
+  });
   it("maps duplicate keys to an inline form error", () => {
     const error = new Prisma.PrismaClientKnownRequestError("duplicate", {
       code: "P2002",
