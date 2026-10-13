@@ -84,7 +84,15 @@
     "AuditRuntimeContext",
     "AuditAggregateCursor",
     "AuditPilotRecord",
-    "AuditPolicyRequirement"
+    "AuditPolicyRequirement",
+    "AuditAdministrationRoot",
+    "AuditEventAdditionalTarget",
+    "AuditBusinessContext",
+    "AuditMutationWitness",
+    "AuditRootBinding",
+    "AuditCaptureTablePolicy",
+    "AuditCaptureFieldPolicy",
+    "AuditOperationEvidence"
   ],
   "secretFields": [
     "tokenHash",

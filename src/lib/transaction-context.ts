@@ -23,3 +23,10 @@ export async function withDatabaseTransaction<T>(db: PrismaClient, run: (tx: Pri
   if (current) return run(current);
   return db.$transaction(tx => transactions.run(tx, () => run(tx)));
 }
+
+/** Bind an already opened, trusted server transaction to composed writers. */
+export function inDatabaseTransaction<T>(tx: Prisma.TransactionClient, run: () => Promise<T>): Promise<T> {
+  const current = transactions.getStore();
+  if (current && current !== tx) throw new Error("Independent nested database transaction refused");
+  return transactions.run(tx, run);
+}

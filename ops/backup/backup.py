@@ -183,12 +183,17 @@ def inventory(connection, exported_snapshot=None):
 
 
 def audit_contract(connection):
-    """Recognize B1 releases and the additive B2 requirement independently."""
+    """Recognize installed journal releases without inferring activation."""
     b2 = sql(connection, 'SELECT to_regclass(\'public."AuditPolicyRequirement"\') IS NOT NULL;').strip() == b"t"
     if not b2 and sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t":
         installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261013000200_b2_audit_requirement' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
         require(installed == b"0", "audit-protection-unavailable")
-    return json.loads(Path(__file__).with_name("audit-contract-b2.json" if b2 else "audit-contract.json").read_text())
+    capture = sql(connection, 'SELECT to_regclass(\'public."AuditBusinessContext"\') IS NOT NULL;').strip() == b"t"
+    if not capture and sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t":
+        installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261013000300_b2_sql_capture' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
+        require(installed == b"0", "audit-protection-unavailable")
+    filename = "audit-contract-b2-capture.json" if capture else "audit-contract-b2.json" if b2 else "audit-contract.json"
+    return json.loads(Path(__file__).with_name(filename).read_text())
 
 
 def audit_restore_acl(connection):
@@ -207,6 +212,10 @@ def audit_restore_acl(connection):
         revocations = sql(connection, f"SELECT DISTINCT 'REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON TABLE public.'||quote_ident(c.relname)||' FROM '||quote_ident(r.rolname)||';' FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a JOIN pg_roles r ON r.oid=a.grantee WHERE n.nspname='public' AND c.relname IN ({protected}) AND NOT pg_has_role(a.grantee,c.relowner,'USAGE');").decode()
         if revocations.strip():
             sql(connection, revocations)
+        private = ",".join("'" + name + "'" for name in contract.get("privateTables", ["AuditRuntimeContext"]))
+        readers = sql(connection, f"SELECT DISTINCT 'REVOKE SELECT ON TABLE public.'||quote_ident(c.relname)||' FROM '||quote_ident(r.rolname)||';' FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a JOIN pg_roles r ON r.oid=a.grantee WHERE n.nspname='public' AND c.relname IN ({private}) AND NOT pg_has_role(a.grantee,c.relowner,'USAGE') AND a.privilege_type='SELECT';").decode()
+        if readers.strip():
+            sql(connection, readers)
 
 
 def audit_protection(connection):
@@ -228,7 +237,12 @@ def audit_protection(connection):
         return
     require(len(tables) == len(contract["tables"]) and len({row["owner"] for row in tables}) == 1, "audit-protection-unavailable")
     protected = ",".join("'" + name + "'" for name in contract["tables"] if name != "AuditPilotRecord")
-    unsafe = sql(connection, f"SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE n.nspname='public' AND c.relname IN ({protected}) AND a.privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER') AND CASE WHEN a.grantee=0 THEN true ELSE NOT pg_has_role(a.grantee,c.relowner,'USAGE') END;").strip()
+    private = ",".join("'" + name + "'" for name in contract.get("privateTables", ["AuditRuntimeContext"]))
+    # A dump must include the (empty) private tables. The configured snapshot
+    # connection is allowed to read them only when it has no business DML.
+    # Application writers and unrelated readers are not exempted by this rule.
+    readonly_snapshot = "a.grantee=(SELECT oid FROM pg_roles WHERE rolname=session_user) AND NOT EXISTS(SELECT 1 FROM pg_class b JOIN pg_namespace bn ON bn.oid=b.relnamespace WHERE bn.nspname='public' AND b.relkind IN ('r','p') AND (has_table_privilege(session_user,b.oid,'DELETE,TRUNCATE') OR has_any_column_privilege(session_user,b.oid,'INSERT') OR has_any_column_privilege(session_user,b.oid,'UPDATE')))"
+    unsafe = sql(connection, f"SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE n.nspname='public' AND c.relname IN ({protected}) AND (a.privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER') OR c.relname IN ({private}) AND a.privilege_type='SELECT' AND NOT ({readonly_snapshot})) AND CASE WHEN a.grantee=0 THEN true ELSE NOT pg_has_role(a.grantee,c.relowner,'USAGE') END;").strip()
     require(unsafe == b"0", "audit-protection-unavailable")
     functions = json.loads(sql(connection, "SELECT coalesce(json_agg(json_build_object('name',p.proname,'body',p.prosrc,'definer',p.prosecdef,'config',p.proconfig,'owner',pg_get_userbyid(p.proowner),'publicExecute',EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND (p.proname LIKE 'covex_audit_%' OR p.proname LIKE 'covex_b2_%');"))
     require(len(functions) == len(contract["functions"]), "audit-protection-unavailable")
@@ -241,7 +255,13 @@ def audit_protection(connection):
     for expected in contract["triggers"]:
         actual = next((row for row in triggers if row["name"] == expected["name"] and row["table"] == expected["table"]), {})
         require(actual and actual["enabled"] == "O" and actual["function"] == expected["function"] and actual["type"] == expected["type"] and actual["deferred"] == actual["deferrable"] == expected["deferred"], "audit-protection-unavailable")
-    require(sql(connection, 'SELECT count(*) FROM "AuditRuntimeContext";').strip() == b"0", "audit-protection-unavailable")
+    for table in contract.get("privateTables", ["AuditRuntimeContext"]):
+        require(sql(connection, f'SELECT count(*) FROM "{table}";').strip() == b"0", "audit-protection-unavailable")
+    if "capturePolicySha256" in contract:
+        metadata = json.loads(sql(connection, '''SELECT jsonb_agg(jsonb_build_object('entityType',t."entityType",'primaryKey',t."primaryKey",'rootPaths',t."rootPaths",'captureMode',t."captureMode",'fields',
+          (SELECT jsonb_agg(jsonb_build_object('fieldPath',f."fieldPath",'valueType',f."valueType",'transform',f.transform,'critical',f.critical) ORDER BY f."fieldPath") FROM "AuditCaptureFieldPolicy" f WHERE f."entityType"=t."entityType")) ORDER BY t."entityType") FROM "AuditCaptureTablePolicy" t;'''))
+        digest = hashlib.sha256(json.dumps(metadata, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+        require(digest == contract["capturePolicySha256"], "audit-protection-unavailable")
 
 
 def asset_files(value):

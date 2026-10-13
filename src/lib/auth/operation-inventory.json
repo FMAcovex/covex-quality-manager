@@ -619,7 +619,7 @@
       ],
       "module": "SYSTEM",
       "permission": "MANAGE_CONFIGURATION",
-      "resourceArg": 0,
+      "resourceArg": -1,
       "resourceKind": "RECORD",
       "dynamicCreate": false
     },
@@ -645,7 +645,7 @@
       ],
       "module": "SYSTEM",
       "permission": "MANAGE_CONFIGURATION",
-      "resourceArg": -1,
+      "resourceArg": 0,
       "resourceKind": "RECORD",
       "dynamicCreate": false
     },

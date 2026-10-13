@@ -12,5 +12,6 @@ COPY --chmod=0444 ops/backup/backup.py /opt/covex/backup.py
 COPY --chmod=0444 ops/backup/storage.py /opt/covex/storage.py
 COPY --chmod=0444 ops/backup/audit-contract.json /opt/covex/audit-contract.json
 COPY --chmod=0444 ops/backup/audit-contract-b2.json /opt/covex/audit-contract-b2.json
+COPY --chmod=0444 ops/backup/audit-contract-b2-capture.json /opt/covex/audit-contract-b2-capture.json
 USER 10001:10001
 ENTRYPOINT ["python3", "/opt/covex/backup.py"]

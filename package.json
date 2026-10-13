@@ -11,6 +11,8 @@
     "phase4b3-b1:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase4b3-b1-audit.ts",
     "phase4b3-b2:configuration:smoke": "tsx scripts/smoke-phase4b3-b2-configuration.ts",
     "phase4b3-b2:requirement:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase4b3-b2-requirement.ts",
+    "phase4b3-b2:capture:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase4b3-b2-capture.ts",
+    "phase4b3-b2:auth:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase4b3-b2-auth.ts",
     "phase3b2:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase3b2-dashboard.ts && node --conditions=react-server --import tsx scripts/smoke-phase3b2-pnt.ts && node --conditions=react-server --import tsx scripts/smoke-phase3b2-documents.ts",
     "phase3b2:ui:smoke": "tsx scripts/smoke-phase3b2-ui.ts",
     "phase3b1:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase3b1.ts",

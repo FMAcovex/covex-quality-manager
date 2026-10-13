@@ -139,6 +139,14 @@ async function main() {
     await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" DISABLE TRIGGER audit_event_immutable');
     refused(args("backup"));
     await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" ENABLE TRIGGER audit_event_immutable');
+    // Private lease reads are allowed only to this read-only snapshot identity,
+    // never to an application writer or a backup role with accidental DML.
+    await source.$executeRawUnsafe(`GRANT SELECT ON "AuditBusinessContext" TO "${auditRole}"`);
+    refused(args("backup"));
+    await source.$executeRawUnsafe(`REVOKE SELECT ON "AuditBusinessContext" FROM "${auditRole}"`);
+    await source.$executeRawUnsafe(`GRANT UPDATE(name) ON "Department" TO "${role}"`);
+    refused(args("backup"));
+    await source.$executeRawUnsafe(`REVOKE UPDATE(name) ON "Department" FROM "${role}"`);
     renameSync(storageRoot, storageRoot + "-absent");
     refused(args("backup")); assert(!readdirSync(root).includes("storage"), "El almacenamiento ausente no se recrea");
     renameSync(storageRoot + "-absent", storageRoot);

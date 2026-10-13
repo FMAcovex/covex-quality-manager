@@ -5,6 +5,7 @@ import { identityContext, type Principal } from "../../src/lib/auth/context";
 import { fixtureUsers } from "../auth-fixtures/constants";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("server-only", () => ({}));
 const url = new URL(process.env.DATABASE_URL!);
 if (!isolatedTestEnvironment() || !["127.0.0.1", "localhost"].includes(url.hostname) || !/^covex_phase4b1_test_b2_configuration_[a-f0-9]+$/.test(url.pathname.slice(1))) throw Error("Own disposable configuration fixture required");
 const inspector = new PrismaClient({ log: [] });

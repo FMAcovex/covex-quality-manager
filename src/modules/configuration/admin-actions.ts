@@ -7,6 +7,7 @@ import { AlertRuleKind,AlertSeverity,DocumentType,FormVersionStatus,ParameterVal
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { withDatabaseTransaction } from "@/lib/transaction-context";
+import { configurationAuditBoundary } from "@/lib/audit/configuration-boundary";
 import { isAllowedDocumentType } from "@/modules/configuration/admin-domain";
 
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"?v.trim():"";}
@@ -188,53 +189,53 @@ async function updateFormFieldConfigActionAuthenticatedContent(id:string,fd:Form
 }
 
 export async function createDepartmentAction(...args: Parameters<typeof createDepartmentActionAuthenticatedContent>) {
-  return authorizedAction("createDepartmentAction", args, authenticated => withDatabaseTransaction(prisma, () => createDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof createDepartmentActionAuthenticatedContent>)));
+  return authorizedAction("createDepartmentAction", args, authenticated => configurationAuditBoundary("createDepartmentAction", authenticated, () => createDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof createDepartmentActionAuthenticatedContent>)));
 }
 
 export async function updateDepartmentAction(...args: Parameters<typeof updateDepartmentActionAuthenticatedContent>) {
-  return authorizedAction("updateDepartmentAction", args, authenticated => withDatabaseTransaction(prisma, () => updateDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof updateDepartmentActionAuthenticatedContent>)));
+  return authorizedAction("updateDepartmentAction", args, authenticated => configurationAuditBoundary("updateDepartmentAction", authenticated, () => updateDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof updateDepartmentActionAuthenticatedContent>)));
 }
 
 export async function createCatalogAction(...args: Parameters<typeof createCatalogActionAuthenticatedContent>) {
-  return authorizedAction("createCatalogAction", args, authenticated => withDatabaseTransaction(prisma, () => createCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogActionAuthenticatedContent>)));
+  return authorizedAction("createCatalogAction", args, authenticated => configurationAuditBoundary("createCatalogAction", authenticated, () => createCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogActionAuthenticatedContent>)));
 }
 
 export async function updateCatalogAction(...args: Parameters<typeof updateCatalogActionAuthenticatedContent>) {
-  return authorizedAction("updateCatalogAction", args, authenticated => withDatabaseTransaction(prisma, () => updateCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogActionAuthenticatedContent>)));
+  return authorizedAction("updateCatalogAction", args, authenticated => configurationAuditBoundary("updateCatalogAction", authenticated, () => updateCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogActionAuthenticatedContent>)));
 }
 
 export async function createCatalogItemAction(...args: Parameters<typeof createCatalogItemActionAuthenticatedContent>) {
-  return authorizedAction("createCatalogItemAction", args, authenticated => withDatabaseTransaction(prisma, () => createCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogItemActionAuthenticatedContent>)));
+  return authorizedAction("createCatalogItemAction", args, authenticated => configurationAuditBoundary("createCatalogItemAction", authenticated, () => createCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogItemActionAuthenticatedContent>)));
 }
 
 export async function updateCatalogItemAction(...args: Parameters<typeof updateCatalogItemActionAuthenticatedContent>) {
-  return authorizedAction("updateCatalogItemAction", args, authenticated => withDatabaseTransaction(prisma, () => updateCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogItemActionAuthenticatedContent>)));
+  return authorizedAction("updateCatalogItemAction", args, authenticated => configurationAuditBoundary("updateCatalogItemAction", authenticated, () => updateCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogItemActionAuthenticatedContent>)));
 }
 
 export async function cloneFormVersionAction(...args: Parameters<typeof cloneFormVersionActionAuthenticatedContent>) {
-  return authorizedAction("cloneFormVersionAction", args, authenticated => withDatabaseTransaction(prisma, () => cloneFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof cloneFormVersionActionAuthenticatedContent>)));
+  return authorizedAction("cloneFormVersionAction", args, authenticated => configurationAuditBoundary("cloneFormVersionAction", authenticated, () => cloneFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof cloneFormVersionActionAuthenticatedContent>)));
 }
 
 export async function activateFormVersionAction(...args: Parameters<typeof activateFormVersionActionAuthenticatedContent>) {
-  return authorizedAction("activateFormVersionAction", args, authenticated => withDatabaseTransaction(prisma, () => activateFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateFormVersionActionAuthenticatedContent>)));
+  return authorizedAction("activateFormVersionAction", args, authenticated => configurationAuditBoundary("activateFormVersionAction", authenticated, () => activateFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateFormVersionActionAuthenticatedContent>)));
 }
 
 export async function registerTemplateVersionAction(...args: Parameters<typeof registerTemplateVersionActionAuthenticatedContent>) {
-  return authorizedAction("registerTemplateVersionAction", args, authenticated => withDatabaseTransaction(prisma, () => registerTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof registerTemplateVersionActionAuthenticatedContent>)));
+  return authorizedAction("registerTemplateVersionAction", args, authenticated => configurationAuditBoundary("registerTemplateVersionAction", authenticated, () => registerTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof registerTemplateVersionActionAuthenticatedContent>)));
 }
 
 export async function activateTemplateVersionAction(...args: Parameters<typeof activateTemplateVersionActionAuthenticatedContent>) {
-  return authorizedAction("activateTemplateVersionAction", args, authenticated => withDatabaseTransaction(prisma, () => activateTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateTemplateVersionActionAuthenticatedContent>)));
+  return authorizedAction("activateTemplateVersionAction", args, authenticated => configurationAuditBoundary("activateTemplateVersionAction", authenticated, () => activateTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateTemplateVersionActionAuthenticatedContent>)));
 }
 
 export async function updateParameterAction(...args: Parameters<typeof updateParameterActionAuthenticatedContent>) {
-  return authorizedAction("updateParameterAction", args, authenticated => withDatabaseTransaction(prisma, () => updateParameterActionAuthenticatedContent(...authenticated as Parameters<typeof updateParameterActionAuthenticatedContent>)));
+  return authorizedAction("updateParameterAction", args, authenticated => configurationAuditBoundary("updateParameterAction", authenticated, () => updateParameterActionAuthenticatedContent(...authenticated as Parameters<typeof updateParameterActionAuthenticatedContent>)));
 }
 
 export async function updateAlertRuleAction(...args: Parameters<typeof updateAlertRuleActionAuthenticatedContent>) {
-  return authorizedAction("updateAlertRuleAction", args, authenticated => withDatabaseTransaction(prisma, () => updateAlertRuleActionAuthenticatedContent(...authenticated as Parameters<typeof updateAlertRuleActionAuthenticatedContent>)));
+  return authorizedAction("updateAlertRuleAction", args, authenticated => configurationAuditBoundary("updateAlertRuleAction", authenticated, () => updateAlertRuleActionAuthenticatedContent(...authenticated as Parameters<typeof updateAlertRuleActionAuthenticatedContent>)));
 }
 
 export async function updateFormFieldConfigAction(...args: Parameters<typeof updateFormFieldConfigActionAuthenticatedContent>) {
-  return authorizedAction("updateFormFieldConfigAction", args, authenticated => withDatabaseTransaction(prisma, () => updateFormFieldConfigActionAuthenticatedContent(...authenticated as Parameters<typeof updateFormFieldConfigActionAuthenticatedContent>)));
+  return authorizedAction("updateFormFieldConfigAction", args, authenticated => configurationAuditBoundary("updateFormFieldConfigAction", authenticated, () => updateFormFieldConfigActionAuthenticatedContent(...authenticated as Parameters<typeof updateFormFieldConfigActionAuthenticatedContent>)));
 }

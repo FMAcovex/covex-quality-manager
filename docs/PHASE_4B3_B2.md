@@ -2,11 +2,11 @@
 
 Base verificada: main `70d6a1348a93a9dd51d9beb75a32e2014f375ed3`, B1 / #142 integrado. Rama única `feature/phase4b3-b2-qms-audit-integration`; checkout existente, sin worktrees. Referencias: [4B3-A](PHASE_4B3_A.md), [B1](PHASE_4B3_B1.md), [4B2](PHASE_4B2.md), [4B1](PHASE_4B1.md), [DECISIONS](DECISIONS.md) e inventario de autorización 4B1.
 
-**Estado de este corte: preparación, requisito durable e integración inicial; no entrega B2 completa.** Hay guardas de denegación para uso requerido sin política preparada, pero todavía no captura SQL B2 ni política activada. No se ha demostrado cobertura de las 63 operaciones. No abrir la PR de entrega hasta cumplir los criterios solicitados y comprobar CI integral sobre su SHA final. Los commits internos no implican aprobación productiva.
+**Estado de este corte: motor de captura SQL B2 ensayado e integración de configuración; no entrega B2 completa.** Se conserva el requisito durable. OLD/NEW, testigo independiente, cobertura diferida y 13 acciones reales de configuración se prueban en PostgreSQL aislado. El RPC de esta preparación sigue limitado a bases efímeras; ninguna política corporativa está preparada/activada. Faltan los servicios de los siete módulos, otras operaciones transversales, custodia D05 y regresión integral. No se ha demostrado cobertura completa de las 63 operaciones ni se abre la PR de entrega.
 
 ## 1. Integración inicial
 
-Se reconcilia el inventario estático con la base integrada y se corrige la separación entre modificaciones de configuración e historial. Las acciones de configuración utilizan una sola transacción, incluidas activaciones que retiran otras versiones; los helpers internos reutilizan la transacción. No se cambian estados, reglas de validación, codificación, permisos ni interpretación GMP de formularios.
+Se conserva la atomicidad probada de configuración e historial y se añade un sobre SQL a sus 13 acciones cuando existe requisito durable. Una instalación sin requisito mantiene la composición anterior; con requisito no existe fallback si falla captura/protección. Las activaciones incluyen las retiradas anteriores y el historial en una sola transacción. No se cambian ciclos, codificación ni matriz de permisos.
 
 ## 2. Criterios funcionales confirmados por el proyecto
 
@@ -18,7 +18,9 @@ Formalización del uso previsto, clasificación y riesgo residual, custodia exte
 
 ## 4. Arquitectura inicial aplicada
 
-`transaction-context.ts` proporciona composición exclusiva del servidor mediante AsyncLocalStorage. `db.ts` conserva el cliente y extensión de autoría 4B1; durante la composición dirige delegates/SQL a la transacción existente. Fuera del contexto conserva el cliente original. El contexto no procede de FormData ni headers y no concede permisos. `withDatabaseTransaction` reutiliza una transacción ya abierta; los tres bloques internos de configuración se adaptan expresamente para evitar commits independientes. No es todavía el motor de audit trail B2 ni sustituye triggers.
+`transaction-context.ts` conserva la composición AsyncLocalStorage ya probada. `inDatabaseTransaction` vincula el sobre B2 a esa composición y rechaza una transacción independiente anidada. Los tres bloques internos de configuración siguen reutilizando `withDatabaseTransaction`. No se interceptan indiscriminadamente `$transaction`, opciones SERIALIZABLE ni arrays Prisma: los demás servicios requieren adaptación explícita. La captura ocurre en PostgreSQL, independientemente de delegates Prisma.
+
+La migración aditiva `20261013000300_b2_sql_capture` incorpora políticas fijas de tablas/campos, contexto privado, testigos transitorios y raíces administrativas tipadas. Un cambio de relación produce un evento por campo y enlaces a ambas raíces. Los cinco historiales operativos se enlazan mediante `AuditOperationEvidence` con FKs específicas; no se copian sus snapshots al journal ni se emite un evento de negocio por el mero INSERT del historial. Los originales binarios siguen fuera de los eventos.
 
 ## 5. Inventario y matriz de operaciones
 
@@ -28,7 +30,7 @@ Formalización del uso previsto, clasificación y riesgo residual, custodia exte
 
 `scripts/audit-policy-catalog.ts` reconcilia los 63 IDs y W01–W22 de A con fuentes/escritores reales. `policy-catalog.json` contiene candidatos y criticidad **propuesta**, no campos aprobados ni catálogo SQL activo. Los campos candidatos se normalizan por modelo; bytes, campos de secretos y modelos de sesión/login/journal quedan fuera. Los índices de writers referencian el inventario versionado. Cada fila mantiene `NOT_DEMONSTRATED`, campos auditados/captura/evidencias vacíos hasta su integración y prueba real.
 
-Hay 58 filas de escritura de negocio, dos de canal técnico separado (PN07/TR06), una de mantenimiento dependiente de IT (TR08), una de consulta sin nueva emisión (PN08) y una diferida a C (TR09). Clasificar una fila no demuestra su cobertura. La matriz individual sigue a continuación.
+Hay 58 filas de escritura de negocio, dos de canal técnico separado (PN07/TR06), una de mantenimiento dependiente de IT (TR08), una de consulta sin nueva emisión (PN08) y una diferida a C (TR09). El inventario actual mantiene279 llamadas/49 archivos, 50 candidatos SQL y seis clientes independientes. Las políticas SQL compiladas no sustituyen la demostración por writer/operación. La matriz continúa con `NOT_DEMONSTRATED` hasta completar sus escenarios y dependencias, aunque configuración ya tiene pruebas parciales reales.
 
 | ID | Operación de referencia | Writers candidatos | Captura SQL B2 / prueba |
 | --- | --- | --- | --- |
@@ -87,9 +89,9 @@ Hay 58 filas de escritura de negocio, dos de canal técnico separado (PN07/TR06)
 | PN07 | Caducidad de staging / borrado pendiente desde lectura | W08, W11 | TECHNICAL_SEPARATE_STREAM; no demostrada |
 | PN08 | Descarga de objeto histórico | W08, W10 | READ_NO_BUSINESS_EVENT; no demostrada |
 | TR01 | Review: alta, respuesta, aceptación/resolución | W13 | BUSINESS_WRITE; no demostrada |
-| TR02 | Catálogos/departamentos/parámetros/alertas | W17 | BUSINESS_WRITE; no demostrada |
-| TR03 | FormVersion/FormFieldConfig: clonar/editar/activar/retirar | W17 | BUSINESS_WRITE; no demostrada |
-| TR04 | Plantillas: registro/instalación/activación/retirada | W17, W21 | BUSINESS_WRITE; no demostrada |
+| TR02 | Catálogos/departamentos/parámetros/alertas | W17 | BUSINESS_WRITE; acciones reales probadas, matriz completa pendiente |
+| TR03 | FormVersion/FormFieldConfig: clonar/editar/activar/retirar | W17 | BUSINESS_WRITE; clonación/campos/activación y retiradas probadas, matriz completa pendiente |
+| TR04 | Plantillas: registro/instalación/activación/retirada | W17, W21 | BUSINESS_WRITE; registro/activación probados; scripts/custodia pendientes |
 | TR05 | Admisión/baja/roles/ámbitos/política y aceptación administrativa existente | W18 | BUSINESS_WRITE; no demostrada |
 | TR06 | Login/logout/denegaciones/caducidad | W19 | TECHNICAL_SEPARATE_STREAM; no demostrada |
 | TR07 | Importar históricos / backfill controlado | W20 | BUSINESS_WRITE; no demostrada |
@@ -98,19 +100,19 @@ Hay 58 filas de escritura de negocio, dos de canal técnico separado (PN07/TR06)
 
 ## 6. Motivos
 
-Pendiente de integración: aplicar D03 por cambio real/estado, distinguir primera incorporación de rectificación y mantener un motivo por guardado. No añadir textos genéricos ni hacer obligatorio el motivo de todos los borradores, seguimientos o cambios administrativos. La clasificación de campos deberá contrastarse con los modelos y reglas actuales antes de programar exigencias.
+La preparación SQL distingue primera incorporación de contenido crítico, rectificación de contenido establecido y borradores. Se prueba investigación de Desviación: primera incorporación sin motivo, corrección posterior rechazada sin motivo y aceptada con justificación; borrador sin obligación adicional. Configuración conserva su campo `reason`: cambios administrativos de etiquetas/formato/alertas no añaden obligación genérica; activación/retirada oficial y cambio del parámetro existente `ALLOW_CLOSED_RECORD_EDIT` exigen motivo. La política completa de los demás campos, decisiones, borrados/recreación de hijos equivalentes y motivos/errores inline de módulos sigue pendiente. No hay motivos autogenerados nuevos.
 
 ## 7. Borradores
 
-La cobertura futura incluye creación y edición de borradores con sus OLD/NEW reales, sin añadir motivo salvo regla vigente. El trabajo inicial no modifica formularios ni ciclos de borrador/apertura.
+Se prueba creación de expediente/niños anidados y edición de contenido previamente persistido en borrador sin motivo adicional. Los escenarios completos de borrador/apertura y sus escritores originales todavía necesitan integración; no se modifican sus reglas funcionales.
 
 ## 8. Custodia híbrida
 
-Pendiente de integración: conservar PDFs originales/supersesión para todos los módulos donde `RecordVersionDocument.upsert.update` reemplaza bytes. Preservar PNT y programas/informes oficiales existentes; no crear una emisión oficial por cada descarga de Word de trabajo ni presentar regeneraciones como originales perdidos.
+Pendiente de integración: conservar PDFs originales/supersesión para todos los módulos donde `RecordVersionDocument.upsert.update` reemplaza bytes. Preservar PNT y programas/informes existentes y la distinción Word de trabajo/emisión formal. En contextos de ensayo requeridos se valida checksum contra bytes reales y se bloquea sobrescribir un original hasta disponer de custodia D05; una instalación sin requisito no cambia el comportamiento anterior. Esta denegación provisional no se presenta como custodia terminada. No se regeneran originales perdidos ni se reconstruyen históricos.
 
 ## 9. Modelos y migraciones
 
-La migración aditiva `20261013000200_b2_audit_requirement` añade `AuditPolicyRequirement`: versión fija, referencia de requisito, principal SQL observado y fecha PostgreSQL. **No inserta ninguna fila ni aprueba/activa una política.** No modifica migraciones anteriores. Política completa, activación y custodia documental siguen pendientes. Solo se aplica a bases efímeras de ensayo, nunca a la habitual/corporativa.
+Se conserva intacta `20261013000200_b2_audit_requirement`. La siguiente migración aditiva añade siete objetos de captura/correlación y enlaces tipados a evidencias operativas, manteniendo las anteriores. `AuditOperation` admite motivo NULL para D03, schemaVersion2 para B2 y la identidad del módulo/permiso seleccionado; B1 conserva schemaVersion1 y su motivo obligatorio. El cursor incorpora una FK administrativa con CHECK excluyente. **No se inserta aprobación, requisito ni activación por instalar.** Solo se migra en bases efímeras propias.
 
 ## 10. PostgreSQL
 
@@ -118,19 +120,25 @@ La captura/cobertura diferida B1 conserva su piloto aislado. La preparación B2 
 
 Los perfiles Entra de usuarios aún no admitidos y refrescos sin cambio de autorización siguen siendo técnicos; sesiones/intentos no están en esta política. Un marcador PNT ERROR solo admite la categoría reducida existente, sin payload adicional. En bases sintéticas, el historial del piloto B1 exige su lease/operación/raíz reales, no basta el nombre del campo. No se inventan eventos GMP para esos controles.
 
-El contrato de preparación contiene siete tablas protegidas, doce funciones y145 triggers esperados, incluyendo los B1. Se comprueban body/search_path/propietarios/PUBLIC y las guardas nuevas sin interferir con triggers PNT/Auditorías existentes. **Denegar no equivale a capturar OLD/NEW:** faltan contexto, raíces administrativas, captura, motivos, evidencias y cobertura diferida B2. El helper transaccional inicial tampoco acredita esa cobertura.
+El contrato anterior B1 y el de requisito B2 siguen disponibles. `audit-contract-b2-capture.json` añade el contrato de captura: **15 tablas protegidas, 26 funciones y290 triggers**, con hash de políticas/campos además de body/search_path/owner/PUBLIC/tipo/diferimiento. Los roles operativos tampoco leen las leases privadas.
+
+BEFORE guarda identidad/raíces y un testigo independiente; AFTER captura OLD/NEW reales y otro AFTER calcula la expectativa. Al commit se cotejan exactamente campos, valores, entidades y raíces de cada mutación: omitir captura o testigo, falsear OLD o perder contexto revierte todo. Los valores DATE/INSTANT/JSON/enteros conservan tipo; snapshots/procedencia JSON se referencian por hash, bytes/secretos no se copian. El contexto se elimina al commit y se exige vacío en backup. Captura sin cambio relevante no crea operación/secuencia; historial operativo de noop se conserva sin un falso evento de negocio.
+
+`covex_b2_begin` continúa limitado a `covex_phase4b1_test_*`: no constituye activación corporativa. La guarda previa mantiene su denegación en bases corporativas requeridas. No hay flag de aplicación/HTTP/GUC que la desactive.
 
 ## 11. Identidad y autorización
 
-Entra, sesión, roles, matriz, consulta global y guardas 4B1 permanecen intactos. La prueba inicial de configuración usa sesiones reales del proveedor sintético y las acciones autorizadas; el actor manipulado del formulario no sustituye al UUID/nombre autenticado. Pendiente: revalidación concurrente de autorizaciones dentro del sobre B2 y su prueba negativa específica.
+Entra, sesiones, roles y matriz no cambian. El actor procede de `requireUser` y del perfil admitido observado por PostgreSQL; no se toma de DTO/FormData. Las pruebas usan sesiones del proveedor sintético y tres deberes DB separados. Un usuario de consulta mantiene lectura global y no ejecuta escrituras. Se demuestra que la revocación de EDIT, confirmada por otra transacción administrativa mientras una escritura está pendiente, provoca rollback al commit. La integración debe todavía enumerar/revalidar todos los permisos adicionales de cada operación (cierre/anulación/orígenes) y resolver los importadores SERIALIZABLE sin depender de snapshots obsoletos.
+
+Defecto previo demostrado y corregido en metadatos del inventario 4B1: `createCatalogAction.resourceArg` era0 y trataba el FormData como ID; pasa a-1. `createCatalogItemAction.resourceArg` era-1 y omitía el catálogo padre; pasa a0. Módulo, permiso, matriz y reglas del guard no cambian. Las acciones reales y la regresión 4B1 verifican esta corrección; el registro de plantillas ya tenía el índice correcto.
 
 ## 12. Integración por módulo
 
-Desviaciones, CAPA, Cambios, Reclamaciones, Devoluciones, Auditorías y PNT: todavía pendientes de captura B2. Se conservarán reglas específicas, historial, snapshots y versiones. Los candidatos por operación/tablas/servicio están en la matriz; ninguna fila se marca demostrada por invocar un helper.
+Se demuestra captura SQL sobre tablas reales de Desviaciones, CAPA, Cambios, Reclamaciones, Devoluciones, Auditorías y PNT, además de relaciones e hijos. **Es una prueba del motor, no de sus servicios originales:** los writers de esos módulos siguen pendientes de composición, motivos/recibos/errores y pruebas del comportamiento completo. Ninguna de sus filas se marca demostrada por instalar un trigger o invocar un helper.
 
 ## 13. Administración
 
-Corregida la atomicidad de configuración: todos los cambios y `ConfigurationChange` comparten transacción, incluida lectura anterior y retirada simultánea de versiones. Prueba PostgreSQL fuerza un fallo del INSERT de historial y coteja exactamente departamento/fechas/estados de todas las versiones anteriores. Captura B2, motivos según clasificación y autorización administrativa concurrente siguen pendientes.
+Los 13 writers W17 están compuestos con el sobre SQL y se ejercitan desde sus acciones autorizadas originales: departamentos, catálogos/hijos, clonación/edición/activación de formularios, registro/activación de plantillas, parámetros y alertas. Se comprueban actor, OLD/NEW, FKs a `ConfigurationChange`, rollback de historial y noop sin evento nuevo. Los formularios de settings incluyen UUID de petición en el HTML inicial; un reintento con la misma clave/contenido devuelve el recibo sin duplicar historial. La configuración sin requisito conserva la prueba PostgreSQL anterior. CLI de instalación y administración de usuarios aún requieren integración propia.
 
 ## 14. Importaciones e históricos
 
@@ -138,15 +146,15 @@ Identificado el cliente Prisma independiente de importación PNT y la caducidad 
 
 ## 15. Negativas ejecutadas en este corte
 
-Pruebas del analizador detectan nested/bulk, SQL tagged y cliente independiente sin publicar literales. El contexto transaccional verifica rollback y aislamiento entre solicitudes concurrentes. PostgreSQL real verifica fallo de historial tras cambio de departamento y tras activación/retirada multi-versión: datos e historial intactos. **No se han ejecutado todavía las 15 negativas de captura B2 solicitadas.**
+El smoke de captura prueba consulta sin permiso de edición, SQL/cliente independiente sin lease, GUC falso, motivo ausente para rectificación, captura omitida, testigo omitido, OLD falseado, fallo tras escritura padre/niño, ambos ámbitos de una relación, revocación concurrente, petición repetida con contenido/permiso diferente y checksum binario falso. Se cotejan filas, operaciones, eventos, targets y cursores tras rollback. No se afirma haber completado las 15 negativas sobre todos los writers: supersesión D05, servicios/rutas directas de los módulos, restauración de eventos B2 y otros escenarios siguen pendientes.
 
 ## 16. Concurrencia e idempotencia
 
-Se prueba aislamiento de contextos concurrentes y reutilización de transacción; no se afirma resolución B2 completa de locks, before autoritativo, CAS, reintentos postcommit y revocación concurrente. Las pruebas B1 siguen operativas y no se modifican para hacerlas pasar.
+Se prueban contextos separados, cadena OLD/NEW de tres writers simultáneos, secuencias continuas, retry postcommit sin callback repetido, conflicto de digest/permiso y revocación concurrente de grant. Los locks de filas/cursores serializan esa cadena; operaciones multirraíz pueden requerir tratamiento explícito de deadlock y orden de locks en los adapters. Recibos tipados de formularios/redirects/documentos y CAS de servicios originales siguen pendientes. El piloto B1 y sus pruebas no se reducen.
 
 ## 17. Recuperación 4B2
 
-Se amplía el contrato de backup/restore para reconocer tanto B1 como la preparación B2. Ausencia de la tabla del requisito con migración aplicada, función alterada, EXECUTE PUBLIC o guarda deshabilitada impiden declarar protección válida. `--no-acl` exige revocar también PUBLIC en las funciones nuevas antes de validar el destino; la imagen incluye ambos contratos. No se alteran cifrado, almacenamiento aprobado ni inventario de bytes. **Recuperación4B2 de esta preparación verificada sobreb674607**: dump/restore real, contratos nuevos íntegros, journal B1 sin historia inventada y siguiente secuencia, fuente/almacenamiento original indisponibles, protección debilitada rechazada y sesiones recuperadas revocadas. Recuperación de captura/custodia B2 completa sigue pendiente y no se presenta como realizada.
+Backup/restore reconocen B1, requisito B2 y fundación de captura por objetos/migraciones verificables. El contrato nuevo también coteja políticas y ausencia de filas privadas; revoca SELECT indebido de leases tras `--no-acl`. El rol que ejecuta el snapshot puede leer esas tablas vacías solo si carece de DML en todas las tablas públicas; aplicación y terceros no reciben esa excepción. El smoke comprueba negativas al conceder SELECT de lease a la app y al conceder UPDATE de columna al backup, además del positivo read-only. La imagen incorpora el tercer contrato. Se conservan cifrado, almacenamiento aprobado, cuarentena y revocación de sesiones. La recuperación 4B2 comprueba instalación/esquema/contrato completo y journal B1; **todavía falta enriquecer su dataset con operaciones/eventos/enlaces y originales/supersesiones B2**, sin presentar la prueba actual como recuperación de B2 terminada.
 
 ## 18. Pruebas y CI
 
@@ -156,10 +164,16 @@ Focalizadas iniciales: inventario, matriz y contexto; tipos/lint afectados; smok
 
 Imagen `covex4b3-backup:b2` construida y prueba Docker de almacenamiento aprobada: UID10001, montaje ficticio válido y negativas de ausencia/desmontaje/sustitución correctas. No se despliega ni se provisiona almacenamiento corporativo. El checkout queda en la misma rama para continuar captura SQL, integración de módulos, custodia, negativas pendientes y regresión final.
 
+Evidencia del motor/W17 actual: `phase4b3-b2:capture:smoke` — PostgreSQL16, propietario/migrador/aplicación separados, siete tablas de módulo, bulk/niños/cascade, tipos nativos incluyendo arrays, noops sujetos a ámbito, concurrencia y negativas; dos tests PostgreSQL adicionales recorren las 13 acciones originales de configuración. Suite unitaria711 tests/101 archivos; focalizada audit/auth/context175 tests/10 archivos; tipos y Prisma validate correctos, lint sin errores (tres avisos previos). Python backup26 tests y runtime13 conservados. B1/requisito/atomicidad legacy B2 y recuperación4B2 pasan.
+
+`phase4b3-b2:auth:smoke` ejecuta íntegramente el smoke HTTP/OIDC4B1 sobre otra base propia y una app Next actual temporal en loopback, con proveedor sintético firmado. El runtime temporal copia fuentes del checkout, sin Git checkout/worktree ni `.env`; mantiene intacto el standalone existente y elimina procesos/directorio/base al terminar. Verifica siete módulos, lectura global, ámbitos, revocación, CSRF y snapshots. No utiliza la base habitual ni un proveedor corporativo. No se ejecutan quality/CI final ni QMS final gate B2 hasta completar el alcance restante.
+
+La imagen actual `covex4b3-backup:b2-capture` se construyó (`3c06e7018163b3e9752dd4769c90a10885deee9a0715d29cf7f3c7199f1f46e1`) y supera el smoke Docker de almacenamiento con UID10001. El primer intento no pudo terminar con el disco lleno; después de liberar solo caché de compilación y retirar la imagen B2 de ensayo anterior se repitió con éxito. Se conservaron contenedores PostgreSQL, volúmenes y datos. La imagen B1 sigue disponible y no se desplegó ninguna.
+
 ## 19. Riesgos y límites
 
-La matriz es inventario inicial; faltan política/captura/evidencias, custodia, cobertura de writers dinámicos/SQL/scripts y prueba completa de permisos concurrentes. El alcance del proyecto está autorizado, pero aceptación GMP/IT y riesgo privilegiado continúan separados. No se inventan credenciales, rutas corporativas, identidades técnicas ni checkpoints. No se declara la aplicación validada o el audit trail B2 operativo.
+El motor SQL y W17 tienen evidencia parcial real; la matriz completa sigue abierta. Faltan composición de los siete módulos, review/administración/importaciones/scripts, todos los permisos condicionados, motivos y recibos completos, custodia D05, canal técnico separado y dataset de recuperación B2. No hay protección criptográfica frente a DBA ni aceptación GMP/IT. No se inventan rutas, identidades técnicas, aprobaciones, originales o checkpoints.
 
 ## 20. Activación y C
 
-Implementado el requisito durable y verificable; pendientes preparación completa, referencias de aceptación QA/DT/IT y activación. Instalación, arranque o merge no activan una política. Una vez registrado el requisito, las guardas deniegan escrituras y ningún flag HTTP/GUC lo desactiva silenciosamente. `auditPolicyState` informa infraestructura/requisito y mantiene prepared/activated/corporateUseAuthorized enfalse: no afirma una aprobación inexistente. Registrar un requisito no es una aprobación GMP ni una firma. Pruebas aisladas/B1 se conservan. C no se implementa; la PR final exige cobertura real, custodia/recuperación y CI integral demostradas.
+Implementado el requisito durable y verificable; pendientes preparación completa, referencias de aceptación QA/DT/IT y activación. Instalación, arranque o merge no activan una política. Una vez registrado el requisito en una base corporativa, las guardas deniegan escrituras y ningún flag HTTP/GUC lo desactiva silenciosamente. El RPC de captura de esta fundación solo admite bases efímeras de integración; no es una ruta de activación productiva. `auditPolicyState` mantiene prepared/activated/corporateUseAuthorized enfalse. Registrar un requisito no es una aprobación GMP ni una firma. Pruebas aisladas/B1 se conservan. C no se implementa; la PR final exige cobertura real, custodia/recuperación y CI integral demostradas.
