@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { DocumentType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { retainSignedOriginal } from "@/lib/qms/signed-custody-service";
 import { validateSignedPdfMetadata, safeSignedPdfFileName } from "@/lib/qms/signed-version-document";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { auditReportInclude, lockReportAudit, auditReportEvent, readAuditSnapshot, snapshotAudit } from "../report-service";
@@ -64,7 +65,9 @@ export async function storeAuditSignedPdf(auditId: string, versionId: string, fi
     const version=await tx.qmsRecordVersion.findFirst({where:{id:versionId,qmsRecordId:a.qmsRecordId}});
     if(!version)throw new Error("La versión no pertenece a esta auditoría.");
     if(await tx.recordVersionDocument.findUnique({where:{recordVersionId_kind:{recordVersionId:versionId,kind:'SIGNED_PDF'}}}))throw new Error("Esta versión ya conserva un PDF firmado; no se sobrescribe. Emite una revisión formal si procede.");
-    const d=await tx.recordVersionDocument.create({data:{recordVersionId:versionId,kind:'SIGNED_PDF',fileName:safeSignedPdfFileName(file.name),mimeType:'application/pdf',fileData:bytes,fileSize:file.size,checksum:digest(bytes),uploadedByText:actor}});
+    const fileName=safeSignedPdfFileName(file.name);
+    const custody=await retainSignedOriginal(tx,{recordVersionId:versionId,kind:'SIGNED_PDF',bytes,fileName,actor,expectedChecksum:null,replacementReason:''});
+    const d=await tx.recordVersionDocument.create({data:{recordVersionId:versionId,kind:'SIGNED_PDF',fileName,mimeType:'application/pdf',fileData:bytes,fileSize:file.size,checksum:digest(bytes),uploadedByText:actor,custodyId:custody.custodyId}});
     await auditReportEvent(tx,a.qmsRecordId,actor,"audit.document.signed",null,{id:d.id,recordVersionId:versionId,sequence:version.sequenceNumber,checksum:d.checksum},"Carga de PDF firmado externamente para esta versión");return d;
   });
 }

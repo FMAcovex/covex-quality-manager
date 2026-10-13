@@ -992,6 +992,14 @@
       "public": false
     },
     {
+      "file": "src/app/api/auth/session/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "READ",
+      "public": false,
+      "guard": "SELF_SESSION"
+    },
+    {
       "file": "src/app/api/capa/[id]/annex-iii/route.ts",
       "method": "GET",
       "module": "CAPA",
@@ -1209,6 +1217,13 @@
       "public": false
     },
     {
+      "file": "src/app/api/qms/[id]/document-originals/[custodyId]/route.ts",
+      "method": "GET",
+      "module": "QMS",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
       "file": "src/app/api/qms/business-code-suggestion/route.ts",
       "method": "GET",
       "module": "QMS",
@@ -1286,14 +1301,6 @@
       "public": false
     },
     {
-      "file": "src/app/auth/login/route.ts",
-      "method": "GET",
-      "module": "SYSTEM",
-      "permission": "READ",
-      "public": true,
-      "guard": "OIDC_START"
-    },
-    {
       "file": "src/app/auth/callback/route.ts",
       "method": "GET",
       "module": "SYSTEM",
@@ -1302,20 +1309,20 @@
       "guard": "OIDC_CALLBACK"
     },
     {
+      "file": "src/app/auth/login/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "READ",
+      "public": true,
+      "guard": "OIDC_START"
+    },
+    {
       "file": "src/app/auth/logout/route.ts",
       "method": "POST",
       "module": "SYSTEM",
       "permission": "READ",
       "public": false,
       "guard": "SELF_SESSION_CSRF"
-    },
-    {
-      "file": "src/app/api/auth/session/route.ts",
-      "method": "GET",
-      "module": "SYSTEM",
-      "permission": "READ",
-      "public": false,
-      "guard": "SELF_SESSION"
     }
   ],
   "pages": [

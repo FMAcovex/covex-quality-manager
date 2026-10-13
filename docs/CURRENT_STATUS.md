@@ -1,4 +1,6 @@
-# Estado vigente — corte 2026-10-13
+# Estado vigente — corte 2026-10-14
+
+**Continuación B2 en la misma rama:** custodia D05 de PDF firmado integrada en los seis módulos documentales, originales/sustituciones inmutables con SHA, actor y fecha SQL; legado sin identidad retrospectiva, CAS concurrente, motivo y rollback demostrados. Lifecycle PNT original y adaptación de upsert a la captura verificados; recuperación4B2 compara operaciones/evidencias/recibos/secuencias B2 y la cadena documental exacta, preserva protección y replay tras restaurar. Imagen Docker actual y negativas de almacenamiento pasan. Véase el apartado de continuación D05 en [PHASE_4B3_B2.md](PHASE_4B3_B2.md). Quedan importaciones/canal técnico, otros ciclos de la matriz63, checkpoint completo B2 y desarrollo C/validación final; no PR intermedia ni activación corporativa/GMP.
 
 **Baseline y cautelas de desarrollo:** [V1_BASELINE_AND_BACKLOG.md](V1_BASELINE_AND_BACKLOG.md). Los avances posteriores se recogen en este corte y en el registro fechado a continuación; las entradas antiguas conservan el estado de PR en su fecha, no su estado actual.
 

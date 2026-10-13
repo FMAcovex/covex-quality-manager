@@ -49,7 +49,10 @@ export async function administerUser(raw: unknown, form?: FormData) {
     await tx.authRecordAssignment.deleteMany({ where: { userId: user.id } });
     await tx.authUserRole.createMany({ data: roles.map(r => ({ userId: user.id, roleId: r.id })) });
     await tx.authUserDepartment.createMany({ data: departments.map(d => ({ userId: user.id, departmentId: d.id })) });
-    await tx.authRecordAssignment.createMany({ data: input.assignments.map(a => ({ ...a, userId: user.id })), skipDuplicates: true });
+    // Deduplicate before INSERT rather than SQL ON CONFLICT: speculative
+    // BEFORE INSERT witnesses must not outlive a row skipped by PostgreSQL.
+    const assignments = [...new Map(input.assignments.map(a => [JSON.stringify([a.module, a.recordId]), a])).values()];
+    await tx.authRecordAssignment.createMany({ data: assignments.map(a => ({ ...a, userId: user.id })) });
     await tx.authSession.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } });
     await tx.authAuthorizationChange.create({ data: { actorUserId: actor.id, source: "CORPORATE_SESSION", targetUserId: user.id, action: before ? "USER_AUTHORIZATION_CHANGED" : "USER_ADMITTED", oldValue: before ? JSON.parse(JSON.stringify(before)) : undefined, newValue: JSON.parse(JSON.stringify(input)), reason: input.reason } });
     return user.id;

@@ -1230,6 +1230,7 @@ model QmsRecordVersion {
   updatedAt          DateTime          @updatedAt
   generatedDocuments GeneratedDocument[]
   documents          RecordVersionDocument[]
+  signedCustodies    SignedDocumentCustody[]
   reviewThreads      ReviewThread[]
 
   @@unique([qmsRecordId, sequenceNumber])
@@ -1296,13 +1297,39 @@ model RecordVersionDocument {
   checksum         String
   uploadedByText   String?
   uploadedAt       DateTime                  @default(now())
+  custodyId        String? @unique @db.Uuid
+  custody          SignedDocumentCustody? @relation("CurrentSignedCustody", fields: [custodyId], references: [id], onDelete: Restrict)
 
   @@unique([recordVersionId, kind])
   @@index([recordVersionId, uploadedAt])
   @@index([kind, uploadedAt])
 }
 
+// Exact received bytes remain in GeneratedDocument. This append-only record
+// distinguishes authenticated custody now from labels/dates observed in legacy uploads.
+model SignedDocumentCustody {
+  id String @id @default(uuid()) @db.Uuid
+  originalDocumentId String @unique
+  originalDocument GeneratedDocument @relation(fields: [originalDocumentId], references: [id], onDelete: Restrict)
+  recordVersionId String
+  recordVersion QmsRecordVersion @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  kind RecordVersionDocumentKind
+  sourceKind String
+  identitySource String
+  retainedByUserId String? @db.Uuid
+  retainedByUser AuthUser? @relation(fields: [retainedByUserId], references: [id], onDelete: Restrict)
+  retainedByName String?
+  retainedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  replacesId String? @unique @db.Uuid
+  replaces SignedDocumentCustody? @relation("SignedCustodySupersession", fields: [replacesId], references: [id], onDelete: Restrict)
+  replacement SignedDocumentCustody? @relation("SignedCustodySupersession")
+  reason String?
+  currentSlot RecordVersionDocument? @relation("CurrentSignedCustody")
+  @@index([recordVersionId, retainedAt, id])
+}
+
 model GeneratedDocument {
+  signedCustody SignedDocumentCustody?
   auditEvents AuditEvent[]
   authenticatedUserId String? @db.Uuid
   authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
@@ -2131,6 +2158,7 @@ enum AccessScope {
  ASSIGNED
 }
 model AuthUser {
+ signedCustodies SignedDocumentCustody[]
  auditOperations AuditOperation[]
  id String @id @default(uuid()) @db.Uuid
  tenantId String @db.Uuid

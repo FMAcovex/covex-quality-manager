@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { isolatedTestEnvironment } from "../../src/lib/auth/config";
 import { identityContext, type Principal } from "../../src/lib/auth/context";
 import { fixtureUsers } from "../auth-fixtures/constants";
@@ -77,6 +78,130 @@ it.each(cases)("captures original %s draft create/edit actions, authenticated ac
   const events = await inspector.auditEvent.count();
   expect(await settled(() => asUser(qa, () => actions[editName](entity.id, { error: null }, form(editValues))))).toEqual(editResponse);
   expect(await inspector.auditEvent.count()).toBe(events);
+}, 30000);
+
+it.each([
+  ["CAPA", "capa", "../../src/modules/capa/signed-document-actions", "uploadCapaSignedPdfAction"],
+  ["CHANGE_CONTROL", "changeControl", "../../src/modules/change-control/signed-document-actions", "uploadChangeControlSignedPdfAction"],
+  ["COMPLAINT", "complaint", "../../src/modules/complaints/signed-document-actions", "uploadComplaintSignedPdfAction"],
+  ["RETURN", "returnRecord", "../../src/modules/returns/signed-document-actions", "uploadReturnSignedPdfAction"],
+  ["AUDIT", "audit", "../../src/modules/audits/report-actions", "storeAuditSignedPdfAction"],
+] as const)("retains %s signed originals through its original authorized action and preserves its replacement rules", async (module, model, file, name) => {
+  const root = await inspector.qmsRecord.findFirstOrThrow({ where: { recordType: module, businessCode: { startsWith: "SYNTHETIC-B2-" + module + "-" } } });
+  const entity = await (inspector as unknown as Record<string, Domain>)[model].findUniqueOrThrow({ where: { qmsRecordId: root.id } });
+  const version = await inspector.qmsRecordVersion.findFirstOrThrow({ where: { qmsRecordId: root.id } });
+  const action = (await import(file) as Record<string, Action>)[name];
+  const bytes = Buffer.from("%PDF-1.7\nSynthetic original " + module + "\n%%EOF");
+  const upload = (requestId: string, replacementReason = "") => {
+    const fd = form({ actor: "Spoofed uploader", _covexAuditRequestId: requestId, replacementReason });
+    fd.set("file", new File([bytes], "synthetic.pdf", { type: "application/pdf" })); return fd;
+  };
+  const run = (user: Principal, fd: FormData) => asUser(user, () => action(entity.id, module === "RETURN" ? "annex-iii" : version.id, { error: null, success: null }, fd));
+  const requestId = randomUUID();
+  await expect(run(reader, upload(requestId))).rejects.toMatchObject({ status: 403 });
+  expect(await run(qa, upload(requestId))).toHaveProperty("error", null);
+  const slot = await inspector.recordVersionDocument.findFirstOrThrow({ where: { recordVersionId: version.id }, include: { custody: { include: { originalDocument: true } } } });
+  expect(slot.custody?.retainedByUserId).toBe(qa.id);
+  expect(slot.custody?.identitySource).toBe("AUTHENTICATED_SERVER_SESSION");
+  expect(Buffer.from(slot.custody!.originalDocument.fileData!)).toEqual(bytes);
+  const op = await inspector.auditOperation.findFirstOrThrow({ where: { requestId }, include: { events: true, targets: true } });
+  expect(op.actorUserId).toBe(qa.id); expect(op.targets.some(t => t.rootKey === "QMS_RECORD:" + root.id)).toBe(true);
+  expect(op.events.some(e => e.entityType === "SignedDocumentCustody" && e.recordVersionId === version.id)).toBe(true);
+  const before = { originals: await inspector.signedDocumentCustody.count(), versions: await inspector.qmsRecordVersion.count(), events: await inspector.auditEvent.count() };
+  await run(qa, upload(requestId));
+  expect({ originals: await inspector.signedDocumentCustody.count(), versions: await inspector.qmsRecordVersion.count(), events: await inspector.auditEvent.count() }).toEqual(before);
+  expect(await run(qa, upload(randomUUID()))).toHaveProperty("error", expect.any(String));
+  if (module === "AUDIT") {
+    expect(await run(qa, upload(randomUUID(), "An audit requires a new formal revision"))).toHaveProperty("error", expect.any(String));
+    expect(await inspector.signedDocumentCustody.count()).toBe(before.originals);
+  } else {
+    expect(await run(qa, upload(randomUUID(), "Synthetic explicit supersession"))).toHaveProperty("error", null);
+    const current = await inspector.recordVersionDocument.findUniqueOrThrow({ where: { id: slot.id }, include: { custody: true } });
+    expect(current.custody?.replacesId).toBe(slot.custodyId);
+    expect(await inspector.qmsRecordVersion.count()).toBe(before.versions);
+  }
+}, 30000);
+
+it("observes a stored legacy original without retrospective authenticated identity and rejects corrupt predecessors", async () => {
+  const { uploadDeviationSignedPdfAction } = await import("../../src/modules/deviations/signed-document-actions");
+  for (const corrupt of [false, true]) {
+    const root = await inspector.qmsRecord.findFirstOrThrow({ where: { businessCode: { startsWith: "SYNTHETIC-B2-LEGACY-" + (corrupt ? "CORRUPT-" : "VALID-") } } });
+    const record = await inspector.deviation.findUniqueOrThrow({ where: { qmsRecordId: root.id } });
+    const version = await inspector.qmsRecordVersion.findFirstOrThrow({ where: { qmsRecordId: root.id } });
+    const previous = await inspector.recordVersionDocument.findFirstOrThrow({ where: { recordVersionId: version.id } });
+    const before = { originals: await inspector.generatedDocument.count(), custody: await inspector.signedDocumentCustody.count(), operations: await inspector.auditOperation.count() };
+    const fd = form({ replacementReason: "Synthetic legacy original supersession", _covexAuditRequestId: randomUUID() });
+    fd.set("file", new File(["%PDF-1.7\nNew received synthetic original\n%%EOF"], "new.pdf", { type: "application/pdf" }));
+    const run = () => asUser(qa, () => uploadDeviationSignedPdfAction(record.id, version.id, { error: null, success: null }, fd));
+    if (corrupt) {
+      await expect(run()).rejects.toThrow();
+      expect({ originals: await inspector.generatedDocument.count(), custody: await inspector.signedDocumentCustody.count(), operations: await inspector.auditOperation.count() }).toEqual(before);
+      expect(await inspector.recordVersionDocument.findUniqueOrThrow({ where: { id: previous.id } })).toEqual(previous);
+    } else {
+      expect(await run()).toHaveProperty("error", null);
+      const current = await inspector.recordVersionDocument.findUniqueOrThrow({ where: { id: previous.id }, include: { custody: { include: { replaces: { include: { originalDocument: true } } } } } });
+      const observed = current.custody!.replaces!;
+      expect(observed.sourceKind).toBe("OBSERVED_LEGACY_SIGNED_PDF"); expect(observed.retainedByUserId).toBe(qa.id);
+      expect(observed.originalDocument.authenticatedUserId).toBeNull();
+      expect(observed.originalDocument.generatedByText).toBe(previous.uploadedByText);
+      expect(observed.originalDocument.generatedAt).toEqual(previous.uploadedAt);
+      expect(observed.originalDocument.metadata).toMatchObject({ originalSnapshotKnown: false });
+      expect(Buffer.from(observed.originalDocument.fileData!)).toEqual(Buffer.from(previous.fileData));
+    }
+  }
+}, 30000);
+
+it("rolls back a signed replacement's archive, current slot, history and receipt if mandatory capture fails", async () => {
+  const { uploadDeviationSignedPdfAction } = await import("../../src/modules/deviations/signed-document-actions");
+  const record = await inspector.deviation.findFirstOrThrow({ where: { qmsRecord: { businessCode: { startsWith: "SYNTHETIC-B2-LEGACY-VALID-" } } } });
+  const slot = await inspector.recordVersionDocument.findFirstOrThrow({ where: { recordVersion: { qmsRecordId: record.qmsRecordId } } });
+  const before = { originals: await inspector.generatedDocument.count(), custody: await inspector.signedDocumentCustody.count(), history: await inspector.changeHistory.count(), operations: await inspector.auditOperation.count(), events: await inspector.auditEvent.count(), receipts: await inspector.auditCommandResult.count() };
+  await inspector.$executeRawUnsafe('ALTER TABLE "AuditEvent" ADD CONSTRAINT b2_document_capture_failure CHECK ("entityType"<>\'SignedDocumentCustody\') NOT VALID');
+  try {
+    const fd = form({ replacementReason: "Synthetic failed supersession", _covexAuditRequestId: randomUUID() });
+    fd.set("file", new File(["%PDF-1.7\nMust roll back\n%%EOF"], "failed.pdf", { type: "application/pdf" }));
+    await expect(asUser(qa, () => uploadDeviationSignedPdfAction(record.id, slot.recordVersionId, { error: null, success: null }, fd))).rejects.toThrow();
+    expect(await inspector.recordVersionDocument.findUniqueOrThrow({ where: { id: slot.id } })).toEqual(slot);
+    expect({ originals: await inspector.generatedDocument.count(), custody: await inspector.signedDocumentCustody.count(), history: await inspector.changeHistory.count(), operations: await inspector.auditOperation.count(), events: await inspector.auditEvent.count(), receipts: await inspector.auditCommandResult.count() }).toEqual(before);
+  } finally { await inspector.$executeRawUnsafe('ALTER TABLE "AuditEvent" DROP CONSTRAINT b2_document_capture_failure'); }
+}, 30000);
+
+it("serializes signed supersessions and rejects a stale predecessor without losing either committed original", async () => {
+  const record = await inspector.deviation.findFirstOrThrow({ where: { qmsRecord: { businessCode: { startsWith: "SYNTHETIC-B2-LEGACY-VALID-" } } } });
+  const slot = await inspector.recordVersionDocument.findFirstOrThrow({ where: { recordVersion: { qmsRecordId: record.qmsRecordId } } });
+  const { withBusinessAudit } = await import("../../src/lib/audit/business-service");
+  const { retainSignedOriginal } = await import("../../src/lib/qms/signed-custody-service");
+  let arrivals = 0, release!: () => void;
+  const barrier = new Promise<void>(resolve => { release = resolve; });
+  const before = { custody: await inspector.signedDocumentCustody.count(), operations: await inspector.auditOperation.count() };
+  const commands = [0, 1].map(async index => asUser(qa, () => withBusinessAudit({ operationCode: "DV08", module: "DEVIATION", permission: "ATTACH_DOCUMENT" },
+    { requestId: randomUUID(), digest: String(index + 1).repeat(64), reason: "Synthetic concurrent supersession" }, async tx => {
+      const observed = await tx.recordVersionDocument.findUniqueOrThrow({ where: { id: slot.id } });
+      if (++arrivals === 2) release(); await barrier;
+      const bytes = Buffer.from("%PDF-1.7\nConcurrent original " + index + "\n%%EOF");
+      const receipt = await retainSignedOriginal(tx, { recordVersionId: slot.recordVersionId, kind: slot.kind, bytes, fileName: "concurrent.pdf", actor: qa.name, expectedChecksum: observed.checksum, replacementReason: "Synthetic concurrent supersession" });
+      await tx.recordVersionDocument.update({ where: { id: slot.id }, data: { custodyId: receipt.custodyId, fileName: "concurrent.pdf", fileData: bytes, fileSize: bytes.length, checksum: createHash("sha256").update(bytes).digest("hex"), uploadedByText: qa.name } });
+    })));
+  const results = await Promise.allSettled(commands);
+  expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1); expect(results.filter(r => r.status === "rejected")).toHaveLength(1);
+  expect(await inspector.signedDocumentCustody.count()).toBe(before.custody + 1);
+  expect(await inspector.auditOperation.count()).toBe(before.operations + 1);
+  const current = await inspector.recordVersionDocument.findUniqueOrThrow({ where: { id: slot.id }, include: { custody: { include: { replaces: { include: { originalDocument: true } } } } } });
+  expect(current.custody?.replacesId).toBe(slot.custodyId);
+  expect(Buffer.from(current.custody!.replaces!.originalDocument.fileData!)).toEqual(Buffer.from(slot.fileData));
+}, 30000);
+
+it("refuses a first formal PDF without custody even inside a valid mandatory business lease", async () => {
+  const { withBusinessAudit } = await import("../../src/lib/audit/business-service");
+  const root = await inspector.qmsRecord.findFirstOrThrow({ where: { businessCode: { startsWith: "SYNTHETIC-B2-LEGACY-VALID-" } } });
+  const before = { versions: await inspector.qmsRecordVersion.count(), slots: await inspector.recordVersionDocument.count(), events: await inspector.auditEvent.count() };
+  const bytes = Buffer.from("%PDF-1.7\nUncustodied received original\n%%EOF");
+  const rejected = asUser(qa, () => withBusinessAudit({ operationCode: "DV08", module: "DEVIATION", permission: "ATTACH_DOCUMENT" }, { requestId: randomUUID(), digest: "e".repeat(64), reason: null }, async tx => {
+    const version = await tx.qmsRecordVersion.create({ data: { qmsRecordId: root.id, sequenceNumber: 99, kind: "INITIAL", snapshot: { synthetic: true } } });
+    await tx.recordVersionDocument.create({ data: { recordVersionId: version.id, kind: "SIGNED_PDF", fileName: "uncustodied.pdf", fileData: bytes, fileSize: bytes.length, checksum: createHash("sha256").update(bytes).digest("hex") } });
+  }));
+  await expect(rejected).rejects.toMatchObject({ cause: { message: expect.stringContaining("Mandatory original custody unavailable") } });
+  expect({ versions: await inspector.qmsRecordVersion.count(), slots: await inspector.recordVersionDocument.count(), events: await inspector.auditEvent.count() }).toEqual(before);
 }, 30000);
 
 it("rolls back an original action's business, children, versions and journal when history fails", async () => {
@@ -214,4 +339,118 @@ it("captures original PNT document and manual-state HTTP services with preserved
   expect((await inspector.controlledDocumentRevision.findUniqueOrThrow({ where: { id: revision.id } })).status).toBe("IN_REVIEW");
   expect((await inspector.auditOperation.findFirstOrThrow({ where: { requestId: stateId } })).operation).toBe("PN04");
   expect((await asUser(qa, () => state(change(), params)) as Response).status).toBe(201);
+  const updated = await inspector.controlledDocumentRevision.findUniqueOrThrow({ where: { id: revision.id } });
+  const subsequentId = randomUUID();
+  const subsequent = () => new Request(origin + "/api/controlled-documents/" + master.id + "/revisions/" + revision.id + "/manual-status", { method: "POST", headers: { origin, "content-type": "application/json" }, body: JSON.stringify({ requestId: subsequentId, expectedVersion: 1, expectedUpdatedAt: updated.updatedAt.toISOString(), targetStatus: "DRAFT", reason: "Synthetic return to draft with an existing lifecycle projection" }) });
+  expect((await asUser(qa, () => state(subsequent(), params)) as Response).status).toBe(201);
+  expect((await inspector.controlledRevisionLifecycle.findUniqueOrThrow({ where: { revisionId: revision.id } })).version).toBe(2);
+}, 30000);
+
+it("captures the original PNT lifecycle, explicit successor activation, predecessor retirement and rectification with existing projections", async () => {
+  const { POST } = await import("../../src/app/api/controlled-documents/[id]/revisions/[revisionId]/lifecycle/route");
+  const { POST: attach } = await import("../../src/app/api/controlled-documents/[id]/revisions/[revisionId]/documents/route");
+  const { revisionAction } = await import("../../src/modules/controlled-documents/actions");
+  const master = await inspector.controlledDocument.findUniqueOrThrow({ where: { baseCode: "GC-00/999" }, include: { revisions: true } });
+  const origin = process.env.AUTH_ORIGIN!;
+  const execute = async (revisionId: string, operation: string, evidenceId: string, extra: Record<string, unknown> = {}) => {
+    const projection = await inspector.controlledRevisionLifecycle.findUnique({ where: { revisionId } });
+    const requestId = randomUUID();
+    const input = { requestId, expectedVersion: projection?.version ?? 0, operation, reason: "Synthetic documented " + operation, notes: "Synthetic documentary assessment", evidenceIds: [evidenceId], ...extra };
+    const request = () => new Request(origin + "/api/controlled-documents/" + master.id + "/revisions/" + revisionId + "/lifecycle", { method: "POST", headers: { origin, "content-type": "application/json" }, body: JSON.stringify(input) });
+    const params = { params: Promise.resolve({ id: master.id, revisionId }) };
+    expect((await asUser(reader, () => POST(request(), params)) as Response).status).toBe(403);
+    const response = await asUser(qa, () => POST(request(), params)) as Response;
+    const body = await response.json(); if (response.status !== 201) throw Error("Original lifecycle rejected: " + JSON.stringify(body));
+    const journal = await inspector.auditOperation.findFirstOrThrow({ where: { requestId }, include: { events: true, evidence: true } });
+    expect(journal.actorUserId).toBe(qa.id); expect(journal.reason).toBe(input.reason);
+    expect(journal.events.some(e => e.entityType === "ControlledRevisionDecision" && e.fieldPath === "operation" && JSON.stringify(e.newValue).includes(operation))).toBe(true);
+    expect(journal.evidence.some(e => e.controlledDocumentChangeId)).toBe(true);
+    const count = await inspector.auditEvent.count();
+    expect((await asUser(qa, () => POST(request(), params)) as Response).status).toBe(201); expect(await inspector.auditEvent.count()).toBe(count);
+    return body.id as string;
+  };
+  const activate = async (revisionId: string, evidenceId: string, previousRevisionId: string | null) => {
+    await execute(revisionId, "VERIFY", evidenceId, { result: "FAVORABLE" });
+    for (const functionName of ["PREPARATION", "REVIEW"] as const) {
+      const registrationId = await execute(revisionId, "REGISTER_EXTERNAL", evidenceId, { function: functionName, externalPerson: "External synthetic " + functionName, responsibility: "Synthetic business responsibility", authorityBasis: "Synthetic documentary basis", accreditedDate: "2025-12-01" });
+      await execute(revisionId, "CONTRAST_EXTERNAL", evidenceId, { result: "ACCEPTED", registrationId });
+    }
+    await execute(revisionId, "SUBMIT", evidenceId);
+    const registrationId = await execute(revisionId, "REGISTER_EXTERNAL", evidenceId, { function: "APPROVAL", externalPerson: "External synthetic approver", responsibility: "Synthetic business responsibility", authorityBasis: "Synthetic documentary basis", accreditedDate: "2025-12-02" });
+    await execute(revisionId, "CONTRAST_EXTERNAL", evidenceId, { result: "ACCEPTED", registrationId });
+    await execute(revisionId, "PLAN", evidenceId, { finalDocumentId: evidenceId, separationConfirmed: true, effectiveFrom: "2026-01-01", reviewDueAt: "2027-01-01" });
+    await execute(revisionId, "ACTIVATE", evidenceId, { previousRevisionId });
+    expect((await inspector.controlledDocumentRevision.findUniqueOrThrow({ where: { id: revisionId } })).status).toBe("IN_FORCE");
+  };
+  const first = master.revisions[0], firstObject = await inspector.controlledRevisionDocument.findFirstOrThrow({ where: { revisionId: first.id } });
+  await activate(first.id, firstObject.id, null);
+  expect(await asUser(qa, () => revisionAction(master.id, null, {}, form({ operation: "REGISTER", revisionCode: "01", changeReason: "Synthetic explicit successor revision" })))).not.toHaveProperty("error");
+  const successor = await inspector.controlledDocumentRevision.findUniqueOrThrow({ where: { documentId_revisionCode: { documentId: master.id, revisionCode: "01" } } });
+  const fd = form({ mode: "file", kind: "DOCUMENT_PDF", _covexAuditRequestId: randomUUID() });
+  fd.set("file", new File(["%PDF-1.7\nSynthetic successor original\n%%EOF"], "successor.pdf", { type: "application/pdf" }));
+  const attached = await asUser(qa, () => attach(new Request(origin + "/api/controlled-documents/" + master.id + "/revisions/" + successor.id + "/documents", { method: "POST", headers: { origin }, body: fd }), { params: Promise.resolve({ id: master.id, revisionId: successor.id }) })) as Response;
+  expect(attached.status).toBe(201); const successorObjectId = (await attached.json()).id as string;
+  await activate(successor.id, successorObjectId, first.id);
+  expect((await inspector.controlledDocumentRevision.findUniqueOrThrow({ where: { id: first.id } })).status).toBe("OBSOLETE");
+  expect((await inspector.controlledRevisionDocument.findUniqueOrThrow({ where: { id: firstObject.id } })).fileData).toEqual(firstObject.fileData);
+  const retirement = await execute(successor.id, "RETIRE", successorObjectId);
+  await execute(successor.id, "RECTIFY", successorObjectId, { rectifiesId: retirement });
+  expect((await inspector.controlledDocumentRevision.findUniqueOrThrow({ where: { id: successor.id } })).status).toBe("OBSOLETE");
+}, 60000);
+
+it("retains exact immutable signed originals and an authenticated supersession through the original deviation upload action", async () => {
+  const { uploadDeviationSignedPdfAction } = await import("../../src/modules/deviations/signed-document-actions");
+  const record = await inspector.deviation.findFirstOrThrow({ where: { internalObservations: "Persisted original-service edit", status: "DRAFT" } });
+  const version = await inspector.qmsRecordVersion.findFirstOrThrow({ where: { qmsRecordId: record.qmsRecordId }, orderBy: { sequenceNumber: "desc" } });
+  const originals = [new TextEncoder().encode("%PDF-1.7\nSynthetic original one\n%%EOF"), new TextEncoder().encode("%PDF-1.7\nSynthetic replacement two\n%%EOF")];
+  const upload = (index: number, requestId: string, reason = "") => {
+    const fd = form({ actor: "Spoofed PDF uploader", replacementReason: reason, _covexAuditRequestId: requestId });
+    fd.set("file", new File([originals[index]], "synthetic-original-" + index + ".pdf", { type: "application/pdf" })); return fd;
+  };
+  const firstId = randomUUID();
+  await expect(asUser(reader, () => uploadDeviationSignedPdfAction(record.id, version.id, { error: null, success: null }, upload(0, firstId)))).rejects.toMatchObject({ status: 403 });
+  const first = await asUser(qa, () => uploadDeviationSignedPdfAction(record.id, version.id, { error: null, success: null }, upload(0, firstId))) as { error: string | null };
+  expect(first.error).toBeNull();
+  const firstSlot = await inspector.recordVersionDocument.findUniqueOrThrow({ where: { recordVersionId_kind: { recordVersionId: version.id, kind: "SIGNED_PDF" } }, include: { custody: { include: { originalDocument: true } } } });
+  expect(firstSlot.custody?.retainedByUserId).toBe(qa.id); expect(firstSlot.uploadedByText).toBe(qa.name);
+  expect(firstSlot.custody?.sourceKind).toBe("RECEIVED_SIGNED_PDF");
+  expect(Array.from(firstSlot.custody!.originalDocument.fileData!)).toEqual(Array.from(originals[0]));
+  expect(firstSlot.checksum).toBe(createHash("sha256").update(originals[0]).digest("hex"));
+  const firstOperation = await inspector.auditOperation.findFirstOrThrow({ where: { requestId: firstId }, include: { events: true } });
+  expect(firstOperation.events.some(e => e.entityType === "SignedDocumentCustody")).toBe(true);
+  expect(firstOperation.events.some(e => e.generatedDocumentId === firstSlot.custody!.originalDocumentId && e.documentChecksum === firstSlot.checksum)).toBe(true);
+  const count = { custody: await inspector.signedDocumentCustody.count(), events: await inspector.auditEvent.count(), versions: await inspector.qmsRecordVersion.count() };
+  const denied = await asUser(qa, () => uploadDeviationSignedPdfAction(record.id, version.id, { error: null, success: null }, upload(1, randomUUID()))) as typeof first;
+  expect(denied.error).toBeTruthy(); expect(await inspector.signedDocumentCustody.count()).toBe(count.custody);
+  const replacementId = randomUUID(), reason = "Synthetic explicit replacement of received original";
+  const second = await asUser(qa, () => uploadDeviationSignedPdfAction(record.id, version.id, { error: null, success: null }, upload(1, replacementId, reason))) as typeof first;
+  expect(second.error).toBeNull();
+  const secondSlot = await inspector.recordVersionDocument.findUniqueOrThrow({ where: { id: firstSlot.id }, include: { custody: { include: { originalDocument: true, replaces: { include: { originalDocument: true } } } } } });
+  expect(secondSlot.custody!.replacesId).toBe(firstSlot.custodyId); expect(secondSlot.custody!.reason).toBe(reason);
+  expect(Array.from(secondSlot.custody!.originalDocument.fileData!)).toEqual(Array.from(originals[1]));
+  expect(Array.from(secondSlot.custody!.replaces!.originalDocument.fileData!)).toEqual(Array.from(originals[0]));
+  expect(await inspector.qmsRecordVersion.count()).toBe(count.versions);
+  const totals = { custody: await inspector.signedDocumentCustody.count(), events: await inspector.auditEvent.count() };
+  await asUser(qa, () => uploadDeviationSignedPdfAction(record.id, version.id, { error: null, success: null }, upload(1, replacementId, reason)));
+  expect({ custody: await inspector.signedDocumentCustody.count(), events: await inspector.auditEvent.count() }).toEqual(totals);
+  const app = (await import("../../src/lib/db")).prisma;
+  await expect(app.generatedDocument.update({ where: { id: firstSlot.custody!.originalDocumentId }, data: { fileName: "Forbidden rewrite.pdf" } })).rejects.toThrow();
+  const { withBusinessAudit } = await import("../../src/lib/audit/business-service");
+  await expect(asUser(qa, () => withBusinessAudit({ operationCode: "DV08", module: "DEVIATION", permission: "ATTACH_DOCUMENT" }, { requestId: randomUUID(), digest: "c".repeat(64), reason: "Synthetic forbidden original metadata rewrite" }, async tx => {
+    await tx.generatedDocument.update({ where: { id: firstSlot.custody!.originalDocumentId }, data: { fileName: "Forbidden within a valid audited command.pdf" } });
+  }))).rejects.toThrow();
+  await expect(inspector.generatedDocument.update({ where: { id: firstSlot.custody!.originalDocumentId }, data: { fileData: originals[1] } })).rejects.toThrow();
+  await expect(inspector.generatedDocument.delete({ where: { id: firstSlot.custody!.originalDocumentId } })).rejects.toThrow();
+  await expect(inspector.signedDocumentCustody.update({ where: { id: firstSlot.custodyId! }, data: { reason: "Forbidden rewrite" } })).rejects.toThrow();
+  expect(await inspector.signedDocumentCustody.count()).toBe(totals.custody);
+  const { GET } = await import("../../src/app/api/qms/[id]/document-originals/[custodyId]/route");
+  const request = () => new Request(process.env.AUTH_ORIGIN! + "/api/qms/" + record.qmsRecordId + "/document-originals/" + firstSlot.custodyId);
+  const params = { params: Promise.resolve({ id: record.qmsRecordId, custodyId: firstSlot.custodyId! }) };
+  expect((await asUser(admin, () => GET(request(), params)) as Response).status).toBe(403);
+  expect((await asUser(reader, () => GET(request(), params)) as Response).status).toBe(200); // Existing fixture role explicitly grants DOWNLOAD.
+  const downloaded = await asUser(qa, () => GET(request(), params)) as Response;
+  expect(downloaded.status).toBe(200); expect(new Uint8Array(await downloaded.arrayBuffer())).toEqual(originals[0]);
+  expect(downloaded.headers.get("x-checksum-sha256")).toBe(firstSlot.checksum);
+  const other = await inspector.qmsRecord.findFirstOrThrow({ where: { id: { not: record.qmsRecordId }, recordType: "DEVIATION" } });
+  expect((await asUser(qa, () => GET(request(), { params: Promise.resolve({ id: other.id, custodyId: firstSlot.custodyId! }) })) as Response).status).toBe(404);
 }, 30000);

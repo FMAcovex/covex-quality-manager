@@ -20,7 +20,7 @@ const groups: Record<string, string[]> = {
   W12: ["src/lib/qms/relation-service.ts", "src/lib/qms/administrative-status.ts"],
   W13: ["src/lib/qms/review/service.ts"],
   W14: ["src/lib/qms/versioning.ts", "src/modules/complaints/version-service.ts", "src/modules/returns/snapshot-service.ts"],
-  W15: ["src/lib/qms/signed-version-document.ts"],
+  W15: ["src/lib/qms/signed-version-document.ts", "src/lib/qms/signed-custody-service.ts"],
   W16: ["src/app/api/deviations/[id]/annex-iii/route.ts", "src/app/api/capa/[id]/annex-iii/route.ts", "src/app/api/changes/[id]/annex-iii/route.ts", "src/app/api/changes/[id]/annex-iv/route.ts", "src/app/api/changes/[id]/annex-v/route.ts", "src/app/api/complaints/[id]/annex-iii/route.ts", "src/app/api/complaints/[id]/annex-iv/route.ts", "src/modules/returns/documents/archive.ts", "src/modules/audits/documents/service.ts"],
   W17: ["src/modules/configuration/admin-actions.ts"],
   W18: ["src/lib/auth/administration.ts", "scripts/auth-provision.ts"],

@@ -68,6 +68,10 @@ function createMemoryClient(records: StoredRecord[]) {
       ),
     },
     qmsRelation: {
+      create: vi.fn(async ({ data }: { data: UpsertArgs["create"] }) => {
+        const relation: StoredRelation = { ...data, id: `relation-${relations.length + 1}`, isActive: true, createdAt: new Date("2026-09-29T00:00:00Z") };
+        relations.push(relation); return relation;
+      }),
       upsert: vi.fn(async ({ where, update, create }: UpsertArgs) => {
         const key = where.sourceRecordId_targetRecordId_relationType;
         const existing = relations.find(

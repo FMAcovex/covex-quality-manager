@@ -9,7 +9,7 @@ import { isolatedTestEnvironment } from "../src/lib/auth/config";
 import { fixtureUsers } from "./auth-fixtures/constants";
 import { fixtureLogin, cookieHeader } from "./auth-fixtures/http";
 import { writeZip, readZip } from "../src/lib/ooxml/zip";
-import { auditApplicationFixture, auditedSqlFixture } from "./audit-fixtures/database";
+import { auditApplicationFixture, auditedSqlFixture, businessApplicationGrantsFixture, businessSqlFixture } from "./audit-fixtures/database";
 
 const sha256 = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
 function officeFixture(kind: "word" | "sheet") {
@@ -101,12 +101,40 @@ async function main() {
     await source.auditPilotRecord.create({ data: { qmsRecordId: deviation.qmsRecordId! } });
     auditSourceApp = await auditApplicationFixture(source, new URL(sourceUrl), auditRole);
     const auditReceipt = await auditedSqlFixture(auditSourceApp, fixtureUsers.qa.id, [deviation.qmsRecordId!], randomUUID(), 7);
+    await businessApplicationGrantsFixture(source, auditRole);
+    await source.$executeRaw`SELECT covex_b2_require_policy('Synthetic recovery fixture; no corporate acceptance')`;
+    const editRequest = randomUUID();
+    await businessSqlFixture(auditSourceApp, fixtureUsers.qa.id, editRequest, "DV02", "DEVIATION", "EDIT", "Synthetic recovered persisted correction", async tx => {
+      await tx.deviation.update({ where: { id: deviation.id }, data: { whatHappened: "B2 persisted recovered correction" } });
+      await tx.deviationImmediateAction.create({ data: { deviationId: deviation.id, description: "B2 recovered child" } });
+      await tx.changeHistory.create({ data: { qmsRecordId: deviation.qmsRecordId, changedByText: fixtureUsers.qa.name, fieldPath: "whatHappened", oldValue: "Evento totalmente ficticio", newValue: "B2 persisted recovered correction", reason: "Synthetic recovered persisted correction" } });
+    });
+    await businessSqlFixture(auditSourceApp, fixtureUsers.qa.id, randomUUID(), "PN01", "PNT", "EDIT", "Synthetic recovery PNT correction", async tx => {
+      await tx.controlledDocument.update({ where: { id: master.id }, data: { observations: "B2 recovered PNT metadata" } });
+      await tx.controlledDocumentChange.create({ data: { documentId: master.id, action: "Synthetic recovery", changedByText: fixtureUsers.qa.name, reason: "Synthetic recovery PNT correction" } });
+    });
+    const receivedBytes = [Buffer.from("%PDF-1.7\nB2 first received replacement\x00\xff\n%%EOF", "latin1"), Buffer.from("%PDF-1.7\nB2 second received replacement\x00\xff\n%%EOF", "latin1")];
+    for (const bytes of receivedBytes) await businessSqlFixture(auditSourceApp, fixtureUsers.qa.id, randomUUID(), "DV08", "DEVIATION", "ATTACH_DOCUMENT", "Synthetic recovered signed supersession", async tx => {
+      const old = await tx.recordVersionDocument.findUniqueOrThrow({ where: { recordVersionId_kind: { recordVersionId: version.id, kind: "SIGNED_PDF" } } });
+      const [receipt] = await tx.$queryRaw<{ custody_id: string }[]>`SELECT * FROM covex_b2_retain_signed_original(${fixtureUsers.qa.id}::uuid,${fixtureUsers.qa.name},${version.id},'SIGNED_PDF',${bytes}::bytea,'b2-received.pdf',${old.checksum},'Synthetic recovered signed supersession',NULL)`;
+      await tx.recordVersionDocument.update({ where: { id: old.id }, data: { custodyId: receipt.custody_id, fileName: "b2-received.pdf", fileData: bytes, fileSize: bytes.length, checksum: sha256(bytes), uploadedByText: fixtureUsers.qa.name } });
+      await tx.changeHistory.create({ data: { qmsRecordId: deviation.qmsRecordId, changedByText: fixtureUsers.qa.name, fieldPath: "__signed_document__", oldValue: { checksum: old.checksum }, newValue: { checksum: sha256(bytes) }, reason: "Synthetic recovered signed supersession" } });
+    });
     const auditGolden = {
       operations: await source.auditOperation.findMany({ orderBy: { id: "asc" } }),
       events: await source.auditEvent.findMany({ orderBy: { id: "asc" } }),
-      targets: await source.auditOperationTarget.findMany({ orderBy: { rootKey: "asc" } }),
+      targets: await source.auditOperationTarget.findMany({ orderBy: [{ rootKey: "asc" }, { aggregateSequence: "asc" }] }),
+      cursors: await source.auditAggregateCursor.findMany({ orderBy: { rootKey: "asc" } }),
+      receipts: await source.auditCommandResult.findMany({ orderBy: { operationId: "asc" } }),
+      evidence: await source.auditOperationEvidence.findMany({ orderBy: { id: "asc" } }),
+      additionalTargets: await source.auditEventAdditionalTarget.findMany({ orderBy: [{ eventId: "asc" }, { rootKey: "asc" }] }),
+      custody: await source.signedDocumentCustody.findMany({ orderBy: { id: "asc" }, include: { originalDocument: true } }),
+      slots: await source.recordVersionDocument.findMany({ orderBy: { id: "asc" } }),
     };
-    assert.equal(auditGolden.events.length, 2);
+    assert.equal(auditGolden.operations.filter(op => op.schemaVersion === 2).length, 4);
+    assert.equal(auditGolden.receipts.length, 4); assert.equal(auditGolden.custody.length, 3);
+    assert(auditGolden.events.some(event => event.entityType === "SignedDocumentCustody"));
+    assert(auditGolden.evidence.length >= 3);
     await source.authSession.create({ data: { userId: fixtureUsers.qa.id, tokenHash: sha256(oldToken), csrfHash: sha256("synthetic-csrf"), expiresAt: new Date(Date.now() + 3600000) } });
     await source.authLoginAttempt.create({ data: { id: randomUUID(), state: "synthetic", nonce: "synthetic", verifier: "synthetic", returnTo: "/", expiresAt: new Date(Date.now() + 60000) } });
     // Least-privilege backup identity on this disposable database only.
@@ -194,22 +222,38 @@ async function main() {
     restored = new PrismaClient({ datasourceUrl: restoredUrl.href });
     assert.deepEqual(await restored.auditOperation.findMany({ orderBy: { id: "asc" } }), auditGolden.operations, "Journal recuperado sin fabricación de eventos históricos");
     assert.deepEqual(await restored.auditEvent.findMany({ orderBy: { id: "asc" } }), auditGolden.events);
-    assert.deepEqual(await restored.auditOperationTarget.findMany({ orderBy: { rootKey: "asc" } }), auditGolden.targets);
+    assert.deepEqual(await restored.auditOperationTarget.findMany({ orderBy: [{ rootKey: "asc" }, { aggregateSequence: "asc" }] }), auditGolden.targets);
+    assert.deepEqual(await restored.auditAggregateCursor.findMany({ orderBy: { rootKey: "asc" } }), auditGolden.cursors);
+    assert.deepEqual(await restored.auditCommandResult.findMany({ orderBy: { operationId: "asc" } }), auditGolden.receipts);
+    assert.deepEqual(await restored.auditOperationEvidence.findMany({ orderBy: { id: "asc" } }), auditGolden.evidence);
+    assert.deepEqual(await restored.auditEventAdditionalTarget.findMany({ orderBy: [{ eventId: "asc" }, { rootKey: "asc" }] }), auditGolden.additionalTargets);
+    assert.deepEqual(await restored.signedDocumentCustody.findMany({ orderBy: { id: "asc" }, include: { originalDocument: true } }), auditGolden.custody, "Exact originals, historical identity, custodian, supersession links and SHA survive offline recovery");
+    assert.deepEqual(await restored.recordVersionDocument.findMany({ orderBy: { id: "asc" } }), auditGolden.slots);
     assert.equal(await restored.auditRuntimeContext.count(), 0);
+    assert.equal(await restored.auditBusinessContext.count(), 0); assert.equal(await restored.auditMutationWitness.count(), 0); assert.equal(await restored.auditRootBinding.count(), 0);
     const nextAuditRole = "covex4b3_afterrestore_" + id; auditRoles.push(nextAuditRole);
     auditRestoredApp = await auditApplicationFixture(restored, restoredUrl, nextAuditRole);
+    await businessApplicationGrantsFixture(restored, nextAuditRole);
+    const replayed = await businessSqlFixture(auditRestoredApp, fixtureUsers.qa.id, editRequest, "DV02", "DEVIATION", "EDIT", "Synthetic recovered persisted correction", async () => { throw Error("Committed B2 command must not execute twice after restoration"); });
+    assert.equal(replayed, auditGolden.operations.find(op => op.requestId === editRequest)!.id);
     const nextAudit = await auditedSqlFixture(auditRestoredApp, fixtureUsers.qa.id, [deviation.qmsRecordId!], randomUUID(), 8);
     assert.notEqual(nextAudit.operation_id, auditReceipt.operation_id);
-    assert.equal((await restored.auditOperationTarget.findFirstOrThrow({ where: { operationId: nextAudit.operation_id } })).aggregateSequence, BigInt(2));
+    assert.equal((await restored.auditOperationTarget.findFirstOrThrow({ where: { operationId: nextAudit.operation_id } })).aggregateSequence, auditGolden.cursors.find(c => c.rootKey === "QMS_RECORD:" + deviation.qmsRecordId)!.lastSequence + BigInt(1));
     await assert.rejects(auditRestoredApp.$executeRawUnsafe('TRUNCATE "AuditEvent" CASCADE'));
+    await assert.rejects(auditRestoredApp.$queryRaw`SELECT * FROM "AuditBusinessContext"`);
+    await assert.rejects(auditRestoredApp.signedDocumentCustody.delete({ where: { id: auditGolden.custody[0].id } }));
+    await assert.rejects(auditRestoredApp.generatedDocument.update({ where: { id: auditGolden.custody[0].originalDocumentId }, data: { fileName: "forbidden-after-restore.pdf" } }));
     assert.deepEqual((await restored.qmsRecord.findMany({ orderBy: { id: "asc" }, select: { id: true } })).map(r => r.id), records.map(r => r.id), "UUID sin expedientes duplicados");
     assert.equal(await restored.qmsRecordVersion.count(), records.length * 2);
     assert.equal(await restored.qmsRelation.count(), 2);
     assert.equal(await restored.authSession.count({ where: { revokedAt: null } }), 0);
     assert.equal(await restored.authLoginAttempt.count(), 0);
-    for (const [rows, expected] of [[await restored.templateVersion.findMany({ where: { fileData: { not: null } } }), sha256(word)], [await restored.generatedDocument.findMany({ where: { fileData: { not: null } } }), sha256(word)], [await restored.recordVersionDocument.findMany(), checksum], [await restored.controlledRevisionDocument.findMany({ where: { fileData: { not: null } } }), checksum], [await restored.auditAnnualProgrammeVersion.findMany(), sha256(sheet)]] as const) {
+    for (const [rows, expected] of [[await restored.templateVersion.findMany({ where: { fileData: { not: null } } }), sha256(word)], [await restored.controlledRevisionDocument.findMany({ where: { fileData: { not: null } } }), checksum], [await restored.auditAnnualProgrammeVersion.findMany(), sha256(sheet)]] as const) {
       for (const row of rows) assert.equal(sha256(Buffer.from(row.fileData!)), expected, "SHA-256 binario en cada familia documental");
     }
+    for (const row of [...await restored.generatedDocument.findMany({ where: { fileData: { not: null } } }), ...await restored.recordVersionDocument.findMany()]) assert.equal(sha256(Buffer.from(row.fileData!)), row.checksum);
+    assert.equal((await restored.deviation.findUniqueOrThrow({ where: { id: deviation.id } })).whatHappened, "B2 persisted recovered correction");
+    assert.equal(await restored.deviationImmediateAction.count({ where: { deviationId: deviation.id, description: "B2 recovered child" } }), 1);
     assert.deepEqual(readFileSync(join(root, "restored-assets/templates/fixture.docx")), asset);
     const release = join(root, "release"); command("python3", ["ops/release.py", "--sha", cfg.release_sha, "--out", release]);
     const restoredEnv = { ...env, DATABASE_URL: restoredUrl.href, HOSTNAME: "127.0.0.1", PORT: "3102" };
@@ -224,13 +268,15 @@ async function main() {
       const login = await fixtureLogin("reader"); assert(login.success, "Nuevo login OIDC después de recuperar");
       const user = await fetch(env.AUTH_ORIGIN + "/api/auth/session", { headers: { cookie: cookieHeader(login.jar) } }); assert(user.ok); assert.equal((await user.json()).name, fixtureUsers.reader.name);
       for (const path of ["deviations", "capa", "changes", "complaints", "returns", "audits", "controlled-documents"]) assert.equal((await fetch(env.AUTH_ORIGIN + "/" + path, { headers: { cookie: cookieHeader(login.jar) }, redirect: "manual" })).status, 200);
-      await restored.authUser.update({ where: { id: fixtureUsers.reader.id }, data: { active: false } });
+      await businessSqlFixture(auditRestoredApp, fixtureUsers.admin.id, randomUUID(), "TR05", "SYSTEM", "MANAGE_USERS", "Synthetic post-recovery access withdrawal", async tx => {
+        await tx.authUser.update({ where: { id: fixtureUsers.reader.id }, data: { active: false } });
+      });
       assert.equal((await fetch(env.AUTH_ORIGIN + "/api/auth/session", { headers: { cookie: cookieHeader(login.jar) } })).status, 401, "Revocación 4B1 sigue efectiva tras recuperación");
     } finally { Object.assign(process.env, previousEnv); }
     command("node", [resolve("ops/runtime/health.mjs"), env.AUTH_ORIGIN + "/api/health"]);
     await stop(app); app = undefined;
     await assert.rejects(fetch(env.AUTH_ORIGIN + "/api/health"), "Parada efectiva del servicio aislado");
-    console.log("4B2 recovery OK: absent/unmounted/substituted storage refused without creating backups; enrolled test storage positive; PostgreSQL16 consistent encrypted backup; all tables/schema, seven modules, relationships, frozen versions/history, five binary families and external files; B1 journal/targets/events preserved without fabricated history, next sequence writable, weakened protection quarantined; tamper/unsafe target/existing target/failure rejected; unavailable source and backup storage recovery; session revocation, fresh OIDC/global read and access revocation; standalone health/start/stop. Synthetic only, pending corporate IT/QA acceptance.");
+    console.log("4B2 recovery OK: absent/unmounted/substituted storage refused without creating backups; enrolled test storage positive; PostgreSQL16 consistent encrypted backup; seven modules, relationships, frozen versions/history, binary families and external files; B1 and B2 operations, typed OLD/NEW, evidence, receipts, targets and cursors preserved; exact signed originals and supersession chains restored, protected and replay-safe; next sequence writable, weakened protection quarantined; tamper/unsafe/existing targets rejected; unavailable source and backup storage recovery; session revocation, fresh OIDC/global read and access withdrawal; standalone health/start/stop. Synthetic only, pending corporate IT/QA acceptance.");
   } finally {
     await stop(app); await stop(provider); await auditSourceApp?.$disconnect(); await auditRestoredApp?.$disconnect(); await restored?.$disconnect(); await source.$disconnect();
     for (const database of databases.reverse()) {

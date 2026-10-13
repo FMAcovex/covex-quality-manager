@@ -67,9 +67,9 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
     assertTransition(c.operation, r.status, c.function);
     if (r.consolidatedAt && !(await tx.controlledRevisionLifecycle.findUnique({ where: { revisionId } })) && !["RETIRE", "ANNUL", "RECTIFY"].includes(c.operation))
       throw new Error("Registro histórico P1A sin acreditación P2B; no se reinterpreta como aprobado.");
-    const projection = await tx.controlledRevisionLifecycle.upsert({ where: { revisionId }, create: { revisionId, documentId,
+    const projection = await tx.controlledRevisionLifecycle.findUnique({ where: { revisionId } }) ?? await tx.controlledRevisionLifecycle.create({ data: { revisionId, documentId,
       ...(r.consolidatedAt ? { legacyOrigin: true, effectiveFrom: r.effectiveFrom, reviewDueAt: r.reviewDueAt, obsoletedAt: r.obsoletedAt } : {}),
-    }, update: {} });
+    } });
     if (projection.version !== c.expectedVersion) throw new Error("La revisión ha cambiado. Recargue antes de decidir.");
     const oldState = r.status, before = { revision: r, projection };
     await objects(tx, revisionId, c.evidenceIds, c.referenceBasis);
@@ -122,7 +122,7 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
           if (!master.baseCode || !master.title || !master.departmentId) throw new Error("Complete el maestro antes de activar.");
           assertActivationIdentity(master, r);
           if (previous) {
-            const previousProjection = await tx.controlledRevisionLifecycle.upsert({ where: { revisionId: previous.id }, create: { revisionId: previous.id, documentId, legacyOrigin: true, effectiveFrom: previous.effectiveFrom, reviewDueAt: previous.reviewDueAt }, update: {} });
+            const previousProjection = await tx.controlledRevisionLifecycle.findUnique({ where: { revisionId: previous.id } }) ?? await tx.controlledRevisionLifecycle.create({ data: { revisionId: previous.id, documentId, legacyOrigin: true, effectiveFrom: previous.effectiveFrom, reviewDueAt: previous.reviewDueAt } });
             if (day(previousProjection.effectiveFrom) && plan.effectiveFrom! < day(previousProjection.effectiveFrom)!) throw new Error("Vigencia anterior incompatible.");
             const old = { revision: previous, projection: previousProjection };
             const obsolete = await tx.controlledDocumentRevision.update({ where: { id: previous.id }, data: { status: "OBSOLETE" } });

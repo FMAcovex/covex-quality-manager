@@ -41,20 +41,18 @@ export async function changeManualRevisionStatus(documentId: string, revisionId:
     const prior = await tx.controlledDocumentRevision.findFirst({ where: { documentId, status: "IN_FORCE" } });
     if (input.targetStatus === "IN_FORCE" && (prior?.id || null) !== (input.previousRevisionId ?? null))
       throw new Error("Ha cambiado la revisión vigente anterior. Recargue y confirme el cambio.");
-    const lifecycle = await tx.controlledRevisionLifecycle.upsert({ where: { revisionId },
-      create: { revisionId, documentId, legacyOrigin: !!revision.consolidatedAt,
+    const lifecycle = projection ?? await tx.controlledRevisionLifecycle.create({
+      data: { revisionId, documentId, legacyOrigin: !!revision.consolidatedAt,
         effectiveFrom: revision.effectiveFrom, reviewDueAt: revision.reviewDueAt, obsoletedAt: revision.obsoletedAt },
-      update: {},
     });
     const start = input.targetStatus === "IN_FORCE" ? date(input.effectiveFrom!) : null;
     const due = input.targetStatus === "IN_FORCE" ? (input.reviewDueAt ? date(input.reviewDueAt) : null) : null;
     if (start && lifecycle.approvalAt && start < lifecycle.approvalAt)
       throw new Error("La vigencia no puede ser anterior a la fecha de aprobación ya registrada.");
     if (start && prior?.id !== revisionId && prior) {
-      const oldLifecycle = await tx.controlledRevisionLifecycle.upsert({ where: { revisionId: prior.id },
-        create: { documentId, revisionId: prior.id, legacyOrigin: true,
+      const oldLifecycle = await tx.controlledRevisionLifecycle.findUnique({ where: { revisionId: prior.id } }) ?? await tx.controlledRevisionLifecycle.create({
+        data: { documentId, revisionId: prior.id, legacyOrigin: true,
           effectiveFrom: prior.effectiveFrom, reviewDueAt: prior.reviewDueAt, obsoletedAt: prior.obsoletedAt },
-        update: {},
       });
       const oldStart = iso(oldLifecycle.effectiveFrom) || iso(prior.effectiveFrom);
       if (oldStart && input.effectiveFrom! < oldStart) throw new Error("La nueva vigencia no puede comenzar antes que la revisión vigente anterior.");

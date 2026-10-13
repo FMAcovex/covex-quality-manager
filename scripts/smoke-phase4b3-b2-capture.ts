@@ -7,7 +7,7 @@ import { identityContext } from "../src/lib/auth/context";
 import { fixtureUsers } from "./auth-fixtures/constants";
 import { auditApplicationFixture, auditedSqlFixture } from "./audit-fixtures/database";
 import { assertAuditProtection } from "../src/lib/audit/protection";
-import contract from "../ops/backup/audit-contract-b2-integration.json";
+import contract from "../ops/backup/audit-contract-b2-documents.json";
 import type { BusinessAuditDescriptor, BusinessAuditCommand } from "../src/lib/audit/business-service";
 
 async function main() {
@@ -36,10 +36,11 @@ async function main() {
     let appUrl:URL|undefined;
     app=await auditApplicationFixture(owner,url,appRole,parent,connection=>{appUrl=connection;}); roles.push(appRole);
     for(const table of contract.privateTables) await owner.$executeRawUnsafe(`REVOKE ALL ON "${table}" FROM "${appRole}"`);
-    await owner.$executeRawUnsafe(`GRANT INSERT,UPDATE,DELETE ON ${contract.guardTables.map(table=>'"'+table+'"').join(",")} TO "${appRole}"`);
+    await owner.$executeRawUnsafe(`GRANT INSERT,UPDATE,DELETE ON ${contract.guardTables.filter(table=>table!=="SignedDocumentCustody").map(table=>'"'+table+'"').join(",")} TO "${appRole}"`);
     await owner.$executeRawUnsafe(`GRANT INSERT,UPDATE,DELETE ON "AuthSession","AuthLoginAttempt" TO "${appRole}"`);
     await owner.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_b2_begin(UUID,UUID,TEXT,TEXT,TEXT,TEXT,TEXT) TO "${appRole}"`);
     await owner.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_b2_command_outcome(JSONB,JSONB),covex_b2_check_claims(UUID,JSONB) TO "${appRole}"`);
+    await owner.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_b2_retain_signed_original(UUID,TEXT,TEXT,TEXT,BYTEA,TEXT,TEXT,TEXT,TEXT) TO "${appRole}"`);
     await owner.$transaction(tx=>assertAuditProtection(tx));
     const department=await owner.department.findFirstOrThrow();
     if (!await owner.department.findUnique({where:{code:"LG-00"}})) await owner.department.create({data:{code:"LG-00",name:"Synthetic returns fixture department"}});
@@ -54,7 +55,7 @@ async function main() {
     for(const [module,model,additional] of definitions) {
       const root=await owner.qmsRecord.create({data:{recordType:module as QmsRecordType,businessCode:"SYNTHETIC-B2-"+module+"-"+suffix,year:2026}});
       type DomainWriter={create(args:object):Promise<{id:string;qmsRecordId:string}>};
-      const data={...additional,qmsRecordId:root.id,...(module!=="AUDIT"?{departmentId:department.id}:{}),...(module==="DEVIATION"?{status:"OPEN"}:{})};
+      const data={...additional,qmsRecordId:root.id,...(module!=="AUDIT"?{departmentId:department.id}:{}),...(["DEVIATION","AUDIT"].includes(module)?{status:"OPEN"}:{})};
       // Use real enum defaults for synthetic required fields, not business guesses.
       const modelMeta=Prisma.dmmf.datamodel.models.find(m=>m.name[0].toLowerCase()+m.name.slice(1)===model)!;
       for(const field of modelMeta.fields.filter(f=>f.kind==="enum"&&f.isRequired&&!f.hasDefaultValue)) {
@@ -62,6 +63,16 @@ async function main() {
         Object.assign(data,{[field.name]:enumValue});
       }
       records[module]=await (owner as unknown as Record<string,DomainWriter>)[model].create({data});
+      await owner.qmsRecordVersion.create({data:{qmsRecordId:root.id,sequenceNumber:0,kind:"INITIAL",snapshot:{synthetic:true},createdByText:"Synthetic historical source",reason:"Disposable fixture baseline"}});
+    }
+    // Genuine pre-policy slots, including one deliberately corrupt fixture. The
+    // replacement must observe stored bytes, never manufacture a past identity.
+    for (const corrupt of [false,true]) {
+      const root=await owner.qmsRecord.create({data:{recordType:"DEVIATION",businessCode:"SYNTHETIC-B2-LEGACY-"+(corrupt?"CORRUPT-":"VALID-")+suffix}});
+      await owner.deviation.create({data:{qmsRecordId:root.id,status:"OPEN",departmentId:department.id}});
+      const version=await owner.qmsRecordVersion.create({data:{qmsRecordId:root.id,sequenceNumber:0,kind:"INITIAL",snapshot:{synthetic:true},createdByText:"Legacy label",reason:"Legacy fixture"}});
+      const bytes=Buffer.from("%PDF-1.7\nGenuinely stored synthetic legacy original\n%%EOF");
+      await owner.recordVersionDocument.create({data:{recordVersionId:version.id,kind:"SIGNED_PDF",fileName:"legacy.pdf",fileData:bytes,fileSize:bytes.length,checksum:corrupt?"0".repeat(64):createHash("sha256").update(bytes).digest("hex"),uploadedByText:"Unverified historical uploader",uploadedAt:new Date("2020-01-02T03:04:05Z")}});
     }
     const document=await owner.controlledDocument.create({data:{title:"Synthetic controlled document",createdByText:"Legacy source label",departmentId:department.id}});
     const draft=await owner.deviation.create({data:{status:"DRAFT",investigation:"Existing draft content",qmsRecord:{create:{recordType:"DEVIATION"}}}});
