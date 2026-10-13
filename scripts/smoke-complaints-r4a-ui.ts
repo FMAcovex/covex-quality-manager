@@ -1,3 +1,4 @@
+import { purgeLegacyFixtureDocuments } from "./audit-fixtures/legacy-cleanup";
 import { Prisma } from "@prisma/client";
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
@@ -89,7 +90,8 @@ async function main(){
   await browser.close();
   // Also clean a committed Draft when the browser fails before its navigation.
   ids.push(...(await prisma.complaint.findMany({where:{partyName:{startsWith:marker}},select:{qmsRecordId:true}})).map(row=>row.qmsRecordId));
-  await prisma.reviewMessage.deleteMany({where:{reviewThread:{qmsRecordId:{in:ids}}}});await prisma.reviewThread.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.recordVersionDocument.deleteMany({where:{recordVersion:{qmsRecordId:{in:ids}}}});await prisma.generatedDocument.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.qmsRelation.deleteMany({where:{OR:[{sourceRecordId:{in:ids}},{targetRecordId:{in:ids}}]}});await prisma.changeHistory.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.qmsRecordVersion.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.complaint.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.capa.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.returnRecord.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.qmsRecord.deleteMany({where:{id:{in:ids}}});for(const backup of backups)await prisma.templateVersion.update({where:{id:backup.id},data:backup.data});
+  await prisma.reviewMessage.deleteMany({where:{reviewThread:{qmsRecordId:{in:ids}}}});await prisma.reviewThread.deleteMany({where:{qmsRecordId:{in:ids}}});await purgeLegacyFixtureDocuments(prisma, {recordVersion:{qmsRecordId:{in:ids}}});
+    await prisma.recordVersionDocument.deleteMany({where:{recordVersion:{qmsRecordId:{in:ids}}}});await prisma.generatedDocument.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.qmsRelation.deleteMany({where:{OR:[{sourceRecordId:{in:ids}},{targetRecordId:{in:ids}}]}});await prisma.changeHistory.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.qmsRecordVersion.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.complaint.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.capa.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.returnRecord.deleteMany({where:{qmsRecordId:{in:ids}}});await prisma.qmsRecord.deleteMany({where:{id:{in:ids}}});for(const backup of backups)await prisma.templateVersion.update({where:{id:backup.id},data:backup.data});
  }
 }
 main().finally(()=>prisma.$disconnect()).catch(e=>{console.error(e);process.exitCode=1;});

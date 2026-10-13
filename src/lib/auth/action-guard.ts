@@ -1,4 +1,5 @@
 import { prisma } from "../db";
+import { auditPolicyState } from "../audit/activation";
 import inventory from "./operation-inventory.json";
 import { AccessError, currentIdentity, identityContext, type AccessModule, type AccessPermission } from "./context";
 import { assertPermission } from "./policy";
@@ -105,6 +106,7 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
   return identityContext.run({ principal: user, ...(context?.unitTest ? { unitTest: true } : {}), ...(context?.testHarness ? { testHarness: true } : {}), auditClaims: context?.auditClaims, resource: scope, module: accessModule, createdRecords: context?.createdRecords ?? new Set<string>() }, async () => {
     const execute = () => run(authenticatedArguments(args, user.name, permission === "CREATE", name));
     if (unit) return execute();
+    if (!(await auditPolicyState(prisma)).required) return execute();
     const { actionAuditBoundary } = await import("../audit/action-boundary");
     return actionAuditBoundary(name, args, accessModule, permission, execute);
   });

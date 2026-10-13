@@ -197,7 +197,7 @@ export async function createQmsRelation(
     // writers pass the transaction client, never a second independent client.
     result = await client.qmsRelation.upsert(upsert);
   } else {
-    if (client.$queryRaw) await client.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(["COVEX-QMS-RELATION", relation.sourceRecordId, relation.targetRecordId, relation.relationType])},0))`);
+    if (client.$queryRaw) await client.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(["COVEX-QMS-RELATION", relation.sourceRecordId, relation.targetRecordId, relation.relationType])},0))::text AS locked`);
     const previous = await client.qmsRelation.findUnique({ where: upsert.where });
     result = previous
       ? await client.qmsRelation.update({ where: { id: previous.id }, data: upsert.update })

@@ -1,3 +1,4 @@
+import { purgeLegacyFixtureDocuments } from "./audit-fixtures/legacy-cleanup";
 import assert from "node:assert/strict";
 import { PrismaClient, QmsRecordType } from "@prisma/client";
 
@@ -148,6 +149,11 @@ async function main() {
 
     console.log("Record versioning PostgreSQL smoke test passed.");
   } finally {
+    await purgeLegacyFixtureDocuments(prisma, {
+        recordVersion: {
+          qmsRecordId: { in: [deviationRecord.id, capaRecord.id] },
+        },
+      });
     await prisma.recordVersionDocument.deleteMany({
       where: {
         recordVersion: {

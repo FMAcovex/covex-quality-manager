@@ -11,9 +11,9 @@ DO $$
 DECLARE object_name TEXT; function_id regprocedure;
 BEGIN
   FOR object_name IN SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN (
-    'AuditPolicyRequirement','AuditAdministrationRoot','AuditEventAdditionalTarget','AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditCaptureTablePolicy','AuditCaptureFieldPolicy','AuditOperationEvidence','AuditCommandResult','SignedDocumentCustody') LOOP
+    'AuditPolicyRequirement','AuditAdministrationRoot','AuditEventAdditionalTarget','AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditCaptureTablePolicy','AuditCaptureFieldPolicy','AuditOperationEvidence','AuditCommandResult','SignedDocumentCustody','AuditTechnicalContext','AuditTechnicalEvent') LOOP
     EXECUTE format('REVOKE ALL ON public.%I FROM covex_app',object_name);
-    IF object_name NOT IN ('AuditBusinessContext','AuditMutationWitness','AuditRootBinding') THEN EXECUTE format('GRANT SELECT ON public.%I TO covex_app',object_name); END IF;
+    IF object_name NOT IN ('AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditTechnicalContext') THEN EXECUTE format('GRANT SELECT ON public.%I TO covex_app',object_name); END IF;
   END LOOP;
   FOR function_id IN SELECT p.oid::regprocedure FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'covex_b2_%' LOOP
     EXECUTE format('REVOKE ALL ON FUNCTION %s FROM covex_app',function_id);
@@ -26,6 +26,9 @@ BEGIN
   END IF;
   IF to_regprocedure('public.covex_b2_retain_signed_original(uuid,text,text,text,bytea,text,text,text,text)') IS NOT NULL THEN
     GRANT EXECUTE ON FUNCTION covex_b2_retain_signed_original(UUID,TEXT,TEXT,TEXT,BYTEA,TEXT,TEXT,TEXT,TEXT) TO covex_app;
+  END IF;
+  IF to_regprocedure('public.covex_b2_expire_staging(uuid)') IS NOT NULL THEN
+    GRANT EXECUTE ON FUNCTION covex_b2_expire_staging(UUID) TO covex_app;
   END IF;
 END;
 $$;

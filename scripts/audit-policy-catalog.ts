@@ -42,7 +42,7 @@ const additional: Record<string,string[]> = {
 };
 export function auditPolicyCatalogue() {
   const inventory = auditWriterInventory(), source = readFileSync("docs/PHASE_4B3_A.md", "utf8");
-  const prohibitedModels = new Set(["AuthSession", "AuthLoginAttempt", "AuditOperation", "AuditEvent", "AuditOperationTarget", "AuditRuntimeContext", "AuditAggregateCursor", "AuditPilotRecord", "AuditPolicyRequirement", "AuditAdministrationRoot", "AuditEventAdditionalTarget", "AuditBusinessContext", "AuditMutationWitness", "AuditRootBinding", "AuditCaptureTablePolicy", "AuditCaptureFieldPolicy", "AuditOperationEvidence", "AuditCommandResult"]);
+  const prohibitedModels = new Set(["AuthSession", "AuthLoginAttempt", "AuditOperation", "AuditEvent", "AuditOperationTarget", "AuditRuntimeContext", "AuditAggregateCursor", "AuditPilotRecord", "AuditPolicyRequirement", "AuditAdministrationRoot", "AuditEventAdditionalTarget", "AuditBusinessContext", "AuditMutationWitness", "AuditRootBinding", "AuditCaptureTablePolicy", "AuditCaptureFieldPolicy", "AuditOperationEvidence", "AuditCommandResult", "AuditTechnicalContext", "AuditTechnicalEvent"]);
   const secretFields = new Set(["tokenHash", "csrfHash", "nonce", "verifier", "password", "secret", "accessToken", "refreshToken"]);
   const fieldCandidates = Object.fromEntries(Prisma.dmmf.datamodel.models.filter(model => !prohibitedModels.has(model.name)).map(model => [model.name, model.fields.filter(field => field.kind !== "object" && field.type !== "Bytes" && !secretFields.has(field.name)).map(field => ({ name: field.name, type: field.type }))]));
   const rows = source.split("\n").filter(line => /^\| (DV|CA|CC|RC|DE|AU|PN|TR)\d{2} /.test(line));

@@ -43,7 +43,7 @@ async function POSTAuthenticatedContent(request: Request) {
         if (form.get("saveBatch") === "on") {
             const actor = currentIdentity()?.principal.name;
             if (typeof actor !== "string") throw new Error("Indica el responsable del lote.");
-            return Response.json({ batchId: await createBatch(buffer, name, actor) }, { headers });
+            return Response.json({ batchId: await createBatch(buffer, name, actor, undefined, { requestId: request.headers.get("idempotency-key") ?? undefined }) }, { headers });
         }
         const report = await previewIndex(buffer, name);
         return Response.json({ report }, { headers });

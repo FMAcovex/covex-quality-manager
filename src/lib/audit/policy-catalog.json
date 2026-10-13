@@ -94,7 +94,9 @@
     "AuditCaptureTablePolicy",
     "AuditCaptureFieldPolicy",
     "AuditOperationEvidence",
-    "AuditCommandResult"
+    "AuditCommandResult",
+    "AuditTechnicalContext",
+    "AuditTechnicalEvent"
   ],
   "secretFields": [
     "tokenHash",

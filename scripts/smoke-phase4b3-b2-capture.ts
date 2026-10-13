@@ -7,7 +7,7 @@ import { identityContext } from "../src/lib/auth/context";
 import { fixtureUsers } from "./auth-fixtures/constants";
 import { auditApplicationFixture, auditedSqlFixture } from "./audit-fixtures/database";
 import { assertAuditProtection } from "../src/lib/audit/protection";
-import contract from "../ops/backup/audit-contract-b2-documents.json";
+import contract from "../ops/backup/audit-contract-b2-staging.json";
 import type { BusinessAuditDescriptor, BusinessAuditCommand } from "../src/lib/audit/business-service";
 
 async function main() {
@@ -40,7 +40,7 @@ async function main() {
     await owner.$executeRawUnsafe(`GRANT INSERT,UPDATE,DELETE ON "AuthSession","AuthLoginAttempt" TO "${appRole}"`);
     await owner.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_b2_begin(UUID,UUID,TEXT,TEXT,TEXT,TEXT,TEXT) TO "${appRole}"`);
     await owner.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_b2_command_outcome(JSONB,JSONB),covex_b2_check_claims(UUID,JSONB) TO "${appRole}"`);
-    await owner.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_b2_retain_signed_original(UUID,TEXT,TEXT,TEXT,BYTEA,TEXT,TEXT,TEXT,TEXT) TO "${appRole}"`);
+    await owner.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_b2_retain_signed_original(UUID,TEXT,TEXT,TEXT,BYTEA,TEXT,TEXT,TEXT,TEXT),covex_b2_expire_staging(UUID) TO "${appRole}"`);
     await owner.$transaction(tx=>assertAuditProtection(tx));
     const department=await owner.department.findFirstOrThrow();
     if (!await owner.department.findUnique({where:{code:"LG-00"}})) await owner.department.create({data:{code:"LG-00",name:"Synthetic returns fixture department"}});
@@ -76,6 +76,10 @@ async function main() {
     }
     const document=await owner.controlledDocument.create({data:{title:"Synthetic controlled document",createdByText:"Legacy source label",departmentId:department.id}});
     const draft=await owner.deviation.create({data:{status:"DRAFT",investigation:"Existing draft content",qmsRecord:{create:{recordType:"DEVIATION"}}}});
+    for (const state of ["PARTIAL","PENDING","CONFIRMED"]) {
+      const batch=await owner.controlledDocumentImportBatch.create({data:{fileName:"SYNTHETIC-B2-STAGING-"+state+".xlsx",sha256:"f".repeat(64),analyzedAt:new Date(),actor:"Historical staging label",summary:{synthetic:true},reportMetadata:{synthetic:true},state,expiresAt:new Date(Date.now()+(state==="PENDING"?86400000:-86400000))}});
+      for (const confirmed of [false,true]) await owner.controlledDocumentImportRow.create({data:{batchId:batch.id,sourceKey:(confirmed?"d":"e").repeat(64),data:{synthetic:true},...(confirmed?{result:{synthetic:true}}:{})}});
+    }
     await owner.auditPilotRecord.create({data:{qmsRecordId:records.DEVIATION.qmsRecordId}});
     await owner.$executeRaw`SELECT covex_b2_require_policy('Synthetic capture tests; no corporate approval')`;
     process.env.DATABASE_URL=url.href;

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "../db";
+import { auditPolicyState } from "../audit/activation";
 import { accessModules, permissions, AccessError, identityContext, currentIdentity, type Principal } from "./context";
 import { assertPermission } from "./policy";
 import { requireCsrf, requireUser } from "./session";
@@ -12,6 +13,7 @@ async function administrationCommand<T>(name: "administerUser" | "configureRole"
   const context = currentIdentity();
   return identityContext.run({ ...context, principal: actor, auditClaims: [...(context?.auditClaims ?? []), { module: "SYSTEM", permission: "MANAGE_USERS", resource: {} }] }, async () => {
     if (context?.unitTest && process.env.VITEST === "true" && process.env.APP_ENV === "test") return execute();
+    if (!(await auditPolicyState(prisma)).required) return execute();
     const { actionAuditBoundary } = await import("../audit/action-boundary");
     return actionAuditBoundary(name, [input, ...(form ? [form] : [])], "SYSTEM", "MANAGE_USERS", execute);
   });

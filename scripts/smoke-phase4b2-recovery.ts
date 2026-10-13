@@ -120,6 +120,14 @@ async function main() {
       await tx.recordVersionDocument.update({ where: { id: old.id }, data: { custodyId: receipt.custody_id, fileName: "b2-received.pdf", fileData: bytes, fileSize: bytes.length, checksum: sha256(bytes), uploadedByText: fixtureUsers.qa.name } });
       await tx.changeHistory.create({ data: { qmsRecordId: deviation.qmsRecordId, changedByText: fixtureUsers.qa.name, fieldPath: "__signed_document__", oldValue: { checksum: old.checksum }, newValue: { checksum: sha256(bytes) }, reason: "Synthetic recovered signed supersession" } });
     });
+    let stagingId = "";
+    await businessSqlFixture(auditSourceApp, fixtureUsers.qa.id, randomUUID(), "PN06", "PNT", "IMPORT", null, async tx => {
+      const staging = await tx.controlledDocumentImportBatch.create({ data: { fileName: "synthetic-recovery-staging.xlsx", sha256: "c".repeat(64), analyzedAt: new Date(), actor: fixtureUsers.qa.name, summary: { synthetic: true }, reportMetadata: { synthetic: true }, expiresAt: new Date(Date.now()-86400000) } });
+      stagingId = staging.id;
+      await tx.controlledDocumentImportRow.create({ data: { batchId: staging.id, sourceKey: "c".repeat(64), data: { synthetic: true } } });
+    });
+    const [expiry] = await auditSourceApp.$queryRaw<{ expired: number }[]>`SELECT covex_b2_expire_staging(${fixtureUsers.qa.id}::uuid) AS expired`;
+    assert.equal(expiry.expired, 1);
     const auditGolden = {
       operations: await source.auditOperation.findMany({ orderBy: { id: "asc" } }),
       events: await source.auditEvent.findMany({ orderBy: { id: "asc" } }),
@@ -130,9 +138,10 @@ async function main() {
       additionalTargets: await source.auditEventAdditionalTarget.findMany({ orderBy: [{ eventId: "asc" }, { rootKey: "asc" }] }),
       custody: await source.signedDocumentCustody.findMany({ orderBy: { id: "asc" }, include: { originalDocument: true } }),
       slots: await source.recordVersionDocument.findMany({ orderBy: { id: "asc" } }),
+      technical: await source.auditTechnicalEvent.findMany({ orderBy: { id: "asc" } }),
     };
-    assert.equal(auditGolden.operations.filter(op => op.schemaVersion === 2).length, 4);
-    assert.equal(auditGolden.receipts.length, 4); assert.equal(auditGolden.custody.length, 3);
+    assert.equal(auditGolden.operations.filter(op => op.schemaVersion === 2).length, 5);
+    assert.equal(auditGolden.receipts.length, 5); assert.equal(auditGolden.custody.length, 3); assert.equal(auditGolden.technical.length, 1);
     assert(auditGolden.events.some(event => event.entityType === "SignedDocumentCustody"));
     assert(auditGolden.evidence.length >= 3);
     await source.authSession.create({ data: { userId: fixtureUsers.qa.id, tokenHash: sha256(oldToken), csrfHash: sha256("synthetic-csrf"), expiresAt: new Date(Date.now() + 3600000) } });
@@ -229,8 +238,10 @@ async function main() {
     assert.deepEqual(await restored.auditEventAdditionalTarget.findMany({ orderBy: [{ eventId: "asc" }, { rootKey: "asc" }] }), auditGolden.additionalTargets);
     assert.deepEqual(await restored.signedDocumentCustody.findMany({ orderBy: { id: "asc" }, include: { originalDocument: true } }), auditGolden.custody, "Exact originals, historical identity, custodian, supersession links and SHA survive offline recovery");
     assert.deepEqual(await restored.recordVersionDocument.findMany({ orderBy: { id: "asc" } }), auditGolden.slots);
+    assert.deepEqual(await restored.auditTechnicalEvent.findMany({ orderBy: { id: "asc" } }), auditGolden.technical);
     assert.equal(await restored.auditRuntimeContext.count(), 0);
     assert.equal(await restored.auditBusinessContext.count(), 0); assert.equal(await restored.auditMutationWitness.count(), 0); assert.equal(await restored.auditRootBinding.count(), 0);
+    assert.equal(await restored.auditTechnicalContext.count(), 0);
     const nextAuditRole = "covex4b3_afterrestore_" + id; auditRoles.push(nextAuditRole);
     auditRestoredApp = await auditApplicationFixture(restored, restoredUrl, nextAuditRole);
     await businessApplicationGrantsFixture(restored, nextAuditRole);
@@ -239,8 +250,18 @@ async function main() {
     const nextAudit = await auditedSqlFixture(auditRestoredApp, fixtureUsers.qa.id, [deviation.qmsRecordId!], randomUUID(), 8);
     assert.notEqual(nextAudit.operation_id, auditReceipt.operation_id);
     assert.equal((await restored.auditOperationTarget.findFirstOrThrow({ where: { operationId: nextAudit.operation_id } })).aggregateSequence, auditGolden.cursors.find(c => c.rootKey === "QMS_RECORD:" + deviation.qmsRecordId)!.lastSequence + BigInt(1));
+    const nextBusiness = await businessSqlFixture(auditRestoredApp, fixtureUsers.qa.id, randomUUID(), "DV02", "DEVIATION", "EDIT", null, async tx => {
+      await tx.deviation.update({ where: { id: deviation.id }, data: { internalObservations: "New B2 operation after isolated recovery" } });
+    });
+    assert.equal((await restored.auditOperationTarget.findFirstOrThrow({ where: { operationId: nextBusiness } })).aggregateSequence, auditGolden.cursors.find(c => c.rootKey === "QMS_RECORD:" + deviation.qmsRecordId)!.lastSequence + BigInt(2));
+    const newEvent = await restored.auditEvent.findFirstOrThrow({ where: { operationId: nextBusiness, fieldPath: "internalObservations" } });
+    assert.deepEqual(newEvent.oldValue, { present: true, type: "NULL", value: null });
+    assert.deepEqual(newEvent.newValue, { present: true, type: "STRING", value: "New B2 operation after isolated recovery" });
     await assert.rejects(auditRestoredApp.$executeRawUnsafe('TRUNCATE "AuditEvent" CASCADE'));
     await assert.rejects(auditRestoredApp.$queryRaw`SELECT * FROM "AuditBusinessContext"`);
+    await assert.rejects(auditRestoredApp.$queryRaw`SELECT * FROM "AuditTechnicalContext"`);
+    await assert.rejects(restored.auditTechnicalEvent.update({ where: { id: auditGolden.technical[0].id }, data: { deletedPendingRows: 0 } }));
+    assert.equal((await restored.controlledDocumentImportBatch.findUniqueOrThrow({ where: { id: stagingId } })).state, "EXPIRED");
     await assert.rejects(auditRestoredApp.signedDocumentCustody.delete({ where: { id: auditGolden.custody[0].id } }));
     await assert.rejects(auditRestoredApp.generatedDocument.update({ where: { id: auditGolden.custody[0].originalDocumentId }, data: { fileName: "forbidden-after-restore.pdf" } }));
     assert.deepEqual((await restored.qmsRecord.findMany({ orderBy: { id: "asc" }, select: { id: true } })).map(r => r.id), records.map(r => r.id), "UUID sin expedientes duplicados");

@@ -27,6 +27,47 @@ const settled = async (run: () => Promise<unknown>) => {
   try { return await run(); }
   catch (error) { if (error && typeof error === "object" && "digest" in error && String(error.digest).startsWith("NEXT_REDIRECT;")) return { redirect: error.digest }; throw error; }
 };
+
+it("expires only actual pending staging through a private technical lease, atomically and without fabricating business events", async () => {
+  const { expireBatches } = await import("../../src/modules/controlled-documents/import/service");
+  const { importDb } = await import("../../src/modules/controlled-documents/import/database");
+  try {
+    const { businessSqlFixture } = await import("./database");
+    await asUser(qa, () => businessSqlFixture(importDb, qa.id, randomUUID(), "PN06", "PNT", "IMPORT", null, async tx => {
+      const batch = await tx.controlledDocumentImportBatch.create({ data: { fileName: "SYNTHETIC-B2-STAGING-OWN-PARTIAL.xlsx", sha256: "c".repeat(64), analyzedAt: new Date(), actor: qa.name, state: "PARTIAL", summary: { synthetic: true }, reportMetadata: { synthetic: true }, expiresAt: new Date(Date.now()-86400000) } });
+      for (const confirmed of [false,true]) await tx.controlledDocumentImportRow.create({ data: { batchId: batch.id, sourceKey: (confirmed?"d":"e").repeat(64), data: { synthetic: true }, ...(confirmed?{result:{synthetic:true}}:{}) } });
+    }));
+    // Another original import may have triggered expiry earlier; this test owns
+    // its rollback fixture and does not depend on Vitest file execution order.
+    const expired = await inspector.controlledDocumentImportBatch.findFirstOrThrow({ where: { fileName: "SYNTHETIC-B2-STAGING-OWN-PARTIAL.xlsx" }, include: { rows: true } });
+    const kept = await inspector.controlledDocumentImportBatch.findMany({ where: { fileName: { in: ["SYNTHETIC-B2-STAGING-PENDING.xlsx","SYNTHETIC-B2-STAGING-CONFIRMED.xlsx"] } }, include: { rows: true }, orderBy: { id: "asc" } });
+    const operations = await inspector.auditOperation.count();
+    const technicalCount = await inspector.auditTechnicalEvent.count();
+    await inspector.$executeRawUnsafe('ALTER TABLE "AuditTechnicalEvent" ADD CONSTRAINT b2_technical_failure CHECK (operation=\'NEVER_SUCCESS\') NOT VALID');
+    try {
+      await expect(asUser(reader, () => expireBatches())).rejects.toThrow();
+      expect(await inspector.controlledDocumentImportBatch.findUniqueOrThrow({ where: { id: expired.id }, include: { rows: true } })).toEqual(expired);
+      expect(await inspector.auditTechnicalEvent.count()).toBe(technicalCount);
+    } finally { await inspector.$executeRawUnsafe('ALTER TABLE "AuditTechnicalEvent" DROP CONSTRAINT b2_technical_failure'); }
+    const expiredCount = await asUser(reader, () => expireBatches()) as number;
+    expect(expiredCount).toBeGreaterThanOrEqual(1);
+    const current = await inspector.controlledDocumentImportBatch.findUniqueOrThrow({ where: { id: expired.id }, include: { rows: true } });
+    expect(current.state).toBe("EXPIRED"); expect(current.version).toBe(expired.version + 1);
+    expect(current.rows).toEqual(expired.rows.filter(row => row.result !== null));
+    expect(await inspector.controlledDocumentImportBatch.findMany({ where: { id: { in: kept.map(b => b.id) } }, include: { rows: true }, orderBy: { id: "asc" } })).toEqual(kept);
+    const event = await inspector.auditTechnicalEvent.findFirstOrThrow({ where: { batchId: expired.id } });
+    expect(event.actorKind).toBe("SYSTEM"); expect(event.triggeredByUserId).toBe(reader.id); expect(event.triggeredByName).toBe(reader.name);
+    expect(event.deletedPendingRows).toBe(1); expect(event.retainedConfirmedRows).toBe(1);
+    expect(await inspector.auditOperation.count()).toBe(operations);
+    expect(await asUser(reader, () => expireBatches())).toBe(0); expect(await inspector.auditTechnicalEvent.count()).toBe(technicalCount + expiredCount);
+    expect(await inspector.auditTechnicalContext.count()).toBe(0);
+    await expect(importDb.$queryRaw`SELECT * FROM "AuditTechnicalContext"`).rejects.toThrow();
+    await expect(inspector.auditTechnicalEvent.update({ where: { id: event.id }, data: { deletedPendingRows: 0 } })).rejects.toThrow();
+    await expect(inspector.controlledDocumentImportBatch.update({ where: { id: kept[0].id }, data: { state: "EXPIRED" } })).rejects.toThrow();
+    const { withBusinessAuditResult } = await import("../../src/lib/audit/business-service");
+    await expect(asUser(qa, () => withBusinessAuditResult({ operationCode: "PN06", module: "PNT", permission: "IMPORT" }, { requestId: randomUUID(), digest: "f".repeat(64), reason: null }, () => expireBatches()))).rejects.toThrow();
+  } finally { await importDb.$disconnect(); }
+}, 30000);
 const cases = [
   ["DEVIATION", "deviation", "../../src/modules/deviations/actions", "createDeviationAction", "updateDeviationAction"],
   ["CAPA", "capa", "../../src/modules/capa/actions", "createCapaAction", "updateCapaAction"],
@@ -412,6 +453,8 @@ it("retains exact immutable signed originals and an authenticated supersession t
   const first = await asUser(qa, () => uploadDeviationSignedPdfAction(record.id, version.id, { error: null, success: null }, upload(0, firstId))) as { error: string | null };
   expect(first.error).toBeNull();
   const firstSlot = await inspector.recordVersionDocument.findUniqueOrThrow({ where: { recordVersionId_kind: { recordVersionId: version.id, kind: "SIGNED_PDF" } }, include: { custody: { include: { originalDocument: true } } } });
+  const { purgeLegacyFixtureDocuments } = await import("./legacy-cleanup");
+  await expect(purgeLegacyFixtureDocuments(inspector, { id: firstSlot.id })).rejects.toThrow("Non-audited disposable fixture and its controlled owner required");
   expect(firstSlot.custody?.retainedByUserId).toBe(qa.id); expect(firstSlot.uploadedByText).toBe(qa.name);
   expect(firstSlot.custody?.sourceKind).toBe("RECEIVED_SIGNED_PDF");
   expect(Array.from(firstSlot.custody!.originalDocument.fileData!)).toEqual(Array.from(originals[0]));

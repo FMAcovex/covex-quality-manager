@@ -1,4 +1,5 @@
 import { prisma } from "../db";
+import { auditPolicyState } from "../audit/activation";
 import inventory from "./operation-inventory.json";
 import { AccessError, currentIdentity, identityContext, type AccessModule, type AccessPermission } from "./context";
 import { assertPermission } from "./policy";
@@ -55,6 +56,7 @@ async function authorizeAndRunRoute<T extends Response>(file: string, method: st
     if (body) authenticated[0] = new Request(request.url, { method, headers: request.headers, body: JSON.stringify(body) });
     const response = await identityContext.run({ principal: user, ...(unit ? { unitTest: true } : {}), ...(context?.testHarness ? { testHarness: true } : {}), auditClaims: context?.auditClaims, resource: scope, module: accessModule, createdRecords: new Set<string>() }, async () => {
       if (unit) return run(authenticated);
+      if (!(await auditPolicyState(prisma)).required) return run(authenticated);
       const { routeAuditBoundary } = await import("../audit/route-boundary");
       return routeAuditBoundary(file, method, authenticated[0] as Request, params, accessModule, permission, body, () => run(authenticated));
     });
