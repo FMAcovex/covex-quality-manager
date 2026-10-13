@@ -492,3 +492,7 @@ QmsRecordVersion INITIAL/AUDIT_REVISION con snapshot completo congelado; Templat
 ## Devoluciones R4B
 
 R4B no cambia Prisma ni añade migraciones: ReturnFollowup y QmsRecordVersion técnico único existentes. extraData.r4b guarda aplicabilidad/destino contextual y conserva otras claves legacy. ReturnProduct conserva UUID al editar/reordenar. GeneratedDocument archiva binarios/checksum y snapshot inmutable para Return; PDF sustituidos también se archivan. Véase RETURNS_R4B.md.
+
+## Audit Trail técnico 4B3-B1
+
+La migración aditiva `20261013000100_audit_engine_b1` añade AuditOperation, AuditOperationTarget y AuditEvent, cursor por raíz AuditAggregateCursor, lease privada AuditRuntimeContext y fixture AuditPilotRecord. Raíces TEXT mediante FKs reales a QmsRecord/ControlledDocument/AuditAnnualPlan; actor AuthUser y operaciones UUID. Eventos tipados, secuencia BIGINT y correlación operación/raíz; referencias opcionales a versiones/documentos con integridad SQL. No se reconstruye historial previo ni se altera ChangeHistory/snapshots/documentos. Captura activa exclusivamente para el piloto sintético aislado, sin política GMP global. Contrato, privilegios, recuperación y límites en [PHASE_4B3_B1.md](PHASE_4B3_B1.md).

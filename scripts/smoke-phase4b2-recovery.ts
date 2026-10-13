@@ -9,6 +9,7 @@ import { isolatedTestEnvironment } from "../src/lib/auth/config";
 import { fixtureUsers } from "./auth-fixtures/constants";
 import { fixtureLogin, cookieHeader } from "./auth-fixtures/http";
 import { writeZip, readZip } from "../src/lib/ooxml/zip";
+import { auditApplicationFixture, auditedSqlFixture } from "./audit-fixtures/database";
 
 const sha256 = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
 function officeFixture(kind: "word" | "sheet") {
@@ -54,6 +55,8 @@ async function main() {
   const root = mkdtempSync(join(tmpdir(), "covex4b2-")), assetRoot = join(root, "templates"), keys = ["encryption.key", "manifest.key"];
   const env = { ...process.env, DATABASE_URL: sourceUrl.href, AUTH_ORIGIN: "http://127.0.0.1:3102", AUTH_TEST_ISSUER: "http://127.0.0.1:5462" };
   let restored: PrismaClient | undefined, app: ChildProcess | undefined, provider: ChildProcess | undefined;
+  let auditSourceApp: PrismaClient | undefined, auditRestoredApp: PrismaClient | undefined;
+  const auditRoles: string[] = [];
   let pgContainer: string | undefined, pgPassPath: string | undefined;
   const role = "covex4b2_backup_" + id, roleSecret = randomBytes(32).toString("hex");
   const databases: string[] = [];
@@ -94,6 +97,16 @@ async function main() {
     const plan = await source.auditAnnualPlan.create({ data: { year: 2026, auditType: "INTERNAL", title: "Programa ficticio", createdByText: "Autor sintético" } });
     await source.auditAnnualProgrammeVersion.create({ data: { planId: plan.id, sequenceNumber: 0, requestId: randomUUID(), requestHash: sha256(sheet), contentFingerprint: sha256(sheet), snapshot: { synthetic: true }, templateVersionId: template.id, templateChecksum: sha256(word), reference: "4B2-FICTITIOUS", generatedBy: "Autor sintético", reason: "Prueba", fileName: "synthetic.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileData: sheet, fileSize: sheet.length, checksum: sha256(sheet) } });
     const oldToken = randomBytes(32).toString("base64url");
+    const auditRole = "covex4b3_recovery_" + id; auditRoles.push(auditRole);
+    await source.auditPilotRecord.create({ data: { qmsRecordId: deviation.qmsRecordId! } });
+    auditSourceApp = await auditApplicationFixture(source, new URL(sourceUrl), auditRole);
+    const auditReceipt = await auditedSqlFixture(auditSourceApp, fixtureUsers.qa.id, [deviation.qmsRecordId!], randomUUID(), 7);
+    const auditGolden = {
+      operations: await source.auditOperation.findMany({ orderBy: { id: "asc" } }),
+      events: await source.auditEvent.findMany({ orderBy: { id: "asc" } }),
+      targets: await source.auditOperationTarget.findMany({ orderBy: { rootKey: "asc" } }),
+    };
+    assert.equal(auditGolden.events.length, 2);
     await source.authSession.create({ data: { userId: fixtureUsers.qa.id, tokenHash: sha256(oldToken), csrfHash: sha256("synthetic-csrf"), expiresAt: new Date(Date.now() + 3600000) } });
     await source.authLoginAttempt.create({ data: { id: randomUUID(), state: "synthetic", nonce: "synthetic", verifier: "synthetic", returnTo: "/", expiresAt: new Date(Date.now() + 60000) } });
     // Least-privilege backup identity on this disposable database only.
@@ -123,6 +136,9 @@ async function main() {
     const configFile = join(root, "config.json"); writeFileSync(configFile, JSON.stringify(cfg), { mode: 0o600 });
     const args = (operation: string, ...extra: string[]) => ["ops/backup/backup.py", operation, "--config", configFile, ...extra];
     function refused(extra: string[]) { const result = spawnSync("python3", extra, { env: pgEnv, encoding: "utf8", timeout: 120000 }); assert.notEqual(result.status, 0); assert.equal(JSON.parse(result.stdout.trim()).status, "failure"); }
+    await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" DISABLE TRIGGER audit_event_immutable');
+    refused(args("backup"));
+    await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" ENABLE TRIGGER audit_event_immutable');
     renameSync(storageRoot, storageRoot + "-absent");
     refused(args("backup")); assert(!readdirSync(root).includes("storage"), "El almacenamiento ausente no se recrea");
     renameSync(storageRoot + "-absent", storageRoot);
@@ -149,6 +165,15 @@ async function main() {
     databases.push(failedName);
     refused(args("restore", "--bundle", inconsistent, "--target", failedName, "--confirm", failedName, "--assets-out", join(root, "failed-assets")));
     assert.equal(JSON.parse(readFileSync(join(cfg.status_directory, "restore.json"), "utf8")).status, "failure", "Una restauración con divergencia no se declara satisfactoria");
+    // Isolated pg_restore shim weakens a NEW fixture after a genuine restore.
+    const unsafeAuditName = "covex_phase4b1_test_4b2_restore_" + randomBytes(8).toString("hex"); databases.push(unsafeAuditName);
+    const restoreTool = command("python3", ["-c", "import shutil;print(shutil.which('pg_restore'))"], pgEnv);
+    const shim = join(root, "unsafe-audit-shim"); mkdirSync(shim);
+    const shimCode = `#!/usr/bin/env python3\nimport os,subprocess,sys\nr=subprocess.run([${JSON.stringify(restoreTool)},*sys.argv[1:]])\nif r.returncode==0 and os.environ.get('PGDATABASE')==${JSON.stringify(unsafeAuditName)} and any(a.startswith('--dbname=') for a in sys.argv[1:]):\n subprocess.run(['psql','-X','-v','ON_ERROR_STOP=1','-c','ALTER TABLE "AuditEvent" DISABLE TRIGGER audit_event_immutable'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)\nsys.exit(r.returncode)\n`;
+    writeFileSync(join(shim, "pg_restore"), shimCode, { mode: 0o700 });
+    const badProtection = spawnSync("python3", args("restore", "--bundle", bundle, "--target", unsafeAuditName, "--confirm", unsafeAuditName, "--assets-out", join(root, "unprotected-assets")), { env: { ...pgEnv, PATH: shim + ":" + pgEnv.PATH }, encoding: "utf8", timeout: 120000 });
+    assert.notEqual(badProtection.status, 0);
+    assert.equal(JSON.parse(badProtection.stdout.trim()).reason, "audit-protection-unavailable", "La recuperación sin protección queda en cuarentena");
     // The source is unavailable: recovery relies only on artifact, keys and recovery server.
     cfg.source.port = 1; writeFileSync(configFile, JSON.stringify(cfg), { mode: 0o600 });
     refused(args("backup"));
@@ -159,6 +184,16 @@ async function main() {
     refused(args("restore", "--bundle", recoveryBundle, "--target", targetName, "--confirm", targetName, "--assets-out", join(root, "repeat")));
     const restoredUrl = new URL(base); restoredUrl.pathname = "/" + targetName;
     restored = new PrismaClient({ datasourceUrl: restoredUrl.href });
+    assert.deepEqual(await restored.auditOperation.findMany({ orderBy: { id: "asc" } }), auditGolden.operations, "Journal recuperado sin fabricación de eventos históricos");
+    assert.deepEqual(await restored.auditEvent.findMany({ orderBy: { id: "asc" } }), auditGolden.events);
+    assert.deepEqual(await restored.auditOperationTarget.findMany({ orderBy: { rootKey: "asc" } }), auditGolden.targets);
+    assert.equal(await restored.auditRuntimeContext.count(), 0);
+    const nextAuditRole = "covex4b3_afterrestore_" + id; auditRoles.push(nextAuditRole);
+    auditRestoredApp = await auditApplicationFixture(restored, restoredUrl, nextAuditRole);
+    const nextAudit = await auditedSqlFixture(auditRestoredApp, fixtureUsers.qa.id, [deviation.qmsRecordId!], randomUUID(), 8);
+    assert.notEqual(nextAudit.operation_id, auditReceipt.operation_id);
+    assert.equal((await restored.auditOperationTarget.findFirstOrThrow({ where: { operationId: nextAudit.operation_id } })).aggregateSequence, BigInt(2));
+    await assert.rejects(auditRestoredApp.$executeRawUnsafe('TRUNCATE "AuditEvent" CASCADE'));
     assert.deepEqual((await restored.qmsRecord.findMany({ orderBy: { id: "asc" }, select: { id: true } })).map(r => r.id), records.map(r => r.id), "UUID sin expedientes duplicados");
     assert.equal(await restored.qmsRecordVersion.count(), records.length * 2);
     assert.equal(await restored.qmsRelation.count(), 2);
@@ -187,14 +222,16 @@ async function main() {
     command("node", [resolve("ops/runtime/health.mjs"), env.AUTH_ORIGIN + "/api/health"]);
     await stop(app); app = undefined;
     await assert.rejects(fetch(env.AUTH_ORIGIN + "/api/health"), "Parada efectiva del servicio aislado");
-    console.log("4B2 recovery OK: absent/unmounted/substituted storage refused without creating backups; enrolled test storage positive; PostgreSQL16 consistent encrypted backup; all tables/schema, seven modules, relationships, frozen versions/history, five binary families and external files; tamper/unsafe target/existing target/failure rejected; unavailable source and backup storage recovery; session revocation, fresh OIDC/global read and access revocation; standalone health/start/stop. Synthetic only, pending corporate IT/QA acceptance.");
+    console.log("4B2 recovery OK: absent/unmounted/substituted storage refused without creating backups; enrolled test storage positive; PostgreSQL16 consistent encrypted backup; all tables/schema, seven modules, relationships, frozen versions/history, five binary families and external files; B1 journal/targets/events preserved without fabricated history, next sequence writable, weakened protection quarantined; tamper/unsafe target/existing target/failure rejected; unavailable source and backup storage recovery; session revocation, fresh OIDC/global read and access revocation; standalone health/start/stop. Synthetic only, pending corporate IT/QA acceptance.");
   } finally {
-    await stop(app); await stop(provider); await restored?.$disconnect(); await source.$disconnect();
+    await stop(app); await stop(provider); await auditSourceApp?.$disconnect(); await auditRestoredApp?.$disconnect(); await restored?.$disconnect(); await source.$disconnect();
     for (const database of databases.reverse()) {
       await parent.$executeRaw(Prisma.sql`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=${database} AND pid<>pg_backend_pid()`);
       await parent.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${database}"`);
     }
-    await parent.$executeRawUnsafe(`DROP ROLE IF EXISTS "${role}"`); await parent.$disconnect();
+    await parent.$executeRawUnsafe(`DROP ROLE IF EXISTS "${role}"`);
+    for (const auditRole of auditRoles) await parent.$executeRawUnsafe(`DROP ROLE IF EXISTS "${auditRole}"`);
+    await parent.$disconnect();
     if (pgContainer && pgPassPath) command("docker", ["exec", pgContainer, "rm", "-f", pgPassPath]);
     rmSync(root, { recursive: true, force: true });
   }

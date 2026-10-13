@@ -233,6 +233,7 @@ class StorageSafety(unittest.TestCase):
             Path(next(arg[7:] for arg in args if arg.startswith("--file="))).write_bytes(b"synthetic dump")
         stack = contextlib.ExitStack()
         stack.enter_context(patch.object(backup, "pg_version"))
+        stack.enter_context(patch.object(backup, "audit_protection"))
         stack.enter_context(patch.object(backup, "snapshot", return_value=contextlib.nullcontext("synthetic")))
         stack.enter_context(patch.object(backup, "inventory", return_value=({"external_references_without_custody": 0}, [])))
         stack.enter_context(patch.object(backup, "connection_env", return_value={}))

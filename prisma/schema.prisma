@@ -347,6 +347,8 @@ enum ReviewTargetKind {
 }
 
 model QmsRecord {
+  auditCursors AuditAggregateCursor[]
+  auditPilot AuditPilotRecord?
   id                 String              @id @default(uuid())
   recordType         QmsRecordType
   businessCode       String?
@@ -1209,6 +1211,7 @@ model ChangeHistory {
 }
 
 model QmsRecordVersion {
+  auditEvents AuditEvent[]
   authenticatedUserId String? @db.Uuid
   authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id                 String            @id @default(uuid())
@@ -1299,6 +1302,7 @@ model RecordVersionDocument {
 }
 
 model GeneratedDocument {
+  auditEvents AuditEvent[]
   authenticatedUserId String? @db.Uuid
   authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   fileData          Bytes?
@@ -1579,6 +1583,7 @@ model Audit {
 }
 
 model AuditAnnualPlan {
+  auditCursors AuditAggregateCursor[]
   technicalApproverName String?
   qualityApproverName String?
   programmeVersions AuditAnnualProgrammeVersion[]
@@ -1831,6 +1836,7 @@ enum ControlledDocumentVerificationStatus {
 }
 
 model ControlledDocument {
+  auditCursors AuditAggregateCursor[]
   id String @id @default(uuid())
   baseCode String? @unique
   title String? @db.Text
@@ -2121,6 +2127,7 @@ enum AccessScope {
  ASSIGNED
 }
 model AuthUser {
+ auditOperations AuditOperation[]
  id String @id @default(uuid()) @db.Uuid
  tenantId String @db.Uuid
  objectId String @db.Uuid
@@ -2224,4 +2231,90 @@ model AuthAuthorizationChange {
  newValue Json?
  reason String
  createdAt DateTime @default(now())
+}
+
+// 4B3-B1 infrastructure. No production QMS capture policy is activated.
+model AuditOperation {
+  id String @id @db.Uuid
+  actorUserId String @db.Uuid
+  actorUser AuthUser @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorName String
+  origin String
+  operation String
+  requestId String @db.Uuid
+  requestDigest String
+  reason String
+  policyVersion String
+  schemaVersion Int
+  occurredAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  databasePrincipal String
+  targets AuditOperationTarget[]
+  events AuditEvent[]
+  context AuditRuntimeContext?
+  @@unique([actorUserId, origin, requestId])
+  @@index([occurredAt, id])
+}
+
+model AuditAggregateCursor {
+  rootKey String @id
+  rootKind String
+  qmsRecordId String? @unique
+  qmsRecord QmsRecord? @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  controlledDocumentId String? @unique
+  controlledDocument ControlledDocument? @relation(fields: [controlledDocumentId], references: [id], onDelete: Restrict)
+  auditAnnualPlanId String? @unique
+  auditAnnualPlan AuditAnnualPlan? @relation(fields: [auditAnnualPlanId], references: [id], onDelete: Restrict)
+  lastSequence BigInt @default(0)
+  targets AuditOperationTarget[]
+}
+
+model AuditOperationTarget {
+  operationId String @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  rootKey String
+  root AuditAggregateCursor @relation(fields: [rootKey], references: [rootKey], onDelete: Restrict)
+  aggregateSequence BigInt
+  events AuditEvent[]
+  @@id([operationId, rootKey])
+  @@unique([rootKey, aggregateSequence])
+}
+
+model AuditEvent {
+  id String @id @db.Uuid
+  operationId String @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  rootKey String
+  target AuditOperationTarget @relation(fields: [operationId, rootKey], references: [operationId, rootKey], onDelete: Restrict)
+  eventOrdinal Int
+  entityType String
+  entityId String
+  fieldPath String
+  oldValue Json
+  newValue Json
+  capturedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  recordVersionId String?
+  recordVersion QmsRecordVersion? @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  generatedDocumentId String?
+  generatedDocument GeneratedDocument? @relation(fields: [generatedDocumentId], references: [id], onDelete: Restrict)
+  documentChecksum String?
+  @@unique([operationId, eventOrdinal])
+  @@index([rootKey, capturedAt, id])
+}
+
+// Private transaction lease, removed by deferred coverage validation at commit.
+model AuditRuntimeContext {
+  operationId String @id @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  transactionId BigInt @unique
+  backendPid Int
+  databasePrincipal String
+}
+
+// Synthetic fixture only. No production endpoint and no business fields altered.
+model AuditPilotRecord {
+  qmsRecordId String @id
+  qmsRecord QmsRecord @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  value Int @default(0)
+  revision Int @default(0)
+  updatedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
 }

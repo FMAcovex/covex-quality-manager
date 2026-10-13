@@ -14,5 +14,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE covex_migrator IN SCHEMA public GRANT SELECT, 
 ALTER DEFAULT PRIVILEGES FOR ROLE covex_migrator IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO covex_app;
 ALTER DEFAULT PRIVILEGES FOR ROLE covex_migrator IN SCHEMA public GRANT SELECT ON TABLES TO covex_backup;
 -- Tables already migrated: DBA reviews and grants the same privileges explicitly.
+-- B1 journal is an exception: apply audit-grants.sql AFTER broad grants/migration.
 -- App has no CREATE/ALTER/TRUNCATE grant and is never database/table owner.
 -- Restrict recovery role/network to the independent recovery cluster and maintenance window.

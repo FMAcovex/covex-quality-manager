@@ -182,6 +182,58 @@ def inventory(connection, exported_snapshot=None):
     return {"tables": tables, "schema_sha256": hashlib.sha256(shape).hexdigest(), "external_references_without_custody": unresolved}, files
 
 
+def audit_restore_acl(connection):
+    # --no-acl deliberately avoids source cluster identities. Restore secure
+    # PUBLIC exceptions explicitly before any protection check/access opening.
+    contract = json.loads(Path(__file__).with_name("audit-contract.json").read_text())
+    names = ",".join("'" + name + "'" for name in contract["functions"])
+    statements = sql(connection, f"SELECT 'REVOKE ALL ON FUNCTION '||p.oid::regprocedure::text||' FROM PUBLIC;' FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ({names});").decode()
+    if statements.strip():
+        sql(connection, statements)
+        tables = ",".join('"' + name + '"' for name in contract["tables"])
+        sql(connection, "REVOKE ALL ON " + tables + " FROM PUBLIC;")
+        # Default privileges of the recovery account can reintroduce writers
+        # despite --no-acl. Remove those on NEW journal objects only.
+        protected = ",".join("'" + name + "'" for name in contract["tables"] if name != "AuditPilotRecord")
+        revocations = sql(connection, f"SELECT DISTINCT 'REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON TABLE public.'||quote_ident(c.relname)||' FROM '||quote_ident(r.rolname)||';' FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a JOIN pg_roles r ON r.oid=a.grantee WHERE n.nspname='public' AND c.relname IN ({protected}) AND NOT pg_has_role(a.grantee,c.relowner,'USAGE');").decode()
+        if revocations.strip():
+            sql(connection, revocations)
+
+
+def audit_protection(connection):
+    """A legacy database has no B1 tables. Partial/weakened B1 is quarantined.
+
+    Compare the release contract independently of database function assertions.
+    pg_restore loads data before triggers: historical events are copied, not made.
+    """
+    contract = json.loads(Path(__file__).with_name("audit-contract.json").read_text())
+    names = ",".join("'" + name + "'" for name in contract["tables"])
+    tables = json.loads(sql(connection, f"SELECT coalesce(json_agg(json_build_object('name',c.relname,'owner',pg_get_userbyid(c.relowner))),'[]') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN ({names});"))
+    if not tables:
+        functions_present = sql(connection, "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'covex_audit_%';").strip()
+        require(functions_present == b"0", "audit-protection-unavailable")
+        has_migrations = sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t"
+        if has_migrations:
+            installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261013000100_audit_engine_b1' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
+            require(installed == b"0", "audit-protection-unavailable")
+        return
+    require(len(tables) == len(contract["tables"]) and len({row["owner"] for row in tables}) == 1, "audit-protection-unavailable")
+    protected = ",".join("'" + name + "'" for name in contract["tables"] if name != "AuditPilotRecord")
+    unsafe = sql(connection, f"SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE n.nspname='public' AND c.relname IN ({protected}) AND a.privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER') AND CASE WHEN a.grantee=0 THEN true ELSE NOT pg_has_role(a.grantee,c.relowner,'USAGE') END;").strip()
+    require(unsafe == b"0", "audit-protection-unavailable")
+    functions = json.loads(sql(connection, "SELECT coalesce(json_agg(json_build_object('name',p.proname,'body',p.prosrc,'definer',p.prosecdef,'config',p.proconfig,'owner',pg_get_userbyid(p.proowner),'publicExecute',EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'covex_audit_%';"))
+    require(len(functions) == len(contract["functions"]), "audit-protection-unavailable")
+    for name, expected in contract["functions"].items():
+        actual = next((row for row in functions if row["name"] == name), {})
+        require(actual and hashlib.sha256(actual["body"].encode()).hexdigest() == expected["sha256"] and actual["definer"] == expected["definer"] and actual["config"] == ["search_path=pg_catalog, public"] and actual["owner"] == tables[0]["owner"] and not actual["publicExecute"], "audit-protection-unavailable")
+    triggers = json.loads(sql(connection, f"SELECT coalesce(json_agg(json_build_object('name',t.tgname,'table',c.relname,'function',p.proname,'enabled',t.tgenabled,'type',t.tgtype,'deferred',t.tginitdeferred,'deferrable',t.tgdeferrable)),'[]') FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_proc p ON p.oid=t.tgfoid WHERE n.nspname='public' AND c.relname IN ({names}) AND NOT t.tgisinternal;"))
+    require(len(triggers) == len(contract["triggers"]), "audit-protection-unavailable")
+    for expected in contract["triggers"]:
+        actual = next((row for row in triggers if row["name"] == expected["name"] and row["table"] == expected["table"]), {})
+        require(actual and actual["enabled"] == "O" and actual["function"] == expected["function"] and actual["type"] == expected["type"] and actual["deferred"] == actual["deferrable"] == expected["deferred"], "audit-protection-unavailable")
+    require(sql(connection, 'SELECT count(*) FROM "AuditRuntimeContext";').strip() == b"0", "audit-protection-unavailable")
+
+
 def asset_files(value):
     files, sources = {}, {}
     for asset in value.get("assets", []):
@@ -230,6 +282,7 @@ def backup(value):
 def backup_at_destination(value, output, descriptor, check):
     source = value["source"]
     pg_version(source)
+    audit_protection(source)
     check()
     identifier = "covex-" + dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex
     with tempfile.TemporaryDirectory(prefix="covex-plain-", dir=value["temporary_directory"]) as scratch, tempfile.TemporaryDirectory(prefix=".pending-", dir=output) as staging:
@@ -255,6 +308,7 @@ def backup_at_destination(value, output, descriptor, check):
         (staging / "manifest.mac").write_text(signature(manifest, value) + "\n")
         os.chmod(staging / "manifest.mac", 0o600)
         verify(staging, value)
+        audit_protection(source)
         check()
         os.rename(staging.name, identifier, src_dir_fd=descriptor, dst_dir_fd=descriptor)
         try:
@@ -314,8 +368,11 @@ def restore(value, bundle, name, confirmation, assets_destination):
         run(["pg_restore", "--list", str(scratch / "database.dump")])
         extract_assets(scratch / "assets.tar", assets_destination, manifest["assets"])
         sql(target, f'CREATE DATABASE "{name}" TEMPLATE template0;')
+        sql(target, f'REVOKE CONNECT ON DATABASE "{name}" FROM PUBLIC;')
         run(["pg_restore", "--exit-on-error", "--single-transaction", "--no-owner", "--no-acl", "--dbname=" + name, str(scratch / "database.dump")], connection_env(target, name), timeout=value.get("command_timeout_seconds", 3600))
         restored = {**target, "database": name}
+        audit_restore_acl(restored)
+        audit_protection(restored)
         contents, _ = inventory(restored)
         require(contents == manifest["database"], "restored-content-mismatch")
         # Snapshot equality is verified BEFORE operational sessions are invalidated.
