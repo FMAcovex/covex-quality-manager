@@ -1,0 +1,127 @@
+{
+  "tables": [
+    "AuditOperation",
+    "AuditAggregateCursor",
+    "AuditOperationTarget",
+    "AuditEvent",
+    "AuditRuntimeContext",
+    "AuditPilotRecord"
+  ],
+  "functions": {
+    "covex_audit_value_valid": {
+      "sha256": "bf8ad1da6e401441c916382bc18b58f1a47ae53e515fc47ee7c1045792296187",
+      "definer": false
+    },
+    "covex_audit_immutable": {
+      "sha256": "34728c6c4e151e8e654881b65d6d4d032ed5d0c375ecbe57eee4254adc6eb05d",
+      "definer": false
+    },
+    "covex_audit_context": {
+      "sha256": "3e9318ebbd13babb50476b7d0c2f102827d97065e50e6afcadc47379d73ed525",
+      "definer": true
+    },
+    "covex_audit_stamp_operation": {
+      "sha256": "3c8ecfbbfb8759beb41944c6b5c53038e59a07cb921ebb4c3fc8d05d3472ab8e",
+      "definer": false
+    },
+    "covex_audit_stamp_event": {
+      "sha256": "8f9193ac9ccff6d950caf07450dddcf73483b43966e7f06653c6a82ab0921417",
+      "definer": true
+    },
+    "covex_audit_begin": {
+      "sha256": "b5041b7944c292ba4a5b3c45d6ed20625da7539781cac265c1d95e9f5b06bb3d",
+      "definer": true
+    },
+    "covex_audit_guard_pilot": {
+      "sha256": "9a1e0c14fad00d6f825f1a67695ffcabbc6e36c403b7b647f9c3f644d10d4a7b",
+      "definer": true
+    },
+    "covex_audit_capture_pilot": {
+      "sha256": "3944bd2ab92b1a39e6a85853cce89a0f3e431b520298dc153266480f4feaed6a",
+      "definer": true
+    },
+    "covex_audit_require_events": {
+      "sha256": "de24615bf21904d5193c59f2c7cb87c1d48fbe4d7f4f7610e3850d3b0cf5c723",
+      "definer": true
+    }
+  },
+  "triggers": [
+    {
+      "name": "audit_operation_stamp",
+      "table": "AuditOperation",
+      "function": "covex_audit_stamp_operation",
+      "type": 7,
+      "deferred": false
+    },
+    {
+      "name": "audit_event_stamp",
+      "table": "AuditEvent",
+      "function": "covex_audit_stamp_event",
+      "type": 7,
+      "deferred": false
+    },
+    {
+      "name": "audit_pilot_guard",
+      "table": "AuditPilotRecord",
+      "function": "covex_audit_guard_pilot",
+      "type": 23,
+      "deferred": false
+    },
+    {
+      "name": "audit_pilot_capture",
+      "table": "AuditPilotRecord",
+      "function": "covex_audit_capture_pilot",
+      "type": 17,
+      "deferred": false
+    },
+    {
+      "name": "audit_operation_coverage",
+      "table": "AuditOperation",
+      "function": "covex_audit_require_events",
+      "type": 5,
+      "deferred": true
+    },
+    {
+      "name": "audit_operation_immutable",
+      "table": "AuditOperation",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_operation_no_truncate",
+      "table": "AuditOperation",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_event_immutable",
+      "table": "AuditEvent",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_event_no_truncate",
+      "table": "AuditEvent",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_target_immutable",
+      "table": "AuditOperationTarget",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_target_no_truncate",
+      "table": "AuditOperationTarget",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    }
+  ]
+}
