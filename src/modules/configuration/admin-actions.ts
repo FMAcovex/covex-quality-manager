@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { AlertRuleKind,AlertSeverity,DocumentType,FormVersionStatus,ParameterValueType,Prisma,QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { withDatabaseTransaction } from "@/lib/transaction-context";
 import { isAllowedDocumentType } from "@/modules/configuration/admin-domain";
 
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"?v.trim():"";}
@@ -73,7 +74,7 @@ async function cloneFormVersionActionAuthenticatedContent(formId:string,fd:FormD
   const source=await prisma.formVersion.findUniqueOrThrow({where:{id:formId},include:{fieldConfigs:true}});
   const versionCode=text(fd,"versionCode"),effectiveFrom=text(fd,"effectiveFrom");
   if(!versionCode||!effectiveFrom)throw new Error("Versión y fecha de vigencia son obligatorias.");
-  const created=await prisma.$transaction(async tx=>{
+  const created=await withDatabaseTransaction(prisma, async tx=>{
     const form=await tx.formVersion.create({data:{module:source.module,versionCode,effectiveFrom:new Date(effectiveFrom),status:FormVersionStatus.DRAFT,isActive:false,notes:text(fd,"notes")||`Clonada desde ${source.versionCode}`}});
     if(source.fieldConfigs.length)await tx.formFieldConfig.createMany({data:source.fieldConfigs.map(x=>({formVersionId:form.id,fieldKey:x.fieldKey,label:x.label,sectionKey:x.sectionKey,sectionLabel:x.sectionLabel,sortOrder:x.sortOrder,kind:x.kind,valueType:x.valueType,required:x.required,listAvailable:x.listAvailable,listVisibleByDefault:x.listVisibleByDefault,filterable:x.filterable,simpleExport:x.simpleExport,officialAnnexField:x.officialAnnexField,editableDefinition:x.editableDefinition,options:x.options===null?undefined:x.options as Prisma.InputJsonValue}))});
     return form;
@@ -87,7 +88,7 @@ async function activateFormVersionActionAuthenticatedContent(id:string,fd:FormDa
   if(target.status!=="DRAFT")throw new Error("Solo puede activarse una versión en borrador.");
   const currentActive=await prisma.formVersion.findFirst({where:{module:target.module,status:"ACTIVE",isActive:true,id:{not:id}},orderBy:{effectiveFrom:"desc"}});
   if(currentActive&&target.effectiveFrom<=currentActive.effectiveFrom)throw new Error("La nueva versión debe tener una vigencia posterior a la versión activa.");
-  await prisma.$transaction(async tx=>{
+  await withDatabaseTransaction(prisma, async tx=>{
     const active=await tx.formVersion.findMany({where:{module:target.module,status:"ACTIVE",isActive:true,id:{not:id}}});
     for(const old of active)await tx.formVersion.update({where:{id:old.id},data:{status:"RETIRED",isActive:false,effectiveTo:new Date(target.effectiveFrom.getTime()-86400000)}});
     await tx.formVersion.update({where:{id},data:{status:"ACTIVE",isActive:true,effectiveTo:null}});
@@ -127,7 +128,7 @@ async function activateTemplateVersionActionAuthenticatedContent(id:string,fd:Fo
   const target=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
   const currentActive=await prisma.templateVersion.findFirst({where:{module:target.module,documentType:target.documentType,isActive:true,id:{not:id}},orderBy:{effectiveFrom:"desc"}});
   if(currentActive&&target.effectiveFrom<=currentActive.effectiveFrom)throw new Error("La nueva plantilla debe tener una vigencia posterior a la plantilla activa.");
-  await prisma.$transaction(async tx=>{
+  await withDatabaseTransaction(prisma, async tx=>{
     const active=await tx.templateVersion.findMany({where:{module:target.module,documentType:target.documentType,isActive:true,id:{not:id}}});
     for(const old of active)await tx.templateVersion.update({where:{id:old.id},data:{isActive:false,effectiveTo:new Date(target.effectiveFrom.getTime()-86400000)}});
     await tx.templateVersion.update({where:{id},data:{isActive:true,effectiveTo:null}});
@@ -187,53 +188,53 @@ async function updateFormFieldConfigActionAuthenticatedContent(id:string,fd:Form
 }
 
 export async function createDepartmentAction(...args: Parameters<typeof createDepartmentActionAuthenticatedContent>) {
-  return authorizedAction("createDepartmentAction", args, authenticated => createDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof createDepartmentActionAuthenticatedContent>));
+  return authorizedAction("createDepartmentAction", args, authenticated => withDatabaseTransaction(prisma, () => createDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof createDepartmentActionAuthenticatedContent>)));
 }
 
 export async function updateDepartmentAction(...args: Parameters<typeof updateDepartmentActionAuthenticatedContent>) {
-  return authorizedAction("updateDepartmentAction", args, authenticated => updateDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof updateDepartmentActionAuthenticatedContent>));
+  return authorizedAction("updateDepartmentAction", args, authenticated => withDatabaseTransaction(prisma, () => updateDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof updateDepartmentActionAuthenticatedContent>)));
 }
 
 export async function createCatalogAction(...args: Parameters<typeof createCatalogActionAuthenticatedContent>) {
-  return authorizedAction("createCatalogAction", args, authenticated => createCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogActionAuthenticatedContent>));
+  return authorizedAction("createCatalogAction", args, authenticated => withDatabaseTransaction(prisma, () => createCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogActionAuthenticatedContent>)));
 }
 
 export async function updateCatalogAction(...args: Parameters<typeof updateCatalogActionAuthenticatedContent>) {
-  return authorizedAction("updateCatalogAction", args, authenticated => updateCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogActionAuthenticatedContent>));
+  return authorizedAction("updateCatalogAction", args, authenticated => withDatabaseTransaction(prisma, () => updateCatalogActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogActionAuthenticatedContent>)));
 }
 
 export async function createCatalogItemAction(...args: Parameters<typeof createCatalogItemActionAuthenticatedContent>) {
-  return authorizedAction("createCatalogItemAction", args, authenticated => createCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogItemActionAuthenticatedContent>));
+  return authorizedAction("createCatalogItemAction", args, authenticated => withDatabaseTransaction(prisma, () => createCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof createCatalogItemActionAuthenticatedContent>)));
 }
 
 export async function updateCatalogItemAction(...args: Parameters<typeof updateCatalogItemActionAuthenticatedContent>) {
-  return authorizedAction("updateCatalogItemAction", args, authenticated => updateCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogItemActionAuthenticatedContent>));
+  return authorizedAction("updateCatalogItemAction", args, authenticated => withDatabaseTransaction(prisma, () => updateCatalogItemActionAuthenticatedContent(...authenticated as Parameters<typeof updateCatalogItemActionAuthenticatedContent>)));
 }
 
 export async function cloneFormVersionAction(...args: Parameters<typeof cloneFormVersionActionAuthenticatedContent>) {
-  return authorizedAction("cloneFormVersionAction", args, authenticated => cloneFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof cloneFormVersionActionAuthenticatedContent>));
+  return authorizedAction("cloneFormVersionAction", args, authenticated => withDatabaseTransaction(prisma, () => cloneFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof cloneFormVersionActionAuthenticatedContent>)));
 }
 
 export async function activateFormVersionAction(...args: Parameters<typeof activateFormVersionActionAuthenticatedContent>) {
-  return authorizedAction("activateFormVersionAction", args, authenticated => activateFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateFormVersionActionAuthenticatedContent>));
+  return authorizedAction("activateFormVersionAction", args, authenticated => withDatabaseTransaction(prisma, () => activateFormVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateFormVersionActionAuthenticatedContent>)));
 }
 
 export async function registerTemplateVersionAction(...args: Parameters<typeof registerTemplateVersionActionAuthenticatedContent>) {
-  return authorizedAction("registerTemplateVersionAction", args, authenticated => registerTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof registerTemplateVersionActionAuthenticatedContent>));
+  return authorizedAction("registerTemplateVersionAction", args, authenticated => withDatabaseTransaction(prisma, () => registerTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof registerTemplateVersionActionAuthenticatedContent>)));
 }
 
 export async function activateTemplateVersionAction(...args: Parameters<typeof activateTemplateVersionActionAuthenticatedContent>) {
-  return authorizedAction("activateTemplateVersionAction", args, authenticated => activateTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateTemplateVersionActionAuthenticatedContent>));
+  return authorizedAction("activateTemplateVersionAction", args, authenticated => withDatabaseTransaction(prisma, () => activateTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof activateTemplateVersionActionAuthenticatedContent>)));
 }
 
 export async function updateParameterAction(...args: Parameters<typeof updateParameterActionAuthenticatedContent>) {
-  return authorizedAction("updateParameterAction", args, authenticated => updateParameterActionAuthenticatedContent(...authenticated as Parameters<typeof updateParameterActionAuthenticatedContent>));
+  return authorizedAction("updateParameterAction", args, authenticated => withDatabaseTransaction(prisma, () => updateParameterActionAuthenticatedContent(...authenticated as Parameters<typeof updateParameterActionAuthenticatedContent>)));
 }
 
 export async function updateAlertRuleAction(...args: Parameters<typeof updateAlertRuleActionAuthenticatedContent>) {
-  return authorizedAction("updateAlertRuleAction", args, authenticated => updateAlertRuleActionAuthenticatedContent(...authenticated as Parameters<typeof updateAlertRuleActionAuthenticatedContent>));
+  return authorizedAction("updateAlertRuleAction", args, authenticated => withDatabaseTransaction(prisma, () => updateAlertRuleActionAuthenticatedContent(...authenticated as Parameters<typeof updateAlertRuleActionAuthenticatedContent>)));
 }
 
 export async function updateFormFieldConfigAction(...args: Parameters<typeof updateFormFieldConfigActionAuthenticatedContent>) {
-  return authorizedAction("updateFormFieldConfigAction", args, authenticated => updateFormFieldConfigActionAuthenticatedContent(...authenticated as Parameters<typeof updateFormFieldConfigActionAuthenticatedContent>));
+  return authorizedAction("updateFormFieldConfigAction", args, authenticated => withDatabaseTransaction(prisma, () => updateFormFieldConfigActionAuthenticatedContent(...authenticated as Parameters<typeof updateFormFieldConfigActionAuthenticatedContent>)));
 }

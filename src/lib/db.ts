@@ -1,9 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import { currentIdentity } from "./auth/context";
+import { contextualDatabase } from "./transaction-context";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const prisma =
+const configuredPrisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
@@ -35,6 +36,8 @@ export const prisma =
     },
   }) as unknown as PrismaClient;
 
+export const prisma = contextualDatabase(configuredPrisma);
+
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.prisma = configuredPrisma;
 }
