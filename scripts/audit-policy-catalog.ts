@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { Prisma } from "@prisma/client";
 import { auditWriterInventory } from "./audit-writer-inventory";
+import { auditManifestJson } from "./audit-manifest-format";
 
 // Design catalogue and reconciliation, NOT an activated or approved GMP policy.
 const groups: Record<string, string[]> = {
@@ -58,4 +59,4 @@ export function auditPolicyCatalogue() {
   });
   return { schemaVersion: 1, policyVersion: "QMS_B2_DESIGN_V1", base: "70d6a1348a93a9dd51d9beb75a32e2014f375ed3", functionalDesignConfirmed: true, formalGmpAcceptance: "PENDING_QA_DT_IT", activation: "NOT_IMPLEMENTED_NOT_ACTIVATED", writerInventory: "writer-inventory.json", fieldCandidates, prohibitedModels: [...prohibitedModels], secretFields: [...secretFields], writerGroups: groups, operations };
 }
-if (basename(process.argv[1] ?? "") === "audit-policy-catalog.ts" && process.argv.includes("--print")) process.stdout.write(JSON.stringify(auditPolicyCatalogue(), null, 2) + "\n");
+if (basename(process.argv[1] ?? "") === "audit-policy-catalog.ts" && process.argv.includes("--print")) process.stdout.write(auditManifestJson(auditPolicyCatalogue()));

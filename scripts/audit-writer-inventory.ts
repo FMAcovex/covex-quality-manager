@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { Prisma } from "@prisma/client";
 import ts from "typescript";
+import { auditManifestJson } from "./audit-manifest-format";
 
 // Static source metadata only. Never executes a writer or reads a database.
 const writes = new Set(["create", "createMany", "createManyAndReturn", "update", "updateMany", "updateManyAndReturn", "upsert", "delete", "deleteMany"]);
@@ -94,4 +95,4 @@ export function auditWriterInventory(root = process.cwd()) {
   }
   return { schemaVersion: 1, interpretation: "STATIC_CANDIDATES_NOT_SQL_COVERAGE", writers, rawSql, independentClients, fingerprints };
 }
-if (basename(process.argv[1] ?? "") === "audit-writer-inventory.ts" && process.argv.includes("--print")) process.stdout.write(JSON.stringify(auditWriterInventory(), null, 2) + "\n");
+if (basename(process.argv[1] ?? "") === "audit-writer-inventory.ts" && process.argv.includes("--print")) process.stdout.write(auditManifestJson(auditWriterInventory()));
