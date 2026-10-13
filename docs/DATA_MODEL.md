@@ -496,3 +496,7 @@ R4B no cambia Prisma ni añade migraciones: ReturnFollowup y QmsRecordVersion t�
 ## Audit Trail técnico 4B3-B1
 
 La migración aditiva `20261013000100_audit_engine_b1` añade AuditOperation, AuditOperationTarget y AuditEvent, cursor por raíz AuditAggregateCursor, lease privada AuditRuntimeContext y fixture AuditPilotRecord. Raíces TEXT mediante FKs reales a QmsRecord/ControlledDocument/AuditAnnualPlan; actor AuthUser y operaciones UUID. Eventos tipados, secuencia BIGINT y correlación operación/raíz; referencias opcionales a versiones/documentos con integridad SQL. No se reconstruye historial previo ni se altera ChangeHistory/snapshots/documentos. Captura activa exclusivamente para el piloto sintético aislado, sin política GMP global. Contrato, privilegios, recuperación y límites en [PHASE_4B3_B1.md](PHASE_4B3_B1.md).
+
+## Preparación del requisito 4B3-B2
+
+`AuditPolicyRequirement` registra un requisito técnico durable, con versión fija, referencia, principal SQL y hora de PostgreSQL. La migración `20261013000200_b2_audit_requirement` instala estructura y guardas, sin filas ni activación/aprobación. El rol operativo no puede registrar ni retirar el requisito. Si se registra, se deniegan escrituras mientras no exista la política B2 completa. Es un control de preparación, no evidencia de captura OLD/NEW de los siete módulos; integración y custodia completas pendientes en [PHASE_4B3_B2.md](PHASE_4B3_B2.md).

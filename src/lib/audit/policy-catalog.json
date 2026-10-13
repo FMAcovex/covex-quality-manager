@@ -83,7 +83,8 @@
     "AuditOperationTarget",
     "AuditRuntimeContext",
     "AuditAggregateCursor",
-    "AuditPilotRecord"
+    "AuditPilotRecord",
+    "AuditPolicyRequirement"
   ],
   "secretFields": [
     "tokenHash",

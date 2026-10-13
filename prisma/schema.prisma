@@ -2318,3 +2318,11 @@ model AuditPilotRecord {
   revision Int @default(0)
   updatedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
 }
+
+// Durable requirement, never an HTTP/environment toggle. Installation adds no row.
+model AuditPolicyRequirement {
+  policyVersion String @id
+  requirementReference String
+  requestedByDatabasePrincipal String
+  requestedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+}

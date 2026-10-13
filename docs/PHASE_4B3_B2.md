@@ -2,7 +2,7 @@
 
 Base verificada: main `70d6a1348a93a9dd51d9beb75a32e2014f375ed3`, B1 / #142 integrado. Rama única `feature/phase4b3-b2-qms-audit-integration`; checkout existente, sin worktrees. Referencias: [4B3-A](PHASE_4B3_A.md), [B1](PHASE_4B3_B1.md), [4B2](PHASE_4B2.md), [4B1](PHASE_4B1.md), [DECISIONS](DECISIONS.md) e inventario de autorización 4B1.
 
-**Estado de este corte: preparación e integración inicial, no entrega B2 completa.** No hay captura SQL B2 ni política activada. No se ha demostrado cobertura de las 63 operaciones. No abrir la PR de entrega hasta cumplir los criterios solicitados y comprobar CI integral sobre su SHA final. Los commits internos no implican aprobación productiva.
+**Estado de este corte: preparación, requisito durable e integración inicial; no entrega B2 completa.** Hay guardas de denegación para uso requerido sin política preparada, pero todavía no captura SQL B2 ni política activada. No se ha demostrado cobertura de las 63 operaciones. No abrir la PR de entrega hasta cumplir los criterios solicitados y comprobar CI integral sobre su SHA final. Los commits internos no implican aprobación productiva.
 
 ## 1. Integración inicial
 
@@ -24,7 +24,7 @@ Formalización del uso previsto, clasificación y riesgo residual, custodia exte
 
 `scripts/audit-writer-inventory.ts` inspecciona código estático, nunca ejecuta escrituras ni consulta bases. En la base B1 identifica **279 llamadas explícitas en 49 archivos**, frente a 277/48 de 4B3-A: las dos llamadas del adaptador piloto B1 y su archivo adicional explican esa diferencia. Añade 12 escrituras anidadas visibles, 42 candidatos SQL —incluidos SELECT con efectos posibles— y seis lugares con clientes independientes. Excluye tests, smokes, fixtures, benchmarks y seed demo.
 
-`writer-inventory.json` conserva localizador/función/delegate/método, claves estructurales, nested writes visibles y hashes de fuente. No contiene valores, sentencias SQL, archivos de entrada ni datos personales. Los argumentos dinámicos, alias y escrituras detrás de helpers siguen requiriendo revisión manual; AST no acredita cobertura ni atomicidad.
+`writer-inventory.json` conserva localizador/función/delegate/método, claves estructurales, nested writes visibles y hashes de fuente. Tras incorporar el estado/protección del requisito existen46 candidatos SQL; las llamadas de negocio siguen siendo279/49. No contiene valores, sentencias SQL, archivos de entrada ni datos personales. Los argumentos dinámicos, alias y escrituras detrás de helpers siguen requiriendo revisión manual; AST no acredita cobertura ni atomicidad.
 
 `scripts/audit-policy-catalog.ts` reconcilia los 63 IDs y W01–W22 de A con fuentes/escritores reales. `policy-catalog.json` contiene candidatos y criticidad **propuesta**, no campos aprobados ni catálogo SQL activo. Los campos candidatos se normalizan por modelo; bytes, campos de secretos y modelos de sesión/login/journal quedan fuera. Los índices de writers referencian el inventario versionado. Cada fila mantiene `NOT_DEMONSTRATED`, campos auditados/captura/evidencias vacíos hasta su integración y prueba real.
 
@@ -110,11 +110,15 @@ Pendiente de integración: conservar PDFs originales/supersesión para todos los
 
 ## 9. Modelos y migraciones
 
-No se añaden migraciones en este corte ni se altera B1. La extensión aditiva del catálogo, activación y custodia documental queda pendiente. No se aplica ninguna migración a la base habitual/corporativa.
+La migración aditiva `20261013000200_b2_audit_requirement` añade `AuditPolicyRequirement`: versión fija, referencia de requisito, principal SQL observado y fecha PostgreSQL. **No inserta ninguna fila ni aprueba/activa una política.** No modifica migraciones anteriores. Política completa, activación y custodia documental siguen pendientes. Solo se aplica a bases efímeras de ensayo, nunca a la habitual/corporativa.
 
 ## 10. PostgreSQL
 
-La captura/cobertura diferida B1 conserva su piloto aislado. Pendiente: extender contextos, raíces administrativas, captura obligatoria INSERT/UPDATE/DELETE/bulk/nested, motivos, evidencias y garantías de commit a las políticas B2. El helper transaccional inicial no demuestra que una escritura incluida no pueda eludir auditoría.
+La captura/cobertura diferida B1 conserva su piloto aislado. La preparación B2 instala guardas INSERT/UPDATE/DELETE y de TRUNCATE en66 tablas. Cuando el propietario/migrador controlado registra el requisito mediante `covex_b2_require_policy`, se deniegan esas escrituras porque todavía no existe política preparada/activa. El rol operativo no ejecuta ese RPC ni inserta, modifica, elimina o trunca el requisito; un GUC de desactivación no lo sustituye. Incluso el propietario encuentra triggers contra su retirada ordinaria, manteniendo el límite DBA de poder alterar protección.
+
+Los perfiles Entra de usuarios aún no admitidos y refrescos sin cambio de autorización siguen siendo técnicos; sesiones/intentos no están en esta política. Un marcador PNT ERROR solo admite la categoría reducida existente, sin payload adicional. En bases sintéticas, el historial del piloto B1 exige su lease/operación/raíz reales, no basta el nombre del campo. No se inventan eventos GMP para esos controles.
+
+El contrato de preparación contiene siete tablas protegidas, doce funciones y145 triggers esperados, incluyendo los B1. Se comprueban body/search_path/propietarios/PUBLIC y las guardas nuevas sin interferir con triggers PNT/Auditorías existentes. **Denegar no equivale a capturar OLD/NEW:** faltan contexto, raíces administrativas, captura, motivos, evidencias y cobertura diferida B2. El helper transaccional inicial tampoco acredita esa cobertura.
 
 ## 11. Identidad y autorización
 
@@ -142,11 +146,13 @@ Se prueba aislamiento de contextos concurrentes y reutilización de transacción
 
 ## 17. Recuperación 4B2
 
-No se modifican almacenamiento aprobado, backup, restore ni hashes en este corte. Pendiente extender recuperación para políticas/objetos B2, documentos sustituidos y continuidad de secuencia con protección/grants correctos. Los controles B1 no se presentan como prueba del esquema B2 todavía no implementado.
+Se amplía el contrato de backup/restore para reconocer tanto B1 como la preparación B2. Ausencia de la tabla del requisito con migración aplicada, función alterada, EXECUTE PUBLIC o guarda deshabilitada impiden declarar protección válida. `--no-acl` exige revocar también PUBLIC en las funciones nuevas antes de validar el destino; la imagen incluye ambos contratos. No se alteran cifrado, almacenamiento aprobado ni inventario de bytes. La recuperación de esta preparación debe probarse antes de considerarla verificada; recuperación de captura/custodia B2 completa sigue pendiente y no se presenta como realizada.
 
 ## 18. Pruebas y CI
 
-Focalizadas iniciales: seis pruebas Vitest (inventario, matriz, contexto); tipos/lint afectados; smoke B1; `pnpm phase4b3-b2:configuration:smoke` prueba acciones reales de configuración en PostgreSQL y base propia `covex_phase4b1_test_b2_configuration_*`, eliminada al terminar. Solo se sustituye la invalidación de cache de Next en ese fixture; autenticación, autorización, Prisma y PostgreSQL son reales. Suite unitaria completa: **707 tests en99 archivos** correctos. No se ha ejecutado quality ni CI integral B2: se harán cuando la integración esté terminada, sobre su último commit, sin reducir suites ni modificar el gate.
+Focalizadas iniciales: inventario, matriz y contexto; tipos/lint afectados; smoke B1; `pnpm phase4b3-b2:configuration:smoke` prueba acciones reales de configuración en PostgreSQL y base propia `covex_phase4b1_test_b2_configuration_*`, eliminada al terminar. Solo se sustituye la invalidación de cache de Next en ese fixture; autenticación, autorización, Prisma y PostgreSQL son reales. Suite unitaria completa previa al requisito:707 tests/99 archivos.
+
+`pnpm phase4b3-b2:requirement:smoke` crea otra base propia y tres deberes DB separados. Verifica instalación inactiva, requisito SQL durable, bloqueo directo/bulk/TRUNCATE, RPC/grants, ausencia de bypass por GUC, consultas globales, falta de falsos eventos, B1 con historial autenticado y detección de guarda deshabilitada. Focalizadas actuales:19 tests/5 archivos; suite unitaria actual709 tests/100 archivos; backup Python26 tests, tipos y lint correctos. No se ejecuta quality/CI integral B2 hasta completar la integración, sobre su último commit, sin reducir suites ni modificar el gate.
 
 ## 19. Riesgos y límites
 
@@ -154,4 +160,4 @@ La matriz es inventario inicial; faltan política/captura/evidencias, custodia, 
 
 ## 20. Activación y C
 
-Pendiente mecanismo durable de requisito/aprobación/activación: instalación, arranque o merge no activarán una política. Una vez requerido el uso regulado, escrituras incluidas deben denegarse si falta su política o captura; ningún flag HTTP puede desactivarla silenciosamente. Pruebas aisladas se conservan. C (consulta/revisión/exportación) no se implementa en esta rama. La PR final se entregará únicamente con cobertura real, custodia/recuperación y CI integral demostradas.
+Implementado el requisito durable y verificable; pendientes preparación completa, referencias de aceptación QA/DT/IT y activación. Instalación, arranque o merge no activan una política. Una vez registrado el requisito, las guardas deniegan escrituras y ningún flag HTTP/GUC lo desactiva silenciosamente. `auditPolicyState` informa infraestructura/requisito y mantiene prepared/activated/corporateUseAuthorized enfalse: no afirma una aprobación inexistente. Registrar un requisito no es una aprobación GMP ni una firma. Pruebas aisladas/B1 se conservan. C no se implementa; la PR final exige cobertura real, custodia/recuperación y CI integral demostradas.

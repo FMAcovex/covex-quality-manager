@@ -182,10 +182,19 @@ def inventory(connection, exported_snapshot=None):
     return {"tables": tables, "schema_sha256": hashlib.sha256(shape).hexdigest(), "external_references_without_custody": unresolved}, files
 
 
+def audit_contract(connection):
+    """Recognize B1 releases and the additive B2 requirement independently."""
+    b2 = sql(connection, 'SELECT to_regclass(\'public."AuditPolicyRequirement"\') IS NOT NULL;').strip() == b"t"
+    if not b2 and sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t":
+        installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261013000200_b2_audit_requirement' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
+        require(installed == b"0", "audit-protection-unavailable")
+    return json.loads(Path(__file__).with_name("audit-contract-b2.json" if b2 else "audit-contract.json").read_text())
+
+
 def audit_restore_acl(connection):
     # --no-acl deliberately avoids source cluster identities. Restore secure
     # PUBLIC exceptions explicitly before any protection check/access opening.
-    contract = json.loads(Path(__file__).with_name("audit-contract.json").read_text())
+    contract = audit_contract(connection)
     names = ",".join("'" + name + "'" for name in contract["functions"])
     statements = sql(connection, f"SELECT 'REVOKE ALL ON FUNCTION '||p.oid::regprocedure::text||' FROM PUBLIC;' FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname IN ({names});").decode()
     if statements.strip():
@@ -206,11 +215,11 @@ def audit_protection(connection):
     Compare the release contract independently of database function assertions.
     pg_restore loads data before triggers: historical events are copied, not made.
     """
-    contract = json.loads(Path(__file__).with_name("audit-contract.json").read_text())
+    contract = audit_contract(connection)
     names = ",".join("'" + name + "'" for name in contract["tables"])
     tables = json.loads(sql(connection, f"SELECT coalesce(json_agg(json_build_object('name',c.relname,'owner',pg_get_userbyid(c.relowner))),'[]') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN ({names});"))
     if not tables:
-        functions_present = sql(connection, "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'covex_audit_%';").strip()
+        functions_present = sql(connection, "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND (p.proname LIKE 'covex_audit_%' OR p.proname LIKE 'covex_b2_%');").strip()
         require(functions_present == b"0", "audit-protection-unavailable")
         has_migrations = sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t"
         if has_migrations:
@@ -221,12 +230,13 @@ def audit_protection(connection):
     protected = ",".join("'" + name + "'" for name in contract["tables"] if name != "AuditPilotRecord")
     unsafe = sql(connection, f"SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE n.nspname='public' AND c.relname IN ({protected}) AND a.privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER') AND CASE WHEN a.grantee=0 THEN true ELSE NOT pg_has_role(a.grantee,c.relowner,'USAGE') END;").strip()
     require(unsafe == b"0", "audit-protection-unavailable")
-    functions = json.loads(sql(connection, "SELECT coalesce(json_agg(json_build_object('name',p.proname,'body',p.prosrc,'definer',p.prosecdef,'config',p.proconfig,'owner',pg_get_userbyid(p.proowner),'publicExecute',EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'covex_audit_%';"))
+    functions = json.loads(sql(connection, "SELECT coalesce(json_agg(json_build_object('name',p.proname,'body',p.prosrc,'definer',p.prosecdef,'config',p.proconfig,'owner',pg_get_userbyid(p.proowner),'publicExecute',EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))),'[]') FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND (p.proname LIKE 'covex_audit_%' OR p.proname LIKE 'covex_b2_%');"))
     require(len(functions) == len(contract["functions"]), "audit-protection-unavailable")
     for name, expected in contract["functions"].items():
         actual = next((row for row in functions if row["name"] == name), {})
         require(actual and hashlib.sha256(actual["body"].encode()).hexdigest() == expected["sha256"] and actual["definer"] == expected["definer"] and actual["config"] == ["search_path=pg_catalog, public"] and actual["owner"] == tables[0]["owner"] and not actual["publicExecute"], "audit-protection-unavailable")
-    triggers = json.loads(sql(connection, f"SELECT coalesce(json_agg(json_build_object('name',t.tgname,'table',c.relname,'function',p.proname,'enabled',t.tgenabled,'type',t.tgtype,'deferred',t.tginitdeferred,'deferrable',t.tgdeferrable)),'[]') FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_proc p ON p.oid=t.tgfoid WHERE n.nspname='public' AND c.relname IN ({names}) AND NOT t.tgisinternal;"))
+    guards = ",".join("'" + name + "'" for name in contract.get("guardTables", [])) or "NULL"
+    triggers = json.loads(sql(connection, f"SELECT coalesce(json_agg(json_build_object('name',t.tgname,'table',c.relname,'function',p.proname,'enabled',t.tgenabled,'type',t.tgtype,'deferred',t.tginitdeferred,'deferrable',t.tgdeferrable)),'[]') FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_proc p ON p.oid=t.tgfoid WHERE n.nspname='public' AND (c.relname IN ({names}) OR c.relname IN ({guards}) AND t.tgname LIKE 'audit_b2_%') AND NOT t.tgisinternal;"))
     require(len(triggers) == len(contract["triggers"]), "audit-protection-unavailable")
     for expected in contract["triggers"]:
         actual = next((row for row in triggers if row["name"] == expected["name"] and row["table"] == expected["table"]), {})
