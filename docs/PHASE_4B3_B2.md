@@ -146,13 +146,15 @@ Se prueba aislamiento de contextos concurrentes y reutilización de transacción
 
 ## 17. Recuperación 4B2
 
-Se amplía el contrato de backup/restore para reconocer tanto B1 como la preparación B2. Ausencia de la tabla del requisito con migración aplicada, función alterada, EXECUTE PUBLIC o guarda deshabilitada impiden declarar protección válida. `--no-acl` exige revocar también PUBLIC en las funciones nuevas antes de validar el destino; la imagen incluye ambos contratos. No se alteran cifrado, almacenamiento aprobado ni inventario de bytes. La recuperación de esta preparación debe probarse antes de considerarla verificada; recuperación de captura/custodia B2 completa sigue pendiente y no se presenta como realizada.
+Se amplía el contrato de backup/restore para reconocer tanto B1 como la preparación B2. Ausencia de la tabla del requisito con migración aplicada, función alterada, EXECUTE PUBLIC o guarda deshabilitada impiden declarar protección válida. `--no-acl` exige revocar también PUBLIC en las funciones nuevas antes de validar el destino; la imagen incluye ambos contratos. No se alteran cifrado, almacenamiento aprobado ni inventario de bytes. **Recuperación4B2 de esta preparación verificada sobreb674607**: dump/restore real, contratos nuevos íntegros, journal B1 sin historia inventada y siguiente secuencia, fuente/almacenamiento original indisponibles, protección debilitada rechazada y sesiones recuperadas revocadas. Recuperación de captura/custodia B2 completa sigue pendiente y no se presenta como realizada.
 
 ## 18. Pruebas y CI
 
 Focalizadas iniciales: inventario, matriz y contexto; tipos/lint afectados; smoke B1; `pnpm phase4b3-b2:configuration:smoke` prueba acciones reales de configuración en PostgreSQL y base propia `covex_phase4b1_test_b2_configuration_*`, eliminada al terminar. Solo se sustituye la invalidación de cache de Next en ese fixture; autenticación, autorización, Prisma y PostgreSQL son reales. Suite unitaria completa previa al requisito:707 tests/99 archivos.
 
 `pnpm phase4b3-b2:requirement:smoke` crea otra base propia y tres deberes DB separados. Verifica instalación inactiva, requisito SQL durable, bloqueo directo/bulk/TRUNCATE, RPC/grants, ausencia de bypass por GUC, consultas globales, falta de falsos eventos, B1 con historial autenticado y detección de guarda deshabilitada. Focalizadas actuales:19 tests/5 archivos; suite unitaria actual709 tests/100 archivos; backup Python26 tests, tipos y lint correctos. No se ejecuta quality/CI integral B2 hasta completar la integración, sobre su último commit, sin reducir suites ni modificar el gate.
+
+Imagen `covex4b3-backup:b2` construida y prueba Docker de almacenamiento aprobada: UID10001, montaje ficticio válido y negativas de ausencia/desmontaje/sustitución correctas. No se despliega ni se provisiona almacenamiento corporativo. El checkout queda en la misma rama para continuar captura SQL, integración de módulos, custodia, negativas pendientes y regresión final.
 
 ## 19. Riesgos y límites
 
