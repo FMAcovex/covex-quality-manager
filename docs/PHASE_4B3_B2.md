@@ -1,8 +1,29 @@
-# Fase 4B3-B2 — integración transversal, trabajo en curso
+# Fase 4B3-B2 — checkpoint técnico completado
 
 Base verificada: main `70d6a1348a93a9dd51d9beb75a32e2014f375ed3`, B1 / #142 integrado. Rama única `feature/phase4b3-b2-qms-audit-integration`; checkout existente, sin worktrees. Referencias: [4B3-A](PHASE_4B3_A.md), [B1](PHASE_4B3_B1.md), [4B2](PHASE_4B2.md), [4B1](PHASE_4B1.md), [DECISIONS](DECISIONS.md) e inventario de autorización 4B1.
 
-**Estado de este corte: motor SQL, acciones originales de los siete módulos, transversales iniciales, custodia de PDF firmados y recuperación B2; no entrega B2 completa.** Se conserva el requisito durable. OLD/NEW, testigo independiente, cobertura diferida, configuración y servicios originales se prueban en PostgreSQL aislado. El RPC sigue limitado a bases efímeras; ninguna política corporativa está preparada/activada. Faltan otros escenarios de negocio, importaciones/canal técnico y regresión integral. No se ha demostrado cobertura completa de las 63 operaciones ni se abre la PR de entrega. El nuevo encargo autoriza terminar B2 y C conjuntamente, en esta rama y una única PR final, tras un checkpoint técnico interno satisfactorio de B2 (D-082).
+**Checkpoint interno B2:** `49bfe41718fb6bbc0870ecb5a086e166f82106bc` (2026-10-14). Este SHA fija la implementación técnica B2 que se usa como base de 4B3-C. No es una activación corporativa, una aceptación GMP ni una liberación productiva. Los apartados de avance anteriores que figuran más abajo se conservan como trazabilidad cronológica y quedan sustituidos, en cuanto al estado vigente, por este checkpoint.
+
+## 0. Resultado final de B2
+
+El motor captura las mutaciones persistidas relevantes de los siete módulos mediante el sobre de operación autenticado y controles SQL independientes. Conserva OLD/NEW tipado, orden de eventos, actor UUID/nombre de sesión, fecha de base, raíz y objetivos adicionales, motivo a nivel de operación, evidencia referenciada y resultado mínimo idempotente. Negocio, historial, versiones, documentos y journal confirman o revierten juntos. La aplicación no puede escribir, corregir ni borrar el journal; los contextos, testigos y madurez transaccional son privados para el rol operativo.
+
+La clasificación crítica es una **propuesta técnica** versionada (`QMS_B2_CRITICAL_TECHNICAL_V1`). Exige motivo para cierres/reaperturas, cambios posteriores de decisiones o fechas establecidas, sustitución de originales y pérdida material de hijos ya operativos. Distingue borrador de dato establecido usando el estado persistido, compara conjuntos de hijos por contenido y no convierte cada guardado en una rectificación crítica. QA/DT todavía debe aceptar clasificación, periodicidad de revisión, retención y riesgo residual.
+
+La custodia conserva bytes y SHA-256 de originales firmados/documentales, identidad autenticada, fecha SQL, motivo y cadena de sustitución. Los Word de trabajo generan un recibo auditable sin fabricar una nueva emisión formal; Devoluciones conserva además su archivo histórico ya existente. Versiones congeladas y originales retenidos son inmutables. La recuperación 4B2 contrasta journal, evaluaciones críticas, evidencias, recibos, documentos y secuencias, y demuestra que una nueva escritura protegida funciona después de restaurar.
+
+La matriz ejecutable contiene exactamente 63 operaciones: 57 demostradas aisladamente sobre servicios/rutas reales; PN07 como canal técnico probado; PN08 como lectura autorizada sin nuevo evento; TR06 como stream técnico de autenticación; TR07 bloqueada de forma atómica hasta disponer de identidad/procedencia controlada; TR08 demostrada en backup/restauración; y TR09 transferida expresamente a C. Cada fila enlaza fuentes, writers, tablas, campos capturados y evidencia. No queda ninguna fila `NOT_DEMONSTRATED`.
+
+Verificación exacta del checkpoint:
+
+- `pnpm quality`: Prisma válido/generado, lint sin errores (tres avisos heredados), 727/727 pruebas y build de producción correcto;
+- smoke PostgreSQL B2: operaciones reales, documentos, relaciones admitidas, concurrencia, rollback, no-op, reintento, autorizaciones y negativas de bypass correctos;
+- smokes de requisito y autenticación 4B1 completos;
+- 13 regresiones originales de módulos/documentos correctas;
+- recuperación 4B2, contrato de backup, imagen Docker no root y pruebas positiva/negativas de almacenamiento correctas;
+- contrato crítico, inventario de writers y catálogo de política reconciliados con el código.
+
+No se han usado datos corporativos, identidades reales ni rutas de almacenamiento reales. La política permanece preparada solo en bases de ensayo controladas; no se registra una activación corporativa. La revisión y exportación del journal, incluida TR09, pertenecen a C y parten de este SHA.
 
 ## 1. Integración inicial
 
