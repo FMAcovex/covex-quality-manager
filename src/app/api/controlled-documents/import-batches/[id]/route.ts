@@ -20,9 +20,10 @@ async function POSTAuthenticatedContent(request: Request, { params }: {params: P
         const reader = request.body.getReader(), chunks: Uint8Array[] = []; let size = 0;
         try { while (true) { const part = await reader.read(); if (part.done) break; size += part.value.length; if (size > 8 * 1024 * 1024) { await reader.cancel(); throw new Error("Solicitud demasiado grande."); } chunks.push(part.value); } } finally { reader.releaseLock(); }
         const v = JSON.parse(Buffer.concat(chunks).toString("utf8")), id = await idValue(params);
-        if (v.operation === "DECIDE") { await decide(id, decisionSchema.parse(v.input)); return Response.json({ batch: await getBatch(id) }, { headers }); }
-        if (v.operation === "PREPARE") return Response.json({ plan: await prepare(id, undefined, actorSchema.parse(v.input?.actor)) }, { headers });
-        if (v.operation === "CONFIRM") return Response.json({ result: await confirm(id, confirmation.parse(v.input)), batch: await getBatch(id) }, { headers });
+        const auditRequest = { requestId: request.headers.get("idempotency-key") ?? undefined };
+        if (v.operation === "DECIDE") { await decide(id, decisionSchema.parse(v.input), undefined, auditRequest); return Response.json({ batch: await getBatch(id) }, { headers }); }
+        if (v.operation === "PREPARE") return Response.json({ plan: await prepare(id, undefined, actorSchema.parse(v.input?.actor), auditRequest) }, { headers });
+        if (v.operation === "CONFIRM") return Response.json({ result: await confirm(id, confirmation.parse(v.input), undefined, auditRequest), batch: await getBatch(id) }, { headers });
         throw new Error("Operación desconocida.");
     } catch (e) { return failure(e); }
 }

@@ -1,3 +1,4 @@
+import { purgeLegacyFixtureDocuments } from "./audit-fixtures/legacy-cleanup";
 // CI retry marker: retrigger R3 complaints regression after queued runner
 import assert from "node:assert/strict";
 import { PrismaClient, QmsRecordType, RecordVersionKind } from "@prisma/client";
@@ -342,7 +343,8 @@ async function main() {
       },
     });
     if (versionIds.length) {
-      await prisma.recordVersionDocument.deleteMany({
+      await purgeLegacyFixtureDocuments(prisma, { recordVersionId: { in: versionIds } });
+    await prisma.recordVersionDocument.deleteMany({
         where: { recordVersionId: { in: versionIds } },
       });
       await prisma.generatedDocument.deleteMany({

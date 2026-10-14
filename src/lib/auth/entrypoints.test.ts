@@ -38,6 +38,18 @@ describe("4B1 protección directa de entradas", () => {
     const [creation] = authenticatedArguments([form], "Sesión QA", true) as FormData[]; expect(creation.get("createdByText")).toBe("Sesión QA");
     expect(authenticatedArguments([{ qmsRecordId: "id", acceptedByText: "Impostor", _covexCsrf: "transient" }], "Sesión QA", false, "acceptReviewThreadAction")[0]).toEqual({ qmsRecordId: "id", acceptedByText: "Sesión QA" });
   });
+  it("un tipo de operación de auditoría desconocido no convierte EDIT en FOLLOWUP", async () => {
+    configureTest();
+    const editor: Principal = { ...principal, id: "synthetic-editor", grants: [{ module: "AUDIT", permission: "EDIT", scope: "ALL" }] };
+    const run = vi.fn(async () => "must not write a followup");
+    const args = ["synthetic-audit", "unknown-kind", undefined, undefined, { error: null }, new FormData()];
+    for (const kind of ["unknown-kind", ["followup"], ["finding"], null, {}]) {
+      await identityContext.run({ principal: editor, unitTest: true }, () => expect(authorizedAction("saveAuditChildAction", [args[0],kind,...args.slice(2)], run)).rejects.toMatchObject({ status: 403 }));
+    }
+    expect(run).not.toHaveBeenCalled();
+    await identityContext.run({ principal: editor, unitTest: true }, () => expect(authorizedAction("saveAuditChildAction", [args[0],"followup",...args.slice(2)], run)).rejects.toMatchObject({ status: 403 }));
+    await identityContext.run({ principal: editor, unitTest: true }, () => expect(authorizedAction("saveAuditChildAction", [args[0],"finding",...args.slice(2)], run)).resolves.toBe("must not write a followup"));
+  });
   it("no habilita el arnés unitario por bandera sintética en producción", () => {
     configureTest(); vi.stubEnv("APP_ENV", "production"); expect(() => authConfiguration()).toThrow();
   });

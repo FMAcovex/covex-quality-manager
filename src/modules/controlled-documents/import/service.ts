@@ -4,12 +4,16 @@ import { previewIndex } from "../preview/service";
 import type { PreviewReport, PreviewRow } from "../preview/types";
 import { validateDepartmentForBaseCode } from "../domain";
 import { actorSchema, decisionSchema, hash, validateCandidate, MAX_BATCH_BYTES, MAX_PENDING_BATCHES, RETENTION_DAYS, type DecisionInput, type Resolution } from "./domain";
+import { auditPolicyState } from "@/lib/audit/activation";
+import { assertAuditProtection, assertAuditApplicationRole } from "@/lib/audit/protection";
+import { requireUser } from "@/lib/auth/session";
+import { importAuditCommand, importActor, type ImportAuditRequest } from "./audit";
 type Tx = Prisma.TransactionClient;
 const json = (v: unknown): Prisma.InputJsonValue => JSON.parse(JSON.stringify(v));
 const rowValue = (r: ControlledDocumentImportRow) => r.data as unknown as PreviewRow;
 const date = (s: string) => s ? new Date(`${s}T00:00:00Z`) : null;
 async function event(tx: Tx, batchId: string, action: string, actor: string, detail: unknown) {
-    await tx.controlledDocumentImportEvent.create({ data: { batchId, action, actor, detail: json(detail) } });
+    return tx.controlledDocumentImportEvent.create({ data: { batchId, action, actor, detail: json(detail) } });
 }
 async function transaction<T>(db: PrismaClient, fn: (tx: Tx) => Promise<T>): Promise<T> {
     try { return await db.$transaction(fn, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10000, timeout: 60000 }); }
@@ -29,6 +33,14 @@ function editable(b: { state: string; expiresAt: Date }) {
 }
 // Expiration removes only pending staging, never operational PNT/revisions or confirmed receipts.
 export async function expireBatches(db: PrismaClient = prisma) {
+    if ((await auditPolicyState(db)).required) {
+        const principal = await requireUser();
+        return transaction(db, async tx => {
+            await assertAuditProtection(tx); await assertAuditApplicationRole(tx);
+            const [result] = await tx.$queryRaw<{ expired: number }[]>`SELECT covex_b2_expire_staging(${principal.id}::uuid) AS expired`;
+            return result.expired;
+        });
+    }
     return transaction(db, async tx => {
         const expired = await tx.controlledDocumentImportBatch.findMany({ where: { state: { in: ["PENDING", "PARTIAL"] }, expiresAt: { lte: new Date() } }, select: { id: true } });
         for (const item of expired) {
@@ -41,15 +53,15 @@ export async function expireBatches(db: PrismaClient = prisma) {
         return expired.length;
     });
 }
-export async function createBatch(buffer: Buffer, fileName: string, actorValue: string, db: PrismaClient = prisma) {
-    const actor = actorSchema.parse(actorValue);
+export async function createBatch(buffer: Buffer, fileName: string, actorValue: string, db: PrismaClient = prisma, request?: ImportAuditRequest) {
+    const actor = actorSchema.parse(importActor(actorValue));
     const report = await previewIndex(buffer, fileName, {
         departments: () => db.department.findMany({ select: { id: true, code: true, isActive: true } }),
         documents: codes => db.controlledDocument.findMany({ where: { baseCode: { in: codes } }, include: { revisions: true } })
     });
     if (Buffer.byteLength(JSON.stringify(report)) > MAX_BATCH_BYTES) throw new Error("El análisis supera el límite de staging de 16 MiB.");
     await expireBatches(db);
-    return transaction(db, async tx => {
+    return importAuditCommand(db, "CREATE_BATCH", { fileName, sha256: report.sha256 }, null, request, () => transaction(db, async tx => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(81724001)`;
         const count = await tx.controlledDocumentImportBatch.count({ where: { state: { in: ["PENDING", "PARTIAL"] } } });
         if (count >= MAX_PENDING_BATCHES) throw new Error("Límite de 100 lotes pendientes alcanzado. Resuelve o espera su caducidad.");
@@ -58,7 +70,7 @@ export async function createBatch(buffer: Buffer, fileName: string, actorValue: 
         await tx.controlledDocumentImportRow.createMany({ data: rows.map(r => ({ batchId: b.id, sourceKey: r.sourceKey, baseCode: r.normalized.baseCode, data: json(r), decision: r.classification === "PNT" ? "PENDING" : "EXCLUDED" })) });
         await event(tx, b.id, "CREATED", actor, { summary: report.summary, expiresAt: b.expiresAt });
         return b.id;
-    });
+    }));
 }
 export async function getBatch(id: string, db: PrismaClient = prisma) {
     await expireBatches(db);
@@ -73,9 +85,9 @@ async function current(tx: Tx, baseCode: string, departmentId: string) {
     const department = await tx.department.findUnique({ where: { id: departmentId } });
     return { document, department, fingerprint: hash({ document, department }) };
 }
-export async function decide(id: string, input: DecisionInput, db: PrismaClient = prisma) {
-    const v = decisionSchema.parse(input);
-    return transaction(db, async tx => {
+export async function decide(id: string, input: DecisionInput, db: PrismaClient = prisma, request?: ImportAuditRequest) {
+    const v = decisionSchema.parse({ ...input, actor: importActor(input.actor) });
+    return importAuditCommand(db, "DECIDE", { id, input: v }, v.reason, request, () => transaction(db, async tx => {
         const b = await lockedBatch(tx, id, v.version); editable(b);
         const target = b.rows.find(r => r.sourceKey === v.sourceKey);
         if (!target || target.result) throw new Error("Fila no disponible para conciliación.");
@@ -101,7 +113,7 @@ export async function decide(id: string, input: DecisionInput, db: PrismaClient 
         }
         await tx.controlledDocumentImportBatch.update({ where: { id }, data: { version: { increment: 1 } } });
         await event(tx, id, "DECISION", v.actor, { sourceKey: v.sourceKey, scope: v.scope, decision: v.decision, reason: v.reason, resolution: v.resolution || null, affectedKeys: affected.map(r => r.sourceKey) });
-    });
+    }));
 }
 export type Proposal = { sourceKey: string; baseCode: string; kind: "NEW_DOCUMENT" | "NEW_REVISION" | "EXISTING" | "CONFLICT"; writes: number; reason?: string; fingerprint: string };
 async function planRows(tx: Tx, rows: ControlledDocumentImportRow[]) {
@@ -132,24 +144,30 @@ function planSummary(rows: ControlledDocumentImportRow[], proposals: Proposal[])
     const eligible = proposals.filter(p => p.kind !== "CONFLICT").length;
     return { newDocuments: proposals.filter(p => p.kind === "NEW_DOCUMENT").length, newRevisions: proposals.filter(p => p.kind === "NEW_REVISION" || p.kind === "NEW_DOCUMENT" && p.writes === 4).length, existing: proposals.filter(p => p.kind === "EXISTING").length, excluded: rows.filter(r => r.decision === "EXCLUDED").length, pending: rows.filter(r => r.decision === "PENDING").length, conflicts: proposals.filter(p => p.kind === "CONFLICT").length + pendingConflicts, businessWrites: proposals.reduce((n,p) => n + p.writes,0), writes: eligible ? proposals.reduce((n,p) => n + p.writes,0) + eligible + rows.filter(r => r.decision === "EXCLUDED").length + 2 : 0 };
 }
-export async function prepare(id: string, db: PrismaClient = prisma, actorValue?: string) {
-    return transaction(db, async tx => {
+export async function prepare(id: string, db: PrismaClient = prisma, actorValue?: string, request?: ImportAuditRequest) {
+    const reference = await importAuditCommand(db, "PREPARE", { id }, null, request, () => transaction(db, async tx => {
         const b = await lockedBatch(tx, id); editable(b);
         const proposals = await planRows(tx, b.rows), summary = planSummary(b.rows, proposals);
         const eligibleKeys = proposals.filter(p => p.kind !== "CONFLICT").map(p => p.sourceKey);
-        await event(tx, id, "PROPOSED", actorSchema.parse(actorValue ?? b.actor), { summary, proposals });
-        return { version: b.version, proposals, summary, eligibleKeys, token: hash({ id, version: b.version, proposals }) };
-    });
+        // Preserve the original protocol's digest before JSONB normalizes key
+        // order. This proposal fingerprint is not an authentication credential.
+        const token = hash({ id, version: b.version, proposals });
+        const receipt = await event(tx, id, "PROPOSED", actorSchema.parse(importActor(actorValue ?? b.actor)), { version: b.version, summary, proposals, eligibleKeys, token });
+        return { eventId: receipt.id };
+    }));
+    const receipt = await db.controlledDocumentImportEvent.findUniqueOrThrow({ where: { id: reference.eventId } });
+    return receipt.detail as unknown as { version: number; proposals: Proposal[]; summary: ReturnType<typeof planSummary>; eligibleKeys: string[]; token: string };
 }
-export async function confirm(id: string, input: { actor: string; version: number; token: string; eligibleKeys: string[]; explicitlyConfirmed: boolean }, db: PrismaClient = prisma) {
-    const actor = actorSchema.parse(input.actor);
+export async function confirm(id: string, input: { actor: string; version: number; token: string; eligibleKeys: string[]; explicitlyConfirmed: boolean }, db: PrismaClient = prisma, request?: ImportAuditRequest) {
+    const actor = actorSchema.parse(importActor(input.actor));
     if (input.explicitlyConfirmed !== true || !Array.isArray(input.eligibleKeys) || !input.eligibleKeys.length) throw new Error("Confirma explícitamente los registros elegibles de la propuesta.");
+    let reference: { retried: boolean; eventId: string };
     try {
-        return await transaction(db, async tx => {
+        reference = await importAuditCommand(db, "CONFIRM", { id, input: { ...input, actor } }, null, request, () => transaction(db, async tx => {
             const b = await lockedBatch(tx, id);
             // A successful request retried with the same proposal returns its receipt without any writes.
             const receipt = await tx.controlledDocumentImportEvent.findFirst({ where: { batchId: id, action: "CONFIRMED", detail: { path: ["token"], equals: input.token } } });
-            if (receipt) return { retried: true, detail: receipt.detail };
+            if (receipt) return { retried: true, eventId: receipt.id };
             editable(b);
             if (b.version !== input.version) throw new Error("El lote ha cambiado. Revisa otra vez la propuesta.");
             const proposals = await planRows(tx, b.rows);
@@ -184,14 +202,16 @@ export async function confirm(id: string, input: { actor: string; version: numbe
             // Excluded rows also retain only the minimal history once a confirmation occurs.
             for (const r of b.rows.filter(r => r.decision === "EXCLUDED")) { const src = rowValue(r); await tx.controlledDocumentImportRow.update({ where: { id: r.id }, data: { data: json({ ...src, source: { ...src.source, values: [] } }) } }); }
             const detail = { token: input.token, summary, result, conflicts: proposals.filter(p => p.kind === "CONFLICT") };
-            await event(tx, id, "CONFIRMED", actor, detail);
-            return { retried: false, detail };
-        });
+            const recorded = await event(tx, id, "CONFIRMED", actor, detail);
+            return { retried: false, eventId: recorded.id };
+        }));
     } catch (e) {
         // Operational error marker excludes diagnostics and private row contents. No partial business writes survive.
         await db.controlledDocumentImportEvent.create({ data: { batchId: id, action: "ERROR", actor, detail: { category: "CONFIRMATION_REJECTED_OR_ROLLED_BACK" } } }).catch(() => undefined);
         throw e;
     }
+    const receipt = await db.controlledDocumentImportEvent.findUniqueOrThrow({ where: { id: reference.eventId } });
+    return { retried: reference.retried, detail: receipt.detail };
 }
 export function batchReport(b: { reportMetadata: Prisma.JsonValue; rows: ControlledDocumentImportRow[] }): PreviewReport {
     return { ...(b.reportMetadata as unknown as Omit<PreviewReport,"rows">), rows: b.rows.map(rowValue) };

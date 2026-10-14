@@ -6,11 +6,25 @@ export type PersistenceFormError = {
   fieldIssues?: Record<string, string[]>;
 };
 
+export function requiresAuditReason(error: unknown): boolean {
+  const pattern = /Reason required for (established critical correction|critical operational decision|official version activation\/retirement)/;
+  let current = error;
+  for (let depth=0; depth<4 && current && typeof current==="object"; depth++) {
+    if ("message" in current && typeof current.message==="string" && pattern.test(current.message)) return true;
+    current = "cause" in current ? current.cause : null;
+  }
+  return false;
+}
+
 export function persistenceFormError(
   error: unknown,
   entityLabel: string,
   options: { duplicateField?: string } = {},
 ): PersistenceFormError {
+  if (requiresAuditReason(error)) {
+    const message = "Indica el motivo de esta modificación crítica antes de guardar.";
+    return { error: message, fieldErrors: [message], fieldIssues: { changeReason: [message] } };
+  }
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
       const message = "La codificación ya está utilizada por otro expediente del mismo tipo.";

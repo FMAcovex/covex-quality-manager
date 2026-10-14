@@ -1,6 +1,7 @@
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
+import { AuditTrailPanel } from "@/components/audit-trail-panel";
 
 import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -53,6 +54,7 @@ const tabs = [
   ["versions", "Seguimientos"],
   ["documents", "Documentos"],
   ["review", "Revisión"],
+  ["audit-trail", "Audit Trail"],
   ["history", "Historial"],
 ] as const;
 
@@ -74,10 +76,10 @@ async function CapaDetailPageAuthenticatedContent({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; review?: string; thread?: string; returnTo?: string }>;
+  searchParams: Promise<{ tab?: string; review?: string; thread?: string; returnTo?: string; auditPage?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab, review, thread, returnTo } = await searchParams;
+  const { tab: rawTab, review, thread, returnTo, auditPage } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const capa = await getCapaDetail(id);
   if (!capa) notFound();
@@ -620,6 +622,7 @@ async function CapaDetailPageAuthenticatedContent({
           ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
         </div>
       ) : null}
+      {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${capa.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>
     <ReviewDrawer />
     </ReviewWorkspaceProvider>

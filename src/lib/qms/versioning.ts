@@ -483,10 +483,13 @@ export async function ensureInitialVersion(
   source: HistorySource = "UI",
   reason = "Versión inicial del expediente",
 ) {
-  return tx.qmsRecordVersion.upsert({
-    where: { qmsRecordId_sequenceNumber: { qmsRecordId, sequenceNumber: 0 } },
-    update: {},
-    create: {
+  // Serialize initial version creation and avoid a speculative INSERT witness
+  // for a version which already exists (native ON CONFLICT).
+  await tx.$queryRaw`SELECT id FROM "QmsRecord" WHERE id = ${qmsRecordId} FOR UPDATE`;
+  const existing = await tx.qmsRecordVersion.findUnique({ where: { qmsRecordId_sequenceNumber: { qmsRecordId, sequenceNumber: 0 } } });
+  if (existing) return existing;
+  return tx.qmsRecordVersion.create({
+    data: {
       qmsRecordId,
       sequenceNumber: 0,
       kind: RecordVersionKind.INITIAL,

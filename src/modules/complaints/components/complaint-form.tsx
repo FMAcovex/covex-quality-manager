@@ -296,6 +296,8 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
     <TextArea label="Motivo del cambio / seguimiento" name="changeReason"/>
   </div></section>:null}
 
+  {mode==="create"?<section className="form-section"><div className="form-grid"><TextArea label="Motivo de la actuación, cuando se solicite" name="changeReason"/></div></section>:null}
+
   <div className="form-footer"><Link className="button" href={cancelHref ?? (complaintId ? `/complaints/${complaintId}` : "/complaints")}>Cancelar</Link><div className="heading-actions">
    {recordStatus==="DRAFT"?<button className="button" name="saveStatus" value="DRAFT" disabled={pending}>{pending?"Guardando…":"Guardar borrador"}</button>:null}
    {mode==="edit"&&recordStatus!=="DRAFT"?<button className="button" name="saveMode" value="current" disabled={pending}>{pending?"Guardando…":"Guardar cambios"}</button>:null}

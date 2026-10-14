@@ -10,12 +10,14 @@ import { DocumentLink } from "./document-link";
 import { displayDate } from "../domain";
 export function IndexPreview() {
     const fileRef = useRef<File | null>(null);
+    const batchRequest = useRef<string | null>(null);
     const actor = usePresentationAccess()?.actor ?? "";
     async function saveBatch() {
         if (!fileRef.current || !actor.trim()) { setError("Indica el responsable del lote."); return; }
         setPending(true); setError("");
         try { const form = new FormData(); form.set("file", fileRef.current); form.set("actor", actor); form.set("saveBatch", "on");
-            const response = await authenticatedFetch("/api/controlled-documents/index-preview", { method: "POST", body: form }); const value = await response.json();
+            batchRequest.current ??= crypto.randomUUID();
+            const response = await authenticatedFetch("/api/controlled-documents/index-preview", { method: "POST", headers: {"Idempotency-Key":batchRequest.current}, body: form }); const value = await response.json();
             if (!response.ok) throw new Error(value.error || "No se pudo guardar el lote.");
             window.location.assign(`/controlled-documents/import-index/${value.batchId}`);
         } catch(e) { setError(e instanceof Error ? e.message : "No se pudo guardar el lote."); setPending(false); }
@@ -29,6 +31,7 @@ export function IndexPreview() {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         fileRef.current = form.get("file") as File;
+        batchRequest.current = null;
         setError("");
         setPending(true);
         setReport(null);

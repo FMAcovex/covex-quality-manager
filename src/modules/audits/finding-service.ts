@@ -107,7 +107,9 @@ export async function linkAuditFinding(auditId: string, findingId: string, targe
     if (!existing?.isActive) await event(tx, audit.qmsRecordId, actor, "relations", existing, relation, "Auditoría genera expediente existente");
     const before = await tx.auditFindingRelation.findUnique({ where: { findingId_qmsRelationId: { findingId, qmsRelationId: relation.id } } });
     if (before?.isActive) throw new Error("El expediente ya está atribuido a este hallazgo.");
-    const after = await tx.auditFindingRelation.upsert({ where: { findingId_qmsRelationId: { findingId, qmsRelationId: relation.id } }, update: { isActive: true, updatedByText: actor, retiredAt: null, retiredByText: null, retirementReason: null }, create: { findingId, qmsRelationId: relation.id, createdByText: actor } });
+    const after = before
+      ? await tx.auditFindingRelation.update({ where: { id: before.id }, data: { isActive: true, updatedByText: actor, retiredAt: null, retiredByText: null, retirementReason: null } })
+      : await tx.auditFindingRelation.create({ data: { findingId, qmsRelationId: relation.id, createdByText: actor } });
     await event(tx, audit.qmsRecordId, actor, `audit.attributions.${after.id}`, before, after, "Atribución de expediente a hallazgo"); await refreshCapaOriginSnapshot(tx,targetRecordId,actor); return after;
   });
 }

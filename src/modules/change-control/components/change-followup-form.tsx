@@ -207,6 +207,7 @@ export function ChangeFollowupForm({
         <label className="field"><span>Próximo seguimiento</span><input type="date" name="nextFollowupDate" defaultValue={dateInput(defaults?.nextFollowupDate)} /></label>
         <label className="field span-2"><span>Si permanece abierto, motivo</span><textarea name="remainOpenReason" defaultValue={defaults?.remainOpenReason ?? ""} /></label>
         <label className="field span-3"><span>Motivo del cierre / conclusión</span><textarea name="conclusion" defaultValue={defaults?.conclusion ?? ""} /></label>
+        <label className="field span-3"><span>Motivo de la actuación o corrección, cuando se solicite</span><textarea name="reason" /></label>
         <label className="field"><span>Aprobación del cierre, si aplica</span><input name="approvalByText" defaultValue={defaults?.approvalByText ?? ""} /></label>
       </div>
       <div className="form-footer">

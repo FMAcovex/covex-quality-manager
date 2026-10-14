@@ -1,7 +1,7 @@
+import { storeWorkingDocument } from "@/lib/qms/working-document";
 import { currentIdentity } from "@/lib/auth/context";
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getComplaintDetail } from "@/modules/complaints/queries";
 import { generateComplaintAnnexIV } from "@/modules/complaints/documents/docx";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
@@ -23,7 +23,7 @@ async function GETAuthenticatedContent(request:Request,{params}:{params:Promise<
  try{
   const buffer=await generateComplaintAnnexIV(source);
   const sourceTemplateId=version?(version.snapshot as {complaint?:{annexIVTemplateVersionId?:string|null}}).complaint?.annexIVTemplateVersionId:r.annexIVTemplateVersionId;
-  await prisma.generatedDocument.create({data:{qmsRecordId:r.qmsRecordId,recordVersionId:version?.id??null,documentType:"COMPLAINT_ANNEX_IV",templateVersionId:sourceTemplateId??null,generatedByText:(currentIdentity()?.principal.name ?? process.env.DEFAULT_ACTOR_NAME)||r.createdByText,metadata:{source:"download",recordVersion:version?.sequenceNumber??null}}});
+  await storeWorkingDocument({data:{qmsRecordId:r.qmsRecordId,recordVersionId:version?.id??null,documentType:"COMPLAINT_ANNEX_IV",templateVersionId:sourceTemplateId??null,generatedByText:(currentIdentity()?.principal.name ?? process.env.DEFAULT_ACTOR_NAME)||r.createdByText,metadata:{source:"download",recordVersion:version?.sequenceNumber??null}}}, buffer);
   return new Response(new Uint8Array(buffer),{headers:{"Content-Type":"application/vnd.openxmlformats-officedocument.wordprocessingml.document","Content-Disposition":`attachment; filename="Anexo_IV_Respuesta_Reclamacion_${safe(r.qmsRecord.businessCode||id)}_${recordVersionLabel}.docx"`,"Cache-Control":"no-store"}});
  }catch(e){if(e instanceof TemplateAssetError)return templateUnavailableResponse(e.message);throw e;}
 }

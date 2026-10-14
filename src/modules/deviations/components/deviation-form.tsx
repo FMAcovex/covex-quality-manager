@@ -648,6 +648,7 @@ export function DeviationForm({
         </section>
       ) : null}
 
+      {mode === "create" ? <section className="form-section"><div className="form-grid"><TextArea label="Motivo de la actuación, cuando se solicite" name="changeReason" issues={issues.changeReason} /></div></section> : null}
       {recordStatus === "DRAFT" ? (
         <div className="form-errors draft-notice">
           <strong>Borrador</strong>

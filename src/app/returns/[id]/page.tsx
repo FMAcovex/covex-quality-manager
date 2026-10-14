@@ -1,6 +1,7 @@
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
+import { AuditTrailPanel } from "@/components/audit-trail-panel";
 
 import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -59,6 +60,7 @@ const tabs = [
   ["relations", "Relaciones"],
   ["documents", "Documentos"],
   ["review", "Revisión"],
+  ["audit-trail", "Audit Trail"],
   ["history", "Historial"],
 ] as const;
 
@@ -69,10 +71,10 @@ async function ReturnDetailPageAuthenticatedContent({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; review?: string; thread?: string; returnTo?: string }>;
+  searchParams: Promise<{ tab?: string; review?: string; thread?: string; returnTo?: string; auditPage?: string }>;
 }) {
   const { id } = await params;
-  const { tab: raw, review, thread, returnTo } = await searchParams;
+  const { tab: raw, review, thread, returnTo, auditPage } = await searchParams;
   const tab = tabs.some(([key]) => key === raw) ? raw! : "summary";
   const r = await getReturnDetail(id);
   if (!r) notFound();
@@ -990,6 +992,7 @@ async function ReturnDetailPageAuthenticatedContent({
             )}
           </div>
         ) : null}
+        {tab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${r.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
       </section>
       <ReviewDrawer />
     </ReviewWorkspaceProvider>

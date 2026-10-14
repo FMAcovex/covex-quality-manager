@@ -9,7 +9,7 @@ import { isolatedTestEnvironment } from "../src/lib/auth/config";
 import { fixtureUsers } from "./auth-fixtures/constants";
 import { fixtureLogin, cookieHeader } from "./auth-fixtures/http";
 import { writeZip, readZip } from "../src/lib/ooxml/zip";
-import { auditApplicationFixture, auditedSqlFixture } from "./audit-fixtures/database";
+import { auditApplicationFixture, auditedSqlFixture, businessApplicationGrantsFixture, businessSqlFixture } from "./audit-fixtures/database";
 
 const sha256 = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
 function officeFixture(kind: "word" | "sheet") {
@@ -101,12 +101,65 @@ async function main() {
     await source.auditPilotRecord.create({ data: { qmsRecordId: deviation.qmsRecordId! } });
     auditSourceApp = await auditApplicationFixture(source, new URL(sourceUrl), auditRole);
     const auditReceipt = await auditedSqlFixture(auditSourceApp, fixtureUsers.qa.id, [deviation.qmsRecordId!], randomUUID(), 7);
+    await businessApplicationGrantsFixture(source, auditRole);
+    await source.$executeRaw`SELECT covex_b2_require_policy('Synthetic recovery fixture; no corporate acceptance')`;
+    const editRequest = randomUUID();
+    await businessSqlFixture(auditSourceApp, fixtureUsers.qa.id, editRequest, "DV02", "DEVIATION", "EDIT", "Synthetic recovered persisted correction", async tx => {
+      await tx.deviation.update({ where: { id: deviation.id }, data: { whatHappened: "B2 persisted recovered correction" } });
+      await tx.deviationImmediateAction.create({ data: { deviationId: deviation.id, description: "B2 recovered child" } });
+      await tx.changeHistory.create({ data: { qmsRecordId: deviation.qmsRecordId, changedByText: fixtureUsers.qa.name, fieldPath: "whatHappened", oldValue: "Evento totalmente ficticio", newValue: "B2 persisted recovered correction", reason: "Synthetic recovered persisted correction" } });
+    });
+    await businessSqlFixture(auditSourceApp, fixtureUsers.qa.id, randomUUID(), "PN01", "PNT", "EDIT", "Synthetic recovery PNT correction", async tx => {
+      await tx.controlledDocument.update({ where: { id: master.id }, data: { observations: "B2 recovered PNT metadata" } });
+      await tx.controlledDocumentChange.create({ data: { documentId: master.id, action: "Synthetic recovery", changedByText: fixtureUsers.qa.name, reason: "Synthetic recovery PNT correction" } });
+    });
+    const receivedBytes = [Buffer.from("%PDF-1.7\nB2 first received replacement\x00\xff\n%%EOF", "latin1"), Buffer.from("%PDF-1.7\nB2 second received replacement\x00\xff\n%%EOF", "latin1")];
+    for (const bytes of receivedBytes) await businessSqlFixture(auditSourceApp, fixtureUsers.qa.id, randomUUID(), "DV08", "DEVIATION", "ATTACH_DOCUMENT", "Synthetic recovered signed supersession", async tx => {
+      const old = await tx.recordVersionDocument.findUniqueOrThrow({ where: { recordVersionId_kind: { recordVersionId: version.id, kind: "SIGNED_PDF" } } });
+      const [receipt] = await tx.$queryRaw<{ custody_id: string }[]>`SELECT * FROM covex_b2_retain_signed_original(${fixtureUsers.qa.id}::uuid,${fixtureUsers.qa.name},${version.id},'SIGNED_PDF',${bytes}::bytea,'b2-received.pdf',${old.checksum},'Synthetic recovered signed supersession',NULL)`;
+      await tx.recordVersionDocument.update({ where: { id: old.id }, data: { custodyId: receipt.custody_id, fileName: "b2-received.pdf", fileData: bytes, fileSize: bytes.length, checksum: sha256(bytes), uploadedByText: fixtureUsers.qa.name } });
+      await tx.changeHistory.create({ data: { qmsRecordId: deviation.qmsRecordId, changedByText: fixtureUsers.qa.name, fieldPath: "__signed_document__", oldValue: { checksum: old.checksum }, newValue: { checksum: sha256(bytes) }, reason: "Synthetic recovered signed supersession" } });
+    });
+    let stagingId = "";
+    await businessSqlFixture(auditSourceApp, fixtureUsers.qa.id, randomUUID(), "PN06", "PNT", "IMPORT", null, async tx => {
+      const staging = await tx.controlledDocumentImportBatch.create({ data: { fileName: "synthetic-recovery-staging.xlsx", sha256: "c".repeat(64), analyzedAt: new Date(), actor: fixtureUsers.qa.name, summary: { synthetic: true }, reportMetadata: { synthetic: true }, expiresAt: new Date(Date.now()-86400000) } });
+      stagingId = staging.id;
+      await tx.controlledDocumentImportRow.create({ data: { batchId: staging.id, sourceKey: "c".repeat(64), data: { synthetic: true } } });
+    });
+    const [expiry] = await auditSourceApp.$queryRaw<{ expired: number }[]>`SELECT covex_b2_expire_staging(${fixtureUsers.qa.id}::uuid) AS expired`;
+    assert.equal(expiry.expired, 1);
+    const [cutoff]=await source.$queryRaw<{id:string;time:string}[]>`SELECT id,to_char("occurredAt" AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS time FROM "AuditOperation" ORDER BY "occurredAt" DESC,id DESC LIMIT 1`;
+    const cOperations=await source.auditOperation.findMany({where:{origin:"QMS_SERVER"},orderBy:{id:"asc"},select:{id:true}});
+    const cEvents=await source.auditEvent.findMany({where:{operationId:{in:cOperations.map(row=>row.id)}},orderBy:{id:"asc"},select:{id:true}});
+    const cManifest={version:"COVEX_SYNTHETIC_RECOVERY_C_V1",cutoff:{occurredAt:cutoff.time,operationId:cutoff.id},operationIds:cOperations.map(row=>row.id),eventIds:cEvents.map(row=>row.id)};
+    const cReviewId=randomUUID(),cReviewRequest=randomUUID(),cExportId=randomUUID(),cExportRequest=randomUUID();
+    const cBytes=Buffer.from("Synthetic controlled audit export\r\n"+cManifest.eventIds.join("\r\n")),cDigest=sha256(JSON.stringify(cManifest));
+    const idsSql=(ids:string[])=>Prisma.sql`ARRAY[${Prisma.join(ids)}]::uuid[]`;
+    const cReview=(client:PrismaClient)=>client.$queryRaw<{id:string}[]>(Prisma.sql`SELECT covex_c_record_review(${cReviewId}::uuid,${cReviewRequest}::uuid,${cDigest},${fixtureUsers.qa.id}::uuid,'NO_OBSERVATIONS','Synthetic offline recovery receipt',${JSON.stringify(cManifest)}::jsonb,${cutoff.time}::timestamptz,${cutoff.id}::uuid,${idsSql(cManifest.operationIds)},${idsSql(cManifest.eventIds)},NULL::uuid) AS id`);
+    const cExport=(client:PrismaClient)=>client.$queryRaw<{id:string}[]>(Prisma.sql`SELECT covex_c_record_export(${cExportId}::uuid,${cExportRequest}::uuid,${cDigest},${fixtureUsers.qa.id}::uuid,'CSV_UTF8','synthetic-recovery.csv',${new Uint8Array(cBytes)}::bytea,${JSON.stringify(cManifest)}::jsonb,${cutoff.time}::timestamptz,${cutoff.id}::uuid,${idsSql(cManifest.operationIds)},${idsSql(cManifest.eventIds)},${cManifest.eventIds.length}::integer) AS id`);
+    assert.deepEqual(await cReview(auditSourceApp),[{id:cReviewId}]);assert.deepEqual(await cExport(auditSourceApp),[{id:cExportId}]);
     const auditGolden = {
       operations: await source.auditOperation.findMany({ orderBy: { id: "asc" } }),
       events: await source.auditEvent.findMany({ orderBy: { id: "asc" } }),
-      targets: await source.auditOperationTarget.findMany({ orderBy: { rootKey: "asc" } }),
+      targets: await source.auditOperationTarget.findMany({ orderBy: [{ rootKey: "asc" }, { aggregateSequence: "asc" }] }),
+      cursors: await source.auditAggregateCursor.findMany({ orderBy: { rootKey: "asc" } }),
+      receipts: await source.auditCommandResult.findMany({ orderBy: { operationId: "asc" } }),
+      evidence: await source.auditOperationEvidence.findMany({ orderBy: { id: "asc" } }),
+      additionalTargets: await source.auditEventAdditionalTarget.findMany({ orderBy: [{ eventId: "asc" }, { rootKey: "asc" }] }),
+      custody: await source.signedDocumentCustody.findMany({ orderBy: { id: "asc" }, include: { originalDocument: true } }),
+      slots: await source.recordVersionDocument.findMany({ orderBy: { id: "asc" } }),
+      technical: await source.auditTechnicalEvent.findMany({ orderBy: { id: "asc" } }),
+      assessments: await source.auditOperationAssessment.findMany({ orderBy: { operationId: "asc" } }),
+      reviews:await source.auditTrailReview.findMany({orderBy:{id:"asc"}}),
+      reviewOperations:await source.auditTrailReviewOperation.findMany({orderBy:[{reviewId:"asc"},{operationId:"asc"}]}),
+      reviewEvents:await source.auditTrailReviewEvent.findMany({orderBy:[{reviewId:"asc"},{eventId:"asc"}]}),
+      exports:await source.auditTrailExport.findMany({orderBy:{id:"asc"}}),
+      exportEvents:await source.auditTrailExportEvent.findMany({orderBy:[{exportId:"asc"},{eventId:"asc"}]}),
     };
-    assert.equal(auditGolden.events.length, 2);
+    assert.equal(auditGolden.operations.filter(op => op.schemaVersion === 2).length, 5);
+    assert.equal(auditGolden.receipts.length, 5); assert.equal(auditGolden.custody.length, 3); assert.equal(auditGolden.technical.length, 1);
+    assert(auditGolden.events.some(event => event.entityType === "SignedDocumentCustody"));
+    assert(auditGolden.evidence.length >= 3);
     await source.authSession.create({ data: { userId: fixtureUsers.qa.id, tokenHash: sha256(oldToken), csrfHash: sha256("synthetic-csrf"), expiresAt: new Date(Date.now() + 3600000) } });
     await source.authLoginAttempt.create({ data: { id: randomUUID(), state: "synthetic", nonce: "synthetic", verifier: "synthetic", returnTo: "/", expiresAt: new Date(Date.now() + 60000) } });
     // Least-privilege backup identity on this disposable database only.
@@ -135,10 +188,29 @@ async function main() {
     const cfg = { environment: "test", approval_reference: "SYNTHETIC-4B2", release_sha: command("git", ["rev-parse", "HEAD"]), assets_consistency: "immutable-release", external_reference_policy: "references-only-accepted", application_root: root, assets: [{ label: "templates", path: assetRoot }], backup_directory: join(storageRoot, "backups"), backup_storage: { mode: "test-directory-identity", root: storageRoot, device: storageInfo.dev, inode: storageInfo.ino, marker_sha256: sha256(marker) }, temporary_directory: join(root, "plain"), encryption_key: join(root, keys[0]), manifest_key: join(root, keys[1]), status_directory: join(root, "status"), approved_recovery_hosts: [base.hostname], source: { host: base.hostname, port: Number(base.port || 5432), database: sourceName, user: role, passfile, sslmode: "disable" }, recovery: { host: base.hostname, port: Number(base.port || 5432), database: "postgres", user: decodeURIComponent(base.username), passfile, sslmode: "disable" } };
     const configFile = join(root, "config.json"); writeFileSync(configFile, JSON.stringify(cfg), { mode: 0o600 });
     const args = (operation: string, ...extra: string[]) => ["ops/backup/backup.py", operation, "--config", configFile, ...extra];
-    function refused(extra: string[]) { const result = spawnSync("python3", extra, { env: pgEnv, encoding: "utf8", timeout: 120000 }); assert.notEqual(result.status, 0); assert.equal(JSON.parse(result.stdout.trim()).status, "failure"); }
+    function refused(extra: string[]) { const result = spawnSync("python3", extra, { env: pgEnv, encoding: "utf8", timeout: 120000 }); assert.notEqual(result.status, 0); const failure=JSON.parse(result.stdout.trim());assert.equal(failure.status, "failure");return failure; }
     await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" DISABLE TRIGGER audit_event_immutable');
     refused(args("backup"));
     await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" ENABLE TRIGGER audit_event_immutable');
+    await source.$executeRawUnsafe('ALTER TABLE "AuditTrailReview" DISABLE TRIGGER audit_c_review_immutable');
+    refused(args("backup"));
+    await source.$executeRawUnsafe('ALTER TABLE "AuditTrailReview" ENABLE TRIGGER audit_c_review_immutable');
+    // Simulate damaged storage only inside this disposable source. Re-enable the
+    // trigger before backup, so the byte/hash check (not weakened metadata) fails.
+    await source.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" DISABLE TRIGGER audit_c_export_immutable');
+    try{await source.auditTrailExport.update({where:{id:cExportId},data:{contentSha256:"0".repeat(64)}});}finally{await source.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" ENABLE TRIGGER audit_c_export_immutable');}
+    try{assert.equal(refused(args("backup")).reason,"document-checksum-mismatch");}finally{
+      await source.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" DISABLE TRIGGER audit_c_export_immutable');
+      try{await source.auditTrailExport.update({where:{id:cExportId},data:{contentSha256:sha256(cBytes)}});}finally{await source.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" ENABLE TRIGGER audit_c_export_immutable');}
+    }
+    // Private lease reads are allowed only to this read-only snapshot identity,
+    // never to an application writer or a backup role with accidental DML.
+    await source.$executeRawUnsafe(`GRANT SELECT ON "AuditBusinessContext" TO "${auditRole}"`);
+    refused(args("backup"));
+    await source.$executeRawUnsafe(`REVOKE SELECT ON "AuditBusinessContext" FROM "${auditRole}"`);
+    await source.$executeRawUnsafe(`GRANT UPDATE(name) ON "Department" TO "${role}"`);
+    refused(args("backup"));
+    await source.$executeRawUnsafe(`REVOKE UPDATE(name) ON "Department" FROM "${role}"`);
     renameSync(storageRoot, storageRoot + "-absent");
     refused(args("backup")); assert(!readdirSync(root).includes("storage"), "El almacenamiento ausente no se recrea");
     renameSync(storageRoot + "-absent", storageRoot);
@@ -186,22 +258,65 @@ async function main() {
     restored = new PrismaClient({ datasourceUrl: restoredUrl.href });
     assert.deepEqual(await restored.auditOperation.findMany({ orderBy: { id: "asc" } }), auditGolden.operations, "Journal recuperado sin fabricación de eventos históricos");
     assert.deepEqual(await restored.auditEvent.findMany({ orderBy: { id: "asc" } }), auditGolden.events);
-    assert.deepEqual(await restored.auditOperationTarget.findMany({ orderBy: { rootKey: "asc" } }), auditGolden.targets);
+    assert.deepEqual(await restored.auditOperationTarget.findMany({ orderBy: [{ rootKey: "asc" }, { aggregateSequence: "asc" }] }), auditGolden.targets);
+    assert.deepEqual(await restored.auditAggregateCursor.findMany({ orderBy: { rootKey: "asc" } }), auditGolden.cursors);
+    assert.deepEqual(await restored.auditCommandResult.findMany({ orderBy: { operationId: "asc" } }), auditGolden.receipts);
+    assert.deepEqual(await restored.auditOperationEvidence.findMany({ orderBy: { id: "asc" } }), auditGolden.evidence);
+    assert.deepEqual(await restored.auditEventAdditionalTarget.findMany({ orderBy: [{ eventId: "asc" }, { rootKey: "asc" }] }), auditGolden.additionalTargets);
+    assert.deepEqual(await restored.signedDocumentCustody.findMany({ orderBy: { id: "asc" }, include: { originalDocument: true } }), auditGolden.custody, "Exact originals, historical identity, custodian, supersession links and SHA survive offline recovery");
+    assert.deepEqual(await restored.recordVersionDocument.findMany({ orderBy: { id: "asc" } }), auditGolden.slots);
+    assert.deepEqual(await restored.auditTechnicalEvent.findMany({ orderBy: { id: "asc" } }), auditGolden.technical);
+    assert.deepEqual(await restored.auditOperationAssessment.findMany({ orderBy: { operationId: "asc" } }), auditGolden.assessments);
+    assert.deepEqual(await restored.auditTrailReview.findMany({orderBy:{id:"asc"}}),auditGolden.reviews);
+    assert.deepEqual(await restored.auditTrailReviewOperation.findMany({orderBy:[{reviewId:"asc"},{operationId:"asc"}]}),auditGolden.reviewOperations);
+    assert.deepEqual(await restored.auditTrailReviewEvent.findMany({orderBy:[{reviewId:"asc"},{eventId:"asc"}]}),auditGolden.reviewEvents);
+    assert.deepEqual(await restored.auditTrailExport.findMany({orderBy:{id:"asc"}}),auditGolden.exports);
+    assert.deepEqual(await restored.auditTrailExportEvent.findMany({orderBy:[{exportId:"asc"},{eventId:"asc"}]}),auditGolden.exportEvents);
+    assert.equal(sha256(Buffer.from(auditGolden.exports[0].fileData)),auditGolden.exports[0].contentSha256);
+    assert.equal(auditGolden.assessments.length, auditGolden.operations.filter(operation=>operation.origin==="QMS_SERVER").length);
     assert.equal(await restored.auditRuntimeContext.count(), 0);
+    assert.equal(await restored.auditBusinessContext.count(), 0); assert.equal(await restored.auditMutationWitness.count(), 0); assert.equal(await restored.auditRootBinding.count(), 0);
+    assert.equal(await restored.auditTechnicalContext.count(), 0);
+    assert.equal(await restored.auditRootMaturity.count(), 0);
+    await assert.rejects(restored.auditOperationAssessment.update({where:{operationId:auditGolden.assessments[0].operationId},data:{proposedCritical:false}}));
     const nextAuditRole = "covex4b3_afterrestore_" + id; auditRoles.push(nextAuditRole);
     auditRestoredApp = await auditApplicationFixture(restored, restoredUrl, nextAuditRole);
+    await businessApplicationGrantsFixture(restored, nextAuditRole);
+    assert.deepEqual(await cReview(auditRestoredApp),[{id:cReviewId}]);assert.deepEqual(await cExport(auditRestoredApp),[{id:cExportId}]);
+    assert.equal(await restored.auditTrailReview.count(),1);assert.equal(await restored.auditTrailExport.count(),1);
+    await assert.rejects(auditRestoredApp.auditTrailReview.update({where:{id:cReviewId},data:{notes:"Forbidden restored rewrite"}}));
+    await assert.rejects(restored.auditTrailExport.update({where:{id:cExportId},data:{fileName:"forbidden.csv"}}));
+    await assert.rejects(auditRestoredApp.$executeRawUnsafe('TRUNCATE "AuditTrailExportEvent"'));
+    const replayed = await businessSqlFixture(auditRestoredApp, fixtureUsers.qa.id, editRequest, "DV02", "DEVIATION", "EDIT", "Synthetic recovered persisted correction", async () => { throw Error("Committed B2 command must not execute twice after restoration"); });
+    assert.equal(replayed, auditGolden.operations.find(op => op.requestId === editRequest)!.id);
     const nextAudit = await auditedSqlFixture(auditRestoredApp, fixtureUsers.qa.id, [deviation.qmsRecordId!], randomUUID(), 8);
     assert.notEqual(nextAudit.operation_id, auditReceipt.operation_id);
-    assert.equal((await restored.auditOperationTarget.findFirstOrThrow({ where: { operationId: nextAudit.operation_id } })).aggregateSequence, BigInt(2));
+    assert.equal((await restored.auditOperationTarget.findFirstOrThrow({ where: { operationId: nextAudit.operation_id } })).aggregateSequence, auditGolden.cursors.find(c => c.rootKey === "QMS_RECORD:" + deviation.qmsRecordId)!.lastSequence + BigInt(1));
+    const nextBusiness = await businessSqlFixture(auditRestoredApp, fixtureUsers.qa.id, randomUUID(), "DV02", "DEVIATION", "EDIT", null, async tx => {
+      await tx.deviation.update({ where: { id: deviation.id }, data: { internalObservations: "New B2 operation after isolated recovery" } });
+    });
+    assert.equal((await restored.auditOperationTarget.findFirstOrThrow({ where: { operationId: nextBusiness } })).aggregateSequence, auditGolden.cursors.find(c => c.rootKey === "QMS_RECORD:" + deviation.qmsRecordId)!.lastSequence + BigInt(2));
+    const newEvent = await restored.auditEvent.findFirstOrThrow({ where: { operationId: nextBusiness, fieldPath: "internalObservations" } });
+    assert.deepEqual(newEvent.oldValue, { present: true, type: "NULL", value: null });
+    assert.deepEqual(newEvent.newValue, { present: true, type: "STRING", value: "New B2 operation after isolated recovery" });
     await assert.rejects(auditRestoredApp.$executeRawUnsafe('TRUNCATE "AuditEvent" CASCADE'));
+    await assert.rejects(auditRestoredApp.$queryRaw`SELECT * FROM "AuditBusinessContext"`);
+    await assert.rejects(auditRestoredApp.$queryRaw`SELECT * FROM "AuditTechnicalContext"`);
+    await assert.rejects(restored.auditTechnicalEvent.update({ where: { id: auditGolden.technical[0].id }, data: { deletedPendingRows: 0 } }));
+    assert.equal((await restored.controlledDocumentImportBatch.findUniqueOrThrow({ where: { id: stagingId } })).state, "EXPIRED");
+    await assert.rejects(auditRestoredApp.signedDocumentCustody.delete({ where: { id: auditGolden.custody[0].id } }));
+    await assert.rejects(auditRestoredApp.generatedDocument.update({ where: { id: auditGolden.custody[0].originalDocumentId }, data: { fileName: "forbidden-after-restore.pdf" } }));
     assert.deepEqual((await restored.qmsRecord.findMany({ orderBy: { id: "asc" }, select: { id: true } })).map(r => r.id), records.map(r => r.id), "UUID sin expedientes duplicados");
     assert.equal(await restored.qmsRecordVersion.count(), records.length * 2);
     assert.equal(await restored.qmsRelation.count(), 2);
     assert.equal(await restored.authSession.count({ where: { revokedAt: null } }), 0);
     assert.equal(await restored.authLoginAttempt.count(), 0);
-    for (const [rows, expected] of [[await restored.templateVersion.findMany({ where: { fileData: { not: null } } }), sha256(word)], [await restored.generatedDocument.findMany({ where: { fileData: { not: null } } }), sha256(word)], [await restored.recordVersionDocument.findMany(), checksum], [await restored.controlledRevisionDocument.findMany({ where: { fileData: { not: null } } }), checksum], [await restored.auditAnnualProgrammeVersion.findMany(), sha256(sheet)]] as const) {
+    for (const [rows, expected] of [[await restored.templateVersion.findMany({ where: { fileData: { not: null } } }), sha256(word)], [await restored.controlledRevisionDocument.findMany({ where: { fileData: { not: null } } }), checksum], [await restored.auditAnnualProgrammeVersion.findMany(), sha256(sheet)]] as const) {
       for (const row of rows) assert.equal(sha256(Buffer.from(row.fileData!)), expected, "SHA-256 binario en cada familia documental");
     }
+    for (const row of [...await restored.generatedDocument.findMany({ where: { fileData: { not: null } } }), ...await restored.recordVersionDocument.findMany()]) assert.equal(sha256(Buffer.from(row.fileData!)), row.checksum);
+    assert.equal((await restored.deviation.findUniqueOrThrow({ where: { id: deviation.id } })).whatHappened, "B2 persisted recovered correction");
+    assert.equal(await restored.deviationImmediateAction.count({ where: { deviationId: deviation.id, description: "B2 recovered child" } }), 1);
     assert.deepEqual(readFileSync(join(root, "restored-assets/templates/fixture.docx")), asset);
     const release = join(root, "release"); command("python3", ["ops/release.py", "--sha", cfg.release_sha, "--out", release]);
     const restoredEnv = { ...env, DATABASE_URL: restoredUrl.href, HOSTNAME: "127.0.0.1", PORT: "3102" };
@@ -216,13 +331,15 @@ async function main() {
       const login = await fixtureLogin("reader"); assert(login.success, "Nuevo login OIDC después de recuperar");
       const user = await fetch(env.AUTH_ORIGIN + "/api/auth/session", { headers: { cookie: cookieHeader(login.jar) } }); assert(user.ok); assert.equal((await user.json()).name, fixtureUsers.reader.name);
       for (const path of ["deviations", "capa", "changes", "complaints", "returns", "audits", "controlled-documents"]) assert.equal((await fetch(env.AUTH_ORIGIN + "/" + path, { headers: { cookie: cookieHeader(login.jar) }, redirect: "manual" })).status, 200);
-      await restored.authUser.update({ where: { id: fixtureUsers.reader.id }, data: { active: false } });
+      await businessSqlFixture(auditRestoredApp, fixtureUsers.admin.id, randomUUID(), "TR05", "SYSTEM", "MANAGE_USERS", "Synthetic post-recovery access withdrawal", async tx => {
+        await tx.authUser.update({ where: { id: fixtureUsers.reader.id }, data: { active: false } });
+      });
       assert.equal((await fetch(env.AUTH_ORIGIN + "/api/auth/session", { headers: { cookie: cookieHeader(login.jar) } })).status, 401, "Revocación 4B1 sigue efectiva tras recuperación");
     } finally { Object.assign(process.env, previousEnv); }
     command("node", [resolve("ops/runtime/health.mjs"), env.AUTH_ORIGIN + "/api/health"]);
     await stop(app); app = undefined;
     await assert.rejects(fetch(env.AUTH_ORIGIN + "/api/health"), "Parada efectiva del servicio aislado");
-    console.log("4B2 recovery OK: absent/unmounted/substituted storage refused without creating backups; enrolled test storage positive; PostgreSQL16 consistent encrypted backup; all tables/schema, seven modules, relationships, frozen versions/history, five binary families and external files; B1 journal/targets/events preserved without fabricated history, next sequence writable, weakened protection quarantined; tamper/unsafe target/existing target/failure rejected; unavailable source and backup storage recovery; session revocation, fresh OIDC/global read and access revocation; standalone health/start/stop. Synthetic only, pending corporate IT/QA acceptance.");
+    console.log("4B2 recovery OK: absent/unmounted/substituted storage refused without creating backups; enrolled test storage positive; PostgreSQL16 consistent encrypted backup; seven modules, relationships, frozen versions/history, binary families and external files; B1 and B2 operations, typed OLD/NEW, evidence, receipts, targets and cursors preserved; exact signed originals and supersession chains restored, protected and replay-safe; next sequence writable, weakened protection quarantined; tamper/unsafe/existing targets rejected; unavailable source and backup storage recovery; session revocation, fresh OIDC/global read and access withdrawal; standalone health/start/stop. Synthetic only, pending corporate IT/QA acceptance.");
   } finally {
     await stop(app); await stop(provider); await auditSourceApp?.$disconnect(); await auditRestoredApp?.$disconnect(); await restored?.$disconnect(); await source.$disconnect();
     for (const database of databases.reverse()) {

@@ -1,6 +1,26 @@
 {
   "actions": [
     {
+      "file": "src/lib/audit/trail-actions.ts",
+      "name": "recordAuditTrailReviewAction",
+      "params": ["form"],
+      "module": "SYSTEM",
+      "permission": "AUDIT_TRAIL_REVIEW",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/audit/trail-actions.ts",
+      "name": "createAuditTrailExportAction",
+      "params": ["form"],
+      "module": "SYSTEM",
+      "permission": "AUDIT_TRAIL_EXPORT",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
       "file": "src/lib/qms/review/actions.ts",
       "name": "createReviewThreadAction",
       "params": [
@@ -619,7 +639,7 @@
       ],
       "module": "SYSTEM",
       "permission": "MANAGE_CONFIGURATION",
-      "resourceArg": 0,
+      "resourceArg": -1,
       "resourceKind": "RECORD",
       "dynamicCreate": false
     },
@@ -645,7 +665,7 @@
       ],
       "module": "SYSTEM",
       "permission": "MANAGE_CONFIGURATION",
-      "resourceArg": -1,
+      "resourceArg": 0,
       "resourceKind": "RECORD",
       "dynamicCreate": false
     },
@@ -978,6 +998,13 @@
   ],
   "routes": [
     {
+      "file": "src/app/api/audit-trail/exports/[id]/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "AUDIT_TRAIL_EXPORT",
+      "public": false
+    },
+    {
       "file": "src/app/api/audits/[id]/documents/route.ts",
       "method": "GET",
       "module": "AUDIT",
@@ -990,6 +1017,14 @@
       "module": "AUDIT",
       "permission": "DOWNLOAD",
       "public": false
+    },
+    {
+      "file": "src/app/api/auth/session/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "READ",
+      "public": false,
+      "guard": "SELF_SESSION"
     },
     {
       "file": "src/app/api/capa/[id]/annex-iii/route.ts",
@@ -1209,6 +1244,13 @@
       "public": false
     },
     {
+      "file": "src/app/api/qms/[id]/document-originals/[custodyId]/route.ts",
+      "method": "GET",
+      "module": "QMS",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
       "file": "src/app/api/qms/business-code-suggestion/route.ts",
       "method": "GET",
       "module": "QMS",
@@ -1286,14 +1328,6 @@
       "public": false
     },
     {
-      "file": "src/app/auth/login/route.ts",
-      "method": "GET",
-      "module": "SYSTEM",
-      "permission": "READ",
-      "public": true,
-      "guard": "OIDC_START"
-    },
-    {
       "file": "src/app/auth/callback/route.ts",
       "method": "GET",
       "module": "SYSTEM",
@@ -1302,23 +1336,24 @@
       "guard": "OIDC_CALLBACK"
     },
     {
+      "file": "src/app/auth/login/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "READ",
+      "public": true,
+      "guard": "OIDC_START"
+    },
+    {
       "file": "src/app/auth/logout/route.ts",
       "method": "POST",
       "module": "SYSTEM",
       "permission": "READ",
       "public": false,
       "guard": "SELF_SESSION_CSRF"
-    },
-    {
-      "file": "src/app/api/auth/session/route.ts",
-      "method": "GET",
-      "module": "SYSTEM",
-      "permission": "READ",
-      "public": false,
-      "guard": "SELF_SESSION"
     }
   ],
   "pages": [
+    "src/app/audit-trail/page.tsx",
     "src/app/audits/[id]/edit/page.tsx",
     "src/app/audits/[id]/page.tsx",
     "src/app/audits/new/page.tsx",

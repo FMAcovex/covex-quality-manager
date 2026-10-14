@@ -667,9 +667,6 @@ async function updateChangeControlActionAuthenticatedContent(
       }
     });
 
-    revalidatePath("/changes");
-    revalidatePath(`/changes/${id}`);
-    redirect(qmsDetailUrl("/changes", id, formData.get("returnTo"), formData.get("detailTab")));
   } catch (error) {
     if (error instanceof OperationalBusinessCodeError) {
       return preserveFormState(previous, formData, {
@@ -682,6 +679,9 @@ async function updateChangeControlActionAuthenticatedContent(
     }
     return preserveFormState(previous, formData, persistenceFormError(error, "el Control de Cambio"));
   }
+  revalidatePath("/changes");
+  revalidatePath(`/changes/${id}`);
+  redirect(qmsDetailUrl("/changes", id, formData.get("returnTo"), formData.get("detailTab")));
 }
 
 function parseFollowupTasks(raw: string): ChangeFollowupTaskInput[] {

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
-import { DocumentType,Prisma,RecordVersionDocumentKind } from "@prisma/client";
+import { DocumentType,RecordVersionDocumentKind } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { retainSignedOriginal } from "./signed-custody-service";
 
 export const MAX_SIGNED_PDF_SIZE = 15 * 1024 * 1024;
 
@@ -118,41 +119,18 @@ export async function storeSignedVersionPdf({
       const currentDocument=await tx.recordVersionDocument.findUnique({where:{recordVersionId_kind:{recordVersionId,kind}}});
       existingDocument=currentDocument;
       if(currentDocument&&!replacementReason)throw new Error("Para sustituir un PDF firmado debe indicarse el motivo.");
-      if(currentDocument){
-        // Archive a legacy upload once. Its original data snapshot is unknown.
-        const archived=await tx.generatedDocument.findFirst({where:{qmsRecordId,documentType:archiveReturnType,checksum:currentDocument.checksum,mimeType:"application/pdf"},select:{id:true}});
-        if(!archived)await tx.generatedDocument.create({data:{qmsRecordId,recordVersionId,documentType:archiveReturnType,fileData:currentDocument.fileData,fileName:currentDocument.fileName,mimeType:"application/pdf",checksum:currentDocument.checksum,generatedAt:currentDocument.uploadedAt,generatedByText:currentDocument.uploadedByText,metadata:{source:"legacy-signed-upload",kind,originalSnapshotKnown:false}}});
-      }
-      const snapshot=await tx.qmsRecordVersion.findUniqueOrThrow({where:{id:recordVersionId},select:{snapshot:true}});
-      await tx.generatedDocument.create({data:{qmsRecordId,recordVersionId,documentType:archiveReturnType,fileData:bytes,fileName:file.name,mimeType:"application/pdf",checksum,generatedByText:actor,metadata:{source:"signed-upload",kind,replacementReason,observedSnapshot:snapshot.snapshot} as Prisma.InputJsonObject}});
     }
-    await tx.recordVersionDocument.upsert({
-      where: {
-        recordVersionId_kind: {
-          recordVersionId,
-          kind,
-        },
-      },
-      update: {
-        fileName: file.name,
-        mimeType: "application/pdf",
-        fileData: bytes,
-        fileSize: file.size,
-        checksum,
-        uploadedByText: actor,
-        uploadedAt: new Date(),
-      },
-      create: {
-        recordVersionId,
-        kind,
-        fileName: file.name,
-        mimeType: "application/pdf",
-        fileData: bytes,
-        fileSize: file.size,
-        checksum,
-        uploadedByText: actor,
-      },
+    const custody=await retainSignedOriginal(tx,{recordVersionId,kind,bytes,fileName:file.name,actor,
+      expectedChecksum:existingDocument?.checksum??null,replacementReason,documentType:archiveReturnType});
+    // The custody RPC holds the root lock and checks the observed predecessor.
+    // Explicit create/update avoids speculative BEFORE INSERT witnesses from a
+    // native ON CONFLICT upsert, while preserving the slot's unique key.
+    const data = { custodyId: custody.custodyId, fileName: file.name, mimeType: "application/pdf",
+      fileData: bytes, fileSize: file.size, checksum, uploadedByText: actor };
+    if (existingDocument) await tx.recordVersionDocument.update({
+      where: { recordVersionId_kind: { recordVersionId, kind } }, data: { ...data, uploadedAt: new Date() },
     });
+    else await tx.recordVersionDocument.create({ data: { ...data, recordVersionId, kind } });
 
     await tx.changeHistory.create({
       data: {

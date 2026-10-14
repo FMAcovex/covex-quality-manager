@@ -1,3 +1,4 @@
+import { purgeLegacyFixtureDocuments } from "./audit-fixtures/legacy-cleanup";
 // Synthetic fixtures only: these are not official COVEX templates or deployment assets.
 import { createHash, randomUUID } from "node:crypto";
 import { DocumentType } from "@prisma/client";
@@ -21,7 +22,8 @@ export async function installSyntheticAuditTemplates(){
 export async function cleanupAuditR3cFixtures(recordIds:string[],templateIds:string[]=[]){
  const ids=(await prisma.audit.findMany({where:{qmsRecordId:{in:recordIds}},select:{id:true}})).map(a=>a.id);
  await prisma.reviewMessage.deleteMany({where:{reviewThread:{qmsRecordId:{in:recordIds}}}});await prisma.reviewThread.deleteMany({where:{qmsRecordId:{in:recordIds}}});
- await prisma.recordVersionDocument.deleteMany({where:{recordVersion:{qmsRecordId:{in:recordIds}}}});await prisma.generatedDocument.deleteMany({where:{qmsRecordId:{in:recordIds}}});
+ await purgeLegacyFixtureDocuments(prisma, {recordVersion:{qmsRecordId:{in:recordIds}}});
+    await prisma.recordVersionDocument.deleteMany({where:{recordVersion:{qmsRecordId:{in:recordIds}}}});await prisma.generatedDocument.deleteMany({where:{qmsRecordId:{in:recordIds}}});
  await prisma.auditFindingRelation.deleteMany({where:{finding:{auditId:{in:ids}}}});await prisma.auditFollowup.deleteMany({where:{auditId:{in:ids}}});await prisma.auditFindingAction.deleteMany({where:{finding:{auditId:{in:ids}}}});await prisma.auditFinding.deleteMany({where:{auditId:{in:ids}}});
  await prisma.qmsRelation.deleteMany({where:{OR:[{sourceRecordId:{in:recordIds}},{targetRecordId:{in:recordIds}}]}});await prisma.changeHistory.deleteMany({where:{qmsRecordId:{in:recordIds}}});await prisma.qmsRecordVersion.deleteMany({where:{qmsRecordId:{in:recordIds}}});
  await prisma.auditParticipant.deleteMany({where:{auditId:{in:ids}}});await prisma.auditDepartment.deleteMany({where:{auditId:{in:ids}}});await prisma.audit.deleteMany({where:{id:{in:ids}}});await prisma.capa.deleteMany({where:{qmsRecordId:{in:recordIds}}});await prisma.deviation.deleteMany({where:{qmsRecordId:{in:recordIds}}});await prisma.qmsRecord.deleteMany({where:{id:{in:recordIds}}});

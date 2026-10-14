@@ -4,7 +4,7 @@ import { CsrfField } from "@/components/csrf";
 
 
 import { authenticatedFetch } from "@/lib/auth/client";
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import type { PreviewRow } from "../preview/types";
 import { issueLabels, declaredStateLabels } from "../preview/types";
 import { DocumentLink } from "./document-link";
@@ -17,11 +17,14 @@ type Department = {id: string; code: string; name: string; isActive: boolean};
 export function ImportBatch({initial, departments}: {initial: Batch; departments: Department[]}) {
     const canImport = useCanAct("IMPORT");
     const actor = usePresentationAccess()?.actor ?? "";
+    const pendingRequest = useRef<{ signature: string; id: string } | null>(null);
     const [batch,setBatch] = useState(initial), [error,setError] = useState(""), [busy,setBusy] = useState(false), [query,setQuery] = useState(""), [filter,setFilter] = useState(""), [page,setPage] = useState(1), [plan,setPlan] = useState<Plan | null>(null), [confirmed,setConfirmed] = useState(false);
     const editable = canImport && ["PENDING","PARTIAL"].includes(batch.state), filtered = batch.rows.filter(r => (!query || `${r.baseCode || ""} ${r.data.normalized.title}`.toUpperCase().includes(query.toUpperCase())) && (!filter || r.decision === filter)), pages = Math.max(1,Math.ceil(filtered.length/25)), current = Math.min(page,pages);
     async function request(operation: string, input?: unknown) {
         setBusy(true); setError("");
-        try { const response = await authenticatedFetch(`/api/controlled-documents/import-batches/${batch.id}`,{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({operation,input})}); const result = await response.json(); if (!response.ok) throw new Error(result.error || "Operación rechazada."); if (result.batch) { setBatch(result.batch); setPlan(null); setConfirmed(false); } if (result.plan) { setPlan(result.plan); setConfirmed(false); } }
+        const body = JSON.stringify({operation,input}), signature = JSON.stringify([batch.id,batch.version,body]);
+        if (pendingRequest.current?.signature !== signature) pendingRequest.current = {signature,id:crypto.randomUUID()};
+        try { const response = await authenticatedFetch(`/api/controlled-documents/import-batches/${batch.id}`,{method:"POST", headers:{"Content-Type":"application/json","Idempotency-Key":pendingRequest.current.id}, body}); const result = await response.json(); if (!response.ok) throw new Error(result.error || "Operación rechazada."); pendingRequest.current = null; if (result.batch) { setBatch(result.batch); setPlan(null); setConfirmed(false); } if (result.plan) { setPlan(result.plan); setConfirmed(false); } }
         catch(e) { setError(e instanceof Error ? e.message : "Operación rechazada."); setPlan(null); setConfirmed(false); }
         finally { setBusy(false); }
     }

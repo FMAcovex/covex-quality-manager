@@ -76,10 +76,11 @@ export async function saveAudit(raw: unknown, id?: string) {
     };
     const audit = before ? await tx.audit.update({ where: { id: before.id }, data }) : await tx.audit.create({ data: { ...data, qmsRecordId: qmsRecord.id, createdByText: v.actor } });
     await tx.auditDepartment.updateMany({ where: { auditId: audit.id, departmentId: { notIn: v.departmentIds }, isActive: true }, data: { isActive: false } });
-    for (const department of departments) await tx.auditDepartment.upsert({
-      where: { auditId_departmentId: { auditId: audit.id, departmentId: department.id } }, update: { isActive: true },
-      create: { auditId: audit.id, departmentId: department.id, departmentCodeSnapshot: department.code, departmentNameSnapshot: department.name },
-    });
+    for (const department of departments) {
+      const previous = await tx.auditDepartment.findUnique({ where: { auditId_departmentId: { auditId: audit.id, departmentId: department.id } } });
+      if (previous) await tx.auditDepartment.update({ where: { id: previous.id }, data: { isActive: true } });
+      else await tx.auditDepartment.create({ data: { auditId: audit.id, departmentId: department.id, departmentCodeSnapshot: department.code, departmentNameSnapshot: department.name } });
+    }
     await tx.auditParticipant.updateMany({ where: { auditId: audit.id, isActive: true, id: { notIn: v.participants.flatMap(p => p.id ? [p.id] : []) } }, data: { isActive: false } });
     for (const participant of v.participants) {
       const pd = { displayName: participant.displayName, position: nullable(participant.position), organization: nullable(participant.organization), role: participant.role, sortOrder: participant.sortOrder, isActive: true };

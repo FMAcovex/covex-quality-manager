@@ -1193,6 +1193,7 @@ model ReturnFollowup {
 }
 
 model ChangeHistory {
+  auditEvidence AuditOperationEvidence[]
   authenticatedUserId String? @db.Uuid
   authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id            String        @id @default(uuid())
@@ -1229,6 +1230,7 @@ model QmsRecordVersion {
   updatedAt          DateTime          @updatedAt
   generatedDocuments GeneratedDocument[]
   documents          RecordVersionDocument[]
+  signedCustodies    SignedDocumentCustody[]
   reviewThreads      ReviewThread[]
 
   @@unique([qmsRecordId, sequenceNumber])
@@ -1295,13 +1297,39 @@ model RecordVersionDocument {
   checksum         String
   uploadedByText   String?
   uploadedAt       DateTime                  @default(now())
+  custodyId        String? @unique @db.Uuid
+  custody          SignedDocumentCustody? @relation("CurrentSignedCustody", fields: [custodyId], references: [id], onDelete: Restrict)
 
   @@unique([recordVersionId, kind])
   @@index([recordVersionId, uploadedAt])
   @@index([kind, uploadedAt])
 }
 
+// Exact received bytes remain in GeneratedDocument. This append-only record
+// distinguishes authenticated custody now from labels/dates observed in legacy uploads.
+model SignedDocumentCustody {
+  id String @id @default(uuid()) @db.Uuid
+  originalDocumentId String @unique
+  originalDocument GeneratedDocument @relation(fields: [originalDocumentId], references: [id], onDelete: Restrict)
+  recordVersionId String
+  recordVersion QmsRecordVersion @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  kind RecordVersionDocumentKind
+  sourceKind String
+  identitySource String
+  retainedByUserId String? @db.Uuid
+  retainedByUser AuthUser? @relation(fields: [retainedByUserId], references: [id], onDelete: Restrict)
+  retainedByName String?
+  retainedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  replacesId String? @unique @db.Uuid
+  replaces SignedDocumentCustody? @relation("SignedCustodySupersession", fields: [replacesId], references: [id], onDelete: Restrict)
+  replacement SignedDocumentCustody? @relation("SignedCustodySupersession")
+  reason String?
+  currentSlot RecordVersionDocument? @relation("CurrentSignedCustody")
+  @@index([recordVersionId, retainedAt, id])
+}
+
 model GeneratedDocument {
+  signedCustody SignedDocumentCustody?
   auditEvents AuditEvent[]
   authenticatedUserId String? @db.Uuid
   authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
@@ -1393,6 +1421,7 @@ model AlertRule {
 }
 
 model ConfigurationChange {
+  auditEvidence AuditOperationEvidence[]
   authenticatedUserId String? @db.Uuid
   authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id            String   @id @default(uuid())
@@ -1631,6 +1660,7 @@ model AuditPlanEntry {
 }
 
 model AuditPlanChange {
+  auditEvidence AuditOperationEvidence[]
   authenticatedUserId String? @db.Uuid
   authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id          String         @id @default(uuid())
@@ -1900,6 +1930,7 @@ model ControlledDocumentRevision {
 }
 
 model ControlledDocumentChange {
+  auditEvidence AuditOperationEvidence[]
   authenticatedUserId String? @db.Uuid
   authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
   id String @id @default(uuid())
@@ -2008,6 +2039,7 @@ model ControlledDecisionEvidence {
 
 // P1B-2: bounded staging; no original workbook binary.
 model ControlledDocumentImportBatch {
+  auditTechnicalEvents AuditTechnicalEvent[]
   id String @id @default(uuid())
   fileName String
   sha256 String
@@ -2121,13 +2153,19 @@ enum AccessPermission {
  PNT_CORRECT
  PNT_LEGACY_REGISTER
  PNT_MANAGE_STATE
+ AUDIT_TRAIL_REVIEW
+ AUDIT_TRAIL_EXPORT
+ AUDIT_TRAIL_SENSITIVE_READ
 }
 enum AccessScope {
  ALL
  ASSIGNED
 }
 model AuthUser {
+ signedCustodies SignedDocumentCustody[]
  auditOperations AuditOperation[]
+ auditTrailReviews AuditTrailReview[]
+ auditTrailExports AuditTrailExport[]
  id String @id @default(uuid()) @db.Uuid
  tenantId String @db.Uuid
  objectId String @db.Uuid
@@ -2154,6 +2192,7 @@ model AuthUser {
  authoredControlledRevisionDecision ControlledRevisionDecision[]
  authoredControlledDocumentImportEvent ControlledDocumentImportEvent[]
  authoredAuditAnnualProgrammeVersion AuditAnnualProgrammeVersion[]
+ triggeredAuditTechnicalEvents AuditTechnicalEvent[]
  @@unique([tenantId, objectId])
 }
 model AuthRole {
@@ -2221,6 +2260,7 @@ model AuthLoginAttempt {
  @@index([expiresAt])
 }
 model AuthAuthorizationChange {
+ auditEvidence AuditOperationEvidence[]
  id String @id @default(uuid()) @db.Uuid
  actorUserId String? @db.Uuid
  actorUser AuthUser? @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
@@ -2235,6 +2275,8 @@ model AuthAuthorizationChange {
 
 // 4B3-B1 infrastructure. No production QMS capture policy is activated.
 model AuditOperation {
+  assessment AuditOperationAssessment?
+  trailReviews AuditTrailReviewOperation[]
   id String @id @db.Uuid
   actorUserId String @db.Uuid
   actorUser AuthUser @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
@@ -2243,13 +2285,17 @@ model AuditOperation {
   operation String
   requestId String @db.Uuid
   requestDigest String
-  reason String
+  reason String?
   policyVersion String
   schemaVersion Int
   occurredAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
   databasePrincipal String
+  accessModule String?
+  accessPermission String?
   targets AuditOperationTarget[]
   events AuditEvent[]
+  evidence AuditOperationEvidence[]
+  commandResult AuditCommandResult?
   context AuditRuntimeContext?
   @@unique([actorUserId, origin, requestId])
   @@index([occurredAt, id])
@@ -2264,6 +2310,8 @@ model AuditAggregateCursor {
   controlledDocument ControlledDocument? @relation(fields: [controlledDocumentId], references: [id], onDelete: Restrict)
   auditAnnualPlanId String? @unique
   auditAnnualPlan AuditAnnualPlan? @relation(fields: [auditAnnualPlanId], references: [id], onDelete: Restrict)
+  administrationRootId String? @unique
+  administrationRoot AuditAdministrationRoot? @relation(fields: [administrationRootId], references: [id], onDelete: Restrict)
   lastSequence BigInt @default(0)
   targets AuditOperationTarget[]
 }
@@ -2275,6 +2323,7 @@ model AuditOperationTarget {
   root AuditAggregateCursor @relation(fields: [rootKey], references: [rootKey], onDelete: Restrict)
   aggregateSequence BigInt
   events AuditEvent[]
+  additionalEvents AuditEventAdditionalTarget[]
   @@id([operationId, rootKey])
   @@unique([rootKey, aggregateSequence])
 }
@@ -2297,6 +2346,10 @@ model AuditEvent {
   generatedDocumentId String?
   generatedDocument GeneratedDocument? @relation(fields: [generatedDocumentId], references: [id], onDelete: Restrict)
   documentChecksum String?
+  mutationId String? @db.Uuid
+  additionalTargets AuditEventAdditionalTarget[]
+  trailExports AuditTrailExportEvent[]
+  trailReviews AuditTrailReviewEvent[]
   @@unique([operationId, eventOrdinal])
   @@index([rootKey, capturedAt, id])
 }
@@ -2317,4 +2370,228 @@ model AuditPilotRecord {
   value Int @default(0)
   revision Int @default(0)
   updatedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+}
+
+// Durable requirement, never an HTTP/environment toggle. Installation adds no row.
+model AuditPolicyRequirement {
+  policyVersion String @id
+  requirementReference String
+  requestedByDatabasePrincipal String
+  requestedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+}
+
+// B2 SQL capture foundation. No migration/startup activates a corporate policy.
+model AuditAdministrationRoot {
+  id String @id
+  category String
+  createdAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  cursor AuditAggregateCursor?
+}
+
+// A relationship change is one event correlated with both affected roots.
+model AuditEventAdditionalTarget {
+  eventId String @db.Uuid
+  event AuditEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  operationId String @db.Uuid
+  rootKey String
+  target AuditOperationTarget @relation(fields: [operationId, rootKey], references: [operationId, rootKey], onDelete: Restrict)
+  @@id([eventId, rootKey])
+}
+
+// Private, transaction-local state. Never writable/readable by the runtime role.
+model AuditBusinessContext {
+  rootMaturity AuditRootMaturity[]
+  transactionId BigInt @id
+  backendPid Int
+  databasePrincipal String
+  actorUserId String @db.Uuid
+  actorName String
+  requestId String @db.Uuid
+  requestDigest String
+  operationCode String
+  accessModule String
+  accessPermission String
+  reason String?
+  operationId String? @db.Uuid
+  authorizationClaims Json @default("[]")
+  commandOutcome Json?
+}
+
+model AuditCommandResult {
+  operationId String @id @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  outcome Json
+  authorizationClaims Json
+  recordedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+}
+
+model AuditMutationWitness {
+  requiresReason Boolean @default(false)
+  id String @id @db.Uuid
+  transactionId BigInt
+  entityType String
+  entityKey String
+  verb String
+  beforeRoots String[]
+  expected Json?
+  completed Boolean @default(false)
+  @@index([transactionId, entityType, entityKey])
+}
+
+model AuditRootBinding {
+  transactionId BigInt
+  entityType String
+  entityKey String
+  roots String[]
+  @@id([transactionId, entityType, entityKey])
+}
+
+model AuditCaptureTablePolicy {
+  entityType String @id
+  primaryKey String[]
+  rootPaths Json
+  captureMode String
+}
+
+model AuditCaptureFieldPolicy {
+  entityType String
+  fieldPath String
+  valueType String
+  transform String
+  critical Boolean
+  @@id([entityType, fieldPath])
+}
+
+// Typed references to existing evidence; snapshots are kept in their source.
+// SQL-only bounded technical cleanup. Application cannot read or write leases.
+model AuditRootMaturity {
+  transactionId BigInt
+  context AuditBusinessContext @relation(fields: [transactionId], references: [transactionId], onDelete: Restrict)
+  rootKey String
+  module String
+  isDraft Boolean
+  @@id([transactionId,rootKey])
+}
+model AuditOperationAssessment {
+  operationId String @id @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  policyVersion String
+  proposedCritical Boolean
+  reasonRequired Boolean
+  assessedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  @@index([proposedCritical,operationId])
+}
+
+// 4B3-C review receipts and controlled exports. Both families are append-only;
+// they document an exact cut without changing the source operation/event.
+model AuditTrailReview {
+  id String @id @db.Uuid
+  requestId String @db.Uuid
+  requestDigest String
+  reviewerUserId String @db.Uuid
+  reviewerUser AuthUser @relation(fields: [reviewerUserId], references: [id], onDelete: Restrict)
+  reviewerName String
+  result String
+  notes String?
+  scopeManifest Json
+  cutoffOccurredAt DateTime @db.Timestamptz(6)
+  cutoffOperationId String @db.Uuid
+  supersedesId String? @db.Uuid
+  supersedes AuditTrailReview? @relation("AuditTrailReviewCorrections", fields: [supersedesId], references: [id], onDelete: Restrict)
+  corrections AuditTrailReview[] @relation("AuditTrailReviewCorrections")
+  createdAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  operations AuditTrailReviewOperation[]
+  events AuditTrailReviewEvent[]
+  @@unique([reviewerUserId, requestId])
+  @@index([createdAt, id])
+  @@index([result, createdAt])
+}
+
+model AuditTrailReviewOperation {
+  reviewId String @db.Uuid
+  review AuditTrailReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+  operationId String @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  @@id([reviewId, operationId])
+  @@index([operationId, reviewId])
+}
+
+model AuditTrailReviewEvent {
+  reviewId String @db.Uuid
+  review AuditTrailReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+  eventId String @db.Uuid
+  event AuditEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  @@id([reviewId, eventId])
+  @@index([eventId, reviewId])
+}
+
+model AuditTrailExport {
+  id String @id @db.Uuid
+  requestId String @db.Uuid
+  requestDigest String
+  actorUserId String @db.Uuid
+  actorUser AuthUser @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorName String
+  format String
+  fileName String
+  fileData Bytes
+  contentSha256 String
+  rowCount Int
+  scopeManifest Json
+  cutoffOccurredAt DateTime @db.Timestamptz(6)
+  cutoffOperationId String @db.Uuid
+  createdAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  events AuditTrailExportEvent[]
+  @@unique([actorUserId, requestId])
+  @@index([createdAt, id])
+}
+
+model AuditTrailExportEvent {
+  exportId String @db.Uuid
+  export AuditTrailExport @relation(fields: [exportId], references: [id], onDelete: Restrict)
+  eventId String @db.Uuid
+  event AuditEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  @@id([exportId, eventId])
+  @@index([eventId, exportId])
+}
+model AuditTechnicalContext {
+  transactionId BigInt @id
+  backendPid Int
+  databasePrincipal String
+  batchId String
+  triggeredByUserId String @db.Uuid
+  triggeredByName String
+  cutoff DateTime @db.Timestamptz(6)
+  retainedConfirmedRows Int
+}
+model AuditTechnicalEvent {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channel String
+  operation String
+  actorKind String
+  triggeredByUserId String @db.Uuid
+  triggeredByUser AuthUser @relation(fields: [triggeredByUserId], references: [id], onDelete: Restrict)
+  triggeredByName String
+  batchId String
+  batch ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  occurredAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  deletedPendingRows Int
+  retainedConfirmedRows Int
+  @@index([occurredAt,id])
+  @@index([batchId])
+}
+model AuditOperationEvidence {
+  id String @id @db.Uuid
+  operationId String @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  changeHistoryId String?
+  changeHistory ChangeHistory? @relation(fields: [changeHistoryId], references: [id], onDelete: Restrict)
+  configurationChangeId String?
+  configurationChange ConfigurationChange? @relation(fields: [configurationChangeId], references: [id], onDelete: Restrict)
+  authorizationChangeId String? @db.Uuid
+  authorizationChange AuthAuthorizationChange? @relation(fields: [authorizationChangeId], references: [id], onDelete: Restrict)
+  auditPlanChangeId String?
+  auditPlanChange AuditPlanChange? @relation(fields: [auditPlanChangeId], references: [id], onDelete: Restrict)
+  controlledDocumentChangeId String?
+  controlledDocumentChange ControlledDocumentChange? @relation(fields: [controlledDocumentChangeId], references: [id], onDelete: Restrict)
 }

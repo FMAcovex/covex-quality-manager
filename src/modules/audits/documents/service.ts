@@ -3,6 +3,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { DocumentType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { retainSignedOriginal } from "@/lib/qms/signed-custody-service";
+import { documentCommand } from "@/lib/audit/document-command";
+import { resourceScope } from "@/lib/auth/resources";
+import { currentIdentity } from "@/lib/auth/context";
 import { validateSignedPdfMetadata, safeSignedPdfFileName } from "@/lib/qms/signed-version-document";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { auditReportInclude, lockReportAudit, auditReportEvent, readAuditSnapshot, snapshotAudit } from "../report-service";
@@ -12,8 +16,11 @@ const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
 export async function generateAuditDocument(auditId: string, type: DocumentType, sequence: number | null, actor: string) {
+  actor = currentIdentity()?.principal.name ?? actor;
   if (!types.includes(type)) throw new Error("Tipo documental no generable.");
-  return prisma.$transaction(async tx => {
+  const scope = await resourceScope("AUDIT", auditId);
+  if (!scope.id) throw Error("Auditoría no disponible");
+  const id = await documentCommand("AUDIT", { ...scope, id: scope.id }, { auditId, type, sequence }, () => prisma.$transaction(async tx => {
     const a = await lockReportAudit(tx, auditId);
     if (a.status === "DRAFT") throw new Error("Abre la auditoría antes de generar documentos operativos.");
     if (sequence === null && type !== "AUDIT_CAPA_PLAN" && type !== "AUDIT_EXTERNAL_PLAN") throw new Error("El informe se genera desde una versión formal concreta.");
@@ -22,8 +29,11 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
     const snapshot = version ? readAuditSnapshot(version.snapshot) : snapshotAudit(a, []);
     const scenario = snapshot.audit.scenario;
     if ((type === "AUDIT_INTERNAL_REPORT" && !scenario?.startsWith("INTERNAL")) || ((type === "AUDIT_EXTERNAL_REPORT" || type === "AUDIT_EXTERNAL_PLAN") && scenario !== "SUPPLIER")) throw new Error("El documento no aplica al escenario de esta versión.");
+    // Retained signed PDFs share the report's documentType and version. They
+    // must never satisfy a request for the generated Word/XLSX original.
+    const generatedMime=type==="AUDIT_CAPA_PLAN"?"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     if (version) {
-      const existing = await tx.generatedDocument.findFirst({ where: { recordVersionId: version.id, documentType: type, fileData: { not: null } }, orderBy: { generatedAt: "asc" } });
+      const existing = await tx.generatedDocument.findFirst({ where: { recordVersionId: version.id, documentType: type, mimeType:generatedMime, fileData: { not: null } }, orderBy: { generatedAt: "asc" } });
       if (existing) { if (!existing.checksum || digest(existing.fileData!) !== existing.checksum) throw new Error("El documento histórico no coincide con su checksum."); return existing; }
     }
     const pinned = snapshot.templates.find(t => t.documentType === type);
@@ -36,7 +46,8 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
     const document = await tx.generatedDocument.create({ data: { qmsRecordId: a.qmsRecordId, recordVersionId: version?.id, documentType: type, templateVersionId: template.id, fileData: new Uint8Array(output), fileName, mimeType: xlsx ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document", checksum: digest(output), generatedByText: actor, metadata: json({ source: "GENERATED", version: sequence, templateChecksum: template.checksum, currentState: sequence === null }) } });
     await auditReportEvent(tx, a.qmsRecordId, actor, "audit.document.generated", null, { id: document.id, fileName, version: sequence, templateVersionId: template.id }, "Generación desde snapshot formal / estado actual indicado");
     return document;
-  }, { timeout: 20000 });
+  }, { timeout: 20000 }));
+  return prisma.generatedDocument.findUniqueOrThrow({ where: { id } });
 }
 export async function registerAuditAttachment(auditId: string, file: File, metadata: { type: "AUDIT_RECEIVED" | "AUDIT_RESPONSE" | "AUDIT_EVIDENCE"; reference: string; date: string; externalVersion: string; observations: string; actor: string; documentName: string }) {
   if (!metadata.actor.trim() || !metadata.documentName.trim()) throw new Error("Indica tipo/nombre documental y responsable.");
@@ -64,7 +75,9 @@ export async function storeAuditSignedPdf(auditId: string, versionId: string, fi
     const version=await tx.qmsRecordVersion.findFirst({where:{id:versionId,qmsRecordId:a.qmsRecordId}});
     if(!version)throw new Error("La versión no pertenece a esta auditoría.");
     if(await tx.recordVersionDocument.findUnique({where:{recordVersionId_kind:{recordVersionId:versionId,kind:'SIGNED_PDF'}}}))throw new Error("Esta versión ya conserva un PDF firmado; no se sobrescribe. Emite una revisión formal si procede.");
-    const d=await tx.recordVersionDocument.create({data:{recordVersionId:versionId,kind:'SIGNED_PDF',fileName:safeSignedPdfFileName(file.name),mimeType:'application/pdf',fileData:bytes,fileSize:file.size,checksum:digest(bytes),uploadedByText:actor}});
+    const fileName=safeSignedPdfFileName(file.name);
+    const custody=await retainSignedOriginal(tx,{recordVersionId:versionId,kind:'SIGNED_PDF',bytes,fileName,actor,expectedChecksum:null,replacementReason:''});
+    const d=await tx.recordVersionDocument.create({data:{recordVersionId:versionId,kind:'SIGNED_PDF',fileName,mimeType:'application/pdf',fileData:bytes,fileSize:file.size,checksum:digest(bytes),uploadedByText:actor,custodyId:custody.custodyId}});
     await auditReportEvent(tx,a.qmsRecordId,actor,"audit.document.signed",null,{id:d.id,recordVersionId:versionId,sequence:version.sequenceNumber,checksum:d.checksum},"Carga de PDF firmado externamente para esta versión");return d;
   });
 }

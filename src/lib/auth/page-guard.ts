@@ -8,7 +8,7 @@ import { canPresent, presentationAccess } from "./presentation";
 import { resourceScope, qmsScope } from "./resources";
 import { prisma } from "../db";
 
-const paths: Record<string, AccessModule> = { deviations: "DEVIATION", capa: "CAPA", changes: "CHANGE_CONTROL", complaints: "COMPLAINT", returns: "RETURN", audits: "AUDIT", "controlled-documents": "PNT", settings: "SYSTEM" };
+const paths: Record<string, AccessModule> = { deviations: "DEVIATION", capa: "CAPA", changes: "CHANGE_CONTROL", complaints: "COMPLAINT", returns: "RETURN", audits: "AUDIT", "controlled-documents": "PNT", settings: "SYSTEM", "audit-trail": "DEVIATION" };
 function forbidden(segment: string) {
   return createElement("section", { className: "card", role: "alert" }, createElement("h1", null, "Acceso no permitido"), createElement("p", null, "No tiene permiso para esta operación. Puede seguir consultando los expedientes."), createElement("a", { className: "button", href: `/${segment}` }, "Volver al listado"));
 }

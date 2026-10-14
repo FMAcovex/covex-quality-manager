@@ -1,7 +1,7 @@
+import { storeWorkingDocument } from "@/lib/qms/working-document";
 import { currentIdentity } from "@/lib/auth/context";
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { generateAnnexIII } from "@/modules/deviations/documents/annex-iii";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
@@ -54,7 +54,7 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
 
   try {
     const buffer = await generateAnnexIII(annexRecord);
-    await prisma.generatedDocument.create({
+    await storeWorkingDocument({
       data: {
         qmsRecordId: deviation.qmsRecordId,
         recordVersionId: storedVersion?.id ?? null,
@@ -72,7 +72,7 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
           recordVersion: storedVersion?.sequenceNumber ?? null,
         },
       },
-    });
+    }, buffer);
     const suffix = storedVersion ? `_${versionLabel(storedVersion.sequenceNumber)}` : "";
     const filename = `Anexo_III_${safe(deviation.qmsRecord.businessCode || id)}${suffix}.docx`;
     return new Response(new Uint8Array(buffer), {

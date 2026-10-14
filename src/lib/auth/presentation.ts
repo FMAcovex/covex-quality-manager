@@ -15,7 +15,7 @@ export type PresentationAccess = {
 
 // Presentation uses the same policy as server operations; it never grants access.
 export function canPresent(user: Principal, module: AccessModule, permission: AccessPermission, scope: ResourceScope = {}) {
-  try { assertPermission(user, module, permission, scope); return true; }
+  try { assertPermission(user, module, permission, scope, false); return true; }
   catch (error) { if (error instanceof AccessError) return false; throw error; }
 }
 export function currentActor() { return currentIdentity()?.principal.name ?? ""; }

@@ -182,7 +182,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
         <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations}/>
         <label className="field"><span>Documento firmado disponible</span><select name="signedDocumentAvailable" defaultValue={formDefaults.signedDocumentAvailable??""}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>
         <label className="field"><span>Control del dato</span><select name="dataQualityStatus" defaultValue={formDefaults.dataQualityStatus??"REVIEW_REQUIRED"}><option value="COMPLETE">Completo</option><option value="INCOMPLETE">Incompleto</option><option value="REVIEW_REQUIRED">Pendiente revisar</option></select></label>
-        {mode==="edit"?<TextArea label="Motivo del cambio" name="changeReason"/>:null}
+        <TextArea label="Motivo de la actuación / cambio" name="changeReason"/>
       </div>
     </section>
 

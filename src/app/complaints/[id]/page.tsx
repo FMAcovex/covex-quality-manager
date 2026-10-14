@@ -1,6 +1,7 @@
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
+import { AuditTrailPanel } from "@/components/audit-trail-panel";
 
 import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -39,7 +40,7 @@ import { complaintCapaPlanReviewTarget,complaintReviewTargets } from "@/lib/qms/
 export const dynamic="force-dynamic";
 const tabs=[
  ["summary","Resumen"],["part-i","Parte I"],["part-ii","Parte II"],
- ["relations","Relaciones"],["documents","Documentos"],["versions","Versiones"],["review","Revisión"],["history","Historial"]
+ ["relations","Relaciones"],["documents","Documentos"],["versions","Versiones"],["review","Revisión"],["audit-trail","Audit Trail"],["history","Historial"]
 ] as const;
 const txt=(v:string|null|undefined)=>v||"—";
 const yesNo=(v:string|null|undefined)=>v==="YES"?"Sí":v==="NO"?"No":v==="NA"?"N/A":"—";
@@ -61,8 +62,8 @@ function complaintFollowupLabel(sequenceNumber: number) {
     : `${versionLabel(sequenceNumber)} · Seguimiento`;
 }
 
-async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string;returnTo?:string}>}){
- const {id}=await params;const {tab:raw,review,thread, returnTo}=await searchParams;const tab=tabs.some(([k])=>k===raw)?raw!:"summary";
+async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string;returnTo?:string;auditPage?:string}>}){
+ const {id}=await params;const {tab:raw,review,thread, returnTo,auditPage}=await searchParams;const tab=tabs.some(([k])=>k===raw)?raw!:"summary";
  const r=await getComplaintDetail(id);if(!r)notFound();
  const situation=complaintOperationalSituation(r);
  const followupState=complaintFollowupState(r);
@@ -260,6 +261,7 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
 
   {tab==="history"&&r.followups.length?<div className="card"><h2>Seguimientos históricos legacy</h2><p className="muted-note">Datos anteriores conservados para consulta. Los nuevos seguimientos se registran exclusivamente como versiones.</p><div className="timeline">{r.followups.map(item=><article key={item.id} className="timeline-item"><strong>{formatDate(item.followupDate)} · {item.completedByText??"—"}</strong><p className="prose-value">{item.comment}</p><small>Próximo seguimiento: {formatDate(item.nextFollowupDate)}</small></article>)}</div></div>:null}
   {tab==="history"?<div className="card"><h2>Historial interno de modificaciones</h2><p className="muted-note">Historial administrativo de cambios; no constituye un audit trail GMP validado.</p>{r.qmsRecord.history.length?<div className="timeline">{r.qmsRecord.history.map(x=><div className="timeline-item history-entry" key={x.id}><header className="history-entry-header"><strong>{formatDate(x.changedAt)}</strong><span>{x.changedByText??"Sistema"}</span><span className="badge neutral">{x.source}</span></header><p className="history-entry-detail"><strong>{x.fieldPath}</strong>{x.reason?<span> · Motivo: {x.reason}</span>:null}</p></div>)}</div>:<div className="empty-panel">Sin cambios registrados.</div>}</div>:null}
+  {tab==="audit-trail"?<AuditTrailPanel rootKey={`QMS_RECORD:${r.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/>:null}
  </section>
  <ReviewDrawer/>
  </ReviewWorkspaceProvider>;

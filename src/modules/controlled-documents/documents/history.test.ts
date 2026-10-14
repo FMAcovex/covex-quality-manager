@@ -7,6 +7,9 @@ vi.mock("next/headers", () => ({ headers: requestHeaders }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("Not found"); } }));
 vi.mock("@/modules/controlled-documents/components/document-link", () => ({ DocumentLink: ({ children, href }: { children: React.ReactNode; href: string }) => React.createElement("a", { href }, children) }));
 vi.mock("@/modules/controlled-documents/components/revision-documents", () => ({ RevisionDocuments: () => null }));
+// This unit renders only the legacy history tab. The new server-only journal
+// panel is exercised separately with real PostgreSQL and seven-module Chromium.
+vi.mock("@/components/audit-trail-panel", () => ({ AuditTrailPanel: () => null }));
 import DetailPage from "@/app/controlled-documents/[id]/page";
 import { documentHistoryActions } from "./history";
 

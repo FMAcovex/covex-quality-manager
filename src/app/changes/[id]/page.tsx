@@ -1,6 +1,7 @@
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
+import { AuditTrailPanel } from "@/components/audit-trail-panel";
 
 import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -65,10 +66,10 @@ async function ChangeControlDetailPageAuthenticatedContent({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; relationError?: string; review?: string; thread?: string; returnTo?: string }>;
+  searchParams: Promise<{ tab?: string; relationError?: string; review?: string; thread?: string; returnTo?: string; auditPage?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab, relationError, review, thread, returnTo } = await searchParams;
+  const { tab: rawTab, relationError, review, thread, returnTo, auditPage } = await searchParams;
   const activeTab = changeControlDetailTabs.some(([key]) => key === rawTab) ? rawTab! : "information";
   const [record, lookups] = await Promise.all([
     getChangeControlDetail(id),
@@ -658,6 +659,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
           ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
         </div>
       ) : null}
+      {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${record.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>
     <ReviewDrawer />
     </ReviewWorkspaceProvider>

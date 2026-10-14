@@ -1,4 +1,5 @@
 import { Prisma, QmsRecordType, QmsRelationType } from "@prisma/client";
+import { hasDatabaseTransaction } from "@/lib/transaction-context";
 import { currentIdentity } from "@/lib/auth/context";
 import { assertPermission } from "@/lib/auth/policy";
 import { qmsScope } from "@/lib/auth/resources";
@@ -149,6 +150,7 @@ export async function createQmsRelation(
     target,
     input.relationType ?? QmsRelationType.GENERATES,
   );
+  const transactional = hasDatabaseTransaction() || !("$transaction" in client) && Boolean(client.$queryRaw);
 
   if (source.recordType === "AUDIT") {
     await lockAuditOrigin(client, source.id);
@@ -159,11 +161,11 @@ export async function createQmsRelation(
     ]);
     if (!audit || !audit.qmsRecord.isActive || audit.status === "DRAFT" || !operationalTarget?.isActive || (!operationalTarget.capa && !operationalTarget.deviation) || operationalTarget.capa?.status === "DRAFT" || operationalTarget.deviation?.status === "DRAFT") throw new QmsRelationValidationError("Auditoría y destino deben ser expedientes operativos y activos.");
   }
-  if (source.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && client.$queryRaw && !("$transaction" in client)) {
+  if (source.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && client.$queryRaw && transactional) {
     const { lockComplaintVersion } = await import("@/modules/complaints/version-service");
     await lockComplaintVersion(client as Prisma.TransactionClient, source.id);
   }
-  if(target.recordType==="RETURN"&&client.returnRecord&&client.$queryRaw&&!("$transaction" in client)){
+  if(target.recordType==="RETURN"&&client.returnRecord&&client.$queryRaw&&transactional){
     const {lockReturn}=await import("@/modules/returns/snapshot-service");
     await lockReturn(client as Prisma.TransactionClient,target.id);
     const operational=await client.returnRecord.findUnique({where:{qmsRecordId:target.id},select:{status:true}});
@@ -171,7 +173,7 @@ export async function createQmsRelation(
     if(complaint&&(complaint.status==="DRAFT"||!complaint.qmsRecord.isActive))throw new QmsRelationValidationError("La reclamación debe estar activa y operativa para vincularse.");
     if(!operational||operational.status==="DRAFT")throw new QmsRelationValidationError("La devolución debe ser operativa para vincularse.");
   }
-  const result = await client.qmsRelation.upsert({
+  const upsert = {
     where: {
       sourceRecordId_targetRecordId_relationType: {
         sourceRecordId: relation.sourceRecordId,
@@ -190,12 +192,24 @@ export async function createQmsRelation(
         input.notes ??
         operationalRelationLabel(relation.sourceType, relation.targetType),
     },
-  });
-  if (source.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && !("$transaction" in client)) {
+  };
+  let result;
+  if (!transactional) {
+    // Legacy standalone clients keep their atomic API. Mandatory business
+    // writers pass the transaction client, never a second independent client.
+    result = await client.qmsRelation.upsert(upsert);
+  } else {
+    if (client.$queryRaw) await client.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${JSON.stringify(["COVEX-QMS-RELATION", relation.sourceRecordId, relation.targetRecordId, relation.relationType])},0))::text AS locked`);
+    const previous = await client.qmsRelation.findUnique({ where: upsert.where });
+    result = previous
+      ? previous.isActive ? previous : await client.qmsRelation.update({ where: { id: previous.id }, data: upsert.update })
+      : await client.qmsRelation.create({ data: upsert.create });
+  }
+  if (source.recordType === "COMPLAINT" && client.complaint && client.qmsRecordVersion && transactional) {
     const { refreshComplaintRelationSnapshot } = await import("@/modules/complaints/version-service");
     await refreshComplaintRelationSnapshot(client as Prisma.TransactionClient, source.id);
   }
-  if(target.recordType==="RETURN"&&client.returnRecord&&client.qmsRecordVersion&&!("$transaction" in client)){
+  if(target.recordType==="RETURN"&&client.returnRecord&&client.qmsRecordVersion&&transactional){
     const {refreshReturnSnapshot}=await import("@/modules/returns/snapshot-service");
     await refreshReturnSnapshot(client as Prisma.TransactionClient,target.id);
   }

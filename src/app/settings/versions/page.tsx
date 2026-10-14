@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
@@ -133,7 +134,7 @@ async function VersionsPageAuthenticatedContent() {
                         </Link>
 
                         {form.status === "DRAFT" ? (
-                          <PermissionGate permission="MANAGE_CONFIGURATION" module={form.module}><form action={activateFormVersionAction.bind(null, form.id)}><CsrfField />
+                          <PermissionGate permission="MANAGE_CONFIGURATION" module={form.module}><form action={activateFormVersionAction.bind(null, form.id)}><CsrfField requestId={randomUUID()} />
                             <ActorField
                               type="hidden"
                               name="actor"
@@ -153,7 +154,7 @@ async function VersionsPageAuthenticatedContent() {
                           <PermissionGate permission="MANAGE_CONFIGURATION" module={form.module}><form
                             action={cloneFormVersionAction.bind(null, form.id)}
                             className="admin-pop-form"
-                          ><CsrfField />
+                          ><CsrfField requestId={randomUUID()} />
                             <label>
                               Nuevo código
                               <input name="versionCode" placeholder="DEV-07" required />
@@ -260,7 +261,7 @@ async function VersionsPageAuthenticatedContent() {
                       ) : null}
 
                       {!template.isActive ? (
-                        <PermissionGate permission="MANAGE_CONFIGURATION" module={template.module}><form action={activateTemplateVersionAction.bind(null, template.id)}><CsrfField />
+                        <PermissionGate permission="MANAGE_CONFIGURATION" module={template.module}><form action={activateTemplateVersionAction.bind(null, template.id)}><CsrfField requestId={randomUUID()} />
                           <ActorField
                             type="hidden"
                             name="actor"
@@ -289,7 +290,7 @@ async function VersionsPageAuthenticatedContent() {
           <PermissionGate permission="MANAGE_CONFIGURATION" anyModule><form
             action={registerTemplateVersionAction}
             className="form-grid admin-template-form"
-          ><CsrfField />
+          ><CsrfField requestId={randomUUID()} />
             <label className="field">
               <span>Módulo</span>
               <select name="module" required>

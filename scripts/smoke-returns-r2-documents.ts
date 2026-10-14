@@ -1,3 +1,4 @@
+import { purgeLegacyFixtureDocuments } from "./audit-fixtures/legacy-cleanup";
 import assert from "node:assert/strict";
 import {
   PrismaClient,
@@ -153,6 +154,7 @@ async function main() {
       where: { qmsRecordId: record.id },
       select: { id: true },
     });
+    await purgeLegacyFixtureDocuments(prisma, { recordVersionId: { in: versions.map((item) => item.id) } });
     await prisma.recordVersionDocument.deleteMany({
       where: { recordVersionId: { in: versions.map((item) => item.id) } },
     });

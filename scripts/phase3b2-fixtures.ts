@@ -1,3 +1,4 @@
+import { purgeLegacyFixtureDocuments } from "./audit-fixtures/legacy-cleanup";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -165,6 +166,7 @@ export async function createPhase3b2Fixtures(size = 1000, freezeHistory = false,
     await prisma.generatedDocument.create({ data: { qmsRecordId: record.qmsRecordId, recordVersionId: recordVersions[0].id, documentType: m === 3 ? "COMPLAINT_ANNEX_III" : "RETURN_ANNEX_III", fileName: "fictitious-history.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileData: bytes, checksum, metadata: { fictitious: true }, generatedByText: actor } });
   }
   async function cleanup() {
+    await purgeLegacyFixtureDocuments(prisma, { recordVersion: { qmsRecordId: { in: qmsIds } } });
     await prisma.recordVersionDocument.deleteMany({ where: { recordVersion: { qmsRecordId: { in: qmsIds } } } });
     await prisma.generatedDocument.deleteMany({ where: { qmsRecordId: { in: qmsIds } } });
     await prisma.qmsRecordVersion.deleteMany({ where: { qmsRecordId: { in: qmsIds } } });

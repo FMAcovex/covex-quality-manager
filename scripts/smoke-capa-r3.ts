@@ -1,3 +1,4 @@
+import { purgeLegacyFixtureDocuments } from "./audit-fixtures/legacy-cleanup";
 import "./auth-fixtures/context";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -805,6 +806,7 @@ async function main() {
     });
     const versionIds = versionRows.map((item) => item.id);
 
+    await purgeLegacyFixtureDocuments(prisma, { recordVersionId: { in: versionIds } });
     await prisma.recordVersionDocument.deleteMany({
       where: { recordVersionId: { in: versionIds } },
     });

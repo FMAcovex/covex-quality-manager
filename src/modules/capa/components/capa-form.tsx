@@ -649,14 +649,14 @@ export function CapaForm({
             </select>
           </label>
 
-          {mode === "edit" ? (
+          {(
             <TextArea
-              label="Motivo del nuevo seguimiento"
+              label="Motivo de la actuación / nuevo seguimiento"
               name="changeReason"
-              help="Obligatorio únicamente al pulsar Guardar como nuevo seguimiento."
+              help="Obligatorio para un nuevo seguimiento y cuando se solicite al guardar una corrección o cierre."
               issues={issues.changeReason}
             />
-          ) : null}
+          )}
         </div>
       </section>
 

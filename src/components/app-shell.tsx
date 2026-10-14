@@ -15,6 +15,7 @@ const modules = [
   { label: "Devoluciones", href: "/returns", enabled: true, match: "/returns" },
   { label: "Auditorías", href: "/audits", enabled: true, match: "/audits" },
   { label: "Documentación controlada", href: "/controlled-documents", enabled: true, match: "/controlled-documents" },
+  { label: "Audit Trail", href: "/audit-trail", enabled: true, match: "/audit-trail" },
   { label: "Configuración", href: "/settings", enabled: true, match: "/settings" },
 ];
 

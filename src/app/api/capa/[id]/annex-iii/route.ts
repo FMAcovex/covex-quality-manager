@@ -1,7 +1,7 @@
+import { storeWorkingDocument } from "@/lib/qms/working-document";
 import { currentIdentity } from "@/lib/auth/context";
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getCapaDetail } from "@/modules/capa/queries";
 import { generateCapaAnnexIII } from "@/modules/capa/documents/annex-iii";
 import { parseCapaAnnexVersion } from "@/modules/capa/documents/version-query";
@@ -64,7 +64,7 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
 
   try {
     const buffer = await generateCapaAnnexIII(annexRecord);
-    await prisma.generatedDocument.create({
+    await storeWorkingDocument({
       data: {
         qmsRecordId: capa.qmsRecordId,
         recordVersionId: storedVersion?.id ?? null,
@@ -83,7 +83,7 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
           recordVersion: storedVersion?.sequenceNumber ?? null,
         },
       },
-    });
+    }, buffer);
     const suffix = storedVersion ? `_${versionLabel(storedVersion.sequenceNumber)}` : "";
     const filename=`Anexo_III_CAPA_${safe(capa.qmsRecord.businessCode || id)}${suffix}.docx`;
     return new Response(new Uint8Array(buffer),{
