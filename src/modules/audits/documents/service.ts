@@ -29,8 +29,11 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
     const snapshot = version ? readAuditSnapshot(version.snapshot) : snapshotAudit(a, []);
     const scenario = snapshot.audit.scenario;
     if ((type === "AUDIT_INTERNAL_REPORT" && !scenario?.startsWith("INTERNAL")) || ((type === "AUDIT_EXTERNAL_REPORT" || type === "AUDIT_EXTERNAL_PLAN") && scenario !== "SUPPLIER")) throw new Error("El documento no aplica al escenario de esta versión.");
+    // Retained signed PDFs share the report's documentType and version. They
+    // must never satisfy a request for the generated Word/XLSX original.
+    const generatedMime=type==="AUDIT_CAPA_PLAN"?"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     if (version) {
-      const existing = await tx.generatedDocument.findFirst({ where: { recordVersionId: version.id, documentType: type, fileData: { not: null } }, orderBy: { generatedAt: "asc" } });
+      const existing = await tx.generatedDocument.findFirst({ where: { recordVersionId: version.id, documentType: type, mimeType:generatedMime, fileData: { not: null } }, orderBy: { generatedAt: "asc" } });
       if (existing) { if (!existing.checksum || digest(existing.fileData!) !== existing.checksum) throw new Error("El documento histórico no coincide con su checksum."); return existing; }
     }
     const pinned = snapshot.templates.find(t => t.documentType === type);
