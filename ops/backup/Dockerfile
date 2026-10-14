@@ -8,14 +8,6 @@ RUN --mount=type=secret,id=proxy_ca \
       apt-get update && apt-get install -y --no-install-recommends python3 openssl ca-certificates; \
     fi && rm -rf /var/lib/apt/lists/*
 RUN install -d -m 0755 /opt/covex
-COPY --chmod=0444 ops/backup/backup.py /opt/covex/backup.py
-COPY --chmod=0444 ops/backup/storage.py /opt/covex/storage.py
-COPY --chmod=0444 ops/backup/audit-contract.json /opt/covex/audit-contract.json
-COPY --chmod=0444 ops/backup/audit-contract-b2.json /opt/covex/audit-contract-b2.json
-COPY --chmod=0444 ops/backup/audit-contract-b2-capture.json /opt/covex/audit-contract-b2-capture.json
-COPY --chmod=0444 ops/backup/audit-contract-b2-integration.json /opt/covex/audit-contract-b2-integration.json
-COPY --chmod=0444 ops/backup/audit-contract-b2-documents.json /opt/covex/audit-contract-b2-documents.json
-COPY --chmod=0444 ops/backup/audit-contract-b2-staging.json /opt/covex/audit-contract-b2-staging.json
-COPY --chmod=0444 ops/backup/audit-contract-b2-critical.json /opt/covex/audit-contract-b2-critical.json
+COPY --chmod=0444 ops/backup/backup.py ops/backup/storage.py ops/backup/audit-contract*.json /opt/covex/
 USER 10001:10001
 ENTRYPOINT ["python3", "/opt/covex/backup.py"]

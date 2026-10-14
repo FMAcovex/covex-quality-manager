@@ -16,6 +16,8 @@ export async function auditApplicationFixture(source: PrismaClient, url: URL, ro
   await source.$executeRawUnsafe(`GRANT UPDATE(value) ON "AuditPilotRecord" TO "${role}"`);
   await source.$executeRawUnsafe(`GRANT INSERT ON "ChangeHistory" TO "${role}"`);
   await source.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_audit_begin(UUID,UUID,TEXT,TEXT,JSONB) TO "${role}"`);
+  const [review]=await source.$queryRaw<{present:boolean}[]>`SELECT to_regclass('public."AuditTrailReview"') IS NOT NULL AS present`;
+  if(review.present)await source.$executeRawUnsafe(`GRANT EXECUTE ON FUNCTION covex_c_record_review(UUID,UUID,TEXT,UUID,TEXT,TEXT,JSONB,TIMESTAMPTZ,UUID,UUID[],UUID[],UUID),covex_c_record_export(UUID,UUID,TEXT,UUID,TEXT,TEXT,BYTEA,JSONB,TIMESTAMPTZ,UUID,UUID[],UUID[],INTEGER) TO "${role}"`);
   const appUrl=new URL(url);appUrl.username=role;appUrl.password=secret;
   connection?.(new URL(appUrl));
   return new PrismaClient({datasourceUrl:appUrl.href,log:[]});

@@ -18,7 +18,8 @@ describe("B2 operation matrix honesty and reconciliation", () => {
         expect(operation.sqlCapture.length).toBeGreaterThan(0);
       }
     }
-    expect(catalogue.operations.find(op => op.id === "TR09")?.category).toBe("DEFERRED_C");
+    expect(catalogue.operations.find(op => op.id === "TR09")?.category).toBe("CONTROLLED_REVIEW_EXPORT");
+    expect(catalogue.operations.find(op => op.id === "TR09")?.tables).toContain("AuditTrailExportEvent");
     expect(catalogue.operations.find(op => op.id === "PN08")?.category).toBe("READ_NO_BUSINESS_EVENT");
     expect(catalogue.operations.find(op => op.id === "TR07")?.coverage).toBe("JUSTIFIED_EXCLUSION_BLOCKED");
     expect(catalogue.formalGmpAcceptance).toBe("PENDING_QA_DT_IT");

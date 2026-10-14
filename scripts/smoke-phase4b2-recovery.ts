@@ -128,6 +128,16 @@ async function main() {
     });
     const [expiry] = await auditSourceApp.$queryRaw<{ expired: number }[]>`SELECT covex_b2_expire_staging(${fixtureUsers.qa.id}::uuid) AS expired`;
     assert.equal(expiry.expired, 1);
+    const [cutoff]=await source.$queryRaw<{id:string;time:string}[]>`SELECT id,to_char("occurredAt" AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS time FROM "AuditOperation" ORDER BY "occurredAt" DESC,id DESC LIMIT 1`;
+    const cOperations=await source.auditOperation.findMany({where:{origin:"QMS_SERVER"},orderBy:{id:"asc"},select:{id:true}});
+    const cEvents=await source.auditEvent.findMany({where:{operationId:{in:cOperations.map(row=>row.id)}},orderBy:{id:"asc"},select:{id:true}});
+    const cManifest={version:"COVEX_SYNTHETIC_RECOVERY_C_V1",cutoff:{occurredAt:cutoff.time,operationId:cutoff.id},operationIds:cOperations.map(row=>row.id),eventIds:cEvents.map(row=>row.id)};
+    const cReviewId=randomUUID(),cReviewRequest=randomUUID(),cExportId=randomUUID(),cExportRequest=randomUUID();
+    const cBytes=Buffer.from("Synthetic controlled audit export\r\n"+cManifest.eventIds.join("\r\n")),cDigest=sha256(JSON.stringify(cManifest));
+    const idsSql=(ids:string[])=>Prisma.sql`ARRAY[${Prisma.join(ids)}]::uuid[]`;
+    const cReview=(client:PrismaClient)=>client.$queryRaw<{id:string}[]>(Prisma.sql`SELECT covex_c_record_review(${cReviewId}::uuid,${cReviewRequest}::uuid,${cDigest},${fixtureUsers.qa.id}::uuid,'NO_OBSERVATIONS','Synthetic offline recovery receipt',${JSON.stringify(cManifest)}::jsonb,${cutoff.time}::timestamptz,${cutoff.id}::uuid,${idsSql(cManifest.operationIds)},${idsSql(cManifest.eventIds)},NULL::uuid) AS id`);
+    const cExport=(client:PrismaClient)=>client.$queryRaw<{id:string}[]>(Prisma.sql`SELECT covex_c_record_export(${cExportId}::uuid,${cExportRequest}::uuid,${cDigest},${fixtureUsers.qa.id}::uuid,'CSV_UTF8','synthetic-recovery.csv',${new Uint8Array(cBytes)}::bytea,${JSON.stringify(cManifest)}::jsonb,${cutoff.time}::timestamptz,${cutoff.id}::uuid,${idsSql(cManifest.operationIds)},${idsSql(cManifest.eventIds)},${cManifest.eventIds.length}::integer) AS id`);
+    assert.deepEqual(await cReview(auditSourceApp),[{id:cReviewId}]);assert.deepEqual(await cExport(auditSourceApp),[{id:cExportId}]);
     const auditGolden = {
       operations: await source.auditOperation.findMany({ orderBy: { id: "asc" } }),
       events: await source.auditEvent.findMany({ orderBy: { id: "asc" } }),
@@ -140,6 +150,11 @@ async function main() {
       slots: await source.recordVersionDocument.findMany({ orderBy: { id: "asc" } }),
       technical: await source.auditTechnicalEvent.findMany({ orderBy: { id: "asc" } }),
       assessments: await source.auditOperationAssessment.findMany({ orderBy: { operationId: "asc" } }),
+      reviews:await source.auditTrailReview.findMany({orderBy:{id:"asc"}}),
+      reviewOperations:await source.auditTrailReviewOperation.findMany({orderBy:[{reviewId:"asc"},{operationId:"asc"}]}),
+      reviewEvents:await source.auditTrailReviewEvent.findMany({orderBy:[{reviewId:"asc"},{eventId:"asc"}]}),
+      exports:await source.auditTrailExport.findMany({orderBy:{id:"asc"}}),
+      exportEvents:await source.auditTrailExportEvent.findMany({orderBy:[{exportId:"asc"},{eventId:"asc"}]}),
     };
     assert.equal(auditGolden.operations.filter(op => op.schemaVersion === 2).length, 5);
     assert.equal(auditGolden.receipts.length, 5); assert.equal(auditGolden.custody.length, 3); assert.equal(auditGolden.technical.length, 1);
@@ -177,6 +192,9 @@ async function main() {
     await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" DISABLE TRIGGER audit_event_immutable');
     refused(args("backup"));
     await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" ENABLE TRIGGER audit_event_immutable');
+    await source.$executeRawUnsafe('ALTER TABLE "AuditTrailReview" DISABLE TRIGGER audit_c_review_immutable');
+    refused(args("backup"));
+    await source.$executeRawUnsafe('ALTER TABLE "AuditTrailReview" ENABLE TRIGGER audit_c_review_immutable');
     // Private lease reads are allowed only to this read-only snapshot identity,
     // never to an application writer or a backup role with accidental DML.
     await source.$executeRawUnsafe(`GRANT SELECT ON "AuditBusinessContext" TO "${auditRole}"`);
@@ -241,6 +259,12 @@ async function main() {
     assert.deepEqual(await restored.recordVersionDocument.findMany({ orderBy: { id: "asc" } }), auditGolden.slots);
     assert.deepEqual(await restored.auditTechnicalEvent.findMany({ orderBy: { id: "asc" } }), auditGolden.technical);
     assert.deepEqual(await restored.auditOperationAssessment.findMany({ orderBy: { operationId: "asc" } }), auditGolden.assessments);
+    assert.deepEqual(await restored.auditTrailReview.findMany({orderBy:{id:"asc"}}),auditGolden.reviews);
+    assert.deepEqual(await restored.auditTrailReviewOperation.findMany({orderBy:[{reviewId:"asc"},{operationId:"asc"}]}),auditGolden.reviewOperations);
+    assert.deepEqual(await restored.auditTrailReviewEvent.findMany({orderBy:[{reviewId:"asc"},{eventId:"asc"}]}),auditGolden.reviewEvents);
+    assert.deepEqual(await restored.auditTrailExport.findMany({orderBy:{id:"asc"}}),auditGolden.exports);
+    assert.deepEqual(await restored.auditTrailExportEvent.findMany({orderBy:[{exportId:"asc"},{eventId:"asc"}]}),auditGolden.exportEvents);
+    assert.equal(sha256(Buffer.from(auditGolden.exports[0].fileData)),auditGolden.exports[0].contentSha256);
     assert.equal(auditGolden.assessments.length, auditGolden.operations.filter(operation=>operation.origin==="QMS_SERVER").length);
     assert.equal(await restored.auditRuntimeContext.count(), 0);
     assert.equal(await restored.auditBusinessContext.count(), 0); assert.equal(await restored.auditMutationWitness.count(), 0); assert.equal(await restored.auditRootBinding.count(), 0);
@@ -250,6 +274,11 @@ async function main() {
     const nextAuditRole = "covex4b3_afterrestore_" + id; auditRoles.push(nextAuditRole);
     auditRestoredApp = await auditApplicationFixture(restored, restoredUrl, nextAuditRole);
     await businessApplicationGrantsFixture(restored, nextAuditRole);
+    assert.deepEqual(await cReview(auditRestoredApp),[{id:cReviewId}]);assert.deepEqual(await cExport(auditRestoredApp),[{id:cExportId}]);
+    assert.equal(await restored.auditTrailReview.count(),1);assert.equal(await restored.auditTrailExport.count(),1);
+    await assert.rejects(auditRestoredApp.auditTrailReview.update({where:{id:cReviewId},data:{notes:"Forbidden restored rewrite"}}));
+    await assert.rejects(restored.auditTrailExport.update({where:{id:cExportId},data:{fileName:"forbidden.csv"}}));
+    await assert.rejects(auditRestoredApp.$executeRawUnsafe('TRUNCATE "AuditTrailExportEvent"'));
     const replayed = await businessSqlFixture(auditRestoredApp, fixtureUsers.qa.id, editRequest, "DV02", "DEVIATION", "EDIT", "Synthetic recovered persisted correction", async () => { throw Error("Committed B2 command must not execute twice after restoration"); });
     assert.equal(replayed, auditGolden.operations.find(op => op.requestId === editRequest)!.id);
     const nextAudit = await auditedSqlFixture(auditRestoredApp, fixtureUsers.qa.id, [deviation.qmsRecordId!], randomUUID(), 8);

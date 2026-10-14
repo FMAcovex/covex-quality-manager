@@ -48,7 +48,7 @@ function coverage(id:string, category:string) {
   if (id === "TR06") return { coverage:"DEMONSTRATED_TECHNICAL_AUTH_STREAM", evidence:["scripts/smoke-phase4b3-b2-auth.ts: OIDC, session expiry/revocation and denied access"] };
   if (id === "TR07") return { coverage:"JUSTIFIED_EXCLUSION_BLOCKED", evidence:[`${moduleEvidence}: historical imports and backfill blocked atomically pending controlled identity/provenance`] };
   if (id === "TR08") return { coverage:"DEMONSTRATED_CONTROLLED_RECOVERY", evidence:["scripts/smoke-phase4b2-recovery.ts: protected backup/restore, replay, sequence and immutable journal"] };
-  if (id === "TR09") return { coverage:"DEFERRED_TO_AUTHORIZED_C", evidence:["docs/PHASE_4B3_A.md §7: review/export scope authorized for 4B3-C"] };
+  if (id === "TR09") return { coverage:"DEMONSTRATED_CONTROLLED_REVIEW_EXPORT", evidence:["scripts/audit-fixtures/trail-c.test.ts: exact microsecond cut, explicit permissions, immutable review/export, replay, conflicts and protection", "scripts/audit-fixtures/trail-c-ui.ts: seven modules, ordinary/sensitive consultation and controlled review/export", "scripts/smoke-phase4b2-recovery.ts: exact review/export receipts, bytes, manifests and protected replay after recovery"] };
   if (id.startsWith("PN")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "PN06" ? "scripts/audit-fixtures/pnt-import-capture.test.ts: original proposal/confirmation, rollback and concurrency" : "scripts/audit-fixtures/module-actions-capture.test.ts: original PNT master/document/lifecycle actions"] };
   if (id === "TR01") return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: original Review append-only lifecycle"] };
   if (["TR02","TR03","TR04"].includes(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/configuration-capture.test.ts: original configuration writers, activation reason and rollback"] };
@@ -59,17 +59,17 @@ function coverage(id:string, category:string) {
 }
 export function auditPolicyCatalogue() {
   const inventory = auditWriterInventory(), source = readFileSync("docs/PHASE_4B3_A.md", "utf8"), capture = auditCapturePolicy();
-  const prohibitedModels = new Set(["AuthSession", "AuthLoginAttempt", "AuditOperation", "AuditEvent", "AuditOperationTarget", "AuditRuntimeContext", "AuditAggregateCursor", "AuditPilotRecord", "AuditPolicyRequirement", "AuditAdministrationRoot", "AuditEventAdditionalTarget", "AuditBusinessContext", "AuditMutationWitness", "AuditRootBinding", "AuditCaptureTablePolicy", "AuditCaptureFieldPolicy", "AuditOperationEvidence", "AuditCommandResult", "AuditTechnicalContext", "AuditTechnicalEvent", "AuditRootMaturity", "AuditOperationAssessment"]);
+  const prohibitedModels = new Set(["AuthSession", "AuthLoginAttempt", "AuditOperation", "AuditEvent", "AuditOperationTarget", "AuditRuntimeContext", "AuditAggregateCursor", "AuditPilotRecord", "AuditPolicyRequirement", "AuditAdministrationRoot", "AuditEventAdditionalTarget", "AuditBusinessContext", "AuditMutationWitness", "AuditRootBinding", "AuditCaptureTablePolicy", "AuditCaptureFieldPolicy", "AuditOperationEvidence", "AuditCommandResult", "AuditTechnicalContext", "AuditTechnicalEvent", "AuditRootMaturity", "AuditOperationAssessment", "AuditTrailReview", "AuditTrailReviewOperation", "AuditTrailReviewEvent", "AuditTrailExport", "AuditTrailExportEvent"]);
   const secretFields = new Set(["tokenHash", "csrfHash", "nonce", "verifier", "password", "secret", "accessToken", "refreshToken"]);
   const fieldCandidates = Object.fromEntries(Prisma.dmmf.datamodel.models.filter(model => !prohibitedModels.has(model.name)).map(model => [model.name, model.fields.filter(field => field.kind !== "object" && field.type !== "Bytes" && !secretFields.has(field.name)).map(field => ({ name: field.name, type: field.type }))]));
   const rows = source.split("\n").filter(line => /^\| (DV|CA|CC|RC|DE|AU|PN|TR)\d{2} /.test(line));
   const operations = rows.map(line => {
     const cells = line.split("|").slice(1,-1).map(cell => cell.trim()), id = cells[0].slice(0,4);
     const writerGroups = [...new Set([...prefixes[id.slice(0,2)], ...additional[id] ?? []])].sort();
-    const sourceFiles = [...new Set(writerGroups.flatMap(group => groups[group]))].sort();
+    const sourceFiles = [...new Set([...writerGroups.flatMap(group => groups[group]),...(id==="TR09"?["src/lib/audit/trail.ts","src/lib/audit/trail-actions.ts","src/app/api/audit-trail/exports/[id]/route.ts"]:[])])].sort();
     const writers = inventory.writers.filter(writer => sourceFiles.includes(writer.file));
-    const tables = [...new Set(writers.flatMap(writer => [writer.model, ...writer.nested.map(n => n.model)]))].sort();
-    const category = id === "TR09" ? "DEFERRED_C" : id === "PN08" ? "READ_NO_BUSINESS_EVENT" : id === "TR06" || id === "PN07" ? "TECHNICAL_SEPARATE_STREAM" : id === "TR08" ? "CONTROLLED_MAINTENANCE_IT_DEPENDENCY" : "BUSINESS_WRITE";
+    const tables = id==="TR09"?["AuditTrailReview","AuditTrailReviewOperation","AuditTrailReviewEvent","AuditTrailExport","AuditTrailExportEvent"]:[...new Set(writers.flatMap(writer => [writer.model, ...writer.nested.map(n => n.model)]))].sort();
+    const category = id === "TR09" ? "CONTROLLED_REVIEW_EXPORT" : id === "PN08" ? "READ_NO_BUSINESS_EVENT" : id === "TR06" || id === "PN07" ? "TECHNICAL_SEPARATE_STREAM" : id === "TR08" ? "CONTROLLED_MAINTENANCE_IT_DEPENDENCY" : "BUSINESS_WRITE";
     const captured = capture.filter(policy=>tables.includes(policy.entityType));
     return { id, title: cells[0].slice(5), proposedEvents: cells[5], proposedCriticality: cells[6], testReferences: cells[7].split("/").map(test => test.trim()), category, writerGroups, sourceFiles,
       candidateWriterIndexes: writers.map(writer => inventory.writers.indexOf(writer)),

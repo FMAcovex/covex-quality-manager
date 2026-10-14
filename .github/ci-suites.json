@@ -46,7 +46,7 @@
       "hito10:smoke"
     ],
     "ui": [],
-    "security": ["phase4b1:smoke", "phase4b2:smoke", "phase4b3-b1:smoke", "phase4b3-b2:requirement:smoke", "phase4b3-b2:capture:smoke", "phase4b3-b2:auth:smoke"]
+    "security": ["phase4b1:smoke", "phase4b2:smoke", "phase4b3-b1:smoke", "phase4b3-b2:configuration:smoke", "phase4b3-b2:requirement:smoke", "phase4b3-b2:capture:smoke", "phase4b3-b2:auth:smoke", "phase4b3-c:smoke"]
   },
   "browser-qms": {
     "db": [],

@@ -38,9 +38,9 @@ const date = (value: string | undefined, end = false) => {
   return Number.isNaN(result.valueOf()) ? undefined : result;
 };
 export function parseAuditTrailFilters(input: Record<string,string|undefined>): AuditTrailFilters {
-  const module = auditTrailModules.includes(input.module as AuditTrailModule) ? input.module as AuditTrailModule : undefined;
+  const moduleFilter = auditTrailModules.includes(input.module as AuditTrailModule) ? input.module as AuditTrailModule : undefined;
   return {
-    module, record:clean(input.record), actor:clean(input.actor), operation:clean(input.operation,80),
+    module:moduleFilter, record:clean(input.record), actor:clean(input.actor), operation:clean(input.operation,80),
     from:date(input.from)?.toISOString(), to:date(input.to,true)?.toISOString(),
     critical:input.critical==="YES"||input.critical==="NO"?input.critical:undefined,
     reason:input.reason==="WITH"||input.reason==="WITHOUT"?input.reason:undefined,
@@ -118,7 +118,7 @@ export async function queryAuditTrail(filters:AuditTrailFilters,{page=1,pageSize
   const events=ids.length?await prisma.auditEvent.findMany({where:{operationId:{in:ids},...eventRootWhere(filters,rootKey)},orderBy:[{operationId:"asc"},{eventOrdinal:"asc"}],select:{id:true,operationId:true,entityType:true,entityId:true,fieldPath:true,oldValue:true,newValue:true,capturedAt:true,recordVersionId:true,generatedDocumentId:true,documentChecksum:true}}):[];
   const byOperation=new Map<string,typeof events>();
   for(const event of events)byOperation.set(event.operationId,[...(byOperation.get(event.operationId)??[]),event]);
-  const operations:TrailOperation[]=rows.map(row=>({id:row.id,actorName:row.actorName,operation:row.operation,reason:row.reason,policyVersion:row.policyVersion,schemaVersion:row.schemaVersion,occurredAt:row.occurredAt,accessModule:row.accessModule,accessPermission:row.accessPermission,critical:row.assessment?.proposedCritical??null,aggregateSequence:row.targets[0]?.aggregateSequence??null,rootKeys:row.targets.map(t=>t.rootKey),events:(byOperation.get(row.id)??[]).map(({operationId:_,...event})=>event),reviews:[...new Map(row.trailReviews.map(link=>[link.review.id,link.review])).values()]}));
+  const operations:TrailOperation[]=rows.map(row=>({id:row.id,actorName:row.actorName,operation:row.operation,reason:row.reason,policyVersion:row.policyVersion,schemaVersion:row.schemaVersion,occurredAt:row.occurredAt,accessModule:row.accessModule,accessPermission:row.accessPermission,critical:row.assessment?.proposedCritical??null,aggregateSequence:row.targets[0]?.aggregateSequence??null,rootKeys:row.targets.map(t=>t.rootKey),events:(byOperation.get(row.id)??[]).map(event=>({id:event.id,entityType:event.entityType,entityId:event.entityId,fieldPath:event.fieldPath,oldValue:event.oldValue,newValue:event.newValue,capturedAt:event.capturedAt,recordVersionId:event.recordVersionId,generatedDocumentId:event.generatedDocumentId,documentChecksum:event.documentChecksum})),reviews:[...new Map(row.trailReviews.map(link=>[link.review.id,link.review])).values()]}));
   return {operations,total,page,pageSize,hasNext:page*pageSize<total};
 }
 

@@ -91,6 +91,9 @@ it("creates a cut, hash and immutable event manifest for controlled exports and 
   const requestId=randomUUID(),exportForm=form({filters:JSON.stringify({module:"DEVIATION"}),_covexAuditRequestId:requestId});
   const redirected=await asUser(qa,()=>redirectResult(()=>createAuditTrailExportAction(exportForm)));expect(redirected).toContain("/api/audit-trail/exports/");
   const item=await inspector.auditTrailExport.findUniqueOrThrow({where:{actorUserId_requestId:{actorUserId:qa.id,requestId}},include:{events:true}});
+  expect(await asUser(qa,()=>redirectResult(()=>createAuditTrailExportAction(exportForm)))).toContain(item.id);
+  exportForm.set("filters",JSON.stringify({module:"CAPA"}));
+  await expect(asUser(qa,()=>createAuditTrailExportAction(exportForm))).rejects.toThrow(/Export request conflict/);
   expect(item.actorName).toBe(qa.name);expect(item.rowCount).toBe(item.events.length);expect(item.events.length).toBeGreaterThan(0);expect(item.contentSha256).toBe(createHash("sha256").update(item.fileData).digest("hex"));
   expect(item.scopeManifest).toMatchObject({version:"COVEX_AUDIT_EXPORT_MANIFEST_V1",contentSha256:item.contentSha256,eventCount:item.rowCount});
   const manifest=item.scopeManifest as {cutoff:{occurredAt:string};operationIds:string[];eventIds:string[]};
@@ -109,4 +112,35 @@ it("creates a cut, hash and immutable event manifest for controlled exports and 
   const params={params:Promise.resolve({id:item.id})},request=new Request(`http://127.0.0.1/api/audit-trail/exports/${item.id}`);
   const download=await asUser(qa,()=>GET(request,params));expect(download.status).toBe(200);expect(download.headers.get("X-COVEX-Content-SHA256")).toBe(item.contentSha256);expect(Buffer.from(await download.arrayBuffer())).toEqual(Buffer.from(item.fileData));
   expect((await asUser(reader,()=>GET(request,params))).status).toBe(403);expect((await asUser(admin,()=>GET(request,params))).status).toBe(403);
+});
+
+it("fails closed for weakened C triggers, public RPC access and an unsafe application writer",async()=>{
+  const {prisma}=await import("../../src/lib/db");
+  const {assertAuditProtection,assertAuditApplicationRole}=await import("../../src/lib/audit/protection");
+  const {createAuditTrailExportAction}=await import("../../src/lib/audit/trail-actions");
+  await prisma.$transaction(async tx=>{await assertAuditProtection(tx);await assertAuditApplicationRole(tx);});
+  const count=await inspector.auditTrailExport.count();
+  await inspector.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" DISABLE TRIGGER audit_c_export_immutable');
+  try{await expect(asUser(qa,()=>createAuditTrailExportAction(form({filters:"{}",_covexAuditRequestId:randomUUID()})))).rejects.toMatchObject({code:"PROTECTION"});}finally{await inspector.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" ENABLE TRIGGER audit_c_export_immutable');}
+  await inspector.$executeRawUnsafe('GRANT EXECUTE ON FUNCTION covex_c_has_permission(UUID,TEXT) TO PUBLIC');
+  try{await expect(prisma.$transaction(tx=>assertAuditProtection(tx))).rejects.toMatchObject({code:"PROTECTION"});}finally{await inspector.$executeRawUnsafe('REVOKE EXECUTE ON FUNCTION covex_c_has_permission(UUID,TEXT) FROM PUBLIC');}
+  const [connection]=await prisma.$queryRaw<{role:string}[]>`SELECT current_user AS role`;
+  expect(connection.role).toMatch(/^covex4b3_[a-z0-9_]+$/);
+  await inspector.$executeRawUnsafe(`GRANT UPDATE ON "AuditTrailReview" TO "${connection.role}"`);
+  try{await expect(prisma.$transaction(tx=>assertAuditApplicationRole(tx))).rejects.toMatchObject({code:"PROTECTION"});}finally{await inspector.$executeRawUnsafe(`REVOKE UPDATE ON "AuditTrailReview" FROM "${connection.role}"`);}
+  expect(await inspector.auditTrailExport.count()).toBe(count);
+  await prisma.$transaction(async tx=>{await assertAuditProtection(tx);await assertAuditApplicationRole(tx);});
+});
+
+it("replays an unchanged pending-review command after its own receipt changes the review filter",async()=>{
+  const {queryAuditTrail,auditTrailCutoff}=await import("../../src/lib/audit/trail");
+  const {recordAuditTrailReviewAction}=await import("../../src/lib/audit/trail-actions");
+  const selection=await asUser(qa,()=>queryAuditTrail({review:"UNREVIEWED"},{pageSize:1})),cutoff=(await auditTrailCutoff())!;
+  expect(selection.operations).toHaveLength(1);
+  const requestId=randomUUID(),review=form({filters:JSON.stringify({review:"UNREVIEWED"}),cutoffOccurredAt:cutoff.occurredAt.toISOString(),cutoffOperationId:cutoff.id,result:"NO_OBSERVATIONS",_covexAuditRequestId:requestId},[selection.operations[0].id]);
+  const first=await asUser(qa,()=>redirectResult(()=>recordAuditTrailReviewAction(review)));
+  expect(await asUser(qa,()=>redirectResult(()=>recordAuditTrailReviewAction(review)))).toBe(first);
+  expect(await inspector.auditTrailReview.count({where:{reviewerUserId:qa.id,requestId}})).toBe(1);
+  review.set("notes","Changed command with same request must still conflict");
+  await expect(asUser(qa,()=>recordAuditTrailReviewAction(review))).rejects.toThrow(/Review request conflict/);
 });
