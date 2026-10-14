@@ -1,6 +1,26 @@
 {
   "actions": [
     {
+      "file": "src/lib/audit/trail-actions.ts",
+      "name": "recordAuditTrailReviewAction",
+      "params": ["form"],
+      "module": "SYSTEM",
+      "permission": "AUDIT_TRAIL_REVIEW",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/audit/trail-actions.ts",
+      "name": "createAuditTrailExportAction",
+      "params": ["form"],
+      "module": "SYSTEM",
+      "permission": "AUDIT_TRAIL_EXPORT",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
       "file": "src/lib/qms/review/actions.ts",
       "name": "createReviewThreadAction",
       "params": [
@@ -978,6 +998,13 @@
   ],
   "routes": [
     {
+      "file": "src/app/api/audit-trail/exports/[id]/route.ts",
+      "method": "GET",
+      "module": "SYSTEM",
+      "permission": "AUDIT_TRAIL_EXPORT",
+      "public": false
+    },
+    {
       "file": "src/app/api/audits/[id]/documents/route.ts",
       "method": "GET",
       "module": "AUDIT",
@@ -1326,6 +1353,7 @@
     }
   ],
   "pages": [
+    "src/app/audit-trail/page.tsx",
     "src/app/audits/[id]/edit/page.tsx",
     "src/app/audits/[id]/page.tsx",
     "src/app/audits/new/page.tsx",

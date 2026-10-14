@@ -1,0 +1,76 @@
+"use server";
+
+import { createHash, randomUUID } from "node:crypto";
+import { Prisma } from "@prisma/client";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { authorizedAction } from "@/lib/auth/action-guard";
+import { currentIdentity } from "@/lib/auth/context";
+import { prisma } from "@/lib/db";
+import { canonicalAuditJson } from "./canonical-json";
+import { auditTrailCutoff, exactAuditTrailOperationSelection, exactAuditTrailSelection, parseAuditTrailFilters, type AuditTrailFilters } from "./trail";
+
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const requestId=(form:FormData)=>{const value=String(form.get("_covexAuditRequestId")??"");return uuid.test(value)?value:randomUUID();};
+const parseFilters=(form:FormData):AuditTrailFilters=>{try{const value=JSON.parse(String(form.get("filters")??"{}"));return parseAuditTrailFilters(value&&typeof value==="object"?value:{});}catch{return {};}};
+const idArray=(ids:string[])=>Prisma.sql`ARRAY[${Prisma.join(ids)}]::uuid[]`;
+
+function cutoffFromForm(form:FormData){
+  const id=String(form.get("cutoffOperationId")??""),occurredAt=new Date(String(form.get("cutoffOccurredAt")??""));
+  if(!uuid.test(id)||Number.isNaN(occurredAt.valueOf()))throw new Error("El corte de revisión no es válido.");
+  return {id,occurredAt};
+}
+
+async function recordReview(form:FormData){
+  const actor=currentIdentity()?.principal;if(!actor)throw new Error("Sesión no disponible.");
+  const filters=parseFilters(form),cutoff=cutoffFromForm(form);
+  const selected=form.getAll("operationId").map(String);
+  const exact=await exactAuditTrailOperationSelection(filters,cutoff,selected);
+  const result=String(form.get("result")??"");
+  if(!["NO_OBSERVATIONS","OBSERVATIONS_RECORDED","FOLLOW_UP_REQUIRED"].includes(result))throw new Error("Selecciona un resultado de revisión válido.");
+  const notes=String(form.get("notes")??"").trim();if(notes.length>4000)throw new Error("Las observaciones superan el límite permitido.");
+  const supersedesId=String(form.get("supersedesId")??"").trim()||null;if(supersedesId&&!uuid.test(supersedesId))throw new Error("La referencia de rectificación no es válida.");
+  const manifest={version:"COVEX_AUDIT_REVIEW_SCOPE_V1",filters,cutoff:{occurredAt:cutoff.occurredAt.toISOString(),operationId:cutoff.id},operationIds:exact.operationIds,eventIds:exact.eventIds,eventCount:exact.eventIds.length};
+  const command={result,notes:notes||null,supersedesId,manifest};
+  const digest=createHash("sha256").update(canonicalAuditJson(command)).digest("hex"),id=randomUUID(),nonce=requestId(form);
+  const rows=await prisma.$queryRaw<{id:string}[]>(Prisma.sql`SELECT covex_c_record_review(${id}::uuid,${nonce}::uuid,${digest},${actor.id}::uuid,${result},${notes},${JSON.stringify(manifest)}::jsonb,${cutoff.occurredAt},${cutoff.id}::uuid,${idArray(exact.operationIds)},${idArray(exact.eventIds)},${supersedesId}::uuid) AS id`);
+  revalidatePath("/audit-trail");return rows[0]?.id??id;
+}
+
+export async function recordAuditTrailReviewAction(...args:[FormData]){
+  const id=await authorizedAction("recordAuditTrailReviewAction",args,authenticated=>recordReview(authenticated[0] as FormData));
+  redirect(`/audit-trail?reviewed=${encodeURIComponent(id)}`);
+}
+
+const csvCell=(value:unknown)=>{
+  let text=value==null?"":typeof value==="string"?value:canonicalAuditJson(value);
+  if(/^[=+\-@\t\r]/.test(text))text="'"+text;
+  return `"${text.replaceAll('"','""')}"`;
+};
+const csvRow=(values:unknown[])=>values.map(csvCell).join(",")+"\r\n";
+
+async function createExport(form:FormData){
+  const actor=currentIdentity()?.principal;if(!actor)throw new Error("Sesión no disponible.");
+  const filters=parseFilters(form),cutoff=await auditTrailCutoff();if(!cutoff)throw new Error("No existen eventos para exportar.");
+  const exact=await exactAuditTrailSelection(filters,cutoff);
+  if(!exact.events.length)throw new Error("No existen eventos con los filtros indicados.");
+  const operationById=new Map(exact.operations.map(operation=>[operation.id,operation]));
+  const exportId=randomUUID(),nonce=requestId(form);
+  const operationIds=exact.operations.map(operation=>operation.id),eventIds=exact.events.map(event=>event.id);
+  const manifest={version:"COVEX_AUDIT_EXPORT_MANIFEST_V1",format:"CSV_UTF8",filters,cutoff:{occurredAt:cutoff.occurredAt.toISOString(),operationId:cutoff.id},operationIds,eventIds,eventCount:eventIds.length,operationCount:operationIds.length,timezone:"UTC",policyVersions:[...new Set(exact.operations.map(operation=>operation.policyVersion))].sort(),schemaVersions:[...new Set(exact.operations.map(operation=>operation.schemaVersion))].sort(),release:process.env.APP_RELEASE_SHA??"development"};
+  let csv="\uFEFF";
+  csv+=csvRow(["COVEX Quality Manager","Exportación controlada de Audit Trail"]);
+  csv+=csvRow(["Identificador",exportId]);csv+=csvRow(["Corte UTC",cutoff.occurredAt.toISOString()]);csv+=csvRow(["Operación de corte",cutoff.id]);csv+=csvRow(["Ejecutor",actor.name]);csv+=csvRow(["Filtros",canonicalAuditJson(filters)]);csv+="\r\n";
+  csv+=csvRow(["Fecha UTC","Operación ID","Operación","Usuario","Crítica técnica","Entidad","Entidad ID","Campo","Valor anterior tipado","Valor nuevo tipado","Motivo","Versión","Documento","SHA-256 documental"]);
+  for(const event of exact.events){const operation=operationById.get(event.operationId)!;csv+=csvRow([operation.occurredAt.toISOString(),operation.id,operation.operation,operation.actorName,operation.assessment?.proposedCritical===true?"Sí":"No",event.entityType,event.entityId,event.fieldPath,event.oldValue,event.newValue,operation.reason,event.recordVersionId,event.generatedDocumentId,event.documentChecksum]);}
+  const bytes=Buffer.from(csv,"utf8"),fileName=`COVEX_Audit_Trail_${cutoff.occurredAt.toISOString().slice(0,10)}_${exportId.slice(0,8)}.csv`;
+  const command={manifest,fileName,sha256:createHash("sha256").update(bytes).digest("hex")};
+  const digest=createHash("sha256").update(canonicalAuditJson(command)).digest("hex");
+  const rows=await prisma.$queryRaw<{id:string}[]>(Prisma.sql`SELECT covex_c_record_export(${exportId}::uuid,${nonce}::uuid,${digest},${actor.id}::uuid,'CSV_UTF8',${fileName},${new Uint8Array(bytes)}::bytea,${JSON.stringify(manifest)}::jsonb,${cutoff.occurredAt},${cutoff.id}::uuid,${idArray(operationIds)},${idArray(eventIds)},${eventIds.length}) AS id`);
+  return rows[0]?.id??exportId;
+}
+
+export async function createAuditTrailExportAction(...args:[FormData]){
+  const id=await authorizedAction("createAuditTrailExportAction",args,authenticated=>createExport(authenticated[0] as FormData));
+  redirect(`/api/audit-trail/exports/${encodeURIComponent(id)}`);
+}

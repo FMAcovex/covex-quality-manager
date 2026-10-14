@@ -2153,6 +2153,9 @@ enum AccessPermission {
  PNT_CORRECT
  PNT_LEGACY_REGISTER
  PNT_MANAGE_STATE
+ AUDIT_TRAIL_REVIEW
+ AUDIT_TRAIL_EXPORT
+ AUDIT_TRAIL_SENSITIVE_READ
 }
 enum AccessScope {
  ALL
@@ -2161,6 +2164,8 @@ enum AccessScope {
 model AuthUser {
  signedCustodies SignedDocumentCustody[]
  auditOperations AuditOperation[]
+ auditTrailReviews AuditTrailReview[]
+ auditTrailExports AuditTrailExport[]
  id String @id @default(uuid()) @db.Uuid
  tenantId String @db.Uuid
  objectId String @db.Uuid
@@ -2271,6 +2276,7 @@ model AuthAuthorizationChange {
 // 4B3-B1 infrastructure. No production QMS capture policy is activated.
 model AuditOperation {
   assessment AuditOperationAssessment?
+  trailReviews AuditTrailReviewOperation[]
   id String @id @db.Uuid
   actorUserId String @db.Uuid
   actorUser AuthUser @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
@@ -2342,6 +2348,8 @@ model AuditEvent {
   documentChecksum String?
   mutationId String? @db.Uuid
   additionalTargets AuditEventAdditionalTarget[]
+  trailExports AuditTrailExportEvent[]
+  trailReviews AuditTrailReviewEvent[]
   @@unique([operationId, eventOrdinal])
   @@index([rootKey, capturedAt, id])
 }
@@ -2472,6 +2480,79 @@ model AuditOperationAssessment {
   reasonRequired Boolean
   assessedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
   @@index([proposedCritical,operationId])
+}
+
+// 4B3-C review receipts and controlled exports. Both families are append-only;
+// they document an exact cut without changing the source operation/event.
+model AuditTrailReview {
+  id String @id @db.Uuid
+  requestId String @db.Uuid
+  requestDigest String
+  reviewerUserId String @db.Uuid
+  reviewerUser AuthUser @relation(fields: [reviewerUserId], references: [id], onDelete: Restrict)
+  reviewerName String
+  result String
+  notes String?
+  scopeManifest Json
+  cutoffOccurredAt DateTime @db.Timestamptz(6)
+  cutoffOperationId String @db.Uuid
+  supersedesId String? @db.Uuid
+  supersedes AuditTrailReview? @relation("AuditTrailReviewCorrections", fields: [supersedesId], references: [id], onDelete: Restrict)
+  corrections AuditTrailReview[] @relation("AuditTrailReviewCorrections")
+  createdAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  operations AuditTrailReviewOperation[]
+  events AuditTrailReviewEvent[]
+  @@unique([reviewerUserId, requestId])
+  @@index([createdAt, id])
+  @@index([result, createdAt])
+}
+
+model AuditTrailReviewOperation {
+  reviewId String @db.Uuid
+  review AuditTrailReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+  operationId String @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  @@id([reviewId, operationId])
+  @@index([operationId, reviewId])
+}
+
+model AuditTrailReviewEvent {
+  reviewId String @db.Uuid
+  review AuditTrailReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+  eventId String @db.Uuid
+  event AuditEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  @@id([reviewId, eventId])
+  @@index([eventId, reviewId])
+}
+
+model AuditTrailExport {
+  id String @id @db.Uuid
+  requestId String @db.Uuid
+  requestDigest String
+  actorUserId String @db.Uuid
+  actorUser AuthUser @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorName String
+  format String
+  fileName String
+  fileData Bytes
+  contentSha256 String
+  rowCount Int
+  scopeManifest Json
+  cutoffOccurredAt DateTime @db.Timestamptz(6)
+  cutoffOperationId String @db.Uuid
+  createdAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  events AuditTrailExportEvent[]
+  @@unique([actorUserId, requestId])
+  @@index([createdAt, id])
+}
+
+model AuditTrailExportEvent {
+  exportId String @db.Uuid
+  export AuditTrailExport @relation(fields: [exportId], references: [id], onDelete: Restrict)
+  eventId String @db.Uuid
+  event AuditEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  @@id([exportId, eventId])
+  @@index([eventId, exportId])
 }
 model AuditTechnicalContext {
   transactionId BigInt @id

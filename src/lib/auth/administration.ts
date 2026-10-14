@@ -66,7 +66,9 @@ export async function configureRole(raw: unknown, form?: FormData) {
   return administrationCommand("configureRole", input, actor, form, () => prisma.$transaction(async tx => {
     const before = await tx.authRole.findUniqueOrThrow({ where: { id: input.roleId }, include: { permissions: true, users: true } });
     if (before.key === "TECHNICAL_ADMIN" || before.users.some(u => u.userId === actor.id)) throw new AccessError(403, "No puede cambiar su propio rol ni el rol técnico reservado.");
-    if (input.grants.some(g => g.permission === "MANAGE_USERS" || (g.module === "SYSTEM" && !["READ", "MANAGE_CONFIGURATION"].includes(g.permission)) || (g.scope === "ASSIGNED" && ["EXPORT", "IMPORT", "MANAGE_CONFIGURATION"].includes(g.permission)))) throw new AccessError(403);
+    const systemAssignable = ["READ", "MANAGE_CONFIGURATION", "AUDIT_TRAIL_REVIEW", "AUDIT_TRAIL_EXPORT", "AUDIT_TRAIL_SENSITIVE_READ"];
+    const allScopeOnly = ["EXPORT", "IMPORT", "MANAGE_CONFIGURATION", "AUDIT_TRAIL_REVIEW", "AUDIT_TRAIL_EXPORT", "AUDIT_TRAIL_SENSITIVE_READ"];
+    if (input.grants.some(g => g.permission === "MANAGE_USERS" || (g.module === "SYSTEM" && !systemAssignable.includes(g.permission)) || (g.scope === "ASSIGNED" && allScopeOnly.includes(g.permission)))) throw new AccessError(403);
     if (new Set(input.grants.map(g => `${g.module}:${g.permission}`)).size !== input.grants.length) throw new AccessError(403);
     await tx.authRolePermission.deleteMany({ where: { roleId: before.id } });
     await tx.authRolePermission.createMany({ data: input.grants.map(g => ({ ...g, roleId: before.id })) });

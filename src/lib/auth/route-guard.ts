@@ -33,7 +33,7 @@ async function authorizeAndRunRoute<T extends Response>(file: string, method: st
         permission = "FOLLOWUP";
         if (!unit && Array.isArray(body?.recordIds)) for (const id of body.recordIds) { const target = await qmsScope(String(id)); assertPermission(user, target.module, permission, target.scope); accessModule = target.module; scope = target.scope; }
       }
-    } else if (accessModule === "SYSTEM" && params.id && !unit) {
+    } else if (accessModule === "SYSTEM" && params.id && !unit && !file.includes("/audit-trail/exports/")) {
       const template = await prisma.templateVersion.findUnique({ where: { id: params.id }, select: { module: true } });
       if (!template) throw new AccessError(403); accessModule = template.module as AccessModule;
     } else if (params.id && !unit && !file.includes("/import-batches/")) scope = await resourceScope(accessModule, params.id, file.includes("/plans/") ? "AUDIT_PLAN" : "RECORD");

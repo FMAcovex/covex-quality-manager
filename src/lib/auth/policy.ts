@@ -9,7 +9,7 @@ export function assertPermission(user: Principal, module: AccessModule, permissi
   const grants = user.grants.filter(g => g.module === module && g.permission === permission);
   const all = grants.some(g => g.scope === "ALL");
   const assigned = grants.some(g => g.scope === "ASSIGNED");
-  if (all || assigned && !["EXPORT", "IMPORT", "MANAGE_USERS", "MANAGE_CONFIGURATION"].includes(permission) &&
+  if (all || assigned && !["EXPORT", "IMPORT", "MANAGE_USERS", "MANAGE_CONFIGURATION", "AUDIT_TRAIL_REVIEW", "AUDIT_TRAIL_EXPORT", "AUDIT_TRAIL_SENSITIVE_READ"].includes(permission) &&
     ((resource.id && user.assignments.some(a => a.module === module && a.recordId === resource.id)) ||
       (resource.departmentIds?.length && resource.departmentIds.every(id => user.departmentIds.includes(id))))) {
     if (recordClaim) currentIdentity()?.auditClaims?.push({ module, permission, resource: { ...(resource.id ? { id: resource.id } : {}), ...(resource.departmentIds ? { departmentIds: [...resource.departmentIds] } : {}) } });
