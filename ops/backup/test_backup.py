@@ -102,8 +102,17 @@ class Safety(unittest.TestCase):
         self.assertNotIn(data, encrypted.read_bytes())
         backup.crypt(encrypted, recovered, self.value["encryption_key"], decrypt=True)
         self.assertEqual(recovered.read_bytes(), data)
-        with self.assertRaises(backup.Refused):
-            backup.crypt(encrypted, recovered, self.value["manifest_key"], decrypt=True)
+        # AES-CBC is not authenticated: a wrong password can occasionally
+        # yield valid PKCS#7 padding, so OpenSSL may exit successfully while
+        # producing corrupted plaintext. The invariant is that the protected
+        # original can never be recovered with the wrong key.
+        wrong_key_output = self.root / "wrong-key-output"
+        try:
+            backup.crypt(encrypted, wrong_key_output, self.value["manifest_key"], decrypt=True)
+        except backup.Refused:
+            pass
+        else:
+            self.assertNotEqual(wrong_key_output.read_bytes(), data)
 
     def test_authenticated_manifest_and_ciphertext(self):
         for name in ["database.dump.enc", "assets.tar.enc"]:
