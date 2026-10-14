@@ -6,6 +6,7 @@ import { auditPolicyState } from "./activation";
 import { canonicalAuditJson } from "./canonical-json";
 import { actionCommand } from "./action-boundary";
 import { withBusinessAuditResult } from "./business-service";
+import { inDocumentRequest } from "./document-command";
 
 function operation(file: string, module: AccessModule, input: Record<string, unknown> | null) {
   if (file.endsWith("/administrative-status/route.ts")) return ({ DEVIATION: "DV07", CAPA: "CA07", CHANGE_CONTROL: "CC06", COMPLAINT: "RC06", RETURN: "DE06", AUDIT: "AU07" } as Partial<Record<AccessModule, string>>)[module];
@@ -23,6 +24,7 @@ const clean = (value: unknown): unknown => {
 /** Only explicit JSON-response writers enter this envelope. Read/download,
  * technical expiry and import row/batch protocols have separate composition. */
 export async function routeAuditBoundary(file: string, method: string, request: Request, params: Record<string, string>, module: AccessModule, permission: AccessPermission, input: Record<string, unknown> | null, execute: () => Promise<Response>): Promise<Response> {
+  if (method === "GET" && (file.includes("/annex-") || file === "src/app/api/audits/[id]/documents/route.ts")) return inDocumentRequest(request, execute);
   const code = method === "POST" ? operation(file, module, input) : undefined;
   if (!code || currentIdentity()?.unitTest && process.env.VITEST === "true" && process.env.APP_ENV === "test") return execute();
   if (!(await auditPolicyState(prisma)).required) return execute();

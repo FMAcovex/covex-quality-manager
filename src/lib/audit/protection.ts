@@ -6,6 +6,7 @@ import captureContract from "../../../ops/backup/audit-contract-b2-capture.json"
 import integrationContract from "../../../ops/backup/audit-contract-b2-integration.json";
 import documentContract from "../../../ops/backup/audit-contract-b2-documents.json";
 import stagingContract from "../../../ops/backup/audit-contract-b2-staging.json";
+import criticalContract from "../../../ops/backup/audit-contract-b2-critical.json";
 import { AuditEngineError } from "./domain";
 import { canonicalAuditJson } from "./canonical-json";
 
@@ -31,7 +32,12 @@ export async function assertAuditProtection(tx: Prisma.TransactionClient) {
     const [installed] = await tx.$queryRaw<{ count: bigint }[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261013000300_b2_sql_capture' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     if (installed?.count) throw new AuditEngineError("PROTECTION");
   }
-  const contract = version?.staging ? stagingContract : version?.documents ? documentContract : version?.composition ? integrationContract : version?.capture ? captureContract : version?.present ? b2Contract : b1Contract;
+  const [critical] = await tx.$queryRaw<{present:boolean}[]>`SELECT to_regclass('public."AuditOperationAssessment"') IS NOT NULL AS present`;
+  if (!critical?.present && version?.migrations) {
+    const [installed] = await tx.$queryRaw<{count:bigint}[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261013000700_b2_critical_integrity' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
+    if (installed?.count) throw new AuditEngineError("PROTECTION");
+  }
+  const contract = critical?.present ? criticalContract : version?.staging ? stagingContract : version?.documents ? documentContract : version?.composition ? integrationContract : version?.capture ? captureContract : version?.present ? b2Contract : b1Contract;
   const guardTables = version?.present && "guardTables" in contract ? contract.guardTables : [];
   const tables = await tx.$queryRaw<{ name: string; owner: string }[]>`SELECT c.relname AS name,pg_get_userbyid(c.relowner) AS owner FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=ANY(${contract.tables}::text[])`;
   if (tables.length !== contract.tables.length || new Set(tables.map(t=>t.owner)).size !== 1) throw new AuditEngineError("PROTECTION");
@@ -56,7 +62,7 @@ export async function assertAuditProtection(tx: Prisma.TransactionClient) {
 }
 
 export async function assertAuditApplicationRole(tx: Prisma.TransactionClient) {
-  const protectedTables = stagingContract.tables.filter(table => table!=="AuditPilotRecord");
-  const [result] = await tx.$queryRaw<{ unsafe: boolean }[]>`SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=current_user AND (rolsuper OR rolcreaterole)) OR has_schema_privilege(current_user,'public','CREATE') OR EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=ANY(${protectedTables}::text[]) AND (pg_has_role(current_user,c.relowner,'USAGE') OR has_table_privilege(current_user,c.oid,'DELETE,TRUNCATE') OR has_any_column_privilege(current_user,c.oid,'INSERT') OR has_any_column_privilege(current_user,c.oid,'UPDATE') OR c.relname=ANY(${stagingContract.privateTables}::text[]) AND has_any_column_privilege(current_user,c.oid,'SELECT'))) AS unsafe`;
+  const protectedTables = criticalContract.tables.filter(table => table!=="AuditPilotRecord");
+  const [result] = await tx.$queryRaw<{ unsafe: boolean }[]>`SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=current_user AND (rolsuper OR rolcreaterole)) OR has_schema_privilege(current_user,'public','CREATE') OR EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=ANY(${protectedTables}::text[]) AND (pg_has_role(current_user,c.relowner,'USAGE') OR has_table_privilege(current_user,c.oid,'DELETE,TRUNCATE') OR has_any_column_privilege(current_user,c.oid,'INSERT') OR has_any_column_privilege(current_user,c.oid,'UPDATE') OR c.relname=ANY(${criticalContract.privateTables}::text[]) AND has_any_column_privilege(current_user,c.oid,'SELECT'))) AS unsafe`;
   if (!result || result.unsafe) throw new AuditEngineError("PROTECTION");
 }

@@ -4,6 +4,9 @@ import path from "node:path";
 import { DocumentType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { retainSignedOriginal } from "@/lib/qms/signed-custody-service";
+import { documentCommand } from "@/lib/audit/document-command";
+import { resourceScope } from "@/lib/auth/resources";
+import { currentIdentity } from "@/lib/auth/context";
 import { validateSignedPdfMetadata, safeSignedPdfFileName } from "@/lib/qms/signed-version-document";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { auditReportInclude, lockReportAudit, auditReportEvent, readAuditSnapshot, snapshotAudit } from "../report-service";
@@ -13,8 +16,11 @@ const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
 export async function generateAuditDocument(auditId: string, type: DocumentType, sequence: number | null, actor: string) {
+  actor = currentIdentity()?.principal.name ?? actor;
   if (!types.includes(type)) throw new Error("Tipo documental no generable.");
-  return prisma.$transaction(async tx => {
+  const scope = await resourceScope("AUDIT", auditId);
+  if (!scope.id) throw Error("Auditoría no disponible");
+  const id = await documentCommand("AUDIT", { ...scope, id: scope.id }, { auditId, type, sequence }, () => prisma.$transaction(async tx => {
     const a = await lockReportAudit(tx, auditId);
     if (a.status === "DRAFT") throw new Error("Abre la auditoría antes de generar documentos operativos.");
     if (sequence === null && type !== "AUDIT_CAPA_PLAN" && type !== "AUDIT_EXTERNAL_PLAN") throw new Error("El informe se genera desde una versión formal concreta.");
@@ -37,7 +43,8 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
     const document = await tx.generatedDocument.create({ data: { qmsRecordId: a.qmsRecordId, recordVersionId: version?.id, documentType: type, templateVersionId: template.id, fileData: new Uint8Array(output), fileName, mimeType: xlsx ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document", checksum: digest(output), generatedByText: actor, metadata: json({ source: "GENERATED", version: sequence, templateChecksum: template.checksum, currentState: sequence === null }) } });
     await auditReportEvent(tx, a.qmsRecordId, actor, "audit.document.generated", null, { id: document.id, fileName, version: sequence, templateVersionId: template.id }, "Generación desde snapshot formal / estado actual indicado");
     return document;
-  }, { timeout: 20000 });
+  }, { timeout: 20000 }));
+  return prisma.generatedDocument.findUniqueOrThrow({ where: { id } });
 }
 export async function registerAuditAttachment(auditId: string, file: File, metadata: { type: "AUDIT_RECEIVED" | "AUDIT_RESPONSE" | "AUDIT_EVIDENCE"; reference: string; date: string; externalVersion: string; observations: string; actor: string; documentName: string }) {
   if (!metadata.actor.trim() || !metadata.documentName.trim()) throw new Error("Indica tipo/nombre documental y responsable.");

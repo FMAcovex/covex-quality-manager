@@ -11,9 +11,9 @@ DO $$
 DECLARE object_name TEXT; function_id regprocedure;
 BEGIN
   FOR object_name IN SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN (
-    'AuditPolicyRequirement','AuditAdministrationRoot','AuditEventAdditionalTarget','AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditCaptureTablePolicy','AuditCaptureFieldPolicy','AuditOperationEvidence','AuditCommandResult','SignedDocumentCustody','AuditTechnicalContext','AuditTechnicalEvent') LOOP
+    'AuditPolicyRequirement','AuditAdministrationRoot','AuditEventAdditionalTarget','AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditCaptureTablePolicy','AuditCaptureFieldPolicy','AuditOperationEvidence','AuditCommandResult','SignedDocumentCustody','AuditTechnicalContext','AuditTechnicalEvent','AuditRootMaturity','AuditOperationAssessment') LOOP
     EXECUTE format('REVOKE ALL ON public.%I FROM covex_app',object_name);
-    IF object_name NOT IN ('AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditTechnicalContext') THEN EXECUTE format('GRANT SELECT ON public.%I TO covex_app',object_name); END IF;
+    IF object_name NOT IN ('AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditTechnicalContext','AuditRootMaturity') THEN EXECUTE format('GRANT SELECT ON public.%I TO covex_app',object_name); END IF;
   END LOOP;
   FOR function_id IN SELECT p.oid::regprocedure FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname LIKE 'covex_b2_%' LOOP
     EXECUTE format('REVOKE ALL ON FUNCTION %s FROM covex_app',function_id);

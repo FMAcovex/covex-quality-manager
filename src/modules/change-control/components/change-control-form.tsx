@@ -497,6 +497,7 @@ export function ChangeControlForm({
         </div>
       </section>
 
+      {mode === "create" ? <section className="form-section"><div className="form-grid"><TextArea label="Motivo de la actuación, cuando se solicite" name="changeReason" /></div></section> : null}
       <div className="form-footer">
         <Link className="button" href={cancelHref ?? (changeId ? `/changes/${changeId}` : "/changes")}>Cancelar</Link>
         <button className="button primary" type="submit" disabled={pending}>

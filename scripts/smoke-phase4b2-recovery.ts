@@ -139,6 +139,7 @@ async function main() {
       custody: await source.signedDocumentCustody.findMany({ orderBy: { id: "asc" }, include: { originalDocument: true } }),
       slots: await source.recordVersionDocument.findMany({ orderBy: { id: "asc" } }),
       technical: await source.auditTechnicalEvent.findMany({ orderBy: { id: "asc" } }),
+      assessments: await source.auditOperationAssessment.findMany({ orderBy: { operationId: "asc" } }),
     };
     assert.equal(auditGolden.operations.filter(op => op.schemaVersion === 2).length, 5);
     assert.equal(auditGolden.receipts.length, 5); assert.equal(auditGolden.custody.length, 3); assert.equal(auditGolden.technical.length, 1);
@@ -239,9 +240,13 @@ async function main() {
     assert.deepEqual(await restored.signedDocumentCustody.findMany({ orderBy: { id: "asc" }, include: { originalDocument: true } }), auditGolden.custody, "Exact originals, historical identity, custodian, supersession links and SHA survive offline recovery");
     assert.deepEqual(await restored.recordVersionDocument.findMany({ orderBy: { id: "asc" } }), auditGolden.slots);
     assert.deepEqual(await restored.auditTechnicalEvent.findMany({ orderBy: { id: "asc" } }), auditGolden.technical);
+    assert.deepEqual(await restored.auditOperationAssessment.findMany({ orderBy: { operationId: "asc" } }), auditGolden.assessments);
+    assert.equal(auditGolden.assessments.length, auditGolden.operations.filter(operation=>operation.origin==="QMS_SERVER").length);
     assert.equal(await restored.auditRuntimeContext.count(), 0);
     assert.equal(await restored.auditBusinessContext.count(), 0); assert.equal(await restored.auditMutationWitness.count(), 0); assert.equal(await restored.auditRootBinding.count(), 0);
     assert.equal(await restored.auditTechnicalContext.count(), 0);
+    assert.equal(await restored.auditRootMaturity.count(), 0);
+    await assert.rejects(restored.auditOperationAssessment.update({where:{operationId:auditGolden.assessments[0].operationId},data:{proposedCritical:false}}));
     const nextAuditRole = "covex4b3_afterrestore_" + id; auditRoles.push(nextAuditRole);
     auditRestoredApp = await auditApplicationFixture(restored, restoredUrl, nextAuditRole);
     await businessApplicationGrantsFixture(restored, nextAuditRole);

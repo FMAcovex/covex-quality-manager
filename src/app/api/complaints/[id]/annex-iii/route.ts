@@ -1,7 +1,7 @@
+import { storeWorkingDocument } from "@/lib/qms/working-document";
 import { currentIdentity } from "@/lib/auth/context";
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getComplaintDetail } from "@/modules/complaints/queries";
 import { generateComplaintAnnexIII } from "@/modules/complaints/documents/docx";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
@@ -37,7 +37,7 @@ async function GETAuthenticatedContent(request:Request,{params}:{params:Promise<
 
  try{
   const buffer=await generateComplaintAnnexIII(annexRecord);
-  await prisma.generatedDocument.create({data:{
+  await storeWorkingDocument({data:{
    qmsRecordId:r.qmsRecordId,
    recordVersionId:storedVersion?.id??null,
    documentType:"COMPLAINT_ANNEX_III",
@@ -48,7 +48,7 @@ async function GETAuthenticatedContent(request:Request,{params}:{params:Promise<
     templateVersion:annexRecord.annexIIITemplateVersion?.versionCode??r.annexIIITemplateVersion?.versionCode??"03",
     recordVersion:storedVersion?.sequenceNumber??null
    }
-  }});
+  }}, buffer);
   const suffix=storedVersion?`_${versionLabel(storedVersion.sequenceNumber)}`:"";
   return new Response(new Uint8Array(buffer),{headers:{
    "Content-Type":"application/vnd.openxmlformats-officedocument.wordprocessingml.document",

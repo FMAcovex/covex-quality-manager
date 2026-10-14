@@ -7,7 +7,7 @@ import { identityContext } from "../src/lib/auth/context";
 import { fixtureUsers } from "./auth-fixtures/constants";
 import { auditApplicationFixture, auditedSqlFixture } from "./audit-fixtures/database";
 import { assertAuditProtection } from "../src/lib/audit/protection";
-import contract from "../ops/backup/audit-contract-b2-staging.json";
+import contract from "../ops/backup/audit-contract-b2-critical.json";
 import type { BusinessAuditDescriptor, BusinessAuditCommand } from "../src/lib/audit/business-service";
 
 async function main() {
@@ -135,7 +135,9 @@ async function main() {
     assert.equal(new Set(relationEvents.map(e=>e.fieldPath)).size,relationEvents.length,"Each changed field is one event, not duplicated per root");
     await execute(edit,command(),tx=>tx.deviationImmediateAction.createMany({data:[0,1,2].map(i=>({deviationId:records.DEVIATION.id,description:"Synthetic immediate action "+i}))}));
     const childIds=(await owner.deviationImmediateAction.findMany({where:{deviationId:records.DEVIATION.id}})).map(r=>r.id);
-    const deletion=await execute(edit,command(),tx=>tx.deviationImmediateAction.deleteMany({where:{id:{in:childIds}}}));
+    await assert.rejects(execute(edit,command(),tx=>tx.deviationImmediateAction.deleteMany({where:{id:{in:childIds}}})),"Removing established operational children requires a motive");
+    assert.equal(await owner.deviationImmediateAction.count({where:{id:{in:childIds}}}),childIds.length);
+    const deletion=await execute(edit,command("Synthetic documented immediate action withdrawal"),tx=>tx.deviationImmediateAction.deleteMany({where:{id:{in:childIds}}}));
     for(const id of childIds) assert(await owner.auditEvent.count({where:{operationId:deletion.operationId!,entityType:"DeviationImmediateAction",entityId:id}})>0);
     // Post-commit retry: same key/content skips the callback and returns receipt.
     const retry=command(); let writes=0;
@@ -182,7 +184,7 @@ async function main() {
       cascadeId=created.id;
     });
     const cascadeChildren=await owner.deviationImmediateAction.findMany({where:{deviationId:cascadeId}});
-    const cascade=await execute(edit,command(),tx=>tx.deviation.delete({where:{id:cascadeId}}));
+    const cascade=await execute(edit,command("Synthetic documented cascade withdrawal"),tx=>tx.deviation.delete({where:{id:cascadeId}}));
     for(const child of cascadeChildren) assert(await owner.auditEvent.count({where:{operationId:cascade.operationId!,entityType:"DeviationImmediateAction",entityId:child.id}})>0,"Deleted parent binding preserves child ownership");
     // Concurrent writers serialize on the business row/cursor; OLD values and
     // root sequences form a chain even though each command has a different key.

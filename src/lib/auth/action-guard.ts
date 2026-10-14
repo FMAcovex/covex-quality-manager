@@ -50,7 +50,10 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
   else {
     const id = entry.resourceArg >= 0 ? args[entry.resourceArg] : null;
     if (entry.dynamicCreate) permission = (name === "revisionAction" ? args[1] : id) ? "EDIT" : "CREATE";
-    if (name === "saveAuditChildAction" && args[1] === "followup") permission = "FOLLOWUP";
+    if (name === "saveAuditChildAction") {
+      if (typeof args[1] !== "string" || !["finding", "action", "followup"].includes(args[1])) throw new AccessError(403);
+      if (args[1] === "followup") permission = "FOLLOWUP";
+    }
     if (id && !unit) scope = await resourceScope(accessModule, String(id), entry.resourceKind);
     else if (form) { const dept = form.get("departmentId") ?? form.get("codingDepartmentId"); scope.departmentIds = dept ? [String(dept)] : []; }
   }

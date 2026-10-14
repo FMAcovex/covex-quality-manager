@@ -1,0 +1,2446 @@
+{
+  "tables": [
+    "AuditOperation",
+    "AuditAggregateCursor",
+    "AuditOperationTarget",
+    "AuditEvent",
+    "AuditRuntimeContext",
+    "AuditPilotRecord",
+    "AuditPolicyRequirement",
+    "AuditAdministrationRoot",
+    "AuditEventAdditionalTarget",
+    "AuditBusinessContext",
+    "AuditMutationWitness",
+    "AuditRootBinding",
+    "AuditCaptureTablePolicy",
+    "AuditCaptureFieldPolicy",
+    "AuditOperationEvidence",
+    "AuditCommandResult",
+    "SignedDocumentCustody",
+    "AuditTechnicalContext",
+    "AuditTechnicalEvent",
+    "AuditRootMaturity",
+    "AuditOperationAssessment"
+  ],
+  "functions": {
+    "covex_audit_value_valid": {
+      "sha256": "9a07d7b5dec1fe48b8c22343f7f4368c4f4397e5a1cba004b93bb2cba5e95018",
+      "definer": false
+    },
+    "covex_audit_immutable": {
+      "sha256": "34728c6c4e151e8e654881b65d6d4d032ed5d0c375ecbe57eee4254adc6eb05d",
+      "definer": false
+    },
+    "covex_audit_context": {
+      "sha256": "3e9318ebbd13babb50476b7d0c2f102827d97065e50e6afcadc47379d73ed525",
+      "definer": true
+    },
+    "covex_audit_stamp_operation": {
+      "sha256": "3c8ecfbbfb8759beb41944c6b5c53038e59a07cb921ebb4c3fc8d05d3472ab8e",
+      "definer": false
+    },
+    "covex_audit_stamp_event": {
+      "sha256": "8f9193ac9ccff6d950caf07450dddcf73483b43966e7f06653c6a82ab0921417",
+      "definer": true
+    },
+    "covex_audit_begin": {
+      "sha256": "b5041b7944c292ba4a5b3c45d6ed20625da7539781cac265c1d95e9f5b06bb3d",
+      "definer": true
+    },
+    "covex_audit_guard_pilot": {
+      "sha256": "9a1e0c14fad00d6f825f1a67695ffcabbc6e36c403b7b647f9c3f644d10d4a7b",
+      "definer": true
+    },
+    "covex_audit_capture_pilot": {
+      "sha256": "3944bd2ab92b1a39e6a85853cce89a0f3e431b520298dc153266480f4feaed6a",
+      "definer": true
+    },
+    "covex_audit_require_events": {
+      "sha256": "cdb2e5e67e4bb8cd84c79645baa4ed9bfa46a0007de6726fe10ef8df268df64a",
+      "definer": true
+    },
+    "covex_b2_require_policy": {
+      "sha256": "8cc34e9b291aad0fa40c45592de25ec125d130f350bb54db45ace14d51d1473a",
+      "definer": true
+    },
+    "covex_b2_required_guard": {
+      "sha256": "23d50aca08227d7d0d4342f2500ac1411062070195ae2236f7a7d78b9359554e",
+      "definer": true
+    },
+    "covex_b2_required_truncate": {
+      "sha256": "1dbf7b5db4e2684570d8d3a518d6962b5c7a7da47bc09a85baae11a93db806cf",
+      "definer": true
+    },
+    "covex_b2_entity_key": {
+      "sha256": "08e323d053725af43bbe9c9b5807f3f5b0a60fb524d948ca1451dd55e2e1e3ab",
+      "definer": true
+    },
+    "covex_b2_roots": {
+      "sha256": "5dee692c2a35b8680a9759be47e6956c54bd5c4e760f90cf9273dd715d05b4d6",
+      "definer": true
+    },
+    "covex_b2_typed": {
+      "sha256": "7c73ec24034c5be15ee46fce249e42cd41e490f24778a61b5db0513a4aa1ccfc",
+      "definer": false
+    },
+    "covex_b2_changes": {
+      "sha256": "3b6c5c1a0f69eaf6e3e7a26178348638e82e078af2679aec7f87342b411365cc",
+      "definer": true
+    },
+    "covex_b2_permission": {
+      "sha256": "fc3b3f1b066927a28e0f571d33d42012a631513ac97b11f58d9216e339095f01",
+      "definer": true
+    },
+    "covex_b2_authorize_root": {
+      "sha256": "e97e2372fd06bed101560498c858aa36b8c8cc3c3b82c9466e7d974622b53ff6",
+      "definer": true
+    },
+    "covex_b2_begin": {
+      "sha256": "d2018de6f3596535910a40906923ba07652697bd52f6720a90923be04dea8d2e",
+      "definer": true
+    },
+    "covex_b2_before": {
+      "sha256": "e3cbdca2c21b740a1d1bbd35831587168ef421a72ae95cd23abeff85534a3381",
+      "definer": true
+    },
+    "covex_b2_ensure_operation": {
+      "sha256": "615e8483ad136c178b7fc86c3a64114f5c92a6a3d34604913a5a1a74f7dd718b",
+      "definer": true
+    },
+    "covex_b2_capture": {
+      "sha256": "d4122a789c850a18af6b59bca506946993775e8edcc3d07922b18991155ca5ca",
+      "definer": true
+    },
+    "covex_b2_witness": {
+      "sha256": "8a14afcd6399df174acb6df50ac3ef3720c08103e894acb9c522c1758c0d5104",
+      "definer": true
+    },
+    "covex_b2_finish": {
+      "sha256": "ce90979b428e82fa1e63d3af5f54e41fc48242b3cb5c604266e33f933d3abb46",
+      "definer": true
+    },
+    "covex_b2_link_target": {
+      "sha256": "76372d749e98b1a6d83c31b01d28f3f0a42b2c8b1db811c887811ca975d3a1e2",
+      "definer": true
+    },
+    "covex_b2_evidence_guard": {
+      "sha256": "af1b79675293d3b0dde50a18c468b816db1161ef5e66d75f4520e0d415c2ae86",
+      "definer": true
+    },
+    "covex_b2_check_claims": {
+      "sha256": "02a114cba4779abdbd4760cced3072e96af1ba3d245d10ab82070066e5def355",
+      "definer": true
+    },
+    "covex_b2_command_outcome": {
+      "sha256": "95e7dffae38c54e13548b651e181a3633459c1745777846ea66dcad4de80a83f",
+      "definer": true
+    },
+    "covex_b2_retain_signed_original": {
+      "sha256": "0f66d1342c6e33fd7180f263813fd8fbaf606162dd26e45fd5aaa26d02d5bc45",
+      "definer": true
+    },
+    "covex_b2_signed_slot_guard": {
+      "sha256": "08c5ab78aa9261ff2a4f7b438aafdb174bab82f68ae445551b6334ce5391bbf1",
+      "definer": true
+    },
+    "covex_b2_signed_original_immutable": {
+      "sha256": "44a3ef9163df494e5c102745eaed2ed04bba49e70fe4c2045cad65c45ef8c689",
+      "definer": true
+    },
+    "covex_b2_staging_mutation": {
+      "sha256": "63d1eb10332ee0ad2349ac5e0e1dc06f120a08f97a62bdba1ce43cab5b154a53",
+      "definer": true
+    },
+    "covex_b2_technical_event_guard": {
+      "sha256": "a87a8ce9d2eb509440bd1cdf936e5705207e8e4768c091d3717be7a7ade1f7e2",
+      "definer": true
+    },
+    "covex_b2_technical_context_complete": {
+      "sha256": "66aecc77dcb861b94b8bbcf4cf8f21c5f454f6c47c9e9addcc7c41fb481494d6",
+      "definer": true
+    },
+    "covex_b2_expire_staging": {
+      "sha256": "04ff20033c31ceff8dcf64c0e810265dca859eef6f5471ccd9cb012d69a3844d",
+      "definer": true
+    },
+    "covex_b2_observe_maturity": {
+      "sha256": "fcd05d8ee663ee62dc91a5e649b143d4fd0e4b07265c11d5f6a0baadd601b4ac",
+      "definer": true
+    },
+    "covex_b2_critical_mutation": {
+      "sha256": "114a2e36fbda0496e908b733edc656185d39fac93634555d344c3156b718b3b1",
+      "definer": true
+    },
+    "covex_b2_child_signature": {
+      "sha256": "ddba17646002bf462a5f1a64a26977f88f5405a6aee3c16dd88d86fcb42f0715",
+      "definer": false
+    },
+    "covex_b2_assess_critical": {
+      "sha256": "bfcd3efde89bb36927b6caa9151a5e27a44cb6b0bf58bf0c13c82496f9cdd244",
+      "definer": true
+    },
+    "covex_b2_assessment_guard": {
+      "sha256": "e46e6dc8f3ce7cd688990049c56c58cc085e880cd6284892655c68eda720837c",
+      "definer": true
+    },
+    "covex_b2_frozen_version_guard": {
+      "sha256": "079dcaffe424afc543245da0b5316a7e482c35993fcfa9e20e02fd4a36a6f03d",
+      "definer": true
+    },
+    "covex_b2_original_document_guard": {
+      "sha256": "3e19b51240b4b6b23c610ca577a46387efb32fc669cf01bdd0e5b3c0fdbbe0b9",
+      "definer": true
+    }
+  },
+  "triggers": [
+    {
+      "name": "audit_operation_stamp",
+      "table": "AuditOperation",
+      "function": "covex_audit_stamp_operation",
+      "type": 7,
+      "deferred": false
+    },
+    {
+      "name": "audit_event_stamp",
+      "table": "AuditEvent",
+      "function": "covex_audit_stamp_event",
+      "type": 7,
+      "deferred": false
+    },
+    {
+      "name": "audit_pilot_guard",
+      "table": "AuditPilotRecord",
+      "function": "covex_audit_guard_pilot",
+      "type": 23,
+      "deferred": false
+    },
+    {
+      "name": "audit_pilot_capture",
+      "table": "AuditPilotRecord",
+      "function": "covex_audit_capture_pilot",
+      "type": 17,
+      "deferred": false
+    },
+    {
+      "name": "audit_operation_coverage",
+      "table": "AuditOperation",
+      "function": "covex_audit_require_events",
+      "type": 5,
+      "deferred": true
+    },
+    {
+      "name": "audit_operation_immutable",
+      "table": "AuditOperation",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_operation_no_truncate",
+      "table": "AuditOperation",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_event_immutable",
+      "table": "AuditEvent",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_event_no_truncate",
+      "table": "AuditEvent",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_target_immutable",
+      "table": "AuditOperationTarget",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_target_no_truncate",
+      "table": "AuditOperationTarget",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_requirement_immutable",
+      "table": "AuditPolicyRequirement",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_requirement_no_truncate",
+      "table": "AuditPolicyRequirement",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AlertRule",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AlertRule",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AppParameter",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AppParameter",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "Audit",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "Audit",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditAnnualPlan",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditAnnualPlan",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditAnnualProgrammeVersion",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditAnnualProgrammeVersion",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditDepartment",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditDepartment",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditFinding",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditFinding",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditFindingAction",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditFindingAction",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditFindingRelation",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditFindingRelation",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditFollowup",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditFollowup",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditParticipant",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditParticipant",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditPlanChange",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditPlanChange",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuditPlanEntry",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuditPlanEntry",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuthAuthorizationChange",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuthAuthorizationChange",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuthRecordAssignment",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuthRecordAssignment",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuthRole",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuthRole",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuthRolePermission",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuthRolePermission",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuthUser",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuthUser",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuthUserDepartment",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuthUserDepartment",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "AuthUserRole",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "AuthUserRole",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "Capa",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "Capa",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "CapaActionFollowup",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "CapaActionFollowup",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "CapaFollowup",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "CapaFollowup",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "CapaPlannedAction",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "CapaPlannedAction",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ChangeControl",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ChangeControl",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ChangeControlFollowup",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ChangeControlFollowup",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ChangeControlTask",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ChangeControlTask",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ChangeControlTaskState",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ChangeControlTaskState",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ChangeHistory",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ChangeHistory",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "Complaint",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "Complaint",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ComplaintCapaPlan",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ComplaintCapaPlan",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ComplaintDerivedAction",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ComplaintDerivedAction",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ComplaintFollowup",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ComplaintFollowup",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ConfigurationChange",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ConfigurationChange",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledDecisionEvidence",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledDecisionEvidence",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledDocument",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledDocument",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledDocumentChange",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledDocumentChange",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledDocumentImportBatch",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledDocumentImportBatch",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledDocumentImportEvent",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledDocumentImportEvent",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledDocumentImportRow",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledDocumentImportRow",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledDocumentRevision",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledDocumentRevision",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledRevisionDecision",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledRevisionDecision",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledRevisionDocument",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledRevisionDocument",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ControlledRevisionLifecycle",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ControlledRevisionLifecycle",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "Department",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "Department",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "Deviation",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "Deviation",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "DeviationCapaPlan",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "DeviationCapaPlan",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "DeviationFollowup",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "DeviationFollowup",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "DeviationImmediateAction",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "DeviationImmediateAction",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "FormFieldConfig",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "FormFieldConfig",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "FormVersion",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "FormVersion",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "GeneratedDocument",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "GeneratedDocument",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "HistoricalImportBatch",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "HistoricalImportBatch",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "HistoricalImportRow",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "HistoricalImportRow",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "LookupCatalog",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "LookupCatalog",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "LookupCatalogItem",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "LookupCatalogItem",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "QmsRecord",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "QmsRecord",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "QmsRecordVersion",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "QmsRecordVersion",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "QmsRelation",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "QmsRelation",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "RecordVersionDocument",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "RecordVersionDocument",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ReturnFollowup",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ReturnFollowup",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ReturnProduct",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ReturnProduct",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ReturnRecord",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ReturnRecord",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ReviewMessage",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ReviewMessage",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "ReviewThread",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "ReviewThread",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "TemplateVersion",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "TemplateVersion",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_business_coverage",
+      "table": "AuditBusinessContext",
+      "function": "covex_b2_finish",
+      "type": 5,
+      "deferred": true
+    },
+    {
+      "name": "audit_b2_additional_target_guard",
+      "table": "AuditEventAdditionalTarget",
+      "function": "covex_b2_link_target",
+      "type": 7,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_evidence_guard",
+      "table": "AuditOperationEvidence",
+      "function": "covex_b2_evidence_guard",
+      "type": 7,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AlertRule",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AlertRule",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AppParameter",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AppParameter",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "Audit",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "Audit",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditAnnualPlan",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditAnnualPlan",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditAnnualProgrammeVersion",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditAnnualProgrammeVersion",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditDepartment",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditDepartment",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditFinding",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditFinding",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditFindingAction",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditFindingAction",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditFindingRelation",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditFindingRelation",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditFollowup",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditFollowup",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditParticipant",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditParticipant",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditPlanChange",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditPlanChange",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuditPlanEntry",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuditPlanEntry",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuthAuthorizationChange",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuthAuthorizationChange",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuthRecordAssignment",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuthRecordAssignment",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuthRole",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuthRole",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuthRolePermission",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuthRolePermission",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuthUser",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuthUser",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuthUserDepartment",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuthUserDepartment",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "AuthUserRole",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "AuthUserRole",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "Capa",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "Capa",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "CapaActionFollowup",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "CapaActionFollowup",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "CapaFollowup",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "CapaFollowup",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "CapaPlannedAction",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "CapaPlannedAction",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ChangeControl",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ChangeControl",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ChangeControlFollowup",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ChangeControlFollowup",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ChangeControlTask",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ChangeControlTask",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ChangeControlTaskState",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ChangeControlTaskState",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ChangeHistory",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ChangeHistory",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "Complaint",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "Complaint",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ComplaintCapaPlan",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ComplaintCapaPlan",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ComplaintDerivedAction",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ComplaintDerivedAction",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ComplaintFollowup",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ComplaintFollowup",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ConfigurationChange",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ConfigurationChange",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledDecisionEvidence",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledDecisionEvidence",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledDocument",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledDocument",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledDocumentChange",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledDocumentChange",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledDocumentImportBatch",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledDocumentImportBatch",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledDocumentImportEvent",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledDocumentImportEvent",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledDocumentImportRow",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledDocumentImportRow",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledDocumentRevision",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledDocumentRevision",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledRevisionDecision",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledRevisionDecision",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledRevisionDocument",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledRevisionDocument",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ControlledRevisionLifecycle",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ControlledRevisionLifecycle",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "Department",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "Department",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "Deviation",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "Deviation",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "DeviationCapaPlan",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "DeviationCapaPlan",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "DeviationFollowup",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "DeviationFollowup",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "DeviationImmediateAction",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "DeviationImmediateAction",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "FormFieldConfig",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "FormFieldConfig",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "FormVersion",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "FormVersion",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "GeneratedDocument",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "GeneratedDocument",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "HistoricalImportBatch",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "HistoricalImportBatch",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "HistoricalImportRow",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "HistoricalImportRow",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "LookupCatalog",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "LookupCatalog",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "LookupCatalogItem",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "LookupCatalogItem",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "QmsRecord",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "QmsRecord",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "QmsRecordVersion",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "QmsRecordVersion",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "QmsRelation",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "QmsRelation",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "RecordVersionDocument",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "RecordVersionDocument",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ReturnFollowup",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ReturnFollowup",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ReturnProduct",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ReturnProduct",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ReturnRecord",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ReturnRecord",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ReviewMessage",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ReviewMessage",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "ReviewThread",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "ReviewThread",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "TemplateVersion",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "TemplateVersion",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_immutable",
+      "table": "AuditAdministrationRoot",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_no_truncate",
+      "table": "AuditAdministrationRoot",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_immutable",
+      "table": "AuditEventAdditionalTarget",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_no_truncate",
+      "table": "AuditEventAdditionalTarget",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_immutable",
+      "table": "AuditCaptureTablePolicy",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_no_truncate",
+      "table": "AuditCaptureTablePolicy",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_immutable",
+      "table": "AuditCaptureFieldPolicy",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_no_truncate",
+      "table": "AuditCaptureFieldPolicy",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_immutable",
+      "table": "AuditOperationEvidence",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_no_truncate",
+      "table": "AuditOperationEvidence",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_immutable",
+      "table": "AuditCommandResult",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_no_truncate",
+      "table": "AuditCommandResult",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required",
+      "table": "SignedDocumentCustody",
+      "function": "covex_b2_required_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_required_truncate",
+      "table": "SignedDocumentCustody",
+      "function": "covex_b2_required_truncate",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_capture",
+      "table": "SignedDocumentCustody",
+      "function": "covex_b2_capture",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_witness",
+      "table": "SignedDocumentCustody",
+      "function": "covex_b2_witness",
+      "type": 29,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_immutable",
+      "table": "SignedDocumentCustody",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_no_truncate",
+      "table": "SignedDocumentCustody",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_signed_slot",
+      "table": "RecordVersionDocument",
+      "function": "covex_b2_signed_slot_guard",
+      "type": 31,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_signed_slot_no_truncate",
+      "table": "RecordVersionDocument",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_signed_original",
+      "table": "GeneratedDocument",
+      "function": "covex_b2_signed_original_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_technical_event_guard",
+      "table": "AuditTechnicalEvent",
+      "function": "covex_b2_technical_event_guard",
+      "type": 7,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_technical_event_immutable",
+      "table": "AuditTechnicalEvent",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_technical_event_no_truncate",
+      "table": "AuditTechnicalEvent",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_technical_context_complete",
+      "table": "AuditTechnicalContext",
+      "function": "covex_b2_technical_context_complete",
+      "type": 5,
+      "deferred": true
+    },
+    {
+      "name": "audit_b2_original_document",
+      "table": "GeneratedDocument",
+      "function": "covex_b2_original_document_guard",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_assessment_guard",
+      "table": "AuditOperationAssessment",
+      "function": "covex_b2_assessment_guard",
+      "type": 7,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_assessment_immutable",
+      "table": "AuditOperationAssessment",
+      "function": "covex_audit_immutable",
+      "type": 27,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_assessment_no_truncate",
+      "table": "AuditOperationAssessment",
+      "function": "covex_audit_immutable",
+      "type": 34,
+      "deferred": false
+    },
+    {
+      "name": "audit_b2_frozen_version",
+      "table": "QmsRecordVersion",
+      "function": "covex_b2_frozen_version_guard",
+      "type": 27,
+      "deferred": false
+    }
+  ],
+  "contractVersion": "B2_CRITICAL_INTEGRITY",
+  "guardTables": [
+    "AlertRule",
+    "AppParameter",
+    "Audit",
+    "AuditAnnualPlan",
+    "AuditAnnualProgrammeVersion",
+    "AuditDepartment",
+    "AuditFinding",
+    "AuditFindingAction",
+    "AuditFindingRelation",
+    "AuditFollowup",
+    "AuditParticipant",
+    "AuditPlanChange",
+    "AuditPlanEntry",
+    "AuthAuthorizationChange",
+    "AuthRecordAssignment",
+    "AuthRole",
+    "AuthRolePermission",
+    "AuthUser",
+    "AuthUserDepartment",
+    "AuthUserRole",
+    "Capa",
+    "CapaActionFollowup",
+    "CapaFollowup",
+    "CapaPlannedAction",
+    "ChangeControl",
+    "ChangeControlFollowup",
+    "ChangeControlTask",
+    "ChangeControlTaskState",
+    "ChangeHistory",
+    "Complaint",
+    "ComplaintCapaPlan",
+    "ComplaintDerivedAction",
+    "ComplaintFollowup",
+    "ConfigurationChange",
+    "ControlledDecisionEvidence",
+    "ControlledDocument",
+    "ControlledDocumentChange",
+    "ControlledDocumentImportBatch",
+    "ControlledDocumentImportEvent",
+    "ControlledDocumentImportRow",
+    "ControlledDocumentRevision",
+    "ControlledRevisionDecision",
+    "ControlledRevisionDocument",
+    "ControlledRevisionLifecycle",
+    "Department",
+    "Deviation",
+    "DeviationCapaPlan",
+    "DeviationFollowup",
+    "DeviationImmediateAction",
+    "FormFieldConfig",
+    "FormVersion",
+    "GeneratedDocument",
+    "HistoricalImportBatch",
+    "HistoricalImportRow",
+    "LookupCatalog",
+    "LookupCatalogItem",
+    "QmsRecord",
+    "QmsRecordVersion",
+    "QmsRelation",
+    "RecordVersionDocument",
+    "ReturnFollowup",
+    "ReturnProduct",
+    "ReturnRecord",
+    "ReviewMessage",
+    "ReviewThread",
+    "TemplateVersion",
+    "SignedDocumentCustody"
+  ],
+  "privateTables": [
+    "AuditRuntimeContext",
+    "AuditBusinessContext",
+    "AuditMutationWitness",
+    "AuditRootBinding",
+    "AuditTechnicalContext",
+    "AuditRootMaturity"
+  ],
+  "capturePolicySha256": "544016d6ec5001aad2c4eda4959f5cfb5bbd2511c7f2fff814ab6e3801fff94c"
+}

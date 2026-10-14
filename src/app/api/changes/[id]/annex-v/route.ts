@@ -1,3 +1,4 @@
+import { storeWorkingDocument } from "@/lib/qms/working-document";
 import { currentIdentity } from "@/lib/auth/context";
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
@@ -64,7 +65,7 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
     }
 
     const buffer = await generateChangeAnnexV(annexRecord, sequenceNumber);
-    await prisma.generatedDocument.create({
+    await storeWorkingDocument({
       data: {
         qmsRecordId: record.qmsRecordId,
         recordVersionId: storedVersion.id,
@@ -77,7 +78,7 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
           followupVersion: sequenceNumber,
         },
       },
-    });
+    }, buffer);
     const filename = `Anexo_V_CC_${safe(record.qmsRecord.businessCode || id)}_${versionLabel(sequenceNumber)}.docx`;
     return new Response(new Uint8Array(buffer), {
       headers: {

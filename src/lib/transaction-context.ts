@@ -7,6 +7,13 @@ const shared = globalThis as typeof globalThis & { [key]?: AsyncLocalStorage<Pri
 const transactions = shared[key] ??= new AsyncLocalStorage<Prisma.TransactionClient>();
 const compositions = new AsyncLocalStorage<{ isolationLevel?: Prisma.TransactionIsolationLevel }>();
 
+/** Lets adapters distinguish the contextual proxy from an ordinary standalone
+ * client. The proxy deliberately still exposes `$transaction`, so property
+ * detection alone cannot identify an active composed transaction. */
+export function hasDatabaseTransaction() {
+  return Boolean(transactions.getStore());
+}
+
 export function contextualDatabase(db: PrismaClient): PrismaClient {
   return new Proxy(db, {
     get(target, property) {

@@ -1,7 +1,7 @@
+import { storeWorkingDocument } from "@/lib/qms/working-document";
 import { currentIdentity } from "@/lib/auth/context";
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getChangeControlDetail } from "@/modules/change-control/queries";
 import { generateChangeAnnexIV } from "@/modules/change-control/documents/annex-iv";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
@@ -53,7 +53,7 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
 
   try {
     const buffer = await generateChangeAnnexIV(annexRecord);
-    await prisma.generatedDocument.create({
+    await storeWorkingDocument({
       data: {
         qmsRecordId: record.qmsRecordId,
         recordVersionId: storedVersion?.id ?? null,
@@ -67,7 +67,7 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
           recordVersion: storedVersion?.sequenceNumber ?? null,
         },
       },
-    });
+    }, buffer);
     const suffix = storedVersion ? `_${versionLabel(storedVersion.sequenceNumber)}` : "";
     const filename = `Anexo_IV_CC_${safe(record.qmsRecord.businessCode || id)}${suffix}.docx`;
     return new Response(new Uint8Array(buffer), {

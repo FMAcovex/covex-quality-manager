@@ -5,6 +5,8 @@ import { currentIdentity, type AccessModule, type AccessPermission } from "../au
 import { auditPolicyState } from "./activation";
 import { canonicalAuditJson } from "./canonical-json";
 import { withBusinessAuditResult } from "./business-service";
+import { requiresAuditReason, persistenceFormError } from "../forms/persistence-error";
+import { preserveFormState, type PreservedFormState } from "../forms/preserved-state";
 
 // Trusted action semantics. Field-level SQL events retain the actual persisted
 // changes when one save spans several rows in the approved 63-operation matrix.
@@ -48,12 +50,13 @@ export async function actionCommand(name: string, args: unknown[]) {
 export async function actionAuditBoundary<T>(name: string, args: unknown[], module: AccessModule, permission: AccessPermission, execute: () => Promise<T>): Promise<T> {
   const context = currentIdentity();
   if (context?.unitTest && process.env.VITEST === "true" && process.env.APP_ENV === "test") return execute();
-  const operationCode = operations[name];
+  const operationCode = name === "saveAuditChildAction" ? args[1] === "followup" ? "AU04" : args[1] === "action" ? "AU03" : "AU02" : operations[name];
   if (!operationCode) return execute(); // Configuration has its own existing envelope.
   const state = await auditPolicyState(prisma);
   if (!state.required) return execute();
   const review = operationCode === "TR01";
-  const result = await withBusinessAuditResult({ operationCode, module, permission }, await actionCommand(name, args), async () => {
+  let result: T;
+  try { result = await withBusinessAuditResult({ operationCode, module, permission }, await actionCommand(name, args), async () => {
     const response = await execute();
     if (review && response && typeof response === "object" && "threads" in response) {
       // This is the mutable display query, not the committed command response.
@@ -63,7 +66,13 @@ export async function actionAuditBoundary<T>(name: string, args: unknown[], modu
       return receipt as T;
     }
     return response;
-  });
+  }); } catch (error) {
+    const form = args.find(arg=>arg instanceof FormData) as FormData|undefined;
+    if (!form || !requiresAuditReason(error)) throw error;
+    const previous = args.find(arg=>arg && typeof arg==="object" && !(arg instanceof FormData) && !Array.isArray(arg)) as PreservedFormState|undefined;
+    const state = persistenceFormError(error,"la operación");
+    return preserveFormState(previous??{},form,module==="AUDIT"?{error:state.error,fieldErrors:{changeReason:state.error}}:state) as T;
+  }
   if (review && result && typeof result === "object" && "success" in result && result.success && context?.resource?.id) {
     const { getReviewThreadsForDisplay } = await import("../qms/review/ui-queries");
     return { ...result, threads: await getReviewThreadsForDisplay(context.resource.id) } as T;

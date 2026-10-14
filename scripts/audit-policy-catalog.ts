@@ -3,6 +3,7 @@ import { basename } from "node:path";
 import { Prisma } from "@prisma/client";
 import { auditWriterInventory } from "./audit-writer-inventory";
 import { auditManifestJson } from "./audit-manifest-format";
+import { auditCapturePolicy } from "./audit-capture-policy";
 
 // Design catalogue and reconciliation, NOT an activated or approved GMP policy.
 const groups: Record<string, string[]> = {
@@ -21,7 +22,7 @@ const groups: Record<string, string[]> = {
   W13: ["src/lib/qms/review/service.ts"],
   W14: ["src/lib/qms/versioning.ts", "src/modules/complaints/version-service.ts", "src/modules/returns/snapshot-service.ts"],
   W15: ["src/lib/qms/signed-version-document.ts", "src/lib/qms/signed-custody-service.ts"],
-  W16: ["src/app/api/deviations/[id]/annex-iii/route.ts", "src/app/api/capa/[id]/annex-iii/route.ts", "src/app/api/changes/[id]/annex-iii/route.ts", "src/app/api/changes/[id]/annex-iv/route.ts", "src/app/api/changes/[id]/annex-v/route.ts", "src/app/api/complaints/[id]/annex-iii/route.ts", "src/app/api/complaints/[id]/annex-iv/route.ts", "src/modules/returns/documents/archive.ts", "src/modules/audits/documents/service.ts"],
+  W16: ["src/lib/qms/working-document.ts", "src/app/api/deviations/[id]/annex-iii/route.ts", "src/app/api/capa/[id]/annex-iii/route.ts", "src/app/api/changes/[id]/annex-iii/route.ts", "src/app/api/changes/[id]/annex-iv/route.ts", "src/app/api/changes/[id]/annex-v/route.ts", "src/app/api/complaints/[id]/annex-iii/route.ts", "src/app/api/complaints/[id]/annex-iv/route.ts", "src/modules/returns/documents/archive.ts", "src/modules/audits/documents/service.ts"],
   W17: ["src/modules/configuration/admin-actions.ts"],
   W18: ["src/lib/auth/administration.ts", "scripts/auth-provision.ts"],
   W19: ["src/lib/auth/oidc.ts", "src/lib/auth/session.ts", "src/app/api/reminders/manual/route.ts"],
@@ -40,9 +41,25 @@ const additional: Record<string,string[]> = {
   PN02: ["W09"], PN03: ["W09"], PN04: ["W09"], PN05: ["W10"], PN06: ["W11"], PN07: ["W11"], PN08: ["W10"],
   TR01: ["W13"], TR02: ["W17"], TR03: ["W17"], TR04: ["W17", "W21"], TR05: ["W18"], TR06: ["W19"], TR07: ["W20"], TR08: ["W22"], TR09: [],
 };
+const moduleEvidence = "scripts/audit-fixtures/operational-actions-capture.test.ts";
+function coverage(id:string, category:string) {
+  if (id === "PN07") return { coverage:"DEMONSTRATED_TECHNICAL_STREAM", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: private expiry lease, rollback and immutability"] };
+  if (id === "PN08") return { coverage:"JUSTIFIED_READ_ONLY_NO_BUSINESS_EVENT", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: historical original download authorization and checksum"] };
+  if (id === "TR06") return { coverage:"DEMONSTRATED_TECHNICAL_AUTH_STREAM", evidence:["scripts/smoke-phase4b3-b2-auth.ts: OIDC, session expiry/revocation and denied access"] };
+  if (id === "TR07") return { coverage:"JUSTIFIED_EXCLUSION_BLOCKED", evidence:[`${moduleEvidence}: historical imports and backfill blocked atomically pending controlled identity/provenance`] };
+  if (id === "TR08") return { coverage:"DEMONSTRATED_CONTROLLED_RECOVERY", evidence:["scripts/smoke-phase4b2-recovery.ts: protected backup/restore, replay, sequence and immutable journal"] };
+  if (id === "TR09") return { coverage:"DEFERRED_TO_AUTHORIZED_C", evidence:["docs/PHASE_4B3_A.md §7: review/export scope authorized for 4B3-C"] };
+  if (id.startsWith("PN")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "PN06" ? "scripts/audit-fixtures/pnt-import-capture.test.ts: original proposal/confirmation, rollback and concurrency" : "scripts/audit-fixtures/module-actions-capture.test.ts: original PNT master/document/lifecycle actions"] };
+  if (id === "TR01") return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: original Review append-only lifecycle"] };
+  if (["TR02","TR03","TR04"].includes(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/configuration-capture.test.ts: original configuration writers, activation reason and rollback"] };
+  if (id === "TR05") return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: admission and role-policy proposal with authorization evidence"] };
+  if (id.startsWith("AU")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "AU08" || id === "AU09" ? `${moduleEvidence}: annual plan/entry/approvers/immutable programme issuance` : id === "AU06" || id === "AU07" ? "scripts/audit-fixtures/audit-report-capture.test.ts: report issue, retained documents, rollback and closure" : `${moduleEvidence}: audit record/findings/actions/followups/relations and withdrawal`] };
+  if (/^(DV|CA|CC|RC|DE)/.test(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[`${moduleEvidence}: original operational create/edit/children/followup/closure/relations/documents`, "scripts/audit-fixtures/module-actions-capture.test.ts: signed custody, administrative state and rollback"] };
+  return { coverage:category === "BUSINESS_WRITE" ? "NOT_DEMONSTRATED" : "JUSTIFIED_SEPARATE_STREAM", evidence:[] };
+}
 export function auditPolicyCatalogue() {
-  const inventory = auditWriterInventory(), source = readFileSync("docs/PHASE_4B3_A.md", "utf8");
-  const prohibitedModels = new Set(["AuthSession", "AuthLoginAttempt", "AuditOperation", "AuditEvent", "AuditOperationTarget", "AuditRuntimeContext", "AuditAggregateCursor", "AuditPilotRecord", "AuditPolicyRequirement", "AuditAdministrationRoot", "AuditEventAdditionalTarget", "AuditBusinessContext", "AuditMutationWitness", "AuditRootBinding", "AuditCaptureTablePolicy", "AuditCaptureFieldPolicy", "AuditOperationEvidence", "AuditCommandResult", "AuditTechnicalContext", "AuditTechnicalEvent"]);
+  const inventory = auditWriterInventory(), source = readFileSync("docs/PHASE_4B3_A.md", "utf8"), capture = auditCapturePolicy();
+  const prohibitedModels = new Set(["AuthSession", "AuthLoginAttempt", "AuditOperation", "AuditEvent", "AuditOperationTarget", "AuditRuntimeContext", "AuditAggregateCursor", "AuditPilotRecord", "AuditPolicyRequirement", "AuditAdministrationRoot", "AuditEventAdditionalTarget", "AuditBusinessContext", "AuditMutationWitness", "AuditRootBinding", "AuditCaptureTablePolicy", "AuditCaptureFieldPolicy", "AuditOperationEvidence", "AuditCommandResult", "AuditTechnicalContext", "AuditTechnicalEvent", "AuditRootMaturity", "AuditOperationAssessment"]);
   const secretFields = new Set(["tokenHash", "csrfHash", "nonce", "verifier", "password", "secret", "accessToken", "refreshToken"]);
   const fieldCandidates = Object.fromEntries(Prisma.dmmf.datamodel.models.filter(model => !prohibitedModels.has(model.name)).map(model => [model.name, model.fields.filter(field => field.kind !== "object" && field.type !== "Bytes" && !secretFields.has(field.name)).map(field => ({ name: field.name, type: field.type }))]));
   const rows = source.split("\n").filter(line => /^\| (DV|CA|CC|RC|DE|AU|PN|TR)\d{2} /.test(line));
@@ -53,9 +70,12 @@ export function auditPolicyCatalogue() {
     const writers = inventory.writers.filter(writer => sourceFiles.includes(writer.file));
     const tables = [...new Set(writers.flatMap(writer => [writer.model, ...writer.nested.map(n => n.model)]))].sort();
     const category = id === "TR09" ? "DEFERRED_C" : id === "PN08" ? "READ_NO_BUSINESS_EVENT" : id === "TR06" || id === "PN07" ? "TECHNICAL_SEPARATE_STREAM" : id === "TR08" ? "CONTROLLED_MAINTENANCE_IT_DEPENDENCY" : "BUSINESS_WRITE";
+    const captured = capture.filter(policy=>tables.includes(policy.entityType));
     return { id, title: cells[0].slice(5), proposedEvents: cells[5], proposedCriticality: cells[6], testReferences: cells[7].split("/").map(test => test.trim()), category, writerGroups, sourceFiles,
       candidateWriterIndexes: writers.map(writer => inventory.writers.indexOf(writer)),
-      tables, auditedFields: [], sqlCapture: [], reasonRule: "D03_OPTION_B_OPERATION_LEVEL_NO_BLANKET_REASON", coverage: "NOT_DEMONSTRATED", evidence: [] };
+      tables, auditedFields: captured.flatMap(policy=>policy.fields.map(field=>`${policy.entityType}.${field.fieldPath}`)),
+      sqlCapture: captured.map(policy=>({entityType:policy.entityType,captureMode:policy.captureMode,fieldCount:policy.fields.length})),
+      reasonRule: "D03_OPTION_B_OPERATION_LEVEL_NO_BLANKET_REASON", ...coverage(id,category) };
   });
   return { schemaVersion: 1, policyVersion: "QMS_B2_DESIGN_V1", base: "70d6a1348a93a9dd51d9beb75a32e2014f375ed3", functionalDesignConfirmed: true, formalGmpAcceptance: "PENDING_QA_DT_IT", activation: "NOT_IMPLEMENTED_NOT_ACTIVATED", writerInventory: "writer-inventory.json", fieldCandidates, prohibitedModels: [...prohibitedModels], secretFields: [...secretFields], writerGroups: groups, operations };
 }

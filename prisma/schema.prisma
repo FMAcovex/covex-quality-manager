@@ -2270,6 +2270,7 @@ model AuthAuthorizationChange {
 
 // 4B3-B1 infrastructure. No production QMS capture policy is activated.
 model AuditOperation {
+  assessment AuditOperationAssessment?
   id String @id @db.Uuid
   actorUserId String @db.Uuid
   actorUser AuthUser @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
@@ -2391,6 +2392,7 @@ model AuditEventAdditionalTarget {
 
 // Private, transaction-local state. Never writable/readable by the runtime role.
 model AuditBusinessContext {
+  rootMaturity AuditRootMaturity[]
   transactionId BigInt @id
   backendPid Int
   databasePrincipal String
@@ -2416,6 +2418,7 @@ model AuditCommandResult {
 }
 
 model AuditMutationWitness {
+  requiresReason Boolean @default(false)
   id String @id @db.Uuid
   transactionId BigInt
   entityType String
@@ -2453,6 +2456,23 @@ model AuditCaptureFieldPolicy {
 
 // Typed references to existing evidence; snapshots are kept in their source.
 // SQL-only bounded technical cleanup. Application cannot read or write leases.
+model AuditRootMaturity {
+  transactionId BigInt
+  context AuditBusinessContext @relation(fields: [transactionId], references: [transactionId], onDelete: Restrict)
+  rootKey String
+  module String
+  isDraft Boolean
+  @@id([transactionId,rootKey])
+}
+model AuditOperationAssessment {
+  operationId String @id @db.Uuid
+  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  policyVersion String
+  proposedCritical Boolean
+  reasonRequired Boolean
+  assessedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  @@index([proposedCritical,operationId])
+}
 model AuditTechnicalContext {
   transactionId BigInt @id
   backendPid Int

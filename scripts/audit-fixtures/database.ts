@@ -1,6 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { randomBytes } from "node:crypto";
-import businessContract from "../../ops/backup/audit-contract-b2-staging.json";
+import businessContract from "../../ops/backup/audit-contract-b2-critical.json";
 
 // All callers create their own disposable database; never run against habitual data.
 export async function auditApplicationFixture(source: PrismaClient, url: URL, role: string, provisioner: PrismaClient = source, connection?: (url: URL) => void) {
@@ -11,7 +11,7 @@ export async function auditApplicationFixture(source: PrismaClient, url: URL, ro
   await source.$executeRawUnsafe(`GRANT USAGE ON SCHEMA public TO "${role}"`);
   await source.$executeRawUnsafe(`GRANT SELECT ON ALL TABLES IN SCHEMA public TO "${role}"`);
   await source.$executeRawUnsafe(`REVOKE ALL ON "AuditRuntimeContext" FROM "${role}"`);
-  const privateTables = await source.$queryRaw<{ name: string }[]>`SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN ('AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditTechnicalContext')`;
+  const privateTables = await source.$queryRaw<{ name: string }[]>`SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN ('AuditBusinessContext','AuditMutationWitness','AuditRootBinding','AuditTechnicalContext','AuditRootMaturity')`;
   for (const table of privateTables) await source.$executeRawUnsafe(`REVOKE ALL ON "${table.name}" FROM "${role}"`);
   await source.$executeRawUnsafe(`GRANT UPDATE(value) ON "AuditPilotRecord" TO "${role}"`);
   await source.$executeRawUnsafe(`GRANT INSERT ON "ChangeHistory" TO "${role}"`);
