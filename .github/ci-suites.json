@@ -46,7 +46,7 @@
       "hito10:smoke"
     ],
     "ui": [],
-    "security": ["phase4b1:smoke", "phase4b2:smoke", "phase4b3-b1:smoke", "phase4b3-b2:configuration:smoke", "phase4b3-b2:requirement:smoke", "phase4b3-b2:capture:smoke", "phase4b3-b2:auth:smoke", "phase4b3-c:smoke"]
+    "security": ["phase4b1:smoke", "phase4b2:smoke", "phase4b3-b1:smoke", "phase4b3-b2:configuration:smoke", "phase4b3-b2:requirement:smoke", "phase4b3-b2:capture:smoke", "phase4b3-b2:auth:smoke"]
   },
   "browser-qms": {
     "db": [],
@@ -57,7 +57,8 @@
       "phase3b2:ui:smoke",
       "ux-c3:ui:smoke",
       "review-r2c:ui:smoke",
-      "phase4b1:ui:smoke"
+      "phase4b1:ui:smoke",
+      "phase4b3-c:smoke"
     ]
   },
   "browser-audits": {
