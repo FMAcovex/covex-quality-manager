@@ -65,7 +65,7 @@ function aggregateWhere(filters:AuditTrailFilters):Prisma.AuditAggregateCursorWh
   if(!filters.module||filters.module!=="PNT") business.push({qmsRecordId:{not:null},qmsRecord:{is:{...(filters.module?{recordType:filters.module as QmsRecordType}:{}),...(filters.record?{OR:[{businessCode:{contains:filters.record,mode:"insensitive"}},{annulledBusinessCode:{contains:filters.record,mode:"insensitive"}},...(/^[0-9a-f-]{36}$/i.test(filters.record)?[{id:filters.record}]:[])]}: {})}}});
   return {OR:business};
 }
-function operationWhere(filters:AuditTrailFilters,rootKey?:string,cutoff?:{occurredAt:Date;id:string}):Prisma.AuditOperationWhereInput {
+function operationWhere(filters:AuditTrailFilters,rootKey?:string,cutoff?:{occurredAt:string;id:string}):Prisma.AuditOperationWhereInput {
   const root=rootKey?{rootKey}:{root:aggregateWhere(filters)};
   return {
     targets:{some:root},
@@ -86,6 +86,18 @@ function eventRootWhere(filters:AuditTrailFilters,rootKey?:string):Prisma.AuditE
 export async function auditTrailCutoff() {
   const [row]=await prisma.$queryRaw<{occurredAt:Date;id:string}[]>`SELECT "occurredAt",id FROM "AuditOperation" ORDER BY "occurredAt" DESC,id DESC LIMIT 1`;
   return row??null;
+}
+
+// Date loses PostgreSQL microseconds. Resolve the immutable operation's exact
+// timestamp, checking that the submitted millisecond timestamp identifies it.
+// Never round the upper bound: later operations in that millisecond stay out.
+async function exactCutoff(cutoff:{occurredAt:Date;id:string}) {
+  const [row]=await prisma.$queryRaw<{occurredAt:string;id:string}[]>(Prisma.sql`
+    SELECT to_char("occurredAt" AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS "occurredAt",id
+    FROM "AuditOperation"
+    WHERE id=${cutoff.id}::uuid AND date_trunc('milliseconds',"occurredAt")=${cutoff.occurredAt}::timestamptz`);
+  if(!row)throw new AccessError(403);
+  return row;
 }
 
 export async function queryAuditTrail(filters:AuditTrailFilters,{page=1,pageSize=20,rootKey}:{page?:number;pageSize?:number;rootKey?:string}={}) {
@@ -128,22 +140,24 @@ export async function legacyTrail(rootKey:string) {
 
 export async function exactAuditTrailSelection(filters:AuditTrailFilters,cutoff:{occurredAt:Date;id:string},limit=10000) {
   if(filters.sensitive&&!mayReadSensitive())throw new AccessError(403);
-  const operations=await prisma.auditOperation.findMany({where:operationWhere(filters,undefined,cutoff),orderBy:[{occurredAt:"asc"},{id:"asc"}],take:5001,select:{id:true,actorName:true,operation:true,reason:true,policyVersion:true,schemaVersion:true,occurredAt:true,assessment:{select:{proposedCritical:true}},targets:{where:{root:aggregateWhere(filters)},select:{rootKey:true,aggregateSequence:true}}}});
+  const boundary=await exactCutoff(cutoff);
+  const operations=await prisma.auditOperation.findMany({where:operationWhere(filters,undefined,boundary),orderBy:[{occurredAt:"asc"},{id:"asc"}],take:5001,select:{id:true,actorName:true,operation:true,reason:true,policyVersion:true,schemaVersion:true,occurredAt:true,assessment:{select:{proposedCritical:true}},targets:{where:{root:aggregateWhere(filters)},select:{rootKey:true,aggregateSequence:true}}}});
   if(operations.length>5000)throw new Error("El alcance supera 5.000 operaciones; acota los filtros.");
   const ids=operations.map(operation=>operation.id);
   const events=ids.length?await prisma.auditEvent.findMany({where:{operationId:{in:ids},...eventRootWhere(filters)},orderBy:[{capturedAt:"asc"},{operationId:"asc"},{eventOrdinal:"asc"}],take:limit+1,select:{id:true,operationId:true,entityType:true,entityId:true,fieldPath:true,oldValue:true,newValue:true,capturedAt:true,recordVersionId:true,generatedDocumentId:true,documentChecksum:true}}):[];
   if(events.length>limit)throw new Error(`El alcance supera ${limit.toLocaleString("es-ES")} eventos; acota los filtros.`);
   const used=new Set(events.map(event=>event.operationId));
-  return {operations:operations.filter(operation=>used.has(operation.id)),events};
+  return {operations:operations.filter(operation=>used.has(operation.id)),events,cutoff:boundary};
 }
 
 export async function exactAuditTrailOperationSelection(filters:AuditTrailFilters,cutoff:{occurredAt:Date;id:string},operationIds:string[]) {
   if(filters.sensitive&&!mayReadSensitive())throw new AccessError(403);
   const unique=[...new Set(operationIds)].sort();
   if(!unique.length||unique.length>500||unique.some(id=>!/^[0-9a-f-]{36}$/i.test(id)))throw new AccessError(403);
-  const operations=await prisma.auditOperation.findMany({where:{...operationWhere(filters,undefined,cutoff),id:{in:unique}},orderBy:[{occurredAt:"asc"},{id:"asc"}],select:{id:true}});
+  const boundary=await exactCutoff(cutoff);
+  const operations=await prisma.auditOperation.findMany({where:{...operationWhere(filters,undefined,boundary),id:{in:unique}},orderBy:[{occurredAt:"asc"},{id:"asc"}],select:{id:true}});
   if(operations.length!==unique.length)throw new AccessError(403);
   const events=await prisma.auditEvent.findMany({where:{operationId:{in:unique},...eventRootWhere(filters)},orderBy:[{operationId:"asc"},{eventOrdinal:"asc"}],select:{id:true,operationId:true}});
   if(!events.length||new Set(events.map(event=>event.operationId)).size!==unique.length)throw new AccessError(403);
-  return {operationIds:operations.map(operation=>operation.id),eventIds:events.map(event=>event.id)};
+  return {operationIds:operations.map(operation=>operation.id),eventIds:events.map(event=>event.id),cutoff:boundary};
 }
