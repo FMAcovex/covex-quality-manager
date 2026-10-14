@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 // Downloads/generators keep their existing dedicated binary readers and ownership checks.
 export const versionDocumentMetadata = {
   id: true, recordVersionId: true, kind: true, fileName: true, mimeType: true, fileSize: true,
-  checksum: true, uploadedByText: true, uploadedAt: true,
+  checksum: true, uploadedByText: true, uploadedAt: true, custodyId: true,
 } satisfies Prisma.RecordVersionDocumentSelect;
 export const generatedDocumentMetadata = {
   authenticatedUserId: true,
