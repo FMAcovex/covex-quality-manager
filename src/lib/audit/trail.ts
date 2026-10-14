@@ -3,6 +3,7 @@ import { Prisma, type QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { AccessError, currentIdentity, type AccessModule } from "@/lib/auth/context";
 import { assertPermission } from "@/lib/auth/policy";
+import { requireUser } from "@/lib/auth/session";
 
 export const auditTrailModules = ["DEVIATION","CAPA","CHANGE_CONTROL","COMPLAINT","RETURN","AUDIT","PNT"] as const;
 export type AuditTrailModule = typeof auditTrailModules[number];
@@ -49,13 +50,13 @@ export function parseAuditTrailFilters(input: Record<string,string|undefined>): 
   };
 }
 
-function principal() {
-  const user=currentIdentity()?.principal;
-  if(!user) throw new AccessError(401);
-  return user;
+async function principal() {
+  // Nested Server Components render after authorizedPage's AsyncLocalStorage
+  // callback returns. Resolve the validated session in that render context too.
+  return currentIdentity()?.principal??await requireUser();
 }
-function mayReadSensitive() {
-  try { assertPermission(principal(),"SYSTEM","AUDIT_TRAIL_SENSITIVE_READ"); return true; }
+async function mayReadSensitive() {
+  try { assertPermission(await principal(),"SYSTEM","AUDIT_TRAIL_SENSITIVE_READ"); return true; }
   catch(error){ if(error instanceof AccessError)return false; throw error; }
 }
 function aggregateWhere(filters:AuditTrailFilters):Prisma.AuditAggregateCursorWhereInput {
@@ -101,13 +102,13 @@ async function exactCutoff(cutoff:{occurredAt:Date;id:string}) {
 }
 
 export async function queryAuditTrail(filters:AuditTrailFilters,{page=1,pageSize=20,rootKey}:{page?:number;pageSize?:number;rootKey?:string}={}) {
-  const user=principal();
+  const user=await principal();
   if(rootKey?.startsWith("QMS_RECORD:")) {
     const record=await prisma.qmsRecord.findUnique({where:{id:rootKey.slice(11)},select:{recordType:true}});
     if(!record)throw new AccessError(403);assertPermission(user,record.recordType as AccessModule,"READ");
   } else if(rootKey?.startsWith("PNT:")) assertPermission(user,"PNT","READ");
   else assertPermission(user,"DEVIATION","READ");
-  if(filters.sensitive&&!mayReadSensitive())throw new AccessError(403);
+  if(filters.sensitive&&!await mayReadSensitive())throw new AccessError(403);
   page=Math.max(1,Math.floor(page));pageSize=Math.min(50,Math.max(1,Math.floor(pageSize)));
   const where=operationWhere(filters,rootKey);
   const [rows,total]=await Promise.all([
@@ -123,7 +124,7 @@ export async function queryAuditTrail(filters:AuditTrailFilters,{page=1,pageSize
 }
 
 export async function legacyTrail(rootKey:string) {
-  const user=principal();
+  const user=await principal();
   if(rootKey.startsWith("QMS_RECORD:")) {
     const id=rootKey.slice(11),record=await prisma.qmsRecord.findUnique({where:{id},select:{recordType:true,history:{where:{auditEvidence:{none:{}}},orderBy:[{changedAt:"desc"},{id:"desc"}],take:25,select:{id:true,changedAt:true,changedByText:true,fieldPath:true,oldValue:true,newValue:true,reason:true,source:true}},versions:{orderBy:{sequenceNumber:"desc"},take:25,select:{id:true,sequenceNumber:true,kind:true,reason:true,createdByText:true,source:true,frozenAt:true,createdAt:true}}}});
     if(!record)throw new AccessError(403);assertPermission(user,record.recordType as AccessModule,"READ");
@@ -139,7 +140,7 @@ export async function legacyTrail(rootKey:string) {
 }
 
 export async function exactAuditTrailSelection(filters:AuditTrailFilters,cutoff:{occurredAt:Date;id:string},limit=10000) {
-  if(filters.sensitive&&!mayReadSensitive())throw new AccessError(403);
+  if(filters.sensitive&&!await mayReadSensitive())throw new AccessError(403);
   const boundary=await exactCutoff(cutoff);
   const operations=await prisma.auditOperation.findMany({where:operationWhere(filters,undefined,boundary),orderBy:[{occurredAt:"asc"},{id:"asc"}],take:5001,select:{id:true,actorName:true,operation:true,reason:true,policyVersion:true,schemaVersion:true,occurredAt:true,assessment:{select:{proposedCritical:true}},targets:{where:{root:aggregateWhere(filters)},select:{rootKey:true,aggregateSequence:true}}}});
   if(operations.length>5000)throw new Error("El alcance supera 5.000 operaciones; acota los filtros.");
@@ -151,7 +152,7 @@ export async function exactAuditTrailSelection(filters:AuditTrailFilters,cutoff:
 }
 
 export async function exactAuditTrailOperationSelection(filters:AuditTrailFilters,cutoff:{occurredAt:Date;id:string},operationIds:string[]) {
-  if(filters.sensitive&&!mayReadSensitive())throw new AccessError(403);
+  if(filters.sensitive&&!await mayReadSensitive())throw new AccessError(403);
   const unique=[...new Set(operationIds)].sort();
   if(!unique.length||unique.length>500||unique.some(id=>!/^[0-9a-f-]{36}$/i.test(id)))throw new AccessError(403);
   const boundary=await exactCutoff(cutoff);

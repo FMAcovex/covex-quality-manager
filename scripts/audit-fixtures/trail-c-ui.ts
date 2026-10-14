@@ -13,6 +13,7 @@ async function main(){
   try{
     for(const fixture of fixtures){
       const response=await reader.goto(`${base}/${fixture.path}/${fixture.id}?tab=audit-trail`);assert(response?.ok(),fixture.module);
+      console.log("C browser record",fixture.module);
       await reader.locator(".audit-trail-operation").first().waitFor();
       assert.equal(await reader.locator('main form:has(input[name="_covexCsrf"])').count(),0,fixture.module+" read-only");
       assert(await reader.locator(".audit-trail-operation-meta").first().innerText().then(text=>text.includes(fixtureUsers.qa.name)));

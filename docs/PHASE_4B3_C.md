@@ -6,6 +6,10 @@ Rama única: `feature/phase4b3-b2-qms-audit-integration`, checkout existente. Ch
 
 Los siete expedientes conservan sus pantallas y ciclos funcionales y añaden la pestaña Audit Trail. La consulta agrupa operaciones únicas por transacción, muestra actor autenticado, UTC, correlación, secuencia, motivo, OLD/NEW tipado y referencias a versiones/documentos. El historial operativo legado y las versiones se consultan aparte; no se reconstruye identidad histórica ni se fabrican eventos retrospectivos.
 
+Los paneles Server Component anidados recuperan la sesión validada mediante la frontera de autenticación existente cuando ya no está disponible el contexto de identidad de la construcción de la página. Esto conserva los mismos permisos/ámbitos y evita el error de renderizado 401 demostrado por la prueba real de interfaz.
+
+La tarjeta de registro de revisión mantiene el flujo normal de página: se eliminó su posición sticky al comprobar que tapaba las casillas de selección en Chromium. Se conserva el diseño existente y la prueba exige interacción real, sin clicks forzados.
+
 La bandeja transversal `/audit-trail` tiene paginación en servidor y filtros por módulo, expediente, actor, fecha, operación, criticidad técnica, motivo y revisión. El stream ordinario QMS/PNT conserva consulta global para usuarios activos/admitidos. Administración/seguridad exige un permiso explícito separado. Los objetivos adicionales no duplican operaciones; los eventos se filtran por la raíz visible.
 
 `SYSTEM/ALL` reserva permisos independientes `AUDIT_TRAIL_REVIEW`, `AUDIT_TRAIL_EXPORT` y `AUDIT_TRAIL_SENSITIVE_READ`. La administración técnica no los obtiene automáticamente. Las pruebas QA los conceden únicamente en fixtures sintéticos; no se han asignado permisos corporativos ni aceptado una matriz real.
@@ -27,6 +31,8 @@ Backup selecciona el contrato C por el esquema instalado y falla de forma cerrad
 Se conserva la matriz63: TR09 figura como `DEMONSTRATED_CONTROLLED_REVIEW_EXPORT`, con fuentes, tablas y pruebas C. Las exclusiones/streams de B2 y la aceptación formal pendiente siguen intactos. Inventarios estáticos y contrato JSON se regeneran desde fuentes y se cotejan mediante pruebas, sin atribuirles por sí solos cobertura de SQL.
 
 La evidencia focalizada ya acredita permisos, corte exacto, replay/conflictos, manifest, inmutabilidad y detección de protección debilitada. La comprobación previa con timestamps `.123456`, `.123457`, `.123458` confirmó exclusión de la operación posterior dentro del mismo milisegundo. Los dos defectos ESLint de `trail.ts` se corrigen sin desactivar reglas.
+
+La prueba Chromium de C confirma las siete pestañas, consulta transversal, ausencia de opciones de revisión/exportación para consulta e IT, actor autenticado, interacción QA de revisión, filtro de revisadas, descarga CSV y denegación del stream sensible, sin errores de navegador.
 
 La entrega exige `pnpm quality` y los cinco grupos completos de `.github/ci-suites.json` sobre el SHA final, más el gate de cobertura del mismo SHA. Sus resultados exactos se comunican en la entrega; este documento no sustituye la evidencia ejecutada. El workflow remoto solo se dispara por PR y no hay PR de esta rama: la consolidación puede ejecutar localmente los runners y gate sin crear una PR. No se presenta una ejecución local como GitHub Actions verde.
 

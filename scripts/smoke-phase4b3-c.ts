@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { createWriteStream } from "node:fs";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { isolatedTestEnvironment } from "../src/lib/auth/config";
 import { fixtureUsers } from "./auth-fixtures/constants";
@@ -9,6 +10,7 @@ import { auditApplicationFixture, businessApplicationGrantsFixture, businessSqlF
 async function stop(child?:ChildProcess){if(child&&child.exitCode===null){child.kill("SIGTERM");await new Promise<void>(resolve=>{child.once("exit",resolve);setTimeout(()=>{child.kill("SIGKILL");resolve();},5000).unref();});}}
 async function main(){
   assert(isolatedTestEnvironment(),"Disposable synthetic environment required");
+  assert(!(process.argv.includes("--ui-only")&&process.argv.includes("--database-only")),"Choose one focused verification mode");
   const parent=new PrismaClient({log:[]}),url=new URL(process.env.DATABASE_URL!);
   assert(["127.0.0.1","localhost"].includes(url.hostname));
   const suffix=randomBytes(8).toString("hex"),name="covex_phase4b1_test_b2_capture_"+suffix,role="covex4b3_c_"+suffix;
@@ -47,18 +49,23 @@ async function main(){
       });
     }
     const env={...setupEnv,DATABASE_URL:appUrl!.href,B2_CAPTURE_INSPECTOR_URL:url.href,C_AUDIT_FIXTURES:JSON.stringify(fixtures)};
-    const test=spawnSync("pnpm",["exec","vitest","run","--config","scripts/audit-fixtures/vitest-capture.config.ts","scripts/audit-fixtures/trail-c.test.ts"],{env,encoding:"utf8",timeout:120000});
-    process.stdout.write(test.stdout);process.stderr.write(test.stderr);assert.equal(test.status,0,"C focused PostgreSQL verification failed");
+    if(!process.argv.includes("--ui-only")){
+      const test=spawnSync("pnpm",["exec","vitest","run","--config","scripts/audit-fixtures/vitest-capture.config.ts","scripts/audit-fixtures/trail-c.test.ts"],{env,encoding:"utf8",timeout:120000});
+      process.stdout.write(test.stdout);process.stderr.write(test.stderr);assert.equal(test.status,0,"C focused PostgreSQL verification failed");
+    }
     if(!process.argv.includes("--database-only")){
       for(const endpoint of [origin,issuer]){let occupied=false;try{await fetch(endpoint,{signal:AbortSignal.timeout(500)});occupied=true;}catch{}assert(!occupied,"Synthetic C port already occupied");}
       provider=spawn("node",["--import","tsx","scripts/auth-fixtures/provider.ts"],{env,stdio:"ignore"});
-      server=spawn("node",["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port","3010"],{env,stdio:"ignore"});
+      const serverLog="/tmp/covex-c-server-"+suffix+".log",log=createWriteStream(serverLog,{mode:0o600});
+      console.log("Synthetic C server log:",serverLog);
+      server=spawn("node",["node_modules/next/dist/bin/next","start","--hostname","127.0.0.1","--port","3010"],{env,stdio:["ignore","pipe","pipe"]});
+      server.stdout?.pipe(log);server.stderr?.pipe(log);server.once("exit",()=>log.end());
       let ready=false;
       for(let i=0;i<120;i++){assert(server.exitCode===null&&provider.exitCode===null);try{if((await fetch(origin+"/api/health")).ok&&(await fetch(issuer+"/.well-known/openid-configuration")).ok){ready=true;break;}}catch{}await new Promise(resolve=>setTimeout(resolve,250));}
       assert(ready,"C local readiness failed");
       const ui=spawnSync("node",["--import","tsx","scripts/audit-fixtures/trail-c-ui.ts"],{env,encoding:"utf8",timeout:180000});process.stdout.write(ui.stdout);process.stderr.write(ui.stderr);assert.equal(ui.status,0,"C seven-module UI verification failed");
     }
-    console.log("C verified: isolated PostgreSQL protection, permissions, exact scope, review/export receipts and integrity"+(process.argv.includes("--database-only")?"":"; authenticated seven-module browser consultation, review and export"));
+    console.log(process.argv.includes("--ui-only")?"C seven-module browser verification completed; database test suite omitted in this explicit diagnostic mode":"C verified: isolated PostgreSQL protection, permissions, exact scope, review/export receipts and integrity"+(process.argv.includes("--database-only")?"":"; authenticated seven-module browser consultation, review and export"));
   }finally{
     await stop(server);await stop(provider);await app?.$disconnect();await owner?.$disconnect();
     if(created){await parent.$queryRaw(Prisma.sql`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=${name} AND pid<>pg_backend_pid()`);await parent.$executeRawUnsafe(`DROP DATABASE "${name}"`);}
