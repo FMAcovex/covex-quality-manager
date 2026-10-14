@@ -188,13 +188,21 @@ async function main() {
     const cfg = { environment: "test", approval_reference: "SYNTHETIC-4B2", release_sha: command("git", ["rev-parse", "HEAD"]), assets_consistency: "immutable-release", external_reference_policy: "references-only-accepted", application_root: root, assets: [{ label: "templates", path: assetRoot }], backup_directory: join(storageRoot, "backups"), backup_storage: { mode: "test-directory-identity", root: storageRoot, device: storageInfo.dev, inode: storageInfo.ino, marker_sha256: sha256(marker) }, temporary_directory: join(root, "plain"), encryption_key: join(root, keys[0]), manifest_key: join(root, keys[1]), status_directory: join(root, "status"), approved_recovery_hosts: [base.hostname], source: { host: base.hostname, port: Number(base.port || 5432), database: sourceName, user: role, passfile, sslmode: "disable" }, recovery: { host: base.hostname, port: Number(base.port || 5432), database: "postgres", user: decodeURIComponent(base.username), passfile, sslmode: "disable" } };
     const configFile = join(root, "config.json"); writeFileSync(configFile, JSON.stringify(cfg), { mode: 0o600 });
     const args = (operation: string, ...extra: string[]) => ["ops/backup/backup.py", operation, "--config", configFile, ...extra];
-    function refused(extra: string[]) { const result = spawnSync("python3", extra, { env: pgEnv, encoding: "utf8", timeout: 120000 }); assert.notEqual(result.status, 0); assert.equal(JSON.parse(result.stdout.trim()).status, "failure"); }
+    function refused(extra: string[]) { const result = spawnSync("python3", extra, { env: pgEnv, encoding: "utf8", timeout: 120000 }); assert.notEqual(result.status, 0); const failure=JSON.parse(result.stdout.trim());assert.equal(failure.status, "failure");return failure; }
     await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" DISABLE TRIGGER audit_event_immutable');
     refused(args("backup"));
     await source.$executeRawUnsafe('ALTER TABLE "AuditEvent" ENABLE TRIGGER audit_event_immutable');
     await source.$executeRawUnsafe('ALTER TABLE "AuditTrailReview" DISABLE TRIGGER audit_c_review_immutable');
     refused(args("backup"));
     await source.$executeRawUnsafe('ALTER TABLE "AuditTrailReview" ENABLE TRIGGER audit_c_review_immutable');
+    // Simulate damaged storage only inside this disposable source. Re-enable the
+    // trigger before backup, so the byte/hash check (not weakened metadata) fails.
+    await source.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" DISABLE TRIGGER audit_c_export_immutable');
+    try{await source.auditTrailExport.update({where:{id:cExportId},data:{contentSha256:"0".repeat(64)}});}finally{await source.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" ENABLE TRIGGER audit_c_export_immutable');}
+    try{assert.equal(refused(args("backup")).reason,"document-checksum-mismatch");}finally{
+      await source.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" DISABLE TRIGGER audit_c_export_immutable');
+      try{await source.auditTrailExport.update({where:{id:cExportId},data:{contentSha256:sha256(cBytes)}});}finally{await source.$executeRawUnsafe('ALTER TABLE "AuditTrailExport" ENABLE TRIGGER audit_c_export_immutable');}
+    }
     // Private lease reads are allowed only to this read-only snapshot identity,
     // never to an application writer or a backup role with accidental DML.
     await source.$executeRawUnsafe(`GRANT SELECT ON "AuditBusinessContext" TO "${auditRole}"`);

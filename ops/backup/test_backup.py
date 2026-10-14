@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import io
 import tarfile
 import contextlib
@@ -20,6 +20,28 @@ import storage
 spec = importlib.util.spec_from_file_location("backup", Path(__file__).with_name("backup.py"))
 backup = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(backup)
+
+
+class AuditExportInventory(unittest.TestCase):
+    def inventory(self, checksum):
+        data = b"synthetic controlled audit export"
+        row = {"id": "synthetic", "fileData": "\\x" + data.hex(), "contentSha256": checksum}
+        process = MagicMock()
+        process.stdin = io.BytesIO()
+        process.stdout = io.BytesIO((json.dumps(row) + "\n").encode())
+        process.wait.return_value = 0
+        process.poll.return_value = 0
+        with patch.object(backup, "sql", side_effect=[b"AuditTrailExport\n", b"synthetic schema"]), patch.object(backup, "connection_env", return_value={}), patch.object(backup.subprocess, "Popen", return_value=process):
+            return backup.inventory({})
+
+    def test_valid_controlled_export_hash(self):
+        tables, files = self.inventory(hashlib.sha256(b"synthetic controlled audit export").hexdigest())
+        self.assertEqual(tables["tables"]["AuditTrailExport"]["rows"], 1)
+        self.assertEqual(files, [])
+
+    def test_corrupted_controlled_export_hash_refused(self):
+        with self.assertRaisesRegex(backup.Refused, "document-checksum-mismatch"):
+            self.inventory("0" * 64)
 
 
 class Safety(unittest.TestCase):

@@ -24,6 +24,8 @@ El contrato C añade cinco tablas y diez triggers de inmutabilidad/no-TRUNCATE a
 
 Backup selecciona el contrato C por el esquema instalado y falla de forma cerrada si una migración registrada ha perdido su tabla. La restauración conserva recibos, vínculos, manifest y bytes; restablece ACL seguros tras `--no-acl` y coteja protección antes de abrir acceso. El fixture de recuperación contrasta las cinco familias C, hashes, replay y rechazo de modificaciones después de restaurar, además de las pruebas históricas conservadas de 4B2. Continúan las comprobaciones obligatorias de identidad/montaje del almacenamiento. El exportador CSV no sustituye este backup.
 
+El inventario binario contrasta también `AuditTrailExport.contentSha256`; una prueba negativa demostró que la lógica anterior solo reconocía `checksum`/`sha256` y aceptaba una huella C discordante. Se incorporan pruebas positiva/negativa focalizadas y un caso PostgreSQL de corrupción sintética con triggers habilitados antes del backup.
+
 ## Evidencia y ejecución
 
 `phase4b3-c:smoke` crea y elimina su propia base, rol operativo y procesos loopback. Ejecuta las cuatro pruebas C conservadas más negativas de protección y reintento desde filtros de revisión; usa Chromium con usuarios sintéticos de consulta, QA e IT para recorrer los siete módulos, consulta transversal, revisión, filtros, descarga y denegación del stream sensible. `--database-only` permite focalizar el diagnóstico sin repetir regresiones de otros bloques.

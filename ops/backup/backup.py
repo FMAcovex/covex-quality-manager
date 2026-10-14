@@ -159,7 +159,7 @@ def inventory(connection, exported_snapshot=None):
                     data = row["fileData"]
                     require(isinstance(data, str) and data.startswith("\\x"), "binary-encoding-refused")
                     binary = bytes.fromhex(data[2:])
-                    stored = row.get("checksum") or row.get("sha256")
+                    stored = row.get("checksum") or row.get("sha256") or row.get("contentSha256")
                     require(not stored or hmac.compare_digest(stored, hashlib.sha256(binary).hexdigest()), "document-checksum-mismatch")
                     size = row.get("fileSize", row.get("sizeBytes"))
                     require(size is None or size == len(binary), "document-size-mismatch")
