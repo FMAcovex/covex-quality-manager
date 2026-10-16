@@ -1,0 +1,39 @@
+# DEMO LOCAL de COVEX Quality Manager (D-087). Datos ficticios; no usar con datos reales.
+# Arranque: docker compose -f compose.demo.yaml up --build
+# Guía: docs/DEMO_LOCAL.md
+name: covex-demo
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: covex_demo
+      POSTGRES_USER: covex
+      POSTGRES_PASSWORD: covex_demo
+    volumes:
+      - covex_demo_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U covex -d covex_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  app:
+    build:
+      context: .
+      dockerfile: ops/demo/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: demo
+      AUTH_PROVIDER: demo
+      AUTH_ORIGIN: http://localhost:3000
+      DATABASE_URL: postgresql://covex:covex_demo@postgres:5432/covex_demo
+      ALLOW_DEMO_DATA: "true"
+      DEFAULT_ACTOR_NAME: Demo local
+    # Solo accesible desde este ordenador, nunca desde la red.
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./plantillas:/plantillas:ro
+volumes:
+  covex_demo_pg:

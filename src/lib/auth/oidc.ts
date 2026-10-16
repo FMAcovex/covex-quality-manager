@@ -7,11 +7,12 @@ import { AccessError } from "./context";
 
 export async function providerConfiguration() {
   const config = authConfiguration();
+  if (config.demo) throw new AccessError(403, "La demo local no usa proveedor de identidad.");
   const provider = await oidc.discovery(config.issuer, config.clientId, config.secret, undefined, config.synthetic ? { execute: [oidc.allowInsecureRequests] } : undefined);
   oidc.enableNonRepudiationChecks(provider);
   return provider;
 }
-const cookieOptions = () => ({ httpOnly: true, secure: authConfiguration().secure, sameSite: "lax" as const, path: "/" });
+export const cookieOptions = () => ({ httpOnly: true, secure: authConfiguration().secure, sameSite: "lax" as const, path: "/" });
 export async function startLogin(request: Request) {
   const config = authConfiguration(), provider = await providerConfiguration();
   const flow = randomToken(), state = oidc.randomState(), nonce = oidc.randomNonce(), verifier = oidc.randomPKCECodeVerifier();

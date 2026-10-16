@@ -1347,6 +1347,14 @@
       "guard": "OIDC_CALLBACK"
     },
     {
+      "file": "src/app/auth/demo/route.ts",
+      "method": "POST",
+      "module": "SYSTEM",
+      "permission": "READ",
+      "public": true,
+      "guard": "LOCAL_DEMO_ONLY"
+    },
+    {
       "file": "src/app/auth/login/route.ts",
       "method": "GET",
       "module": "SYSTEM",

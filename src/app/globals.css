@@ -2657,3 +2657,7 @@ button[disabled] {
   .role-grants-table thead { display: none; }
   .role-grants-table th[scope="row"] { border-right: 0; border-bottom: 0; padding-bottom: 4px; }
 }
+.demo-profiles { display: grid; gap: 10px; margin-top: 14px; }
+.demo-profile { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.demo-profile .button { min-width: 250px; justify-content: center; }
+.demo-profile span { color: var(--muted); font-size: 13px; }
