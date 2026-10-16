@@ -689,3 +689,7 @@ El responsable del proyecto revisa los hallazgos del ciclo de vida descriptivo (
 
 Los puntos 1–4 no cambian código: el ciclo de vida declarado en los contratos ya los describe. Ninguno se presenta como control GMP validado.
 
+## D-086 — Editor de roles limitado a los permisos de cada módulo (2026-10-16)
+
+El responsable del proyecto aprueba que las políticas de rol solo admitan, para cada módulo, los permisos que declara su contrato (`permissionsForModule`, PR 4 del contrato de módulo). Usuarios y roles sigue reservado al rol técnico. El servidor rechaza cualquier otra combinación con un mensaje que nombra módulo y permiso. El cuadro de texto JSON se sustituye por una tabla con una fila por módulo, una casilla por permiso admitido y su ámbito (Todos / Asignados; los permisos que solo admiten Todos no ofrecen Asignados). Si un rol existente tiene permisos no admitidos, el editor los enumera y se retiran al guardar la nueva política, que, como hasta ahora, revoca las sesiones del rol y queda pendiente de aceptación QA/DT. No cambian los roles guardados ni los permisos efectivos hasta que se guarda una política.
+

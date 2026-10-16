@@ -2642,3 +2642,18 @@ button[disabled] {
   .qms-list-ux-b .status-strip > div,
   .qms-list-ux-b .summary-strip > div { padding: 11px; }
 }
+.role-grants { border: 0; padding: 0; margin: 0 0 12px; min-width: 0; }
+.role-grants legend { font-weight: 700; margin-bottom: 8px; }
+.role-grants-table { min-width: 0; width: 100%; }
+.role-grants-table td { white-space: normal; }
+.role-grants-table th[scope="row"] { white-space: nowrap; vertical-align: top; width: 1%; }
+.role-grant-list { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.role-grant { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.role-grant label { display: inline-flex; align-items: center; gap: 5px; }
+.role-grant select { width: auto; height: 28px; padding: 0 6px; font-size: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+.role-grants .form-errors p { margin: 0; }
+@media (max-width: 700px) {
+  .role-grants-table, .role-grants-table tbody, .role-grants-table tr, .role-grants-table th, .role-grants-table td { display: block; width: auto; }
+  .role-grants-table thead { display: none; }
+  .role-grants-table th[scope="row"] { border-right: 0; border-bottom: 0; padding-bottom: 4px; }
+}

@@ -145,7 +145,7 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
   - llamadas literales a `assertPermission` y `canPresent`.
 - El test exige que cada permiso comprobado esté declarado por su módulo, que los permisos específicos (`PNT_*`, `AUDIT_ISSUE_*`, `AUDIT_TRAIL_*`) solo pertenezcan a su módulo y que todo permiso de `permissions` tenga al menos un módulo. Se comprobó por mutación: quitar `GENERATE_DOCUMENT` de CAPA o `PNT_ACTIVATE` de PNT hace fallar el test.
 - El mapa de segmentos de ruta de `page-guard.ts` se deriva del `href` de cada contrato (`qmsModuleByPathSegment`).
-- **No cambia** la matriz de roles ni la validación del editor de roles, que sigue aceptando cualquier combinación módulo/permiso. Restringirla a `permissionsForModule` sería un cambio de comportamiento que requiere decisión propia.
+- **No cambia** la matriz de roles ni la validación del editor de roles, que sigue aceptando cualquier combinación módulo/permiso. Restringirla a `permissionsForModule` sería un cambio de comportamiento que requiere decisión propia. **Decidido después (D-086):** el editor de roles solo admite los permisos de cada módulo (`src/lib/auth/role-policy.ts`).
 
 ### 4.3 Implementado en PR 5 (2026-10-16)
 
