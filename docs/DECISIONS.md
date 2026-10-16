@@ -705,3 +705,14 @@ El responsable del proyecto aprueba una **demo local** para ver y probar la apli
 
 La demo no es un entorno validado ni de producción y no admite datos reales.
 
+## D-088 — Módulo OOS: ampliación del alcance y diseño (2026-10-16)
+
+El responsable del proyecto decide añadir un módulo de **resultados fuera de especificación (OOS)** según el PNT GC-10/014/04. Amplía D-072, que dejaba OOS/OOT como posibilidad fuera de V1. Diseño en [OOS_DESIGN.md](OOS_DESIGN.md). Decisiones cerradas:
+
+- la fuente es el PNT GC-10/014/04, vigente aunque el fichero diga «en redacción»; las plantillas de los anexos III y IV se toman del PNT, no de los anexos sueltos, y su encabezado correcto es 04;
+- código `OOS/API|MD/YYY/AAAA` con numeración independiente por área y año, asignada al abrir; los códigos históricos se conservan;
+- estados Borrador, Abierto y Cerrado, con la fase (I o II) como campo propio, y resultado Invalidado, Confirmado o No concluyente;
+- relaciones canónicas OOS → CAPA y OOS → Desviación;
+- solo OOS; OOT y resultados atípicos quedan fuera.
+
+Esta PR es documental. La implementación se hará en las PR OOS-1 a OOS-3, cada una con su aprobación de alcance, y quedan abiertas las decisiones de la sección 10 del diseño.

@@ -26,7 +26,7 @@ Evolucionar COVEX Quality Manager hacia QMS corporativo configurable, extensible
 
 Antes de añadir módulos, definir contratos versionados de: identidad de expediente y código visible; navegación/filtros/listado; permisos/operaciones; tipos de relación permitidos; documentos y su procedencia; versionado y eventos; tareas; KPI. Preferir composición/adaptadores a tablas universales que obliguen a PNT o Auditorías a usar estados ajenos. La incorporación de un módulo no debe requerir migración masiva de expedientes existentes. Diseño propuesto, pendiente de aprobación, en [MODULE_CONTRACT.md](MODULE_CONTRACT.md).
 
-Futuros dominios **no comprometidos para V1**: Proveedores/homologación, OOS/OOT, validación/cualificación, riesgos, formación, calibración/mantenimiento, PQR/APQR e inspecciones. Training Manager permanece independiente hasta una decisión específica de integración e identidad.
+Futuros dominios **no comprometidos para V1**: Proveedores/homologación, OOS/OOT (OOS aprobado en D-088, diseño en OOS_DESIGN.md), validación/cualificación, riesgos, formación, calibración/mantenimiento, PQR/APQR e inspecciones. Training Manager permanece independiente hasta una decisión específica de integración e identidad.
 
 ## Identidad, permisos y separación de funciones — diseño futuro
 
