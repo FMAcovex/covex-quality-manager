@@ -27,6 +27,27 @@ async function revisionData(tx: Prisma.TransactionClient, m: Awaited<ReturnType<
     }
     return { ...snapshot(m), revisionCode: v.revisionCode, revisionReason: nullable(v.revisionReason), status: newRevisionStatus(v.existingDocument, v.existingStatus), effectiveFrom: date(v.effectiveFrom), reviewDueAt: date(v.reviewDueAt), obsoletedAt: date(v.obsoletedAt), previousRevisionId: nullable(v.previousRevisionId), sourceReference: nullable(v.sourceReference), verificationStatus: (v.existingDocument ? "VERIFIED" : "UNVERIFIED") as "VERIFIED" | "UNVERIFIED" | "REVIEW_REQUIRED", verifiedByText: v.existingDocument ? v.actor : null, verifiedAt: v.existingDocument ? new Date() : null, consolidatedAt: v.existingDocument ? new Date() : null };
 }
+/**
+ * Registro histórico de una revisión vigente: la vigente anterior del mismo PNT
+ * pasa a Obsoleta desde la nueva fecha de vigencia (D-085), igual que en la
+ * activación y en el cambio manual. Una vigente posterior no se sustituye.
+ */
+async function supersedePriorInForce(tx: Prisma.TransactionClient, documentId: string, revisionId: string | undefined, v: RevisionInput) {
+    const prior = await tx.controlledDocumentRevision.findFirst({ where: { documentId, status: "IN_FORCE", ...(revisionId ? { NOT: { id: revisionId } } : {}) } });
+    if (!prior)
+        return;
+    if (prior.revisionCode >= v.revisionCode)
+        throw new Error(`La revisión ${prior.revisionCode} ya está vigente y es posterior; registra esta revisión histórica como obsoleta.`);
+    const lifecycle = await tx.controlledRevisionLifecycle.findUnique({ where: { revisionId: prior.id } }) ?? await tx.controlledRevisionLifecycle.create({
+        data: { documentId, revisionId: prior.id, legacyOrigin: true, effectiveFrom: prior.effectiveFrom, reviewDueAt: prior.reviewDueAt, obsoletedAt: prior.obsoletedAt },
+    });
+    const priorStart = (lifecycle.effectiveFrom ?? prior.effectiveFrom)?.toISOString().slice(0, 10);
+    if (priorStart && v.effectiveFrom < priorStart)
+        throw new Error("La nueva vigencia no puede comenzar antes que la revisión vigente anterior.");
+    await tx.controlledDocumentRevision.update({ where: { id: prior.id }, data: { status: "OBSOLETE" } });
+    await tx.controlledRevisionLifecycle.update({ where: { revisionId: prior.id }, data: { version: { increment: 1 }, obsoletedAt: date(v.effectiveFrom) } });
+    await history(tx, documentId, prior.id, "Obsoleta por registro histórico de revisión posterior", v.actor, `Sustituida por revisión ${v.revisionCode}. ${v.changeReason}`, { status: prior.status, revisionCode: prior.revisionCode }, { status: "OBSOLETE", revisionCode: prior.revisionCode, obsoletedAt: v.effectiveFrom });
+}
 export async function saveMaster(v: MasterInput, id?: string, db: PrismaClient = prisma) {
     return db.$transaction(async (tx) => {
         if (id)
@@ -82,6 +103,8 @@ export async function saveRevision(documentId: string, v: RevisionInput, id?: st
         if (old?.lifecycle && v.existingDocument)
             throw new Error("Una revisión con decisiones documentales no se convierte en registro histórico desde la edición.");
         const data = await revisionData(tx, m, v, id);
+        if (data.status === "IN_FORCE")
+            await supersedePriorInForce(tx, documentId, id, v);
         if (old?.lifecycle) {
             // Keep original verification attribution and every decision/evidence link.
             // An earlier favourable contrast cannot attest changed draft content.

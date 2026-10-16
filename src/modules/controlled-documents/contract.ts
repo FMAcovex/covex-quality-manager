@@ -46,7 +46,7 @@ export const pntModule: QmsModuleContract = {
     ],
     notes: [
       "Registrar o contrastar una función externa, verificar con discrepancias y rectificar una revisión obsoleta o anulada no cambian el estado.",
-      "Activar una revisión, o fijarla manualmente como vigente, pasa a Obsoleta la vigente anterior; la base de datos admite una sola vigente por documento.",
+      "Activar una revisión, fijarla manualmente como vigente o registrarla como vigente histórica (D-085) pasa a Obsoleta la vigente anterior; la base de datos admite una sola vigente por documento.",
       "Con el maestro sin registrar, el cambio manual solo admite Borrador. El registro histórico solo convierte borradores sin decisiones documentales.",
       "Estado del maestro: Borrador → Activo al registrarlo o al activar una revisión; ninguna operación lo anula hoy.",
     ],

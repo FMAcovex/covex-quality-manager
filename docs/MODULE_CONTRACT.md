@@ -158,7 +158,7 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
   - Se exportan `capaFollowupStatuses` y los mapeos de estado de las importaciones históricas de Desviaciones y CAPA.
 - `src/modules/lifecycle.test.ts` compara, para **todas** las combinaciones origen → destino, la declaración de cada operación con su regla. Se comprobó por mutación: cambiar una regla, la tabla de PNT o una declaración hace fallar el test. Solo la importación de PNT queda sin regla pura (estado literal en el importador, cubierto por su smoke PostgreSQL).
 - Se conserva también el orden de las comprobaciones: en Auditorías, la regla de Borrador sigue evaluándose después de la de formulario desactualizado (`auditClosureStatusError` y `auditReturnsToDraft` por separado), porque `audits-r3a:smoke` fija qué mensaje se muestra cuando fallan las dos.
-- Hallazgos del mapeo que la declaración **documenta tal cual**, sin cambiarlos (cualquier cambio requiere decisión propia):
+- Hallazgos del mapeo que la declaración **documenta tal cual**. **Decididos en D-085:** los cuatro siguientes se mantienen; la sucesión de vigentes en el registro histórico de PNT se corrige.
   - el servidor admite dar de alta directamente en Cerrada en Desviaciones, CAPA (también Cancelada), Controles de cambios, Reclamaciones y Devoluciones; Auditorías lo impide;
   - Cerrada → Abierta: CAPA, Controles de cambios y Devoluciones no crean versión de reapertura; Desviaciones y Reclamaciones solo si se guarda como nueva versión; Auditorías no reabre;
   - CAPA Cancelada → Abierta o Cerrada está admitido, y cancelar desde la ficha no exige motivo (el seguimiento sí, pero su formulario no está enlazado en la interfaz);
