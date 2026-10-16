@@ -5,6 +5,7 @@ import { parseCapaForm } from "../src/modules/capa/validation";
 import { parseChangeControlForm } from "../src/modules/change-control/validation";
 import { parseComplaintForm } from "../src/modules/complaints/validation";
 import { parseReturnForm } from "../src/modules/returns/validation";
+import { canRelate } from "../src/lib/qms/relation-rules";
 
 function emptyWith(name: string, value: string) {
   const form = new FormData();
@@ -144,11 +145,15 @@ async function assertSourceContracts() {
     }
   }
 
-  const relationRules = await readFile("src/lib/qms/relation-rules.ts", "utf8");
-  assert.ok(relationRules.includes("DEVIATION"));
-  assert.ok(relationRules.includes("COMPLAINT"));
-  assert.ok(relationRules.includes("CAPA"));
-  assert.ok(relationRules.includes("RETURN"));
+  // La matriz se deriva de los contratos de módulo (D-083): comprobar las
+  // relaciones operativas en lugar del texto de relation-rules.ts.
+  for (const [source, target] of [
+    ["DEVIATION", "CAPA"],
+    ["COMPLAINT", "CAPA"],
+    ["COMPLAINT", "RETURN"],
+  ] as const) {
+    assert.ok(canRelate(source, target, "GENERATES"), `${source} -> ${target} debe seguir permitida.`);
+  }
 
   const filterHelpers = await readFile("src/lib/qms/list-filters.ts", "utf8");
   assert.ok(filterHelpers.includes("queryList"));
