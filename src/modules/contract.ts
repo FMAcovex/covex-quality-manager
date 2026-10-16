@@ -1,5 +1,5 @@
 import type { QmsRecordType, QmsRelationType } from "@prisma/client";
-import type { AccessModule } from "@/lib/auth/context";
+import type { AccessModule, AccessPermission } from "@/lib/auth/context";
 import type { QmsRelationClient } from "@/lib/qms/relation-service";
 
 /**
@@ -21,6 +21,8 @@ export type QmsModuleContract = {
   labels: Readonly<{ singular: string; plural: string }>;
   href: string;
   indicatorsHref: string | null;
+  /** Permisos que el módulo admite; un test exige que cubran todos los que el código comprueba. */
+  permissions: readonly AccessPermission[];
   relations: Readonly<{ outgoing: readonly QmsRelationRule[] }>;
 };
 

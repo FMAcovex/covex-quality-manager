@@ -7,6 +7,19 @@ export const changeControlModule: QmsRecordModuleContract = {
   labels: { singular: "Control de Cambio", plural: "Controles de cambios" },
   href: "/changes",
   indicatorsHref: "/changes/indicators",
+  permissions: [
+    "READ",
+    "CREATE",
+    "EDIT",
+    "FOLLOWUP",
+    "REVIEW",
+    "CLOSE",
+    "ANNUL",
+    "DOWNLOAD",
+    "EXPORT",
+    "ATTACH_DOCUMENT",
+    "GENERATE_DOCUMENT",
+  ],
   // Sin relaciones operativas en V1 (D-018, D-047, D-083 MC-2).
   relations: { outgoing: [] },
 };
