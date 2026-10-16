@@ -39,20 +39,18 @@ Campos:
 - `notes` opcional;
 - `isActive`.
 
-Tipos conceptuales iniciales:
-- GENERATES;
-- RELATED_TO;
-- IMPLEMENTED_BY;
-- ASSOCIATED_WITH.
+Tipo de relación: `GENERATES`, único valor del enum `QmsRelationType`.
+Los tipos conceptuales iniciales `RELATED_TO`, `IMPLEMENTED_BY` y
+`ASSOCIATED_WITH` nunca se habilitaron y se retiraron del enum (D-083 MC-4,
+migración `20261016000200_retire_unused_relation_types`). Un tipo nuevo
+requiere decisión, regla en el contrato del módulo y migración propias.
 
 Regla operativa vigente de 10.8C3-B1: solo se crea `GENERATES` para
-Desviación → CAPA, Reclamación → CAPA y Reclamación → Devolución. Los demás
-valores del enum se conservan por compatibilidad del esquema, pero no están
-habilitados por la capa común de creación.
+Desviación → CAPA, Reclamación → CAPA y Reclamación → Devolución.
 
 Las relaciones direccionales se almacenan una sola vez en una dirección canónica. La interfaz deriva la etiqueta inversa cuando proceda. Ejemplo: si `Desviación GENERATES CAPA`, desde la CAPA se muestra `ORIGINATES_FROM Desviación` sin crear una segunda fila.
 
-Para relaciones simétricas como RELATED_TO, normalizar el orden de los UUID antes de guardar para impedir duplicados invertidos.
+Si en el futuro se aprueba un tipo de relación simétrica, normalizar el orden de los UUID antes de guardar para impedir duplicados invertidos.
 
 No duplicar la misma relación exacta accidentalmente. Definir unicidad para `sourceRecordId + targetRecordId + relationType`; si una relación fue desactivada, reactivar la existente en lugar de insertar un duplicado.
 
