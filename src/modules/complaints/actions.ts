@@ -29,6 +29,7 @@ import { complaintNewVersionErrors,complaintSaveMode,complaintVersionKind } from
 
 import type { FollowupActionState } from "@/components/basic-followup-form";
 import { complaintVersionSource, lockComplaintVersion, refreshComplaintRelationSnapshot } from "@/modules/complaints/version-service";
+import { keepsOperationalStatus } from "@/modules/lifecycle";
 
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
@@ -161,7 +162,7 @@ async function updateComplaintActionAuthenticatedContent(id:string,previous:Comp
  if(existing.status!=="DRAFT"&&(v.complaintType!==existing.complaintType||new Date(v.openedAt!).getUTCFullYear()!==existing.qmsRecord.year))return preserveFormState(previous,fd,{error:"El tipo y el año de apertura deben conservar la codificación operativa existente."});
  const requestedBusinessCode=v.businessCode;
  v.businessCode=existing.qmsRecord.businessCode??requestedBusinessCode;
- if(existing.status!=="DRAFT"&&v.status==="DRAFT"){
+ if(!keepsOperationalStatus(existing.status,v.status)){
   return preserveFormState(previous,fd,{error:"No se puede volver a borrador una reclamación ya operativa.",fieldErrors:["Una reclamación abierta o cerrada no puede volver al estado Borrador."]});
  }
  const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
@@ -172,7 +173,7 @@ async function updateComplaintActionAuthenticatedContent(id:string,previous:Comp
    await lockComplaintVersion(tx,existing.qmsRecordId);
    const before=await getSnapshot(tx,id);
    const versionKind=complaintVersionKind({saveMode,reopening:before.status==="CLOSED"&&v.status==="OPEN"});
-   if(before.status!=="DRAFT"&&v.status==="DRAFT")throw new Error("Una reclamación operativa no puede volver a Borrador.");
+   if(!keepsOperationalStatus(before.status,v.status))throw new Error("Una reclamación operativa no puede volver a Borrador.");
    if(saveMode==="CREATE_VERSION"&&before.status==="DRAFT")throw new Error("Abre la reclamación antes de crear una nueva versión.");
    if(before.status!=="DRAFT"&&(v.complaintType!==before.complaintType||new Date(v.openedAt!).getUTCFullYear()!==before.qmsRecord.year))throw new Error("El tipo y el año deben conservar la codificación existente.");
 

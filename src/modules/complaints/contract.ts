@@ -26,4 +26,17 @@ export const complaintModule: QmsRecordModuleContract = {
       { target: "RETURN", type: "GENERATES", label: "Reclamación → Devolución" },
     ],
   },
+  lifecycle: {
+    field: "Complaint.status",
+    states: ["DRAFT", "OPEN", "CLOSED"],
+    transitions: [
+      { operation: "save", label: "Alta y edición de la ficha", from: [null, "DRAFT"], to: ["DRAFT", "OPEN", "CLOSED"] },
+      { operation: "save", label: "Alta y edición de la ficha", from: ["OPEN", "CLOSED"], to: ["OPEN", "CLOSED"] },
+    ],
+    notes: [
+      "Pasar a Cerrada exige el permiso de cierre, fecha de cierre, conclusión y, si procede, la Parte II resuelta.",
+      "Cerrada → Abierta (reapertura) crea una versión de reapertura solo si se guarda como nueva versión.",
+      "La anulación del expediente (`QmsRecord`) no cambia este estado.",
+    ],
+  },
 };

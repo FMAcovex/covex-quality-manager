@@ -34,6 +34,7 @@ import {
   snapshotJson,
   startNextVersion,
 } from "@/lib/qms/versioning";
+import { keepsOperationalStatus } from "@/modules/lifecycle";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -304,7 +305,7 @@ async function updateDeviationActionAuthenticatedContent(
   const v = parsed.values;
   const requestedBusinessCode = v.businessCode;
   v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
-  if (existing.status !== "DRAFT" && v.status === "DRAFT") {
+  if (!keepsOperationalStatus(existing.status, v.status)) {
     return formError(
       previous,
       formData,

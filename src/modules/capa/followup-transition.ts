@@ -25,6 +25,9 @@ type ParseOptions = {
   hasExistingExecutionEvidence: boolean;
 };
 
+/** Estados que puede fijar un seguimiento de CAPA. */
+export const capaFollowupStatuses = ["OPEN", "CLOSED", "CANCELLED"] as const;
+
 function text(formData: FormData, name: string) {
   const value = formData.get(name);
   if (typeof value !== "string") return null;
@@ -79,7 +82,7 @@ export function parseCapaFollowupTransition(
 
   const status = enumValue(
     text(formData, "status"),
-    ["OPEN", "CLOSED", "CANCELLED"] as const,
+    capaFollowupStatuses,
     options.current.status,
   );
   const operationalClosedAt = submittedOrCurrent(

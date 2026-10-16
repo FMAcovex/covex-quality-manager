@@ -147,6 +147,24 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
 - El mapa de segmentos de ruta de `page-guard.ts` se deriva del `href` de cada contrato (`qmsModuleByPathSegment`).
 - **No cambia** la matriz de roles ni la validación del editor de roles, que sigue aceptando cualquier combinación módulo/permiso. Restringirla a `permissionsForModule` sería un cambio de comportamiento que requiere decisión propia.
 
+### 4.3 Implementado en PR 5 (2026-10-16)
+
+- Cada contrato declara `lifecycle`: el campo de estado principal, sus estados (los del enum Prisma, comprobado por test), las transiciones vigentes por operación y notas. Es **descriptivo**: documenta lo que el código admite hoy en servidor; no controla ni cambia ninguna transición.
+- Las comprobaciones de estado que las acciones hacían en línea pasan a funciones puras, con el mismo resultado y los mismos mensajes:
+  - `src/modules/lifecycle.ts`: `keepsOperationalStatus` (un expediente operativo no vuelve a Borrador; Desviaciones, CAPA, Controles de cambios, Reclamaciones y Devoluciones) y `acceptsFollowup` (seguimientos de CAPA y Controles de cambios);
+  - `src/modules/audits/lifecycle.ts`: `auditClosureStatusError`, `auditReturnsToDraft` (combinadas en `auditStatusChangeError`) y `auditAlreadyClosed`;
+  - `src/modules/change-control/lifecycle.ts`: `followupFinalStatus`;
+  - PNT: `revisionStatusAfter` (estado tras cada decisión) y `newRevisionStatus` (alta y registro histórico). La tabla de orígenes `assertTransition` y `validateManualChange` ya eran puras.
+  - Se exportan `capaFollowupStatuses` y los mapeos de estado de las importaciones históricas de Desviaciones y CAPA.
+- `src/modules/lifecycle.test.ts` compara, para **todas** las combinaciones origen → destino, la declaración de cada operación con su regla. Se comprobó por mutación: cambiar una regla, la tabla de PNT o una declaración hace fallar el test. Solo la importación de PNT queda sin regla pura (estado literal en el importador, cubierto por su smoke PostgreSQL).
+- Se conserva también el orden de las comprobaciones: en Auditorías, la regla de Borrador sigue evaluándose después de la de formulario desactualizado (`auditClosureStatusError` y `auditReturnsToDraft` por separado), porque `audits-r3a:smoke` fija qué mensaje se muestra cuando fallan las dos.
+- Hallazgos del mapeo que la declaración **documenta tal cual**, sin cambiarlos (cualquier cambio requiere decisión propia):
+  - el servidor admite dar de alta directamente en Cerrada en Desviaciones, CAPA (también Cancelada), Controles de cambios, Reclamaciones y Devoluciones; Auditorías lo impide;
+  - Cerrada → Abierta: CAPA, Controles de cambios y Devoluciones no crean versión de reapertura; Desviaciones y Reclamaciones solo si se guarda como nueva versión; Auditorías no reabre;
+  - CAPA Cancelada → Abierta o Cerrada está admitido, y cancelar desde la ficha no exige motivo (el seguimiento sí, pero su formulario no está enlazado en la interfaz);
+  - en servidor, Desviaciones, CAPA, Controles de cambios y Reclamaciones admiten editar un expediente anulado (ni la página de edición ni la acción lo comprueban); Devoluciones y Auditorías lo impiden.
+- **Corrección de seguridad incluida:** la comprobación de permiso de cierre del servidor solo miraba el campo `status`, y Reclamaciones envía el estado en `saveStatus`. Un usuario con permiso de edición sin permiso de cierre podía cerrar una reclamación con una petición directa. `action-guard.ts` comprueba ahora también `saveStatus`, con su test.
+
 ### 5.3 Ampliar una relación en el futuro
 
 Requiere una decisión en `DECISIONS.md` y una PR que añada una línea en el contrato del módulo de origen, su `guard` si procede y sus tests positivos y negativos. No requiere migración ni tocar el servicio común.
@@ -166,8 +184,8 @@ Cada paso es una PR independiente, sin cambio visible, con lint, tests, Prisma v
 | **2-bis (implementada)** | MC-2 y MC-4 etapa 1: retirar el formulario de alta de relaciones de Control de Cambios y los tipos sin uso del código de aplicación | Consulta de relaciones conservada; test de que la acción ya no existe en el inventario; regresión de Control de Cambios verde |
 | **3 (implementada)** | Menú, tarjetas del dashboard, etiquetas, `accessModules` y `auditTrailModules` derivados del registro; PNT registrado con `recordType: null` | Tests de equivalencia de listas; regresión UI Chromium sin diferencias visuales |
 | **4 (implementada)** | Permisos admitidos por módulo y comprobación cruzada con `operation-inventory.json` | Test de inventario ampliado; sin cambios en la matriz de roles |
-| **5** | Ciclo de vida **descriptivo**: estados y transiciones vigentes declarados, verificados contra el comportamiento actual por test, sin pasar aún a controlarlos | Test que recorre las transiciones reales y las compara con la declaración |
-| Posterior | MC-4 etapa 2: retirar tipos del enum Prisma con migración protegida | Migración falla si hay filas con esos tipos; fixtures y pruebas de audit trail adaptadas |
+| **5 (implementada)** | Ciclo de vida **descriptivo**: estados y transiciones vigentes declarados, verificados contra el comportamiento actual por test, sin pasar aún a controlarlos | Test que recorre las transiciones reales y las compara con la declaración |
+| **MC-4 etapa 2 (implementada)** | Retirar tipos del enum Prisma con migración protegida | Migración falla si hay filas con esos tipos; fixtures y pruebas de audit trail adaptadas |
 | Posterior | Documentos/plantillas, KPI, objetivos de Review; después, módulos nuevos sobre el contrato | Según decisión y alcance aprobados |
 
 **Reversión:** cada PR de migración mantiene la lista literal sustituida hasta que su test de equivalencia pasa en CI; revertir la PR restaura el estado anterior sin efecto en datos.

@@ -4,6 +4,8 @@ export const revisionLabels = { IMPORTED_PENDING: "Importada / pendiente de veri
 export const verificationLabels = { UNVERIFIED: "Sin verificar", VERIFIED: "Verificado documentalmente", REVIEW_REQUIRED: "Requiere contraste documental" };
 export const existingStatuses = ["IN_FORCE", "OBSOLETE", "ANNULLED"] as const;
 export type ExistingStatus = typeof existingStatuses[number];
+/** Estado inicial de una revisión dada de alta en la aplicación: Borrador, o el estado acreditado si es un registro histórico. */
+export function newRevisionStatus(existingDocument: boolean, existingStatus: ExistingStatus) { return existingDocument ? existingStatus : "DRAFT" as const; }
 export function normalizeBaseCode(value: string) { return value.trim().toUpperCase(); }
 export function validBaseCode(value: string) { return /^[A-Z]{2}-\d{2}\/\d{3}$/.test(value); }
 export function validateDepartmentForBaseCode(baseCode: string, departmentCode: string) {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { AuditValidationError } from "./service";
 import { reportInputSchema, reportDateFields, reportTextFields, issueReportSchema, closeAuditSchema } from "./report-validation";
 import { auditClosureChecklist, type ClosureContext } from "./closure-policy";
+import { auditAlreadyClosed } from "./lifecycle";
 
 type Tx = Prisma.TransactionClient;
 export const auditReportInclude = {
@@ -90,7 +91,7 @@ export async function closeAudit(id: string, raw: unknown) {
   const v = parse(closeAuditSchema, raw);
   return prisma.$transaction(async tx => {
     const a = await lockReportAudit(tx, id);
-    if (a.status === "CLOSED") throw new Error("La auditoría ya está cerrada.");
+    if (auditAlreadyClosed(a.status)) throw new Error("La auditoría ya está cerrada.");
     // Keep necessary CAPA status/efficacy and administrative state stable until
     // the QA decision commits, including concurrent edits in the CAPA module.
     const capaRecordIds = [...new Set(a.findings.filter(f => f.isActive).flatMap(f => f.relations.filter(r => r.isActive && r.qmsRelation.isActive && r.qmsRelation.targetRecord.capa).map(r => r.qmsRelation.targetRecord.id)))].sort();

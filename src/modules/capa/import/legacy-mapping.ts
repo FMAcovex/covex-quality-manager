@@ -42,7 +42,8 @@ function type(v:XlsxCellValue){
   const s=(str(v)??"").toLowerCase();
   return s.includes("prevent")||s==="ap"?"PREVENTIVE" as const:"CORRECTIVE" as const;
 }
-function status(v:XlsxCellValue){
+/** Estado de una fila histórica: Cancelada, Cerrada o, en otro caso, Abierta. */
+export function legacyCapaStatus(v:XlsxCellValue){
   const s=(str(v)??"").toLowerCase();
   if(s.includes("cancel"))return "CANCELLED" as const;
   if(s.includes("cerr"))return "CLOSED" as const;
@@ -99,7 +100,7 @@ export function mapHistoricalCapaRows(
       businessCode:code,originType:str(row.cells.F),normalizedOrigin:enriched?.normalizedOrigin??null,
       originCode:str(row.cells.G),description:str(row.cells.H),openedAt:date(row.cells.I),
       plannedAt:date(row.cells.J),operationalClosedAt:date(row.cells.K),effectiveClosedAt:date(row.cells.L),
-      status:status(row.cells.M),effectivenessStatus:efficacy(enriched?.efficacy??null),
+      status:legacyCapaStatus(row.cells.M),effectivenessStatus:efficacy(enriched?.efficacy??null),
       observations:str(row.cells.O),signedDocumentAvailable:bool(row.cells.N),
       followupSummary:null,followupSequence:null,followupDate:null,nextFollowupDate:null,
       issues:["HISTORICAL_LIST_ONLY","ROOT_CAUSE_NOT_IN_LIST"],raw:row.cells,
@@ -122,7 +123,7 @@ export function mapHistoricalCapaRows(
       businessCode:code,originType:str(row.cells.D),normalizedOrigin:enriched?.normalizedOrigin??null,
       originCode:str(row.cells.E),description:str(row.cells.F),openedAt:date(row.cells.G),
       plannedAt:date(row.cells.H),operationalClosedAt:date(row.cells.J),effectiveClosedAt:date(row.cells.N),
-      status:status(row.cells.I),effectivenessStatus:efficacy(row.cells.K),
+      status:legacyCapaStatus(row.cells.I),effectivenessStatus:efficacy(row.cells.K),
       observations:str(row.cells.O),signedDocumentAvailable:null,
       followupSummary:f.summary,followupSequence:f.sequence,followupDate:f.date,nextFollowupDate:date(row.cells.M),
       issues:["HISTORICAL_LIST_ONLY","ROOT_CAUSE_NOT_IN_LIST"],raw:row.cells,

@@ -31,6 +31,7 @@ import { lockReturn, returnSnapshotSource, refreshReturnSnapshot } from "./snaps
 import { contextFromExtraData,validReturnDate } from "./rules";
 import { isReturnDepartmentCode } from "@/modules/returns/departments";
 import { ensureInitialVersion,serializeReturnVersion,snapshotJson } from "@/lib/qms/versioning";
+import { keepsOperationalStatus } from "@/modules/lifecycle";
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
 
@@ -152,7 +153,7 @@ async function updateReturnActionAuthenticatedContent(id:string,previous:ReturnF
   :null;
 
  v.businessCode=existing.qmsRecord.businessCode??requestedBusinessCode;
- if(existing.status!=="DRAFT"&&v.status==="DRAFT")return preserveFormState(previous,fd,{error:"No se puede volver a borrador una devolución ya operativa.",fieldErrors:["Una devolución abierta o cerrada no puede volver al estado Borrador."]});
+ if(!keepsOperationalStatus(existing.status,v.status))return preserveFormState(previous,fd,{error:"No se puede volver a borrador una devolución ya operativa.",fieldErrors:["Una devolución abierta o cerrada no puede volver al estado Borrador."]});
  const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
  if((department&&!isReturnDepartmentCode(department.code))||(v.status!=="DRAFT"&&!department))return preserveFormState(previous,fd,{error:"El área seleccionada no es válida para Devoluciones.",fieldErrors:["La codificación de Devoluciones está restringida a LG-00, LG-10, LG-20, LG-30 y LG-40."]});
  try{
@@ -163,7 +164,7 @@ async function updateReturnActionAuthenticatedContent(id:string,previous:ReturnF
   const before=await getSnapshot(tx,id);
   const becomingOperational=before.status==="DRAFT"&&v.status!=="DRAFT";
   if(!before.qmsRecord.isActive)throw new Error("No se puede modificar una devolución anulada.");
-  if(before.status!=="DRAFT"&&v.status==="DRAFT")throw new Error("Una devolución operativa no puede volver a Borrador.");
+  if(!keepsOperationalStatus(before.status,v.status))throw new Error("Una devolución operativa no puede volver a Borrador.");
   if((before.status!=="DRAFT"||before.qmsRecord.businessCode)&&v.departmentId!==before.departmentId)throw new Error("El área debe conservar la codificación operativa existente.");
   const communicationYear=v.communicationDate?new Date(v.receivedAt??v.communicationDate).getUTCFullYear():null;
   let businessCode=before.qmsRecord.businessCode;

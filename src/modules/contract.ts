@@ -24,7 +24,37 @@ export type QmsModuleContract = {
   /** Permisos que el módulo admite; un test exige que cubran todos los que el código comprueba. */
   permissions: readonly AccessPermission[];
   relations: Readonly<{ outgoing: readonly QmsRelationRule[] }>;
+  /** Ciclo de vida descriptivo del estado principal (PR 5): documenta, no controla. */
+  lifecycle: ModuleLifecycle;
 };
+
+/**
+ * Ciclo de vida **descriptivo** del campo de estado principal (contrato de
+ * módulo, PR 5). Recoge los cambios de estado que el código vigente admite en
+ * servidor; no los controla ni los amplía. `src/modules/lifecycle.test.ts` lo
+ * compara con las reglas de estado de cada módulo para todas las combinaciones
+ * origen → destino. Guardar sin cambiar de estado no es una transición.
+ */
+export type ModuleLifecycle = Readonly<{
+  /** Campo descrito, como `Modelo.campo`. */
+  field: string;
+  /** Valores del enum Prisma del campo, en su orden. */
+  states: readonly string[];
+  transitions: readonly LifecycleTransition[];
+  /** Matices que no son cambios de estado del campo: anulación, efectos en otras revisiones… */
+  notes: readonly string[];
+}>;
+
+/** Cambios admitidos por una operación: cada origen hacia cada destino distinto de la lista. */
+export type LifecycleTransition = Readonly<{
+  /** Identificador estable de la operación dentro del módulo. */
+  operation: string;
+  /** Nombre de la operación para personas. */
+  label: string;
+  /** Estados de origen; `null` es el alta. */
+  from: readonly (string | null)[];
+  to: readonly string[];
+}>;
 
 export type QmsRecordModuleContract = QmsModuleContract & Readonly<{ recordType: QmsRecordType }>;
 
