@@ -401,7 +401,7 @@ it("captures original operational relation adapters across the five QMS modules 
   const {addCapaRelationAction}=await import("../../src/modules/capa/actions");
   const {addComplaintRelationAction,unlinkComplaintRelationAction}=await import("../../src/modules/complaints/actions");
   const {addReturnRelationAction,unlinkReturnComplaintAction}=await import("../../src/modules/returns/actions");
-  const {addChangeControlRelationAction}=await import("../../src/modules/change-control/actions");
+  const changeControlActions=await import("../../src/modules/change-control/actions");
   // Exercise a genuine deactivation/reactivation through the native adapter;
   // its original creation came from CAPA's authenticated opening/provenance.
   const initialRelation=await inspector.qmsRelation.findUniqueOrThrow({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:deviation.qmsRecordId,targetRecordId:capa.qmsRecordId,relationType:"GENERATES"}}});
@@ -426,16 +426,13 @@ it("captures original operational relation adapters across the five QMS modules 
   await execute("complaint-return",complaint.qmsRecordId,returned.qmsRecordId,id=>asUser(qa,()=>addComplaintRelationAction(complaint.id,{error:null},form({businessCode:returned.qmsRecord.businessCode!,recordType:"RETURN",targetRecordId:returned.qmsRecordId,reason:"Synthetic explicit derived return",_covexAuditRequestId:id}))));
   await settled(()=>asUser(qa,()=>unlinkReturnComplaintAction(returned.id,complaint.qmsRecordId,form({reason:"Synthetic original Return relation withdrawal",_covexAuditRequestId:randomUUID()}))));
   await execute("return-complaint",complaint.qmsRecordId,returned.qmsRecordId,id=>asUser(qa,()=>addReturnRelationAction(returned.id,{error:null},form({businessCode:complaint.qmsRecord.businessCode!,recordType:"COMPLAINT",targetRecordId:complaint.qmsRecordId,reason:"Synthetic native return provenance reinstatement",_covexAuditRequestId:id}))));
-  // Change Control still exposes a legacy generic-relation adapter, while the
-  // approved operational matrix deliberately contains no Change Control pair.
-  // Prove that the adapter fails closed and cannot manufacture an audited
-  // operation for an unsupported business relationship.
-  const unsupportedId=randomUUID(),unsupportedBefore=await inspector.auditOperation.count();
-  expect(await inspector.qmsRelation.findUnique({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:change.qmsRecordId,targetRecordId:deviation.qmsRecordId,relationType:"ASSOCIATED_WITH"}}})).toBeNull();
-  const unsupported=await settled(()=>asUser(qa,()=>addChangeControlRelationAction(change.id,form({businessCode:deviation.qmsRecord.businessCode!,relationType:"ASSOCIATED_WITH",reason:"Synthetic unsupported cross-module change relation",_covexAuditRequestId:unsupportedId}))));
-  expect(unsupported).toHaveProperty("redirect",expect.stringContaining("relationError="));
-  expect(await inspector.auditOperation.count()).toBe(unsupportedBefore);
-  expect(await inspector.qmsRelation.findUnique({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:change.qmsRecordId,targetRecordId:deviation.qmsRecordId,relationType:"ASSOCIATED_WITH"}}})).toBeNull();
+  // Change Control has no operational relations (D-018/D-047/D-083 MC-2):
+  // its former generic-relation adapter is removed, so no action can
+  // manufacture an audited operation for an unsupported business relationship.
+  expect(changeControlActions).not.toHaveProperty("addChangeControlRelationAction");
+  const {default:operationInventory}=await import("../../src/lib/auth/operation-inventory.json");
+  expect(operationInventory.actions.some(entry=>entry.name==="addChangeControlRelationAction")).toBe(false);
+  expect(await inspector.qmsRelation.count({where:{OR:[{sourceRecordId:change.qmsRecordId},{targetRecordId:change.qmsRecordId}]}})).toBe(0);
   await settled(()=>asUser(qa,()=>unlinkComplaintRelationAction(complaint.id,returned.qmsRecordId,form({reason:"Synthetic native Complaint relation withdrawal",_covexAuditRequestId:randomUUID()}))));
   expect((await inspector.qmsRelation.findUniqueOrThrow({where:{sourceRecordId_targetRecordId_relationType:{sourceRecordId:complaint.qmsRecordId,targetRecordId:returned.qmsRecordId,relationType:"GENERATES"}}})).isActive).toBe(false);
 },60000);

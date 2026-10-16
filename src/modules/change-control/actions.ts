@@ -8,14 +8,12 @@ import {
   ChangeTaskOrigin,
   Prisma,
   QmsRecordType,
-  QmsRelationType,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
-import { createQmsRelation } from "@/lib/qms/relation-service";
 import {
   assignOperationalBusinessCode,
   OperationalBusinessCodeError,
@@ -1126,47 +1124,6 @@ async function updateChangeControlFollowupActionAuthenticatedContent(
   redirect(`/changes/${id}?tab=followups`);
 }
 
-async function addChangeControlRelationActionAuthenticatedContent(id: string, formData: FormData) {
-  const change = await prisma.changeControl.findUnique({ where: { id } });
-  if (!change) {
-    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("Control de Cambio no encontrado.")}`);
-  }
-  if (change.finalStatus === "DRAFT") {
-    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("El Control de Cambio debe estar abierto antes de crear relaciones.")}`);
-  }
-  const businessCode = String(formData.get("businessCode") ?? "").trim();
-  const relationType = String(formData.get("relationType") ?? "RELATED_TO");
-  const actor = String(formData.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo").trim();
-  const relationTypes = Object.values(QmsRelationType) as string[];
-  if (!businessCode || !relationTypes.includes(relationType)) {
-    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("Relación incompleta.")}`);
-  }
-
-  const target = await prisma.qmsRecord.findFirst({
-    where: { businessCode, id: { not: change.qmsRecordId } },
-  });
-  if (!target) {
-    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent("No existe un expediente con esa codificación.")}`);
-  }
-
-  try {
-    await createQmsRelation(prisma, {
-      sourceRecordId: change.qmsRecordId,
-      targetRecordId: target.id,
-      relationType: relationType as QmsRelationType,
-      createdByText: actor,
-    });
-  } catch (error) {
-    const message = error instanceof Error
-      ? error.message
-      : "No se ha podido crear la relación QMS.";
-    redirect(`/changes/${id}?tab=relations&relationError=${encodeURIComponent(message)}`);
-  }
-
-  revalidatePath(`/changes/${id}`);
-  redirect(`/changes/${id}?tab=relations`);
-}
-
 export async function createChangeControlAction(...args: Parameters<typeof createChangeControlActionAuthenticatedContent>) {
   return authorizedAction("createChangeControlAction", args, authenticated => createChangeControlActionAuthenticatedContent(...authenticated as Parameters<typeof createChangeControlActionAuthenticatedContent>));
 }
@@ -1183,6 +1140,3 @@ export async function updateChangeControlFollowupAction(...args: Parameters<type
   return authorizedAction("updateChangeControlFollowupAction", args, authenticated => updateChangeControlFollowupActionAuthenticatedContent(...authenticated as Parameters<typeof updateChangeControlFollowupActionAuthenticatedContent>));
 }
 
-export async function addChangeControlRelationAction(...args: Parameters<typeof addChangeControlRelationActionAuthenticatedContent>) {
-  return authorizedAction("addChangeControlRelationAction", args, authenticated => addChangeControlRelationActionAuthenticatedContent(...authenticated as Parameters<typeof addChangeControlRelationActionAuthenticatedContent>));
-}

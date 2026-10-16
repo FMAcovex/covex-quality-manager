@@ -13,7 +13,7 @@ import { preserveFormState, type PreservedFormState } from "../forms/preserved-s
 const operations: Record<string, string> = {
   createDeviationAction: "DV01", updateDeviationAction: "DV02", addDeviationFollowupAction: "DV05", addDeviationRelationAction: "DV08", unlinkDeviationCapaAction: "DV08", uploadDeviationSignedPdfAction: "DV08",
   createCapaAction: "CA01", updateCapaAction: "CA02", addCapaFollowupAction: "CA04", addCapaRelationAction: "CA07", unlinkCapaOriginAction: "CA07", uploadCapaSignedPdfAction: "CA08",
-  createChangeControlAction: "CC01", updateChangeControlAction: "CC02", addChangeControlFollowupAction: "CC04", updateChangeControlFollowupAction: "CC04", addChangeControlRelationAction: "CC06", uploadChangeControlSignedPdfAction: "CC07",
+  createChangeControlAction: "CC01", updateChangeControlAction: "CC02", addChangeControlFollowupAction: "CC04", updateChangeControlFollowupAction: "CC04", uploadChangeControlSignedPdfAction: "CC07",
   createComplaintAction: "RC01", updateComplaintAction: "RC02", addComplaintFollowupAction: "RC04", addComplaintRelationAction: "RC06", unlinkComplaintRelationAction: "RC06", uploadComplaintSignedPdfAction: "RC07",
   createReturnAction: "DE01", updateReturnAction: "DE02", addReturnFollowupAction: "DE04", addReturnRelationAction: "DE06", unlinkReturnComplaintAction: "DE06", uploadReturnSignedPdfAction: "DE07",
   saveAuditAction: "AU01", saveAuditChildAction: "AU02", linkAuditFindingAction: "AU05", retireAuditChildAction: "AU03", retireAuditAttributionAction: "AU05", unlinkAuditRecordAction: "AU05",

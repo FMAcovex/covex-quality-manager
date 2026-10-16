@@ -1,9 +1,7 @@
-import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
 import { AuditTrailPanel } from "@/components/audit-trail-panel";
 
-import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
@@ -15,7 +13,6 @@ import { reviewTargetWithValue } from "@/lib/qms/review/targets/catalog";
 import { changeControlReviewTargets, changeControlTaskReviewTarget, changeControlFollowupReviewTarget } from "@/lib/qms/review/targets/change-control";
 import {
   addChangeControlFollowupAction,
-  addChangeControlRelationAction,
 } from "@/modules/change-control/actions";
 import { ChangeFollowupForm } from "@/modules/change-control/components/change-followup-form";
 import {
@@ -55,10 +52,7 @@ import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 export const dynamic = "force-dynamic";
 
 function relationLabel(type: string) {
-  if (type === "GENERATES") return "Genera";
-  if (type === "IMPLEMENTED_BY") return "Implantado por";
-  if (type === "ASSOCIATED_WITH") return "Asociado";
-  return "Relacionado";
+  return type === "GENERATES" ? "Genera" : "Relacionado";
 }
 
 async function ChangeControlDetailPageAuthenticatedContent({
@@ -66,10 +60,10 @@ async function ChangeControlDetailPageAuthenticatedContent({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; relationError?: string; review?: string; thread?: string; returnTo?: string; auditPage?: string }>;
+  searchParams: Promise<{ tab?: string; review?: string; thread?: string; returnTo?: string; auditPage?: string }>;
 }) {
   const { id } = await params;
-  const { tab: rawTab, relationError, review, thread, returnTo, auditPage } = await searchParams;
+  const { tab: rawTab, review, thread, returnTo, auditPage } = await searchParams;
   const activeTab = changeControlDetailTabs.some(([key]) => key === rawTab) ? rawTab! : "information";
   const [record, lookups] = await Promise.all([
     getChangeControlDetail(id),
@@ -627,13 +621,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
               ))}
             </div>
           ) : <div className="empty-panel">Sin expedientes relacionados.</div>}
-          {relationError ? <p className="form-error">{relationError}</p> : null}
-          <PermissionGate permission="EDIT"><form action={addChangeControlRelationAction.bind(null, id)} className="relation-form inline-form"><CsrfField />
-            <label className="field"><span>Codificación relacionada</span><input name="businessCode" required /></label>
-            <label className="field"><span>Tipo de relación</span><select name="relationType"><option value="RELATED_TO">Relacionada</option><option value="GENERATES">Genera</option><option value="IMPLEMENTED_BY">Implantada por</option><option value="ASSOCIATED_WITH">Asociada</option></select></label>
-            <label className="field"><span>Registrado por</span><ActorField name="actor" defaultValue={currentActor()} /></label>
-            <div className="full"><button className="button primary" type="submit">Añadir relación</button></div>
-          </form></PermissionGate>
+          <p className="muted-note">Control de Cambios no admite relaciones operativas con otros módulos en V1.</p>
         </div>
       ) : null}
 

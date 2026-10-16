@@ -495,19 +495,6 @@
       "dynamicCreate": false
     },
     {
-      "file": "src/modules/change-control/actions.ts",
-      "name": "addChangeControlRelationAction",
-      "params": [
-        "id",
-        "formData"
-      ],
-      "module": "CHANGE_CONTROL",
-      "permission": "EDIT",
-      "resourceArg": 0,
-      "resourceKind": "RECORD",
-      "dynamicCreate": false
-    },
-    {
       "file": "src/modules/change-control/signed-document-actions.ts",
       "name": "uploadChangeControlSignedPdfAction",
       "params": [
