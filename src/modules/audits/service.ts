@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { assignOperationalBusinessCode } from "@/lib/qms/business-code";
 import { auditInputSchema, type AuditInput } from "./validation";
 import { auditCodeYear, hasAuditBusinessSeries } from "./domain";
-import { auditStatusChangeError } from "./lifecycle";
+import { auditClosureStatusError, auditDraftReturnMessage, auditReturnsToDraft } from "./lifecycle";
 
 export class AuditValidationError extends Error {
   constructor(public readonly fields: Record<string, string>) { super(Object.values(fields).join(" ")); }
@@ -23,10 +23,11 @@ export async function saveAudit(raw: unknown, id?: string) {
     const before = id ? await tx.audit.findUnique({ where: { id }, include: { qmsRecord: true, departments: true, participants: true } }) : null;
     if (id && !before) throw new AuditValidationError({ title: "La auditoría no existe." });
     if (before && !before.qmsRecord.isActive) throw new AuditValidationError({ title: "Reactiva el expediente antes de editarlo." });
-    const statusError = auditStatusChangeError(before?.status ?? null, v.status);
-    if (statusError) throw new AuditValidationError({ status: statusError });
+    const closureError = auditClosureStatusError(before?.status ?? null, v.status);
+    if (closureError) throw new AuditValidationError({ status: closureError });
     if (before && v.expectedUpdatedAt && v.expectedUpdatedAt !== before.updatedAt.toISOString()) throw new AuditValidationError({ title: "El expediente cambió desde que abriste el formulario. Recarga antes de guardar." });
     if (before && before.status !== "DRAFT") {
+      if (auditReturnsToDraft(before.status, v.status)) throw new AuditValidationError({ status: auditDraftReturnMessage });
       for (const field of ["auditType", "scenario", "codingDepartmentId", "entityCode"] as const) {
         if ((before[field] ?? "") !== v[field]) throw new AuditValidationError({ [field]: "La identificación y serie quedan fijadas al abrir la auditoría." });
       }

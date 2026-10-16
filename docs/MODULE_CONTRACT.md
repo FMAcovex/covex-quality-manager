@@ -152,12 +152,12 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
 - Cada contrato declara `lifecycle`: el campo de estado principal, sus estados (los del enum Prisma, comprobado por test), las transiciones vigentes por operación y notas. Es **descriptivo**: documenta lo que el código admite hoy en servidor; no controla ni cambia ninguna transición.
 - Las comprobaciones de estado que las acciones hacían en línea pasan a funciones puras, con el mismo resultado y los mismos mensajes:
   - `src/modules/lifecycle.ts`: `keepsOperationalStatus` (un expediente operativo no vuelve a Borrador; Desviaciones, CAPA, Controles de cambios, Reclamaciones y Devoluciones) y `acceptsFollowup` (seguimientos de CAPA y Controles de cambios);
-  - `src/modules/audits/lifecycle.ts`: `auditStatusChangeError` y `auditAlreadyClosed`;
+  - `src/modules/audits/lifecycle.ts`: `auditClosureStatusError`, `auditReturnsToDraft` (combinadas en `auditStatusChangeError`) y `auditAlreadyClosed`;
   - `src/modules/change-control/lifecycle.ts`: `followupFinalStatus`;
   - PNT: `revisionStatusAfter` (estado tras cada decisión) y `newRevisionStatus` (alta y registro histórico). La tabla de orígenes `assertTransition` y `validateManualChange` ya eran puras.
   - Se exportan `capaFollowupStatuses` y los mapeos de estado de las importaciones históricas de Desviaciones y CAPA.
 - `src/modules/lifecycle.test.ts` compara, para **todas** las combinaciones origen → destino, la declaración de cada operación con su regla. Se comprobó por mutación: cambiar una regla, la tabla de PNT o una declaración hace fallar el test. Solo la importación de PNT queda sin regla pura (estado literal en el importador, cubierto por su smoke PostgreSQL).
-- Única diferencia observable: en Auditorías, si un mismo guardado intenta volver a Borrador **y** llega con el formulario desactualizado, el mensaje que se muestra es el de Borrador. Antes era el de formulario desactualizado. En ambos casos se rechaza sin escribir.
+- Se conserva también el orden de las comprobaciones: en Auditorías, la regla de Borrador sigue evaluándose después de la de formulario desactualizado (`auditClosureStatusError` y `auditReturnsToDraft` por separado), porque `audits-r3a:smoke` fija qué mensaje se muestra cuando fallan las dos.
 - Hallazgos del mapeo que la declaración **documenta tal cual**, sin cambiarlos (cualquier cambio requiere decisión propia):
   - el servidor admite dar de alta directamente en Cerrada en Desviaciones, CAPA (también Cancelada), Controles de cambios, Reclamaciones y Devoluciones; Auditorías lo impide;
   - Cerrada → Abierta: CAPA, Controles de cambios y Devoluciones no crean versión de reapertura; Desviaciones y Reclamaciones solo si se guarda como nueva versión; Auditorías no reabre;
