@@ -1,3 +1,4 @@
+import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
@@ -40,7 +41,7 @@ import { complaintCapaPlanReviewTarget,complaintReviewTargets } from "@/lib/qms/
 export const dynamic="force-dynamic";
 const tabs=[
  ["summary","Resumen"],["part-i","Parte I"],["part-ii","Parte II"],
- ["relations","Relaciones"],["documents","Documentos"],["versions","Versiones"],["review","Revisión"],["audit-trail","Audit Trail"],["history","Historial"]
+ ["relations","Relaciones"],["documents","Documentos"],["versions","Versiones"],["review","Revisión"],["timeline","Cronología"],["audit-trail","Audit Trail"],["history","Historial"]
 ] as const;
 const txt=(v:string|null|undefined)=>v||"—";
 const yesNo=(v:string|null|undefined)=>v==="YES"?"Sí":v==="NO"?"No":v==="NA"?"N/A":"—";
@@ -261,6 +262,7 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
 
   {tab==="history"&&r.followups.length?<div className="card"><h2>Seguimientos históricos legacy</h2><p className="muted-note">Datos anteriores conservados para consulta. Los nuevos seguimientos se registran exclusivamente como versiones.</p><div className="timeline">{r.followups.map(item=><article key={item.id} className="timeline-item"><strong>{formatDate(item.followupDate)} · {item.completedByText??"—"}</strong><p className="prose-value">{item.comment}</p><small>Próximo seguimiento: {formatDate(item.nextFollowupDate)}</small></article>)}</div></div>:null}
   {tab==="history"?<div className="card"><h2>Historial interno de modificaciones</h2><p className="muted-note">Historial administrativo de cambios; no constituye un audit trail GMP validado.</p>{r.qmsRecord.history.length?<div className="timeline">{r.qmsRecord.history.map(x=><div className="timeline-item history-entry" key={x.id}><header className="history-entry-header"><strong>{formatDate(x.changedAt)}</strong><span>{x.changedByText??"Sistema"}</span><span className="badge neutral">{x.source}</span></header><p className="history-entry-detail"><strong>{x.fieldPath}</strong>{x.reason?<span> · Motivo: {x.reason}</span>:null}</p></div>)}</div>:<div className="empty-panel">Sin cambios registrados.</div>}</div>:null}
+  {tab==="timeline"?<RecordTimeline qmsRecordId={r.qmsRecord.id}/>:null}
   {tab==="audit-trail"?<AuditTrailPanel rootKey={`QMS_RECORD:${r.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/>:null}
  </section>
  <ReviewDrawer/>

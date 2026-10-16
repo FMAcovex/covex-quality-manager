@@ -45,11 +45,11 @@ export function qmsWithReturnTo(path: string, root: QmsListRoot, value: unknown)
 
 /** Known detail tabs only; never pass unchecked query strings to a redirect. */
 const detailTabs: Record<QmsListRoot, readonly string[]> = {
-  "/deviations": ["summary", "description", "investigation", "actions", "conclusion", "relations", "versions", "documents", "review", "history"],
-  "/capa": ["summary", "action-followups", "state", "relations", "versions", "documents", "review", "history"],
-  "/changes": ["information", "request", "dictamen", "followups", "documents", "relations", "review", "history"],
-  "/complaints": ["summary", "part-i", "part-ii", "relations", "documents", "versions", "review", "history"],
-  "/returns": ["summary", "checks", "followups", "relations", "documents", "review", "history"],
+  "/deviations": ["summary", "description", "investigation", "actions", "conclusion", "relations", "versions", "documents", "review", "timeline", "history"],
+  "/capa": ["summary", "action-followups", "state", "relations", "versions", "documents", "review", "timeline", "history"],
+  "/changes": ["information", "request", "dictamen", "followups", "documents", "relations", "review", "timeline", "history"],
+  "/complaints": ["summary", "part-i", "part-ii", "relations", "documents", "versions", "review", "timeline", "history"],
+  "/returns": ["summary", "checks", "followups", "relations", "documents", "review", "timeline", "history"],
 };
 export type QmsReturnContext = { returnTo: string; tab: string };
 

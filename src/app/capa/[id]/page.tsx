@@ -1,3 +1,4 @@
+import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
@@ -54,6 +55,7 @@ const tabs = [
   ["versions", "Seguimientos"],
   ["documents", "Documentos"],
   ["review", "Revisión"],
+  ["timeline", "Cronología"],
   ["audit-trail", "Audit Trail"],
   ["history", "Historial"],
 ] as const;
@@ -622,6 +624,7 @@ async function CapaDetailPageAuthenticatedContent({
           ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
         </div>
       ) : null}
+      {activeTab === "timeline" ? <RecordTimeline qmsRecordId={capa.qmsRecord.id} /> : null}
       {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${capa.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>
     <ReviewDrawer />
