@@ -126,9 +126,9 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
 
 Requiere una decisión en `DECISIONS.md` y una PR que añada una línea en el contrato del módulo de origen, su `guard` si procede y sus tests positivos y negativos. No requiere migración ni tocar el servicio común.
 
-### 5.4 Incoherencia detectada (se corrige en la PR 2-bis, no en esta)
+### 5.4 Incoherencia detectada (corregida en la PR 2-bis)
 
-La ficha de Control de Cambios muestra la pestaña Relaciones con un formulario de alta (`src/app/changes/[id]/page.tsx`, `addChangeControlRelationAction` en `src/modules/change-control/actions.ts:1129`). El formulario ofrece los cuatro tipos (`RELATED_TO` por defecto, `GENERATES`, `IMPLEMENTED_BY`, `ASSOCIATED_WITH`), pero como la matriz no admite ninguna relación de Control de Cambios, **cualquier intento termina en error** «Relación no permitida». No hay riesgo de datos, pero sí confusión de uso. Resuelto en MC-2: se retirará en la PR 2-bis.
+La ficha de Control de Cambios muestra la pestaña Relaciones con un formulario de alta (`src/app/changes/[id]/page.tsx`, `addChangeControlRelationAction` en `src/modules/change-control/actions.ts:1129`). El formulario ofrece los cuatro tipos (`RELATED_TO` por defecto, `GENERATES`, `IMPLEMENTED_BY`, `ASSOCIATED_WITH`), pero como la matriz no admite ninguna relación de Control de Cambios, **cualquier intento termina en error** «Relación no permitida». No había riesgo de datos, pero sí confusión de uso. **Corregido en la PR 2-bis (2026-10-16):** se retiran el formulario, `addChangeControlRelationAction` y su entrada en `operation-inventory.json` y en `action-boundary.ts`. La pestaña conserva la consulta de relaciones existentes y una nota de que Control de Cambios no admite relaciones operativas en V1.
 
 ## 6. Plan de migración propuesto
 
@@ -138,7 +138,7 @@ Cada paso es una PR independiente, sin cambio visible, con lint, tests, Prisma v
 | --- | --- | --- |
 | **1 (esta)** | Diseño y decisiones MC-1 a MC-4 | Aprobado en D-083 |
 | **2 (implementada)** | `contract.ts` + `registry.ts` con identidad, etiquetas y **relaciones** de los 6 módulos `QmsRecord`; `relation-rules.ts` y el servicio de relaciones derivan del registro y de los hooks de módulo | Test de equivalencia de matriz; tests existentes de relaciones sin cambios; smoke de relaciones PostgreSQL verde |
-| **2-bis** | MC-2 y MC-4 etapa 1: retirar el formulario de alta de relaciones de Control de Cambios y los tipos sin uso del código de aplicación | Consulta de relaciones conservada; test de que la acción ya no existe en el inventario; regresión de Control de Cambios verde |
+| **2-bis (implementada)** | MC-2 y MC-4 etapa 1: retirar el formulario de alta de relaciones de Control de Cambios y los tipos sin uso del código de aplicación | Consulta de relaciones conservada; test de que la acción ya no existe en el inventario; regresión de Control de Cambios verde |
 | **3** | Menú, tarjetas del dashboard, etiquetas, `accessModules` y `auditTrailModules` derivados del registro; PNT registrado con `recordType: null` | Tests de equivalencia de listas; regresión UI Chromium sin diferencias visuales |
 | **4** | Permisos admitidos por módulo y comprobación cruzada con `operation-inventory.json` | Test de inventario ampliado; sin cambios en la matriz de roles |
 | **5** | Ciclo de vida **descriptivo**: estados y transiciones vigentes declarados, verificados contra el comportamiento actual por test, sin pasar aún a controlarlos | Test que recorre las transiciones reales y las compara con la declaración |
@@ -176,5 +176,5 @@ Aun con contrato: modelo Prisma y migración propios, nuevo valor en `QmsRecordT
 - **MC-2 — Control de Cambios sin relaciones.** Se mantiene fuera de las relaciones operativas (D-018, D-047). Se retirará el formulario de alta de la pestaña Relaciones en una PR acotada, conservando la consulta de relaciones existentes y sin borrar datos.
 - **MC-3 — PNT: necesidad futura.** No se incorpora PNT a `QmsRecord` ni se amplía la matriz por ahora. El contrato ya admite `recordType: null` para PNT, de modo que la incorporación futura sea un cambio localizado con su decisión e impacto propios.
 - **MC-4 — Retirar los tipos sin uso, por etapas.**
-  1. Junto con MC-2: quitar `RELATED_TO`, `IMPLEMENTED_BY` y `ASSOCIATED_WITH` de la interfaz y del código de aplicación (`src/app/changes/[id]/page.tsx`, `addChangeControlRelationAction`, `src/lib/qms/relations.ts`).
+  1. Junto con MC-2: quitar `RELATED_TO`, `IMPLEMENTED_BY` y `ASSOCIATED_WITH` de la interfaz y del código de aplicación (`src/app/changes/[id]/page.tsx`, `addChangeControlRelationAction`, `src/lib/qms/relations.ts`). **Hecho en la PR 2-bis:** `relations.ts` era código sin uso fuera de su propio test y se elimina junto con él. Los tipos siguen en el enum Prisma hasta la etapa 2.
   2. PR propia posterior: retirarlos del enum Prisma con una migración que se detenga si existe alguna fila que los use. Antes hay que adaptar las fixtures y pruebas que hoy los escriben directamente: `scripts/phase3b1-fixtures.ts:69`, `scripts/smoke-phase4b3-b2-capture.ts` (operación DV08) y `scripts/audit-fixtures/operational-actions-capture.test.ts:428-438`.
