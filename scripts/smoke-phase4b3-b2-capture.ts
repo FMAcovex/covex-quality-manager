@@ -128,7 +128,7 @@ async function main() {
     }
     const batch=await execute({operationCode:"TR07",module:"DEVIATION",permission:"IMPORT"},command(),tx=>tx.historicalImportBatch.create({data:{sourceFileName:"synthetic-source.txt",sourceSha256:createHash("sha256").update("synthetic-source").digest("hex"),years:[2020,2025],importedByText:principals.qa.name}}));
     assert.deepEqual((await owner.auditEvent.findFirstOrThrow({where:{operationId:batch.operationId!,fieldPath:"years"}})).newValue,{present:true,type:"JSON",value:[2020,2025]},"Native integer arrays keep their JSON structure, not a scalar integer tag");
-    const relation=await execute({...edit,operationCode:"DV08"},command(),tx=>tx.qmsRelation.create({data:{sourceRecordId:records.DEVIATION.qmsRecordId,targetRecordId:records.CAPA.qmsRecordId,relationType:"RELATED_TO",createdByText:principals.qa.name}}));
+    const relation=await execute({...edit,operationCode:"DV08"},command(),tx=>tx.qmsRelation.create({data:{sourceRecordId:records.DEVIATION.qmsRecordId,targetRecordId:records.CAPA.qmsRecordId,relationType:"GENERATES",createdByText:principals.qa.name}}));
     assert.equal(await owner.auditOperationTarget.count({where:{operationId:relation.operationId!}}),2);
     const relationEvents=await owner.auditEvent.findMany({where:{operationId:relation.operationId!},include:{additionalTargets:true}});
     assert(relationEvents.every(e=>e.additionalTargets.length===1));
@@ -175,7 +175,8 @@ async function main() {
     await execute(administer,command("Restore only the synthetic fixture grant"),tx=>tx.authRolePermission.create({data:grant}),principals.admin);
     await execute(administer,command("Synthetic assignment scope fixture"),tx=>tx.authRecordAssignment.create({data:{userId:principals.manager.id,module:"DEVIATION",recordId:records.DEVIATION.qmsRecordId}}),principals.admin);
     const assignedBefore=await owner.auditOperation.count();
-    await assert.rejects(execute({...edit,operationCode:"DV08"},command(),tx=>tx.qmsRelation.create({data:{sourceRecordId:records.DEVIATION.qmsRecordId,targetRecordId:records.CAPA.qmsRecordId,relationType:"ASSOCIATED_WITH",createdByText:principals.manager.name}}),principals.manager));
+    // Reverse direction avoids the unique key of the DEVIATION→CAPA row created above, so only the CAPA endpoint scope can reject it.
+    await assert.rejects(execute({...edit,operationCode:"DV08"},command(),tx=>tx.qmsRelation.create({data:{sourceRecordId:records.CAPA.qmsRecordId,targetRecordId:records.DEVIATION.qmsRecordId,relationType:"GENERATES",createdByText:principals.manager.name}}),principals.manager));
     await assert.rejects(execute({operationCode:"CA02",module:"CAPA",permission:"EDIT"},command(),tx=>tx.capa.update({where:{id:records.CAPA.id},data:{internalObservations:null}}),principals.manager),"A scoped no-op cannot update technical timestamps of an unassigned record");
     assert.equal(await owner.auditOperation.count(),assignedBefore,"Both endpoints require current scope");
     let cascadeId="";

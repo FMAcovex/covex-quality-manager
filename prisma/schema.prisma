@@ -18,9 +18,6 @@ enum QmsRecordType {
 
 enum QmsRelationType {
   GENERATES
-  RELATED_TO
-  IMPLEMENTED_BY
-  ASSOCIATED_WITH
 }
 
 enum TriState {

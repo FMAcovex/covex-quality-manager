@@ -66,7 +66,7 @@ export async function createListFixtures(size = 360) {
     await prisma.capaPlannedAction.createMany({ data: [0, 1].map(i => ({ capaId: ids[1][0], description: `${prefix} acción visible ${i}`, sortOrder: i, plannedExecutionDate: new Date(i ? "2026-05-01" : "2026-04-01") })) });
     await prisma.changeControlTask.create({ data: { changeControlId: ids[2][0], description: `${prefix} tarea visible`, plannedDate: new Date("2026-05-01"), origin: "DICTAMEN" } });
     await prisma.qmsRelation.create({ data: { sourceRecordId: recordIds[0][0], targetRecordId: recordIds[1][0], relationType: "GENERATES" } });
-    await prisma.qmsRelation.create({ data: { sourceRecordId: recordIds[0][1], targetRecordId: recordIds[1][1], relationType: "RELATED_TO", isActive: false } });
+    await prisma.qmsRelation.create({ data: { sourceRecordId: recordIds[0][1], targetRecordId: recordIds[1][1], relationType: "GENERATES", isActive: false } });
     await prisma.qmsRecordVersion.createMany({ data: [0, 1, 2].map(sequenceNumber => ({ qmsRecordId: recordIds[1][0], sequenceNumber, kind: "FOLLOWUP" as const, frozenAt: sequenceNumber < 2 ? new Date("2026-01-01") : null, snapshot: { synthetic: true, text: "X".repeat(4096) } })) });
     for (let i = 0; i < 7; i++) {
       const q = await prisma.qmsRecord.create({ data: { recordType: "AUDIT", businessCode: `${prefix}-AUD-${i}`, year: 2026, audit: { create: { title: `${prefix} auditoría ${i}`, status: "OPEN", scenario: "INTERNAL_COVEX", auditType: "INTERNAL" } } }, include: { audit: true } });

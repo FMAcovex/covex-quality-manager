@@ -58,14 +58,8 @@ describe("Hito 10.8C3-B1: reglas direccionales QMS", () => {
     ).toThrow(/Relación no permitida/);
   });
 
-  it("bloquea cualquier tipo distinto de GENERATES", () => {
-    expect(
-      canRelate(
-        QmsRecordType.DEVIATION,
-        QmsRecordType.CAPA,
-        QmsRelationType.RELATED_TO,
-      ),
-    ).toBe(false);
+  it("GENERATES es el único tipo de relación (D-083 MC-4)", () => {
+    expect(Object.values(QmsRelationType)).toEqual([QmsRelationType.GENERATES]);
   });
 
   it("bloquea una relación del expediente consigo mismo", () => {
