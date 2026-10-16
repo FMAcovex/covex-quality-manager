@@ -1,15 +1,15 @@
-import { QmsRecordType, QmsRelationType } from "@prisma/client";
-import type { QmsModuleContract } from "@/modules/contract";
+import type { QmsRecordModuleContract } from "@/modules/contract";
 
-export const deviationModule: QmsModuleContract = {
+export const deviationModule: QmsRecordModuleContract = {
   contractVersion: 1,
   key: "DEVIATION",
-  recordType: QmsRecordType.DEVIATION,
+  recordType: "DEVIATION",
   labels: { singular: "Desviación", plural: "Desviaciones" },
   href: "/deviations",
+  indicatorsHref: "/deviations/indicators",
   relations: {
     outgoing: [
-      { target: QmsRecordType.CAPA, type: QmsRelationType.GENERATES, label: "Desviación → CAPA" },
+      { target: "CAPA", type: "GENERATES", label: "Desviación → CAPA" },
     ],
   },
 };

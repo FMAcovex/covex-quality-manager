@@ -4,14 +4,14 @@ import Link from "next/link";
 import "./dashboard.css";
 import { getDashboardData } from "@/modules/dashboard/queries";
 import {
-  DASHBOARD_MODULES, moduleListHref, queryOption, queryPage, queryYear,
+  DASHBOARD_ALL_MODULES, DASHBOARD_MODULES, moduleListHref, queryOption, queryPage, queryYear,
   type DashboardModule, type DashboardState, type DashboardTaskView,
 } from "@/modules/dashboard/domain";
 
 export const dynamic = "force-dynamic";
 
 type Query = Record<string, string | string[] | undefined>;
-const modules = [...DASHBOARD_MODULES, { key: "PNT", label: "Documentación controlada", href: "/controlled-documents", indicatorHref: null }] as const;
+const modules = DASHBOARD_ALL_MODULES;
 const moduleKeys = ["ALL", ...modules.map(m => m.key)] as const;
 const stateOptions = ["ALL", "OPEN", "CLOSED", "DRAFT"] as const;
 const taskOptions = ["all", "overdue", "upcoming"] as const;

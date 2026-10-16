@@ -1,12 +1,12 @@
-import { QmsRecordType } from "@prisma/client";
-import type { QmsModuleContract } from "@/modules/contract";
+import type { QmsRecordModuleContract } from "@/modules/contract";
 
-export const capaModule: QmsModuleContract = {
+export const capaModule: QmsRecordModuleContract = {
   contractVersion: 1,
   key: "CAPA",
-  recordType: QmsRecordType.CAPA,
+  recordType: "CAPA",
   labels: { singular: "CAPA", plural: "CAPA" },
   href: "/capa",
+  indicatorsHref: "/capa/indicators",
   // CAPA solo es destino; sus orígenes se declaran en Desviación, Reclamación y Auditoría.
   relations: { outgoing: [] },
 };

@@ -5,8 +5,11 @@ import { AccessError, currentIdentity, type AccessModule } from "@/lib/auth/cont
 import { assertPermission } from "@/lib/auth/policy";
 import { requireUser } from "@/lib/auth/session";
 
-export const auditTrailModules = ["DEVIATION","CAPA","CHANGE_CONTROL","COMPLAINT","RETURN","AUDIT","PNT"] as const;
-export type AuditTrailModule = typeof auditTrailModules[number];
+import type { QmsModuleKey } from "@/modules/contract";
+import { qmsModuleKeys } from "@/modules/registry";
+
+export const auditTrailModules = qmsModuleKeys;
+export type AuditTrailModule = QmsModuleKey;
 export type AuditTrailFilters = {
   module?: AuditTrailModule;
   record?: string;

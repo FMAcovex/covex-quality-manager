@@ -1,17 +1,12 @@
 import type { QmsRecordType } from "@prisma/client";
+import { qmsModuleByRecordType } from "@/modules/registry";
 
 export function qmsRecordHref(_recordType: QmsRecordType | string, qmsRecordId: string) {
   return `/qms/${qmsRecordId}`;
 }
 
 export function qmsRecordTypeLabel(recordType: QmsRecordType | string) {
-  if (recordType === "AUDIT") return "Auditoría";
-  if (recordType === "DEVIATION") return "Desviación";
-  if (recordType === "CAPA") return "CAPA";
-  if (recordType === "CHANGE_CONTROL") return "Control de Cambio";
-  if (recordType === "COMPLAINT") return "Reclamación";
-  if (recordType === "RETURN") return "Devolución";
-  return recordType;
+  return qmsModuleByRecordType(recordType)?.labels.singular ?? recordType;
 }
 
 

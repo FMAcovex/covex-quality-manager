@@ -122,6 +122,19 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
 - La tabla `QmsRelation`, las relaciones existentes, la desvinculación/reactivación (D-046, D-047) y el audit trail de relaciones no cambian.
 - Los tests actuales de `relation-rules.test.ts` y `relation-service.test.ts` (incluidos los casos bloqueados) deben pasar sin modificación.
 
+### 4.1 Implementado en PR 3 (2026-10-16)
+
+- Los contratos son **solo datos con imports de tipos**, sin enums de Prisma en tiempo de ejecución, para poder usarlos en componentes de cliente. Se añaden `indicatorsHref` y `recordType: null` para módulos sin `QmsRecord`.
+- **PNT** entra en el registro (`src/modules/controlled-documents/contract.ts`) sin `recordType` ni relaciones (MC-3). `qmsRecordModules` y `qmsRecordTypes` agrupan solo los módulos con expediente.
+- Se derivan del registro:
+  - el menú principal (`src/components/app-shell.tsx`);
+  - las tarjetas y opciones del dashboard (`DASHBOARD_MODULES`, `DASHBOARD_ALL_MODULES`);
+  - la lista de módulos del audit trail (`auditTrailModules`);
+  - las etiquetas de tipo (`qmsRecordTypeLabel`);
+  - las dos listas literales de `src/lib/auth/action-guard.ts`.
+- `accessModules` (`src/lib/auth/context.ts`) **se mantiene literal**, porque es la fuente del tipo `AccessModule` y del propio tipo de clave del contrato. Un test exige que coincida con el registro más `SYSTEM`.
+- La página del audit trail conserva sus etiquetas propias («Controles de Cambios», «PNT»), que difieren de las del menú. Unificarlas sería un cambio visible y queda fuera de esta PR.
+
 ### 5.3 Ampliar una relación en el futuro
 
 Requiere una decisión en `DECISIONS.md` y una PR que añada una línea en el contrato del módulo de origen, su `guard` si procede y sus tests positivos y negativos. No requiere migración ni tocar el servicio común.
@@ -139,7 +152,7 @@ Cada paso es una PR independiente, sin cambio visible, con lint, tests, Prisma v
 | **1 (esta)** | Diseño y decisiones MC-1 a MC-4 | Aprobado en D-083 |
 | **2 (implementada)** | `contract.ts` + `registry.ts` con identidad, etiquetas y **relaciones** de los 6 módulos `QmsRecord`; `relation-rules.ts` y el servicio de relaciones derivan del registro y de los hooks de módulo | Test de equivalencia de matriz; tests existentes de relaciones sin cambios; smoke de relaciones PostgreSQL verde |
 | **2-bis (implementada)** | MC-2 y MC-4 etapa 1: retirar el formulario de alta de relaciones de Control de Cambios y los tipos sin uso del código de aplicación | Consulta de relaciones conservada; test de que la acción ya no existe en el inventario; regresión de Control de Cambios verde |
-| **3** | Menú, tarjetas del dashboard, etiquetas, `accessModules` y `auditTrailModules` derivados del registro; PNT registrado con `recordType: null` | Tests de equivalencia de listas; regresión UI Chromium sin diferencias visuales |
+| **3 (implementada)** | Menú, tarjetas del dashboard, etiquetas, `accessModules` y `auditTrailModules` derivados del registro; PNT registrado con `recordType: null` | Tests de equivalencia de listas; regresión UI Chromium sin diferencias visuales |
 | **4** | Permisos admitidos por módulo y comprobación cruzada con `operation-inventory.json` | Test de inventario ampliado; sin cambios en la matriz de roles |
 | **5** | Ciclo de vida **descriptivo**: estados y transiciones vigentes declarados, verificados contra el comportamiento actual por test, sin pasar aún a controlarlos | Test que recorre las transiciones reales y las compara con la declaración |
 | Posterior | MC-4 etapa 2: retirar tipos del enum Prisma con migración protegida | Migración falla si hay filas con esos tipos; fixtures y pruebas de audit trail adaptadas |

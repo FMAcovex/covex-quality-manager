@@ -5,16 +5,13 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SessionControls } from "./session-controls";
 import { useCanAct } from "./permissions";
+import { qmsModules } from "@/modules/registry";
 
+// Los módulos QMS salen del registro (docs/MODULE_CONTRACT.md); Inicio, Audit
+// Trail y Configuración son entradas transversales.
 const modules = [
   { label: "Inicio", href: "/", enabled: true, match: "/" },
-  { label: "Desviaciones", href: "/deviations", enabled: true, match: "/deviations" },
-  { label: "CAPA", href: "/capa", enabled: true, match: "/capa" },
-  { label: "Controles de cambios", href: "/changes", enabled: true, match: "/changes" },
-  { label: "Reclamaciones", href: "/complaints", enabled: true, match: "/complaints" },
-  { label: "Devoluciones", href: "/returns", enabled: true, match: "/returns" },
-  { label: "Auditorías", href: "/audits", enabled: true, match: "/audits" },
-  { label: "Documentación controlada", href: "/controlled-documents", enabled: true, match: "/controlled-documents" },
+  ...qmsModules.map((contract) => ({ label: contract.labels.plural, href: contract.href, enabled: true, match: contract.href })),
   { label: "Audit Trail", href: "/audit-trail", enabled: true, match: "/audit-trail" },
   { label: "Configuración", href: "/settings", enabled: true, match: "/settings" },
 ];
