@@ -693,3 +693,15 @@ Los puntos 1–4 no cambian código: el ciclo de vida declarado en los contratos
 
 El responsable del proyecto aprueba que las políticas de rol solo admitan, para cada módulo, los permisos que declara su contrato (`permissionsForModule`, PR 4 del contrato de módulo). Usuarios y roles sigue reservado al rol técnico. El servidor rechaza cualquier otra combinación con un mensaje que nombra módulo y permiso. El cuadro de texto JSON se sustituye por una tabla con una fila por módulo, una casilla por permiso admitido y su ámbito (Todos / Asignados; los permisos que solo admiten Todos no ofrecen Asignados). Si un rol existente tiene permisos no admitidos, el editor los enumera y se retiran al guardar la nueva política, que, como hasta ahora, revoca las sesiones del rol y queda pendiente de aceptación QA/DT. No cambian los roles guardados ni los permisos efectivos hasta que se guarda una política.
 
+## D-087 — Demo local para ver y probar la aplicación (2026-10-16)
+
+El responsable del proyecto aprueba una **demo local** para ver y probar la aplicación en su propio ordenador antes de ponerla en funcionamiento, sin IT ni Entra. Complementa D-078: la identidad sintética de 4B1 sigue restringida a pruebas automatizadas aisladas, y la demo usa un modo propio, `AUTH_PROVIDER=demo`, con estos límites:
+
+- solo se activa con `APP_ENV=demo`, la base de datos `covex_demo` y un origen `http://localhost` o `http://127.0.0.1`; un servidor publicado (https o con dominio) no puede usarlo, y el arranque de producción, que exige Entra, lo rechaza;
+- se entra eligiendo uno de cuatro perfiles ficticios (Garantía de Calidad, responsable de departamento, consulta, administrador técnico) de un tenant ficticio; la sesión es una sesión normal de la aplicación y todos los permisos se comprueban igual que con Entra;
+- `POST /auth/demo` es la cuarta ruta pública del inventario de operaciones, y solo funciona en ese modo y con origen coincidente;
+- el kit (`compose.demo.yaml`, `ops/demo/`) publica el puerto solo en `127.0.0.1`, carga datos ficticios (`demo:seed`) y no activa el audit trail GMP;
+- las plantillas oficiales no se incluyen; se pueden instalar en la demo copiando su ZIP en `plantillas/`, que no se versiona.
+
+La demo no es un entorno validado ni de producción y no admite datos reales.
+

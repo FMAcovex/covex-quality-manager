@@ -28,17 +28,15 @@ Prioridad documental y límites: [Decisiones](docs/DECISIONS.md), [Roadmap vigen
 
 ## Demo local sin intervención de IT
 
-Requisitos: Node.js 22 compatible, pnpm y Docker Desktop o PostgreSQL local.
+Para ver y probar la aplicación en tu ordenador con datos ficticios basta con Docker Desktop y un comando:
 
-1. Iniciar PostgreSQL: `docker compose up -d postgres`.
-2. Copiar `.env.example` a `.env` sin incorporar secretos al repositorio.
-3. Instalar dependencias: `pnpm install`.
-4. Preparar la base: `pnpm db:deploy` y `pnpm db:seed`.
-5. Opcional: `pnpm demo:seed`, con `ALLOW_DEMO_DATA=true`; bloqueado con `APP_ENV=production`.
-6. Instalar **en este entorno de base de datos** las plantillas controladas necesarias mediante los comandos `templates:*` que correspondan. Programas Anuales: ver [instalación y fuentes](docs/AUDITS_ANNUAL_PROGRAMMES.md), con sus originales oficiales y hashes.
-7. Iniciar `pnpm dev`; abrir `http://localhost:3000`.
+```
+docker compose -f compose.demo.yaml up --build
+```
 
-La instalación en pruebas de una plantilla no la instala en otro Codespace ni en el futuro servidor. Los registros demo se identifican como ficticios.
+Después se abre <http://localhost:3000> y se elige un perfil de demostración (Garantía de Calidad, responsable de departamento, consulta o administrador técnico). Guía paso a paso para Windows, perfiles, plantillas opcionales y resolución de problemas: [DEMO_LOCAL.md](docs/DEMO_LOCAL.md). La demo solo es accesible desde el propio equipo, no usa Entra ni activa el audit trail GMP y no admite datos reales (D-087).
+
+Desarrollo sin Docker: PostgreSQL local, `.env` a partir de `.env.example`, `pnpm install`, `pnpm db:deploy`, `pnpm db:seed` y `pnpm dev`. El acceso requiere la identidad corporativa configurada (4B1) o las variables de la demo local descritas en [DEMO_LOCAL.md](docs/DEMO_LOCAL.md#para-desarrolladores).
 
 ## Backup lógico de demo / contingencia técnica
 

@@ -55,3 +55,6 @@ release-manifest.json
 !*.env.example
 .env.*
 !.env.example
+
+# Plantillas oficiales copiadas para la demo local: nunca se versionan.
+plantillas/*.zip

@@ -33,7 +33,7 @@ describe("4B1 inventario exhaustivo de entradas protegidas", () => {
     for (const file of files("src/app").filter(p => p.endsWith("/route.ts"))) for (const name of exports(file).names.filter(n => n && ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].includes(n))) {
       const entry = inventory.routes.find(r => r.file === file && r.method === name), source = exports(file).bodies.get(name)!;
       expect(entry, file + ":" + name).toBeDefined();
-      if (entry?.public) expect(["src/app/api/health/route.ts", "src/app/auth/login/route.ts", "src/app/auth/callback/route.ts"]).toContain(file);
+      if (entry?.public) expect(["src/app/api/health/route.ts", "src/app/auth/login/route.ts", "src/app/auth/callback/route.ts", "src/app/auth/demo/route.ts"]).toContain(file);
       else expect(source).toMatch(entry && "guard" in entry ? /requireUser|requireCsrf/ : /authorizedRoute\(/);
       found.push(file + ":" + name);
     }

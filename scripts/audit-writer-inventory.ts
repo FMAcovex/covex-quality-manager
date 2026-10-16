@@ -16,7 +16,7 @@ function files(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? files(join(dir, entry.name)) : /\.(ts|tsx)$/.test(entry.name) ? [join(dir, entry.name)] : []).sort();
 }
 function excluded(file: string) {
-  return /(?:\.test\.|\/__tests__\/|\/.*fixtures\/|-fixtures\.|\/smoke-|\/auth-fixtures\/|\/audit-fixtures\/|\/seed-demo\.|\/benchmark-|\/generate-demo-)/.test(file) || /\/audit-writer-inventory\.ts$/.test(file);
+  return /(?:\.test\.|\/__tests__\/|\/.*fixtures\/|-fixtures\.|\/smoke-|\/auth-fixtures\/|\/audit-fixtures\/|\/seed-demo\.|\/scripts\/demo\/|\/benchmark-|\/generate-demo-)/.test(file) || /\/audit-writer-inventory\.ts$/.test(file);
 }
 function name(node: ts.Node | undefined): string | undefined {
   return node && (ts.isIdentifier(node) || ts.isStringLiteral(node) || ts.isNumericLiteral(node)) ? node.text : undefined;
