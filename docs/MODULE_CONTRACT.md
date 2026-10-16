@@ -133,7 +133,7 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
   - las etiquetas de tipo (`qmsRecordTypeLabel`);
   - las dos listas literales de `src/lib/auth/action-guard.ts`.
 - `accessModules` (`src/lib/auth/context.ts`) **se mantiene literal**, porque es la fuente del tipo `AccessModule` y del propio tipo de clave del contrato. Un test exige que coincida con el registro más `SYSTEM`.
-- La página del audit trail conserva sus etiquetas propias («Controles de Cambios», «PNT»), que difieren de las del menú. Unificarlas sería un cambio visible y queda fuera de esta PR.
+- La página del audit trail conservaba sus etiquetas propias («Controles de Cambios», «PNT»). **Unificado después (2026-10-16):** su filtro de módulo usa `labels.plural` del registro, igual que el menú y el dashboard. Los títulos internos de las páginas de Control de Cambios mantienen «Controles de Cambios».
 
 ### 4.2 Implementado en PR 4 (2026-10-16)
 
