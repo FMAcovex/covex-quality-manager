@@ -174,7 +174,7 @@ Cada paso es una PR independiente, sin cambio visible, con lint, tests, Prisma v
 
 ### Qué seguirá necesitando un módulo nuevo
 
-Aun con contrato: modelo Prisma y migración propios, nuevo valor en `QmsRecordType` si participa en relaciones, sus pantallas, acciones de servidor, entradas en `operation-inventory.json`, registro en la captura de audit trail y pruebas. El contrato elimina la edición dispersa de listas transversales, no el trabajo de dominio ni la validación proporcional del cambio.
+Aun con contrato: su búsqueda para el buscador global (`src/modules/<módulo>/search.ts`, registrada en `src/modules/search-registry.ts`; un test exige que exista para cada módulo registrado), modelo Prisma y migración propios, nuevo valor en `QmsRecordType` si participa en relaciones, sus pantallas, acciones de servidor, entradas en `operation-inventory.json`, registro en la captura de audit trail y pruebas. El contrato elimina la edición dispersa de listas transversales, no el trabajo de dominio ni la validación proporcional del cambio.
 
 ## 7. Fuera de alcance
 

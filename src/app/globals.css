@@ -66,6 +66,15 @@ button, input, select { font: inherit; }
 .actor { justify-self: end; display: flex; align-items: center; gap: 10px; font-size: 13px; }
 .session-controls { min-width: 0; flex-wrap: wrap; }
 .session-controls strong { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-tools { justify-self: end; display: flex; align-items: center; gap: 14px; min-width: 0; }
+.global-search-link { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: var(--muted); border: 1px solid var(--border); background: var(--surface); flex: none; }
+.global-search-link:hover, .global-search-link.active { color: var(--blue-dark); border-color: var(--blue); }
+.global-search { display: flex; gap: 10px; margin-bottom: 18px; max-width: 640px; }
+.global-search input { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.global-search-hits { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; }
+.global-search-hits li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.global-search-summary { color: var(--muted); font-size: 13px; }
 .avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--blue-soft); color: var(--blue-dark); font-weight: 700; }
 .page-shell { width: 100%; padding: 28px; }
 .workspace { max-width: 1800px; margin: 0 auto; }
@@ -112,6 +121,7 @@ th { background: #f7f9fc; color: #53647b; font-weight: 750; }
   .page-shell, .topbar { padding-left: 16px; padding-right: 16px; }
   .actor { display: none; }
   .session-controls { display: flex; grid-column: 1 / -1; justify-self: start; }
+  .topbar-tools { grid-column: 1 / -1; justify-self: start; }
   .page-heading { align-items: flex-start; flex-direction: column; }
   .filter-panel, .status-strip { grid-template-columns: 1fr 1fr; }
 }

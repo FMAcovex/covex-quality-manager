@@ -10,7 +10,7 @@ import { prisma } from "../db";
 import { qmsModuleByPathSegment } from "@/modules/registry";
 
 // Segmentos de módulo derivados del registro; settings y audit-trail son transversales.
-const paths: Record<string, AccessModule> = { ...qmsModuleByPathSegment, settings: "SYSTEM", "audit-trail": "DEVIATION" };
+const paths: Record<string, AccessModule> = { ...qmsModuleByPathSegment, settings: "SYSTEM", "audit-trail": "DEVIATION", search: "DEVIATION" };
 function forbidden(segment: string) {
   return createElement("section", { className: "card", role: "alert" }, createElement("h1", null, "Acceso no permitido"), createElement("p", null, "No tiene permiso para esta operación. Puede seguir consultando los expedientes."), createElement("a", { className: "button", href: `/${segment}` }, "Volver al listado"));
 }
