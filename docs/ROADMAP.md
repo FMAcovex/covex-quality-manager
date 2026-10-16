@@ -35,6 +35,8 @@
 - **PR B (posterior):** únicamente disposición y legibilidad de filtros e indicadores de listados, preservando estilos, lógica, responsive y componentes corporativos.
 - **PR C (posterior):** retorno con filtros/página/pestaña, errores inline y estados de cambios; no modificar ciclo documental, firmas, plazos, obligaciones ni guardado explícito.
 
+- **Contrato de módulo (aprobado 2026-10-16, D-083):** PR 1 documental con diseño y plan de migración en PR 2–5 sin cambio visible, más PR 2-bis para retirar el alta de relaciones de Control de Cambios y los tipos de relación sin uso. Véase [MODULE_CONTRACT.md](MODULE_CONTRACT.md). Cada PR de implementación mantiene su aprobación de alcance.
+
 La evaluación de UX en Work/Codex precederá a B/C y se dividirá en cambios pequeños revisables. Dashboard y backend tendrán PR independientes según impacto.
 
 ---
