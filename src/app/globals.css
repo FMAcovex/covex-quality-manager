@@ -111,6 +111,14 @@ th { background: #f7f9fc; color: #53647b; font-weight: 750; }
 .empty-state strong, .empty-state span { display: block; }
 .empty-state strong { color: var(--text); margin-bottom: 7px; }
 
+/* El menú principal (10 entradas, ~1.240 px) no cabe en la columna central de la cabecera por
+   debajo de unos 2.200 px de ancho: pasa a una segunda fila a todo el ancho, igual que ya hacía
+   por debajo de 1200 px. */
+@media (max-width: 2199px) {
+  .topbar { grid-template-columns: 1fr auto; }
+  .module-nav { grid-column: 1 / -1; order: 3; height: auto; overflow-x: auto; }
+  .module-link { padding: 10px 12px; }
+}
 @media (max-width: 1200px) {
   .topbar { grid-template-columns: 1fr auto; }
   .module-nav { grid-column: 1 / -1; order: 3; height: auto; overflow-x: auto; }
