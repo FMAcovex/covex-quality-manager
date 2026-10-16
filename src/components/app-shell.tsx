@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SessionControls } from "./session-controls";
+import { GlobalSearchBox } from "./global-search-box";
 import { useCanAct } from "./permissions";
 import { qmsModules } from "@/modules/registry";
 
@@ -65,7 +66,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </nav>
 
-        <SessionControls />
+        <div className="topbar-tools">
+          <GlobalSearchBox />
+          <SessionControls />
+        </div>
       </header>
       <main className="page-shell">{children}</main>
     </div>

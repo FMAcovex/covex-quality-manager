@@ -1384,6 +1384,7 @@
     "src/app/returns/indicators/page.tsx",
     "src/app/returns/new/page.tsx",
     "src/app/returns/page.tsx",
+    "src/app/search/page.tsx",
     "src/app/settings/alerts/page.tsx",
     "src/app/settings/catalogs/page.tsx",
     "src/app/settings/history/page.tsx",
