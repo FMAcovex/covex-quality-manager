@@ -1,6 +1,6 @@
 # Contrato de módulo QMS — diseño (PR 1, solo documentación)
 
-**Estado:** propuesta de diseño para aprobación. **Fecha:** 2026-10-16. **Base:** main `a1d61d8` (#143).
+**Estado:** diseño aprobado (D-083, 2026-10-16); implementación pendiente por PR. **Fecha:** 2026-10-16. **Base:** main `a1d61d8` (#143).
 
 Este documento **no implementa nada** y no modifica código, schema, migraciones, plantillas, permisos, estados, relaciones ni datos. Desarrolla la línea ya aprobada en D-072 y en [QMS_TARGET_ARCHITECTURE.md](QMS_TARGET_ARCHITECTURE.md) («Extender módulos de forma segura»). Cada paso de implementación descrito en el plan de migración requiere aprobación de alcance propia.
 
@@ -119,9 +119,9 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
 
 Requiere una decisión en `DECISIONS.md` y una PR que añada una línea en el contrato del módulo de origen, su `guard` si procede y sus tests positivos y negativos. No requiere migración ni tocar el servicio común.
 
-### 5.4 Incoherencia detectada (no se corrige en esta PR)
+### 5.4 Incoherencia detectada (se corrige en la PR 2-bis, no en esta)
 
-La ficha de Control de Cambios muestra la pestaña Relaciones con un formulario de alta (`src/app/changes/[id]/page.tsx`, `addChangeControlRelationAction` en `src/modules/change-control/actions.ts:1129`). El formulario ofrece los cuatro tipos (`RELATED_TO` por defecto, `GENERATES`, `IMPLEMENTED_BY`, `ASSOCIATED_WITH`), pero como la matriz no admite ninguna relación de Control de Cambios, **cualquier intento termina en error** «Relación no permitida». No hay riesgo de datos, pero sí confusión de uso. Ver decisión abierta MC-2.
+La ficha de Control de Cambios muestra la pestaña Relaciones con un formulario de alta (`src/app/changes/[id]/page.tsx`, `addChangeControlRelationAction` en `src/modules/change-control/actions.ts:1129`). El formulario ofrece los cuatro tipos (`RELATED_TO` por defecto, `GENERATES`, `IMPLEMENTED_BY`, `ASSOCIATED_WITH`), pero como la matriz no admite ninguna relación de Control de Cambios, **cualquier intento termina en error** «Relación no permitida». No hay riesgo de datos, pero sí confusión de uso. Resuelto en MC-2: se retirará en la PR 2-bis.
 
 ## 6. Plan de migración propuesto
 
@@ -129,11 +129,13 @@ Cada paso es una PR independiente, sin cambio visible, con lint, tests, Prisma v
 
 | PR | Alcance | Criterio de aceptación |
 | --- | --- | --- |
-| **1 (esta)** | Diseño y decisiones abiertas | Revisión y aprobación del responsable del proyecto |
+| **1 (esta)** | Diseño y decisiones MC-1 a MC-4 | Aprobado en D-083 |
 | **2** | `contract.ts` + `registry.ts` con identidad, etiquetas y **relaciones** de los 6 módulos `QmsRecord`; `relation-rules.ts` y `createQmsRelation` derivan del registro | Test de equivalencia de matriz; tests existentes de relaciones sin cambios; smoke de relaciones PostgreSQL verde |
+| **2-bis** | MC-2 y MC-4 etapa 1: retirar el formulario de alta de relaciones de Control de Cambios y los tipos sin uso del código de aplicación | Consulta de relaciones conservada; test de que la acción ya no existe en el inventario; regresión de Control de Cambios verde |
 | **3** | Menú, tarjetas del dashboard, etiquetas, `accessModules` y `auditTrailModules` derivados del registro; PNT registrado con `recordType: null` | Tests de equivalencia de listas; regresión UI Chromium sin diferencias visuales |
 | **4** | Permisos admitidos por módulo y comprobación cruzada con `operation-inventory.json` | Test de inventario ampliado; sin cambios en la matriz de roles |
 | **5** | Ciclo de vida **descriptivo**: estados y transiciones vigentes declarados, verificados contra el comportamiento actual por test, sin pasar aún a controlarlos | Test que recorre las transiciones reales y las compara con la declaración |
+| Posterior | MC-4 etapa 2: retirar tipos del enum Prisma con migración protegida | Migración falla si hay filas con esos tipos; fixtures y pruebas de audit trail adaptadas |
 | Posterior | Documentos/plantillas, KPI, objetivos de Review; después, módulos nuevos sobre el contrato | Según decisión y alcance aprobados |
 
 **Reversión:** cada PR de migración mantiene la lista literal sustituida hasta que su test de equivalencia pasa en CI; revertir la PR restaura el estado anterior sin efecto en datos.
@@ -161,9 +163,11 @@ Aun con contrato: modelo Prisma y migración propios, nuevo valor en `QmsRecordT
 | Ciclos de import entre módulos y registro | Contratos sin dependencias de UI; guards cargados de forma diferida como hoy |
 | Impacto en audit trail | Sin cambios en escrituras ni en el inventario de escritores; las relaciones se siguen creando por el mismo servicio |
 
-## 9. Decisiones abiertas para el responsable del proyecto
+## 9. Decisiones del responsable del proyecto (D-083, 2026-10-16)
 
-- **MC-1.** Aprobar este diseño y el plan de PR 2–5.
-- **MC-2.** Control de Cambios: (a) mantener fuera de relaciones y **ocultar o deshabilitar** el formulario de la pestaña Relaciones, o (b) autorizar relaciones concretas (por ejemplo Desviación/CAPA/Auditoría → Control de Cambios) con su decisión y PR propias.
-- **MC-3.** PNT: decidir si en el futuro debe poder relacionarse con expedientes (por ejemplo «este control de cambios modifica el PNT-XXX»). Implicaría incorporarlo a `QmsRecord` mediante decisión y análisis de impacto propios; no se propone ahora.
-- **MC-4.** Tipos `RELATED_TO`, `IMPLEMENTED_BY` y `ASSOCIATED_WITH` existen en el enum pero ninguna regla los admite: conservarlos como reserva o documentar su retirada futura.
+- **MC-1 — Aprobado.** Diseño y plan de PR 2–5. Cada PR mantiene su propia aprobación de alcance.
+- **MC-2 — Control de Cambios sin relaciones.** Se mantiene fuera de las relaciones operativas (D-018, D-047). Se retirará el formulario de alta de la pestaña Relaciones en una PR acotada, conservando la consulta de relaciones existentes y sin borrar datos.
+- **MC-3 — PNT: necesidad futura.** No se incorpora PNT a `QmsRecord` ni se amplía la matriz por ahora. El contrato ya admite `recordType: null` para PNT, de modo que la incorporación futura sea un cambio localizado con su decisión e impacto propios.
+- **MC-4 — Retirar los tipos sin uso, por etapas.**
+  1. Junto con MC-2: quitar `RELATED_TO`, `IMPLEMENTED_BY` y `ASSOCIATED_WITH` de la interfaz y del código de aplicación (`src/app/changes/[id]/page.tsx`, `addChangeControlRelationAction`, `src/lib/qms/relations.ts`).
+  2. PR propia posterior: retirarlos del enum Prisma con una migración que se detenga si existe alguna fila que los use. Antes hay que adaptar las fixtures y pruebas que hoy los escriben directamente: `scripts/phase3b1-fixtures.ts:69`, `scripts/smoke-phase4b3-b2-capture.ts` (operación DV08) y `scripts/audit-fixtures/operational-actions-capture.test.ts:428-438`.
