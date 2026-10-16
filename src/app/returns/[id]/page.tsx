@@ -1,3 +1,4 @@
+import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
@@ -60,6 +61,7 @@ const tabs = [
   ["relations", "Relaciones"],
   ["documents", "Documentos"],
   ["review", "Revisión"],
+  ["timeline", "Cronología"],
   ["audit-trail", "Audit Trail"],
   ["history", "Historial"],
 ] as const;
@@ -992,7 +994,8 @@ async function ReturnDetailPageAuthenticatedContent({
             )}
           </div>
         ) : null}
-        {tab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${r.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
+        {tab === "timeline" ? <RecordTimeline qmsRecordId={r.qmsRecord.id} /> : null}
+      {tab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${r.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
       </section>
       <ReviewDrawer />
     </ReviewWorkspaceProvider>

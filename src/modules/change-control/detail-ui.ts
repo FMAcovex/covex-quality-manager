@@ -6,6 +6,7 @@ export const changeControlDetailTabs = [
   ["documents", "Documentos"],
   ["relations", "Relaciones"],
   ["review", "Revisión"],
+  ["timeline", "Cronología"],
   ["audit-trail", "Audit Trail"],
   ["history", "Historial"],
 ] as const;

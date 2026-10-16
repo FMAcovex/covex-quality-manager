@@ -1,3 +1,4 @@
+import { RecordTimeline } from "@/components/record-timeline";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
 import { AuditTrailPanel } from "@/components/audit-trail-panel";
@@ -647,6 +648,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
           ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
         </div>
       ) : null}
+      {activeTab === "timeline" ? <RecordTimeline qmsRecordId={record.qmsRecord.id} /> : null}
       {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${record.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>
     <ReviewDrawer />

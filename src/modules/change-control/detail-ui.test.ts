@@ -19,6 +19,7 @@ describe("modelo visual del expediente de Control de Cambios · CC2", () => {
       ["documents", "Documentos"],
       ["relations", "Relaciones"],
       ["review", "Revisión"],
+      ["timeline", "Cronología"],
       ["audit-trail", "Audit Trail"],
       ["history", "Historial"],
     ]);
