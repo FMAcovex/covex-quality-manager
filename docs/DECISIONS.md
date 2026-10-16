@@ -676,3 +676,16 @@ El responsable del proyecto aprueba el diseño de [MODULE_CONTRACT.md](MODULE_CO
 ## D-084 — Vistas guardadas por usuario, excluidas del audit trail (2026-10-16)
 
 El responsable del proyecto aprueba guardar en base de datos, por usuario, combinaciones de filtros de los listados de los siete módulos (opción B), en la tabla `SavedListView`. Una vista guarda solo la consulta del listado (filtros, orden y vista), sin paginación ni datos de expedientes. Cada usuario ve, crea, sobrescribe y elimina únicamente las suyas; no se comparten ni dan acceso a nada que el usuario no pueda ya consultar. Se decide excluirlas del audit trail (opción 1): son una preferencia personal de consulta que no crea, modifica ni anula datos GMP, documentos o expedientes. La tabla no tiene trigger `audit_b2_required` y sus dos acciones no figuran en el mapa de operaciones de `action-boundary.ts`; un test fija la exclusión. Las 63 operaciones de la matriz B2 no cambian. La exclusión queda documentada y justificada para revisión de QA; si QA decide incluirlas, bastará añadir trigger y operación en una PR propia. Sin cambios de permisos, reglas GMP ni datos existentes.
+
+## D-085 — Ciclos de vida vigentes aceptados y sucesión de vigentes PNT (2026-10-16)
+
+El responsable del proyecto revisa los hallazgos del ciclo de vida descriptivo ([MODULE_CONTRACT.md](MODULE_CONTRACT.md) §4.3) y decide:
+
+1. **Alta directa en Cerrada:** se mantiene. Un expediente puede concluirse en el mismo momento en que se registra.
+2. **Reapertura sin nueva versión:** se mantiene. Reabrir está permitido y no exige crear una versión; editar versiones anteriores es una facilidad operativa del día a día, no un control GMP.
+3. **CAPA Cancelada:** puede reabrirse, y cancelar no exige un motivo separado: Cancelada es un estado y la justificación se escribe en el propio expediente.
+4. **Edición de expedientes anulados:** se mantiene como está. Los anulados no se muestran en el listado por defecto y su editabilidad no plantea problema en la V1.
+5. **PNT, registro histórico como vigente:** se corrige. Al registrar como vigente una revisión histórica, la vigente anterior del mismo PNT pasa a Obsoleta desde la nueva fecha de vigencia, igual que en la activación y en el cambio manual. No se sustituye una vigente con número de revisión posterior, y la nueva vigencia no puede comenzar antes que la anterior.
+
+Los puntos 1–4 no cambian código: el ciclo de vida declarado en los contratos ya los describe. Ninguno se presenta como control GMP validado.
+

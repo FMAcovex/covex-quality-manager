@@ -42,7 +42,24 @@ async function main() {
         assert.equal(initial.status, "IN_FORCE");
         assert.equal(m.changes.length, 2);
         await assert.rejects(saveMaster(input));
-        await assert.rejects(saveRevision(id, revision({ revisionCode: "02", existingDocument: "on", verified: "on", sourceReference: "Fuente ficticia", effectiveFrom: "2026-01-01" })));
+        await assert.rejects(saveRevision(id, revision({ revisionCode: "02", existingDocument: "on", verified: "on", sourceReference: "Fuente ficticia", effectiveFrom: "2025-12-31" })), /antes que la revisión vigente anterior/);
+        // D-085: registrar como vigente una revisión histórica posterior deja obsoleta la vigente anterior.
+        const successionCode = `QA-99/${String((Number(code.slice(-3)) + 500) % 1000).padStart(3, "0")}`;
+        const legacy = (revisionCode: string, effectiveFrom: string) => revision({ revisionCode, existingDocument: "on", existingStatus: "IN_FORCE", verified: "on", sourceReference: "Fuente ficticia", effectiveFrom, changeReason: `Revisión ${revisionCode} vigente contrastada` });
+        const succession = await saveMaster(master({ operation: "REGISTER", baseCode: successionCode, title: "Sucesión ficticia", departmentId: dep.id, revisionCode: "00", changeReason: "Registro vigente real contrastado", existingDocument: "on", existingStatus: "IN_FORCE", verified: "on", sourceReference: "Fuente ficticia", effectiveFrom: "2025-01-01" }));
+        ids.push(succession);
+        const r00 = await prisma.controlledDocumentRevision.findFirstOrThrow({ where: { documentId: succession, revisionCode: "00" } });
+        await assert.rejects(saveRevision(succession, legacy("01", "2024-12-31")), /antes que la revisión vigente anterior/);
+        assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: r00.id } })).status, "IN_FORCE");
+        const r01 = await saveRevision(succession, legacy("01", "2026-02-01"));
+        assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: r00.id } })).status, "OBSOLETE");
+        assert.equal((await prisma.controlledRevisionLifecycle.findUniqueOrThrow({ where: { revisionId: r00.id } })).obsoletedAt?.toISOString().slice(0, 10), "2026-02-01");
+        assert.equal((await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: r01 } })).status, "IN_FORCE");
+        assert.equal(await prisma.controlledDocumentChange.count({ where: { revisionId: r00.id, action: "Obsoleta por registro histórico de revisión posterior" } }), 1);
+        const r03 = await saveRevision(succession, legacy("03", "2026-03-01"));
+        await assert.rejects(saveRevision(succession, legacy("02", "2026-03-01")), /ya está vigente y es posterior/);
+        assert.deepEqual((await prisma.controlledDocumentRevision.findMany({ where: { documentId: succession }, orderBy: { revisionCode: "asc" } })).map(r => [r.revisionCode, r.status]), [["00", "OBSOLETE"], ["01", "OBSOLETE"], ["03", "IN_FORCE"]]);
+        assert.ok(r03);
         const following = await saveRevision(id, revision({ revisionCode: "01", previousRevisionId: initial.id, effectiveFrom: "2030-01-01", reviewDueAt: "2035-01-01" }));
         assert.ok(following);
         const prepared = await prisma.controlledDocumentRevision.findUniqueOrThrow({ where: { id: following } });
@@ -77,11 +94,12 @@ async function main() {
         const before = await prisma.controlledDocumentChange.count({ where: { documentId: id } });
         await assert.rejects(saveRevision(id, revision({ revisionCode: "01" })));
         assert.equal(await prisma.controlledDocumentChange.count({ where: { documentId: id } }), before);
-        console.log("P1A PostgreSQL OK: borrador, registro, 00, unicidad, vigente + elaboración, departamentos históricos, snapshots inmutables, conflicto, historial atómico, filtros y paginación SQL >300.");
+        console.log("P1A PostgreSQL OK: borrador, registro, 00, unicidad, vigente + elaboración, sucesión de vigentes históricas, departamentos históricos, snapshots inmutables, conflicto, historial atómico, filtros y paginación SQL >300.");
     }
     finally {
         // Cleanup confined to the UUIDs created by this test; the application has no delete action.
         await prisma.controlledDocumentChange.deleteMany({ where: { documentId: { in: ids } } });
+        await prisma.controlledRevisionLifecycle.deleteMany({ where: { documentId: { in: ids } } });
         await prisma.controlledDocumentRevision.updateMany({ where: { documentId: { in: ids } }, data: { previousRevisionId: null } });
         await prisma.controlledDocumentRevision.deleteMany({ where: { documentId: { in: ids } } });
         await prisma.controlledDocument.deleteMany({ where: { id: { in: ids } } });
