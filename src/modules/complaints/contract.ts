@@ -1,16 +1,16 @@
-import { QmsRecordType, QmsRelationType } from "@prisma/client";
-import type { QmsModuleContract } from "@/modules/contract";
+import type { QmsRecordModuleContract } from "@/modules/contract";
 
-export const complaintModule: QmsModuleContract = {
+export const complaintModule: QmsRecordModuleContract = {
   contractVersion: 1,
   key: "COMPLAINT",
-  recordType: QmsRecordType.COMPLAINT,
+  recordType: "COMPLAINT",
   labels: { singular: "Reclamación", plural: "Reclamaciones" },
   href: "/complaints",
+  indicatorsHref: "/complaints/indicators",
   relations: {
     outgoing: [
-      { target: QmsRecordType.CAPA, type: QmsRelationType.GENERATES, label: "Reclamación → CAPA" },
-      { target: QmsRecordType.RETURN, type: QmsRelationType.GENERATES, label: "Reclamación → Devolución" },
+      { target: "CAPA", type: "GENERATES", label: "Reclamación → CAPA" },
+      { target: "RETURN", type: "GENERATES", label: "Reclamación → Devolución" },
     ],
   },
 };

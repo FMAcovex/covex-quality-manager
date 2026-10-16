@@ -5,18 +5,26 @@ import type { QmsRelationClient } from "@/lib/qms/relation-service";
 /**
  * Contrato declarativo de un módulo QMS (v1). Ver docs/MODULE_CONTRACT.md.
  *
- * Solo datos: se puede importar desde cualquier capa. La lógica de servidor
+ * Solo datos y solo imports de tipos: se puede importar desde cualquier capa,
+ * incluidos componentes de cliente. La lógica de servidor
  * asociada a relaciones vive en `ModuleRelationHooks` (relation-hooks.ts de
  * cada módulo) y se registra en src/modules/relation-hooks-registry.ts.
  */
+export type QmsModuleKey = Exclude<AccessModule, "SYSTEM">;
+
 export type QmsModuleContract = {
   contractVersion: 1;
-  key: AccessModule;
-  recordType: QmsRecordType;
+  key: QmsModuleKey;
+  /** null cuando el módulo no usa expediente `QmsRecord` (PNT, D-083 MC-3). */
+  recordType: QmsRecordType | null;
+  /** `plural` es el nombre del módulo en el menú principal y el dashboard. */
   labels: Readonly<{ singular: string; plural: string }>;
   href: string;
+  indicatorsHref: string | null;
   relations: Readonly<{ outgoing: readonly QmsRelationRule[] }>;
 };
+
+export type QmsRecordModuleContract = QmsModuleContract & Readonly<{ recordType: QmsRecordType }>;
 
 /** Relación admitida en dirección canónica, declarada en el módulo de origen. */
 export type QmsRelationRule = Readonly<{

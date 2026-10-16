@@ -1,13 +1,19 @@
-export const DASHBOARD_MODULES = [
-  { key: "DEVIATION", label: "Desviaciones", href: "/deviations", indicatorHref: "/deviations/indicators" },
-  { key: "CAPA", label: "CAPA", href: "/capa", indicatorHref: "/capa/indicators" },
-  { key: "CHANGE_CONTROL", label: "Controles de cambios", href: "/changes", indicatorHref: "/changes/indicators" },
-  { key: "COMPLAINT", label: "Reclamaciones", href: "/complaints", indicatorHref: "/complaints/indicators" },
-  { key: "RETURN", label: "Devoluciones", href: "/returns", indicatorHref: "/returns/indicators" },
-  { key: "AUDIT", label: "Auditorías", href: "/audits", indicatorHref: null },
-] as const;
+import type { QmsModuleContract, QmsModuleKey } from "@/modules/contract";
+import { qmsModules, qmsRecordModules } from "@/modules/registry";
 
-export type DashboardModule = typeof DASHBOARD_MODULES[number]["key"] | "PNT";
+const dashboardEntry = (contract: QmsModuleContract) => ({
+  key: contract.key,
+  label: contract.labels.plural,
+  href: contract.href,
+  indicatorHref: contract.indicatorsHref,
+});
+
+/** Tarjetas con recuentos: módulos con expediente QmsRecord, en orden del registro. */
+export const DASHBOARD_MODULES = qmsRecordModules.map(dashboardEntry);
+/** Todos los módulos seleccionables en el dashboard, PNT incluido. */
+export const DASHBOARD_ALL_MODULES = qmsModules.map(dashboardEntry);
+
+export type DashboardModule = QmsModuleKey;
 export type DashboardState = "ALL" | "OPEN" | "CLOSED" | "DRAFT";
 export type DashboardTaskView = "all" | "overdue" | "upcoming";
 export type DashboardFilters = {

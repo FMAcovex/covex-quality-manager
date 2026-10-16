@@ -5,6 +5,7 @@ import { AccessError, currentIdentity, identityContext, type AccessModule, type 
 import { assertPermission } from "./policy";
 import { qmsScope, resourceScope, reviewScope } from "./resources";
 import { requireCsrf, requireUser } from "./session";
+import { qmsRecordModuleKeys, qmsRecordTypes } from "@/modules/registry";
 
 const actorKeys = ["actor", "createdByText", "acceptedByText", "resolvedByText"];
 export function authenticatedArguments(args: unknown[], name: string, creation = false, action = "") {
@@ -31,7 +32,7 @@ async function configurationModule(entry: typeof inventory.actions[number], args
   }
   const raw = form?.get("module");
   const createsModuleResource = ["createCatalogAction", "registerTemplateVersionAction"].includes(entry.name);
-  return createsModuleResource && raw && ["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT"].includes(String(raw)) ? String(raw) as AccessModule : "SYSTEM";
+  return createsModuleResource && raw && (qmsRecordModuleKeys as readonly string[]).includes(String(raw)) ? String(raw) as AccessModule : "SYSTEM";
 }
 async function authorizeAndRun<T>(name: string, args: unknown[], run: (authenticated: unknown[]) => Promise<T>): Promise<T> {
   const entry = inventory.actions.find(a => a.name === name); if (!entry) throw new AccessError(403);
@@ -86,7 +87,7 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
     }
     if (/Relation/.test(name) && form.get("businessCode") && form.get("recordType")) {
       const type = String(form.get("recordType"));
-      if (["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT"].includes(type)) {
+      if ((qmsRecordTypes as readonly string[]).includes(type)) {
         const target = await prisma.qmsRecord.findFirst({ where: { recordType: type as import("@prisma/client").QmsRecordType, businessCode: String(form.get("businessCode")).trim() }, select: { id: true } });
         if (target) ids.add(target.id);
       }
