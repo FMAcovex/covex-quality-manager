@@ -33,6 +33,8 @@ import {
   snapshotJson,
   startNextVersion,
 } from "@/lib/qms/versioning";
+import { acceptsFollowup, keepsOperationalStatus } from "@/modules/lifecycle";
+import { followupFinalStatus } from "@/modules/change-control/lifecycle";
 
 function toDate(value: string | null | undefined) {
   return value ? new Date(value) : null;
@@ -394,7 +396,7 @@ async function updateChangeControlActionAuthenticatedContent(
   const v = parsed.values;
   const requestedBusinessCode = v.businessCode;
   v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
-  if (existing.finalStatus !== "DRAFT" && v.finalStatus === "DRAFT") {
+  if (!keepsOperationalStatus(existing.finalStatus, v.finalStatus)) {
     return preserveFormState(previous, formData, {
       error: "No se puede volver a borrador un Control de Cambio ya operativo.",
       fieldErrors: ["Un Control de Cambio abierto o cerrado no puede volver al estado Borrador."],
@@ -725,7 +727,7 @@ async function addChangeControlFollowupActionAuthenticatedContent(id: string, _s
     },
   });
   if (!change) return { error: "Control de Cambio no encontrado." };
-  if (change.finalStatus === "DRAFT") {
+  if (!acceptsFollowup(change.finalStatus)) {
     return { error: "El Control de Cambio debe estar abierto antes de registrar seguimientos." };
   }
   if (change.dictamenResult !== "APPROVED") {
@@ -845,7 +847,7 @@ async function addChangeControlFollowupActionAuthenticatedContent(id: string, _s
             ? change.operationalClosedAt ?? new Date(followupDate)
             : change.operationalClosedAt,
         effectivenessStatus: effectivenessStatus as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE",
-        finalStatus: closeChange ? "CLOSED" : "OPEN",
+        finalStatus: followupFinalStatus(closeChange),
         effectiveClosedAt: closeChange ? new Date(followupDate) : null,
         closureConclusion: closeChange ? conclusion : change.closureConclusion,
       },
@@ -1031,7 +1033,7 @@ async function updateChangeControlFollowupActionAuthenticatedContent(
               ? change.operationalClosedAt ?? new Date(followupDate)
               : null,
           effectivenessStatus: effectivenessStatus as "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE",
-          finalStatus: closeChange ? "CLOSED" : "OPEN",
+          finalStatus: followupFinalStatus(closeChange),
           effectiveClosedAt: closeChange ? new Date(followupDate) : null,
           closureConclusion: closeChange ? conclusion : null,
         },
@@ -1107,7 +1109,7 @@ async function updateChangeControlFollowupActionAuthenticatedContent(
           section.executionStatus = executionStatus;
           section.executionDate = executionDate || null;
           section.effectivenessStatus = effectivenessStatus;
-          section.finalStatus = closeChange ? "CLOSED" : "OPEN";
+          section.finalStatus = followupFinalStatus(closeChange);
           section.effectiveClosedAt = closeChange ? followupDate : null;
           section.closureConclusion = closeChange ? conclusion : null;
         }

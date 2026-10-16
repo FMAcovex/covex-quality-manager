@@ -52,6 +52,7 @@ import {
   serializeCapaVersion,
   snapshotJson,
 } from "@/lib/qms/versioning";
+import { keepsOperationalStatus } from "@/modules/lifecycle";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -419,7 +420,7 @@ async function updateCapaActionAuthenticatedContent(
   const historyReason = v.saveIntent === "CREATE_FOLLOWUP_VERSION" ? v.changeReason : null;
   const requestedBusinessCode = v.businessCode;
   v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
-  if (existing.status !== "DRAFT" && v.status === "DRAFT") {
+  if (!keepsOperationalStatus(existing.status, v.status)) {
     return preserveFormState(previous, formData, {
       error: "No se puede volver a borrador una CAPA ya operativa.",
       fieldErrors: ["Una CAPA abierta, cerrada o cancelada no puede volver al estado Borrador."],

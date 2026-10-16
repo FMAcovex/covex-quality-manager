@@ -4,6 +4,7 @@ import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { parseCapaFollowupTransition } from "@/modules/capa/followup-transition";
 import { serializeCapaVersion, snapshotJson, startNextVersion } from "@/lib/qms/versioning";
 import type { FollowupActionState } from "@/components/basic-followup-form";
+import { acceptsFollowup } from "@/modules/lifecycle";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -37,7 +38,7 @@ export async function saveCapaFollowup(
     },
   });
   if (!capa) return { error: "CAPA no encontrada." };
-  if (capa.status === "DRAFT") {
+  if (!acceptsFollowup(capa.status)) {
     return { error: "La CAPA debe estar abierta antes de registrar seguimientos." };
   }
 

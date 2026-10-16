@@ -42,6 +42,23 @@ export function assertTransition(operation: LifecycleCommand["operation"], state
   };
   if (!allowed[operation].includes(state)) throw new Error("Transición no permitida; no se pueden eludir los requisitos documentales.");
 }
+/**
+ * Estado de la revisión tras una decisión ya validada (contrato de módulo, PR 5).
+ * Registrar o contrastar una función externa y verificar con discrepancias no
+ * cambian el estado; rectificar devuelve a En revisión salvo obsoletas y anuladas.
+ */
+export function revisionStatusAfter(operation: LifecycleCommand["operation"], current: State, result?: LifecycleCommand["result"]): State {
+  switch (operation) {
+    case "VERIFY": return result === "FAVORABLE" ? "IN_REVIEW" : current;
+    case "SUBMIT": return "PENDING_APPROVAL";
+    case "PLAN": return "APPROVED_PENDING_EFFECTIVE";
+    case "ACTIVATE": return "IN_FORCE";
+    case "RETIRE": return "OBSOLETE";
+    case "ANNUL": return "ANNULLED";
+    case "RECTIFY": return current === "OBSOLETE" || current === "ANNULLED" ? current : "IN_REVIEW";
+    default: return current;
+  }
+}
 export function normalizedPerson(name: string) { return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim(); }
 export function plannedDates(approval: string, effective: string | undefined, due: string | undefined, today: string) {
   if (!effective || !due || approval > today || effective < approval || due <= effective) throw new Error("Fechas de aprobación, vigencia y revisión incoherentes.");

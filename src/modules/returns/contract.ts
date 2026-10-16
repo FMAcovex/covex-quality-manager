@@ -22,4 +22,16 @@ export const returnModule: QmsRecordModuleContract = {
   ],
   // Devolución solo es destino desde Reclamación.
   relations: { outgoing: [] },
+  lifecycle: {
+    field: "ReturnRecord.status",
+    states: ["DRAFT", "OPEN", "CLOSED"],
+    transitions: [
+      { operation: "save", label: "Alta y edición de la ficha", from: [null, "DRAFT"], to: ["DRAFT", "OPEN", "CLOSED"] },
+      { operation: "save", label: "Alta y edición de la ficha", from: ["OPEN", "CLOSED"], to: ["OPEN", "CLOSED"] },
+    ],
+    notes: [
+      "Pasar a Cerrada exige el permiso de cierre, decisión, destino final y trazabilidad actualizada.",
+      "Una devolución anulada no se puede modificar; la anulación no cambia este estado.",
+    ],
+  },
 };

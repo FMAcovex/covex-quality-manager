@@ -27,4 +27,28 @@ export const pntModule: QmsModuleContract = {
   ],
   // PNT no usa expediente QmsRecord ni relaciones operativas por ahora (D-083 MC-3).
   relations: { outgoing: [] },
+  lifecycle: {
+    field: "ControlledDocumentRevision.status",
+    states: ["IMPORTED_PENDING", "DRAFT", "IN_REVIEW", "PENDING_APPROVAL", "APPROVED_PENDING_EFFECTIVE", "IN_FORCE", "OBSOLETE", "ANNULLED"],
+    transitions: [
+      { operation: "create", label: "Alta de revisión", from: [null], to: ["DRAFT"] },
+      { operation: "legacy-register", label: "Registro histórico", from: [null, "DRAFT"], to: ["IN_FORCE", "OBSOLETE", "ANNULLED"] },
+      { operation: "import", label: "Importación", from: [null], to: ["IMPORTED_PENDING"] },
+      { operation: "VERIFY", label: "Verificación favorable", from: ["IMPORTED_PENDING", "DRAFT"], to: ["IN_REVIEW"] },
+      { operation: "SUBMIT", label: "Envío a aprobación", from: ["IN_REVIEW"], to: ["PENDING_APPROVAL"] },
+      { operation: "PLAN", label: "Planificación de vigencia", from: ["PENDING_APPROVAL"], to: ["APPROVED_PENDING_EFFECTIVE"] },
+      { operation: "ACTIVATE", label: "Activación", from: ["APPROVED_PENDING_EFFECTIVE"], to: ["IN_FORCE"] },
+      { operation: "RETIRE", label: "Retirada", from: ["IN_FORCE"], to: ["OBSOLETE"] },
+      { operation: "ANNUL", label: "Anulación de la revisión", from: ["IMPORTED_PENDING", "DRAFT", "IN_REVIEW", "PENDING_APPROVAL", "APPROVED_PENDING_EFFECTIVE", "IN_FORCE"], to: ["ANNULLED"] },
+      { operation: "RECTIFY", label: "Rectificación", from: ["IMPORTED_PENDING", "DRAFT", "PENDING_APPROVAL", "APPROVED_PENDING_EFFECTIVE"], to: ["IN_REVIEW"] },
+      { operation: "manual", label: "Cambio manual de estado", from: ["IMPORTED_PENDING", "DRAFT", "IN_REVIEW", "PENDING_APPROVAL", "APPROVED_PENDING_EFFECTIVE"], to: ["DRAFT", "IN_REVIEW", "APPROVED_PENDING_EFFECTIVE", "IN_FORCE", "OBSOLETE"] },
+      { operation: "manual", label: "Cambio manual de estado", from: ["IN_FORCE"], to: ["OBSOLETE"] },
+    ],
+    notes: [
+      "Registrar o contrastar una función externa, verificar con discrepancias y rectificar una revisión obsoleta o anulada no cambian el estado.",
+      "Activar una revisión, o fijarla manualmente como vigente, pasa a Obsoleta la vigente anterior; la base de datos admite una sola vigente por documento.",
+      "Con el maestro sin registrar, el cambio manual solo admite Borrador. El registro histórico solo convierte borradores sin decisiones documentales.",
+      "Estado del maestro: Borrador → Activo al registrarlo o al activar una revisión; ninguna operación lo anula hoy.",
+    ],
+  },
 };

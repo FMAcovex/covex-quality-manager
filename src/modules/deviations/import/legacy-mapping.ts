@@ -79,7 +79,8 @@ function yesNo(value: XlsxCellValue): boolean | null {
   return state === "YES" ? true : state === "NO" ? false : null;
 }
 
-function status(value: XlsxCellValue): "OPEN" | "CLOSED" {
+/** Estado de una fila histórica: Cerrada si el texto empieza por «cerr», si no Abierta. */
+export function legacyDeviationStatus(value: XlsxCellValue): "OPEN" | "CLOSED" {
   return string(value)?.toLocaleLowerCase("es-ES").startsWith("cerr") ? "CLOSED" : "OPEN";
 }
 
@@ -143,7 +144,7 @@ function map2025(row: XlsxRow, departmentNames: Map<string, string>): Historical
     rootCause: string(raw.I),
     issueDate: date(raw.J),
     closedAt: date(raw.K),
-    status: status(raw.L),
+    status: legacyDeviationStatus(raw.L),
     deadlineStatus: deadline(raw.M),
     measuresRaw,
     capaRaw,
@@ -182,7 +183,7 @@ function map2026(row: XlsxRow, departmentNames: Map<string, string>): Historical
     rootCause: string(raw.H),
     issueDate: date(raw.I),
     closedAt: date(raw.J),
-    status: status(raw.K),
+    status: legacyDeviationStatus(raw.K),
     deadlineStatus: "NOT_EVALUATED",
     measuresRaw,
     capaRaw,

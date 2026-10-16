@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { Prisma, PrismaClient, type ControlledDocumentRevision, type ControlledRevisionDecision } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { uuid } from "../documents/domain";
-import { commandSchema, permissions, assertTransition, assertActivationIdentity, plannedDates, normalizedPerson, lifecycleHistoryActions, type LifecycleCommand } from "./domain";
+import { commandSchema, permissions, assertTransition, assertActivationIdentity, plannedDates, normalizedPerson, revisionStatusAfter, lifecycleHistoryActions, type LifecycleCommand } from "./domain";
 import { requireLifecyclePermission, type LifecyclePrincipal } from "./access";
 type Tx = Prisma.TransactionClient;
 const json = (value: unknown): Prisma.InputJsonValue => JSON.parse(JSON.stringify(value));
@@ -75,13 +75,12 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
     await objects(tx, revisionId, c.evidenceIds, c.referenceBasis);
     const decisions = await tx.controlledRevisionDecision.findMany({ where: { revisionId }, orderBy: { sequence: "asc" } });
     const today = new Date().toISOString().slice(0, 10);
-    let status = r.status;
+    const status = revisionStatusAfter(c.operation, r.status, c.result);
     if (c.operation === "VERIFY") {
       if (!["FAVORABLE", "DISCREPANCY"].includes(c.result || "")) throw new Error("Indique el resultado del contraste.");
       if (c.result === "DISCREPANCY" && !c.discrepancies) throw new Error("Describa las discrepancias detectadas.");
       if (c.result === "FAVORABLE" && c.discrepancies) throw new Error("No puede aceptar un contraste con discrepancias pendientes.");
       if (c.result === "FAVORABLE" && (!r.baseCodeSnapshot || !r.titleSnapshot || !r.departmentCodeSnapshot)) throw new Error("Faltan código, título o departamento congelados que contrastar; no se acredita una revisión incompleta.");
-      if (c.result === "FAVORABLE") status = "IN_REVIEW";
     }
     if (c.operation === "REGISTER_EXTERNAL") {
       if (!c.function || !c.externalPerson || !c.responsibility || !c.authorityBasis || !c.accreditedDate || c.accreditedDate > today)
@@ -99,8 +98,7 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
       if (r.verificationStatus !== "VERIFIED") throw new Error("Falta verificación documental favorable del contenido actual.");
       const accepted = await requirements(tx, revisionId, decisions);
       if (!accepted.PREPARATION || !accepted.REVIEW) throw new Error("Faltan preparación y revisión externas contrastadas y aceptadas.");
-      if (c.operation === "SUBMIT") status = "PENDING_APPROVAL";
-      else {
+      if (c.operation !== "SUBMIT") {
         if (!accepted.APPROVAL) throw new Error("Falta aprobación externa contrastada y aceptada.");
         if (normalizedPerson(details(accepted.PREPARATION).externalPerson!) === normalizedPerson(details(accepted.APPROVAL).externalPerson!)) throw new Error("Preparador y aprobador deben ser personas distintas (GC-00/001/03).");
         const plan = c.operation === "PLAN" ? c : details(decisions.findLast(d => d.operation === "PLAN")!);
@@ -114,7 +112,6 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
         plannedDates(approval, plan.effectiveFrom, plan.reviewDueAt, today);
         if (c.operation === "PLAN") {
           await tx.controlledRevisionLifecycle.update({ where: { revisionId }, data: { approvalAt: new Date(approval), effectiveFrom: new Date(plan.effectiveFrom!), reviewDueAt: new Date(plan.reviewDueAt!) } });
-          status = "APPROVED_PENDING_EFFECTIVE";
         } else {
           if (plan.effectiveFrom! > today || plan.reviewDueAt! <= today) throw new Error("Vigencia futura o revisión prevista vencida; no se puede activar.");
           const previous = await tx.controlledDocumentRevision.findFirst({ where: { documentId, status: "IN_FORCE" } });
@@ -133,18 +130,15 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
             await append(tx, obsolete, retirement, principal, previous.status, old, { revision: obsolete, projection: updated }, hash);
           }
           await tx.controlledDocument.update({ where: { id: documentId }, data: { administrativeStatus: "ACTIVE" } });
-          status = "IN_FORCE";
         }
       }
     }
     if (c.operation === "RETIRE" || c.operation === "ANNUL") {
-      status = c.operation === "RETIRE" ? "OBSOLETE" : "ANNULLED";
       if (r.status === "IN_FORCE") await tx.controlledRevisionLifecycle.update({ where: { revisionId }, data: { obsoletedAt: new Date(today) } });
     }
     if (c.operation === "RECTIFY") {
       if (!decisions.some(d => d.id === c.rectifiesId)) throw new Error("Seleccione la decisión de esta revisión que se rectifica.");
       if (!["OBSOLETE", "ANNULLED"].includes(status)) {
-        status = "IN_REVIEW";
         await tx.controlledRevisionLifecycle.update({ where: { revisionId }, data: { approvalAt: null, effectiveFrom: null, reviewDueAt: null } });
       }
     }

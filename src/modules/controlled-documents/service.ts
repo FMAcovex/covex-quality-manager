@@ -2,7 +2,7 @@ import { canEditRevision } from "./revision-editability";
 import { indexMetadata } from "./import/domain";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../../lib/db";
-import { MasterInput, RevisionInput, validateDepartmentForBaseCode, validateExistingRevision, validateRevisionDates } from "./domain";
+import { MasterInput, RevisionInput, validateDepartmentForBaseCode, validateExistingRevision, validateRevisionDates, newRevisionStatus } from "./domain";
 const nullable = (v: string) => v || null;
 const date = (v: string) => v ? new Date(`${v}T00:00:00Z`) : null;
 const snapshot = (m: {
@@ -25,7 +25,7 @@ async function revisionData(tx: Prisma.TransactionClient, m: Awaited<ReturnType<
         if (!previous || previous.documentId !== m.id || previous.id === id || previous.revisionCode >= v.revisionCode)
             throw new Error("La revisión anterior debe pertenecer al mismo PNT y ser menor.");
     }
-    return { ...snapshot(m), revisionCode: v.revisionCode, revisionReason: nullable(v.revisionReason), status: v.existingDocument ? v.existingStatus : "DRAFT" as const, effectiveFrom: date(v.effectiveFrom), reviewDueAt: date(v.reviewDueAt), obsoletedAt: date(v.obsoletedAt), previousRevisionId: nullable(v.previousRevisionId), sourceReference: nullable(v.sourceReference), verificationStatus: (v.existingDocument ? "VERIFIED" : "UNVERIFIED") as "VERIFIED" | "UNVERIFIED" | "REVIEW_REQUIRED", verifiedByText: v.existingDocument ? v.actor : null, verifiedAt: v.existingDocument ? new Date() : null, consolidatedAt: v.existingDocument ? new Date() : null };
+    return { ...snapshot(m), revisionCode: v.revisionCode, revisionReason: nullable(v.revisionReason), status: newRevisionStatus(v.existingDocument, v.existingStatus), effectiveFrom: date(v.effectiveFrom), reviewDueAt: date(v.reviewDueAt), obsoletedAt: date(v.obsoletedAt), previousRevisionId: nullable(v.previousRevisionId), sourceReference: nullable(v.sourceReference), verificationStatus: (v.existingDocument ? "VERIFIED" : "UNVERIFIED") as "VERIFIED" | "UNVERIFIED" | "REVIEW_REQUIRED", verifiedByText: v.existingDocument ? v.actor : null, verifiedAt: v.existingDocument ? new Date() : null, consolidatedAt: v.existingDocument ? new Date() : null };
 }
 export async function saveMaster(v: MasterInput, id?: string, db: PrismaClient = prisma) {
     return db.$transaction(async (tx) => {
