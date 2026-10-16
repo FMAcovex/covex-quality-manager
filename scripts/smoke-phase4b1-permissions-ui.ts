@@ -46,7 +46,8 @@ async function main() {
   async function readOnly(page: Page) {
     assert.equal(await page.locator('main a[href*="/new"], main a[href*="/edit"], main input[data-reminder-record], main input[data-reminder-select-all]').count(), 0, "Consulta sin acceso a formularios ni selección para modificar");
     assert.equal(await page.locator('main form:has(input[name="_covexCsrf"])').count(), 0, "Consulta sin formularios de mutación");
-    assert.equal(await page.getByRole("button", { name: /Anular expediente|Reactivar expediente|Cerrar auditoría|Guardar|Registrar documento|Añadir comentario|Preparar correo/ }).count(), 0);
+    // «Guardar vista» guarda una preferencia personal de consulta, no un expediente (D-084).
+    assert.equal(await page.getByRole("button", { name: /Anular expediente|Reactivar expediente|Cerrar auditoría|Guardar(?! vista)|Registrar documento|Añadir comentario|Preparar correo/ }).count(), 0);
     assert.equal(await page.locator('a[href="/settings"], a[href="/settings/users"]').count(), 0);
   }
   try {
