@@ -85,6 +85,13 @@ export const qmsModules = [deviationModule, capaModule, changeControlModule,
 
 Los consumidores derivan sus listas del registro: `accessModules`, `auditTrailModules`, menú, tarjetas del dashboard, etiquetas y matriz de relaciones.
 
+**Implementado en PR 2 (2026-10-16).** Al trasladar el código real se ajusta el esquema anterior:
+
+- `src/modules/contract.ts` define `QmsModuleContract` v1 con `key`, `recordType`, `labels`, `href` y `relations.outgoing`. Es **solo datos**, importable desde cualquier capa. El resto de campos se añadirá en sus PR (3–5).
+- Cada módulo declara su contrato en `src/modules/<módulo>/contract.ts`. El registro está en `src/modules/registry.ts`.
+- La lógica de servidor no va en un `guard` por regla, sino en **hooks por módulo y papel** (`ModuleRelationHooks`: `asSource` / `asTarget`, con `beforeCreate`, `afterCreate`, `beforeDeactivate` y `afterDeactivate`). El código existente lo exige: Devoluciones actúa como **destino**, y Reclamaciones y Devoluciones refrescan snapshots **después** de escribir y también al desvincular.
+- Los hooks viven en `src/modules/<módulo>/relation-hooks.ts` y se registran en `src/modules/relation-hooks-registry.ts`, separado del registro declarativo para que los contratos no arrastren dependencias de servidor. El servicio común ejecuta primero los del origen y después los del destino, el mismo orden que el código anterior.
+
 **Invariantes comprobadas por test:**
 - claves y `recordType` únicos;
 - todo destino de relación es un módulo registrado con `recordType`;
@@ -111,7 +118,7 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
 
 - Cada relación se declara **en el módulo de origen** (`relations.outgoing`), conservando la dirección canónica única (D-018, D-046). La vista inversa sigue derivándose.
 - `relation-rules.ts` deja de tener la lista literal y la construye desde el registro. Sus funciones públicas (`canRelate`, `allowedOutgoingRelationTypes`, `allowedIncomingRelationTypes`, `validateQmsRelation`, `operationalRelationLabel`) conservan firma y comportamiento.
-- Las ramas por módulo de `createQmsRelation` (auditoría operativa y activa; bloqueo de versión de reclamación; devolución operativa y reclamación activa) se trasladan a los `guard` de cada regla **sin cambiar su lógica ni el orden de bloqueos**.
+- Las ramas por módulo de `createQmsRelation` y `deactivateQmsRelation` (auditoría operativa y activa; bloqueo de versión de reclamación; devolución operativa y reclamación activa; refresco de snapshots) se trasladan a los hooks de cada módulo **sin cambiar su lógica ni el orden de bloqueos** (ver sección 4, «Implementado en PR 2»).
 - La tabla `QmsRelation`, las relaciones existentes, la desvinculación/reactivación (D-046, D-047) y el audit trail de relaciones no cambian.
 - Los tests actuales de `relation-rules.test.ts` y `relation-service.test.ts` (incluidos los casos bloqueados) deben pasar sin modificación.
 
@@ -130,7 +137,7 @@ Cada paso es una PR independiente, sin cambio visible, con lint, tests, Prisma v
 | PR | Alcance | Criterio de aceptación |
 | --- | --- | --- |
 | **1 (esta)** | Diseño y decisiones MC-1 a MC-4 | Aprobado en D-083 |
-| **2** | `contract.ts` + `registry.ts` con identidad, etiquetas y **relaciones** de los 6 módulos `QmsRecord`; `relation-rules.ts` y `createQmsRelation` derivan del registro | Test de equivalencia de matriz; tests existentes de relaciones sin cambios; smoke de relaciones PostgreSQL verde |
+| **2 (implementada)** | `contract.ts` + `registry.ts` con identidad, etiquetas y **relaciones** de los 6 módulos `QmsRecord`; `relation-rules.ts` y el servicio de relaciones derivan del registro y de los hooks de módulo | Test de equivalencia de matriz; tests existentes de relaciones sin cambios; smoke de relaciones PostgreSQL verde |
 | **2-bis** | MC-2 y MC-4 etapa 1: retirar el formulario de alta de relaciones de Control de Cambios y los tipos sin uso del código de aplicación | Consulta de relaciones conservada; test de que la acción ya no existe en el inventario; regresión de Control de Cambios verde |
 | **3** | Menú, tarjetas del dashboard, etiquetas, `accessModules` y `auditTrailModules` derivados del registro; PNT registrado con `recordType: null` | Tests de equivalencia de listas; regresión UI Chromium sin diferencias visuales |
 | **4** | Permisos admitidos por módulo y comprobación cruzada con `operation-inventory.json` | Test de inventario ampliado; sin cambios en la matriz de roles |

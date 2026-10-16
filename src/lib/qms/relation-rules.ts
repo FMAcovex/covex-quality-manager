@@ -1,4 +1,8 @@
 import { QmsRecordType, QmsRelationType } from "@prisma/client";
+import { QmsRelationValidationError } from "@/lib/qms/relation-errors";
+import { registeredRelationRules } from "@/modules/registry";
+
+export { QmsRelationValidationError };
 
 export type OperationalRelationRecord = {
   id: string;
@@ -18,35 +22,17 @@ type AllowedRelation = Readonly<{
   sourceType: QmsRecordType;
   targetType: QmsRecordType;
   relationType: QmsRelationType;
+  label: string;
 }>;
 
-export class QmsRelationValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "QmsRelationValidationError";
-  }
-}
-
-// Única fuente de verdad para las relaciones operativas QMS de 10.8C3-B1.
-const allowedRelations: readonly AllowedRelation[] = [
-  {
-    sourceType: QmsRecordType.DEVIATION,
-    targetType: QmsRecordType.CAPA,
-    relationType: QmsRelationType.GENERATES,
-  },
-  {
-    sourceType: QmsRecordType.COMPLAINT,
-    targetType: QmsRecordType.CAPA,
-    relationType: QmsRelationType.GENERATES,
-  },
-  {
-    sourceType: QmsRecordType.COMPLAINT,
-    targetType: QmsRecordType.RETURN,
-    relationType: QmsRelationType.GENERATES,
-  },
-  { sourceType: QmsRecordType.AUDIT, targetType: QmsRecordType.DEVIATION, relationType: QmsRelationType.GENERATES },
-  { sourceType: QmsRecordType.AUDIT, targetType: QmsRecordType.CAPA, relationType: QmsRelationType.GENERATES },
-] as const;
+// Única fuente de verdad: las relaciones declaradas por cada módulo en su
+// contrato (src/modules/*/contract.ts), en el orden del registro.
+export const allowedRelations: readonly AllowedRelation[] = registeredRelationRules.map((rule) => ({
+  sourceType: rule.source,
+  targetType: rule.target,
+  relationType: rule.type,
+  label: rule.label,
+}));
 
 export function canRelate(
   sourceType: QmsRecordType,
@@ -130,17 +116,14 @@ export function operationalRelationLabel(
   sourceType: QmsRecordType,
   targetType: QmsRecordType,
 ) {
-  if (sourceType === QmsRecordType.DEVIATION && targetType === QmsRecordType.CAPA) {
-    return "Desviación → CAPA";
-  }
-  if (sourceType === QmsRecordType.COMPLAINT && targetType === QmsRecordType.CAPA) {
-    return "Reclamación → CAPA";
-  }
-  if (sourceType === QmsRecordType.COMPLAINT && targetType === QmsRecordType.RETURN) {
-    return "Reclamación → Devolución";
-  }
-  if (sourceType === QmsRecordType.AUDIT) return targetType === QmsRecordType.CAPA ? "Auditoría → CAPA" : "Auditoría → Desviación";
-  return "Relación QMS";
+  return (
+    allowedRelations.find(
+      (rule) =>
+        rule.sourceType === sourceType &&
+        rule.targetType === targetType &&
+        rule.relationType === QmsRelationType.GENERATES,
+    )?.label ?? "Relación QMS"
+  );
 }
 
 export function selectOperationalRelationTarget(
