@@ -7,6 +7,19 @@ export const complaintModule: QmsRecordModuleContract = {
   labels: { singular: "Reclamación", plural: "Reclamaciones" },
   href: "/complaints",
   indicatorsHref: "/complaints/indicators",
+  permissions: [
+    "READ",
+    "CREATE",
+    "EDIT",
+    "FOLLOWUP",
+    "REVIEW",
+    "CLOSE",
+    "ANNUL",
+    "DOWNLOAD",
+    "EXPORT",
+    "ATTACH_DOCUMENT",
+    "GENERATE_DOCUMENT",
+  ],
   relations: {
     outgoing: [
       { target: "CAPA", type: "GENERATES", label: "Reclamación → CAPA" },

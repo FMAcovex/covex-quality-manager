@@ -7,8 +7,10 @@ import { PermissionProvider } from "@/components/permissions";
 import { canPresent, presentationAccess } from "./presentation";
 import { resourceScope, qmsScope } from "./resources";
 import { prisma } from "../db";
+import { qmsModuleByPathSegment } from "@/modules/registry";
 
-const paths: Record<string, AccessModule> = { deviations: "DEVIATION", capa: "CAPA", changes: "CHANGE_CONTROL", complaints: "COMPLAINT", returns: "RETURN", audits: "AUDIT", "controlled-documents": "PNT", settings: "SYSTEM", "audit-trail": "DEVIATION" };
+// Segmentos de módulo derivados del registro; settings y audit-trail son transversales.
+const paths: Record<string, AccessModule> = { ...qmsModuleByPathSegment, settings: "SYSTEM", "audit-trail": "DEVIATION" };
 function forbidden(segment: string) {
   return createElement("section", { className: "card", role: "alert" }, createElement("h1", null, "Acceso no permitido"), createElement("p", null, "No tiene permiso para esta operación. Puede seguir consultando los expedientes."), createElement("a", { className: "button", href: `/${segment}` }, "Volver al listado"));
 }

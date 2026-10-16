@@ -1,4 +1,5 @@
 import type { QmsRecordType } from "@prisma/client";
+import type { AccessModule, AccessPermission } from "@/lib/auth/context";
 import type { QmsModuleContract, QmsModuleKey, QmsRecordModuleContract, QmsRelationRule } from "@/modules/contract";
 import { auditModule } from "@/modules/audits/contract";
 import { capaModule } from "@/modules/capa/contract";
@@ -45,3 +46,24 @@ export function qmsModuleByRecordType(recordType: QmsRecordType | string) {
 export function qmsModuleByKey(key: string) {
   return qmsModules.find((contract) => contract.key === key);
 }
+
+/** Permisos transversales del módulo de autorización SYSTEM (configuración, usuarios y audit trail). */
+export const systemPermissions: readonly AccessPermission[] = [
+  "READ",
+  "DOWNLOAD",
+  "MANAGE_CONFIGURATION",
+  "MANAGE_USERS",
+  "AUDIT_TRAIL_REVIEW",
+  "AUDIT_TRAIL_EXPORT",
+  "AUDIT_TRAIL_SENSITIVE_READ",
+];
+
+/** Permisos que admite un módulo de autorización según su contrato. */
+export function permissionsForModule(module: AccessModule): readonly AccessPermission[] {
+  return module === "SYSTEM" ? systemPermissions : qmsModuleByKey(module)?.permissions ?? [];
+}
+
+/** Segmento de ruta de primer nivel → módulo de autorización, derivado de `href`. */
+export const qmsModuleByPathSegment: Readonly<Record<string, QmsModuleKey>> = Object.fromEntries(
+  qmsModules.map((contract) => [contract.href.replace(/^\//, ""), contract.key]),
+);

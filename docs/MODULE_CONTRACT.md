@@ -135,6 +135,18 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
 - `accessModules` (`src/lib/auth/context.ts`) **se mantiene literal**, porque es la fuente del tipo `AccessModule` y del propio tipo de clave del contrato. Un test exige que coincida con el registro más `SYSTEM`.
 - La página del audit trail conserva sus etiquetas propias («Controles de Cambios», «PNT»), que difieren de las del menú. Unificarlas sería un cambio visible y queda fuera de esta PR.
 
+### 4.2 Implementado en PR 4 (2026-10-16)
+
+- Cada contrato declara `permissions`: los permisos que el módulo admite. `systemPermissions` (registro) declara los de `SYSTEM` (configuración, usuarios y audit trail). `permissionsForModule(module)` los expone.
+- `src/modules/permissions.test.ts` obtiene **de forma estática** los pares módulo/permiso que el código comprueba:
+  - inventario de Server Actions y rutas; `QMS` cuenta para todos los módulos con expediente;
+  - operaciones de ciclo de vida PNT de `route-guard.ts`;
+  - `PermissionGate` en páginas y componentes de cada módulo, respetando `module="…"`;
+  - llamadas literales a `assertPermission` y `canPresent`.
+- El test exige que cada permiso comprobado esté declarado por su módulo, que los permisos específicos (`PNT_*`, `AUDIT_ISSUE_*`, `AUDIT_TRAIL_*`) solo pertenezcan a su módulo y que todo permiso de `permissions` tenga al menos un módulo. Se comprobó por mutación: quitar `GENERATE_DOCUMENT` de CAPA o `PNT_ACTIVATE` de PNT hace fallar el test.
+- El mapa de segmentos de ruta de `page-guard.ts` se deriva del `href` de cada contrato (`qmsModuleByPathSegment`).
+- **No cambia** la matriz de roles ni la validación del editor de roles, que sigue aceptando cualquier combinación módulo/permiso. Restringirla a `permissionsForModule` sería un cambio de comportamiento que requiere decisión propia.
+
 ### 5.3 Ampliar una relación en el futuro
 
 Requiere una decisión en `DECISIONS.md` y una PR que añada una línea en el contrato del módulo de origen, su `guard` si procede y sus tests positivos y negativos. No requiere migración ni tocar el servicio común.
@@ -153,7 +165,7 @@ Cada paso es una PR independiente, sin cambio visible, con lint, tests, Prisma v
 | **2 (implementada)** | `contract.ts` + `registry.ts` con identidad, etiquetas y **relaciones** de los 6 módulos `QmsRecord`; `relation-rules.ts` y el servicio de relaciones derivan del registro y de los hooks de módulo | Test de equivalencia de matriz; tests existentes de relaciones sin cambios; smoke de relaciones PostgreSQL verde |
 | **2-bis (implementada)** | MC-2 y MC-4 etapa 1: retirar el formulario de alta de relaciones de Control de Cambios y los tipos sin uso del código de aplicación | Consulta de relaciones conservada; test de que la acción ya no existe en el inventario; regresión de Control de Cambios verde |
 | **3 (implementada)** | Menú, tarjetas del dashboard, etiquetas, `accessModules` y `auditTrailModules` derivados del registro; PNT registrado con `recordType: null` | Tests de equivalencia de listas; regresión UI Chromium sin diferencias visuales |
-| **4** | Permisos admitidos por módulo y comprobación cruzada con `operation-inventory.json` | Test de inventario ampliado; sin cambios en la matriz de roles |
+| **4 (implementada)** | Permisos admitidos por módulo y comprobación cruzada con `operation-inventory.json` | Test de inventario ampliado; sin cambios en la matriz de roles |
 | **5** | Ciclo de vida **descriptivo**: estados y transiciones vigentes declarados, verificados contra el comportamiento actual por test, sin pasar aún a controlarlos | Test que recorre las transiciones reales y las compara con la declaración |
 | Posterior | MC-4 etapa 2: retirar tipos del enum Prisma con migración protegida | Migración falla si hay filas con esos tipos; fixtures y pruebas de audit trail adaptadas |
 | Posterior | Documentos/plantillas, KPI, objetivos de Review; después, módulos nuevos sobre el contrato | Según decisión y alcance aprobados |

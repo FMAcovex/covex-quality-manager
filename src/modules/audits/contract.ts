@@ -7,6 +7,20 @@ export const auditModule: QmsRecordModuleContract = {
   labels: { singular: "Auditoría", plural: "Auditorías" },
   href: "/audits",
   indicatorsHref: null,
+  permissions: [
+    "READ",
+    "CREATE",
+    "EDIT",
+    "FOLLOWUP",
+    "REVIEW",
+    "CLOSE",
+    "ANNUL",
+    "DOWNLOAD",
+    "ATTACH_DOCUMENT",
+    "GENERATE_DOCUMENT",
+    "AUDIT_ISSUE_REPORT",
+    "AUDIT_ISSUE_PROGRAMME",
+  ],
   relations: {
     outgoing: [
       { target: "DEVIATION", type: "GENERATES", label: "Auditoría → Desviación" },
