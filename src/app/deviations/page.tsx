@@ -1,3 +1,5 @@
+import { SavedViews } from "@/components/saved-views";
+import { listSavedViews } from "@/lib/saved-views/queries";
 import { canPresentRecord } from "@/lib/auth/presentation";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -43,6 +45,7 @@ async function DeviationsPageAuthenticatedContent({
     deadline: param(query.deadline),
   };
 
+  const savedViews = await listSavedViews("/deviations");
   const { rows, departments, years, provenances, counters, pagination } = await getDeviationList(filters);
   const exportParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => { if (key !== "page") appendFilterValues(exportParams, key, value); });
@@ -103,7 +106,7 @@ async function DeviationsPageAuthenticatedContent({
           <label className="filter-placeholder"><span>Medidas</span><select name="measures" defaultValue={filters.measures ?? ""}><option value="">Todas</option><option value="none">Ninguna</option><option value="immediate">Correctiva inmediata</option><option value="capa">CAPA</option><option value="both">Inmediata + CAPA</option></select></label>
           <label className="filter-placeholder"><span>CAPA</span><select name="capa" defaultValue={filters.capa ?? ""}><option value="">Todas</option><option value="yes">Con CAPA</option><option value="no">Sin CAPA</option></select></label>
           <label className="filter-placeholder"><span>En plazo</span><select name="deadline" defaultValue={filters.deadline ?? ""}><option value="">Todos</option><option value="IN_TIME">Sí</option><option value="OUT_OF_TIME">No</option><option value="NOT_EVALUATED">No evaluado</option><option value="NA">N/A</option></select></label>
-          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/deviations">Limpiar</Link></div>
+          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/deviations">Limpiar</Link><SavedViews listPath="/deviations" views={savedViews} /></div>
         </div>
         <div className="search-row">
           <SearchAutocomplete

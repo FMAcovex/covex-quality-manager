@@ -1,3 +1,5 @@
+import { SavedViews } from "@/components/saved-views";
+import { listSavedViews } from "@/lib/saved-views/queries";
 import { canPresentRecord } from "@/lib/auth/presentation";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -49,6 +51,7 @@ async function ChangeControlPageAuthenticatedContent({
     effectiveness: queryList(query.effectiveness),
     status: queryList(query.status),
   };
+  const savedViews = await listSavedViews("/changes");
   const { rows, departments, years, counters, pagination } = await getChangeControlList(filters);
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.CHANGE_CONTROL, DocumentType.CHANGE_ANNEX_VII);
   const exportYear = filters.year[0] ?? String(new Date().getFullYear());
@@ -100,7 +103,7 @@ async function ChangeControlPageAuthenticatedContent({
           <MultiSelectFilter name="execution" label="Ejecución" selected={filters.execution} options={[{value:"NOT_EXECUTED",label:"No ejecutado"},{value:"EXECUTED",label:"Ejecutado"}]} />
           <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"ACCEPTABLE",label:"Aceptable"},{value:"NOT_ACCEPTABLE",label:"No aceptable"},{value:"NOT_APPLICABLE",label:"No aplica"}]} />
           <MultiSelectFilter name="status" label="Estado final" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierto"},{value:"CLOSED",label:"Cerrado"}]} />
-          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/changes">Limpiar</Link></div>
+          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/changes">Limpiar</Link><SavedViews listPath="/changes" views={savedViews} /></div>
         </div>
         <div className="search-row">
           <SearchAutocomplete

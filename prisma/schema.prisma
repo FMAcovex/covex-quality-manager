@@ -2166,6 +2166,7 @@ model AuthUser {
  auditOperations AuditOperation[]
  auditTrailReviews AuditTrailReview[]
  auditTrailExports AuditTrailExport[]
+ savedListViews SavedListView[]
  id String @id @default(uuid()) @db.Uuid
  tenantId String @db.Uuid
  objectId String @db.Uuid
@@ -2594,4 +2595,20 @@ model AuditOperationEvidence {
   auditPlanChange AuditPlanChange? @relation(fields: [auditPlanChangeId], references: [id], onDelete: Restrict)
   controlledDocumentChangeId String?
   controlledDocumentChange ControlledDocumentChange? @relation(fields: [controlledDocumentChangeId], references: [id], onDelete: Restrict)
+}
+
+/// Vista guardada de un listado: preferencia personal (nombre + filtros de la URL).
+/// No es dato GMP y queda fuera de la captura obligatoria del audit trail (D-084).
+model SavedListView {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  listPath  String
+  name      String
+  query     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, listPath, name])
+  @@index([userId, listPath])
 }

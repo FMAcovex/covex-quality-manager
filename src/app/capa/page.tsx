@@ -1,3 +1,5 @@
+import { SavedViews } from "@/components/saved-views";
+import { listSavedViews } from "@/lib/saved-views/queries";
 import { canPresentRecord } from "@/lib/auth/presentation";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -46,6 +48,7 @@ async function CapaPageAuthenticatedContent({
     origin: queryList(query.origin),
     followup: param(query.followup),
   };
+  const savedViews = await listSavedViews("/capa");
   const { rows, departments, years, origins, counters, pagination } = await getCapaList(filters);
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.CAPA, DocumentType.CAPA_ANNEX_IV);
 
@@ -98,7 +101,7 @@ async function CapaPageAuthenticatedContent({
           <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"CONFORMING",label:"Conforme"},{value:"NONCONFORMING",label:"No conforme"},{value:"NA",label:"N/A histórico"}]} />
           <MultiSelectFilter name="origin" label="Origen" selected={filters.origin} options={origins.map((value)=>({value,label:value}))} />
           <label className="filter-placeholder"><span>Seguimiento</span><select name="followup" defaultValue={filters.followup ?? ""}><option value="">Todos</option><option value="due">Vencido</option><option value="scheduled">Programado</option><option value="none">Sin próxima fecha</option></select></label>
-          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/capa">Limpiar</Link></div>
+          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/capa">Limpiar</Link><SavedViews listPath="/capa" views={savedViews} /></div>
         </div>
         <div className="search-row">
           <SearchAutocomplete

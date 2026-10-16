@@ -1,6 +1,30 @@
 {
   "actions": [
     {
+      "file": "src/lib/saved-views/actions.ts",
+      "name": "saveListViewAction",
+      "params": [
+        "input"
+      ],
+      "module": "DEVIATION",
+      "permission": "READ",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/saved-views/actions.ts",
+      "name": "deleteListViewAction",
+      "params": [
+        "input"
+      ],
+      "module": "DEVIATION",
+      "permission": "READ",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
       "file": "src/lib/audit/trail-actions.ts",
       "name": "recordAuditTrailReviewAction",
       "params": ["form"],
