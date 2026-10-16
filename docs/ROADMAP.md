@@ -37,6 +37,8 @@
 
 - **Contrato de módulo (aprobado 2026-10-16, D-083):** PR 1 documental con diseño y plan de migración en PR 2–5 sin cambio visible, más PR 2-bis para retirar el alta de relaciones de Control de Cambios y los tipos de relación sin uso. Véase [MODULE_CONTRACT.md](MODULE_CONTRACT.md). Cada PR de implementación mantiene su aprobación de alcance.
 
+- **Módulo OOS (aprobado 2026-10-16, D-088):** PR documental OOS-0 con el diseño según el PNT GC-10/014/04 e implementación en OOS-1 a OOS-3. Véase [OOS_DESIGN.md](OOS_DESIGN.md). Cada PR de implementación mantiene su aprobación de alcance.
+
 La evaluación de UX en Work/Codex precederá a B/C y se dividirá en cambios pequeños revisables. Dashboard y backend tendrán PR independientes según impacto.
 
 ---

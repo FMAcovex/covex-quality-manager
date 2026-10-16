@@ -89,3 +89,8 @@ GC-00.027.03 Reclamaciones.docx y anexos reales III/IV/V recuperados de SharePoi
 ## Devoluciones R4B
 
 Devoluciones R4B: fuente vigente GC-00/028/03, 26/05/2026, descargada y contrastada en SharePoint Dirección de Calidad / GC-00.028 Devoluciones de productos. A3/A4/A5/A6 separados vigentes revisados; sin borradores/OBSOLETOS. Nombres y SHA-256 verificables en RETURNS_R4B.md. No se incorporan binarios controlados al repositorio.
+
+
+## Resultados fuera de especificación (OOS)
+
+Fuente: PNT GC-10/014/04 «Resultados fuera de especificación», vigencia 15/06/2025, leído el 16/10/2026 en SharePoint Dirección de Calidad / GC-10 DPTO. CONTROL DE CALIDAD / GC-10-014 Analíticas Fuera de Especificación. El responsable del proyecto confirma que es la revisión vigente aunque el fichero diga «EN REDACCION». Los anexos III y IV se toman del PNT, no de los ficheros sueltos: el Anexo III suelto no incluye microbiología y el Anexo IV suelto es un informe cumplimentado. Los anexos del PNT citan «GC-10/014/03» por errata, que Calidad debe corregir antes de instalar las plantillas. Hashes y binarios se registrarán al implementar; no se versionan. Diseño en OOS_DESIGN.md.
