@@ -1,3 +1,5 @@
+import { SavedViews } from "@/components/saved-views";
+import { listSavedViews } from "@/lib/saved-views/queries";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { prisma } from "@/lib/db";
@@ -13,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Promise<PntListingFilters> }) {
  const f = await searchParams;
+ const savedViews = await listSavedViews("/controlled-documents");
  const [result, departments] = await Promise.all([queryPntListing(f), prisma.department.findMany({ orderBy: { code: "asc" } })]);
  const params = (changes: Record<string,string>, resetPage = true) => listingQuery(f, changes, resetPage);
  const returnTo = "/controlled-documents?" + params({}, false);
@@ -31,7 +34,7 @@ async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Pr
     <div><span>Revisiones</span><strong>{result.revisionCount}</strong></div>
     <div><span>Filas encontradas</span><strong>{result.rowCount}</strong></div>
   </div>
-  <section className="pnt-filter-card"><div className="pnt-section-heading"><div><h2>Buscar procedimientos</h2></div><Link className="button" href="/controlled-documents">Limpiar filtros</Link></div>
+  <section className="pnt-filter-card"><div className="pnt-section-heading"><div><h2>Buscar procedimientos</h2></div><div className="pnt-heading-actions"><SavedViews listPath="/controlled-documents" views={savedViews} /><Link className="button" href="/controlled-documents">Limpiar filtros</Link></div></div>
    <div className="pnt-quick" aria-label="Filtros rápidos">{[
     ["","Todas"], ["current","Vigentes"], ["dueSoon","Revisión en 30 días"], ["overdue","Revisión vencida"], ["missing","Sin fechas"], ["unverified","Pendientes de verificar"],
    ].map(([value,label]) => <Link key={value} className={"pnt-quick-link"+(result.options.quick === (value || null) ? " is-active" : "")} href={link({quick:value})}>{label}</Link>)}</div>

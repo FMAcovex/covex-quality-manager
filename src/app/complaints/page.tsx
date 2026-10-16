@@ -1,3 +1,5 @@
+import { SavedViews } from "@/components/saved-views";
+import { listSavedViews } from "@/lib/saved-views/queries";
 import { canPresentRecord } from "@/lib/auth/presentation";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -45,6 +47,7 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
   type:queryList(q.type),status:queryList(q.status),classification:queryList(q.classification),
   effectiveness:queryList(q.effectiveness),situation:queryList(q.situation),followup:queryList(q.followup)
  };
+ const savedViews = await listSavedViews("/complaints");
  const {rows,departments,years,counters,pagination}=await getComplaintList(filters);
  const officialTemplateReady=await isActiveTemplateAssetReady(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_V);
  const exportParams=new URLSearchParams();Object.entries(filters).forEach(([k,v])=>appendFilterValues(exportParams,k,v));
@@ -78,7 +81,7 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
    <label className="filter-placeholder"><span>Recurrente</span><select name="recurrent" defaultValue={filters.recurrent??""}><option value="">Todas</option><option value="YES">Sí</option><option value="NO">No</option></select></label>
    <label className="filter-placeholder"><span>CAPA vinculada</span><select name="capa" defaultValue={filters.capa??""}><option value="">Todas</option><option value="YES">Con CAPA</option><option value="NO">Sin CAPA</option></select></label>
    <label className="filter-placeholder"><span>Devolución vinculada</span><select name="returns" defaultValue={filters.returns??""}><option value="">Todas</option><option value="YES">Con devolución</option><option value="NO">Sin devolución</option></select></label>
-   <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/complaints">Limpiar</Link></div>
+   <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/complaints">Limpiar</Link><SavedViews listPath="/complaints" views={savedViews} /></div>
   </div><div className="search-row">
    <SearchAutocomplete
     defaultValue={filters.q??""}
