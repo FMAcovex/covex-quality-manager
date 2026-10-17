@@ -17,11 +17,20 @@ import { deviationColumns } from "@/modules/deviations/column-config";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 import { MultiSelectFilter } from "@/components/multi-select-filter";
-import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
+import { activeFilterChips, appendFilterValues, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
+import { ListFilterToolbar } from "@/components/list-filter-toolbar";
+import { reviewFilterOptions } from "@/lib/qms/review/list-domain";
 
 export const dynamic = "force-dynamic";
 
 const param = firstQueryValue;
+
+const administrativeOptions = [{ value: "ANNULLED", label: "Anulados" }, { value: "ALL", label: "Todos" }];
+const statusOptions = [{ value: "DRAFT", label: "Borrador" }, { value: "OPEN", label: "Abierta" }, { value: "CLOSED", label: "Cerrada" }];
+const classificationOptions = [{ value: "CRITICAL", label: "Crítica" }, { value: "MAJOR", label: "Mayor" }, { value: "MINOR", label: "Menor" }];
+const measuresOptions = [{ value: "none", label: "Ninguna" }, { value: "immediate", label: "Correctiva inmediata" }, { value: "capa", label: "CAPA" }, { value: "both", label: "Inmediata + CAPA" }];
+const capaOptions = [{ value: "yes", label: "Con CAPA" }, { value: "no", label: "Sin CAPA" }];
+const deadlineOptions = [{ value: "IN_TIME", label: "Sí" }, { value: "OUT_OF_TIME", label: "No" }, { value: "NOT_EVALUATED", label: "No evaluado" }, { value: "NA", label: "N/A" }];
 
 async function DeviationsPageAuthenticatedContent({
   searchParams,
@@ -51,9 +60,25 @@ async function DeviationsPageAuthenticatedContent({
   Object.entries(filters).forEach(([key, value]) => { if (key !== "page") appendFilterValues(exportParams, key, value); });
   const currentYear = filters.year[0] ?? String(new Date().getFullYear());
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_V);
+  const yearOptions = years.map((year) => ({ value: String(year), label: String(year) }));
+  const departmentOptions = departments.map((d) => ({ value: d.id, label: d.code }));
+  const provenanceOptions = provenances.map((value) => ({ value, label: deviationProvenanceLabel(value) }));
+  const filterDefinitions: FilterDefinition[] = [
+    { name: "administrative", label: "Estado administrativo", options: administrativeOptions },
+    { name: "year", label: "Año", options: yearOptions },
+    { name: "department", label: "Departamento", options: departmentOptions },
+    { name: "status", label: "Estado", options: statusOptions },
+    { name: "classification", label: "Clasificación", options: classificationOptions },
+    { name: "provenance", label: "Procedencia", options: provenanceOptions },
+    { name: "measures", label: "Medidas", options: measuresOptions },
+    { name: "capa", label: "CAPA", options: capaOptions },
+    { name: "deadline", label: "En plazo", options: deadlineOptions },
+    { name: "review", label: "Revisión", options: reviewFilterOptions },
+  ];
+  const option = (options: { value: string; label: string }[]) => options.map((item) => <option key={item.value} value={item.value}>{item.label}</option>);
 
   return (
-    <section className="workspace qms-list-ux-b">
+    <section className="workspace qms-list-ux-b list-ux-c">
       <div className="page-heading">
         <div>
           <p className="eyebrow">Sistema de Calidad</p>
@@ -96,53 +121,57 @@ async function DeviationsPageAuthenticatedContent({
       </div>
 
       <form method="get" className="toolbar-form">
-        <div className="filter-panel operational">
-          <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-          <MultiSelectFilter name="year" label="Año" selected={filters.year} options={years.map((year)=>({value:String(year),label:String(year)}))} />
-          <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departments.map((d)=>({value:d.id,label:d.code}))} />
-          <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierta"},{value:"CLOSED",label:"Cerrada"}]} />
-          <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={[{value:"CRITICAL",label:"Crítica"},{value:"MAJOR",label:"Mayor"},{value:"MINOR",label:"Menor"}]} />
-          <MultiSelectFilter name="provenance" label="Procedencia" selected={filters.provenance} options={provenances.map((value)=>({value,label:deviationProvenanceLabel(value)}))} />
-          <label className="filter-placeholder"><span>Medidas</span><select name="measures" defaultValue={filters.measures ?? ""}><option value="">Todas</option><option value="none">Ninguna</option><option value="immediate">Correctiva inmediata</option><option value="capa">CAPA</option><option value="both">Inmediata + CAPA</option></select></label>
-          <label className="filter-placeholder"><span>CAPA</span><select name="capa" defaultValue={filters.capa ?? ""}><option value="">Todas</option><option value="yes">Con CAPA</option><option value="no">Sin CAPA</option></select></label>
-          <label className="filter-placeholder"><span>En plazo</span><select name="deadline" defaultValue={filters.deadline ?? ""}><option value="">Todos</option><option value="IN_TIME">Sí</option><option value="OUT_OF_TIME">No</option><option value="NOT_EVALUATED">No evaluado</option><option value="NA">N/A</option></select></label>
-          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/deviations">Limpiar</Link><SavedViews listPath="/deviations" views={savedViews} /></div>
-        </div>
-        <div className="search-row">
-          <SearchAutocomplete
-            defaultValue={filters.q ?? ""}
-            placeholder="Buscar por código, descripción, material/proceso, causa raíz, CAPA u observaciones…"
-            suggestions={rows.map((row) => ({
-              id: row.id,
-              href: toDetail(row.id),
-              code: row.qmsRecord.businessCode ?? "Sin código",
-              title: row.whatHappened ?? row.materialProcessAffected ?? "Sin descripción",
-              meta: [row.departmentCodeSnapshot ?? row.department?.code, row.status === "DRAFT" ? "Borrador" : row.status === "OPEN" ? "Abierta" : "Cerrada"].filter(Boolean).join(" · "),
-              searchText: [
-                row.qmsRecord.businessCode,
-                row.materialProcessAffected,
-                row.provenance,
-                deviationProvenanceLabel(row.provenance),
-                row.whatHappened,
-                row.rootCause,
-                row.internalObservations,
-                ...row.capaPlans.map((plan) => plan.description),
-              ].filter(Boolean).join(" "),
-            }))}
-          />
-          <button className="button" type="submit">Buscar</button>
-        </div>
+        <ListFilterToolbar
+          storageKey="qms.filters.deviations"
+          clearHref="/deviations"
+          chips={activeFilterChips("/deviations", query, filterDefinitions)}
+          views={<SavedViews listPath="/deviations" views={savedViews} />}
+          search={
+            <SearchAutocomplete
+              defaultValue={filters.q ?? ""}
+              placeholder="Buscar por código, descripción, material/proceso, causa raíz, CAPA u observaciones…"
+              suggestions={rows.map((row) => ({
+                id: row.id,
+                href: toDetail(row.id),
+                code: row.qmsRecord.businessCode ?? "Sin código",
+                title: row.whatHappened ?? row.materialProcessAffected ?? "Sin descripción",
+                meta: [row.departmentCodeSnapshot ?? row.department?.code, row.status === "DRAFT" ? "Borrador" : row.status === "OPEN" ? "Abierta" : "Cerrada"].filter(Boolean).join(" · "),
+                searchText: [
+                  row.qmsRecord.businessCode,
+                  row.materialProcessAffected,
+                  row.provenance,
+                  deviationProvenanceLabel(row.provenance),
+                  row.whatHappened,
+                  row.rootCause,
+                  row.internalObservations,
+                  ...row.capaPlans.map((plan) => plan.description),
+                ].filter(Boolean).join(" "),
+              }))}
+            />
+          }
+        >
+          <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option>{option(administrativeOptions)}</select></label>
+          <MultiSelectFilter name="year" label="Año" selected={filters.year} options={yearOptions} />
+          <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departmentOptions} />
+          <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={statusOptions} />
+          <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={classificationOptions} />
+          <MultiSelectFilter name="provenance" label="Procedencia" selected={filters.provenance} options={provenanceOptions} />
+          <label className="filter-placeholder"><span>Medidas</span><select name="measures" defaultValue={filters.measures ?? ""}><option value="">Todas</option>{option(measuresOptions)}</select></label>
+          <label className="filter-placeholder"><span>CAPA</span><select name="capa" defaultValue={filters.capa ?? ""}><option value="">Todas</option>{option(capaOptions)}</select></label>
+          <label className="filter-placeholder"><span>En plazo</span><select name="deadline" defaultValue={filters.deadline ?? ""}><option value="">Todos</option>{option(deadlineOptions)}</select></label>
+          <ReviewListFilter value={filters.review} />
+        </ListFilterToolbar>
       </form>
 
-      <div className="status-strip">
-        <div><strong>{counters.total}</strong><span>Desviaciones</span></div>
-        <div><strong>{counters.drafts}</strong><span>Borradores</span></div>
-        <div><strong>{counters.open}</strong><span>Abiertas</span></div>
-        <div><strong>{counters.overdue}</strong><span>Fuera de plazo</span></div>
-        <div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div>
-      </div>
+      <p className="list-counters">
+        <span><strong>{counters.total}</strong> desviaciones</span>
+        <span><strong>{counters.drafts}</strong> borradores</span>
+        <span><strong>{counters.open}</strong> abiertas</span>
+        <span><strong>{counters.overdue}</strong> fuera de plazo</span>
+        <span><strong>{counters.followupDue}</strong> seguimientos vencidos</span>
+      </p>
 
-      <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="deviation-list-table" moduleLabel="Desviaciones" /></PermissionGate>
+      <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="deviation-list-table" moduleLabel="Desviaciones" hideWhenEmpty /></PermissionGate>
 
       <div className="table-card">
         <div className="table-scroll">

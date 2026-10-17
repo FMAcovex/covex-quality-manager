@@ -50,6 +50,16 @@ En una franja horizontal por encima del buscador:
 ### Buscador
 Debajo de filtros y encima del listado.
 
+**Piloto de listado con menos ruido visual (Desviaciones, 2026-10-17, pendiente de aceptación visual):**
+- buscador, «Buscar», botón «Filtros» con el número de filtros aplicados y vistas guardadas en una sola fila;
+- panel de filtros plegado; abierto o plegado se recuerda en el navegador de cada usuario;
+- filtros aplicados como etiquetas con «×» para quitarlos y «Limpiar filtros»;
+- contadores en una línea, con los mismos datos que las tarjetas anteriores;
+- «Recordatorios por correo» aparece solo al seleccionar expedientes;
+- todos los filtros con etiqueta encima y casilla de la misma altura.
+
+No se quita ningún filtro, opción ni exportación. Si se acepta, se extiende al resto de listados.
+
 ### Tabla
 Tabla horizontal amplia. Permitir scroll horizontal cuando sea necesario.
 Considerar columnas sticky para Código y/o Estado.
