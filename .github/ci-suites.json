@@ -75,12 +75,14 @@
     "db": [
       "complaints-r4a:smoke",
       "returns-r4b:smoke",
+      "oos:smoke",
       "hito8:smoke",
       "complaints-returns-r4c:smoke"
     ],
     "ui": [
       "complaints-r4a:ui:smoke",
       "returns-r4b:ui:smoke",
+      "oos:ui:smoke",
       "complaints-returns-r4c:smoke"
     ]
   },

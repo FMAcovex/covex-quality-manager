@@ -6,6 +6,7 @@ import { searchChangeControls } from "@/modules/change-control/search";
 import { searchComplaints } from "@/modules/complaints/search";
 import { searchControlledDocuments } from "@/modules/controlled-documents/search";
 import { searchDeviations } from "@/modules/deviations/search";
+import { searchOos } from "@/modules/oos/search";
 import { qmsModules } from "@/modules/registry";
 import { searchReturns } from "@/modules/returns/search";
 import { rankHits } from "@/modules/search/ranking";
@@ -19,6 +20,7 @@ export const moduleSearchProviders: Readonly<Record<QmsModuleKey, ModuleSearchPr
   COMPLAINT: searchComplaints,
   RETURN: searchReturns,
   AUDIT: searchAudits,
+  OOS: searchOos,
   PNT: searchControlledDocuments,
 };
 

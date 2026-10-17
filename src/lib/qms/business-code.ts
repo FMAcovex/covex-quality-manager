@@ -188,6 +188,7 @@ export type OperationalBusinessCodeContext = {
   auditType?: "INTERNAL" | "EXTERNAL" | null;
   auditScenario?: "INTERNAL_COVEX" | "INTERNAL_CONTRACTED" | "SUPPLIER" | "CLIENT" | "AUTHORITY" | null;
   entityCode?: string | null;
+  oosArea?: "API" | "MD" | null;
 };
 
 function assertOperationalYear(year: number) {
@@ -261,6 +262,17 @@ export function operationalBusinessCodePrefix(
       );
     }
     return `DEV/${context.departmentCode}/`;
+  }
+
+  if (context.recordType === QmsRecordType.OOS) {
+    // GC-10/014/04 §5.1: correlativo independiente para API y MD (D-088).
+    if (context.oosArea !== "API" && context.oosArea !== "MD") {
+      throw new OperationalBusinessCodeError(
+        "INVALID_FORMAT",
+        "El OOS necesita indicar el área API o MD para calcular su codificación.",
+      );
+    }
+    return `OOS/${context.oosArea}/`;
   }
 
   throw new OperationalBusinessCodeError(

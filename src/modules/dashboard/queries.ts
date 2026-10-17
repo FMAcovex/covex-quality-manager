@@ -28,7 +28,7 @@ export async function getDashboardData(filters: DashboardFilters) {
   };
 
   const [
-    deviations, capas, changes, complaints, returns, audits,
+    deviations, capas, changes, complaints, returns, audits, oos,
     departments, docs, inForceRevisions, revisionCount, alerts,
     deviationDue, auditDue, trend, capaPending, changesPending,
   ] = await Promise.all([
@@ -38,6 +38,7 @@ export async function getDashboardData(filters: DashboardFilters) {
     prisma.complaint.groupBy({ by: ["status"], where: { qmsRecord: qms, ...dep }, _count: { _all: true } }),
     prisma.returnRecord.groupBy({ by: ["status"], where: { qmsRecord: qms, ...dep }, _count: { _all: true } }),
     prisma.audit.groupBy({ by: ["status"], where: { qmsRecord: qms, ...(department ? { departments: { some: { departmentId: department, isActive: true } } } : {}) }, _count: { _all: true } }),
+    prisma.oosRecord.groupBy({ by: ["status"], where: { qmsRecord: qms, ...dep }, _count: { _all: true } }),
     prisma.department.findMany({ where: { isActive: true }, select: { id: true, code: true, name: true }, orderBy: { code: "asc" } }),
     prisma.controlledDocument.findMany({
       where: docWhere,
@@ -97,6 +98,7 @@ export async function getDashboardData(filters: DashboardFilters) {
     moduleCounts("COMPLAINT", complaints.map(r => ({ status: r.status, count: r._count._all })), filters.state),
     moduleCounts("RETURN", returns.map(r => ({ status: r.status, count: r._count._all })), filters.state),
     moduleCounts("AUDIT", audits.map(r => ({ status: r.status, count: r._count._all })), filters.state),
+    moduleCounts("OOS", oos.map(r => ({ status: r.status, count: r._count._all })), filters.state),
   ];
   const metrics = filters.module === "ALL" ? raw : filters.module === "PNT" ? [] : raw.filter(row => row.module === filters.module);
 

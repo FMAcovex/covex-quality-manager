@@ -7,6 +7,7 @@ import { changeControlModule } from "@/modules/change-control/contract";
 import { complaintModule } from "@/modules/complaints/contract";
 import { pntModule } from "@/modules/controlled-documents/contract";
 import { deviationModule } from "@/modules/deviations/contract";
+import { oosModule } from "@/modules/oos/contract";
 import { returnModule } from "@/modules/returns/contract";
 
 /**
@@ -21,6 +22,7 @@ export const qmsModules: readonly QmsModuleContract[] = [
   complaintModule,
   returnModule,
   auditModule,
+  oosModule,
   pntModule,
 ];
 

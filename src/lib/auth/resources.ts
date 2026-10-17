@@ -2,7 +2,7 @@ import { prisma } from "../db";
 import { AccessError, type AccessModule } from "./context";
 import type { ResourceScope } from "./policy";
 
-const models = { DEVIATION: "deviation", CAPA: "capa", CHANGE_CONTROL: "changeControl", COMPLAINT: "complaint", RETURN: "returnRecord", AUDIT: "audit", PNT: "controlledDocument" } as const;
+const models = { DEVIATION: "deviation", CAPA: "capa", CHANGE_CONTROL: "changeControl", COMPLAINT: "complaint", RETURN: "returnRecord", AUDIT: "audit", OOS: "oosRecord", PNT: "controlledDocument" } as const;
 type Delegate = { findUnique(args: object): Promise<Record<string, unknown> | null> };
 export async function resourceScope(accessModule: AccessModule, id?: string | null, kind = "RECORD", client = prisma): Promise<ResourceScope> {
   if (!id) return {};

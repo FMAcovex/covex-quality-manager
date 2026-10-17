@@ -17,6 +17,7 @@ const supportedTypes = new Set<QmsRecordType>([
   QmsRecordType.CHANGE_CONTROL,
   QmsRecordType.COMPLAINT,
   QmsRecordType.RETURN,
+  QmsRecordType.OOS,
 ]);
 
 function recordType(value: string | null) {
@@ -32,6 +33,7 @@ async function GETAuthenticatedContent(request: Request) {
   const departmentId = url.searchParams.get("departmentId")?.trim() || null;
   const actionType = url.searchParams.get("actionType")?.trim() || null;
   const complaintType = url.searchParams.get("complaintType")?.trim() || null;
+  const oosArea = url.searchParams.get("oosArea")?.trim() || null;
 
   if (!type || !Number.isInteger(year) || year < 2000 || year > 2100) {
     return NextResponse.json(
@@ -78,6 +80,7 @@ async function GETAuthenticatedContent(request: Request) {
       complaintType === "CUSTOMER" || complaintType === "PROVIDER"
         ? complaintType
         : null,
+    oosArea: oosArea === "API" || oosArea === "MD" ? oosArea : null,
   };
 
   try {

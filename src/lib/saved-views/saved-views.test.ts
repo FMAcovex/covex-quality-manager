@@ -4,7 +4,7 @@ import { normalizeViewQuery, parseListPath, parseViewName, SAVED_VIEW_QUERY_MAX,
 
 describe("Vistas guardadas — validación", () => {
   it("admite solo los listados de los módulos registrados", () => {
-    expect(savedViewListPaths).toEqual(["/deviations", "/capa", "/changes", "/complaints", "/returns", "/audits", "/controlled-documents"]);
+    expect(savedViewListPaths).toEqual(["/deviations", "/capa", "/changes", "/complaints", "/returns", "/audits", "/oos", "/controlled-documents"]);
     expect(parseListPath("/capa")).toBe("/capa");
     expect(() => parseListPath("/settings")).toThrow(/no admitido/);
     expect(() => parseListPath(undefined)).toThrow();

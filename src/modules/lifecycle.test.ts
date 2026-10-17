@@ -46,7 +46,7 @@ const pntResults = [undefined, ...commandSchema.shape.result.unwrap().options];
 
 /** Regla de estado vigente que comprueba cada operación declarada, por `MÓDULO:operación`. */
 const checkers: Record<string, (states: readonly string[]) => Set<string>> = {
-  ...Object.fromEntries(["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN"].map(module => [`${module}:save`, (states: readonly string[]) => pairsWhere(origins(states), states, keepsOperationalStatus)])),
+  ...Object.fromEntries(["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "OOS"].map(module => [`${module}:save`, (states: readonly string[]) => pairsWhere(origins(states), states, keepsOperationalStatus)])),
   "AUDIT:save": states => pairsWhere(origins(states), states, (from, to) => auditStatusChangeError(from, to) === null),
   "AUDIT:close": states => pairsWhere(states, ["CLOSED"], from => !auditAlreadyClosed(from!) && auditClosureChecklist(closable(from!)).blockers.length === 0),
   "CAPA:followup": states => pairsWhere(states, capaFollowupStatuses, from => acceptsFollowup(from!)),

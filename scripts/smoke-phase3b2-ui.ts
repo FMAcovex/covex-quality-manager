@@ -39,7 +39,7 @@ async function main() {
       async function capture(name: string) { if (captures) await page.screenshot({ path: captures + "/" + width + "-" + name + ".png", fullPage: true }); }
       await visit(page, "/");
       assert.equal(await page.locator(".dashboard-summary article").count(), 5);
-      assert.equal(await page.locator(".dashboard-module-grid article").count(), 7);
+      assert.equal(await page.locator(".dashboard-module-grid article").count(), 8);
       await capture("dashboard");
       await visit(page, "/?module=CAPA&year=2026&department=" + fixture.departments[0] + "&state=OPEN&tasks=upcoming&page=2");
       await page.getByTestId("qms-dashboard").waitFor();

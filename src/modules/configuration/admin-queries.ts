@@ -10,6 +10,7 @@ export function moduleLabel(module:QmsRecordType){
     CHANGE_CONTROL:"Controles de Cambios",
     COMPLAINT:"Reclamaciones",
     RETURN:"Devoluciones",
+    OOS:"OOS",
   } as Record<QmsRecordType,string>)[module];
 }
 

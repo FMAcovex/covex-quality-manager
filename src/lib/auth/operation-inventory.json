@@ -924,6 +924,33 @@
       "dynamicCreate": false
     },
     {
+      "file": "src/modules/oos/actions.ts",
+      "name": "createOosAction",
+      "params": [
+        "previous",
+        "fd"
+      ],
+      "module": "OOS",
+      "permission": "CREATE",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/oos/actions.ts",
+      "name": "updateOosAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "OOS",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
       "file": "src/modules/returns/actions.ts",
       "name": "addReturnFollowupAction",
       "params": [
@@ -1411,6 +1438,10 @@
     "src/app/deviations/page.tsx",
     "src/app/page.tsx",
     "src/app/qms/[id]/page.tsx",
+    "src/app/oos/[id]/edit/page.tsx",
+    "src/app/oos/[id]/page.tsx",
+    "src/app/oos/new/page.tsx",
+    "src/app/oos/page.tsx",
     "src/app/returns/[id]/edit/page.tsx",
     "src/app/returns/[id]/page.tsx",
     "src/app/returns/indicators/page.tsx",

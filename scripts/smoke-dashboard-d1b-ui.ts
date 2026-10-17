@@ -19,6 +19,7 @@ async function countFor(module: string) {
     case "COMPLAINT": return prisma.complaint.count({ where });
     case "RETURN": return prisma.returnRecord.count({ where });
     case "AUDIT": return prisma.audit.count({ where });
+    case "OOS": return prisma.oosRecord.count({ where });
     case "CHANGE_CONTROL": return prisma.changeControl.count({ where: { qmsRecord: { isActive: true }, finalStatus: "OPEN" } });
     default: throw new Error("Unknown module");
   }
@@ -38,7 +39,7 @@ async function main() {
     for (const [module, label] of [
       ["DEVIATION", "Desviaciones"], ["CAPA", "CAPA"],
       ["CHANGE_CONTROL", "Controles de cambios"], ["COMPLAINT", "Reclamaciones"],
-      ["RETURN", "Devoluciones"], ["AUDIT", "Auditorías"],
+      ["RETURN", "Devoluciones"], ["AUDIT", "Auditorías"], ["OOS", "OOS"],
     ] as const) {
       const card = page.locator(".dashboard-module-card").filter({ has: page.locator(".dashboard-module-top").getByText(label, { exact: true }) });
       assert.equal(await card.count(), 1, module + " card count");
@@ -49,8 +50,8 @@ async function main() {
     const masterCount = await prisma.controlledDocument.count({ where: { administrativeStatus: { not: "ANNULLED" } } });
     const pnt = page.locator(".dashboard-pnt-card");
     assert.equal(Number(await pnt.locator(".dashboard-module-top strong").textContent()), masterCount);
-    assert.equal(await page.locator(".dashboard-module-card").count(), 7);
-    console.log("D1B: seis cohortes activas vs Prisma y maestros PNT distintos; render " + (Date.now() - start) + "ms.");
+    assert.equal(await page.locator(".dashboard-module-card").count(), 8);
+    console.log("D1B: siete cohortes activas vs Prisma y maestros PNT distintos; render " + (Date.now() - start) + "ms.");
 
     const links = page.locator(".dashboard-task-table tbody a");
     for (const href of await links.evaluateAll(nodes => nodes.map(node => node.getAttribute("href")))) {
@@ -97,7 +98,7 @@ async function main() {
       if (captureDir) await page.screenshot({ path: captureDir + "/dashboard-" + width + ".png", fullPage: true });
     }
     assert.deepEqual(errors, [], "Dashboard hydration or JavaScript errors");
-    console.log("D1B Playwright OK: siete módulos, recuentos independientes, filtros, drill-down, sin cobertura y 1440/768/390 sin hidratación.");
+    console.log("D1B Playwright OK: ocho módulos, recuentos independientes, filtros, drill-down, sin cobertura y 1440/768/390 sin hidratación.");
   } finally {
     await page.close();
     await browser.close();
