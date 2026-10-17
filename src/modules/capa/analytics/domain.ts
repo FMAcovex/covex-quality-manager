@@ -1,3 +1,11 @@
+import {
+  buildAging,
+  inYearToDate,
+  isDue,
+  yearToDateWindow,
+  type YearToDateComparison,
+} from "@/lib/qms/analytics/trends";
+
 export type CapaAnalyticsRow = {
   openingYear: number | null;
   openedAt: Date | null;
@@ -116,4 +124,93 @@ export function buildCapaFiveYearTrend(rows:CapaAnalyticsRow[],endYear:number,co
   return Array.from({length:5},(_,i)=>endYear-4+i).map((year)=>
     buildCapaYearMetrics(rows,year,covered.has(year))
   );
+}
+
+// Tendencias y pendientes (2026-10-17). Descriptivos: sin objetivos ni plazos del PNT.
+export const CAPA_PARETO = { department: "Departamento", origin: "Origen", type: "Tipo" } as const;
+export type CapaParetoDimension = keyof typeof CAPA_PARETO;
+
+export function buildCapaYearToDate(
+  rows: CapaAnalyticsRow[],
+  selectedYear: number,
+  covered: Set<number>,
+  today: Date,
+): YearToDateComparison {
+  const window = yearToDateWindow(selectedYear, today);
+  const period = (year: number) => {
+    const inPeriod = (date: Date | null) => inYearToDate(window, year, date);
+    const opened = rows.filter((r) => inPeriod(r.openedAt));
+    const executed = rows.filter((r) => r.status === "CLOSED" && inPeriod(r.operationalClosedAt));
+    const evaluable = executed.filter((r) => plannedCompletionDate(r));
+    const inTime = evaluable.filter((r) => r.operationalClosedAt! <= plannedCompletionDate(r)!).length;
+    const evaluated = rows.filter((r) => inPeriod(r.effectiveClosedAt) && (r.effectivenessStatus === "CONFORMING" || r.effectivenessStatus === "NONCONFORMING"));
+    return {
+      opened: opened.length,
+      corrective: opened.filter((r) => r.actionType === "CORRECTIVE").length,
+      preventive: opened.filter((r) => r.actionType === "PREVENTIVE").length,
+      executed: executed.length,
+      inTimeRate: pct(inTime, evaluable.length),
+      evaluated: evaluated.length,
+      conformingRate: pct(evaluated.filter((r) => r.effectivenessStatus === "CONFORMING").length, evaluated.length),
+    };
+  };
+  const current = period(selectedYear);
+  const previous = period(selectedYear - 1);
+  return {
+    ...window,
+    currentYear: selectedYear,
+    previousYear: selectedYear - 1,
+    currentAvailable: covered.has(selectedYear),
+    previousAvailable: covered.has(selectedYear - 1),
+    rows: [
+      { label: "Aperturas", current: current.opened, previous: previous.opened, format: "count" },
+      { label: "Correctivas", current: current.corrective, previous: previous.corrective, format: "count" },
+      { label: "Preventivas", current: current.preventive, previous: previous.preventive, format: "count" },
+      { label: "Ejecutadas", current: current.executed, previous: previous.executed, format: "count" },
+      { label: "Ejecución en plazo", current: current.inTimeRate, previous: previous.inTimeRate, format: "percent" },
+      { label: "Eficacias evaluadas", current: current.evaluated, previous: previous.evaluated, format: "count" },
+      { label: "Eficacia conforme", current: current.conformingRate, previous: previous.conformingRate, format: "percent" },
+    ],
+    note: "Aperturas por fecha de apertura; ejecución por fecha de cierre operativo; eficacia por fecha de cierre de eficacia.",
+  };
+}
+
+export type CapaBacklogRow = {
+  id: string;
+  code: string;
+  openedAt: Date | null;
+  actionType: "CORRECTIVE" | "PREVENTIVE";
+  plannedDates: Date[];
+  nextFollowupDate: Date | null;
+};
+
+const typeLabel = (value: CapaBacklogRow["actionType"]) => (value === "PREVENTIVE" ? "Preventiva" : "Correctiva");
+
+/** CAPA abiertas hoy: antigüedad desde la apertura y fecha prevista de ejecución superada. */
+export function buildCapaBacklog(rows: CapaBacklogRow[], today: Date) {
+  const overdue = (row: CapaBacklogRow) => {
+    const planned = row.plannedDates.length ? new Date(Math.max(...row.plannedDates.map((d) => d.getTime()))) : null;
+    return isDue(planned, today, false);
+  };
+  return {
+    ...buildAging(rows.map((row) => ({
+      id: row.id,
+      code: row.code,
+      startDate: row.openedAt,
+      tags: [overdue(row) ? "OVERDUE" : null, row.plannedDates.length ? null : "NO_PLAN"].filter((tag): tag is string => Boolean(tag)),
+      note: `${typeLabel(row.actionType)}${overdue(row) ? " · prevista superada" : ""}`,
+    })), today),
+    overdue: rows.filter(overdue).length,
+    withoutPlan: rows.filter((row) => !row.plannedDates.length).length,
+    // Mismo criterio que el listado: próximo seguimiento hoy o antes.
+    followupDue: rows.filter((row) => isDue(row.nextFollowupDate, today)).length,
+  };
+}
+
+/** CAPA ejecutadas con la verificación de eficacia pendiente: días desde el cierre operativo. */
+export function buildCapaEffectivenessBacklog(
+  rows: Array<{ id: string; code: string; operationalClosedAt: Date | null; actionType: CapaBacklogRow["actionType"] }>,
+  today: Date,
+) {
+  return buildAging(rows.map((row) => ({ id: row.id, code: row.code, startDate: row.operationalClosedAt, tags: [row.actionType], note: typeLabel(row.actionType) })), today);
 }

@@ -2760,7 +2760,7 @@ button[disabled] {
 .ytd-card .muted-note, .pareto-card .muted-note { margin: 12px 0 0; font-size: 12px; }
 .ytd-table { margin-top: 12px; }
 .ytd-table td strong { color: var(--text); }
-.pareto-switch { display: inline-flex; gap: 2px; margin: 12px 0 10px; padding: 2px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); }
+.pareto-switch { display: inline-flex; flex-wrap: wrap; max-width: 100%; gap: 2px; margin: 12px 0 10px; padding: 2px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-soft); }
 .pareto-switch a { padding: 5px 12px; border-radius: 6px; color: #40536c; font-size: 12px; font-weight: 650; text-decoration: none; }
 .pareto-switch a.active { background: var(--surface); color: var(--blue-dark); box-shadow: 0 1px 3px rgba(22, 52, 88, .12); }
 .pareto-list { list-style: none; margin: 0; padding: 0; display: grid; }

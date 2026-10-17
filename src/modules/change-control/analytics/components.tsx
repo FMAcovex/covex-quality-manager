@@ -1,7 +1,4 @@
-import type {
-  ChangeDistribution,
-  ChangeYearMetrics,
-} from "@/modules/change-control/analytics/domain";
+import type { ChangeYearMetrics } from "@/modules/change-control/analytics/domain";
 
 export const pct = (value: number | null) =>
   value === null ? "—" : `${value.toLocaleString("es-ES", { maximumFractionDigits: 1 })} %`;
@@ -23,34 +20,6 @@ export function ChangeKpiCard({
       <span className="kpi-title">{title}</span>
       <strong className="kpi-value">{value}</strong>
       {detail ? <span className="kpi-detail">{detail}</span> : null}
-    </article>
-  );
-}
-
-export function ChangeDistributionCard({
-  title,
-  items,
-}: {
-  title: string;
-  items: ChangeDistribution[];
-}) {
-  const max = Math.max(1, ...items.map((item) => item.count));
-  return (
-    <article className="chart-card">
-      <h2>{title}</h2>
-      <div className="bar-list">
-        {items.map((item) => (
-          <div className="bar-row" key={item.label}>
-            <div className="bar-label">
-              <span>{item.label}</span>
-              <strong>{item.count} · {pct(item.percentage)}</strong>
-            </div>
-            <div className="bar-track">
-              <span style={{ width: `${Math.max(2, (item.count / max) * 100)}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
     </article>
   );
 }

@@ -97,3 +97,8 @@ export function investigationResultLabel(value: string | null | undefined) {
   if (value === "NOT_ATTRIBUTABLE_TO_COVEX") return "No atribuible a COVEX";
   return "Pendiente";
 }
+
+// Opciones de los grupos «Origen / fuente» y «Categoría / motivo» del formulario;
+// se reutilizan en Indicadores para rotular el Pareto.
+export const complaintSourceOptions=[["CUSTOMER","Cliente"],["DISTRIBUTOR","Distribuidor"],["MAH","Titular / MAH"],["CONSUMER","Consumidor / usuario"],["AUTHORITY","Autoridad / entidad sanitaria"],["SUPPLIER","Proveedor"],["CARRIER","Transportista / operador logístico"],["SUBCONTRACTOR","Subcontrata"],["INTERNAL","Detección interna"],["RECALL","Retirada"],["OTHER","Otro"]] as const;
+export const complaintCategoryOptions=[["PRODUCT_QUALITY","Calidad del producto"],["SPECIFICATIONS_TESTING","Especificaciones / análisis"],["PACKAGING","Acondicionamiento / envase"],["LABELLING_DOCUMENTATION","Etiquetado / documentación"],["QUANTITY_CONTENT","Cantidad / contenido"],["TRANSPORT_STORAGE","Transporte / almacenamiento"],["SERVICE_SUPPLY","Servicio / suministro"],["EQUIPMENT_SYSTEM","Equipo / sistema"],["ENVIRONMENT","Medio ambiente"],["OTHER","Otro"]] as const;

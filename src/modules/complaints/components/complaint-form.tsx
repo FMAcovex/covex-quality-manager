@@ -1,4 +1,5 @@
 "use client";
+import { complaintCategoryOptions as categoryOptions, complaintSourceOptions as sourceOptions } from "@/modules/complaints/domain";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 
@@ -39,10 +40,8 @@ function Checks({label,name,options,defaults=[],required=false,onChange}:{label:
  return <div className="field full"><span>{label}{required?" *":""}</span><div className="checkbox-group">{options.map(([v,l])=><label key={v}><input type="checkbox" name={name} value={v} defaultChecked={defaults.includes(v)} onChange={onChange?e=>{const selected=Array.from(e.currentTarget.closest(".checkbox-group")!.querySelectorAll<HTMLInputElement>("input:checked")).map(input=>input.value);onChange(selected)}:undefined}/>{l}</label>)}</div></div>;
 }
 
-const sourceOptions=[["CUSTOMER","Cliente"],["DISTRIBUTOR","Distribuidor"],["MAH","Titular / MAH"],["CONSUMER","Consumidor / usuario"],["AUTHORITY","Autoridad / entidad sanitaria"],["SUPPLIER","Proveedor"],["CARRIER","Transportista / operador logístico"],["SUBCONTRACTOR","Subcontrata"],["INTERNAL","Detección interna"],["RECALL","Retirada"],["OTHER","Otro"]] as const;
 const scopeOptions=[["MEDICINE","Medicamento"],["API","API"],["SUPPLEMENT","Complemento alimenticio"],["COSMETIC","Cosmética"],["MEDICAL_DEVICE","Producto sanitario"],["ENVIRONMENT","Medio ambiente"],["OTHER","Otro"]] as const;
 const objectOptions=[["PRODUCT_MATERIAL","Producto / material"],["SERVICE","Servicio"],["EQUIPMENT_SYSTEM","Equipo / sistema"],["TRANSPORT","Transporte"],["SUBCONTRACTED_ACTIVITY","Actividad subcontratada"],["OTHER","Otro"]] as const;
-const categoryOptions=[["PRODUCT_QUALITY","Calidad del producto"],["SPECIFICATIONS_TESTING","Especificaciones / análisis"],["PACKAGING","Acondicionamiento / envase"],["LABELLING_DOCUMENTATION","Etiquetado / documentación"],["QUANTITY_CONTENT","Cantidad / contenido"],["TRANSPORT_STORAGE","Transporte / almacenamiento"],["SERVICE_SUPPLY","Servicio / suministro"],["EQUIPMENT_SYSTEM","Equipo / sistema"],["ENVIRONMENT","Medio ambiente"],["OTHER","Otro"]] as const;
 const containmentOptions=[["QUARANTINE","Bloqueo / cuarentena"],["SUSPEND_USE_DISTRIBUTION","Suspender uso / distribución"],["NOTIFY_PARTIES","Aviso a cliente / proveedor / titular / Autoridad"],["NONE","Ninguna"],["OTHER","Otra"]] as const;
 const resolutionOptions=[["RETURN","Devolución"],["CORRECTIVE_ACTION","Acc. correctora"],["PREVENTIVE_ACTION","Acc. preventiva"],["IMMEDIATE_ACTION","Acc. inmediata"],["RECALL","Retirada del mercado"],["CREDIT","Abono"],["REPLACEMENT","Reposición"],["OTHER","Otros"]] as const;
 

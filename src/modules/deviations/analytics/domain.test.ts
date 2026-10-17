@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { ageInDays } from "@/lib/qms/analytics/trends";
 import {
-  ageInDays,
   buildBacklog,
   buildFiveYearTrend,
   buildMonthlySeries,
@@ -119,12 +119,12 @@ describe("antigüedad de las desviaciones abiertas", () => {
       open("D-5", "2025-01-01", { classification: "CRITICAL", nextFollowupDate: new Date("2026-10-17T00:00:00Z") }),
       open("D-6", null, { nextFollowupDate: new Date("2026-10-18T00:00:00Z") }),
     ], today, 3);
-    expect(backlog.buckets.map((bucket) => [bucket.key, bucket.count, bucket.critical, bucket.major])).toEqual([
+    expect(backlog.buckets.map((bucket) => [bucket.key, bucket.count, bucket.tags.CRITICAL ?? 0, bucket.tags.MAJOR ?? 0])).toEqual([
       ["0-30", 1, 0, 0], ["31-60", 2, 1, 1], ["61-90", 1, 0, 0], ["90+", 1, 1, 0],
     ]);
     expect(backlog.buckets[0].percentage).toBe(20);
-    expect([backlog.total, backlog.withoutIssueDate, backlog.medianAgeDays, backlog.outOfTime, backlog.followupDue]).toEqual([6, 1, 60, 1, 1]);
-    expect(backlog.oldest.map((item) => [item.code, item.ageDays])).toEqual([["D-5", 654], ["D-4", 61], ["D-3", 60]]);
+    expect([backlog.total, backlog.withoutStartDate, backlog.medianAgeDays, backlog.outOfTime, backlog.followupDue]).toEqual([6, 1, 60, 1, 1]);
+    expect(backlog.oldest.map((item) => [item.code, item.ageDays, item.note])).toEqual([["D-5", 654, "Crítica"], ["D-4", 61, "Menor"], ["D-3", 60, "Mayor"]]);
   });
 
   it("sin desviaciones abiertas no inventa medianas ni porcentajes", () => {
