@@ -98,7 +98,7 @@ async function main() {
     assert.equal(await page.locator(".is-overdue").count(), 0);
     assert(await page.locator(".is-upcoming").count() >= 9);
     await page.getByRole("button", { name: "Aplicar" }).waitFor();
-    assert.equal(await page.locator(".dashboard-trend-row").count(), 0, "No invented audit trend");
+    assert.equal(await page.locator(".dashboard-module-row").getByRole("link", { name: "Indicadores", exact: true }).count(), 0, "Auditorías no tiene pestaña de indicadores");
     await page.locator('select[name="tasks"]').selectOption("overdue");
     await page.getByRole("button", { name: "Aplicar" }).click();
     await page.waitForURL(url => url.searchParams.get("tasks") === "overdue");

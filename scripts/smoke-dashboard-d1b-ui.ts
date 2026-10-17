@@ -71,21 +71,21 @@ async function main() {
     assert.equal(await page.locator(".dashboard-pnt-line").count(), 0);
     const onlyRow = page.locator(".dashboard-module-row");
     assert.equal(Number(await onlyRow.locator(".dashboard-module-total").textContent()), await prisma.capa.count({ where: { qmsRecord: { isActive: true }, status: "OPEN" } }));
-    assert.equal(await page.locator(".dashboard-trend-row").count(), 5);
-    await page.locator(".dashboard-module-row a").click();
+    // El histórico se consulta en Indicadores de cada módulo, enlazado desde su fila.
+    assert.equal(await page.locator(".dashboard-trend-row").count(), 0);
+    assert.equal(await onlyRow.getByRole("link", { name: "Indicadores", exact: true }).getAttribute("href"), "/capa/indicators?year=" + new Date().getUTCFullYear());
+    await page.locator(".dashboard-module-row a").getByText("Abrir →").click();
     await page.waitForURL(url => url.pathname === "/capa" && url.searchParams.get("status") === "OPEN");
 
     await visit(page, "/?year=2100&module=DEVIATION");
-    assert.equal(await page.locator(".dashboard-trend-row").count(), 5);
-    const withoutCoverage = await page.locator(".dashboard-trend-row").allTextContents();
-    assert(withoutCoverage.some(x => x.includes("Sin datos")), "Missing coverage must not render 0");
+    assert.equal(await page.locator(".dashboard-module-row").getByRole("link", { name: "Indicadores", exact: true }).getAttribute("href"), "/deviations/indicators?year=2100");
     const filtered = page.locator(".dashboard-module-row").first();
     assert.equal(Number(await filtered.locator(".dashboard-module-total").textContent()), await prisma.deviation.count({ where: { qmsRecord: { isActive: true, year: 2100 } } }), "Total de cohorte comparado con Prisma; no asumir años sin registros");
 
     await visit(page, "/?module=PNT");
     assert.equal(await page.locator(".dashboard-pnt-line").count(), 1);
     assert.equal(await page.locator(".dashboard-module-row").count(), 0);
-    assert.equal(await page.locator(".dashboard-trend-row").count(), 0);
+    assert.equal(await page.getByRole("link", { name: "Indicadores", exact: true }).count(), 0);
 
     const captureDir = process.env.D1B_SCREENSHOT_DIR;
     if (captureDir) await mkdir(captureDir, { recursive: true });

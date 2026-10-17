@@ -214,6 +214,7 @@
 .dashboard-home .dashboard-module-table .dashboard-module-total { font-weight: 750; color: var(--dashboard-ink); }
 .dashboard-home .dashboard-module-table .dashboard-module-open { color: var(--blue-dark); font-weight: 700; }
 .dashboard-home .dashboard-module-table .dashboard-module-link a { font-size: 12px; font-weight: 700; text-decoration: none; }
+.dashboard-home .dashboard-module-table .dashboard-indicators-link { margin-right: 14px; font-weight: 600; color: var(--dashboard-subtle); }
 .dashboard-home .dashboard-module-table tbody tr:hover { background: #f6f9fd; }
 .dashboard-home .dashboard-module-table tr.is-empty :is(th, td:not(.dashboard-module-link)) { color: #9aa7b8; font-weight: 400; }
 .dashboard-home .dashboard-module-table tfoot :is(th, td) { border-bottom: 0; font-weight: 750; color: var(--dashboard-ink); }
