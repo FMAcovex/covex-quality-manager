@@ -48,15 +48,17 @@ async function main() {
   if (process.env.APP_ENV !== "test" || !base) throw new Error("APP_ENV=test y D1C_UI_BASE_URL obligatorios; usar PostgreSQL de pruebas.");
   const browser = await chromium.launch({ args: ["--no-sandbox"], executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, timezoneId: "Europe/Madrid" });
+  // Los filtros del panel están plegados por defecto; se abren como preferencia del navegador.
+  await page.addInitScript(() => { try { localStorage.setItem("qms.filters.dashboard", "open"); } catch { /* sin almacenamiento */ } });
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   try {
     await createTaskFixtures();
     await visit(page, "/");
-    const summary = await page.locator(".dashboard-summary article > strong").allTextContents();
-    const modules = await page.locator(".dashboard-module-card").allTextContents();
+    const summary = await page.locator(".dashboard-attention-item > strong").allTextContents();
+    const modules = await page.locator(".dashboard-module-row, .dashboard-pnt-line").allTextContents();
     const taskRows = await page.locator(".dashboard-task-row").allTextContents();
-    assert.equal(summary.length, 5);
+    assert.equal(summary.length, 4);
     assert.equal(modules.length, 8);
     assert(await page.locator(".is-overdue").count() > 0);
 
@@ -64,8 +66,8 @@ async function main() {
     for (const width of [1440, 768, 390]) {
       await page.setViewportSize({ width, height: 1000 });
       await visit(page, "/");
-      assert.deepEqual(await page.locator(".dashboard-summary article > strong").allTextContents(), summary, "KPI unchanged at " + width);
-      assert.deepEqual(await page.locator(".dashboard-module-card").allTextContents(), modules, "Module counts unchanged at " + width);
+      assert.deepEqual(await page.locator(".dashboard-attention-item > strong").allTextContents(), summary, "KPI unchanged at " + width);
+      assert.deepEqual(await page.locator(".dashboard-module-row, .dashboard-pnt-line").allTextContents(), modules, "Module counts unchanged at " + width);
       assert.deepEqual(await page.locator(".dashboard-task-row").allTextContents(), taskRows, "Tasks unchanged at " + width);
       const dimensions = await page.evaluate(() => ({
         scroll: document.documentElement.scrollWidth, viewport: innerWidth,
@@ -74,7 +76,8 @@ async function main() {
       }));
       assert(dimensions.scroll <= dimensions.viewport + 2, "Page overflow: " + JSON.stringify(dimensions));
       assert(dimensions.taskScroll <= dimensions.taskWidth + 2, "Task tray requires horizontal scrolling at " + width);
-      for (const element of await page.locator(".dashboard-filter-panel input, .dashboard-filter-panel select, .dashboard-filter-actions > *").all()) {
+      await page.getByRole("button", { name: "Aplicar" }).waitFor();
+      for (const element of await page.locator(".dashboard-filters .filter-panel input, .dashboard-filters .filter-panel select, .dashboard-filters .filter-actions > *").all()) {
         const box = await element.boundingBox();
         const isControl = await element.evaluate(node => node.matches("input, select"));
         assert(box && box.width >= (isControl ? 90 : 60) && box.height >= (width === 390 ? 44 : 38), "Unusable filter at " + width);
@@ -94,6 +97,7 @@ async function main() {
     await visit(page, "/?module=AUDIT&tasks=upcoming");
     assert.equal(await page.locator(".is-overdue").count(), 0);
     assert(await page.locator(".is-upcoming").count() >= 9);
+    await page.getByRole("button", { name: "Aplicar" }).waitFor();
     assert.equal(await page.locator(".dashboard-trend-row").count(), 0, "No invented audit trend");
     await page.locator('select[name="tasks"]').selectOption("overdue");
     await page.getByRole("button", { name: "Aplicar" }).click();
@@ -116,7 +120,7 @@ async function main() {
     await page.getByRole("link", { name: "Limpiar", exact: true }).click();
     await page.waitForURL(url => url.pathname === "/" && !url.search);
     await page.waitForLoadState("networkidle");
-    assert.equal(await page.locator(".dashboard-module-card").count(), 8);
+    assert.equal(await page.locator(".dashboard-module-row").count(), 7);
     assert.deepEqual(errors, [], "Browser errors");
     console.log("D1C UI OK: unchanged KPI/modules/tasks, usable 1440/768/390 filters and task tray, keyboard focus, deadline filters, audit drill-down, pagination and reset.");
   } finally {

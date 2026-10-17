@@ -19,7 +19,8 @@ export function ListFilterToolbar({
   children,
 }: {
   storageKey: string;
-  search: ReactNode;
+  /** Sin buscador (p. ej. el panel de inicio), la fila muestra solo «Filtros» y las vistas. */
+  search?: ReactNode;
   views?: ReactNode;
   chips: ActiveFilterChip[];
   clearHref: string;
@@ -39,7 +40,7 @@ export function ListFilterToolbar({
   return <div className="list-toolbar">
     <div className="list-toolbar-row">
       {/* Buscador y «Buscar» juntos: las sugerencias se abren debajo y no tapan el botón. */}
-      <div className="list-toolbar-search">{search}<button className="button" type="submit">Buscar</button></div>
+      {search ? <div className="list-toolbar-search">{search}<button className="button" type="submit">Buscar</button></div> : null}
       <button className={`button list-filter-toggle${chips.length ? " has-filters" : ""}`} type="button" aria-expanded={open} aria-controls={panelId} onClick={toggle}>
         Filtros{chips.length ? <span className="list-filter-count">{chips.length}</span> : null}<span aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
