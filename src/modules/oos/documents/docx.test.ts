@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getZipEntryText, readZip, writeZip } from "@/lib/ooxml/zip";
 import { deriveOosAnnex } from "@/modules/oos/documents/derive";
-import { fillOosAnnexIII, fillOosAnnexIV, fillOosAnnexVI, oosInvestigationSummary, oosListingShades, type OosDocumentRecord } from "@/modules/oos/documents/docx";
+import { completeFormPageCount, fillOosAnnexIII, fillOosAnnexIV, fillOosAnnexVI, oosInvestigationSummary, oosListingShades, type OosDocumentRecord } from "@/modules/oos/documents/docx";
 
 // Synthetic grids with the table/row/cell counts of PNT GC-10/014/04 (D-088, OOS-3).
 function template(tables: [rows: number, cells: number][], firstCell = "") {
@@ -65,13 +65,24 @@ describe("Anexos OOS del PNT GC-10/014/04", () => {
 });
 
 describe("derivación de los anexos desde el PNT", () => {
-  it("toma cada anexo desde su primer título hasta el siguiente, sin el índice del apartado 8", () => {
+  it("toma cada anexo desde el título de su formulario hasta el siguiente, sin títulos, encabezado ni pie del PNT", () => {
     const p = (text: string) => `<w:p><w:r><w:t>${text}</w:t></w:r></w:p>`;
-    const body = [p("8. ANEXOS"), p("An"), p("Anexo II"), p("Anexo III"), p("Fase I"), p("Anexo III del PNT GC-10/014/04"), p("Anexo IV"), p("Fase II"), p("Anexo IV del PNT GC-10/014/04"), p("ANEXO V"), p("Árbol"), p("ANEXO VI"), p("Listado")].join("");
+    const section = '<w:p><w:pPr><w:sectPr><w:headerReference w:type="default" r:id="rId12"/><w:footerReference w:type="default" r:id="rId13"/></w:sectPr></w:pPr></w:p>';
+    const body = [p("8. ANEXOS"), p("An"), p("Anexo II"), p("Anexo III"), p("Fase I"), p("Anexo III del PNT GC-10/014/04"), section, p("Anexo IV"), p("Fase II"), p("Anexo IV del PNT GC-10/014/04"), p("ANEXO V"), p("Árbol"), p("ANEXO VI"), p("LISTADO GENERAL DE OOS"), p("LISTADO GENERAL DE OOS AÑO:_")].join("");
     const pnt = writeZip([{ name: "word/document.xml", data: Buffer.from(`<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr/></w:body></w:document>`) }]);
     const text = (type: Parameters<typeof deriveOosAnnex>[1]) => [...getZipEntryText(readZip(deriveOosAnnex(pnt, type)), "word/document.xml").matchAll(/<w:t>([^<]*)<\/w:t>/g)].map((m) => m[1]);
-    expect(text("OOS_ANNEX_III")).toEqual(["Anexo III", "Fase I", "Anexo III del PNT GC-10/014/04"]);
-    expect(text("OOS_ANNEX_IV")).toEqual(["Anexo IV", "Fase II", "Anexo IV del PNT GC-10/014/04"]);
-    expect(text("OOS_ANNEX_VI")).toEqual(["ANEXO VI", "Listado"]);
+    expect(text("OOS_ANNEX_III")).toEqual(["Anexo III del PNT GC-10/014/04"]);
+    expect(text("OOS_ANNEX_IV")).toEqual(["Anexo IV del PNT GC-10/014/04"]);
+    expect(text("OOS_ANNEX_VI")).toEqual(["LISTADO GENERAL DE OOS AÑO:_"]);
+    // Sin encabezado ni pie del PNT: la única numeración es la del propio formulario.
+    expect(getZipEntryText(readZip(deriveOosAnnex(pnt, "OOS_ANNEX_III")), "word/document.xml")).not.toMatch(/headerReference|footerReference/);
+  });
+});
+
+describe("numeración del formulario", () => {
+  it("sustituye la X de «Página n de X» por el número de páginas del anexo, también con la X en otro run", () => {
+    const xml = '<w:t xml:space="preserve">Página 1 de </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>X</w:t><w:t>Página 2 de X</w:t><w:t>X</w:t>';
+    expect(completeFormPageCount(xml)).toBe('<w:t xml:space="preserve">Página 1 de </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>2</w:t><w:t>Página 2 de 2</w:t><w:t>X</w:t>');
+    expect(completeFormPageCount("<w:t>Sin numeración X</w:t>")).toBe("<w:t>Sin numeración X</w:t>");
   });
 });

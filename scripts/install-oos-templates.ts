@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { prisma } from "../src/lib/db";
-import { deriveOosAnnex, oosAnnexRanges } from "../src/modules/oos/documents/derive";
+import { deriveOosAnnex, oosAnnexRanges, supersededOosAnnexChecksums } from "../src/modules/oos/documents/derive";
 import { oosPntV04EffectiveFrom, oosPntV04Sha, type OosAnnexType } from "../src/modules/oos/documents/templates";
 
 // D-088, OOS-3: Anexos III, IV y VI derivados del PNT GC-10/014/04 verificado por SHA-256.
@@ -22,8 +22,10 @@ async function main() {
     for (const asset of assets) {
       const key = { module: QmsRecordType.OOS, documentType: DocumentType[asset.type], versionCode: "04" };
       const existing = await tx.templateVersion.findUnique({ where: { module_documentType_versionCode: key } });
-      // A registered original is history: never replaced by a different binary.
-      if (existing?.checksum && existing.checksum !== asset.checksum) throw new Error(`La versión 04 de ${asset.type} ya contiene otro binario: no se sustituye.`);
+      // A registered original is history: never replaced by a different binary,
+      // except the documented OOS-3 derivation of this same PNT (with its header/footer).
+      const rederived = Boolean(existing?.checksum && existing.checksum !== asset.checksum && existing.checksum === supersededOosAnnexChecksums[asset.type]);
+      if (existing?.checksum && existing.checksum !== asset.checksum && !rederived) throw new Error(`La versión 04 de ${asset.type} ya contiene otro binario: no se sustituye.`);
       const data = { fileName: asset.fileName, fileData: new Uint8Array(asset.data), fileSize: asset.data.length, checksum: asset.checksum, filePath: null, mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" };
       const saved = existing
         ? await tx.templateVersion.update({ where: { id: existing.id }, data })
@@ -31,10 +33,13 @@ async function main() {
       await tx.configurationChange.create({ data: {
         entityType: "TemplateVersion",
         entityKey: `OOS:${asset.type}:04`,
-        action: existing ? "TEMPLATE_BINARY_VERIFIED" : "TEMPLATE_REGISTER",
+        action: rederived ? "TEMPLATE_REDERIVED" : existing ? "TEMPLATE_BINARY_VERIFIED" : "TEMPLATE_REGISTER",
+        oldValue: rederived ? { fileName: existing!.fileName, fileSize: existing!.fileSize, checksum: existing!.checksum } : undefined,
         newValue: { fileName: saved.fileName, fileSize: saved.fileSize, checksum: saved.checksum, isActive: saved.isActive },
         changedByText: actor,
-        reason: `Anexo derivado del PNT GC-10/014/04 verificado (SHA-256 ${oosPntV04Sha})`,
+        reason: rederived
+          ? `Anexo derivado de nuevo del mismo PNT GC-10/014/04 (SHA-256 ${oosPntV04Sha}) sin encabezado ni pie del PNT, como los anexos en uso`
+          : `Anexo derivado del PNT GC-10/014/04 verificado (SHA-256 ${oosPntV04Sha})`,
       } });
     }
   });

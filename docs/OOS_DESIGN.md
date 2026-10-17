@@ -119,25 +119,28 @@ Implementado en OOS-3 (17/10/2026).
 
 | Documento | Fuente | Salida | Cuándo |
 | --- | --- | --- | --- |
-| Anexo III — Fase I | Rango del PNT 04 desde el primer «Anexo III» hasta «Anexo IV» | Word cumplimentado | OOS abierto o cerrado |
-| Anexo IV — Fase II | Desde el primer «Anexo IV» hasta «ANEXO V» | Word cumplimentado | Solo con disposición «Investigación a gran escala» |
-| Anexo VI — Listado general de OOS | Desde «ANEXO VI» hasta el final | Word del año, para imprimir y firmar a mano (§5.2) | Desde el listado: año en curso y años con OOS |
+| Anexo III — Fase I | Rango del PNT 04 desde el título del formulario «Anexo III del PNT» hasta «Anexo IV» | Word cumplimentado | OOS abierto o cerrado |
+| Anexo IV — Fase II | Desde «Anexo IV del PNT» hasta «ANEXO V» | Word cumplimentado | Solo con disposición «Investigación a gran escala» |
+| Anexo VI — Listado general de OOS | Desde la tabla «LISTADO GENERAL DE OOS AÑO» hasta el final | Word del año, para imprimir y firmar a mano (§5.2) | Desde el listado: año en curso y años con OOS |
 
 **Fuente controlada.** PNT `GC-10-014-04 (15-06-2025) EN REDACCION.docx`, con el encabezado de los anexos ya corregido a 04 por Calidad. Su SHA-256 es `1dc7d0a7f0937f90b75f6ba94f3cdbaf0cfdd3b6558503c2f1658d1fd837ad40`.
 
 **Instalación.**
 - `pnpm templates:oos:install -- <PNT.docx>` comprueba el SHA-256 y deriva los tres anexos.
 - Los registra como plantillas versión 04, vigentes desde el 15/06/2025, con su cambio de configuración.
-- Una versión ya registrada con otro binario no se sustituye.
+- Como los anexos en uso de la carpeta «FUERA DE ESPECIFICACIONES», cada anexo derivado empieza en el propio formulario y no lleva encabezado ni pie del PNT ni los títulos del apartado 8. La única numeración es la fila «Página n de X» del formulario.
+- Una versión ya registrada con otro binario no se sustituye. Excepción: la derivación de OOS-3 del mismo PNT, que conservaba encabezado, pie y títulos, se sustituye al reinstalar con el cambio de configuración `TEMPLATE_REDERIVED` (hash anterior y motivo).
 - SHA-256 de los anexos derivados, estable entre ejecuciones:
-  - Anexo III: `66d885876c2ef9b6de56aed21f8b4b6a81b06a6b3142674e17c3dbeaa1ee6903`;
-  - Anexo IV: `bb30562e5893887f5f932d8696e526971dd31fc46e25874295e55dbd591fd391`;
-  - Anexo VI: `40c851beff49620f41fcda800028d0b33869d83c8af100c874a09b5054d85007`.
+  - Anexo III: `eec11dfd04f19b687a5bee286a8ed1f43578934d5d4eb4e71430a7f292d4e737`;
+  - Anexo IV: `f1f900179510436fec8230e9fb1c510afee50fe3bce86cc8ad273542d7df9bc8`;
+  - Anexo VI: `99f4704f8eed938583d668e621aa23e592ee9bdc7ffe506810d037f8a579f3a1`.
+- SHA-256 de la derivación de OOS-3 sustituida: III `66d885876c2ef9b6de56aed21f8b4b6a81b06a6b3142674e17c3dbeaa1ee6903`, IV `bb30562e5893887f5f932d8696e526971dd31fc46e25874295e55dbd591fd391`, VI `40c851beff49620f41fcda800028d0b33869d83c8af100c874a09b5054d85007`.
 - El binario corporativo no se versiona en Git.
 
 **Cumplimentación sin rediseño.**
 - Se rellenan las celdas existentes y se conservan etiquetas, propiedades de celda y tipografía del párrafo.
 - Las indicaciones en gris («fecha», «hora», «analista», «turno», «(fecha)») se sustituyen por el dato cuando existe.
+- En «Página n de X» se escribe el número de páginas del formulario (3 en el Anexo III, 2 en el IV), como en los anexos en uso.
 - Los textos libres van debajo de la indicación del anexo, por ejemplo «(Establecer causa raíz)».
 - La firma sigue siendo manuscrita: en «Emitido por» y «Aprobado por» se escribe el nombre y la fecha registrados, sin firma electrónica (D-073, D-074).
 - No se cumplimentan «Copias / Protocolo de lote» ni «Originales / CC» porque el expediente no registra esos datos.
