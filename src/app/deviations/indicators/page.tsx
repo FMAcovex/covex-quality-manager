@@ -2,6 +2,7 @@ import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import {
   AnnualSummaryTable,
+  BacklogPanel,
   DistributionCard,
   KpiCard,
   MonthlyComparison,
@@ -10,7 +11,7 @@ import {
   formatNumber,
   formatPercent,
 } from "@/modules/deviations/analytics/components";
-import { getDeviationAnalytics } from "@/modules/deviations/analytics/queries";
+import { getDeviationAnalytics, getDeviationBacklog } from "@/modules/deviations/analytics/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ async function DeviationIndicatorsPageAuthenticatedContent({
     capa: param(query.capa),
     status: param(query.status),
   };
-  const data = await getDeviationAnalytics(filters);
+  const [data, backlog] = await Promise.all([getDeviationAnalytics(filters), getDeviationBacklog(filters)]);
   const { current, previous, trend, selectedYear } = data;
   const compare = (currentValue: number | null, previousValue: number | null, suffix = "") =>
     previous.dataAvailable
@@ -131,6 +132,8 @@ async function DeviationIndicatorsPageAuthenticatedContent({
           caution={current.data.review > 0}
         />
       </div>
+
+      <BacklogPanel backlog={backlog} />
 
       <div className="analytics-grid">
         <MonthlyComparison current={current} previous={previous} />

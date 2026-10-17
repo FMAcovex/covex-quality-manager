@@ -77,3 +77,17 @@ Un año no cargado en PostgreSQL debe mostrarse como sin datos.
 No debe representarse como valor cero porque cero significa una cohorte conocida sin desviaciones.
 
 La tendencia mantiene cinco posiciones temporales, pero interrumpe la línea cuando falta cobertura.
+
+## Antigüedad de las desviaciones abiertas (piloto, 2026-10-17)
+
+Foto de lo pendiente hoy, no de un año concreto.
+
+- **Población:** desviaciones abiertas (`status = OPEN`), activas y con `includeInKpi = true`, sea cual sea su año de apertura. Se aplican los filtros de departamento, clasificación, procedencia y CAPA; el año analizado y el estado actual no se aplican.
+- **Antigüedad:** días naturales desde la fecha de apertura (`issueDate`) hasta hoy. Las desviaciones sin fecha de apertura se cuentan aparte, no en un tramo.
+- **Tramos:** 0–30, 31–60, 61–90 y más de 90 días, con los límites incluidos en el tramo inferior. Son descriptivos: no son plazos del PNT ni objetivos aprobados.
+- **Para cada tramo:** número, porcentaje sobre las que tienen fecha, críticas y mayores.
+- **Mediana de antigüedad:** sobre las que tienen fecha.
+- **Marcadas fuera de plazo:** abiertas con «En plazo» = No (`deadlineStatus = OUT_OF_TIME`), tal como se registra en el expediente.
+- **Con seguimiento vencido:** el próximo seguimiento del último registro de seguimiento es hoy o anterior. Es el mismo criterio que el contador del listado.
+- **Las más antiguas:** las cinco con más días abiertas, con enlace al expediente.
+

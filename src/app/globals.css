@@ -2696,3 +2696,38 @@ button[disabled] {
   .list-ux-c .list-toolbar-search { flex-basis: 100%; }
   .list-ux-c .list-toolbar-row > .button { flex: 1 1 auto; }
 }
+
+/* Indicadores · antigüedad de pendientes (piloto en Desviaciones). */
+.backlog-card { margin: 14px 0; }
+.backlog-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.backlog-heading h2 { margin: 2px 0 4px; }
+.backlog-heading .eyebrow { margin: 0; }
+.backlog-heading .muted-note { margin: 0; max-width: 720px; }
+.backlog-heading .summary-link { font-size: 12px; text-decoration: none; white-space: nowrap; }
+.backlog-counters { margin: 14px 0 12px; }
+.backlog-alert, .backlog-counters .backlog-alert strong { color: #a5281f; }
+.backlog-bar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; background: #eef2f7; }
+.backlog-segment { display: grid; place-items: center; min-width: 26px; color: #fff; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.backlog-0-30 { background: #6f9bd8; }
+.backlog-31-60 { background: #c9a24a; }
+.backlog-61-90 { background: #d07a35; }
+.backlog-90\+ { background: #b8362c; }
+.backlog-columns { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 24px; margin-top: 14px; }
+.backlog-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.backlog-table :is(th, td) { padding: 7px 8px; border-bottom: 1px solid #e8edf4; text-align: right; font-variant-numeric: tabular-nums; }
+.backlog-table thead th { color: var(--muted); font-size: 11px; font-weight: 700; background: #f8fafc; }
+.backlog-table :is(th:first-child) { text-align: left; }
+.backlog-table tbody th { font-weight: 600; white-space: nowrap; }
+.backlog-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }
+.backlog-columns h3 { margin: 0 0 8px; font-size: 13px; }
+.backlog-oldest { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; }
+.backlog-oldest li span { margin-left: 8px; color: var(--muted); font-size: 12px; }
+.backlog-oldest .summary-link { overflow-wrap: anywhere; }
+.backlog-columns > * { min-width: 0; }
+.backlog-table-wrap { overflow-x: auto; }
+@media (max-width: 760px) {
+  .backlog-columns { grid-template-columns: 1fr; }
+  .backlog-table { font-size: 12px; }
+  .backlog-table :is(th, td) { padding: 6px 5px; }
+}
+@media (max-width: 420px) { .backlog-table :is(th, td):nth-child(3) { display: none; } }

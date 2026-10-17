@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  ageInDays,
+  buildBacklog,
   buildFiveYearTrend,
   buildYearMetrics,
   closingDays,
@@ -90,5 +92,40 @@ describe("deviation KPI domain", () => {
     expect(closingDays(row({ closedAt: null }))).toBeNull();
     expect(median([])).toBeNull();
     expect(median([5, 1, 9])).toBe(5);
+  });
+});
+
+describe("antigüedad de las desviaciones abiertas", () => {
+  const today = new Date("2026-10-17T15:30:00Z");
+  const open = (id: string, issue: string | null, patch: Record<string, unknown> = {}) => ({
+    id, code: id, issueDate: issue ? new Date(`${issue}T00:00:00Z`) : null, classification: "MINOR" as const, outOfTime: false, nextFollowupDate: null, ...patch,
+  });
+
+  it("cuenta días naturales desde la apertura sin depender de la hora", () => {
+    expect(ageInDays(new Date("2026-10-17T00:00:00Z"), today)).toBe(0);
+    expect(ageInDays(new Date("2026-09-17T00:00:00Z"), today)).toBe(30);
+    expect(ageInDays(new Date("2026-10-20T00:00:00Z"), today)).toBe(0);
+  });
+
+  it("reparte por tramos con los límites incluidos, separa sin fecha y ordena las más antiguas", () => {
+    const backlog = buildBacklog([
+      open("D-1", "2026-09-17"),
+      open("D-2", "2026-09-16", { classification: "CRITICAL" }),
+      open("D-3", "2026-08-18", { classification: "MAJOR", outOfTime: true }),
+      open("D-4", "2026-08-17"),
+      open("D-5", "2025-01-01", { classification: "CRITICAL", nextFollowupDate: new Date("2026-10-17T00:00:00Z") }),
+      open("D-6", null, { nextFollowupDate: new Date("2026-10-18T00:00:00Z") }),
+    ], today, 3);
+    expect(backlog.buckets.map((bucket) => [bucket.key, bucket.count, bucket.critical, bucket.major])).toEqual([
+      ["0-30", 1, 0, 0], ["31-60", 2, 1, 1], ["61-90", 1, 0, 0], ["90+", 1, 1, 0],
+    ]);
+    expect(backlog.buckets[0].percentage).toBe(20);
+    expect([backlog.total, backlog.withoutIssueDate, backlog.medianAgeDays, backlog.outOfTime, backlog.followupDue]).toEqual([6, 1, 60, 1, 1]);
+    expect(backlog.oldest.map((item) => [item.code, item.ageDays])).toEqual([["D-5", 654], ["D-4", 61], ["D-3", 60]]);
+  });
+
+  it("sin desviaciones abiertas no inventa medianas ni porcentajes", () => {
+    const backlog = buildBacklog([], today);
+    expect([backlog.total, backlog.medianAgeDays, backlog.buckets.every((bucket) => bucket.percentage === 0)]).toEqual([0, null, true]);
   });
 });

@@ -2,10 +2,12 @@ import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
+  buildBacklog,
   buildFiveYearTrend,
   buildYearMetrics,
   type AnalyticsRow,
 } from "@/modules/deviations/analytics/domain";
+import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 
 export type DeviationAnalyticsFilters = {
   year?: string;
@@ -136,3 +138,30 @@ export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters) 
     years: availableYears,
   };
 }
+
+/**
+ * Desviaciones abiertas hoy y su antigüedad (piloto). Aplica departamento, clasificación,
+ * procedencia y CAPA; no el año analizado ni el estado, porque lo pendiente es de hoy.
+ */
+export async function getDeviationBacklog(filters: DeviationAnalyticsFilters, today = new Date()) {
+  const records = await prisma.deviation.findMany({
+    where: { AND: [filterWhere({ ...filters, status: undefined }), { status: "OPEN" }] },
+    select: {
+      id: true,
+      issueDate: true,
+      classification: true,
+      deadlineStatus: true,
+      qmsRecord: { select: { businessCode: true, annulledBusinessCode: true } },
+      followups: { orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }], take: 1, select: { nextFollowupDate: true } },
+    },
+  });
+  return buildBacklog(records.map((record) => ({
+    id: record.id,
+    code: qmsRecordDisplayCode(record.qmsRecord),
+    issueDate: record.issueDate,
+    classification: record.classification,
+    outOfTime: record.deadlineStatus === "OUT_OF_TIME",
+    nextFollowupDate: record.followups[0]?.nextFollowupDate ?? null,
+  })), today);
+}
+

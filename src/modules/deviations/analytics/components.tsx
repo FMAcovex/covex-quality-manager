@@ -1,4 +1,6 @@
+import Link from "next/link";
 import type {
+  DeviationBacklog,
   DistributionItem,
   YearMetrics,
 } from "@/modules/deviations/analytics/domain";
@@ -230,3 +232,60 @@ export function AnnualSummaryTable({ trend }: { trend: YearMetrics[] }) {
     </article>
   );
 }
+
+const classificationLabel = { CRITICAL: "Crítica", MAJOR: "Mayor", MINOR: "Menor" } as const;
+
+/** Antigüedad de las desviaciones abiertas hoy (piloto de indicadores de pendientes). */
+export function BacklogPanel({ backlog }: { backlog: DeviationBacklog }) {
+  const dated = backlog.total - backlog.withoutIssueDate;
+  return (
+    <section className="chart-card backlog-card" aria-labelledby="backlog-title">
+      <div className="backlog-heading">
+        <div>
+          <p className="eyebrow">Pendientes hoy</p>
+          <h2 id="backlog-title">Antigüedad de las desviaciones abiertas</h2>
+          <p className="muted-note">Abiertas a fecha de hoy, sea cual sea su año de apertura. Días naturales desde la fecha de apertura. Los tramos son descriptivos, no plazos del PNT.</p>
+        </div>
+        <Link className="summary-link" href="/deviations?status=OPEN">Ver abiertas en el listado →</Link>
+      </div>
+      <p className="list-counters backlog-counters">
+        <span><strong>{backlog.total}</strong> abiertas</span>
+        <span><strong>{backlog.medianAgeDays === null ? "—" : formatNumber(backlog.medianAgeDays)}</strong> días de mediana</span>
+        <span className={backlog.outOfTime ? "backlog-alert" : ""}><strong>{backlog.outOfTime}</strong> marcadas fuera de plazo</span>
+        <span className={backlog.followupDue ? "backlog-alert" : ""}><strong>{backlog.followupDue}</strong> con seguimiento vencido</span>
+        {backlog.withoutIssueDate ? <span className="backlog-alert"><strong>{backlog.withoutIssueDate}</strong> sin fecha de apertura</span> : null}
+      </p>
+      {dated ? <>
+        <div className="backlog-bar" role="img" aria-label={backlog.buckets.map((bucket) => `${bucket.label}: ${bucket.count}`).join(", ")}>
+          {backlog.buckets.filter((bucket) => bucket.count).map((bucket) => (
+            <span key={bucket.key} className={`backlog-segment backlog-${bucket.key}`} style={{ flexGrow: bucket.count }} title={`${bucket.label}: ${bucket.count}`}>{bucket.count}</span>
+          ))}
+        </div>
+        <div className="backlog-columns">
+          <div className="backlog-table-wrap"><table className="backlog-table">
+            <thead><tr><th>Antigüedad</th><th>Abiertas</th><th>%</th><th>Críticas</th><th>Mayores</th></tr></thead>
+            <tbody>{backlog.buckets.map((bucket) => (
+              <tr key={bucket.key}>
+                <th scope="row"><span className={`backlog-dot backlog-${bucket.key}`} aria-hidden="true" />{bucket.label}</th>
+                <td>{bucket.count}</td>
+                <td>{formatPercent(bucket.percentage)}</td>
+                <td className={bucket.critical ? "backlog-alert" : ""}>{bucket.critical}</td>
+                <td>{bucket.major}</td>
+              </tr>
+            ))}</tbody>
+          </table></div>
+          <div>
+            <h3>Las más antiguas</h3>
+            <ol className="backlog-oldest">{backlog.oldest.map((item) => (
+              <li key={item.id}>
+                <Link className="summary-link" href={`/deviations/${item.id}`}>{item.code}</Link>
+                <span>{item.ageDays} días{item.classification ? ` · ${classificationLabel[item.classification]}` : ""}</span>
+              </li>
+            ))}</ol>
+          </div>
+        </div>
+      </> : <div className="empty-panel">{backlog.total ? "Las desviaciones abiertas no tienen fecha de apertura." : "No hay desviaciones abiertas con estos filtros."}</div>}
+    </section>
+  );
+}
+

@@ -190,3 +190,70 @@ export function buildFiveYearTrend(
     buildYearMetrics(rows, year, coveredYears ? coveredYears.has(year) : true),
   );
 }
+
+// Antigüedad de las desviaciones abiertas hoy (piloto). Tramos descriptivos: no son
+// plazos del PNT ni objetivos; el plazo aplicable lo marca «En plazo» de cada expediente.
+export const BACKLOG_BUCKETS = [
+  { key: "0-30", label: "0–30 días", max: 30 },
+  { key: "31-60", label: "31–60 días", max: 60 },
+  { key: "61-90", label: "61–90 días", max: 90 },
+  { key: "90+", label: "Más de 90 días", max: Number.POSITIVE_INFINITY },
+] as const;
+
+export type BacklogRow = {
+  id: string;
+  code: string;
+  issueDate: Date | null;
+  classification: "CRITICAL" | "MAJOR" | "MINOR" | null;
+  outOfTime: boolean;
+  nextFollowupDate: Date | null;
+};
+
+export type DeviationBacklog = {
+  total: number;
+  withoutIssueDate: number;
+  medianAgeDays: number | null;
+  outOfTime: number;
+  followupDue: number;
+  buckets: Array<{ key: string; label: string; count: number; percentage: number; critical: number; major: number }>;
+  oldest: Array<{ id: string; code: string; ageDays: number; classification: BacklogRow["classification"] }>;
+};
+
+/** Días naturales desde la apertura hasta hoy (fechas UTC sin hora). */
+export function ageInDays(issueDate: Date, today: Date) {
+  const start = Date.UTC(issueDate.getUTCFullYear(), issueDate.getUTCMonth(), issueDate.getUTCDate());
+  const end = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  return Math.max(0, Math.round((end - start) / DAY_MS));
+}
+
+export function buildBacklog(rows: BacklogRow[], today: Date, oldestLimit = 5): DeviationBacklog {
+  const todayStart = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const aged = rows
+    .filter((row) => row.issueDate)
+    .map((row) => ({ ...row, ageDays: ageInDays(row.issueDate!, today) }));
+  const buckets = BACKLOG_BUCKETS.map((bucket, index) => {
+    const min = index === 0 ? 0 : BACKLOG_BUCKETS[index - 1].max + 1;
+    const inBucket = aged.filter((row) => row.ageDays >= min && row.ageDays <= bucket.max);
+    return {
+      key: bucket.key,
+      label: bucket.label,
+      count: inBucket.length,
+      percentage: aged.length ? Math.round((inBucket.length / aged.length) * 1000) / 10 : 0,
+      critical: inBucket.filter((row) => row.classification === "CRITICAL").length,
+      major: inBucket.filter((row) => row.classification === "MAJOR").length,
+    };
+  });
+  return {
+    total: rows.length,
+    withoutIssueDate: rows.length - aged.length,
+    medianAgeDays: median(aged.map((row) => row.ageDays)),
+    outOfTime: rows.filter((row) => row.outOfTime).length,
+    // Mismo criterio que el listado: el próximo seguimiento del último registro vence hoy o antes.
+    followupDue: rows.filter((row) => row.nextFollowupDate && row.nextFollowupDate.getTime() <= todayStart).length,
+    buckets,
+    oldest: [...aged]
+      .sort((a, b) => b.ageDays - a.ageDays || a.code.localeCompare(b.code, "es"))
+      .slice(0, oldestLimit)
+      .map(({ id, code, ageDays, classification }) => ({ id, code, ageDays, classification })),
+  };
+}
