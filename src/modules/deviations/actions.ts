@@ -2,7 +2,7 @@
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
-import { InvestigationMethod, Prisma, QmsRecordType } from "@prisma/client";
+import { InvestigationMethod, Prisma, QmsRecordType, RootCauseCategory } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -169,6 +169,7 @@ async function createDeviationActionAuthenticatedContent(
           investigationConclusive: v.investigationConclusive,
           investigationMethods: v.investigationMethods as InvestigationMethod[],
           rootCause: v.rootCause,
+          rootCauseCategories: v.rootCauseCategories as RootCauseCategory[],
           recurrentRootCause: v.recurrentRootCause,
           recurrenceDetails: v.recurrenceDetails,
           classification: v.classification,
@@ -359,6 +360,7 @@ async function updateDeviationActionAuthenticatedContent(
     investigationConclusive: existing.investigationConclusive,
     investigationMethods: existing.investigationMethods,
     rootCause: existing.rootCause,
+    rootCauseCategories: existing.rootCauseCategories,
     recurrentRootCause: existing.recurrentRootCause,
     recurrenceDetails: existing.recurrenceDetails,
     classification: existing.classification,
@@ -522,6 +524,7 @@ async function updateDeviationActionAuthenticatedContent(
           investigationConclusive: v.investigationConclusive,
           investigationMethods: v.investigationMethods as InvestigationMethod[],
           rootCause: v.rootCause,
+          rootCauseCategories: v.rootCauseCategories as RootCauseCategory[],
           recurrentRootCause: v.recurrentRootCause,
           recurrenceDetails: v.recurrenceDetails,
           classification: v.classification,

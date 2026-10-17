@@ -1,5 +1,7 @@
 # Indicadores de los módulos — reglas comunes, Controles de cambios, Reclamaciones y Devoluciones
 
+Desviaciones, CAPA y Reclamaciones incluyen además el Pareto «Causa raíz (6M)» (D-092): cuenta menciones y agrupa como «Sin categoría» los expedientes sin clasificar.
+
 Desviaciones y CAPA tienen su propio documento ([DEVIATION_KPI_DEFINITIONS.md](DEVIATION_KPI_DEFINITIONS.md), [CAPA_KPI_DEFINITIONS.md](CAPA_KPI_DEFINITIONS.md)). Aquí se recogen las reglas comunes de las piezas añadidas el 2026-10-17 y las definiciones de los otros tres módulos.
 
 Todos los indicadores son **descriptivos**. No hay objetivos, límites de control ni plazos: Calidad valora los indicadores a final de año, fuera de la aplicación (D-090). No se muestran colores de «bien» o «mal» sobre las variaciones.

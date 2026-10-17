@@ -2,7 +2,7 @@
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
-import { Prisma, QmsRecordType, RecordVersionKind } from "@prisma/client";
+import { Prisma, QmsRecordType, RecordVersionKind, RootCauseCategory } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { refreshCapaVersionAfterRelationChange } from "./relation-version-service";
@@ -75,6 +75,7 @@ function snapshot(v: ReturnType<typeof parseCapaForm>["values"]) {
     applicableTo: v.applicableTo,
     defectDescription: v.defectDescription,
     rootCause: v.rootCause,
+    rootCauseCategories: v.rootCauseCategories,
     impactAssessment: v.impactAssessment,
     nextFollowupDate: v.nextFollowupDate,
     actionFollowupObservations: v.actionFollowupObservations,
@@ -222,6 +223,7 @@ async function createCapaActionAuthenticatedContent(
           applicableTo: v.applicableTo,
           defectDescription: v.defectDescription,
           rootCause: v.rootCause,
+          rootCauseCategories: v.rootCauseCategories as RootCauseCategory[],
           impactAssessment: v.impactAssessment,
           nextFollowupDate: toDate(v.nextFollowupDate),
           actionFollowupObservations: v.actionFollowupObservations,
@@ -479,6 +481,7 @@ async function updateCapaActionAuthenticatedContent(
     applicableTo: existing.applicableTo,
     defectDescription: existing.defectDescription,
     rootCause: existing.rootCause,
+    rootCauseCategories: existing.rootCauseCategories,
     impactAssessment: existing.impactAssessment,
     nextFollowupDate: existing.nextFollowupDate?.toISOString().slice(0, 10) ?? null,
     actionFollowupObservations: existing.actionFollowupObservations,
@@ -612,6 +615,7 @@ async function updateCapaActionAuthenticatedContent(
           applicableTo: v.applicableTo,
           defectDescription: v.defectDescription,
           rootCause: v.rootCause,
+          rootCauseCategories: v.rootCauseCategories as RootCauseCategory[],
           impactAssessment: existing.impactAssessment,
           nextFollowupDate: toDate(v.nextFollowupDate),
           actionFollowupObservations: v.actionFollowupObservations,

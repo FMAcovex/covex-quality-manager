@@ -54,6 +54,7 @@ export type OosFormDefaults = Partial<{
   phaseIIIssuedAt: string;
   phaseIIAffectedDepartments: string;
   investigationResult: "INVALIDATED" | "CONFIRMED" | "INCONCLUSIVE";
+  rootCauseCategories: string[];
   closedAt: string;
   internalObservations: string;
 }> & Partial<{ [K in OosEvaluationKey as `evaluation.${K}`]: string }>;

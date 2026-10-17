@@ -25,6 +25,7 @@ export type AnalyticsRow = {
   departmentName: string | null;
   capaRequired: boolean | null;
   capaCount: number;
+  rootCauseCategories?: string[];
 };
 
 export type RateMetric = {
@@ -320,5 +321,6 @@ export const PARETO_DIMENSIONS = {
   area: "Área",
   origin: "Origen",
   classification: "Clasificación",
+  rootCause: "Causa raíz (6M)",
 } as const;
 export type ParetoDimension = keyof typeof PARETO_DIMENSIONS;

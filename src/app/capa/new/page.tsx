@@ -42,6 +42,7 @@ async function NewCapaPageAuthenticatedContent({
         applicableTo: deviationPlan.deviation.materialProcessAffected ?? undefined,
         defectDescription: deviationPlan.deviation.whatHappened ?? undefined,
         rootCause: deviationPlan.deviation.rootCause ?? undefined,
+        rootCauseCategories: deviationPlan.deviation.rootCauseCategories,
         plannedActions: [{
           description: deviationPlan.description,
           responsible: deviationPlan.responsible ?? "",
@@ -66,6 +67,7 @@ async function NewCapaPageAuthenticatedContent({
           applicableTo: complaintPlan.complaint.reference ?? complaintPlan.complaint.affectedScope ?? undefined,
           defectDescription: complaintPlan.complaint.description ?? undefined,
           rootCause: complaintPlan.complaint.rootCause ?? undefined,
+          rootCauseCategories: complaintPlan.complaint.rootCauseCategories,
           plannedActions: [{
             description: complaintPlan.description,
             responsible: complaintPlan.responsible ?? "",
@@ -90,6 +92,7 @@ async function NewCapaPageAuthenticatedContent({
             applicableTo: complaint.reference ?? complaint.affectedScope ?? undefined,
             defectDescription: complaint.description ?? undefined,
             rootCause: complaint.rootCause ?? undefined,
+            rootCauseCategories: complaint.rootCauseCategories,
             createdByText: currentActor(),
           }
         : {

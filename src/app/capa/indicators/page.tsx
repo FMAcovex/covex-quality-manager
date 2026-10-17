@@ -1,3 +1,4 @@
+import { ROOT_CAUSE_PARETO_VIEW } from "@/lib/qms/root-cause-categories";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { AgingPanel,MonthlyTrendChart,ParetoCard,YearToDateCard } from "@/components/analytics/trend-charts";
@@ -81,7 +82,7 @@ async function CapaIndicatorsPageAuthenticatedContent({searchParams}:{searchPara
     <div className="analytics-grid">
       <MonthlyTrendChart series={d.monthlySeries}/>
       <YearToDateCard ytd={d.yearToDate}/>
-      <ParetoCard year={d.selectedYear} dimensions={paretoKeys.map((key)=>({key,label:CAPA_PARETO[key],items:d.pareto[key]}))} active={paretoActive} hrefFor={paretoHref} unit="CAPA"/>
+      <ParetoCard year={d.selectedYear} dimensions={paretoKeys.map((key)=>({key,label:CAPA_PARETO[key],items:d.pareto[key],...(key==="rootCause"?ROOT_CAUSE_PARETO_VIEW:{})}))} active={paretoActive} hrefFor={paretoHref} unit="CAPA"/>
     </div>
     <section className="trend-section"><div className="trend-section-heading"><div><p className="eyebrow">Tendencia</p><h2>Últimos 5 años hasta {d.selectedYear}</h2></div></div><CapaTrend trend={d.trend}/></section>
   </section>;

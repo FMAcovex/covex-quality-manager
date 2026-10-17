@@ -1,3 +1,4 @@
+import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
@@ -272,6 +273,7 @@ async function CapaDetailPageAuthenticatedContent({
               <div id={reviewTarget.applicableTo.anchorId} className="info-item full review-target"><dt><span>Materia / material / producto / sistema / equipo</span><ReviewMarker target={reviewTarget.applicableTo} /></dt><dd>{capa.applicableTo ?? "—"}</dd></div>
               <div id={reviewTarget.defectDescription.anchorId} className="info-item full review-target"><dt><span>Descripción breve del defecto</span><ReviewMarker target={reviewTarget.defectDescription} /></dt><dd className="prose-value">{capa.defectDescription ?? "—"}</dd></div>
               <div id={reviewTarget.rootCause.anchorId} className="info-item full review-target"><dt><span>Causa raíz</span><ReviewMarker target={reviewTarget.rootCause} /></dt><dd className="prose-value">{capa.rootCause ?? "—"}</dd></div>
+              <div className="info-item full"><dt>Categoría de causa raíz (6M)</dt><dd>{capa.rootCauseCategories.length ? capa.rootCauseCategories.map((value) => rootCauseCategoryLabel(value, true)).join(", ") : "No informada"}</dd></div>
               {capa.impactAssessment || reviewMode ? <div id={reviewTarget.impactAssessment.anchorId} className="info-item full review-target"><dt><span>Evaluación de impacto</span><ReviewMarker target={reviewTarget.impactAssessment} /></dt><dd className="prose-value">{capa.impactAssessment ?? "—"}</dd></div> : null}
               <div id={reviewTarget.internalObservations.anchorId} className="info-item full review-target"><dt><span>Observaciones internas</span><ReviewMarker target={reviewTarget.internalObservations} /></dt><dd className="prose-value">{capa.internalObservations ?? "—"}</dd></div>
             </dl>

@@ -17,6 +17,7 @@ export type CapaAnalyticsRow = {
   departmentCode: string | null;
   originType: string | null;
   plannedDates: Date[];
+  rootCauseCategories?: string[];
 };
 
 export type CapaDistribution = { label:string; count:number; percentage:number };
@@ -127,7 +128,7 @@ export function buildCapaFiveYearTrend(rows:CapaAnalyticsRow[],endYear:number,co
 }
 
 // Tendencias y pendientes (2026-10-17). Descriptivos: sin objetivos ni plazos del PNT.
-export const CAPA_PARETO = { department: "Departamento", origin: "Origen", type: "Tipo" } as const;
+export const CAPA_PARETO = { department: "Departamento", origin: "Origen", type: "Tipo", rootCause: "Causa raíz (6M)" } as const;
 export type CapaParetoDimension = keyof typeof CAPA_PARETO;
 
 export function buildCapaYearToDate(

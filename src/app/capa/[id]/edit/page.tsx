@@ -43,6 +43,7 @@ async function EditCapaPageAuthenticatedContent({ params, searchParams }: { para
     applicableTo: capa.applicableTo ?? undefined,
     defectDescription: capa.defectDescription ?? undefined,
     rootCause: capa.rootCause ?? undefined,
+    rootCauseCategories: capa.rootCauseCategories,
     impactAssessment: capa.impactAssessment ?? undefined,
     // Se fuerza una nueva fecha en cada edición/seguimiento para evitar arrastrar la anterior.
     nextFollowupDate: undefined,

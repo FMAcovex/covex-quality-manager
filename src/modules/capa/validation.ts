@@ -1,3 +1,4 @@
+import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import type {
   CapaActionFollowupInput,
@@ -166,6 +167,7 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
       originCode: firstOrigin ? firstOrigin.businessCode || null : text(formData, "originCode"),
       applicableTo: text(formData, "applicableTo"),
       defectDescription, rootCause,
+      rootCauseCategories: rootCauseCategoriesFrom(formData),
       impactAssessment: text(formData, "impactAssessment"),
       nextFollowupDate,
       actionFollowupObservations,

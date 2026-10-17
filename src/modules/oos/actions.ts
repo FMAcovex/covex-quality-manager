@@ -70,6 +70,7 @@ function recordData(values: OosFormValues, department: Department | null, existi
     phaseIIIssuedAt: date(values.phaseIIIssuedAt),
     phaseIIAffectedDepartments: values.phaseIIAffectedDepartments,
     investigationResult: values.investigationResult,
+    rootCauseCategories: values.rootCauseCategories,
     closedAt: date(values.closedAt),
     internalObservations: values.internalObservations,
   };

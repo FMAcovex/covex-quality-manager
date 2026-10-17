@@ -41,6 +41,7 @@ export type CapaFormDefaults = {
   applicableTo?: string;
   defectDescription?: string;
   rootCause?: string;
+  rootCauseCategories?: string[];
   impactAssessment?: string;
   nextFollowupDate?: string;
   actionFollowupObservations?: string;

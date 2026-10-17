@@ -1,3 +1,4 @@
+import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
@@ -432,6 +433,7 @@ async function DeviationDetailPageAuthenticatedContent({
             <h2>Causa raíz</h2>
             <dl className="info-grid compact-info-grid">
               <div id={reviewTarget.rootCause.anchorId} className="info-item full review-target"><dt><span>Causa raíz establecida</span><ReviewMarker target={reviewTarget.rootCause} /></dt><dd className="prose-value">{text(deviation.rootCause)}</dd></div>
+              <div className="info-item"><dt>Categoría (6M)</dt><dd>{deviation.rootCauseCategories.length ? deviation.rootCauseCategories.map((value) => rootCauseCategoryLabel(value, true)).join(", ") : "No informada"}</dd></div>
               <div className="info-item"><dt>Metodología</dt><dd>{deviation.investigationMethods.length ? deviation.investigationMethods.map(investigationMethodLabel).join(", ") : "No informada"}</dd></div>
               <div className="info-item"><dt>Recurrencia</dt><dd>{triStateLabel(deviation.recurrentRootCause)}</dd></div>
               <div id={reviewTarget.recurrenceDetails.anchorId} className="info-item wide review-target"><dt><span>Antecedentes / detalle</span><ReviewMarker target={reviewTarget.recurrenceDetails} /></dt><dd className="prose-value">{text(deviation.recurrenceDetails)}</dd></div>
