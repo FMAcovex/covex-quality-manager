@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { auditPolicyCatalogue } from "../../../scripts/audit-policy-catalog";
 
 describe("B2 operation matrix honesty and reconciliation", () => {
-  it("accounts for all 63 IDs and W01-W22 with executable evidence or an explicit tested exclusion", () => {
+  it("accounts for all 68 IDs (63 + OOS, D-088) and W01-W23 with executable evidence or an explicit tested exclusion", () => {
     const catalogue = auditPolicyCatalogue();
-    expect(catalogue.operations).toHaveLength(63);
-    expect(new Set(catalogue.operations.map(op => op.id)).size).toBe(63);
-    expect(Object.keys(catalogue.writerGroups)).toHaveLength(22);
+    expect(catalogue.operations).toHaveLength(68);
+    expect(new Set(catalogue.operations.map(op => op.id)).size).toBe(68);
+    expect(Object.keys(catalogue.writerGroups)).toHaveLength(23);
     for (const paths of Object.values(catalogue.writerGroups)) for (const path of paths) expect(existsSync(path), path).toBe(true);
     for (const operation of catalogue.operations) {
       expect(operation.coverage).not.toBe("NOT_DEMONSTRATED");

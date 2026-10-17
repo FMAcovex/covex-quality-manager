@@ -203,6 +203,18 @@ Todas las filas son propuestas. `Q` remite a las decisiones D01–D12, **siempre
 
 No se añaden operaciones inexistentes: eficacia es propia de CAPA; PNT conserva su ciclo documental; Auditorías no recibe reapertura automática. CAPA, Cambios y Devoluciones mantienen exactamente las transiciones y editabilidad permitidas por su código, sin imponer el ciclo de Desviaciones/Reclamaciones. Las transiciones no disponibles deben seguir denegadas (T06); su rechazo puede ser técnico de seguridad, nunca un nuevo evento de negocio satisfactorio.
 
+### 3.9 OOS — resultados fuera de especificación (ampliación D-088, OOS-2b, 17/10/2026)
+
+Ampliación posterior a la entrega A para el módulo OOS (PNT GC-10/014/04), con el mismo criterio y el mismo carácter de **propuesta**: la matriz pasa de 63 a 68 operaciones y la inclusión, criticidad y campos críticos de OOS siguen pendientes de aprobación por QA/DT, como el resto. OOS no tiene versiones funcionales ni documentos en esta ampliación; los anexos llegan con OOS-3. Campos críticos propuestos por analogía con investigación, conclusión y dictamen de los demás módulos: investigación y conclusión de la Fase I, disposición, dictámenes de ambas fases, revisión de la producción y conclusión de la Fase II, y resultado de la investigación.
+
+| ID / operación | Riesgo | Impacto GMP | Trazabilidad actual | Laguna | Evento propuesto | Criticidad propuesta | Prueba | Q |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| OO01 Alta y apertura con código por área | Registro fuera de contexto o código de otra área | Trazabilidad del resultado fuera de especificación | [oos/actions.ts](../src/modules/oos/actions.ts): ChangeHistory `__created__` | G04/G05 | CREATED / OPENED con código asignado | Alta | T01/T03 | D01/D02 |
+| OO02 Datos iniciales y Fase I: evaluación, investigación, conclusión, disposición y dictamen | Cambiar evaluación o confirmar un error de laboratorio sin fundamento | Invalidación del resultado y disposición del lote | [oos/actions.ts](../src/modules/oos/actions.ts): ChangeHistory `__edit__` before/after | G01/G03/G07 | FIELD_CHANGED / ASSESSMENT_CHANGED | Alta | T01/T03 | D02/D03 |
+| OO03 Fase II: revisión de la producción, repetición, remuestreo, conclusión y dictamen | Alterar la investigación a gran escala o su dictamen | Decisión sobre el lote y lotes asociados | [oos/actions.ts](../src/modules/oos/actions.ts): ChangeHistory `__edit__` before/after | G01/G03/G07 | FIELD_CHANGED / ASSESSMENT_CHANGED | Alta | T01/T03 | D02/D03 |
+| OO04 Resultado de la investigación, estado/cierre y modificaciones posteriores hoy permitidas | Sobreinterpretar CLOSED como inmutabilidad total o cambiar el resultado sin motivo | Consistencia del resultado invalidado, confirmado o no concluyente | [oos/actions.ts](../src/modules/oos/actions.ts): ChangeHistory `__edit__` y reglas de cierre por fase | G01/G05/G07 | STATE_CHANGED / FIELD_CHANGED sin crear nuevo ciclo | Alta | T06/T08 | D02/D03 |
+| OO05 Anulación/reactivación y relaciones con CAPA/Desviación | Romper procedencia | Coherencia QMS | E06; historial `relations` del OOS | G05/G08 | ANNULLED/REACTIVATED / RELATION_CHANGED | Alta | T04/T05 | D02/D03 |
+
 ## 4. Modelo de datos propuesto, sin cambios Prisma
 
 Nombres conceptuales para B/C, no modelos ya existentes. Reutilizar raíces, actores y evidencias actuales. Conservar historiales operativos y sus lectores; no convertir sus filas antiguas en eventos nuevos ni copiar todos sus snapshots al journal.

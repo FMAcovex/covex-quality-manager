@@ -720,3 +720,19 @@ Esta PR es documental. La implementación se hará en las PR OOS-1 a OOS-3, cada
 **Ampliación del 17/10/2026 (OOS-1):** el Anexo VI es un listado imprimible solo con las columnas del PNT; el «Resultado» de cada parámetro de la Fase I es texto libre; la disposición de la Fase I cierra el OOS por error de laboratorio o lo deja abierto y habilita la Fase II (Anexo IV); no se importan OOS antiguos. OOS-1 incluye la Fase II, el resultado y el cierre; las relaciones y la captura del audit trail pasan a OOS-2 y los anexos a OOS-3.
 
 **Ampliación del 17/10/2026 (OOS-2):** OOS-2 implementa las relaciones OOS → CAPA y OOS → Desviación y la revisión (Review) del OOS. La captura del audit trail B2 de las operaciones de OOS se separa a una PR propia (OOS-2b): requiere nuevos códigos de operación en la matriz de `PHASE_4B3_A.md` con su análisis de riesgo, extender la política de captura publicada a `OosRecord` y sustituir funciones SQL contratadas, lo que necesita aprobación de alcance. Hasta entonces, con la política B2 activa en una base de pruebas, las escrituras de OOS se rechazan en lugar de registrarse sin captura.
+
+**Ampliación del 17/10/2026 (OOS-2b):** el responsable del proyecto aprueba el alcance de la captura B2 de OOS. Se añaden las operaciones OO01–OO05 a la matriz de `PHASE_4B3_A.md` (§3.9; de 63 a 68 operaciones):
+
+- OO01: alta y apertura;
+- OO02: datos iniciales y Fase I;
+- OO03: Fase II;
+- OO04: resultado y cierre;
+- OO05: relaciones y anulación.
+
+La migración aditiva `20261017000200_b2_oos_capture` hace lo siguiente:
+
+- protege y captura `OosRecord` con la política de campos congelada en `scripts/audit-oos-build.ts`;
+- extiende con el prefijo OO, el módulo OOS y su tabla las cinco funciones B2 que tienen la lista de módulos fija;
+- se acompaña del contrato `ops/backup/audit-contract-oos.json`.
+
+Los campos críticos de OOS (investigación, conclusión, disposición, dictámenes y resultado) son una propuesta técnica por analogía con los demás módulos y siguen pendientes de aceptación formal de QA/DT, como el resto de la matriz. Sin activación ni validación GMP por estar implementado (D-076).

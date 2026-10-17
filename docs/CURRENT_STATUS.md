@@ -36,6 +36,25 @@
 
 **Módulo OOS — OOS-2 (2026-10-17, D-088):** relaciones canónicas OOS → CAPA y OOS → Desviación declaradas en el contrato, gestionadas desde la pestaña «Relaciones» del OOS (vincular por expediente o código y desvincular con historial) y visibles en solo lectura como «OOS de origen» en la ficha de la CAPA y de la Desviación; columna «CAPA / Desviación» y búsqueda por código relacionado en el listado. Revisión (Review) en la ficha del OOS con 13 puntos revisables (datos iniciales, detección, resultado, evaluación, investigación, conclusión y dictamen de la Fase I, revisión de la producción, repetición, remuestreo, conclusión y dictamen de la Fase II y relaciones), sin versiones funcionales. La captura del audit trail B2 en las operaciones de OOS **no** se incluye: exige ampliar la matriz aprobada de 63 operaciones, la política de captura publicada y las funciones SQL contratadas, y se propone como PR propia con aprobación de alcance ([OOS_DESIGN.md](OOS_DESIGN.md) §11). Pruebas: unitarias, `oos:smoke` y `oos:ui:smoke` ampliados.
 
+**Módulo OOS — OOS-2b (2026-10-17, D-088):** captura del audit trail B2 en las operaciones de OOS, con códigos OO01–OO05 (alta, Fase I, Fase II, resultado y cierre, relaciones y anulación). La matriz `PHASE_4B3_A.md` §3.9 y el catálogo pasan a 68 operaciones y 23 grupos de escritura.
+
+La migración aditiva `20261017000200_b2_oos_capture`:
+
+- añade los triggers de exigencia, captura y testigo en `OosRecord` y su política de 52 campos (8 críticos propuestos);
+- reemplaza `covex_b2_begin`, `covex_b2_before`, `covex_b2_observe_maturity`, `covex_b2_critical_mutation` y `covex_b2_authorize_root`, extendidas solo con OO, OOS y `OosRecord`.
+
+Contrato `audit-contract-oos.json`, reconocido por `protection.ts` y `backup.py`.
+
+Prueba original en `scripts/audit-fixtures/oos-capture.test.ts`, que se ejecuta dentro de `phase4b3-b2:capture:smoke`:
+
+- rechazo de lectores;
+- motivo obligatorio al corregir un valor crítico y al cerrar;
+- relaciones con ambas raíces;
+- idempotencia;
+- anulación y reactivación.
+
+La aceptación formal de QA/DT sigue pendiente.
+
 **4B3-C consolidado para verificación integral:** pestañas de Audit Trail en siete módulos, bandeja transversal, permisos independientes, revisión append-only, corte exacto con microsegundos, exportación conservada/idempotente y contrato de protección/backup C. Se conservan B2 `49bfe417`, checkpoint parcial `a474575` y corrección `f590b275`. Las pruebas focalizadas C pasan; la entrega comunica quality y los cinco grupos/gate sobre su SHA final. No hay PR de la rama ni ejecución remota de Actions implícita. Alcance, pruebas, operación y dependencias QA/IT en [PHASE_4B3_C.md](PHASE_4B3_C.md). Sin activación corporativa, despliegue ni validación GMP. Este párrafo sustituye el estado de C en curso de los cortes anteriores, conservados como historia.
 
 **Checkpoint técnico B2 completado:** `49bfe41718fb6bbc0870ecb5a086e166f82106bc`. La matriz ejecutable reconcilia las 63 operaciones: 57 escrituras de negocio demostradas aisladamente, cinco streams/exclusiones justificados y probados, y TR09 transferida a C. OLD/NEW tipado, identidad autenticada, objetivos, atomicidad, idempotencia, criticidad técnica, documentos/originales, recuperación y negativas de bypass pasan sobre bases sintéticas. `pnpm quality` valida Prisma, 727 pruebas y build. Sin activación corporativa, aceptación GMP ni datos reales. C continúa desde este SHA en la misma rama y PR final; detalle en [PHASE_4B3_B2.md](PHASE_4B3_B2.md).
