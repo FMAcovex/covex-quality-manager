@@ -27,6 +27,16 @@ Menú principal:
 
 Los módulos no implementados pueden ocultarse o aparecer deshabilitados; no simular funcionalidad inexistente.
 
+## Inicio — Panel de Calidad
+
+**Piloto con menos ruido visual (2026-10-17, pendiente de aceptación visual):** mismos datos y estilo, con lo urgente primero.
+- Filtros (área, departamento, año de apertura, estado y plazos) plegados tras el botón «Filtros», con etiquetas de los filtros aplicados, como en los listados.
+- Franja «Requiere atención»: plazos vencidos (rojo si hay alguno), vencen en 30 días y eficacia pendiente (ámbar si hay alguno), y borradores sin abrir. Los plazos llevan a la bandeja de plazos de la misma página; la eficacia pendiente, a los listados de CAPA y de controles de cambios filtrados.
+- Expedientes por módulo en una tabla (total, abiertos, cerrados, borradores y enlace al listado), con fila de totales; los módulos sin expedientes se atenúan. Documentación controlada en una línea propia. En móvil cada módulo es una fila compacta.
+- Se retiran la fila de cinco tarjetas de totales (sus datos están en la tabla) y «Accesos a los módulos» (duplicaba el menú).
+- Textos de negocio: «Año de apertura» en lugar de «Año de cohorte» y «Plazos vencidos y próximos» en lugar de «Tareas del sistema» u «obligaciones». El tiempo de consulta pasa a un título emergente al pie.
+- La tendencia de 5 años no cambia.
+
 ## Desviaciones — página de entrada
 
 Cabecera:
