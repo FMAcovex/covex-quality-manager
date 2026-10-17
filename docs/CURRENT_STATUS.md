@@ -55,6 +55,20 @@ Prueba original en `scripts/audit-fixtures/oos-capture.test.ts`, que se ejecuta 
 
 La aceptación formal de QA/DT sigue pendiente.
 
+**Módulo OOS — OOS-3 (2026-10-17, D-088):** Anexos III (Fase I), IV (Fase II) y VI (listado anual) del PNT GC-10/014/04 corregido.
+
+- **Instalación:** `pnpm templates:oos:install -- <PNT.docx>` verifica el SHA-256 del PNT, deriva los tres anexos y los registra como plantillas v04. El binario no se versiona en Git.
+- **Descargas:** el Anexo III desde la ficha del OOS abierto o cerrado; el Anexo IV solo con disposición «a gran escala»; el Anexo VI desde «Exportar» en el listado, por año.
+- **Cumplimentación:** las celdas de la plantilla se rellenan conservando su formato. En el Anexo VI, cada fila lleva el color de estado de §5.2.
+- **Audit trail:** las descargas de los Anexos III y IV son documentos de trabajo con recibo.
+  - Migraciones aditivas `20261017000300_oos_document_types` (tipos de documento) y `20261017000400_b2_oos_documents` (código OO06 en `covex_b2_begin`).
+  - Contrato `audit-contract-oos-documents.json`.
+  - La matriz y el catálogo pasan a 69 operaciones.
+- **Permisos:** el módulo admite además «Exportar» y «Generar documentos».
+- **Pruebas:** unitarias del relleno y de la derivación, prueba de captura OO06, `oos:ui:smoke` con descarga de los tres anexos, y verificación local con el PNT real convertido a PDF.
+
+Adjuntar el anexo firmado a mano queda pendiente.
+
 **4B3-C consolidado para verificación integral:** pestañas de Audit Trail en siete módulos, bandeja transversal, permisos independientes, revisión append-only, corte exacto con microsegundos, exportación conservada/idempotente y contrato de protección/backup C. Se conservan B2 `49bfe417`, checkpoint parcial `a474575` y corrección `f590b275`. Las pruebas focalizadas C pasan; la entrega comunica quality y los cinco grupos/gate sobre su SHA final. No hay PR de la rama ni ejecución remota de Actions implícita. Alcance, pruebas, operación y dependencias QA/IT en [PHASE_4B3_C.md](PHASE_4B3_C.md). Sin activación corporativa, despliegue ni validación GMP. Este párrafo sustituye el estado de C en curso de los cortes anteriores, conservados como historia.
 
 **Checkpoint técnico B2 completado:** `49bfe41718fb6bbc0870ecb5a086e166f82106bc`. La matriz ejecutable reconcilia las 63 operaciones: 57 escrituras de negocio demostradas aisladamente, cinco streams/exclusiones justificados y probados, y TR09 transferida a C. OLD/NEW tipado, identidad autenticada, objetivos, atomicidad, idempotencia, criticidad técnica, documentos/originales, recuperación y negativas de bypass pasan sobre bases sintéticas. `pnpm quality` valida Prisma, 727 pruebas y build. Sin activación corporativa, aceptación GMP ni datos reales. C continúa desde este SHA en la misma rama y PR final; detalle en [PHASE_4B3_B2.md](PHASE_4B3_B2.md).

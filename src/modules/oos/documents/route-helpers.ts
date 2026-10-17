@@ -29,7 +29,7 @@ export async function oosAnnexResponse(id: string, annex: "III" | "IV") {
       generatedByText: (currentIdentity()?.principal.name ?? process.env.DEFAULT_ACTOR_NAME) || record.createdByText,
       metadata: { source: "download", templateVersion: template.versionCode },
     } }, buffer);
-    const fileName = `Anexo_${annex}_OOS_${safe(record.qmsRecord.businessCode || id)}.docx`;
+    const fileName = `Anexo_${annex}_${safe(record.qmsRecord.businessCode || `OOS_${id}`)}.docx`;
     return new Response(new Uint8Array(buffer), { headers: { "Content-Type": wordMimeType, "Content-Disposition": `attachment; filename="${fileName}"`, "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof TemplateAssetError) return templateUnavailableResponse(error.message);
