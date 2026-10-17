@@ -15,8 +15,21 @@ import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { auditWithReturnTo } from "@/modules/audits/navigation";
 import { pendingAuditReviewDate } from "@/modules/audits/followup-review";
-import { firstQueryValue, queryList } from "@/lib/qms/list-filters";
+import { activeFilterChips, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
+import { ListFilterToolbar } from "@/components/list-filter-toolbar";
+import { reviewFilterOptions } from "@/lib/qms/review/list-domain";
 export const dynamic = "force-dynamic";
+const administrativeOptions = [{ value: "ANNULLED", label: "Anulados" }, { value: "ALL", label: "Todos" }];
+const planningOptions = [{ value: "PLANNED", label: "En plan anual" }, { value: "OUT_OF_PLAN", label: "Fuera de plan" }, { value: "UNCLASSIFIED", label: "Pendiente de clasificación" }];
+const yesNoOptions = [{ value: "yes", label: "Sí" }, { value: "no", label: "No" }];
+const yesNoFilters = [["findings", "Con hallazgos"], ["pendingActions", "Con acciones pendientes"], ["relatedDeviation", "Con Desviación"], ["relatedCapa", "Con CAPA"]] as const;
+const dateFilters = [["nextReviewFrom", "Próxima revisión desde"], ["nextReviewTo", "Próxima revisión hasta"], ["plannedFrom", "Prevista desde"], ["plannedTo", "Prevista hasta"], ["performedFrom", "Realizada desde"], ["performedTo", "Realizada hasta"]] as const;
+const choiceFilters = [
+  ["report", "Informe", [{ value: "pending", label: "Pendiente" }, { value: "issued", label: "Emitido" }]],
+  ["signedPdf", "PDF firmado", [{ value: "yes", label: "Con PDF" }, { value: "no", label: "Sin PDF" }]],
+  ["situation", "Situación", [{ value: "followup", label: "En seguimiento" }, { value: "partial", label: "Cierre parcial" }, { value: "closed", label: "Cerrada" }]],
+] as const;
+const isoDate = (value: string) => value.split("-").reverse().join("/");
 async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: Promise<Record<string,string|string[]|undefined>> }) {
   const query = await searchParams;
   const filters: AuditListFilters = {};
@@ -42,26 +55,54 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
     return suffix ? `/audits?${suffix}` : "/audits";
   };
   const typeTabs = [{type:"",label:"Todas las auditorías"},{type:"INTERNAL",label:"Internas"},{type:"EXTERNAL",label:"Externas"}];
-  return <section className="workspace audits-workspace qms-list-ux-b"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Auditorías</h1><p>Expedientes, planificación, hallazgos y seguimiento.</p></div><div className="heading-actions"><Link className="button" href="/audits/plans">Planes anuales</Link><PermissionGate permission="CREATE" module="AUDIT"><Link className="button primary" href="/audits/new">+ Nueva auditoría</Link></PermissionGate><ColumnSelector tableId="audit-list-table" storageKey="qms.columns.audits" columns={auditColumns}/></div></div>
+  const planOptions = annualPlans.map(p => ({ value: p.id, label: `${p.year} · ${p.auditType==="INTERNAL"?"Interno":"Externo"} · ${p.title}` }));
+  const yearOptions = years.map(y => ({ value: String(y), label: String(y) }));
+  const departmentOptions = departments.map(d => ({ value: d.id, label: `${d.code} · ${d.name}` }));
+  const filterDefinitions: FilterDefinition[] = [
+    { name: "administrative", label: "Estado administrativo", options: administrativeOptions },
+    { name: "planning", label: "Planificación", options: planningOptions },
+    { name: "planId", label: "Plan anual", options: planOptions },
+    { name: "year", label: "Año", options: yearOptions },
+    { name: "type", label: "Tipo", options: options(auditTypeLabels) },
+    { name: "scenario", label: "Escenario", options: options(auditScenarioLabels) },
+    { name: "department", label: "Departamento/Área", options: departmentOptions },
+    { name: "status", label: "Estado", options: options(auditStatusLabels) },
+    { name: "modality", label: "Modalidad", options: options(auditModalityLabels) },
+    { name: "quality", label: "Control", options: options(auditQualityLabels) },
+    { name: "criticality", label: "Criticidad de hallazgos", options: options(criticalityLabels) },
+    ...yesNoFilters.map(([name, label]) => ({ name, label, options: yesNoOptions })),
+    ...dateFilters.map(([name, label]) => ({ name, label, options: [], format: isoDate })),
+    { name: "review", label: "Revisión", options: reviewFilterOptions },
+    ...choiceFilters.map(([name, label, choices]) => ({ name, label, options: choices })),
+  ];
+  return <section className="workspace audits-workspace qms-list-ux-b list-ux-c"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Auditorías</h1><p>Expedientes, planificación, hallazgos y seguimiento.</p></div><div className="heading-actions"><Link className="button" href="/audits/plans">Planes anuales</Link><PermissionGate permission="CREATE" module="AUDIT"><Link className="button primary" href="/audits/new">+ Nueva auditoría</Link></PermissionGate><ColumnSelector tableId="audit-list-table" storageKey="qms.columns.audits" columns={auditColumns}/></div></div>
     <nav className="audit-type-nav" aria-label="Filtrar auditorías por tipo">{typeTabs.map(tab => <Link key={tab.type} className={`audit-type-option ${selectedType === tab.type ? "active" : ""}`} aria-current={selectedType === tab.type ? "page" : undefined} href={typeHref(tab.type)}>{tab.label}</Link>)}</nav>
     {errors.length > 0 && <p className="form-errors" role="alert">{errors.join(" ")}</p>}
-    <form method="get" className="toolbar-form"><div className="filter-panel operational">
-      <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-      <label className="filter-placeholder"><span>Planificación</span><select name="planning" defaultValue={filters.planning??""}><option value="">Todas</option><option value="PLANNED">En plan anual</option><option value="OUT_OF_PLAN">Fuera de plan</option><option value="UNCLASSIFIED">Pendiente de clasificación</option></select></label>
-      <label className="filter-placeholder"><span>Plan anual</span><select name="planId" defaultValue={filters.planId??""}><option value="">Todos los planes</option>{annualPlans.map(p=><option key={p.id} value={p.id}>{p.year} · {p.auditType==="INTERNAL"?"Interno":"Externo"} · {p.title}</option>)}</select></label>
-      <MultiSelectFilter name="year" label="Año" selected={filters.year ?? []} options={years.map(y => ({value:String(y),label:String(y)}))}/>
+    <form method="get" className="toolbar-form">
+      <ListFilterToolbar
+        storageKey="qms.filters.audits"
+        clearHref="/audits"
+        chips={activeFilterChips("/audits", query, filterDefinitions)}
+        views={<SavedViews listPath="/audits" views={savedViews} />}
+        search={<SearchAutocomplete placeholder="Código, objeto, alcance, referencia, entidad, participante o departamento…" defaultValue={filters.q} suggestions={rows.map(r => ({id:r.id,href:toDetail(r.id),code:qmsRecordDisplayCode(r.qmsRecord),title:r.title ?? "Auditoría",searchText:[r.title,r.scope,r.externalReference,r.auditedEntityName,r.entityCode,...r.participants.map(p => p.displayName),...r.departments.map(d => d.departmentNameSnapshot)].join(" ")}))}/>}
+      >
+      <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option>{administrativeOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+      <label className="filter-placeholder"><span>Planificación</span><select name="planning" defaultValue={filters.planning??""}><option value="">Todas</option>{planningOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+      <label className="filter-placeholder"><span>Plan anual</span><select name="planId" defaultValue={filters.planId??""}><option value="">Todos los planes</option>{planOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+      <MultiSelectFilter name="year" label="Año" selected={filters.year ?? []} options={yearOptions}/>
       <MultiSelectFilter name="type" label="Tipo" selected={filters.type ?? []} options={options(auditTypeLabels)}/>
       <MultiSelectFilter name="scenario" label="Escenario" selected={filters.scenario ?? []} options={options(auditScenarioLabels)}/>
-      <MultiSelectFilter name="department" label="Departamento/Área" selected={filters.department ?? []} options={departments.map(d => ({value:d.id,label:`${d.code} · ${d.name}`}))}/>
+      <MultiSelectFilter name="department" label="Departamento/Área" selected={filters.department ?? []} options={departmentOptions}/>
       <MultiSelectFilter name="status" label="Estado" selected={filters.status ?? []} options={options(auditStatusLabels)}/>
       <MultiSelectFilter name="modality" label="Modalidad" selected={filters.modality ?? []} options={options(auditModalityLabels)}/>
       <MultiSelectFilter name="quality" label="Control" selected={filters.quality ?? []} options={options(auditQualityLabels)}/>
       <MultiSelectFilter name="criticality" label="Criticidad de hallazgos" selected={filters.criticality ?? []} options={options(criticalityLabels)}/>
-      {[["findings","Con hallazgos"],["pendingActions","Con acciones pendientes"],["relatedDeviation","Con Desviación"],["relatedCapa","Con CAPA"]].map(([name,label]) => <label key={name} className="filter-placeholder"><span>{label}</span><select name={name} defaultValue={String(filters[name as keyof AuditListFilters] ?? "")}><option value="">Todos</option><option value="yes">Sí</option><option value="no">No</option></select></label>)}
-      {[["nextReviewFrom","Próxima revisión desde"],["nextReviewTo","Próxima revisión hasta"],["plannedFrom","Prevista desde"],["plannedTo","Prevista hasta"],["performedFrom","Realizada desde"],["performedTo","Realizada hasta"]].map(([name,label]) => <label className="filter-placeholder" key={name}><span>{label}</span><input type="date" name={name} defaultValue={String(filters[name as keyof AuditListFilters] ?? "")}/></label>)}
-      <ReviewListFilter value={filters.review}/>{[["report","Informe",{pending:"Pendiente",issued:"Emitido"}],["signedPdf","PDF firmado",{yes:"Con PDF",no:"Sin PDF"}],["situation","Situación",{followup:"En seguimiento",partial:"Cierre parcial",closed:"Cerrada"}]].map(([name,label,choices])=><label className="filter-placeholder" key={String(name)}><span>{String(label)}</span><select name={String(name)} defaultValue={String(filters[name as keyof AuditListFilters] ?? "")}><option value="">Todos</option>{Object.entries(choices).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>)}<div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/audits">Limpiar</Link><SavedViews listPath="/audits" views={savedViews} /></div>
-    </div><div className="search-row"><SearchAutocomplete placeholder="Código, objeto, alcance, referencia, entidad, participante o departamento…" defaultValue={filters.q} suggestions={rows.map(r => ({id:r.id,href:toDetail(r.id),code:qmsRecordDisplayCode(r.qmsRecord),title:r.title ?? "Auditoría",searchText:[r.title,r.scope,r.externalReference,r.auditedEntityName,r.entityCode,...r.participants.map(p => p.displayName),...r.departments.map(d => d.departmentNameSnapshot)].join(" ")}))}/><button className="button">Buscar</button></div></form>
-    <p>{total} expedientes · página {page} de {pages}</p>
+      {yesNoFilters.map(([name,label]) => <label key={name} className="filter-placeholder"><span>{label}</span><select name={name} defaultValue={String(filters[name] ?? "")}><option value="">Todos</option>{yesNoOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>)}
+      {dateFilters.map(([name,label]) => <label className="filter-placeholder" key={name}><span>{label}</span><input type="date" name={name} defaultValue={String(filters[name] ?? "")}/></label>)}
+      <ReviewListFilter value={filters.review}/>{choiceFilters.map(([name,label,choices])=><label className="filter-placeholder" key={name}><span>{label}</span><select name={name} defaultValue={String(filters[name] ?? "")}><option value="">Todos</option>{choices.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>)}
+      </ListFilterToolbar>
+    </form>
+    <p className="list-counters"><span><strong>{total}</strong> expedientes · página {page} de {pages}</span></p>
     <div className="table-wrap"><table id="audit-list-table" className="data-table"><thead><tr>{auditColumns.map(c => <th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>{rows.map(r => {
       const cells = {
         reportVersion: r.qmsRecord.versions[0]?String(r.qmsRecord.versions[0].sequenceNumber).padStart(2,"0"):"Pendiente", reportDate:auditDate(r.reportDate),signedPdf:r.qmsRecord.versions[0]?.documents.length?"Disponible":"No disponible",partial:r.capaPlanEstablishedAt||r.reportSentAt?"Sí":"No",

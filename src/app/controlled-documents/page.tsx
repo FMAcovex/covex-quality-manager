@@ -29,15 +29,14 @@ async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Pr
  ];
  return <section className="workspace pnt-workspace pnt-p3c4 qms-list-ux-b">
   <header className="page-heading pnt-hero"><div><p className="eyebrow">GESTIÓN DOCUMENTAL · PNT</p><h1>Biblioteca de procedimientos</h1><p className="muted-note">Consulta de revisiones, estados, fechas y documentos controlados.</p></div><div className="heading-actions"><PermissionGate permission="CREATE" module="PNT"><Link className="button primary" href={withReturnTo("/controlled-documents/new", returnTo)}>Nuevo PNT</Link></PermissionGate><PermissionGate permission="IMPORT"><Link className="button" href="/controlled-documents/import-index">Importar índice maestro</Link></PermissionGate></div></header>
-  <div className="pnt-summary" aria-label="Resumen del listado">
-    <div><span>Procedimientos</span><strong>{result.masterCount}</strong></div>
-    <div><span>Revisiones</span><strong>{result.revisionCount}</strong></div>
-    <div><span>Filas encontradas</span><strong>{result.rowCount}</strong></div>
-  </div>
-  <section className="pnt-filter-card"><div className="pnt-section-heading"><div><h2>Buscar procedimientos</h2></div><div className="pnt-heading-actions"><SavedViews listPath="/controlled-documents" views={savedViews} /><Link className="button" href="/controlled-documents">Limpiar filtros</Link></div></div>
-   <div className="pnt-quick" aria-label="Filtros rápidos">{[
+  <p className="pnt-summary list-counters" aria-label="Resumen del listado">
+    <span><strong>{result.masterCount}</strong> procedimientos</span>
+    <span><strong>{result.revisionCount}</strong> revisiones</span>
+    <span><strong>{result.rowCount}</strong> filas encontradas</span>
+  </p>
+  <section className="pnt-filter-card"><div className="pnt-section-heading pnt-filter-heading"><div className="pnt-quick" aria-label="Filtros rápidos">{[
     ["","Todas"], ["current","Vigentes"], ["dueSoon","Revisión en 30 días"], ["overdue","Revisión vencida"], ["missing","Sin fechas"], ["unverified","Pendientes de verificar"],
-   ].map(([value,label]) => <Link key={value} className={"pnt-quick-link"+(result.options.quick === (value || null) ? " is-active" : "")} href={link({quick:value})}>{label}</Link>)}</div>
+   ].map(([value,label]) => <Link key={value} className={"pnt-quick-link"+(result.options.quick === (value || null) ? " is-active" : "")} href={link({quick:value})}>{label}</Link>)}</div><div className="pnt-heading-actions"><SavedViews listPath="/controlled-documents" views={savedViews} /><Link className="button" href="/controlled-documents">Limpiar filtros</Link></div></div>
    <form className="filter-panel pnt-filters" method="get">
     {f.quick && <input type="hidden" name="quick" value={f.quick}/>}
     <div className="pnt-search-row"><label className="field"><span>Buscar</span><input name="q" defaultValue={f.q} placeholder="Código, título o referencia"/></label><button className="button primary" type="submit">Buscar</button></div>

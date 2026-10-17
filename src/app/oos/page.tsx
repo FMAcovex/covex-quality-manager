@@ -4,7 +4,8 @@ import { PermissionGate } from "@/components/permissions";
 import { SavedViews } from "@/components/saved-views";
 import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { authorizedPage } from "@/lib/auth/page-guard";
-import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
+import { activeFilterChips, appendFilterValues, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
+import { ListFilterToolbar } from "@/components/list-filter-toolbar";
 import { qmsListingUrl, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { listSavedViews } from "@/lib/saved-views/queries";
@@ -13,6 +14,13 @@ import { getOosList } from "@/modules/oos/queries";
 import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 
 export const dynamic = "force-dynamic";
+
+const administrativeOptions = [{ value: "ANNULLED", label: "Anulados" }, { value: "ALL", label: "Todos" }];
+const areaOptions = [{ value: "API", label: "API" }, { value: "MD", label: "MD" }];
+const statusOptions = [{ value: "DRAFT", label: "Borrador" }, { value: "OPEN", label: "Abierto" }, { value: "CLOSED", label: "Cerrado" }];
+const phaseOptions = [{ value: "I", label: "Fase I" }, { value: "II", label: "Fase II" }];
+const resultOptions = Object.entries(oosInvestigationResultLabels).map(([value, label]) => ({ value, label }));
+const option = (options: { value: string; label: string }[]) => options.map((item) => <option key={item.value} value={item.value}>{item.label}</option>);
 
 async function OosListPageAuthenticatedContent({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
@@ -30,6 +38,15 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
   // Anexo VI: un listado por año (§5.2 del PNT), del año en curso y de los años con OOS.
   const listingYears = [...new Set([new Date().getFullYear(), ...years])].sort((a, b) => b - a);
   const toDetail = (id: string) => qmsWithReturnTo(`/oos/${id}`, "/oos", qmsListingUrl("/oos", query));
+  const yearOptions = years.map((year) => ({ value: String(year), label: String(year) }));
+  const filterDefinitions: FilterDefinition[] = [
+    { name: "administrative", label: "Estado administrativo", options: administrativeOptions },
+    { name: "year", label: "Año", options: yearOptions },
+    { name: "area", label: "Área", options: areaOptions },
+    { name: "status", label: "Estado", options: statusOptions },
+    { name: "phase", label: "Fase", options: phaseOptions },
+    { name: "result", label: "Resultado", options: resultOptions },
+  ];
   const pageParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => appendFilterValues(pageParams, key, value));
   pageParams.delete("page");
@@ -39,7 +56,7 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
     return `/oos?${params}`;
   };
 
-  return <section className="workspace qms-list-ux-b">
+  return <section className="workspace qms-list-ux-b list-ux-c">
     <div className="page-heading">
       <div><p className="eyebrow">Sistema de Calidad</p><h1>OOS</h1><p>Resultados fuera de especificación · GC-10/014/04.</p></div>
       <div className="heading-actions">
@@ -48,17 +65,12 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
       </div>
     </div>
     <form method="get" className="toolbar-form">
-      <div className="filter-panel operational">
-        <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-        <MultiSelectFilter name="year" label="Año" selected={filters.year} options={years.map((year) => ({ value: String(year), label: String(year) }))} />
-        <MultiSelectFilter name="area" label="Área" selected={filters.area} options={[{ value: "API", label: "API" }, { value: "MD", label: "MD" }]} />
-        <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={[{ value: "DRAFT", label: "Borrador" }, { value: "OPEN", label: "Abierto" }, { value: "CLOSED", label: "Cerrado" }]} />
-        <label className="filter-placeholder"><span>Fase</span><select name="phase" defaultValue={filters.phase ?? ""}><option value="">Todas</option><option value="I">Fase I</option><option value="II">Fase II</option></select></label>
-        <MultiSelectFilter name="result" label="Resultado" selected={filters.result} options={Object.entries(oosInvestigationResultLabels).map(([value, label]) => ({ value, label }))} />
-        <div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/oos">Limpiar</Link><SavedViews listPath="/oos" views={savedViews} /></div>
-      </div>
-      <div className="search-row">
-        <SearchAutocomplete
+      <ListFilterToolbar
+        storageKey="qms.filters.oos"
+        clearHref="/oos"
+        chips={activeFilterChips("/oos", query, filterDefinitions)}
+        views={<SavedViews listPath="/oos" views={savedViews} />}
+        search={<SearchAutocomplete
           defaultValue={filters.q ?? ""}
           placeholder="Buscar código, material, lote, proveedor o descripción…"
           suggestions={rows.map((row) => ({
@@ -69,17 +81,23 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
             meta: [row.lotNumber, oosStatusLabels[row.status]].filter(Boolean).join(" · "),
             searchText: [row.qmsRecord.businessCode, row.materialName, row.lotNumber, row.supplier, row.detectionDescription].filter(Boolean).join(" "),
           }))}
-        />
-        <button className="button" type="submit">Buscar</button>
-      </div>
+        />}
+      >
+        <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option>{option(administrativeOptions)}</select></label>
+        <MultiSelectFilter name="year" label="Año" selected={filters.year} options={yearOptions} />
+        <MultiSelectFilter name="area" label="Área" selected={filters.area} options={areaOptions} />
+        <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={statusOptions} />
+        <label className="filter-placeholder"><span>Fase</span><select name="phase" defaultValue={filters.phase ?? ""}><option value="">Todas</option>{option(phaseOptions)}</select></label>
+        <MultiSelectFilter name="result" label="Resultado" selected={filters.result} options={resultOptions} />
+      </ListFilterToolbar>
     </form>
-    <div className="status-strip">
-      <div><strong>{counters.operational}</strong><span>Operativos</span></div>
-      <div><strong>{counters.drafts}</strong><span>Borradores</span></div>
-      <div><strong>{counters.phaseI}</strong><span>Abiertos en Fase I</span></div>
-      <div><strong>{counters.phaseII}</strong><span>Abiertos en Fase II</span></div>
-      <div><strong>{counters.closed}</strong><span>Cerrados</span></div>
-    </div>
+    <p className="list-counters">
+      <span><strong>{counters.operational}</strong> operativos</span>
+      <span><strong>{counters.drafts}</strong> borradores</span>
+      <span><strong>{counters.phaseI}</strong> abiertos en Fase I</span>
+      <span><strong>{counters.phaseII}</strong> abiertos en Fase II</span>
+      <span><strong>{counters.closed}</strong> cerrados</span>
+    </p>
     <div className="table-card"><div className="table-scroll"><table className="change-table">
       <thead><tr><th>N.º OOS</th><th>Estado</th><th>Fase</th><th>Fecha de apertura</th><th>Material afectado</th><th>Lote</th><th>Descripción</th><th>Resultado</th><th>CAPA / Desviación</th><th>Fecha de cierre</th></tr></thead>
       <tbody>{rows.length ? rows.map((row) => <tr key={row.id}>

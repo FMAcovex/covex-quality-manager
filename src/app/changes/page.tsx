@@ -26,11 +26,19 @@ import { getChangeControlList } from "@/modules/change-control/queries";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 import { MultiSelectFilter } from "@/components/multi-select-filter";
-import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
+import { activeFilterChips, appendFilterValues, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
+import { ListFilterToolbar } from "@/components/list-filter-toolbar";
+import { reviewFilterOptions } from "@/lib/qms/review/list-domain";
 
 export const dynamic = "force-dynamic";
 
 const param = firstQueryValue;
+
+const administrativeOptions = [{ value: "ANNULLED", label: "Anulados" }, { value: "ALL", label: "Todos" }];
+const classificationOptions = [{ value: "MAJOR", label: "Mayor" }, { value: "MINOR", label: "Menor" }];
+const executionOptions = [{ value: "NOT_EXECUTED", label: "No ejecutado" }, { value: "EXECUTED", label: "Ejecutado" }];
+const effectivenessOptions = [{ value: "PENDING", label: "Pendiente" }, { value: "ACCEPTABLE", label: "Aceptable" }, { value: "NOT_ACCEPTABLE", label: "No aceptable" }, { value: "NOT_APPLICABLE", label: "No aplica" }];
+const statusOptions = [{ value: "DRAFT", label: "Borrador" }, { value: "OPEN", label: "Abierto" }, { value: "CLOSED", label: "Cerrado" }];
 
 async function ChangeControlPageAuthenticatedContent({
   searchParams,
@@ -55,11 +63,23 @@ async function ChangeControlPageAuthenticatedContent({
   const { rows, departments, years, counters, pagination } = await getChangeControlList(filters);
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.CHANGE_CONTROL, DocumentType.CHANGE_ANNEX_VII);
   const exportYear = filters.year[0] ?? String(new Date().getFullYear());
+  const yearOptions = years.map((year) => ({ value: String(year), label: String(year) }));
+  const departmentOptions = departments.map((d) => ({ value: d.id, label: d.code }));
+  const filterDefinitions: FilterDefinition[] = [
+    { name: "administrative", label: "Estado administrativo", options: administrativeOptions },
+    { name: "year", label: "Año", options: yearOptions },
+    { name: "department", label: "Departamento", options: departmentOptions },
+    { name: "classification", label: "Clasificación", options: classificationOptions },
+    { name: "execution", label: "Ejecución", options: executionOptions },
+    { name: "effectiveness", label: "Eficacia", options: effectivenessOptions },
+    { name: "status", label: "Estado final", options: statusOptions },
+    { name: "review", label: "Revisión", options: reviewFilterOptions },
+  ];
   const simpleParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => { if (key !== "page") appendFilterValues(simpleParams, key, value); });
 
   return (
-    <section className="workspace qms-list-ux-b">
+    <section className="workspace qms-list-ux-b list-ux-c">
       <div className="page-heading">
         <div>
           <p className="eyebrow">Sistema de Calidad</p>
@@ -95,18 +115,12 @@ async function ChangeControlPageAuthenticatedContent({
       </div>
 
       <form method="get" className="toolbar-form">
-        <div className="filter-panel operational change-filters">
-          <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-          <MultiSelectFilter name="year" label="Año" selected={filters.year} options={years.map((year)=>({value:String(year),label:String(year)}))} />
-          <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departments.map((d)=>({value:d.id,label:d.code}))} />
-          <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={[{value:"MAJOR",label:"Mayor"},{value:"MINOR",label:"Menor"}]} />
-          <MultiSelectFilter name="execution" label="Ejecución" selected={filters.execution} options={[{value:"NOT_EXECUTED",label:"No ejecutado"},{value:"EXECUTED",label:"Ejecutado"}]} />
-          <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"ACCEPTABLE",label:"Aceptable"},{value:"NOT_ACCEPTABLE",label:"No aceptable"},{value:"NOT_APPLICABLE",label:"No aplica"}]} />
-          <MultiSelectFilter name="status" label="Estado final" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierto"},{value:"CLOSED",label:"Cerrado"}]} />
-          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/changes">Limpiar</Link><SavedViews listPath="/changes" views={savedViews} /></div>
-        </div>
-        <div className="search-row">
-          <SearchAutocomplete
+        <ListFilterToolbar
+          storageKey="qms.filters.changes"
+          clearHref="/changes"
+          chips={activeFilterChips("/changes", query, filterDefinitions)}
+          views={<SavedViews listPath="/changes" views={savedViews} />}
+          search={<SearchAutocomplete
             defaultValue={filters.q ?? ""}
             placeholder="Buscar código, descripción, solicitante, tarea u observaciones…"
             suggestions={rows.map((row) => ({
@@ -124,20 +138,28 @@ async function ChangeControlPageAuthenticatedContent({
                 ...row.tasks.map((task) => task.description),
               ].filter(Boolean).join(" "),
             }))}
-          />
-          <button className="button" type="submit">Buscar</button>
-        </div>
+          />}
+        >
+          <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option>{administrativeOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+          <MultiSelectFilter name="year" label="Año" selected={filters.year} options={yearOptions} />
+          <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departmentOptions} />
+          <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={classificationOptions} />
+          <MultiSelectFilter name="execution" label="Ejecución" selected={filters.execution} options={executionOptions} />
+          <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={effectivenessOptions} />
+          <MultiSelectFilter name="status" label="Estado final" selected={filters.status} options={statusOptions} />
+          <ReviewListFilter value={filters.review} />
+        </ListFilterToolbar>
       </form>
 
-      <div className="summary-strip">
-        <div><span>Total operativos</span><strong>{counters.total}</strong></div>
-        <div><span>Borradores</span><strong>{counters.drafts}</strong></div>
-        <div><span>Abiertos</span><strong>{counters.open}</strong></div>
-        <div><span>Ejecutados · eficacia pendiente</span><strong>{counters.executedPendingEfficacy}</strong></div>
-        <div><span>Seguimiento vencido</span><strong>{counters.overdue}</strong></div>
-      </div>
+      <p className="list-counters">
+        <span><strong>{counters.total}</strong> operativos</span>
+        <span><strong>{counters.drafts}</strong> borradores</span>
+        <span><strong>{counters.open}</strong> abiertos</span>
+        <span><strong>{counters.executedPendingEfficacy}</strong> ejecutados con eficacia pendiente</span>
+        <span><strong>{counters.overdue}</strong> con seguimiento vencido</span>
+      </p>
 
-      <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="change-control-list-table" moduleLabel="Controles de Cambios" /></PermissionGate>
+      <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="change-control-list-table" moduleLabel="Controles de Cambios" hideWhenEmpty /></PermissionGate>
 
       <div className="table-card">
         <div className="table-scroll">

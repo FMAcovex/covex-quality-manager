@@ -39,9 +39,12 @@ function invalidEmails(values: string[]) {
 export function ManualReminderToolbar({
   tableId,
   moduleLabel,
+  hideWhenEmpty = false,
 }: {
   tableId: string;
   moduleLabel: string;
+  /** Solo aparece al seleccionar expedientes (piloto de listados con menos ruido visual). */
+  hideWhenEmpty?: boolean;
 }) {
   const [selected, setSelected] = useState<ReminderRecord[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -217,7 +220,7 @@ export function ManualReminderToolbar({
 
   return (
     <>
-      <div className="manual-reminder-bar">
+      {hideWhenEmpty && !selected.length ? null : <div className="manual-reminder-bar">
         <div className="manual-reminder-copy">
           <strong>Recordatorios por correo</strong>
           <span>
@@ -239,7 +242,7 @@ export function ManualReminderToolbar({
             Preparar recordatorio
           </button>
         </div>
-      </div>
+      </div>}
 
       {isOpen ? (
         <div

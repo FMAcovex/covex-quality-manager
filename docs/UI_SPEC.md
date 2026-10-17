@@ -50,6 +50,16 @@ En una franja horizontal por encima del buscador:
 ### Buscador
 Debajo de filtros y encima del listado.
 
+**Listados con menos ruido visual (2026-10-17, aceptado por el responsable del proyecto tras el piloto en Desviaciones):**
+- buscador, «Buscar», botón «Filtros» con el número de filtros aplicados y vistas guardadas en una sola fila;
+- panel de filtros plegado; abierto o plegado se recuerda en el navegador de cada usuario;
+- filtros aplicados como etiquetas con «×» para quitarlos y «Limpiar filtros»;
+- contadores en una línea, con los mismos datos que las tarjetas anteriores;
+- «Recordatorios por correo» aparece solo al seleccionar expedientes;
+- todos los filtros con etiqueta encima y casilla de la misma altura.
+
+No se quita ningún filtro, opción ni exportación. Se aplica a Desviaciones, CAPA, Controles de cambios, Reclamaciones, Devoluciones, Auditorías y OOS. Documentación controlada ya tenía los filtros avanzados plegados y filtros rápidos propios: conserva esa estructura, con los contadores en una línea y los filtros rápidos en la fila de acciones.
+
 ### Tabla
 Tabla horizontal amplia. Permitir scroll horizontal cuando sea necesario.
 Considerar columnas sticky para Código y/o Estado.
