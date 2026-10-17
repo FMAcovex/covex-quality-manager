@@ -1,3 +1,5 @@
+import { getSimilarDeviations } from "@/modules/deviations/recurrence-queries";
+import { SimilarDeviations } from "@/modules/deviations/components/similar-deviations";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { RecordTimeline } from "@/components/record-timeline";
@@ -128,6 +130,7 @@ async function DeviationDetailPageAuthenticatedContent({
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const deviation = await getDeviationDetail(id);
   if (!deviation) notFound();
+  const similarDeviations = await getSimilarDeviations(deviation);
 
   const code = qmsRecordDisplayCode(deviation.qmsRecord, "Sin codificación");
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
@@ -438,6 +441,7 @@ async function DeviationDetailPageAuthenticatedContent({
               <div className="info-item"><dt>Categoría (6M)</dt><dd>{deviation.rootCauseCategories.length ? deviation.rootCauseCategories.map((value) => rootCauseCategoryLabel(value, true)).join(", ") : "No informada"}</dd></div>
               <div className="info-item"><dt>Metodología</dt><dd>{deviation.investigationMethods.length ? deviation.investigationMethods.map(investigationMethodLabel).join(", ") : "No informada"}</dd></div>
               <div className="info-item"><dt>Recurrencia</dt><dd>{triStateLabel(deviation.recurrentRootCause)}</dd></div>
+              <div className="info-item full"><SimilarDeviations items={similarDeviations} /></div>
               <div id={reviewTarget.recurrenceDetails.anchorId} className="info-item wide review-target"><dt><span>Antecedentes / detalle</span><ReviewMarker target={reviewTarget.recurrenceDetails} /></dt><dd className="prose-value">{text(deviation.recurrenceDetails)}</dd></div>
             </dl>
           </div>

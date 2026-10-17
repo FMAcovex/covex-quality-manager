@@ -828,3 +828,13 @@ Decisión del responsable de Calidad. Un expediente puede afectar a más de un l
 - **Anexos impresos:** cada casilla muestra el valor principal y los adicionales, uno por línea. No se rediseña ninguna plantilla.
 - **Búsqueda:** la búsqueda global y la de cada listado encuentran también los otros lotes.
 - **Captura B2:** campo `additionalLots` (JSON, no crítico). Contrato `audit-contract-additional-lots.json`, que solo amplía la política de captura.
+
+## D-095 — Ayuda para valorar la recurrencia en Desviaciones (2026-10-17)
+
+Decisión del responsable de Calidad. Junto a «¿Causa raíz recurrente?» (edición) y a la recurrencia (ficha, pestaña de investigación), la aplicación muestra las desviaciones de los 12 meses anteriores a la apertura que comparten alguno de estos datos:
+
+- **mismo lote:** principal, de material, de proveedor u otros lotes afectados;
+- **mismo producto o material;**
+- **misma área y procedencia.**
+
+Se ordenan por número de coincidencias y fecha, como máximo 10, con enlace a cada una. Solo informa: la valoración de la recurrencia la sigue haciendo quien investiga y no se guarda nada nuevo.

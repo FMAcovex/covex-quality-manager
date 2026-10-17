@@ -1,4 +1,6 @@
 "use client";
+import { SimilarDeviations } from "@/modules/deviations/components/similar-deviations";
+import type { SimilarDeviation } from "@/modules/deviations/recurrence-queries";
 import { AdditionalLotsField } from "@/components/additional-lots-field";
 import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
@@ -155,6 +157,7 @@ export function DeviationForm({
   returnTo,
   detailTab,
   currentVersionSequence = 0,
+  similarDeviations,
 }: {
   action: FormAction;
   departments: DepartmentOption[];
@@ -165,6 +168,8 @@ export function DeviationForm({
   returnTo?: string;
   detailTab?: string;
   currentVersionSequence?: number;
+  /** Ayuda de recurrencia (D-095), calculada en el servidor al editar. */
+  similarDeviations?: SimilarDeviation[];
 }) {
   const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, { error: null });
@@ -504,6 +509,7 @@ export function DeviationForm({
           <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." required issues={issues.rootCause} />
           <RootCauseCategoryField defaultValue={formDefaults.rootCauseCategories} />
           <TriStateSelect label="¿Causa raíz recurrente?" name="recurrentRootCause" defaultValue={formDefaults.recurrentRootCause} required issues={issues.recurrentRootCause} />
+          {similarDeviations ? <SimilarDeviations items={similarDeviations} /> : null}
           <label className={`field span-3 ${issues.recurrenceDetails?.length ? "has-error" : ""}`}>
             <span>Antecedentes / detalle de recurrencia *</span>
             <textarea name="recurrenceDetails" defaultValue={formDefaults.recurrenceDetails ?? ""} required aria-invalid={issues.recurrenceDetails?.length ? true : undefined} />

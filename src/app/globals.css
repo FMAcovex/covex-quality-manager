@@ -2792,3 +2792,9 @@ button[disabled] {
 .additional-lot-row { display: flex; flex-wrap: wrap; }
 .additional-lot-row .field { flex: 1 1 140px; min-width: 0; }
 .additional-lots .field-error { margin: 4px 0; color: #a5281f; font-size: 12px; }
+
+/* Ayuda de recurrencia (D-095). */
+.similar-deviations { grid-column: 1 / -1; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 8px; background: var(--surface-soft); font-size: 13px; }
+.similar-deviations ul { margin: 6px 0; padding-left: 18px; display: grid; gap: 4px; }
+.similar-deviations p { margin: 6px 0; color: var(--muted); }
+.similar-deviations span { color: var(--muted); }
