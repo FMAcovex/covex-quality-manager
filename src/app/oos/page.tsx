@@ -6,7 +6,7 @@ import { SearchAutocomplete } from "@/components/search-autocomplete";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
 import { qmsListingUrl, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
-import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { listSavedViews } from "@/lib/saved-views/queries";
 import { formatOosDate, oosInvestigationResultLabels, oosPhase, oosStatusLabels } from "@/modules/oos/domain";
 import { getOosList } from "@/modules/oos/queries";
@@ -75,7 +75,7 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
       <div><strong>{counters.closed}</strong><span>Cerrados</span></div>
     </div>
     <div className="table-card"><div className="table-scroll"><table className="change-table">
-      <thead><tr><th>N.º OOS</th><th>Estado</th><th>Fase</th><th>Fecha de apertura</th><th>Material afectado</th><th>Lote</th><th>Descripción</th><th>Resultado</th><th>Fecha de cierre</th></tr></thead>
+      <thead><tr><th>N.º OOS</th><th>Estado</th><th>Fase</th><th>Fecha de apertura</th><th>Material afectado</th><th>Lote</th><th>Descripción</th><th>Resultado</th><th>CAPA / Desviación</th><th>Fecha de cierre</th></tr></thead>
       <tbody>{rows.length ? rows.map((row) => <tr key={row.id}>
         <td><Link className="summary-link" href={toDetail(row.id)}>{qmsRecordDisplayCode(row.qmsRecord)}</Link>{!row.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</td>
         <td><span className={`badge ${row.status === "DRAFT" ? "neutral" : row.status === "OPEN" ? "open" : "closed"}`}>{oosStatusLabels[row.status]}</span></td>
@@ -85,8 +85,9 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
         <td>{row.lotNumber ?? "—"}</td>
         <td className="table-cell-wrap">{row.detectionDescription ?? "—"}</td>
         <td>{row.investigationResult ? oosInvestigationResultLabels[row.investigationResult] : "—"}</td>
+        <td><div className="relation-chips">{row.qmsRecord.sourceRelations.map(({ targetRecord: related }) => <Link key={related.id} className="relation-chip" href={qmsRecordHref(related.recordType, related.id)} title={qmsRecordTypeLabel(related.recordType)}>{qmsRecordDisplayCode(related, qmsRecordTypeLabel(related.recordType))}{!related.isActive ? " · Anulado" : ""}</Link>)}{row.qmsRecord.sourceRelations.length ? null : "—"}</div></td>
         <td>{formatOosDate(row.closedAt)}</td>
-      </tr>) : <tr><td colSpan={9} className="empty-state"><strong>No hay OOS con estos filtros.</strong></td></tr>}</tbody>
+      </tr>) : <tr><td colSpan={10} className="empty-state"><strong>No hay OOS con estos filtros.</strong></td></tr>}</tbody>
     </table></div></div>
     <nav className="form-footer" aria-label="Paginación de OOS"><span>{count} resultados · página {page} de {Math.max(1, Math.ceil(count / pageSize))}</span>{page > 1 ? <Link className="button small" href={pageHref(page - 1)}>Anterior</Link> : null}{page * pageSize < count ? <Link className="button small" href={pageHref(page + 1)}>Siguiente</Link> : null}</nav>
   </section>;

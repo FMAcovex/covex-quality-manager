@@ -8,8 +8,13 @@ export const oosModule: QmsRecordModuleContract = {
   href: "/oos",
   indicatorsHref: null,
   permissions: ["READ", "CREATE", "EDIT", "REVIEW", "CLOSE", "ANNUL", "DOWNLOAD"],
-  // Las relaciones OOS → CAPA y OOS → Desviación (D-088) llegan en OOS-2.
-  relations: { outgoing: [] },
+  // D-088: el OOS origina CAPA y, en casos poco habituales, una desviación.
+  relations: {
+    outgoing: [
+      { target: "CAPA", type: "GENERATES", label: "OOS → CAPA" },
+      { target: "DEVIATION", type: "GENERATES", label: "OOS → Desviación" },
+    ],
+  },
   lifecycle: {
     field: "OosRecord.status",
     states: ["DRAFT", "OPEN", "CLOSED"],

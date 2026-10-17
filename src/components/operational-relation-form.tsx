@@ -28,6 +28,7 @@ const typeLabels: Record<RelationTargetOption["value"], string> = {
   COMPLAINT: "Reclamación",
   RETURN: "Devolución",
   AUDIT: "Auditoría",
+  OOS: "OOS",
 };
 
 export function OperationalRelationForm({

@@ -951,6 +951,34 @@
       "dynamicCreate": false
     },
     {
+      "file": "src/modules/oos/actions.ts",
+      "name": "addOosRelationAction",
+      "params": [
+        "id",
+        "_state",
+        "fd"
+      ],
+      "module": "OOS",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/oos/actions.ts",
+      "name": "unlinkOosRelationAction",
+      "params": [
+        "id",
+        "relatedQmsRecordId",
+        "fd"
+      ],
+      "module": "OOS",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
       "file": "src/modules/returns/actions.ts",
       "name": "addReturnFollowupAction",
       "params": [

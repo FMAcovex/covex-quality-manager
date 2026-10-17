@@ -1,11 +1,15 @@
 "use server";
 
 import { Prisma, QmsRecordType } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
 import { assignOperationalBusinessCode, OperationalBusinessCodeError } from "@/lib/qms/business-code";
+import type { RelationActionState } from "@/lib/qms/relation-form-types";
+import { allowedOutgoingRelationTypes } from "@/lib/qms/relation-rules";
+import { createQmsRelation, deactivateOperationalRelation, linkOperationalRelationByBusinessCode } from "@/lib/qms/relation-service";
 import { keepsOperationalStatus } from "@/modules/lifecycle";
 import { parseOosForm, type OosFormValues } from "./validation";
 import type { OosFormState } from "./types";
@@ -154,10 +158,70 @@ function historyView(record: Record<string, unknown>) {
   return Object.fromEntries(Object.entries(record).filter(([key]) => !omit.has(key)).map(([key, value]) => [key, value instanceof Date ? value.toISOString().slice(0, 10) : value]));
 }
 
+const relationLabels: Partial<Record<QmsRecordType, string>> = { CAPA: "CAPA", DEVIATION: "Desviación" };
+
+function revalidateRelations(id: string) {
+  revalidatePath("/oos");
+  revalidatePath("/capa");
+  revalidatePath("/deviations");
+  revalidatePath(`/oos/${id}`);
+}
+
+async function addOosRelationActionAuthenticatedContent(id: string, _state: RelationActionState, fd: FormData): Promise<RelationActionState> {
+  try {
+    const record = await prisma.oosRecord.findUnique({ where: { id }, select: { qmsRecordId: true, status: true } });
+    if (!record) return { error: "OOS no encontrado." };
+    if (record.status === "DRAFT") return { error: "El OOS debe estar abierto antes de vincular una CAPA o una desviación." };
+    const code = String(fd.get("businessCode") ?? "").trim();
+    const actor = String(fd.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo").trim();
+    const requestedType = String(fd.get("recordType") ?? "").trim() as QmsRecordType;
+    const targetRecordId = String(fd.get("targetRecordId") ?? "").trim();
+    if (!code && !targetRecordId) return { error: "Selecciona el expediente que se vincula." };
+    if (!allowedOutgoingRelationTypes(QmsRecordType.OOS).includes(requestedType)) return { error: "Un OOS solo puede vincularse con CAPA o Desviaciones (D-088)." };
+    await prisma.$transaction(async (tx) => {
+      await lockRecord(tx, record.qmsRecordId);
+      const current = await tx.qmsRecord.findUniqueOrThrow({ where: { id: record.qmsRecordId }, select: { isActive: true } });
+      if (!current.isActive) throw new Error("No se puede vincular un OOS anulado.");
+      const previous = await tx.qmsRelation.findMany({ where: { sourceRecordId: record.qmsRecordId, isActive: true }, select: { id: true } });
+      if (targetRecordId) {
+        const target = await tx.qmsRecord.findUnique({ where: { id: targetRecordId }, select: { recordType: true, capa: { select: { status: true } }, deviation: { select: { status: true } } } });
+        if (!target || target.recordType !== requestedType) throw new Error("El expediente seleccionado no corresponde al tipo solicitado.");
+        if (target.capa?.status === "DRAFT" || target.deviation?.status === "DRAFT") throw new Error("Selecciona un expediente operativo; el destino sigue en borrador.");
+        await createQmsRelation(tx, { sourceRecordId: record.qmsRecordId, targetRecordId, createdByText: actor });
+      } else {
+        await linkOperationalRelationByBusinessCode(tx, { currentRecordId: record.qmsRecordId, currentType: QmsRecordType.OOS, relatedType: requestedType, businessCode: code, createdByText: actor });
+      }
+      const links = await tx.qmsRelation.findMany({ where: { sourceRecordId: record.qmsRecordId, isActive: true }, select: { id: true, targetRecordId: true } });
+      const added = links.filter((link) => !previous.some((old) => old.id === link.id));
+      if (added.length) await tx.changeHistory.create({ data: { qmsRecordId: record.qmsRecordId, fieldPath: "relations", newValue: json(added), changedByText: actor, reason: "Vinculación de expediente derivado", source: "UI" } });
+    });
+    revalidateRelations(id);
+    return { error: null, success: `${relationLabels[requestedType] ?? "Expediente"} vinculada correctamente.` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "No se ha podido vincular el expediente." };
+  }
+}
+
+async function unlinkOosRelationActionAuthenticatedContent(id: string, relatedQmsRecordId: string, fd: FormData) {
+  const actor = String(fd.get("actor") ?? process.env.DEFAULT_ACTOR_NAME ?? "Usuario demo").trim();
+  const record = await prisma.oosRecord.findUnique({ where: { id }, select: { qmsRecordId: true } });
+  if (!record) throw new Error("El OOS no existe.");
+  await prisma.$transaction((tx) => deactivateOperationalRelation(tx, { currentRecordId: record.qmsRecordId, relatedRecordId: relatedQmsRecordId, changedByText: actor, reason: "Desvinculación de expediente derivado" }));
+  revalidateRelations(id);
+}
+
 export async function createOosAction(...args: Parameters<typeof createOosActionAuthenticatedContent>) {
   return authorizedAction("createOosAction", args, (authenticated) => createOosActionAuthenticatedContent(...(authenticated as Parameters<typeof createOosActionAuthenticatedContent>)));
 }
 
 export async function updateOosAction(...args: Parameters<typeof updateOosActionAuthenticatedContent>) {
   return authorizedAction("updateOosAction", args, (authenticated) => updateOosActionAuthenticatedContent(...(authenticated as Parameters<typeof updateOosActionAuthenticatedContent>)));
+}
+
+export async function addOosRelationAction(...args: Parameters<typeof addOosRelationActionAuthenticatedContent>) {
+  return authorizedAction("addOosRelationAction", args, (authenticated) => addOosRelationActionAuthenticatedContent(...(authenticated as Parameters<typeof addOosRelationActionAuthenticatedContent>)));
+}
+
+export async function unlinkOosRelationAction(...args: Parameters<typeof unlinkOosRelationActionAuthenticatedContent>) {
+  return authorizedAction("unlinkOosRelationAction", args, (authenticated) => unlinkOosRelationActionAuthenticatedContent(...(authenticated as Parameters<typeof unlinkOosRelationActionAuthenticatedContent>)));
 }

@@ -28,7 +28,7 @@ export async function getOosList(filters: OosListFilters) {
   const [rows, years, operational, drafts, phaseI, phaseII, closed] = await Promise.all([
     prisma.oosRecord.findMany({
       where,
-      include: { qmsRecord: true },
+      include: { qmsRecord: { include: { sourceRelations: { where: { isActive: true }, include: { targetRecord: true }, orderBy: { createdAt: "asc" } } } } },
       orderBy: [{ status: "asc" }, { issueDate: "desc" }, { createdAt: "desc" }, { id: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -64,6 +64,7 @@ export function oosListWhere(filters: OosListFilters): Prisma.OosRecordWhereInpu
     and.push({ OR: [
       { qmsRecord: { businessCode: contains } },
       { qmsRecord: { annulledBusinessCode: contains } },
+      { qmsRecord: { sourceRelations: { some: { isActive: true, targetRecord: { OR: [{ businessCode: contains }, { annulledBusinessCode: contains }] } } } } },
       { materialName: contains },
       { lotNumber: contains },
       { supplier: contains },
@@ -88,11 +89,20 @@ export function getOosDetail(id: string) {
     where: { id },
     include: {
       department: true,
-      qmsRecord: { include: { history: { orderBy: { changedAt: "desc" }, take: 100 } } },
+      qmsRecord: { include: { history: { orderBy: { changedAt: "desc" }, take: 100 }, sourceRelations: { where: { isActive: true }, include: { targetRecord: true }, orderBy: { createdAt: "asc" } } } },
     },
   });
 }
 
 export function getOosDepartments() {
   return prisma.department.findMany({ where: { isActive: true }, orderBy: { code: "asc" }, select: { id: true, code: true, name: true } });
+}
+
+/** OOS de origen activos de un expediente destino (CAPA o Desviación). */
+export function getOosOrigins(targetRecordId: string) {
+  return prisma.qmsRelation.findMany({
+    where: { targetRecordId, isActive: true, relationType: "GENERATES", sourceRecord: { recordType: QmsRecordType.OOS } },
+    include: { sourceRecord: { include: { oosRecord: { select: { id: true, materialName: true } } } } },
+    orderBy: { createdAt: "asc" },
+  });
 }

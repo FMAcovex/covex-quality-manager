@@ -21,6 +21,8 @@ describe("Hito 10.8C3-B1: reglas direccionales QMS", () => {
     [QmsRecordType.AUDIT, QmsRecordType.CAPA],
     [QmsRecordType.COMPLAINT, QmsRecordType.CAPA],
     [QmsRecordType.COMPLAINT, QmsRecordType.RETURN],
+    [QmsRecordType.OOS, QmsRecordType.CAPA],
+    [QmsRecordType.OOS, QmsRecordType.DEVIATION],
   ])("permite %s -> %s con GENERATES", (sourceType, targetType) => {
     expect(canRelate(sourceType, targetType, QmsRelationType.GENERATES)).toBe(true);
     expect(
@@ -48,6 +50,11 @@ describe("Hito 10.8C3-B1: reglas direccionales QMS", () => {
     [QmsRecordType.DEVIATION, QmsRecordType.RETURN],
     [QmsRecordType.CAPA, QmsRecordType.RETURN],
     [QmsRecordType.CHANGE_CONTROL, QmsRecordType.CAPA],
+    [QmsRecordType.CAPA, QmsRecordType.OOS],
+    [QmsRecordType.DEVIATION, QmsRecordType.OOS],
+    [QmsRecordType.OOS, QmsRecordType.CHANGE_CONTROL],
+    [QmsRecordType.OOS, QmsRecordType.RETURN],
+    [QmsRecordType.OOS, QmsRecordType.OOS],
   ])("bloquea %s -> %s", (sourceType, targetType) => {
     expect(canRelate(sourceType, targetType, QmsRelationType.GENERATES)).toBe(false);
     expect(() =>
@@ -80,7 +87,9 @@ describe("Hito 10.8C3-B1: reglas direccionales QMS", () => {
       QmsRecordType.DEVIATION,
       QmsRecordType.COMPLAINT,
       QmsRecordType.AUDIT,
+      QmsRecordType.OOS,
     ]);
+    expect(allowedOutgoingRelationTypes(QmsRecordType.OOS)).toEqual([QmsRecordType.CAPA, QmsRecordType.DEVIATION]);
     expect(allowedOutgoingRelationTypes(QmsRecordType.CHANGE_CONTROL)).toEqual([]);
     expect(allowedIncomingRelationTypes(QmsRecordType.CHANGE_CONTROL)).toEqual([]);
   });

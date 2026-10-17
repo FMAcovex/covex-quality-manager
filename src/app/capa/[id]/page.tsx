@@ -21,6 +21,7 @@ import { getCapaDetail } from "@/modules/capa/queries";
 import { capaSnapshotVersionFollowupDate, recordVersionSummary } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
+import { OosOriginPanel } from "@/modules/oos/origin-panel";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { uploadCapaSignedPdfAction } from "@/modules/capa/signed-document-actions";
@@ -105,6 +106,7 @@ async function CapaDetailPageAuthenticatedContent({
           item.sourceRecord.recordType === "COMPLAINT" || item.sourceRecord.recordType === "AUDIT"),
     )
     .map((item) => item.sourceRecord);
+  const hasOosOrigin = capa.qmsRecord.targetRelations.some((item) => item.relationType === "GENERATES" && item.sourceRecord.recordType === "OOS");
 
   const reviewTarget = {
     actionType: reviewTargetWithValue(
@@ -400,7 +402,7 @@ async function CapaDetailPageAuthenticatedContent({
 
       {activeTab === "relations" ? (
         <div className="card">
-          <h2>Orígenes de la CAPA</h2><AuditOriginPanel targetRecordId={capa.qmsRecordId}/>
+          <h2>Orígenes de la CAPA</h2><AuditOriginPanel targetRecordId={capa.qmsRecordId}/><OosOriginPanel targetRecordId={capa.qmsRecordId}/>
           {origins.some(record => record.recordType !== "AUDIT") ? (
             <div className="relation-list">
               {origins.filter(record => record.recordType !== "AUDIT").map((record) => (
@@ -417,7 +419,7 @@ async function CapaDetailPageAuthenticatedContent({
                 </div>
               ))}
             </div>
-          ) : !origins.length ? <div className="empty-panel">No hay orígenes operativos vinculados.</div> : null}
+          ) : !origins.length && !hasOosOrigin ? <div className="empty-panel">No hay orígenes operativos vinculados.</div> : null}
           {capa.status === "DRAFT" ? (
             <div className="empty-panel">Las relaciones operativas se activan al abrir la CAPA.</div>
           ) : (
