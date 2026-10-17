@@ -2670,7 +2670,8 @@ button[disabled] {
    cabecera más compacta. Filtros plegables, etiquetas de filtros aplicados y contadores en línea. */
 .list-ux-c .list-toolbar { display: grid; gap: 10px; margin: 14px 0 10px; }
 .list-ux-c .list-toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.list-ux-c .list-toolbar-row .search-autocomplete { position: relative; flex: 1 1 320px; min-width: 0; }
+.list-ux-c .list-toolbar-search { display: flex; flex: 1 1 360px; gap: 10px; min-width: 0; }
+.list-ux-c .list-toolbar-row .search-autocomplete { position: relative; flex: 1 1 auto; min-width: 0; }
 .list-ux-c .list-toolbar-row .search-autocomplete > input { min-height: 42px; border: 1px solid var(--border); border-radius: 9px; padding: 0 14px; background: var(--surface); }
 .list-ux-c .list-toolbar-row .saved-views { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .list-filter-toggle { display: inline-flex; align-items: center; gap: 7px; }
@@ -2692,5 +2693,6 @@ button[disabled] {
 .list-counters { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 2px 0 12px; color: var(--muted); font-size: 13px; }
 .list-counters strong { margin-right: 3px; color: var(--blue); font-size: 15px; font-variant-numeric: tabular-nums; }
 @media (max-width: 760px) {
+  .list-ux-c .list-toolbar-search { flex-basis: 100%; }
   .list-ux-c .list-toolbar-row > .button { flex: 1 1 auto; }
 }

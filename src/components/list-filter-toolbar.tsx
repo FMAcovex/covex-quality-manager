@@ -38,8 +38,8 @@ export function ListFilterToolbar({
 
   return <div className="list-toolbar">
     <div className="list-toolbar-row">
-      {search}
-      <button className="button" type="submit">Buscar</button>
+      {/* Buscador y «Buscar» juntos: las sugerencias se abren debajo y no tapan el botón. */}
+      <div className="list-toolbar-search">{search}<button className="button" type="submit">Buscar</button></div>
       <button className={`button list-filter-toggle${chips.length ? " has-filters" : ""}`} type="button" aria-expanded={open} aria-controls={panelId} onClick={toggle}>
         Filtros{chips.length ? <span className="list-filter-count">{chips.length}</span> : null}<span aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
