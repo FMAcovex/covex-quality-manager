@@ -1,3 +1,13 @@
+import {
+  buildAging,
+  countLabels,
+  inYearToDate,
+  isDue,
+  yearToDateWindow,
+  type YearToDateComparison,
+} from "@/lib/qms/analytics/trends";
+import { scopeLabels } from "@/modules/change-control/domain";
+
 export type ChangeAnalyticsRow = {
   openingYear: number | null;
   requestDate: Date | null;
@@ -9,6 +19,8 @@ export type ChangeAnalyticsRow = {
   effectivenessStatus: "PENDING" | "ACCEPTABLE" | "NOT_ACCEPTABLE" | "NOT_APPLICABLE";
   departmentCode: string | null;
   plannedDates: Date[];
+  /** Alcance del cambio (varios por expediente). */
+  scopes?: string[];
 };
 
 export type ChangeDistribution = { label: string; count: number; percentage: number };
@@ -143,4 +155,95 @@ export function buildChangeFiveYearTrend(
   return Array.from({ length: 5 }, (_, index) => endYear - 4 + index).map((year) =>
     buildChangeYearMetrics(rows, year, covered.has(year)),
   );
+}
+
+// Tendencias y pendientes (2026-10-17). Descriptivos: sin objetivos ni plazos del PNT.
+export const CHANGE_PARETO = { department: "Departamento", scope: "Alcance", classification: "Clasificación" } as const;
+export type ChangeParetoDimension = keyof typeof CHANGE_PARETO;
+
+/** Alcances marcados en los controles abiertos en el año (un control puede tener varios). */
+export function changeScopeDistribution(rows: ChangeAnalyticsRow[], year: number) {
+  return countLabels(
+    rows
+      .filter((row) => row.openingYear === year)
+      .flatMap((row) => (row.scopes?.length ? row.scopes.map((scope) => scopeLabels[scope] ?? scope) : ["Sin alcance indicado"])),
+  );
+}
+
+export function buildChangeYearToDate(
+  rows: ChangeAnalyticsRow[],
+  selectedYear: number,
+  covered: Set<number>,
+  today: Date,
+): YearToDateComparison {
+  const window = yearToDateWindow(selectedYear, today);
+  const period = (year: number) => {
+    const inPeriod = (date: Date | null) => inYearToDate(window, year, date);
+    const requested = rows.filter((row) => inPeriod(row.requestDate));
+    const executed = rows.filter((row) => row.executionStatus === "EXECUTED" && inPeriod(row.executionDate));
+    const evaluable = executed.filter((row) => plannedCompletionDate(row));
+    const inTime = evaluable.filter((row) => row.executionDate! <= plannedCompletionDate(row)!).length;
+    const evaluated = rows.filter((row) => inPeriod(row.effectiveClosedAt) && (row.effectivenessStatus === "ACCEPTABLE" || row.effectivenessStatus === "NOT_ACCEPTABLE"));
+    return {
+      requested: requested.length,
+      major: requested.filter((row) => row.classification === "MAJOR").length,
+      executed: executed.length,
+      inTimeRate: pct(inTime, evaluable.length),
+      evaluated: evaluated.length,
+      acceptableRate: pct(evaluated.filter((row) => row.effectivenessStatus === "ACCEPTABLE").length, evaluated.length),
+    };
+  };
+  const current = period(selectedYear);
+  const previous = period(selectedYear - 1);
+  return {
+    ...window,
+    currentYear: selectedYear,
+    previousYear: selectedYear - 1,
+    currentAvailable: covered.has(selectedYear),
+    previousAvailable: covered.has(selectedYear - 1),
+    rows: [
+      { label: "Solicitudes", current: current.requested, previous: previous.requested, format: "count" },
+      { label: "Mayores", current: current.major, previous: previous.major, format: "count" },
+      { label: "Ejecutados", current: current.executed, previous: previous.executed, format: "count" },
+      { label: "Ejecución en plazo", current: current.inTimeRate, previous: previous.inTimeRate, format: "percent" },
+      { label: "Eficacias evaluadas", current: current.evaluated, previous: previous.evaluated, format: "count" },
+      { label: "Eficacia aceptable", current: current.acceptableRate, previous: previous.acceptableRate, format: "percent" },
+    ],
+    note: "Solicitudes por fecha de solicitud; ejecución por fecha de ejecución; eficacia por fecha de cierre de eficacia.",
+  };
+}
+
+export type ChangeBacklogRow = {
+  id: string;
+  code: string;
+  requestDate: Date | null;
+  classification: "MAJOR" | "MINOR" | null;
+  executionStatus: "NOT_EXECUTED" | "EXECUTED";
+  effectivenessStatus: ChangeAnalyticsRow["effectivenessStatus"];
+  plannedDates: Date[];
+  nextFollowupDate: Date | null;
+};
+
+/** Controles abiertos hoy: antigüedad desde la solicitud y fecha prevista superada sin ejecutar. */
+export function buildChangeBacklog(rows: ChangeBacklogRow[], today: Date) {
+  const overdue = (row: ChangeBacklogRow) => {
+    if (row.executionStatus === "EXECUTED" || !row.plannedDates.length) return false;
+    return isDue(new Date(Math.max(...row.plannedDates.map((date) => date.getTime()))), today, false);
+  };
+  const pendingEffectiveness = (row: ChangeBacklogRow) => row.executionStatus === "EXECUTED" && row.effectivenessStatus === "PENDING";
+  return {
+    ...buildAging(rows.map((row) => ({
+      id: row.id,
+      code: row.code,
+      startDate: row.requestDate,
+      tags: [row.classification === "MAJOR" ? "MAJOR" : null, overdue(row) ? "OVERDUE" : null, pendingEffectiveness(row) ? "EFFECTIVENESS" : null]
+        .filter((tag): tag is string => Boolean(tag)),
+      note: [row.classification === "MAJOR" ? "Mayor" : row.classification === "MINOR" ? "Menor" : null, overdue(row) ? "prevista superada" : null]
+        .filter(Boolean).join(" · ") || null,
+    })), today),
+    overdue: rows.filter(overdue).length,
+    pendingEffectiveness: rows.filter(pendingEffectiveness).length,
+    // Mismo criterio que el listado: próximo seguimiento del último registro hoy o antes.
+    followupDue: rows.filter((row) => isDue(row.nextFollowupDate, today)).length,
+  };
 }

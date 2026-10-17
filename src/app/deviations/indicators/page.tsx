@@ -1,18 +1,16 @@
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
+import { AgingPanel, MonthlyTrendChart, ParetoCard, YearToDateCard } from "@/components/analytics/trend-charts";
+import { indicatorsHref, paretoDimension } from "@/lib/qms/analytics/trends";
 import {
   AnnualSummaryTable,
-  BacklogPanel,
   KpiCard,
-  MonthlyTrendChart,
-  ParetoCard,
   TrendChart,
-  YearToDateCard,
   deltaLabel,
   formatNumber,
   formatPercent,
 } from "@/modules/deviations/analytics/components";
-import { PARETO_DIMENSIONS, type ParetoDimension } from "@/modules/deviations/analytics/domain";
+import { PARETO_DIMENSIONS, yearToDateComparison, type ParetoDimension } from "@/modules/deviations/analytics/domain";
 import { getDeviationAnalytics, getDeviationBacklog } from "@/modules/deviations/analytics/queries";
 
 export const dynamic = "force-dynamic";
@@ -37,14 +35,10 @@ async function DeviationIndicatorsPageAuthenticatedContent({
   };
   const [data, backlog] = await Promise.all([getDeviationAnalytics(filters), getDeviationBacklog(filters)]);
   const { current, previous, trend, selectedYear } = data;
-  const requestedPareto = param(query.pareto);
-  const paretoDimension: ParetoDimension = requestedPareto && requestedPareto in PARETO_DIMENSIONS ? requestedPareto as ParetoDimension : "area";
-  const paretoHref = (dimension: ParetoDimension) => {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries({ ...filters, year: String(selectedYear) })) if (value) params.set(key, value);
-    if (dimension !== "area") params.set("pareto", dimension);
-    return `/deviations/indicators?${params.toString()}#pareto`;
-  };
+  const paretoKeys = Object.keys(PARETO_DIMENSIONS) as ParetoDimension[];
+  const paretoActive = paretoDimension(param(query.pareto), paretoKeys, "area");
+  const paretoHref = (dimension: string) =>
+    indicatorsHref("/deviations/indicators", { ...filters, year: String(selectedYear) }, dimension, "area");
   const compare = (currentValue: number | null, previousValue: number | null, suffix = "") =>
     previous.dataAvailable
       ? deltaLabel(currentValue, previousValue, suffix)
@@ -87,7 +81,7 @@ async function DeviationIndicatorsPageAuthenticatedContent({
         <label><span>Estado actual</span><select name="status" defaultValue={filters.status ?? ""}>
           <option value="">Todos</option><option value="OPEN">Abiertas</option><option value="CLOSED">Cerradas</option>
         </select></label>
-        {paretoDimension !== "area" ? <input type="hidden" name="pareto" value={paretoDimension} /> : null}
+        {paretoActive !== "area" ? <input type="hidden" name="pareto" value={paretoActive} /> : null}
         <div className="analytics-filter-actions">
           <button className="button primary" type="submit">Aplicar filtros</button>
           <Link className="button" href="/deviations/indicators">Limpiar</Link>
@@ -144,12 +138,32 @@ async function DeviationIndicatorsPageAuthenticatedContent({
         />
       </div>
 
-      <BacklogPanel backlog={backlog} />
+      <AgingPanel
+        id="backlog-title"
+        title="Antigüedad de las desviaciones abiertas"
+        description="Abiertas a fecha de hoy, sea cual sea su año de apertura. Días naturales desde la fecha de apertura. Los tramos son descriptivos, no plazos del PNT."
+        summary={backlog}
+        columns={[{ key: "CRITICAL", label: "Críticas", alert: true }, { key: "MAJOR", label: "Mayores" }]}
+        counters={[
+          { value: backlog.outOfTime, label: "marcadas fuera de plazo", alert: true },
+          { value: backlog.followupDue, label: "con seguimiento vencido", alert: true },
+        ]}
+        listHref="/deviations?status=OPEN"
+        listLabel="Ver abiertas en el listado"
+        detailHref={(id) => `/deviations/${id}`}
+        emptyText="No hay desviaciones abiertas con estos filtros."
+        noDateText="Las desviaciones abiertas no tienen fecha de apertura."
+      />
 
       <div className="analytics-grid">
         <MonthlyTrendChart series={data.monthlySeries} />
-        <YearToDateCard ytd={data.yearToDate} />
-        <ParetoCard year={selectedYear} dimension={paretoDimension} items={data.pareto[paretoDimension]} hrefFor={paretoHref} />
+        <YearToDateCard ytd={yearToDateComparison(data.yearToDate)} />
+        <ParetoCard
+          year={selectedYear}
+          dimensions={paretoKeys.map((key) => ({ key, label: PARETO_DIMENSIONS[key], items: data.pareto[key] }))}
+          active={paretoActive}
+          hrefFor={paretoHref}
+        />
       </div>
 
       <section className="trend-section">

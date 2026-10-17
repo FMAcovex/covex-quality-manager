@@ -1,15 +1,50 @@
 import "server-only";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { buildMonthlyCounts,buildPareto } from "@/lib/qms/analytics/trends";
+import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+import { buildReturnBacklog,buildReturnYearToDate,medianDecisionDays,returnProductMentions,type ReturnTrendRow } from "@/modules/returns/analytics/domain";
 export type ReturnAnalyticsFilters={year?:string;department?:string;type?:string;decision?:string;status?:string};
 type Dist={label:string;count:number;percentage:number};const pct=(a:number,b:number)=>b?Math.round(a/b*1000)/10:0;
 const days=(a:Date|null,b:Date|null)=>a&&b?Math.max(0,Math.round((b.getTime()-a.getTime())/86400000)):null;
 const median=(v:number[])=>{if(!v.length)return null;const x=[...v].sort((a,b)=>a-b),m=Math.floor(x.length/2);return x.length%2?x[m]:(x[m-1]+x[m])/2};
 function dist<T>(rows:T[],get:(x:T)=>string):Dist[]{const m=new Map<string,number>();rows.forEach(x=>{const k=get(x);m.set(k,(m.get(k)??0)+1)});return [...m].map(([label,count])=>({label,count,percentage:pct(count,rows.length)})).sort((a,b)=>b.count-a.count);}
 const typeLabel=(v:string)=>({COMMERCIAL:"Comercial",COMPLAINT:"Reclamación",RECALL:"Retirada",EXPIRY:"Caducidad",TRANSPORT:"Transporte",OTHER:"Otra"} as Record<string,string>)[v]??v;
-export async function getReturnAnalytics(filters:ReturnAnalyticsFilters){
- const rows=await prisma.returnRecord.findMany({where:{includeInKpi:true,qmsRecord:{isActive:true},status:{not:"DRAFT"},...(filters.department?{departmentId:filters.department}:{}),...(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"].includes(filters.type??"")?{returnType:filters.type as "COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER"}:{}),...(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??"")?{decision:filters.decision as "PENDING"|"ACCEPTED"|"REJECTED"}:{}),...(filters.status==="OPEN"||filters.status==="CLOSED"?{status:filters.status}:{})},select:{communicationDate:true,closedAt:true,status:true,decision:true,returnType:true,departmentCodeSnapshot:true,qmsRecord:{select:{year:true}},products:{select:{productType:true}}}});
+export async function getReturnAnalytics(filters:ReturnAnalyticsFilters,now=new Date()){
+ const rows=await prisma.returnRecord.findMany({where:{includeInKpi:true,qmsRecord:{isActive:true},status:{not:"DRAFT"},...(filters.department?{departmentId:filters.department}:{}),...(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"].includes(filters.type??"")?{returnType:filters.type as "COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER"}:{}),...(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??"")?{decision:filters.decision as "PENDING"|"ACCEPTED"|"REJECTED"}:{}),...(filters.status==="OPEN"||filters.status==="CLOSED"?{status:filters.status}:{})},select:{communicationDate:true,closedAt:true,decisionDate:true,status:true,decision:true,returnType:true,departmentCodeSnapshot:true,qmsRecord:{select:{year:true}},products:{select:{productType:true}}}});
  const [departments,yearsRaw]=await Promise.all([prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),prisma.qmsRecord.findMany({where:{recordType:"RETURN",year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}})]);
  const years=yearsRaw.map(x=>x.year).filter((x):x is number=>x!==null);const selected=filters.year&&/^\d{4}$/.test(filters.year)?Number(filters.year):years[0]??new Date().getFullYear();
- const metric=(year:number)=>{const y=rows.filter(r=>(r.qmsRecord.year??r.communicationDate?.getUTCFullYear())===year);const closure=y.map(r=>days(r.communicationDate,r.closedAt)).filter((x):x is number=>x!==null);const productTypes=y.flatMap(r=>r.products.map(p=>({type:p.productType})));return{year,dataAvailable:years.includes(year),total:y.length,open:y.filter(r=>r.status==="OPEN").length,accepted:y.filter(r=>r.decision==="ACCEPTED").length,rejected:y.filter(r=>r.decision==="REJECTED").length,pending:y.filter(r=>r.decision==="PENDING").length,medianClosure:median(closure),types:dist(y,r=>typeLabel(r.returnType)),decisions:dist(y,r=>r.decision==="ACCEPTED"?"Aceptada":r.decision==="REJECTED"?"Rechazada":"Pendiente"),departments:dist(y,r=>r.departmentCodeSnapshot??"Sin área"),productTypes:dist(productTypes,p=>p.type)};};
- return{selectedYear:selected,current:metric(selected),trend:Array.from({length:5},(_,i)=>metric(selected-4+i)),departments,years};
+ const trendRows:ReturnTrendRow[]=rows.map(r=>({openingYear:r.qmsRecord.year??r.communicationDate?.getUTCFullYear()??null,communicationDate:r.communicationDate,closedAt:r.closedAt,decisionDate:r.decisionDate,decision:r.decision,productTypes:r.products.map(p=>p.productType)}));
+ const covered=new Set(years);
+ const metric=(year:number)=>{const y=rows.filter(r=>(r.qmsRecord.year??r.communicationDate?.getUTCFullYear())===year);const closure=y.map(r=>days(r.communicationDate,r.closedAt)).filter((x):x is number=>x!==null);const productTypes=y.flatMap(r=>r.products.map(p=>({type:p.productType})));return{year,dataAvailable:years.includes(year),total:y.length,open:y.filter(r=>r.status==="OPEN").length,accepted:y.filter(r=>r.decision==="ACCEPTED").length,rejected:y.filter(r=>r.decision==="REJECTED").length,pending:y.filter(r=>r.decision==="PENDING").length,medianClosure:median(closure),closed:y.filter(r=>r.status==="CLOSED").length,medianDecision:medianDecisionDays(trendRows,year),types:dist(y,r=>typeLabel(r.returnType)),decisions:dist(y,r=>r.decision==="ACCEPTED"?"Aceptada":r.decision==="REJECTED"?"Rechazada":"Pendiente"),departments:dist(y,r=>r.departmentCodeSnapshot??"Sin área"),productTypes:dist(productTypes,p=>p.type)};};
+ const current=metric(selected);
+ return{
+  selectedYear:selected,current,trend:Array.from({length:5},(_,i)=>metric(selected-4+i)),departments,years,
+  // Tendencias: se calculan sobre las mismas filas, sin consultas nuevas.
+  monthlySeries:buildMonthlyCounts(trendRows.map(r=>r.communicationDate),selected,covered,now),
+  yearToDate:buildReturnYearToDate(trendRows,selected,covered,now),
+  pareto:{type:buildPareto(current.types),productType:buildPareto(returnProductMentions(trendRows,selected)),department:buildPareto(current.departments)},
+ };
+}
+
+/**
+ * Devoluciones abiertas hoy y su antigüedad. Aplica área, tipo y decisión; no el año
+ * analizado ni el estado, porque lo pendiente es de hoy.
+ */
+export async function getReturnBacklog(filters:ReturnAnalyticsFilters,today=new Date()){
+ const where:Prisma.ReturnRecordWhereInput={
+  includeInKpi:true,qmsRecord:{isActive:true},status:"OPEN",
+  ...(filters.department?{departmentId:filters.department}:{}),
+  ...(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"].includes(filters.type??"")?{returnType:filters.type as "COMMERCIAL"|"COMPLAINT"|"RECALL"|"EXPIRY"|"TRANSPORT"|"OTHER"}:{}),
+  ...(["PENDING","ACCEPTED","REJECTED"].includes(filters.decision??"")?{decision:filters.decision as "PENDING"|"ACCEPTED"|"REJECTED"}:{}),
+ };
+ const records=await prisma.returnRecord.findMany({
+  where,
+  select:{id:true,communicationDate:true,returnType:true,decision:true,qmsRecord:{select:{businessCode:true,annulledBusinessCode:true}},
+   followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"},{id:"desc"}],take:1,select:{nextFollowupDate:true}}},
+ });
+ return buildReturnBacklog(records.map(r=>({
+  id:r.id,code:qmsRecordDisplayCode(r.qmsRecord),communicationDate:r.communicationDate,returnType:r.returnType,decision:r.decision,
+  nextFollowupDate:r.followups[0]?.nextFollowupDate??null,
+ })),today);
 }

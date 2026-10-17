@@ -1,12 +1,18 @@
 import "server-only";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { buildCapaFiveYearTrend,buildCapaYearMetrics,type CapaAnalyticsRow } from "@/modules/capa/analytics/domain";
+import { buildMonthlyCounts,buildPareto } from "@/lib/qms/analytics/trends";
+import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+import {
+  buildCapaBacklog,buildCapaEffectivenessBacklog,buildCapaFiveYearTrend,buildCapaYearMetrics,buildCapaYearToDate,
+  type CapaAnalyticsRow,
+} from "@/modules/capa/analytics/domain";
 
 export type CapaAnalyticsFilters={
   year?:string;department?:string;type?:string;origin?:string;status?:string;
 };
 
-export async function getCapaAnalytics(filters:CapaAnalyticsFilters) {
+export async function getCapaAnalytics(filters:CapaAnalyticsFilters,today=new Date()) {
   const records=await prisma.capa.findMany({
     where:{
       includeInKpi:true,
@@ -45,12 +51,51 @@ export async function getCapaAnalytics(filters:CapaAnalyticsFilters) {
     ...years,
     ...batches.filter((b)=>b.recordType==="CAPA").flatMap((b)=>b.years),
   ]);
+  const current=buildCapaYearMetrics(rows,selected,covered.has(selected));
   return {
     selectedYear:selected,
-    current:buildCapaYearMetrics(rows,selected,covered.has(selected)),
+    current,
     previous:buildCapaYearMetrics(rows,selected-1,covered.has(selected-1)),
     trend:buildCapaFiveYearTrend(rows,selected,covered),
+    // Tendencias: se calculan sobre las mismas filas, sin consultas nuevas.
+    monthlySeries:buildMonthlyCounts(rows.map((r)=>r.openedAt),selected,covered,today),
+    yearToDate:buildCapaYearToDate(rows,selected,covered,today),
+    pareto:{department:buildPareto(current.departments),origin:buildPareto(current.origins),type:buildPareto(current.types)},
     years,departments,
     origins:origins.map((r)=>r.originType).filter((v):v is string=>Boolean(v)),
+  };
+}
+
+/**
+ * CAPA abiertas hoy y CAPA ejecutadas con eficacia pendiente. Aplica departamento, tipo y
+ * origen; no el año analizado ni el estado, porque lo pendiente es de hoy.
+ */
+export async function getCapaBacklog(filters:CapaAnalyticsFilters,today=new Date()) {
+  const where:Prisma.CapaWhereInput={
+    includeInKpi:true,
+    qmsRecord:{isActive:true},
+    ...(filters.department?{departmentId:filters.department}:{}),
+    ...(filters.type==="CORRECTIVE"||filters.type==="PREVENTIVE"?{actionType:filters.type}:{}),
+    ...(filters.origin?{originType:filters.origin}:{}),
+  };
+  const code={select:{businessCode:true,annulledBusinessCode:true}} as const;
+  const [open,pendingEffectiveness]=await Promise.all([
+    prisma.capa.findMany({
+      where:{...where,status:"OPEN"},
+      select:{id:true,openedAt:true,actionType:true,nextFollowupDate:true,qmsRecord:code,plannedActions:{select:{plannedExecutionDate:true}}},
+    }),
+    prisma.capa.findMany({
+      where:{...where,status:"CLOSED",effectivenessStatus:"PENDING",effectiveClosedAt:null},
+      select:{id:true,operationalClosedAt:true,actionType:true,qmsRecord:code},
+    }),
+  ]);
+  return {
+    open:buildCapaBacklog(open.map((r)=>({
+      id:r.id,code:qmsRecordDisplayCode(r.qmsRecord),openedAt:r.openedAt,actionType:r.actionType,nextFollowupDate:r.nextFollowupDate,
+      plannedDates:r.plannedActions.map((a)=>a.plannedExecutionDate).filter((d):d is Date=>Boolean(d)),
+    })),today),
+    effectiveness:buildCapaEffectivenessBacklog(pendingEffectiveness.map((r)=>({
+      id:r.id,code:qmsRecordDisplayCode(r.qmsRecord),operationalClosedAt:r.operationalClosedAt,actionType:r.actionType,
+    })),today),
   };
 }

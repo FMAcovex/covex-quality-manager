@@ -1,13 +1,15 @@
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
+import { AgingPanel, MonthlyTrendChart, ParetoCard, YearToDateCard } from "@/components/analytics/trend-charts";
+import { indicatorsHref, paretoDimension } from "@/lib/qms/analytics/trends";
 import {
-  ChangeDistributionCard,
   ChangeKpiCard,
   ChangeTrend,
   num,
   pct,
 } from "@/modules/change-control/analytics/components";
-import { getChangeAnalytics } from "@/modules/change-control/analytics/queries";
+import { CHANGE_PARETO, type ChangeParetoDimension } from "@/modules/change-control/analytics/domain";
+import { getChangeAnalytics, getChangeBacklog } from "@/modules/change-control/analytics/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +29,12 @@ async function ChangeControlIndicatorsPageAuthenticatedContent({
     classification: param(query.classification),
     status: param(query.status),
   };
-  const data = await getChangeAnalytics(filters);
+  const [data, backlog] = await Promise.all([getChangeAnalytics(filters), getChangeBacklog(filters)]);
   const metrics = data.current;
+  const paretoKeys = Object.keys(CHANGE_PARETO) as ChangeParetoDimension[];
+  const paretoActive = paretoDimension(param(query.pareto), paretoKeys, "department");
+  const paretoHref = (key: string) =>
+    indicatorsHref("/changes/indicators", { ...filters, year: String(data.selectedYear) }, key, "department");
 
   return (
     <section className="workspace analytics-workspace">
@@ -84,6 +90,7 @@ async function ChangeControlIndicatorsPageAuthenticatedContent({
             <option value="CLOSED">Cerrados</option>
           </select>
         </label>
+        {paretoActive !== "department" ? <input type="hidden" name="pareto" value={paretoActive} /> : null}
         <div className="analytics-filter-actions">
           <button className="button primary" type="submit">Aplicar</button>
           <Link className="button" href="/changes/indicators">Limpiar</Link>
@@ -136,10 +143,44 @@ async function ChangeControlIndicatorsPageAuthenticatedContent({
         />
       </div>
 
+      <AgingPanel
+        id="change-backlog-title"
+        title="Antigüedad de los controles de cambios abiertos"
+        description="Abiertos a fecha de hoy, sea cual sea su año. Días naturales desde la fecha de solicitud. «Prevista superada»: sin ejecutar y la fecha prevista global del Dictamen ya pasó. Los tramos son descriptivos, no plazos del PNT."
+        summary={backlog}
+        columns={[
+          { key: "MAJOR", label: "Mayores" },
+          { key: "OVERDUE", label: "Prevista superada", alert: true },
+          { key: "EFFECTIVENESS", label: "Eficacia pendiente" },
+        ]}
+        counters={[
+          { value: backlog.overdue, label: "sin ejecutar con fecha prevista superada", alert: true },
+          { value: backlog.followupDue, label: "con seguimiento vencido", alert: true },
+          { value: backlog.pendingEffectiveness, label: "ejecutados con eficacia pendiente" },
+        ]}
+        totalLabel="abiertos"
+        listHref="/changes?status=OPEN"
+        listLabel="Ver abiertos en el listado"
+        detailHref={(id) => `/changes/${id}`}
+        emptyText="No hay controles de cambios abiertos con estos filtros."
+        noDateText="Los controles abiertos no tienen fecha de solicitud."
+      />
+
       <div className="analytics-grid">
-        <ChangeDistributionCard title="Controles por departamento" items={metrics.departments} />
-        <ChangeDistributionCard title="Mayor / Menor" items={metrics.classifications} />
-        <ChangeDistributionCard title="Estado de ejecución" items={metrics.executionStates} />
+        <MonthlyTrendChart series={data.monthlySeries} noun={{ one: "solicitud", many: "solicitudes" }} basis="Por fecha de solicitud." />
+        <YearToDateCard ytd={data.yearToDate} />
+        <ParetoCard
+          year={data.selectedYear}
+          dimensions={paretoKeys.map((key) => ({
+            key,
+            label: CHANGE_PARETO[key],
+            items: data.pareto[key],
+            ...(key === "scope" ? { unit: "menciones", note: "Un control puede afectar a varios alcances: el porcentaje es sobre el total de alcances marcados." } : {}),
+          }))}
+          active={paretoActive}
+          hrefFor={paretoHref}
+          unit="solicitudes"
+        />
       </div>
 
       <section className="trend-section">
