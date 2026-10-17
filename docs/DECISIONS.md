@@ -767,3 +767,12 @@ Decisión del responsable del proyecto. Las fichas de Desviaciones, CAPA, Contro
 - Auditorías conserva su Historial: muestra los valores registrados de cada cambio, que la Cronología no enseña.
 - Los seguimientos legacy de Reclamaciones, que solo se veían en Historial, pasan a la pestaña «Versiones».
 - El Audit Trail no cambia.
+
+## D-090 — Indicadores sin objetivos ni límites de control (2026-10-17)
+
+Decisión del responsable de Calidad. Los indicadores de los módulos son descriptivos y se valoran a final de año, fuera de la aplicación. Cierra lo que la documentación de indicadores dejaba «pendiente de decisión de Calidad».
+
+- No se fijan objetivos por KPI ni se colorean las variaciones como mejora o empeoramiento.
+- No se añade gráfico de control con límites (media ± 2σ/3σ): con pocos expedientes al mes los límites apenas avisan, y la media móvil de 12 meses ya muestra la tendencia.
+- No se añade la tasa de reclamaciones por unidades o lotes distribuidos; la aplicación no registra el volumen distribuido.
+- No se añade exportación del resumen anual.

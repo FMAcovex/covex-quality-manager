@@ -1,6 +1,6 @@
 // Cálculos compartidos de los Indicadores de los módulos: aperturas de 36 meses con media
 // móvil, acumulado del año, Pareto y antigüedad de lo abierto. Son descriptivos: sin
-// objetivos, límites de control ni plazos del PNT (pendientes de decisión de Calidad).
+// objetivos, límites de control ni plazos del PNT (D-090).
 
 const DAY_MS = 86_400_000;
 

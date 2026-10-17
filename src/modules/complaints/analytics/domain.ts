@@ -12,7 +12,7 @@ import {
 import { complaintCategoryOptions, complaintSourceOptions } from "@/modules/complaints/domain";
 
 // Tendencias y pendientes de Reclamaciones (2026-10-17). Descriptivos: sin objetivos ni
-// plazos del PNT; la tasa por unidades o lotes vendidos queda pendiente (no hay ese dato).
+// plazos del PNT; sin tasa por unidades o lotes distribuidos (D-090).
 
 export type ComplaintTrendRow = {
   openingYear: number | null;

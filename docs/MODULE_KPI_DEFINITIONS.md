@@ -2,7 +2,7 @@
 
 Desviaciones y CAPA tienen su propio documento ([DEVIATION_KPI_DEFINITIONS.md](DEVIATION_KPI_DEFINITIONS.md), [CAPA_KPI_DEFINITIONS.md](CAPA_KPI_DEFINITIONS.md)). Aquí se recogen las reglas comunes de las piezas añadidas el 2026-10-17 y las definiciones de los otros tres módulos.
 
-Todos los indicadores son **descriptivos**. No hay objetivos, límites de control (±2σ/3σ) ni plazos aprobados: quedan pendientes de decisión de Calidad. No se muestran colores de «bien» o «mal» sobre las variaciones.
+Todos los indicadores son **descriptivos**. No hay objetivos, límites de control ni plazos: Calidad valora los indicadores a final de año, fuera de la aplicación (D-090). No se muestran colores de «bien» o «mal» sobre las variaciones.
 
 ## Reglas comunes
 
@@ -40,7 +40,7 @@ Implementadas una sola vez en `src/lib/qms/analytics/trends.ts` (cálculo) y `sr
   - % recurrentes (sobre las evaluadas);
   - mediana recepción→respuesta (por fecha de respuesta).
 - **Pareto:** categoría/motivo y origen/fuente (varios por reclamación), clasificación y departamento.
-- **Pendiente:** tasa de reclamaciones por unidades o lotes distribuidos. Necesita el volumen distribuido, que la aplicación no tiene.
+- **No incluida:** tasa de reclamaciones por unidades o lotes distribuidos (D-090).
 
 ## Devoluciones
 
