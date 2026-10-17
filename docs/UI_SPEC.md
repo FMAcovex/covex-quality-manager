@@ -35,7 +35,7 @@ Los módulos no implementados pueden ocultarse o aparecer deshabilitados; no sim
 - Expedientes por módulo en una tabla (total, abiertos, cerrados, borradores y enlace al listado), con fila de totales; los módulos sin expedientes se atenúan. Documentación controlada en una línea propia. En móvil cada módulo es una fila compacta.
 - Se retiran la fila de cinco tarjetas de totales (sus datos están en la tabla) y «Accesos a los módulos» (duplicaba el menú).
 - Textos de negocio: «Año de apertura» en lugar de «Año de cohorte» y «Plazos vencidos y próximos» en lugar de «Tareas del sistema» u «obligaciones». El tiempo de consulta pasa a un título emergente al pie.
-- La tendencia de 5 años no cambia.
+- Sin gráfico de evolución en el inicio (decisión del responsable del proyecto, 17/10/2026): el histórico se consulta en la pestaña Indicadores de cada módulo, enlazada desde su fila de la tabla. La bandeja de plazos ocupa todo el ancho.
 
 ## Desviaciones — página de entrada
 

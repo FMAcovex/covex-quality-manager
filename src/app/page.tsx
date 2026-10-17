@@ -55,9 +55,11 @@ async function HomePageAuthenticatedContent({
     asOf: now,
   });
   const department = data.departments.some(d => d.id === requestedDepartment) ? requestedDepartment! : "";
-  const selectedModule = selectedScope === "ALL" ? "DEVIATION" : selectedScope;
-  const moduleIndicators = DASHBOARD_MODULES.find(m => m.key === selectedModule);
-  const peak = Math.max(1, ...data.trend.map(x => x.total ?? 0));
+  // El análisis histórico está en la pestaña Indicadores de cada módulo (no en el inicio).
+  const indicatorsHref = (module: DashboardModule) => {
+    const href = DASHBOARD_MODULES.find(m => m.key === module)?.indicatorHref;
+    return href ? href + "?year=" + String(year ?? now.getUTCFullYear()) + (department ? "&department=" + encodeURIComponent(department) : "") : null;
+  };
   const active = data.metrics.reduce((sum, m) => sum + m.open, 0);
   const draft = data.metrics.reduce((sum, m) => sum + m.draft, 0);
   const closed = data.metrics.reduce((sum, m) => sum + m.closed, 0);
@@ -90,7 +92,7 @@ async function HomePageAuthenticatedContent({
         <div>
           <p className="eyebrow">COVEX · Sistema de Calidad</p>
           <h1>Panel de Calidad</h1>
-          <p>Estado de los expedientes, próximos plazos y evolución del Sistema de Calidad.</p>
+          <p>Estado de los expedientes y plazos del Sistema de Calidad.</p>
         </div>
         <div className="pilot-callout">
           <strong>Versión piloto</strong>
@@ -165,7 +167,7 @@ async function HomePageAuthenticatedContent({
                   <td className="dashboard-module-open" data-label="Abiertos">{number(item.open)}</td>
                   <td data-label="Cerrados">{number(item.closed)}</td>
                   <td data-label="Borradores">{number(item.draft)}</td>
-                  <td className="dashboard-module-link"><Link href={moduleListHref(item.href, state, year, department)} className="summary-link">Abrir →</Link></td>
+                  <td className="dashboard-module-link">{indicatorsHref(item.module) ? <Link href={indicatorsHref(item.module)!} className="summary-link dashboard-indicators-link">Indicadores</Link> : null}<Link href={moduleListHref(item.href, state, year, department)} className="summary-link">Abrir →</Link></td>
                 </tr>
               ))}
             </tbody>
@@ -184,7 +186,7 @@ async function HomePageAuthenticatedContent({
         )}
       </section>
 
-      <div className="dashboard-two-col">
+      <div className="dashboard-tasks-row">
         <section id="dashboard-tasks" className="dashboard-section dashboard-task-section" aria-labelledby="dashboard-tasks-title">
           <div className="dashboard-heading">
             <div><p className="eyebrow">Acción y seguimiento</p><h2 id="dashboard-tasks-title">Plazos vencidos y próximos</h2></div>
@@ -218,30 +220,6 @@ async function HomePageAuthenticatedContent({
             {data.page < data.pageCount && <Link className="button small" href={queryLink(query, data.page + 1)}>Siguiente</Link>}
             </div>
           </nav>
-        </section>
-
-        <section className="dashboard-section dashboard-trend-section" aria-labelledby="dashboard-trend-title">
-          <div className="dashboard-heading"><div><p className="eyebrow">KPI históricos</p><h2 id="dashboard-trend-title">Evolución de 5 años</h2></div></div>
-          {data.trend.length ? <>
-            <p className="dashboard-trend-module">{moduleName(selectedModule as DashboardModule)} <span>Expedientes por año de apertura</span></p>
-            <p className="dashboard-hint">Hasta {year ?? now.getUTCFullYear()} · los años sin cobertura no equivalen a cero.</p>
-            <div className="dashboard-trend-rows" aria-label="Tendencia quinquenal">
-              {data.trend.map(item => (
-                <div key={item.year} className="dashboard-trend-row">
-                  <strong>{item.year}</strong>
-                  <div className="dashboard-trend-track">
-                    {item.total !== null && <span style={{width: Math.max(item.total ? 2 : 0, (item.total / peak) * 100) + "%"}} aria-hidden="true" />}
-                  </div>
-                  <span>{item.total === null ? "Sin datos" : number(item.total)}</span>
-                </div>
-              ))}
-            </div>
-            {moduleIndicators?.indicatorHref && <Link className="summary-link" href={moduleIndicators.indicatorHref + "?year=" + String(year ?? now.getUTCFullYear()) + (department ? "&department=" + encodeURIComponent(department) : "")}>Ver indicadores completos →</Link>}
-          </> : <>
-            <p className="dashboard-hint">Auditorías y PNT utilizan reglas documentales y estados específicos. No se representa una tendencia de expedientes QMS sin una definición histórica comparable.</p>
-            <Link className="summary-link" href={selectedScope === "PNT" ? "/controlled-documents" : "/audits"}>Consultar el módulo →</Link>
-          </>}
-          <div className="dashboard-footnote">El recuento por año de apertura no coincide con los indicadores por fecha de cierre o de eficacia. Consulta cada módulo para sus definiciones.</div>
         </section>
       </div>
 
