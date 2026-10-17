@@ -755,3 +755,5 @@ Detalle técnico:
 - permiso «Adjuntar documentos».
 
 La demo local instala el PNT de OOS si se copia en `plantillas`.
+
+**Ampliación del 17/10/2026 (anexos sin encabezado):** los anexos OOS en uso de la carpeta «FUERA DE ESPECIFICACIONES» no llevan encabezado y solo numeran la página. Cada anexo se deriva desde el título de su formulario, sin encabezado, pie ni títulos del PNT, y «Página n de X» se completa con el total de páginas del formulario. La derivación anterior de OOS-3 del mismo PNT se sustituye al reinstalar, con cambio de configuración `TEMPLATE_REDERIVED`; cualquier otro binario distinto sigue sin sustituirse (`OOS_DESIGN.md` §8).

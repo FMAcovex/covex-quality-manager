@@ -66,6 +66,13 @@ function render(template: Buffer, fill: (xml: string) => string) {
   return writeZip(entries);
 }
 
+/** «Página n de X»: as in the completed annexes, X is the number of pages of the form (one table each). */
+export function completeFormPageCount(xml: string) {
+  const total = (xml.match(/Página\s*\d+\s*de/g) ?? []).length;
+  if (!total) return xml;
+  return xml.replace(/(Página\s*\d+\s*de\s*(?:<\/w:t>(?:(?!<w:t[\s>])[\s\S])*?<w:t(?:\s[^>]*)?>)?)X(?=<\/w:t>)/g, `$1${total}`);
+}
+
 type Verdict = { verdict: OosVerdict | null; quantity: string | null; destroy: string | null; returned: string | null; other: string | null };
 
 /** DICTAMEN block, identical in both annexes: APROBADO/CANTIDAD, RECHAZADO/DESTRUIR-DEVOLVER-CANTIDAD, OTROS/INDICAR. */
@@ -123,7 +130,7 @@ export function fillOosAnnexIII(template: Buffer, record: OosDocumentRecord) {
     set(2, 13, 2, date(record.phaseIIssuedAt), { replaceHint: true });
     set(2, 14, 0, text(record.phaseIApprovedBy), { mode: "paragraphs" });
     set(2, 14, 2, date(record.phaseIApprovedAt), { replaceHint: true });
-    return xml;
+    return completeFormPageCount(xml);
   });
 }
 
@@ -142,7 +149,7 @@ export function fillOosAnnexIV(template: Buffer, record: OosDocumentRecord) {
     set(1, 8, 0, text(record.phaseIIIssuedBy), { mode: "paragraphs" });
     set(1, 8, 2, date(record.phaseIIIssuedAt), { replaceHint: true });
     set(1, 9, 0, text(record.phaseIIAffectedDepartments), { mode: "paragraphs" });
-    return xml;
+    return completeFormPageCount(xml);
   });
 }
 
