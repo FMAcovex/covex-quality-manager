@@ -1303,6 +1303,27 @@
       "public": true
     },
     {
+      "file": "src/app/api/oos/[id]/annex-iii/route.ts",
+      "method": "GET",
+      "module": "OOS",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/oos/[id]/annex-iv/route.ts",
+      "method": "GET",
+      "module": "OOS",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/oos/export/annex-vi/route.ts",
+      "method": "GET",
+      "module": "OOS",
+      "permission": "EXPORT",
+      "public": false
+    },
+    {
       "file": "src/app/api/qms/[id]/administrative-status/route.ts",
       "method": "POST",
       "module": "QMS",

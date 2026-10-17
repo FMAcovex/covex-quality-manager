@@ -106,3 +106,12 @@ export function getOosOrigins(targetRecordId: string) {
     orderBy: { createdAt: "asc" },
   });
 }
+
+/** Anexo VI: OOS codificados del año, sin borradores ni anulados, por número de OOS. */
+export function getOosAnnexVIRecords(year: number) {
+  return prisma.oosRecord.findMany({
+    where: { status: { not: "DRAFT" }, qmsRecord: { year, isActive: true, businessCode: { not: null } } },
+    include: { qmsRecord: { include: { sourceRelations: { where: { isActive: true }, include: { targetRecord: true }, orderBy: { createdAt: "asc" } } } } },
+    orderBy: { qmsRecord: { businessCode: "asc" } },
+  });
+}

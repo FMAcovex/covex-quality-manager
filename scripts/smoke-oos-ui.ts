@@ -2,13 +2,16 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { type Page } from "playwright";
 import { chromium } from "./auth-fixtures/browser";
+import { createHash } from "node:crypto";
 import { prisma } from "../src/lib/db";
+import { syntheticWorkingDocumentTemplate } from "./audit-fixtures/working-document-template";
 
 // D-088, OOS-1/OOS-2: alta, apertura, Fase I → Fase II, cierre, relaciones y Review desde la interfaz real.
 const base = process.env.OOS_UI_BASE_URL;
 const marker = `OOS-UI-${randomUUID()}`;
 const ids: string[] = [];
 const targets: string[] = [];
+const templates: string[] = [];
 
 async function view(page: Page, path: string) {
   await page.goto(`${base}${path}`);
@@ -119,6 +122,25 @@ async function main() {
     await view(page, `/capa/${capa.capa!.id}?tab=relations`);
     assert.equal(await page.getByRole("link", { name: opened.qmsRecord.businessCode!, exact: true }).count(), 0);
 
+    // OOS-3: Anexos III y IV desde la ficha y Anexo VI desde el listado, con plantillas sintéticas de prueba.
+    const bytes = syntheticWorkingDocumentTemplate();
+    for (const documentType of ["OOS_ANNEX_III", "OOS_ANNEX_IV", "OOS_ANNEX_VI"] as const) {
+      const template = await prisma.templateVersion.create({ data: { module: "OOS", documentType, versionCode: `UI-${marker.slice(-8)}`, effectiveFrom: new Date("2000-01-01"), fileName: "synthetic-only.docx", fileData: new Uint8Array(bytes), fileSize: bytes.length, checksum: createHash("sha256").update(bytes).digest("hex") } });
+      templates.push(template.id);
+    }
+    await view(page, `/oos/${draft.id}`);
+    for (const annex of ["III", "IV"]) {
+      const download = page.waitForEvent("download");
+      await page.getByRole("link", { name: `Anexo ${annex}`, exact: true }).click();
+      assert.match((await download).suggestedFilename(), new RegExp(`^Anexo_${annex}_OOS_MD_\\d{3}_2096\\.docx$`));
+    }
+    assert.deepEqual((await prisma.generatedDocument.findMany({ where: { qmsRecordId: draft.qmsRecordId }, orderBy: { generatedAt: "asc" } })).map((item) => item.documentType), ["OOS_ANNEX_III", "OOS_ANNEX_IV"]);
+    await view(page, "/oos");
+    await page.locator(".export-menu summary").click();
+    const listing = page.waitForEvent("download");
+    await page.getByRole("link", { name: "Anexo VI oficial · año 2096", exact: true }).click();
+    assert.equal((await listing).suggestedFilename(), "Anexo_VI_Listado_general_OOS_2096.docx");
+
     // Ficha, pestañas, listado y buscador global.
     for (const tab of ["summary", "phase-i", "phase-ii", "relations", "review", "timeline", "audit-trail", "history"]) {
       await view(page, `/oos/${draft.id}?tab=${tab}`);
@@ -137,11 +159,13 @@ async function main() {
       }
     }
     assert.deepEqual(errors, []);
-    console.log(`OOS UI OK: borrador sin código, apertura con datos iniciales obligatorios y ${opened.qmsRecord.businessCode}, Fase I → Fase II, cierre no concluyente, vínculo y desvinculación de CAPA con origen visible en la CAPA, observación de Review sin versión, pestañas, listado, buscador y 1440/768/390 sin desbordes.`);
+    console.log(`OOS UI OK: borrador sin código, apertura con datos iniciales obligatorios y ${opened.qmsRecord.businessCode}, Fase I → Fase II, cierre no concluyente, vínculo y desvinculación de CAPA con origen visible en la CAPA, observación de Review sin versión, descarga de los Anexos III, IV y VI, pestañas, listado, buscador y 1440/768/390 sin desbordes.`);
   } finally {
     await browser.close();
     await prisma.reviewMessage.deleteMany({ where: { reviewThread: { qmsRecordId: { in: ids } } } });
     await prisma.reviewThread.deleteMany({ where: { qmsRecordId: { in: ids } } });
+    await prisma.generatedDocument.deleteMany({ where: { qmsRecordId: { in: ids } } });
+    await prisma.templateVersion.deleteMany({ where: { id: { in: templates } } });
     await prisma.qmsRelation.deleteMany({ where: { sourceRecordId: { in: ids } } });
     await prisma.changeHistory.deleteMany({ where: { qmsRecordId: { in: targets } } });
     await prisma.capa.deleteMany({ where: { qmsRecordId: { in: targets } } });

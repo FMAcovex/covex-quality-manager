@@ -7,7 +7,7 @@ export const oosModule: QmsRecordModuleContract = {
   labels: { singular: "OOS", plural: "OOS" },
   href: "/oos",
   indicatorsHref: null,
-  permissions: ["READ", "CREATE", "EDIT", "REVIEW", "CLOSE", "ANNUL", "DOWNLOAD"],
+  permissions: ["READ", "CREATE", "EDIT", "REVIEW", "CLOSE", "ANNUL", "DOWNLOAD", "EXPORT", "GENERATE_DOCUMENT"],
   // D-088: el OOS origina CAPA y, en casos poco habituales, una desviación.
   relations: {
     outgoing: [

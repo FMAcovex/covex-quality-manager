@@ -117,3 +117,35 @@ it("captures OOS relations to CAPA and the administrative annulment across both 
   expect((await status(qa, "REACTIVATE", randomUUID())).status).toBe(200);
   expect((await inspector.qmsRecord.findUniqueOrThrow({ where: { id: record.qmsRecordId } })).isActive).toBe(true);
 }, 60000);
+
+it("captures OOS Anexo III/IV working documents (OO06) with generation permission, receipt and replay", async () => {
+  const { prisma } = await import("../../src/lib/db"), { businessSqlFixture } = await import("./database"), { createHash } = await import("node:crypto");
+  const { syntheticWorkingDocumentTemplate } = await import("./working-document-template");
+  const bytes = syntheticWorkingDocumentTemplate();
+  for (const documentType of ["OOS_ANNEX_III", "OOS_ANNEX_IV"] as const) {
+    await asUser(qa, () => businessSqlFixture(prisma, qa.id, randomUUID(), "TR04", "OOS", "MANAGE_CONFIGURATION", "Synthetic template preparation only in owned test database", async tx => {
+      await tx.templateVersion.create({ data: { module: "OOS", documentType, versionCode: "SYNTHETIC-B2", effectiveFrom: new Date("2026-10-13"), fileName: "synthetic-only.docx", fileData: new Uint8Array(bytes), fileSize: bytes.length, checksum: createHash("sha256").update(bytes).digest("hex") } });
+    }));
+  }
+  const record = await inspector.oosRecord.findUniqueOrThrow({ where: { id: oosId } });
+  expect(record.phaseIDisposition).toBe("FULL_SCALE");
+  for (const annex of ["annex-iii", "annex-iv"] as const) {
+    const { GET } = annex === "annex-iii" ? await import("../../src/app/api/oos/[id]/annex-iii/route") : await import("../../src/app/api/oos/[id]/annex-iv/route");
+    const requestId = randomUUID(), request = () => new Request(`http://127.0.0.1/api/oos/${record.id}/${annex}`, { headers: { "idempotency-key": requestId } }), params = { params: Promise.resolve({ id: record.id }) };
+    expect((await asUser(reader, () => GET(request(), params))).status).toBe(403);
+    const response = await asUser(qa, () => GET(request(), params));
+    if (response.status !== 200) throw Error("Synthetic OOS annex rejected: " + annex + " " + response.status + " " + await response.text());
+    const output = new Uint8Array(await response.arrayBuffer());
+    const op = await operation(requestId);
+    expect(op.operation).toBe("OO06"); expect(op.accessPermission).toBe("GENERATE_DOCUMENT");
+    expect(op.targets.some(target => target.rootKey === "QMS_RECORD:" + record.qmsRecordId)).toBe(true);
+    const document = await inspector.generatedDocument.findUniqueOrThrow({ where: { id: op.events.find(event => event.entityType === "GeneratedDocument" && event.fieldPath === "id")!.entityId } });
+    expect(document.documentType).toBe(annex === "annex-iii" ? "OOS_ANNEX_III" : "OOS_ANNEX_IV");
+    expect(document.generatedByText).toBe(qa.name); expect(document.fileData).toBeNull();
+    expect(document.checksum).toBe(createHash("sha256").update(output).digest("hex"));
+    const before = await inspector.generatedDocument.count({ where: { qmsRecordId: record.qmsRecordId } });
+    const repeated = await asUser(qa, () => GET(request(), params));
+    expect(new Uint8Array(await repeated.arrayBuffer())).toEqual(output);
+    expect(await inspector.generatedDocument.count({ where: { qmsRecordId: record.qmsRecordId } })).toBe(before);
+  }
+}, 60000);

@@ -51,6 +51,7 @@
     "templates:changes:install": "tsx scripts/install-change-control-templates.ts",
     "templates:complaints:install": "tsx scripts/install-complaint-template.ts",
     "templates:returns:install": "tsx scripts/install-return-template.ts",
+    "templates:oos:install": "tsx scripts/install-oos-templates.ts",
     "import:capa": "tsx scripts/import-historical-capa.ts",
     "capa:import:smoke": "tsx scripts/smoke-capa-import.ts",
     "capa:smoke": "tsx scripts/smoke-capa.ts",

@@ -3,6 +3,8 @@ import { expect, it } from "vitest";
 import contract from "../../../ops/backup/audit-contract-oos.json";
 import previous from "../../../ops/backup/audit-contract-c.json";
 import { auditOosContract, oosCapturePolicy, oosCaptureTable, oosMigration, oosPolicySql } from "../../../scripts/audit-oos-build";
+import documentsContract from "../../../ops/backup/audit-contract-oos-documents.json";
+import { auditOosDocumentsContract, oosDocumentsMigration } from "../../../scripts/audit-oos-documents-build";
 
 const replaced = ["covex_b2_authorize_root", "covex_b2_before", "covex_b2_begin", "covex_b2_critical_mutation", "covex_b2_observe_maturity"];
 
@@ -28,4 +30,14 @@ it("extends only the OO prefix, the OOS module and the OosRecord domain table", 
   expect(sql.match(/'ReturnRecord','OosRecord','Audit'/g)).toHaveLength(2);
   expect(oosCaptureTable.fields.filter(field => field.critical).map(field => field.fieldPath)).toEqual(["investigationResult", "phaseIConclusion", "phaseIDisposition", "phaseIInvestigation", "phaseIIConclusion", "phaseIIProductionReview", "phaseIIVerdict", "phaseIVerdict"].sort());
   expect(oosCapturePolicy().filter(table => table.entityType === "OosRecord")).toHaveLength(1);
+});
+
+it("admits OO06 OOS annex generation by widening only covex_b2_begin (D-088, OOS-3)", () => {
+  expect(auditOosDocumentsContract()).toEqual(documentsContract);
+  const sql = readFileSync(oosDocumentsMigration, "utf8");
+  expect(sql).toContain("DE0[1-7]|OO0[1-6]|AU0[1-9]");
+  expect(sql).not.toContain("OO0[1-5]");
+  expect(sql).not.toMatch(/^INSERT INTO "AuditPolicyRequirement"/m);
+  expect(Object.keys(documentsContract.functions).filter(name => documentsContract.functions[name as keyof typeof documentsContract.functions].sha256 !== contract.functions[name as keyof typeof contract.functions]?.sha256)).toEqual(["covex_b2_begin"]);
+  expect({ ...documentsContract, contractVersion: contract.contractVersion, functions: contract.functions }).toEqual(contract);
 });

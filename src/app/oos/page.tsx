@@ -10,6 +10,7 @@ import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/q
 import { listSavedViews } from "@/lib/saved-views/queries";
 import { formatOosDate, oosInvestigationResultLabels, oosPhase, oosStatusLabels } from "@/modules/oos/domain";
 import { getOosList } from "@/modules/oos/queries";
+import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,9 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
     status: queryList(query.status),
     result: queryList(query.result),
   };
-  const [{ rows, years, counters, page, pageSize, count }, savedViews] = await Promise.all([getOosList(filters), listSavedViews("/oos")]);
+  const [{ rows, years, counters, page, pageSize, count }, savedViews, annexVIReady] = await Promise.all([getOosList(filters), listSavedViews("/oos"), isActiveTemplateAssetReady("OOS", "OOS_ANNEX_VI")]);
+  // Anexo VI: un listado por año (§5.2 del PNT), del año en curso y de los años con OOS.
+  const listingYears = [...new Set([new Date().getFullYear(), ...years])].sort((a, b) => b - a);
   const toDetail = (id: string) => qmsWithReturnTo(`/oos/${id}`, "/oos", qmsListingUrl("/oos", query));
   const pageParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => appendFilterValues(pageParams, key, value));
@@ -39,7 +42,10 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
   return <section className="workspace qms-list-ux-b">
     <div className="page-heading">
       <div><p className="eyebrow">Sistema de Calidad</p><h1>OOS</h1><p>Resultados fuera de especificación · GC-10/014/04.</p></div>
-      <div className="heading-actions"><PermissionGate permission="CREATE" module="OOS"><Link href="/oos/new" className="button primary">+ Nuevo OOS</Link></PermissionGate></div>
+      <div className="heading-actions">
+        <PermissionGate permission="CREATE" module="OOS"><Link href="/oos/new" className="button primary">+ Nuevo OOS</Link></PermissionGate>
+        <PermissionGate permission="EXPORT" module="OOS"><details className="export-menu"><summary className="button">Exportar ▾</summary><div className="export-popover"><strong>Anexo VI · Listado general de OOS</strong>{annexVIReady ? listingYears.map((year) => <a key={year} className="export-link" href={`/api/oos/export/annex-vi?year=${year}`}>Anexo VI oficial · año {year}</a>) : <span className="template-missing-note">Anexo VI bloqueado · plantilla oficial pendiente de cargar.</span>}</div></details></PermissionGate>
+      </div>
     </div>
     <form method="get" className="toolbar-form">
       <div className="filter-panel operational">

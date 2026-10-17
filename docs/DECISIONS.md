@@ -736,3 +736,12 @@ La migración aditiva `20261017000200_b2_oos_capture` hace lo siguiente:
 - se acompaña del contrato `ops/backup/audit-contract-oos.json`.
 
 Los campos críticos de OOS (investigación, conclusión, disposición, dictámenes y resultado) son una propuesta técnica por analogía con los demás módulos y siguen pendientes de aceptación formal de QA/DT, como el resto de la matriz. Sin activación ni validación GMP por estar implementado (D-076).
+
+**Ampliación del 17/10/2026 (OOS-3):** Calidad corrige el encabezado de los anexos del PNT GC-10/014/04 a 04. Los Anexos III, IV y VI se derivan del propio PNT, verificado por SHA-256, y se cumplimentan sin rediseño (`OOS_DESIGN.md` §8):
+
+- cada OOS usa la plantilla vigente en su fecha de emisión, sin campos nuevos en el expediente;
+- el Anexo VI marca el estado de seguimiento con el fondo de la fila, amarillo pendiente y verde cerrado, como pide §5.2;
+- las descargas de los Anexos III y IV son documentos de trabajo con recibo y operación OO06 en la matriz (69 operaciones);
+- el módulo admite además los permisos «Exportar» y «Generar documentos».
+
+Adjuntar el anexo firmado a mano queda pendiente, porque la custodia de originales firmados requiere versiones funcionales.

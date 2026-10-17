@@ -9,7 +9,7 @@ import { requiresAuditReason, persistenceFormError } from "../forms/persistence-
 import { preserveFormState, type PreservedFormState } from "../forms/preserved-state";
 
 // Trusted action semantics. Field-level SQL events retain the actual persisted
-// changes when one save spans several rows in the 68-operation matrix (63 + OOS, D-088).
+// changes when one save spans several rows in the 69-operation matrix (63 + OOS, D-088).
 const operations: Record<string, string> = {
   createDeviationAction: "DV01", updateDeviationAction: "DV02", addDeviationFollowupAction: "DV05", addDeviationRelationAction: "DV08", unlinkDeviationCapaAction: "DV08", uploadDeviationSignedPdfAction: "DV08",
   createCapaAction: "CA01", updateCapaAction: "CA02", addCapaFollowupAction: "CA04", addCapaRelationAction: "CA07", unlinkCapaOriginAction: "CA07", uploadCapaSignedPdfAction: "CA08",

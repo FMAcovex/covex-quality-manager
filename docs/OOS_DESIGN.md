@@ -106,25 +106,66 @@ Sin relación con Control de cambios, que no participa en relaciones operativas 
 
 ## 7. Permisos
 
-El módulo admite consultar, crear, editar, revisar, cerrar, anular y descargar, que se asignan en el editor de roles (D-086). El PNT asigna:
+El módulo admite consultar, crear, editar, revisar, cerrar, anular, descargar, exportar y generar documentos (estos dos últimos desde OOS-3), que se asignan en el editor de roles (D-086). El PNT asigna:
 
 - la numeración, la Fase I y su emisión a **Control de Calidad**;
 - la aprobación de la Fase I, la Fase II, la interpretación de resultados y la decisión sobre el lote a **Garantía de Calidad**.
 
-Los roles concretos se configuran en el editor de roles. La aplicación no implementa firma electrónica ni aprobación GMP (D-073, D-074): registra quién emite y aprueba; adjuntar el documento firmado a mano llegará con los anexos (OOS-3).
+Los roles concretos se configuran en el editor de roles. La aplicación no implementa firma electrónica ni aprobación GMP (D-073, D-074): registra quién emite y aprueba; adjuntar el documento firmado a mano queda pendiente (sección 8).
 
 ## 8. Documentos
 
-| Documento | Fuente | Salida |
-| --- | --- | --- |
-| Anexo III — Fase I | Rango del PNT 04 entre «Anexo III» y «Anexo IV» | Word cumplimentado |
-| Anexo IV — Fase II | Rango del PNT 04 entre «Anexo IV» y «Anexo V» | Word cumplimentado |
-| Anexo VI — Listado general de OOS | Tabla del PNT 04 | Pendiente de decisión (sección 10) |
+Implementado en OOS-3 (17/10/2026).
 
-- Se extraen del PNT con el mecanismo `word-range` ya usado en Devoluciones (`scripts/install-template-bundle.ts`), que comprueba el SHA-256 del binario antes de instalar. Las plantillas se cumplimentan sin rediseñarlas.
-- **Requisito previo:** Calidad corrige en el PNT controlado el encabezado «GC-10/014/03» de los anexos. El hash que verifica el instalador será el del binario corregido.
-- Los binarios corporativos no se versionan en Git; se registran nombre y SHA-256 al implementar.
-- Una nueva revisión del PNT se incorpora como nueva versión de plantilla; los expedientes conservan la versión con la que se crearon (AGENTS.md).
+| Documento | Fuente | Salida | Cuándo |
+| --- | --- | --- | --- |
+| Anexo III — Fase I | Rango del PNT 04 desde el primer «Anexo III» hasta «Anexo IV» | Word cumplimentado | OOS abierto o cerrado |
+| Anexo IV — Fase II | Desde el primer «Anexo IV» hasta «ANEXO V» | Word cumplimentado | Solo con disposición «Investigación a gran escala» |
+| Anexo VI — Listado general de OOS | Desde «ANEXO VI» hasta el final | Word del año, para imprimir y firmar a mano (§5.2) | Desde el listado: año en curso y años con OOS |
+
+**Fuente controlada.** PNT `GC-10-014-04 (15-06-2025) EN REDACCION.docx`, con el encabezado de los anexos ya corregido a 04 por Calidad. Su SHA-256 es `1dc7d0a7f0937f90b75f6ba94f3cdbaf0cfdd3b6558503c2f1658d1fd837ad40`.
+
+**Instalación.**
+- `pnpm templates:oos:install -- <PNT.docx>` comprueba el SHA-256 y deriva los tres anexos.
+- Los registra como plantillas versión 04, vigentes desde el 15/06/2025, con su cambio de configuración.
+- Una versión ya registrada con otro binario no se sustituye.
+- SHA-256 de los anexos derivados, estable entre ejecuciones:
+  - Anexo III: `66d885876c2ef9b6de56aed21f8b4b6a81b06a6b3142674e17c3dbeaa1ee6903`;
+  - Anexo IV: `bb30562e5893887f5f932d8696e526971dd31fc46e25874295e55dbd591fd391`;
+  - Anexo VI: `40c851beff49620f41fcda800028d0b33869d83c8af100c874a09b5054d85007`.
+- El binario corporativo no se versiona en Git.
+
+**Cumplimentación sin rediseño.**
+- Se rellenan las celdas existentes y se conservan etiquetas, propiedades de celda y tipografía del párrafo.
+- Las indicaciones en gris («fecha», «hora», «analista», «turno», «(fecha)») se sustituyen por el dato cuando existe.
+- Los textos libres van debajo de la indicación del anexo, por ejemplo «(Establecer causa raíz)».
+- La firma sigue siendo manuscrita: en «Emitido por» y «Aprobado por» se escribe el nombre y la fecha registrados, sin firma electrónica (D-073, D-074).
+- No se cumplimentan «Copias / Protocolo de lote» ni «Originales / CC» porque el expediente no registra esos datos.
+- Dictamen:
+  - APROBADO: «X» y cantidad;
+  - RECHAZADO: «X», destruir, devolver y cantidad;
+  - OTROS: «X» e «Indicar» con el texto y la cantidad.
+
+**Anexo VI.**
+- Una fila por OOS codificado del año, sin borradores ni anulados, ordenadas por número.
+- Columnas:
+  - Nº OOS;
+  - fecha de apertura: la fecha de emisión del informe;
+  - material afectado y lote;
+  - descripción de la detección;
+  - investigación / CAPA: resultado de la investigación, o «En curso · Fase I/II», y expedientes CAPA o Desviación derivados;
+  - fecha de cierre.
+- Las 13 filas de la plantilla se rellenan en su sitio. Si hay más OOS, se repite la última fila.
+- El estado de seguimiento que exige §5.2 se marca con el fondo de la fila: amarillo `FFFF00` pendiente, verde `92D050` cerrado. El PNT no fija el tono exacto.
+
+**Versión de plantilla.** Cada OOS usa la plantilla vigente en su fecha de emisión, y el Anexo VI la vigente al cierre del año. Así una nueva revisión del PNT no cambia los anexos de expedientes anteriores (AGENTS.md), sin añadir campos al expediente.
+
+**Documento de trabajo y audit trail.**
+- Cada descarga de los Anexos III y IV queda registrada como documento de trabajo, con plantilla, versión y SHA-256 del fichero.
+- Con la política B2 se captura como operación OO06 (`PHASE_4B3_A.md` §3.9).
+- El Anexo VI es una exportación con permiso «Exportar» y no se archiva, como el Anexo VI de Devoluciones.
+
+**Pendiente.** Adjuntar el anexo firmado a mano. La custodia de originales firmados exige versiones funcionales del expediente, que OOS no tiene, y queda fuera de OOS-3.
 
 ## 9. Importación del histórico
 
@@ -146,6 +187,6 @@ Los roles concretos se configuran en el editor de roles. La aplicación no imple
 | OOS-1 | Modelo y migración aditiva, contrato y registro, listado, ficha, alta y edición con datos iniciales, Fase I, Fase II, resultado y cierre, codificación, permisos, búsqueda, panel, cronología, audit trail (pestaña), anulación y pruebas |
 | OOS-2 | Relaciones con CAPA y Desviación y revisión (Review) |
 | OOS-2b | Captura del audit trail B2 en las operaciones de OOS (OO01–OO05): matriz de `PHASE_4B3_A.md` §3.9, política de captura de `OosRecord`, funciones SQL y contrato de copia de seguridad |
-| OOS-3 | Anexos III y IV y Anexo VI imprimible con las plantillas del PNT 04 corregido |
+| OOS-3 | Anexos III y IV y Anexo VI imprimible con las plantillas del PNT 04 corregido (sección 8), con la operación OO06 de generación documental en el audit trail |
 
 Cada PR con lint, tests, Prisma validate, build y la batería CI completa. El módulo no queda validado GMP por estar implementado (D-076).
