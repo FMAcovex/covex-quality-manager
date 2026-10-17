@@ -86,7 +86,7 @@ export async function getCapaBacklog(filters:CapaAnalyticsFilters,today=new Date
     }),
     prisma.capa.findMany({
       where:{...where,status:"CLOSED",effectivenessStatus:"PENDING",effectiveClosedAt:null},
-      select:{id:true,operationalClosedAt:true,actionType:true,qmsRecord:code},
+      select:{id:true,operationalClosedAt:true,actionType:true,nextFollowupDate:true,qmsRecord:code},
     }),
   ]);
   return {
@@ -96,6 +96,7 @@ export async function getCapaBacklog(filters:CapaAnalyticsFilters,today=new Date
     })),today),
     effectiveness:buildCapaEffectivenessBacklog(pendingEffectiveness.map((r)=>({
       id:r.id,code:qmsRecordDisplayCode(r.qmsRecord),operationalClosedAt:r.operationalClosedAt,actionType:r.actionType,
+      nextFollowupDate:r.nextFollowupDate,
     })),today),
   };
 }

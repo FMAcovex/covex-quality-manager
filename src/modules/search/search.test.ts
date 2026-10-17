@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { normalizeGlobalQuery, rankHits, summarize } from "@/modules/search/ranking";
+import { normalizeGlobalQuery, rankHits, summarize, lotSummary } from "@/modules/search/ranking";
 import type { GlobalSearchHit } from "@/modules/search/types";
 
 vi.mock("server-only", () => ({}));
@@ -31,5 +31,12 @@ describe("Buscador global — cobertura del registro", () => {
     const { moduleSearchProviders } = await import("@/modules/search-registry");
     const { qmsModuleKeys } = await import("@/modules/registry");
     expect(Object.keys(moduleSearchProviders).sort()).toEqual([...qmsModuleKeys].sort());
+  });
+});
+
+describe("lotSummary", () => {
+  it("muestra los lotes informados sin repetir y omite los vacíos", () => {
+    expect(lotSummary("L-01", null, " L-02 ", "L-01", "")).toBe("Lote L-01 / L-02");
+    expect(lotSummary(null, undefined, "  ")).toBeNull();
   });
 });

@@ -90,10 +90,16 @@ export function CapaFollowupForm({
         </select>
       </label>
       <label className="field">
-        <span>Próxima fecha de seguimiento</span>
+        <span>
+          {status === "CLOSED" && effectivenessStatus === "PENDING"
+            ? "Fecha prevista de verificación de eficacia *"
+            : `Próxima fecha de seguimiento${status === "OPEN" ? " *" : ""}`}
+        </span>
         <input type="date" name="nextFollowupDate" />
         <small className="muted-note">
-          Obligatoria si la CAPA permanece abierta; útil para una verificación de eficacia posterior.
+          {status === "CLOSED" && effectivenessStatus === "PENDING"
+            ? "La eficacia se verifica en el siguiente seguimiento tras cerrar las acciones, antes del cierre efectivo."
+            : "Obligatoria si la CAPA permanece abierta."}
         </small>
       </label>
 

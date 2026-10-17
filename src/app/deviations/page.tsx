@@ -129,7 +129,7 @@ async function DeviationsPageAuthenticatedContent({
           search={
             <SearchAutocomplete
               defaultValue={filters.q ?? ""}
-              placeholder="Buscar por código, descripción, material/proceso, causa raíz, CAPA u observaciones…"
+              placeholder="Buscar por código, lote, descripción, material/proceso, causa raíz, CAPA u observaciones…"
               suggestions={rows.map((row) => ({
                 id: row.id,
                 href: toDetail(row.id),

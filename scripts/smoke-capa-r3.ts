@@ -346,6 +346,7 @@ async function main() {
         operationalClosedAt: `${year}-02-01`,
         conclusion: "Acción implantada con evidencia R3.",
         effectivenessStatus: "PENDING",
+        nextFollowupDate: `${year}-03-01`,
       }),
     );
     assert.equal(followup01.error, undefined, followup01.error);

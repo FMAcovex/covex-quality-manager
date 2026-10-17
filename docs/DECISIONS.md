@@ -776,3 +776,11 @@ Decisión del responsable de Calidad. Los indicadores de los módulos son descri
 - No se añade gráfico de control con límites (media ± 2σ/3σ): con pocos expedientes al mes los límites apenas avisan, y la media móvil de 12 meses ya muestra la tendencia.
 - No se añade la tasa de reclamaciones por unidades o lotes distribuidos; la aplicación no registra el volumen distribuido.
 - No se añade exportación del resumen anual.
+
+## D-091 — Verificación de eficacia de CAPA en el siguiente seguimiento (2026-10-17)
+
+Decisión del responsable de Calidad. La eficacia de una CAPA se verifica en el seguimiento siguiente al cierre de sus acciones, antes del cierre efectivo.
+
+- Al cerrar operativamente una CAPA con la eficacia pendiente, y en cada seguimiento posterior mientras siga pendiente, es obligatoria la fecha del próximo seguimiento, rotulada «Fecha prevista de verificación de eficacia».
+- No se crea un campo nuevo: la fecha es el próximo seguimiento que ya existía. No cambia el Anexo III.
+- Indicadores de CAPA cuenta las verificaciones vencidas (próximo seguimiento hoy o antes) y las que no tienen fecha.

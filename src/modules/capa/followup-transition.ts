@@ -170,6 +170,14 @@ export function parseCapaFollowupTransition(
     );
   }
 
+  // La verificación de eficacia se hace en el seguimiento siguiente al cierre de las acciones,
+  // antes del cierre efectivo: mientras siga pendiente, ese seguimiento debe tener fecha.
+  if (status === "CLOSED" && effectivenessStatus === "PENDING" && !effectiveClosedAt && !nextFollowupDate) {
+    errors.push(
+      "Con la eficacia pendiente, indica la fecha prevista de verificación de eficacia (próximo seguimiento).",
+    );
+  }
+
   if (status === "CANCELLED" && !cancellationReason) {
     errors.push("Una CAPA cancelada debe incluir el motivo de cancelación.");
   }

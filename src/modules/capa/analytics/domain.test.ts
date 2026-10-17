@@ -57,7 +57,14 @@ describe("CAPA: tendencias y pendientes",()=>{
     expect(backlog.oldest.find((x)=>x.code==="C-1")?.note).toBe("Correctiva · prevista superada");
   });
   it("cuenta la eficacia pendiente desde el cierre operativo",()=>{
-    const pending=buildCapaEffectivenessBacklog([{id:"a",code:"C-1",operationalClosedAt:new Date("2026-06-01"),actionType:"CORRECTIVE"}],today);
-    expect([pending.total,pending.buckets[3].count,pending.oldest[0].ageDays]).toEqual([1,1,138]);
+    const pending=buildCapaEffectivenessBacklog([
+      {id:"a",code:"C-1",operationalClosedAt:new Date("2026-06-01"),actionType:"CORRECTIVE",nextFollowupDate:new Date("2026-10-17")},
+      {id:"b",code:"C-2",operationalClosedAt:new Date("2026-10-01"),actionType:"PREVENTIVE",nextFollowupDate:new Date("2026-11-01")},
+      {id:"c",code:"C-3",operationalClosedAt:new Date("2026-10-10"),actionType:"PREVENTIVE",nextFollowupDate:null},
+    ],today);
+    expect([pending.total,pending.buckets[3].count,pending.oldest[0].ageDays]).toEqual([3,1,138]);
+    expect([pending.checkDue,pending.withoutCheckDate]).toEqual([1,1]);
+    expect(pending.oldest[0].note).toBe("Correctiva · verificación vencida");
+    expect(pending.buckets[0].tags).toEqual({PREVENTIVE:2,NO_CHECK_DATE:1});
   });
 });

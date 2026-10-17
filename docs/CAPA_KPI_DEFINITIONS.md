@@ -37,7 +37,9 @@ Mismas piezas que en Desviaciones (reglas comunes en [MODULE_KPI_DEFINITIONS.md]
   - **Fecha prevista superada:** la fecha prevista global (la más tardía de las acciones) es anterior a hoy.
   - **Sin fecha prevista:** ninguna acción tiene fecha prevista.
   - **Seguimiento vencido:** próximo seguimiento hoy o antes (mismo criterio que el listado).
-- **CAPA ejecutadas pendientes de verificar eficacia:** cerradas operativamente con eficacia Pendiente y sin cierre de eficacia (mismo criterio que el contador del listado). Días naturales desde el cierre operativo.
+- **CAPA ejecutadas pendientes de verificar eficacia:** cerradas operativamente con eficacia Pendiente y sin cierre de eficacia (mismo criterio que el contador del listado). Días naturales desde el cierre operativo. La verificación se hace en el seguimiento siguiente al cierre de las acciones (D-091), así que su fecha prevista es el próximo seguimiento:
+  - **Verificación vencida:** próximo seguimiento hoy o antes.
+  - **Sin fecha de verificación:** sin próximo seguimiento (registros anteriores a D-091).
 - **Aperturas por mes · 36 meses** con media móvil de 12 meses, por fecha de apertura.
 - **Acumulado del año** frente al mismo periodo del año anterior: aperturas, correctivas y preventivas (por apertura), ejecutadas y ejecución en plazo (por cierre operativo), eficacias evaluadas y eficacia conforme (por cierre de eficacia).
 - **Pareto** del año por departamento, origen o tipo.

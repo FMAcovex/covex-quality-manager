@@ -64,10 +64,13 @@ async function CapaIndicatorsPageAuthenticatedContent({searchParams}:{searchPara
       id="capa-effectiveness-title"
       eyebrow="Eficacia pendiente"
       title="CAPA ejecutadas pendientes de verificar eficacia"
-      description="Cerradas operativamente con la eficacia pendiente. Días naturales desde el cierre operativo. El plazo de verificación lo fija cada CAPA; los tramos son descriptivos."
+      description="Cerradas operativamente con la eficacia pendiente. Días naturales desde el cierre operativo. La verificación se hace en el seguimiento siguiente al cierre de las acciones: su fecha es el próximo seguimiento. Los tramos son descriptivos."
       summary={backlog.effectiveness}
-      columns={[{key:"CORRECTIVE",label:"Correctivas"},{key:"PREVENTIVE",label:"Preventivas"}]}
-      counters={[]}
+      columns={[{key:"CHECK_DUE",label:"Verificación vencida",alert:true},{key:"CORRECTIVE",label:"Correctivas"},{key:"PREVENTIVE",label:"Preventivas"}]}
+      counters={[
+        {value:backlog.effectiveness.checkDue,label:"con la verificación vencida",alert:true},
+        {value:backlog.effectiveness.withoutCheckDate,label:"sin fecha de verificación",alert:true},
+      ]}
       totalLabel="pendientes de eficacia"
       listHref="/capa?status=CLOSED&effectiveness=PENDING"
       listLabel="Ver en el listado"

@@ -67,6 +67,7 @@ export function oosListWhere(filters: OosListFilters): Prisma.OosRecordWhereInpu
       { qmsRecord: { sourceRelations: { some: { isActive: true, targetRecord: { OR: [{ businessCode: contains }, { annulledBusinessCode: contains }] } } } } },
       { materialName: contains },
       { lotNumber: contains },
+      { supplierLot: contains },
       { supplier: contains },
       { detectionDescription: contains },
     ] });
