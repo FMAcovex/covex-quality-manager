@@ -26,6 +26,12 @@ export function rankHits(query: string, hits: readonly GlobalSearchHit[]): Globa
     .map(({ hit }) => hit);
 }
 
+/** «Lote …» con los lotes informados, para que el resultado muestre por qué coincide. */
+export function lotSummary(...lots: Array<string | null | undefined>): string | null {
+  const values = [...new Set(lots.map((lot) => lot?.trim()).filter((lot): lot is string => Boolean(lot)))];
+  return values.length ? `Lote ${values.join(" / ")}` : null;
+}
+
 export function summarize(...parts: Array<string | null | undefined>): string {
   const text = parts.filter((part): part is string => Boolean(part?.trim())).join(" · ").replace(/\s+/g, " ").trim();
   return text.length > 160 ? `${text.slice(0, 157)}…` : text;

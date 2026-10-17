@@ -46,6 +46,7 @@ describe("Hito 10.8C3-C1: transición de seguimiento CAPA", () => {
     form.set("operationalClosedAt", "2099-02-01");
     form.set("conclusion", "Acción implantada.");
     form.set("evidenceReference", "EV-CAPA-001");
+    form.set("nextFollowupDate", "2099-03-01");
 
     const parsed = parseCapaFollowupTransition(form, {
       current: current(),
@@ -54,6 +55,22 @@ describe("Hito 10.8C3-C1: transición de seguimiento CAPA", () => {
     expect(parsed.errors).toEqual([]);
     expect(parsed.values.status).toBe("CLOSED");
     expect(parsed.values.operationalClosedAt).toBe("2099-02-01");
+  });
+
+  it("exige fecha de verificación de eficacia al cerrar con la eficacia pendiente", () => {
+    const form = baseForm();
+    form.set("status", "CLOSED");
+    form.set("operationalClosedAt", "2099-02-01");
+    form.set("conclusion", "Acción implantada.");
+    form.set("evidenceReference", "EV-CAPA-001");
+
+    const parsed = parseCapaFollowupTransition(form, {
+      current: current(),
+      hasExistingExecutionEvidence: false,
+    });
+    expect(parsed.errors).toContain(
+      "Con la eficacia pendiente, indica la fecha prevista de verificación de eficacia (próximo seguimiento).",
+    );
   });
 
   it("rechaza un cierre operativo sin evidencia en ningún seguimiento", () => {

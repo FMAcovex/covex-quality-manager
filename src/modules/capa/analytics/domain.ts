@@ -207,10 +207,25 @@ export function buildCapaBacklog(rows: CapaBacklogRow[], today: Date) {
   };
 }
 
-/** CAPA ejecutadas con la verificación de eficacia pendiente: días desde el cierre operativo. */
+/**
+ * CAPA ejecutadas con la verificación de eficacia pendiente: días desde el cierre operativo.
+ * La verificación se hace en el seguimiento siguiente al cierre de las acciones, así que su
+ * fecha prevista es el próximo seguimiento.
+ */
 export function buildCapaEffectivenessBacklog(
-  rows: Array<{ id: string; code: string; operationalClosedAt: Date | null; actionType: CapaBacklogRow["actionType"] }>,
+  rows: Array<{ id: string; code: string; operationalClosedAt: Date | null; actionType: CapaBacklogRow["actionType"]; nextFollowupDate?: Date | null }>,
   today: Date,
 ) {
-  return buildAging(rows.map((row) => ({ id: row.id, code: row.code, startDate: row.operationalClosedAt, tags: [row.actionType], note: typeLabel(row.actionType) })), today);
+  const due = (row: (typeof rows)[number]) => isDue(row.nextFollowupDate ?? null, today);
+  return {
+    ...buildAging(rows.map((row) => ({
+      id: row.id,
+      code: row.code,
+      startDate: row.operationalClosedAt,
+      tags: [row.actionType, due(row) ? "CHECK_DUE" : null, row.nextFollowupDate ? null : "NO_CHECK_DATE"].filter((tag): tag is string => Boolean(tag)),
+      note: `${typeLabel(row.actionType)}${due(row) ? " · verificación vencida" : row.nextFollowupDate ? "" : " · sin fecha de verificación"}`,
+    })), today),
+    checkDue: rows.filter(due).length,
+    withoutCheckDate: rows.filter((row) => !row.nextFollowupDate).length,
+  };
 }

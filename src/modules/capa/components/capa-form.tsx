@@ -611,7 +611,12 @@ export function CapaForm({
           />
 
           <label className={`field span-2 ${issues.nextFollowupDate?.length ? "has-error" : ""}`}>
-            <span>Fecha de próximo seguimiento{nextFollowupRequired ? " *" : ""}</span>
+            <span>
+              {recordStatus === "CLOSED" && effectivenessStatus === "PENDING"
+                ? "Fecha prevista de verificación de eficacia (próximo seguimiento)"
+                : "Fecha de próximo seguimiento"}
+              {nextFollowupRequired ? " *" : ""}
+            </span>
             <small className="muted-note">
               En edición se solicita una nueva fecha para evitar reutilizar automáticamente la del seguimiento anterior.
             </small>

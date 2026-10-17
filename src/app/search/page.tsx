@@ -17,12 +17,12 @@ async function SearchPageContent({ searchParams }: { searchParams: Promise<Query
         <div>
           <p className="eyebrow">Búsqueda</p>
           <h1>{query ? `Resultados para «${query}»` : "Buscar expedientes"}</h1>
-          <p>Código, título o descripción en todos los módulos. La búsqueda completa de cada módulo está en su listado.</p>
+          <p>Código, lote, título o descripción en todos los módulos. La búsqueda completa de cada módulo está en su listado.</p>
         </div>
       </div>
       <form className="global-search" action="/search" method="get" role="search">
         <label className="visually-hidden" htmlFor="global-search-input">Buscar en todos los módulos</label>
-        <input id="global-search-input" name="q" type="search" defaultValue={query ?? (typeof raw === "string" ? raw : "")} placeholder="Código, título o descripción" minLength={GLOBAL_SEARCH_MIN_LENGTH} maxLength={100} autoComplete="off" autoFocus />
+        <input id="global-search-input" name="q" type="search" defaultValue={query ?? (typeof raw === "string" ? raw : "")} placeholder="Código, lote, título o descripción" minLength={GLOBAL_SEARCH_MIN_LENGTH} maxLength={100} autoComplete="off" autoFocus />
         <button className="button primary" type="submit">Buscar</button>
       </form>
       {!query ? (
