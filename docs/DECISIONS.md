@@ -802,3 +802,16 @@ Decisión del responsable de Calidad. Desviaciones, CAPA, Reclamaciones y OOS ti
 - Una CAPA creada desde una desviación o reclamación hereda sus categorías, que se pueden editar.
 - Indicadores (Desviaciones, CAPA y Reclamaciones) añade el Pareto «Causa raíz (6M)». Cuenta menciones; los expedientes sin categoría salen como «Sin categoría».
 - Captura B2: campo `rootCauseCategories` (JSON, no crítico). Contrato `audit-contract-root-cause.json`, que solo amplía la política de captura.
+
+## D-093 — Inclusión en bloque al importar el índice de PNT (2026-10-17)
+
+Decisión del responsable de Calidad, para la carga inicial desde el índice de Garantía de Calidad (Excel por departamentos).
+
+- El lote de importación ofrece «Incluir en bloque» para dos grupos de filas pendientes:
+  - PNT vigentes según el índice, sin más incidencia que el aviso de fórmula y con revisión y fecha de vigencia;
+  - PNT anulados según el índice, aunque no tengan fechas ni revisión. Se cargan para conservar el código.
+- Se incluyen con los datos del índice. Las fechas o revisiones no interpretables quedan vacías.
+- Todo se importa sin verificar, como cualquier fila. La revisión y confirmación de la propuesta no cambian.
+- Las demás filas se siguen decidiendo una a una: duplicados, conflictos, errores de celda, estado sin determinar o en elaboración, y vigentes incompletos.
+- Es una sola operación auditada (PN06) con un evento DECISION que lista las filas afectadas.
+- Requisito: los departamentos de cada hoja deben existir en Configuración. Si no, la fila no entra en el bloque.

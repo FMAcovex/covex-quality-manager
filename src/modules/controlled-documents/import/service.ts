@@ -3,7 +3,8 @@ import { importDb as prisma } from "./database";
 import { previewIndex } from "../preview/service";
 import type { PreviewReport, PreviewRow } from "../preview/types";
 import { validateDepartmentForBaseCode } from "../domain";
-import { actorSchema, decisionSchema, hash, validateCandidate, MAX_BATCH_BYTES, MAX_PENDING_BATCHES, RETENTION_DAYS, type DecisionInput, type Resolution } from "./domain";
+import { bulkEligibility, bulkResolution } from "./bulk";
+import { actorSchema, bulkDecisionSchema, decisionSchema, hash, validateCandidate, MAX_BATCH_BYTES, MAX_PENDING_BATCHES, RETENTION_DAYS, type DecisionInput, type Resolution } from "./domain";
 import { auditPolicyState } from "@/lib/audit/activation";
 import { assertAuditProtection, assertAuditApplicationRole } from "@/lib/audit/protection";
 import { requireUser } from "@/lib/auth/session";
@@ -113,6 +114,34 @@ export async function decide(id: string, input: DecisionInput, db: PrismaClient 
         }
         await tx.controlledDocumentImportBatch.update({ where: { id }, data: { version: { increment: 1 } } });
         await event(tx, id, "DECISION", v.actor, { sourceKey: v.sourceKey, scope: v.scope, decision: v.decision, reason: v.reason, resolution: v.resolution || null, affectedKeys: affected.map(r => r.sourceKey) });
+    }));
+}
+/**
+ * Inclusión en bloque (D-093): incluye con los datos del índice las filas pendientes vigentes
+ * sin incidencias y las anuladas según el índice. Una sola operación auditada (PN06) y un
+ * evento DECISION con las claves afectadas; el resto se sigue decidiendo fila a fila.
+ */
+export async function decideBulk(id: string, input: { actor: string; reason: string; version: number }, db: PrismaClient = prisma, request?: ImportAuditRequest) {
+    const v = bulkDecisionSchema.parse({ ...input, actor: importActor(input.actor) });
+    return importAuditCommand(db, "DECIDE_BULK", { id, input: v }, v.reason, request, () => transaction(db, async tx => {
+        const b = await lockedBatch(tx, id, v.version); editable(b);
+        const candidates = b.rows.filter(r => r.decision === "PENDING" && !r.result).map(r => ({ r, source: rowValue(r) })).filter(c => bulkEligibility(c.source));
+        if (!candidates.length) throw new Error("No hay filas que puedan incluirse en bloque.");
+        // Misma huella que current() por fila, leída de una vez para no hacer cientos de consultas.
+        const codes = [...new Set(candidates.map(c => c.source.normalized.baseCode!))];
+        const documents = new Map((await tx.controlledDocument.findMany({ where: { baseCode: { in: codes } }, include: { revisions: { orderBy: { revisionCode: "asc" } } } })).map(d => [d.baseCode, d]));
+        const departments = new Map((await tx.department.findMany({ where: { code: { in: [...new Set(codes.map(code => code.split("/")[0]))] } } })).map(d => [d.code, d]));
+        const included: string[] = [], skipped: string[] = [];
+        for (const { r, source } of candidates) {
+            const baseCode = source.normalized.baseCode!, department = departments.get(baseCode.split("/")[0]);
+            if (!department || b.rows.some(other => other.id !== r.id && other.baseCode === baseCode && other.decision === "INCLUDE")) { skipped.push(r.sourceKey); continue; }
+            const resolution = validateCandidate(source, bulkResolution(source, department.id, v.reason));
+            await tx.controlledDocumentImportRow.update({ where: { id: r.id }, data: { decision: "INCLUDE", resolution: json(resolution), baseline: hash({ document: documents.get(baseCode) ?? null, department }), decidedBy: v.actor, decidedAt: new Date() } });
+            included.push(r.sourceKey);
+        }
+        await tx.controlledDocumentImportBatch.update({ where: { id }, data: { version: { increment: 1 } } });
+        await event(tx, id, "DECISION", v.actor, { scope: "BULK", decision: "INCLUDE", reason: v.reason, affectedKeys: included, skippedKeys: skipped });
+        return { included: included.length, skipped: skipped.length };
     }));
 }
 export type Proposal = { sourceKey: string; baseCode: string; kind: "NEW_DOCUMENT" | "NEW_REVISION" | "EXISTING" | "CONFLICT"; writes: number; reason?: string; fingerprint: string };
