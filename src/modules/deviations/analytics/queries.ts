@@ -4,7 +4,10 @@ import { prisma } from "@/lib/db";
 import {
   buildBacklog,
   buildFiveYearTrend,
+  buildMonthlySeries,
+  buildPareto,
   buildYearMetrics,
+  buildYearToDate,
   type AnalyticsRow,
 } from "@/modules/deviations/analytics/domain";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
@@ -48,7 +51,7 @@ function filterWhere(filters: DeviationAnalyticsFilters): Prisma.DeviationWhereI
   return and.length ? { AND: and } : {};
 }
 
-export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters) {
+export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters, today = new Date()) {
   const [records, departments, provenances, years, importBatches] = await Promise.all([
     prisma.deviation.findMany({
       where: filterWhere(filters),
@@ -131,6 +134,14 @@ export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters) 
     current,
     previous,
     trend,
+    // Tendencias (piloto): se calculan sobre las mismas filas, sin consultas nuevas.
+    monthlySeries: buildMonthlySeries(rows, selectedYear, coveredYears, today),
+    yearToDate: buildYearToDate(rows, selectedYear, coveredYears, today),
+    pareto: {
+      area: buildPareto(current.areas),
+      origin: buildPareto(current.origins),
+      classification: buildPareto(current.classifications),
+    },
     departments,
     provenances: provenances
       .map((item) => item.provenance)

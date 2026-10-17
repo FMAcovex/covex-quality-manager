@@ -3,6 +3,9 @@ import {
   ageInDays,
   buildBacklog,
   buildFiveYearTrend,
+  buildMonthlySeries,
+  buildPareto,
+  buildYearToDate,
   buildYearMetrics,
   closingDays,
   isKpiComplete,
@@ -127,5 +130,69 @@ describe("antigüedad de las desviaciones abiertas", () => {
   it("sin desviaciones abiertas no inventa medianas ni porcentajes", () => {
     const backlog = buildBacklog([], today);
     expect([backlog.total, backlog.medianAgeDays, backlog.buckets.every((bucket) => bucket.percentage === 0)]).toEqual([0, null, true]);
+  });
+});
+
+describe("deviation trends (pilot)", () => {
+  const opened = (iso: string, patch: Partial<AnalyticsRow> = {}) =>
+    row({ openingYear: Number(iso.slice(0, 4)), issueDate: new Date(`${iso}T00:00:00Z`), closedAt: null, status: "OPEN", ...patch });
+
+  it("builds 36 months ending at the current month, with null for uncovered years and partial current month", () => {
+    const rows = [opened("2026-10-02"), opened("2026-10-03"), opened("2025-03-15"), row({ status: "DRAFT", issueDate: new Date("2026-10-04T00:00:00Z") })];
+    const series = buildMonthlySeries(rows, 2026, new Set([2024, 2025, 2026]), new Date("2026-10-17T12:00:00Z"));
+    expect(series).toHaveLength(36);
+    expect(series[0]).toMatchObject({ year: 2023, month: 10, count: null, rolling12: null });
+    const last = series[35];
+    expect(last).toMatchObject({ year: 2026, month: 9, count: 2, partial: true, rolling12: null });
+    const sep = series[34];
+    expect(sep).toMatchObject({ year: 2026, month: 8, count: 0, partial: false });
+    // Sep 2025..Aug 2026 has no openings; Oct 2024..Sep 2025 includes March 2025.
+    expect(sep.rolling12).toBe(0);
+    expect(series.find((point) => point.year === 2025 && point.month === 8)?.rolling12).toBe(0.1);
+    // The 12-month window reaching back into uncovered 2023 has no average.
+    expect(series.find((point) => point.year === 2024 && point.month === 10)?.rolling12).toBeNull();
+    expect(series.find((point) => point.year === 2024 && point.month === 11)?.rolling12).toBe(0);
+  });
+
+  it("ends a past year in December without a partial month", () => {
+    const series = buildMonthlySeries([], 2024, new Set([2022, 2023, 2024]), new Date("2026-10-17T00:00:00Z"));
+    expect(series[35]).toMatchObject({ year: 2024, month: 11, partial: false, count: 0, rolling12: 0 });
+  });
+
+  it("compares year to date with the same day of the previous year", () => {
+    const rows = [
+      opened("2026-02-01", { classification: "CRITICAL" }),
+      opened("2026-10-17", { classification: "MAJOR" }),
+      opened("2025-10-17"),
+      opened("2025-10-18"),
+      row({ openingYear: 2025, issueDate: new Date("2025-01-01T00:00:00Z"), closedAt: new Date("2025-01-20T00:00:00Z") }),
+      row({ openingYear: 2025, issueDate: new Date("2025-01-01T00:00:00Z"), closedAt: new Date("2025-12-01T00:00:00Z") }),
+    ];
+    const ytd = buildYearToDate(rows, 2026, new Set([2025, 2026]), new Date("2026-10-17T09:00:00Z"));
+    expect(ytd).toMatchObject({ cutoffMonth: 9, cutoffDay: 17, fullYear: false });
+    expect(ytd.current).toMatchObject({ openings: 2, critical: 1, major: 1, closures: 0, closureRate: null });
+    expect(ytd.previous).toMatchObject({ openings: 3, closures: 1, closedWithin30: 1, closureRate: 100 });
+    const past = buildYearToDate(rows, 2025, new Set([2025]), new Date("2026-10-17T00:00:00Z"));
+    expect(past).toMatchObject({ fullYear: true, cutoffMonth: 11, cutoffDay: 31 });
+    expect(past.current.openings).toBe(4);
+    expect(past.previous.dataAvailable).toBe(false);
+  });
+
+  it("orders the Pareto, accumulates percentages and folds the tail into «Otras»", () => {
+    const items = [
+      { label: "B", count: 2, percentage: 0 },
+      { label: "A", count: 6, percentage: 0 },
+      { label: "C", count: 1, percentage: 0 },
+      { label: "D", count: 1, percentage: 0 },
+    ];
+    const pareto = buildPareto(items);
+    expect(pareto.map((item) => [item.label, item.cumulative, item.vitalFew])).toEqual([
+      ["A", 60, true], ["B", 80, true], ["C", 90, false], ["D", 100, false],
+    ]);
+    const folded = buildPareto(items, 3);
+    expect(folded.map((item) => [item.label, item.count, item.cumulative, Boolean(item.other)])).toEqual([
+      ["A", 6, 60, false], ["B", 2, 80, false], ["Otras (2)", 2, 100, true],
+    ]);
+    expect(buildPareto([])).toEqual([]);
   });
 });
