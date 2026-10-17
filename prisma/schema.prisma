@@ -2125,9 +2125,9 @@ enum AccessModule {
  COMPLAINT
  RETURN
  AUDIT
- OOS
  PNT
  SYSTEM
+ OOS
 }
 enum AccessPermission {
  READ

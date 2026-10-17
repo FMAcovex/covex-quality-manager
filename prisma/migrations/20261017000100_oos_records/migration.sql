@@ -23,7 +23,9 @@ CREATE TYPE "OosInvestigationResult" AS ENUM ('INVALIDATED', 'CONFIRMED', 'INCON
 ALTER TYPE "QmsRecordType" ADD VALUE 'OOS';
 
 -- AlterEnum
-ALTER TYPE "AccessModule" ADD VALUE 'OOS' BEFORE 'PNT';
+-- Al final del enum: un valor intermedio deja un orden fraccionario que pg_restore
+-- renumera, y la restauración verificada (4B2) compara también ese orden.
+ALTER TYPE "AccessModule" ADD VALUE 'OOS';
 
 -- CreateTable
 CREATE TABLE "OosRecord" (
