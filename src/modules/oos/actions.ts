@@ -35,6 +35,7 @@ function recordData(values: OosFormValues, department: Department | null, existi
     lotNumber: values.lotNumber,
     batchSize: values.batchSize,
     affectedQuantity: values.affectedQuantity,
+    additionalLots: values.additionalLots,
     supplier: values.materialKind === "RAW_OR_PACKAGING_MATERIAL" ? values.supplier : null,
     supplierLot: values.materialKind === "RAW_OR_PACKAGING_MATERIAL" ? values.supplierLot : null,
     process: values.process,

@@ -1,3 +1,4 @@
+import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { notFound } from "next/navigation";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -32,6 +33,7 @@ async function EditOosPageAuthenticatedContent({ params, searchParams }: { param
     lotNumber: str(record.lotNumber),
     batchSize: str(record.batchSize),
     affectedQuantity: str(record.affectedQuantity),
+    additionalLots: storedAdditionalLots(record.additionalLots),
     supplier: str(record.supplier),
     supplierLot: str(record.supplierLot),
     process: str(record.process),

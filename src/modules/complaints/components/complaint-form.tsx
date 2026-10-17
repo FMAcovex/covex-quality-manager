@@ -1,4 +1,5 @@
 "use client";
+import { AdditionalLotsField } from "@/components/additional-lots-field";
 import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { complaintCategoryOptions as categoryOptions, complaintSourceOptions as sourceOptions } from "@/modules/complaints/domain";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
@@ -132,6 +133,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
      <Field label="Caducidad / reanálisis" name="expiryReanalysis" hidden={!productMaterial} defaultValue={formDefaults.expiryReanalysis} required={fullRequired&&productMaterial}/>
      <Field label="Pedido / albarán / certificado" name="purchaseDeliveryReference" defaultValue={formDefaults.purchaseDeliveryReference} span="span-2"/>
     </div>
+    {productMaterial?<AdditionalLotsField defaultValue={formDefaults.additionalLots} labels={{name:"Referencia",lot:"N.º de lote",quantity:"Cantidad"}}/>:null}
    </div>
   </section>
 

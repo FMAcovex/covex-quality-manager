@@ -815,3 +815,16 @@ Decisión del responsable de Calidad, para la carga inicial desde el índice de 
 - Las demás filas se siguen decidiendo una a una: duplicados, conflictos, errores de celda, estado sin determinar o en elaboración, y vigentes incompletos.
 - Es una sola operación auditada (PN06) con un evento DECISION que lista las filas afectadas.
 - Requisito: los departamentos de cada hoja deben existir en Configuración. Si no, la fila no entra en el bloque.
+
+## D-094 — Otros lotes afectados en Desviaciones, Reclamaciones y OOS (2026-10-17)
+
+Decisión del responsable de Calidad. Un expediente puede afectar a más de un lote o producto.
+
+- El primer lote sigue en los campos de siempre. La búsqueda, las importaciones y los anexos no cambian para un expediente de un solo lote.
+- Los demás se registran en «Otros lotes afectados», con las mismas columnas que el lote principal.
+  - Desviaciones: tipo (producto terminado o materia prima/acondicionamiento), producto o material, lote, tamaño de lote y cantidad afectada.
+  - Reclamaciones: referencia, lote y cantidad.
+  - OOS: material, lote, tamaño y cantidad.
+- **Anexos impresos:** cada casilla muestra el valor principal y los adicionales, uno por línea. No se rediseña ninguna plantilla.
+- **Búsqueda:** la búsqueda global y la de cada listado encuentran también los otros lotes.
+- **Captura B2:** campo `additionalLots` (JSON, no crítico). Contrato `audit-contract-additional-lots.json`, que solo amplía la política de captura.

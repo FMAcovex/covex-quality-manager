@@ -1,5 +1,6 @@
 "use client";
 
+import { AdditionalLotsField } from "@/components/additional-lots-field";
 import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
@@ -100,6 +101,7 @@ export function OosForm({ mode, action, departments, defaults = {}, recordId, ca
         <Field label="N.º lote" name="lotNumber" defaultValue={formDefaults.lotNumber} required={!draft} />
         <Field label="Tamaño lote" name="batchSize" defaultValue={formDefaults.batchSize} />
         <Field label="Cantidad afectada" name="affectedQuantity" defaultValue={formDefaults.affectedQuantity} />
+        <AdditionalLotsField defaultValue={formDefaults.additionalLots} labels={{ name: "Material", lot: "N.º lote", size: "Tamaño lote", quantity: "Cantidad afectada" }} />
         <Field label="Proceso" name="process" defaultValue={formDefaults.process} />
         {materialKind === "RAW_OR_PACKAGING_MATERIAL" ? <>
           <Field label="Proveedor" name="supplier" defaultValue={formDefaults.supplier} />

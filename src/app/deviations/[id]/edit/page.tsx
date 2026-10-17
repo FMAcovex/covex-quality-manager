@@ -1,3 +1,4 @@
+import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
@@ -71,6 +72,7 @@ async function EditDeviationPageAuthenticatedContent({
           materialAffectedQuantity: deviation.materialAffectedQuantity ?? "",
           supplier: deviation.supplier ?? "",
           supplierLot: deviation.supplierLot ?? "",
+          additionalLots: storedAdditionalLots(deviation.additionalLots),
           affectedEquipmentLine: deviation.affectedEquipmentLine ?? "",
           otherOrigin: deviation.otherOrigin ?? "",
           whatHappened: deviation.whatHappened ?? "",

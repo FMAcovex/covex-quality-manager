@@ -1,3 +1,5 @@
+import type { AdditionalLot } from "@/lib/qms/additional-lots";
+
 export type FormState = {
   error: string | null;
   fieldErrors?: string[];
@@ -49,6 +51,7 @@ export type DeviationFormDefaults = {
   materialAffectedQuantity?: string;
   supplier?: string;
   supplierLot?: string;
+  additionalLots?: AdditionalLot[];
   affectedEquipmentLine?: string;
   otherOrigin?: string;
   whatHappened?: string;

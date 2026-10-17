@@ -1,3 +1,4 @@
+import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import {
   appendWordCellText,
@@ -31,6 +32,7 @@ type AnnexIIIRecord = {
   materialAffectedQuantity: string | null;
   supplier: string | null;
   supplierLot: string | null;
+  additionalLots?: unknown;
   affectedEquipmentLine: string | null;
   otherOrigin: string | null;
   affectedDocumentation: string | null;
@@ -121,18 +123,22 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordCellText(xml, 0, 5, 2, time(record.eventDateTime));
   xml = setWordCellText(xml, 0, 4, 4, value(record.detectedBy));
 
-  xml = markOrigin(xml, 7, Boolean(record.finishedProductSystem));
-  xml = setWordCellText(xml, 0, 7, 2, value(record.finishedProductSystem));
-  xml = setWordCellText(xml, 0, 7, 4, value(record.productLot));
-  xml = setWordCellText(xml, 0, 8, 4, value(record.lotSize));
-  xml = setWordCellText(xml, 0, 9, 4, value(record.affectedQuantity));
+  // D-094: los otros lotes van en la misma casilla que el principal, uno por línea.
+  const extraLots = storedAdditionalLots(record.additionalLots);
+  const productLots = extraLots.filter((lot) => lot.kind !== "MATERIAL");
+  const materialLots = extraLots.filter((lot) => lot.kind === "MATERIAL");
+  xml = markOrigin(xml, 7, Boolean(record.finishedProductSystem) || productLots.length > 0);
+  xml = setWordCellText(xml, 0, 7, 2, value(lotColumn(record.finishedProductSystem, productLots, "name")));
+  xml = setWordCellText(xml, 0, 7, 4, value(lotColumn(record.productLot, productLots, "lot")));
+  xml = setWordCellText(xml, 0, 8, 4, value(lotColumn(record.lotSize, productLots, "size")));
+  xml = setWordCellText(xml, 0, 9, 4, value(lotColumn(record.affectedQuantity, productLots, "quantity")));
   xml = markOrigin(xml, 10, Boolean(record.client));
   xml = setWordCellText(xml, 0, 10, 2, value(record.client));
-  xml = markOrigin(xml, 11, Boolean(record.rawOrPackagingMaterial));
-  xml = setWordCellText(xml, 0, 11, 2, value(record.rawOrPackagingMaterial));
-  xml = setWordCellText(xml, 0, 11, 4, value(record.materialLot));
-  xml = setWordCellText(xml, 0, 12, 4, value(record.materialLotSize));
-  xml = setWordCellText(xml, 0, 13, 4, value(record.materialAffectedQuantity));
+  xml = markOrigin(xml, 11, Boolean(record.rawOrPackagingMaterial) || materialLots.length > 0);
+  xml = setWordCellText(xml, 0, 11, 2, value(lotColumn(record.rawOrPackagingMaterial, materialLots, "name")));
+  xml = setWordCellText(xml, 0, 11, 4, value(lotColumn(record.materialLot, materialLots, "lot")));
+  xml = setWordCellText(xml, 0, 12, 4, value(lotColumn(record.materialLotSize, materialLots, "size")));
+  xml = setWordCellText(xml, 0, 13, 4, value(lotColumn(record.materialAffectedQuantity, materialLots, "quantity")));
   xml = markOrigin(xml, 14, Boolean(record.supplier));
   xml = setWordCellText(xml, 0, 14, 2, value(record.supplier));
   xml = setWordCellText(xml, 0, 14, 4, value(record.supplierLot));

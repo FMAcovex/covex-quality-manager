@@ -1,6 +1,7 @@
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { idsWithAdditionalLot } from "@/lib/qms/additional-lots-search";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 
 export type OosListFilters = {
@@ -20,7 +21,7 @@ const pageSize = 25;
 const phaseIWhere: Prisma.OosRecordWhereInput = { OR: [{ phaseIDisposition: null }, { phaseIDisposition: "LAB_ERROR" }] };
 
 export async function getOosList(filters: OosListFilters) {
-  const where = oosListWhere(filters);
+  const where = oosListWhere(filters, filters.q?.trim() ? await idsWithAdditionalLot("OOS", filters.q) : []);
   const count = await prisma.oosRecord.count({ where });
   const requestedPage = Number(filters.page) || 1;
   const page = Math.min(Math.max(1, Math.trunc(requestedPage)), Math.max(1, Math.ceil(count / pageSize)));
@@ -56,12 +57,14 @@ function administrativeWhere(value: string | undefined): Prisma.OosRecordWhereIn
   return { qmsRecord: { isActive: true } };
 }
 
-export function oosListWhere(filters: OosListFilters): Prisma.OosRecordWhereInput {
+/** `lotIds`: OOS cuyos otros lotes (D-094) coinciden con `q`, resueltos antes en SQL. */
+export function oosListWhere(filters: OosListFilters, lotIds: string[] = []): Prisma.OosRecordWhereInput {
   const and: Prisma.OosRecordWhereInput[] = [administrativeWhere(filters.administrative)];
   const q = filters.q?.trim();
   if (q) {
     const contains = { contains: q, mode: "insensitive" as const };
     and.push({ OR: [
+      ...(lotIds.length ? [{ id: { in: lotIds } }] : []),
       { qmsRecord: { businessCode: contains } },
       { qmsRecord: { annulledBusinessCode: contains } },
       { qmsRecord: { sourceRelations: { some: { isActive: true, targetRecord: { OR: [{ businessCode: contains }, { annulledBusinessCode: contains }] } } } } },

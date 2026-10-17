@@ -1,4 +1,5 @@
 "use client";
+import { AdditionalLotsField } from "@/components/additional-lots-field";
 import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
@@ -375,6 +376,18 @@ export function DeviationForm({
               <Field label="Tamaño de lote / cantidad (cuando proceda)" name="materialLotSize" defaultValue={formDefaults.materialLotSize} />
               <Field label="Cantidad afectada" name="materialAffectedQuantity" defaultValue={formDefaults.materialAffectedQuantity} required issues={issues.materialAffectedQuantity} />
             </div>
+          </div>
+        ) : null}
+
+        {origin === "FINISHED_PRODUCT_SYSTEM" || origin === "RAW_PACKAGING_MATERIAL" ? (
+          <div className="deviation-origin-group">
+            <AdditionalLotsField
+              key={origin}
+              defaultValue={formDefaults.additionalLots}
+              kinds={{ PRODUCT: "Producto terminado", MATERIAL: "Materia prima / acondicionamiento" }}
+              labels={{ name: "Producto / material", lot: "Nº de lote", size: "Tamaño de lote", quantity: "Cantidad afectada" }}
+              error={issues.additionalLotsJson?.[0]}
+            />
           </div>
         ) : null}
 

@@ -1,3 +1,4 @@
+import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
@@ -159,6 +160,7 @@ async function DeviationDetailPageAuthenticatedContent({
     { label: "Cantidad de material afectada", value: deviation.materialAffectedQuantity },
     { label: "Proveedor", value: deviation.supplier },
     { label: "Lote del proveedor", value: deviation.supplierLot },
+    { label: "Otros lotes afectados", value: storedAdditionalLots(deviation.additionalLots).map((lot) => [lot.kind === "MATERIAL" ? "Material" : "Producto", lot.name, `lote ${lot.lot}`, lot.quantity && `cantidad ${lot.quantity}`].filter(Boolean).join(" · ")).join("; ") || null },
     { label: "Equipo / línea afectada", value: deviation.affectedEquipmentLine },
     { label: "Documentación afectada", value: deviation.affectedDocumentation },
     { label: "Otro origen", value: deviation.otherOrigin },

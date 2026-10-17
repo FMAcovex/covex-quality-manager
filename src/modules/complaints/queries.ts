@@ -1,3 +1,4 @@
+import { idsWithAdditionalLot } from "@/lib/qms/additional-lots-search";
 import { versionDocumentMetadata, templateMetadata, generatedDocumentMetadata } from "@/lib/qms/document-metadata";
 import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
@@ -7,7 +8,7 @@ import { complaintListWhere, type ComplaintListFilters } from "@/modules/complai
 export type { ComplaintListFilters } from "@/modules/complaints/list-filters";
 
 export async function getComplaintList(filters:ComplaintListFilters){
- const where=complaintListWhere(filters);
+ const where=complaintListWhere(filters,new Date(),filters.q?await idsWithAdditionalLot("COMPLAINT",filters.q):[]);
  const pageSize=25;
  const filteredTotal=await prisma.complaint.count({where});
  const pageCount=Math.max(1,Math.ceil(filteredTotal/pageSize));

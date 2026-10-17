@@ -2787,3 +2787,8 @@ button[disabled] {
   .r12-chart-wrap { direction: rtl; }
   .r12-chart { direction: ltr; }
 }
+
+/* Otros lotes afectados (D-094): filas con tantas columnas como campos del lote principal. */
+.additional-lot-row { display: flex; flex-wrap: wrap; }
+.additional-lot-row .field { flex: 1 1 140px; min-width: 0; }
+.additional-lots .field-error { margin: 4px 0; color: #a5281f; font-size: 12px; }

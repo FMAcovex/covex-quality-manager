@@ -1,3 +1,4 @@
+import { parseAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import { oosClosingResults, oosEvaluationKeys, type OosPhaseIEvaluation } from "./domain";
@@ -62,6 +63,8 @@ function evaluation(fd: FormData): OosPhaseIEvaluation {
 
 export function parseOosForm(fd: FormData) {
   const errors: string[] = [];
+  const additional = parseAdditionalLots(fd.get("additionalLotsJson"));
+  if (additional.error) errors.push(additional.error);
   const status = option(statusSchema, text(fd, "status")) ?? "DRAFT";
   const area = option(areaSchema, text(fd, "area"));
   const phaseIDisposition = option(dispositionSchema, text(fd, "phaseIDisposition"));
@@ -134,6 +137,7 @@ export function parseOosForm(fd: FormData) {
       lotNumber: text(fd, "lotNumber"),
       batchSize: text(fd, "batchSize"),
       affectedQuantity: text(fd, "affectedQuantity"),
+      additionalLots: additional.lots,
       supplier: text(fd, "supplier"),
       supplierLot: text(fd, "supplierLot"),
       process: text(fd, "process"),

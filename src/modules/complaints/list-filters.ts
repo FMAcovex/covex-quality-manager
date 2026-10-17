@@ -27,13 +27,15 @@ const situationValues:ComplaintOperationalSituation[]=[
 ];
 const followupValues=["OVERDUE","PENDING","MISSING"] as const;
 
-export function complaintListWhere(filters:ComplaintListFilters,now=new Date()):Prisma.ComplaintWhereInput{
+/** `lotIds`: reclamaciones cuyos otros lotes (D-094) coinciden con `q`, resueltas antes en SQL. */
+export function complaintListWhere(filters:ComplaintListFilters,now=new Date(),lotIds:string[]=[]):Prisma.ComplaintWhereInput{
  const and:Prisma.ComplaintWhereInput[]=[];
   const reviewWhere = reviewListWhere(filters.review);
   if (reviewWhere) and.push({ qmsRecord: reviewWhere });
  if(filters.administrative==="ANNULLED")and.push({qmsRecord:{isActive:false}});
  else if(filters.administrative!=="ALL")and.push({qmsRecord:{isActive:true}});
  if(filters.q)and.push({OR:[
+  ...(lotIds.length?[{id:{in:lotIds}}]:[]),
   {qmsRecord:{businessCode:{contains:filters.q,mode:"insensitive"}}},
   {qmsRecord:{annulledBusinessCode:{contains:filters.q,mode:"insensitive"}}},
   {partyName:{contains:filters.q,mode:"insensitive"}},{reference:{contains:filters.q,mode:"insensitive"}},
