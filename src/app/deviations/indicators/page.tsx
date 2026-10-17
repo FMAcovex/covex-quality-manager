@@ -1,3 +1,4 @@
+import { ROOT_CAUSE_PARETO_VIEW } from "@/lib/qms/root-cause-categories";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { AgingPanel, MonthlyTrendChart, ParetoCard, YearToDateCard } from "@/components/analytics/trend-charts";
@@ -160,7 +161,7 @@ async function DeviationIndicatorsPageAuthenticatedContent({
         <YearToDateCard ytd={yearToDateComparison(data.yearToDate)} />
         <ParetoCard
           year={selectedYear}
-          dimensions={paretoKeys.map((key) => ({ key, label: PARETO_DIMENSIONS[key], items: data.pareto[key] }))}
+          dimensions={paretoKeys.map((key) => ({ key, label: PARETO_DIMENSIONS[key], items: data.pareto[key], ...(key === "rootCause" ? ROOT_CAUSE_PARETO_VIEW : {}) }))}
           active={paretoActive}
           hrefFor={paretoHref}
         />

@@ -1,5 +1,6 @@
 "use client";
 
+import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { CsrfField } from "@/components/csrf";
@@ -158,6 +159,7 @@ export function OosForm({ mode, action, departments, defaults = {}, recordId, ca
       <div className="form-grid return-form-grid">
         <label className="field"><span>Resultado de la investigación{closed ? " *" : ""}</span><select name="investigationResult" defaultValue={formDefaults.investigationResult ?? ""} required={closed} key={disposition}><option value="">Pendiente</option>{results.map((value) => <option key={value} value={value}>{oosInvestigationResultLabels[value]}</option>)}</select><small className="muted-note">{disposition ? "Según la disposición de la Fase I." : "Elige antes la disposición de la Fase I."}</small></label>
         <Field label="Fecha de cierre" name="closedAt" type="date" defaultValue={formDefaults.closedAt} required={closed} />
+        <RootCauseCategoryField defaultValue={formDefaults.rootCauseCategories} />
         <label className="field"><span>Estado</span><select name="status" value={status} onChange={(event) => setStatus(event.target.value as Status)}>{mode === "create" || defaults.status === "DRAFT" ? <option value="DRAFT">Borrador</option> : null}<option value="OPEN">Abierto</option><PermissionGate permission="CLOSE"><option value="CLOSED">Cerrado</option></PermissionGate></select></label>
       </div>
     </section>

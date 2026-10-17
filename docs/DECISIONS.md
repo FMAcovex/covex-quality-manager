@@ -784,3 +784,21 @@ Decisión del responsable de Calidad. La eficacia de una CAPA se verifica en el 
 - Al cerrar operativamente una CAPA con la eficacia pendiente, y en cada seguimiento posterior mientras siga pendiente, es obligatoria la fecha del próximo seguimiento, rotulada «Fecha prevista de verificación de eficacia».
 - No se crea un campo nuevo: la fecha es el próximo seguimiento que ya existía. No cambia el Anexo III.
 - Indicadores de CAPA cuenta las verificaciones vencidas (próximo seguimiento hoy o antes) y las que no tienen fecha.
+
+## D-092 — Categoría de causa raíz (6M) (2026-10-17)
+
+Decisión del responsable de Calidad. Desviaciones, CAPA, Reclamaciones y OOS tienen un apartado adicional, «Categoría de causa raíz (6M)», junto a la causa raíz redactada.
+
+- **Categorías GMP genéricas:**
+  - mano de obra;
+  - método;
+  - máquina;
+  - material;
+  - medio ambiente;
+  - medición;
+  - «No determinada».
+- Se puede marcar más de una. Es opcional y no sustituye a la causa raíz redactada ni a la investigación.
+- No aparece en los anexos impresos; las plantillas aprobadas no cambian.
+- Una CAPA creada desde una desviación o reclamación hereda sus categorías, que se pueden editar.
+- Indicadores (Desviaciones, CAPA y Reclamaciones) añade el Pareto «Causa raíz (6M)». Cuenta menciones; los expedientes sin categoría salen como «Sin categoría».
+- Captura B2: campo `rootCauseCategories` (JSON, no crítico). Contrato `audit-contract-root-cause.json`, que solo amplía la política de captura.

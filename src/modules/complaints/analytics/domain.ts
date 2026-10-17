@@ -24,6 +24,7 @@ export type ComplaintTrendRow = {
   recurrent: boolean | null;
   categoryTypes: string[];
   sourceTypes: string[];
+  rootCauseCategories?: string[];
 };
 
 export const COMPLAINT_PARETO = {
@@ -31,6 +32,7 @@ export const COMPLAINT_PARETO = {
   classification: "Clasificación",
   source: "Origen",
   department: "Departamento",
+  rootCause: "Causa raíz (6M)",
 } as const;
 export type ComplaintParetoDimension = keyof typeof COMPLAINT_PARETO;
 

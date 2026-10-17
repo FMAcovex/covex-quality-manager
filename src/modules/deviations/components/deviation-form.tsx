@@ -1,4 +1,5 @@
 "use client";
+import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 
@@ -488,6 +489,7 @@ export function DeviationForm({
             <FieldIssue messages={issues.investigationMethods} />
           </div>
           <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." required issues={issues.rootCause} />
+          <RootCauseCategoryField defaultValue={formDefaults.rootCauseCategories} />
           <TriStateSelect label="¿Causa raíz recurrente?" name="recurrentRootCause" defaultValue={formDefaults.recurrentRootCause} required issues={issues.recurrentRootCause} />
           <label className={`field span-3 ${issues.recurrenceDetails?.length ? "has-error" : ""}`}>
             <span>Antecedentes / detalle de recurrencia *</span>

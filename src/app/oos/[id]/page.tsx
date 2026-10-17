@@ -1,3 +1,4 @@
+import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AuditTrailPanel } from "@/components/audit-trail-panel";
@@ -174,6 +175,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
           <Item label="Fase">{record.status === "DRAFT" ? "—" : `Fase ${phase}`}</Item>
           <Item label="Disposición de la Fase I">{record.phaseIDisposition ? oosPhaseIDispositionLabels[record.phaseIDisposition] : "Pendiente"}</Item>
           <Item label="Resultado de la investigación">{record.investigationResult ? oosInvestigationResultLabels[record.investigationResult] : "Pendiente"}</Item>
+          <Item label="Categoría de la causa (6M)">{record.rootCauseCategories.length ? record.rootCauseCategories.map((value) => rootCauseCategoryLabel(value, true)).join(", ") : "No informada"}</Item>
           <Item label="Fecha de cierre">{formatOosDate(record.closedAt)}</Item>
         </dl>
       </ReviewCard>

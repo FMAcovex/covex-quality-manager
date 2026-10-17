@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { buildMonthlyCounts,buildPareto } from "@/lib/qms/analytics/trends";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+import { rootCauseCategoryMentions } from "@/lib/qms/root-cause-categories";
 import {
   buildCapaBacklog,buildCapaEffectivenessBacklog,buildCapaFiveYearTrend,buildCapaYearMetrics,buildCapaYearToDate,
   type CapaAnalyticsRow,
@@ -25,7 +26,7 @@ export async function getCapaAnalytics(filters:CapaAnalyticsFilters,today=new Da
     },
     select:{
       openedAt:true,operationalClosedAt:true,effectiveClosedAt:true,status:true,actionType:true,
-      effectivenessStatus:true,departmentCodeSnapshot:true,originType:true,
+      effectivenessStatus:true,departmentCodeSnapshot:true,originType:true,rootCauseCategories:true,
       qmsRecord:{select:{year:true}},plannedActions:{select:{plannedExecutionDate:true}},
     },
   });
@@ -44,6 +45,7 @@ export async function getCapaAnalytics(filters:CapaAnalyticsFilters,today=new Da
       actionType:r.actionType,effectivenessStatus:r.effectivenessStatus,
       departmentCode:r.departmentCodeSnapshot,originType:r.originType,
       plannedDates:r.plannedActions.map((a)=>a.plannedExecutionDate).filter((d):d is Date=>Boolean(d)),
+      rootCauseCategories:r.rootCauseCategories,
     }));
   const years=yearRows.map((r)=>r.year).filter((y):y is number=>y!==null);
   const selected=filters.year&&/^\d{4}$/.test(filters.year)?Number(filters.year):years[0]??new Date().getFullYear();
@@ -60,7 +62,7 @@ export async function getCapaAnalytics(filters:CapaAnalyticsFilters,today=new Da
     // Tendencias: se calculan sobre las mismas filas, sin consultas nuevas.
     monthlySeries:buildMonthlyCounts(rows.map((r)=>r.openedAt),selected,covered,today),
     yearToDate:buildCapaYearToDate(rows,selected,covered,today),
-    pareto:{department:buildPareto(current.departments),origin:buildPareto(current.origins),type:buildPareto(current.types)},
+    pareto:{department:buildPareto(current.departments),origin:buildPareto(current.origins),type:buildPareto(current.types),rootCause:buildPareto(rootCauseCategoryMentions(rows.filter((r)=>r.openingYear===selected)))},
     years,departments,
     origins:origins.map((r)=>r.originType).filter((v):v is string=>Boolean(v)),
   };

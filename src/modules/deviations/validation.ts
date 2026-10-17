@@ -1,3 +1,4 @@
+import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import type { CapaPlanInput, ImmediateActionInput } from "@/modules/deviations/types";
 
@@ -294,6 +295,7 @@ export function parseDeviationForm(formData: FormData) {
       investigationConclusive,
       investigationMethods: methods,
       rootCause,
+      rootCauseCategories: rootCauseCategoriesFrom(formData),
       recurrentRootCause,
       recurrenceDetails,
       classification: deviationClassification,

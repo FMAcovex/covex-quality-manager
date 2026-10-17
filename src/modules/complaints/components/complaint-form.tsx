@@ -1,4 +1,5 @@
 "use client";
+import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { complaintCategoryOptions as categoryOptions, complaintSourceOptions as sourceOptions } from "@/modules/complaints/domain";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
@@ -170,6 +171,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
 
   <section className="form-section"><p className="eyebrow">C)</p><h2>Análisis de causa raíz</h2>
    <TextArea label="Causa y evidencias que la sustentan; justificar si no se determina o no se requiere su análisis" name="rootCause" defaultValue={formDefaults.rootCause} required={fullRequired}/>
+   <RootCauseCategoryField defaultValue={formDefaults.rootCauseCategories}/>
   </section>
 
   <section className="form-section"><p className="eyebrow">D)</p><h2>Clasificación de la reclamación</h2>

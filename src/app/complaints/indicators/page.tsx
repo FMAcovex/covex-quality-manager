@@ -1,3 +1,4 @@
+import { ROOT_CAUSE_PARETO_VIEW } from "@/lib/qms/root-cause-categories";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import { AgingPanel,MonthlyTrendChart,ParetoCard,YearToDateCard } from "@/components/analytics/trend-charts";
@@ -44,6 +45,7 @@ async function ComplaintIndicatorsPageAuthenticatedContent({searchParams}:{searc
    dimensions={paretoKeys.map(key=>({
     key,label:COMPLAINT_PARETO[key],items:d.pareto[key],
     ...(key==="category"||key==="source"?{unit:"menciones",note:`Una reclamación puede tener varias ${key==="category"?"categorías":"fuentes"}: el porcentaje es sobre el total marcado.`}:{}),
+    ...(key==="rootCause"?ROOT_CAUSE_PARETO_VIEW:{}),
    }))}
    active={paretoActive}
    hrefFor={paretoHref}

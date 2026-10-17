@@ -11,6 +11,7 @@ import {
   type AnalyticsRow,
 } from "@/modules/deviations/analytics/domain";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+import { rootCauseCategoryMentions } from "@/lib/qms/root-cause-categories";
 
 export type DeviationAnalyticsFilters = {
   year?: string;
@@ -67,6 +68,7 @@ export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters, 
         departmentCodeSnapshot: true,
         departmentNameSnapshot: true,
         capaRequired: true,
+        rootCauseCategories: true,
         qmsRecord: { select: { year: true } },
         capaPlans: { select: { id: true } },
       },
@@ -112,6 +114,7 @@ export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters, 
     departmentName: record.departmentNameSnapshot,
     capaRequired: record.capaRequired,
     capaCount: record.capaPlans.length,
+    rootCauseCategories: record.rootCauseCategories,
   }));
 
   const availableYears = years
@@ -141,6 +144,7 @@ export async function getDeviationAnalytics(filters: DeviationAnalyticsFilters, 
       area: buildPareto(current.areas),
       origin: buildPareto(current.origins),
       classification: buildPareto(current.classifications),
+      rootCause: buildPareto(rootCauseCategoryMentions(rows.filter((row) => row.status !== "DRAFT" && row.openingYear === selectedYear))),
     },
     departments,
     provenances: provenances

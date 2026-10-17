@@ -1,3 +1,4 @@
+import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import type { ComplaintDerivedActionInput } from "@/modules/complaints/types";
 
@@ -190,7 +191,7 @@ export function parseComplaintForm(fd:FormData,linked:{capa?:boolean;returns?:bo
     impactAssessment:text(fd,"impactAssessment"),impactQualityGmp:yesNo(fd,"impactQualityGmp"),impactSafetyEfficacy:yesNo(fd,"impactSafetyEfficacy"),
     impactRegulatory:yesNo(fd,"impactRegulatory"),impactEnvironment:yesNo(fd,"impactEnvironment"),impactOtherSimilar:yesNo(fd,"impactOtherSimilar"),
     containmentActions,containmentOther:text(fd,"containmentOther"),riskJustification:text(fd,"riskJustification"),
-    investigationResult:enumValue(resultSchema,text(fd,"investigationResult")),rootCause:text(fd,"rootCause"),classification,
+    investigationResult:enumValue(resultSchema,text(fd,"investigationResult")),rootCause:text(fd,"rootCause"),rootCauseCategories:rootCauseCategoriesFrom(fd),classification,
     potentialRecall:tri(fd,"potentialRecall"),recallProcedureRequired:tri(fd,"recallProcedureRequired"),
     authorityNotificationRequired:tri(fd,"authorityNotificationRequired"),responsiblePartyCommunicationRequired:tri(fd,"responsiblePartyCommunicationRequired"),
     regulatoryJustification:text(fd,"regulatoryJustification"),

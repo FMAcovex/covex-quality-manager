@@ -1,3 +1,4 @@
+import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import { oosClosingResults, oosEvaluationKeys, type OosPhaseIEvaluation } from "./domain";
 
@@ -168,6 +169,7 @@ export function parseOosForm(fd: FormData) {
       phaseIIIssuedAt: text(fd, "phaseIIIssuedAt"),
       phaseIIAffectedDepartments: text(fd, "phaseIIAffectedDepartments"),
       investigationResult,
+      rootCauseCategories: rootCauseCategoriesFrom(fd),
       closedAt: status === "CLOSED" ? text(fd, "closedAt") : null,
       internalObservations: text(fd, "internalObservations"),
       changeReason: text(fd, "changeReason"),

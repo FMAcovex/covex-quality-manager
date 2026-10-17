@@ -1,4 +1,5 @@
 "use client";
+import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 
@@ -375,6 +376,7 @@ export function CapaForm({
             required={!draft}
             issues={issues.rootCause}
           />
+          <RootCauseCategoryField defaultValue={formDefaults.rootCauseCategories} />
         </div>
       </section>
 
