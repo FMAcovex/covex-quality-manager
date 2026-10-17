@@ -21,7 +21,7 @@ async function view(page: Page, path: string) {
 
 async function save(page: Page, label: string, id?: string) {
   await page.getByRole("button", { name: label, exact: true }).click();
-  await page.waitForURL(id ? new RegExp(`/oos/${id}$`) : /\/oos\/[0-9a-f-]{36}$/, { timeout: 30000 });
+  await page.waitForURL(id ? new RegExp(`/oos/${id}(\\?tab=[a-z-]+)?$`) : /\/oos\/[0-9a-f-]{36}$/, { timeout: 30000 });
   await page.waitForLoadState("networkidle");
 }
 
@@ -65,8 +65,11 @@ async function main() {
     assert.equal(opened.supplier, "Proveedor ficticio");
     await page.getByText(opened.qmsRecord.businessCode!, { exact: true }).first().waitFor();
 
-    // La Fase II solo aparece con disposición «a gran escala»; se cierra como no concluyente.
-    await view(page, `/oos/${draft.id}/edit`);
+    // La Fase II solo aparece con disposición «a gran escala»; se llega desde «Pasar a Fase II» y se cierra como no concluyente.
+    await view(page, `/oos/${draft.id}?tab=phase-i`);
+    await page.getByRole("link", { name: "Pasar a Fase II" }).click();
+    await page.waitForURL((url) => url.pathname === `/oos/${draft.id}/edit` && url.hash === "#phase-i-disposition");
+    await page.locator("#phase-i-disposition").waitFor();
     assert.equal(await page.locator('[name="phaseIIConclusion"]').isVisible(), false);
     assert.equal(await page.locator('select[name="area"]').isDisabled(), true);
     await fill(page, { phaseIInvestigation: "Sin error de laboratorio.", phaseIConclusion: "No se confirma error de laboratorio." });
@@ -171,7 +174,7 @@ async function main() {
       }
     }
     assert.deepEqual(errors, []);
-    console.log(`OOS UI OK: borrador sin código, apertura con datos iniciales obligatorios y ${opened.qmsRecord.businessCode}, Fase I → Fase II, cierre no concluyente, vínculo y desvinculación de CAPA con origen visible en la CAPA, observación de Review sin versión, descarga de los Anexos III, IV y VI, PDF firmado del Anexo III, pestañas, listado, buscador y 1440/768/390 sin desbordes.`);
+    console.log(`OOS UI OK: borrador sin código, apertura con datos iniciales obligatorios y ${opened.qmsRecord.businessCode}, Fase I → «Pasar a Fase II» → Fase II, cierre no concluyente, vínculo y desvinculación de CAPA con origen visible en la CAPA, observación de Review sin versión, descarga de los Anexos III, IV y VI, PDF firmado del Anexo III, pestañas, listado, buscador y 1440/768/390 sin desbordes.`);
   } finally {
     await browser.close();
     await prisma.reviewMessage.deleteMany({ where: { reviewThread: { qmsRecordId: { in: ids } } } });

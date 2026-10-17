@@ -57,6 +57,8 @@ Separado por fases, sin mezclar descripción, investigación, conclusión y dict
 
 Solo si la disposición de la Fase I es «Investigación a gran escala».
 
+En la ficha de un OOS abierto sin disposición, la pestaña «Fase I» muestra un aviso con el botón «Pasar a Fase II». El botón abre la edición en el campo «Disposición final». El cambio a «Investigación a gran escala» se elige y se guarda de forma explícita; el botón no guarda nada.
+
 - **Revisión de la producción**: los cinco puntos del PNT (motivo de la investigación, aspectos del proceso, revisión de la documentación con causa real o probable, recurrencia y acciones correctivas).
 - **Repetición de pruebas** y **remuestreo**: planes y resultados. En microbiología se puede pasar directamente a remuestreo (§5, PNT 04).
 - **Conclusión de la investigación**.
