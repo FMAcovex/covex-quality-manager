@@ -10,6 +10,7 @@ import criticalContract from "../../../ops/backup/audit-contract-b2-critical.jso
 import cContract from "../../../ops/backup/audit-contract-c.json";
 import oosContract from "../../../ops/backup/audit-contract-oos.json";
 import oosDocumentsContract from "../../../ops/backup/audit-contract-oos-documents.json";
+import oosSignedContract from "../../../ops/backup/audit-contract-oos-signed.json";
 import { AuditEngineError } from "./domain";
 import { canonicalAuditJson } from "./canonical-json";
 
@@ -57,7 +58,13 @@ export async function assertAuditProtection(tx: Prisma.TransactionClient) {
     const [installed] = await tx.$queryRaw<{count:bigint}[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261017000400_b2_oos_documents' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     if (installed?.count) throw new AuditEngineError("PROTECTION");
   }
-  const contract = oosDocuments?.present ? oosDocumentsContract : oos?.present ? oosContract : review?.present ? cContract : critical?.present ? criticalContract : version?.staging ? stagingContract : version?.documents ? documentContract : version?.composition ? integrationContract : version?.capture ? captureContract : version?.present ? b2Contract : b1Contract;
+  // D-088, OOS-4: OOS signed PDFs only widen covex_b2_retain_signed_original.
+  const [oosSigned] = await tx.$queryRaw<{present:boolean}[]>`SELECT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='covex_b2_retain_signed_original' AND p.prosrc LIKE '%OOS_ANNEX_III_SIGNED%') AS present`;
+  if (!oosSigned?.present && version?.migrations) {
+    const [installed] = await tx.$queryRaw<{count:bigint}[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261017000600_b2_oos_signed_documents' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
+    if (installed?.count) throw new AuditEngineError("PROTECTION");
+  }
+  const contract = oosSigned?.present ? oosSignedContract : oosDocuments?.present ? oosDocumentsContract : oos?.present ? oosContract : review?.present ? cContract : critical?.present ? criticalContract : version?.staging ? stagingContract : version?.documents ? documentContract : version?.composition ? integrationContract : version?.capture ? captureContract : version?.present ? b2Contract : b1Contract;
   const guardTables = version?.present && "guardTables" in contract ? contract.guardTables : [];
   const tables = await tx.$queryRaw<{ name: string; owner: string }[]>`SELECT c.relname AS name,pg_get_userbyid(c.relowner) AS owner FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=ANY(${contract.tables}::text[])`;
   if (tables.length !== contract.tables.length || new Set(tables.map(t=>t.owner)).size !== 1) throw new AuditEngineError("PROTECTION");
@@ -77,7 +84,7 @@ export async function assertAuditProtection(tx: Prisma.TransactionClient) {
   if (version?.capture) {
     const [metadata] = await tx.$queryRaw<{ policy: unknown }[]>`SELECT jsonb_agg(jsonb_build_object('entityType',t."entityType",'primaryKey',t."primaryKey",'rootPaths',t."rootPaths",'captureMode',t."captureMode",'fields',
       (SELECT jsonb_agg(jsonb_build_object('fieldPath',f."fieldPath",'valueType',f."valueType",'transform',f.transform,'critical',f.critical) ORDER BY f."fieldPath") FROM "AuditCaptureFieldPolicy" f WHERE f."entityType"=t."entityType")) ORDER BY t."entityType") AS policy FROM "AuditCaptureTablePolicy" t`;
-    const metadataContract = oosDocuments?.present ? oosDocumentsContract : oos?.present ? oosContract : version?.staging ? stagingContract : version?.documents ? documentContract : captureContract;
+    const metadataContract = oosSigned?.present ? oosSignedContract : oosDocuments?.present ? oosDocumentsContract : oos?.present ? oosContract : version?.staging ? stagingContract : version?.documents ? documentContract : captureContract;
     if (createHash("sha256").update(canonicalAuditJson(metadata?.policy)).digest("hex")!==metadataContract.capturePolicySha256) throw new AuditEngineError("PROTECTION");
   }
 }

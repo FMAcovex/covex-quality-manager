@@ -5,6 +5,8 @@ import previous from "../../../ops/backup/audit-contract-c.json";
 import { auditOosContract, oosCapturePolicy, oosCaptureTable, oosMigration, oosPolicySql } from "../../../scripts/audit-oos-build";
 import documentsContract from "../../../ops/backup/audit-contract-oos-documents.json";
 import { auditOosDocumentsContract, oosDocumentsMigration } from "../../../scripts/audit-oos-documents-build";
+import signedContract from "../../../ops/backup/audit-contract-oos-signed.json";
+import { auditOosSignedContract, oosSignedMigration } from "../../../scripts/audit-oos-signed-build";
 
 const replaced = ["covex_b2_authorize_root", "covex_b2_before", "covex_b2_begin", "covex_b2_critical_mutation", "covex_b2_observe_maturity"];
 
@@ -40,4 +42,14 @@ it("admits OO06 OOS annex generation by widening only covex_b2_begin (D-088, OOS
   expect(sql).not.toMatch(/^INSERT INTO "AuditPolicyRequirement"/m);
   expect(Object.keys(documentsContract.functions).filter(name => documentsContract.functions[name as keyof typeof documentsContract.functions].sha256 !== contract.functions[name as keyof typeof contract.functions]?.sha256)).toEqual(["covex_b2_begin"]);
   expect({ ...documentsContract, contractVersion: contract.contractVersion, functions: contract.functions }).toEqual(contract);
+});
+
+it("keeps OOS signed Anexo III/IV PDFs by widening only covex_b2_retain_signed_original (D-088, OOS-4)", () => {
+  expect(auditOosSignedContract()).toEqual(signedContract);
+  const sql = readFileSync(oosSignedMigration, "utf8");
+  expect(sql).toContain(`WHEN 'OOS' THEN CASE document_kind WHEN 'OOS_ANNEX_III_SIGNED' THEN 'OOS_ANNEX_III' WHEN 'OOS_ANNEX_IV_SIGNED' THEN 'OOS_ANNEX_IV' END`);
+  expect(sql).toContain(`root."recordType"<>'OOS' AND document_kind LIKE 'OOS\\_%'`);
+  expect(sql).not.toMatch(/^INSERT INTO "AuditPolicyRequirement"/m);
+  expect(Object.keys(signedContract.functions).filter(name => signedContract.functions[name as keyof typeof signedContract.functions].sha256 !== documentsContract.functions[name as keyof typeof documentsContract.functions]?.sha256)).toEqual(["covex_b2_retain_signed_original"]);
+  expect({ ...signedContract, contractVersion: documentsContract.contractVersion, functions: documentsContract.functions }).toEqual(documentsContract);
 });

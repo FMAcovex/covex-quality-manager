@@ -6,6 +6,7 @@ import { OperationalRelationForm } from "@/components/operational-relation-form"
 import { ActorField, PermissionGate } from "@/components/permissions";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { RecordTimeline } from "@/components/record-timeline";
+import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { ReviewDrawer, ReviewMarker, ReviewModeToggle, ReviewStatusSummary, ReviewThreadList, ReviewWorkspaceProvider } from "@/components/review";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { currentActor } from "@/lib/auth/presentation";
@@ -30,6 +31,8 @@ import {
   readOosEvaluation,
 } from "@/modules/oos/domain";
 import { getOosDetail } from "@/modules/oos/queries";
+import { uploadOosSignedPdfAction } from "@/modules/oos/signed-document-actions";
+import { oosSignedAnnexes, type OosSignedAnnex } from "@/modules/oos/signed-documents";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +75,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
     ["phase-i", "Fase I"],
     ...(phase === "II" ? [["phase-ii", "Fase II"]] : []),
     ["relations", "Relaciones"],
+    ["documents", "Documentos"],
     ["review", "Revisión"],
     ["timeline", "Cronología"],
     ["audit-trail", "Audit Trail"],
@@ -233,6 +237,28 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
       {record.status === "DRAFT" ? <div className="empty-panel">Las relaciones se activan al abrir el OOS.</div> : record.qmsRecord.isActive ? <PermissionGate permission="EDIT"><OperationalRelationForm action={addOosRelationAction.bind(null, id)} title="Vincular expediente existente" codeLabel="Codificación" buttonLabel="Vincular expediente" defaultActor={currentActor()} targetOptions={[{ value: "CAPA", label: "CAPA" }, { value: "DEVIATION", label: "Desviación" }]} currentRecordId={record.qmsRecord.id} currentRecordType="OOS" /></PermissionGate> : null}
     </ReviewCard> : null}
 
+    {tab === "documents" ? <div className="card">
+      <h2>Anexos del PNT GC-10/014/04</h2>
+      {record.status === "DRAFT" ? <div className="empty-panel">Los anexos se generan cuando el OOS está abierto.</div> : <div className="document-grid">
+        {(["annex-iii", ...(record.phaseIDisposition === "FULL_SCALE" ? ["annex-iv"] : [])] as OosSignedAnnex[]).map((annex) => {
+          const config = oosSignedAnnexes[annex];
+          const signed = record.qmsRecord.versions[0]?.documents.find((document) => document.kind === config.kind);
+          return <div key={annex} className="document-block featured">
+            <h3>{config.label} · {annex === "annex-iii" ? "Fase I: investigación en el laboratorio" : "Fase II: investigación a gran escala"}</h3>
+            <p>Genera el Word cumplimentado. Cuando esté firmado a mano, adjunta aquí el PDF escaneado.</p>
+            <div className="document-actions">
+              {record.qmsRecord.isActive ? <PermissionGate permission={["GENERATE_DOCUMENT", "DOWNLOAD"]}><a className="button primary" href={`/api/oos/${id}/${annex}`}>Generar {config.label} cumplimentado</a></PermissionGate> : null}
+              {signed ? <PermissionGate permission="DOWNLOAD"><a className="button" href={`/api/oos/${id}/signed-pdf/${annex}`}>Descargar PDF firmado</a></PermissionGate> : null}
+            </div>
+            <div className="return-signed-document">
+              <strong>{signed ? "PDF firmado disponible" : "PDF firmado pendiente"}</strong>
+              <small className="muted-note">{signed ? `${signed.fileName} · ${Math.max(1, Math.round(signed.fileSize / 1024))} KB · cargado ${formatOosDate(signed.uploadedAt)} · ${signed.uploadedByText ?? "Usuario no informado"}` : `Adjunta el PDF firmado del ${config.label} cuando esté disponible.`}</small>
+              {record.qmsRecord.isActive ? <PermissionGate permission="ATTACH_DOCUMENT"><SignedVersionDocumentForm reloadOnSuccess action={uploadOosSignedPdfAction.bind(null, id, annex)} defaultActor={currentActor()} replace={Boolean(signed)} /></PermissionGate> : null}
+            </div>
+          </div>;
+        })}
+      </div>}
+    </div> : null}
     {tab === "review" ? <div className="review-overview">
       <div className="card">
         <div className="section-title-row">

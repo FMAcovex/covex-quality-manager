@@ -231,3 +231,4 @@ Los Anexos III (Fase I), IV (Fase II) y VI (Listado general de OOS) se derivan d
 
 - Los Anexos III y IV son documentos de trabajo: cada descarga deja un recibo con plantilla, versión y SHA-256, y no crea un original oficial.
 - El Anexo VI es el listado anual imprimible para la firma manuscrita de §5.2 y no se archiva.
+- El PDF firmado a mano de los Anexos III y IV se adjunta en la pestaña «Documentos» y se custodia como original recibido (OOS-4).

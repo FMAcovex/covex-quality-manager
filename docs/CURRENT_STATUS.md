@@ -69,6 +69,14 @@ La aceptación formal de QA/DT sigue pendiente.
 
 Adjuntar el anexo firmado a mano queda pendiente.
 
+**Módulo OOS — OOS-4 (2026-10-17, D-088):** PDF firmado a mano de los Anexos III y IV en la nueva pestaña «Documentos» de la ficha.
+
+- **Custodia:** original recibido inmutable, con SHA-256 verificado al descargar y sustitución con motivo, asociado a un snapshot técnico del OOS (versión 0).
+- **Migraciones:** `20261017000500_oos_signed_document_kinds` y `20261017000600_b2_oos_signed_documents`.
+- **Contrato y permiso:** contrato `audit-contract-oos-signed.json`; permiso «Adjuntar documentos».
+- **Demo local:** `ops/demo/start.sh` instala el PNT GC-10/014/04 desde `plantillas/*.docx` (comprobado por SHA-256).
+- **Pruebas:** captura OO06 de carga, sustitución y custodia; `oos:ui:smoke` con carga y descarga del PDF firmado.
+
 **4B3-C consolidado para verificación integral:** pestañas de Audit Trail en siete módulos, bandeja transversal, permisos independientes, revisión append-only, corte exacto con microsegundos, exportación conservada/idempotente y contrato de protección/backup C. Se conservan B2 `49bfe417`, checkpoint parcial `a474575` y corrección `f590b275`. Las pruebas focalizadas C pasan; la entrega comunica quality y los cinco grupos/gate sobre su SHA final. No hay PR de la rama ni ejecución remota de Actions implícita. Alcance, pruebas, operación y dependencias QA/IT en [PHASE_4B3_C.md](PHASE_4B3_C.md). Sin activación corporativa, despliegue ni validación GMP. Este párrafo sustituye el estado de C en curso de los cortes anteriores, conservados como historia.
 
 **Checkpoint técnico B2 completado:** `49bfe41718fb6bbc0870ecb5a086e166f82106bc`. La matriz ejecutable reconcilia las 63 operaciones: 57 escrituras de negocio demostradas aisladamente, cinco streams/exclusiones justificados y probados, y TR09 transferida a C. OLD/NEW tipado, identidad autenticada, objetivos, atomicidad, idempotencia, criticidad técnica, documentos/originales, recuperación y negativas de bypass pasan sobre bases sintéticas. `pnpm quality` valida Prisma, 727 pruebas y build. Sin activación corporativa, aceptación GMP ni datos reales. C continúa desde este SHA en la misma rama y PR final; detalle en [PHASE_4B3_B2.md](PHASE_4B3_B2.md).

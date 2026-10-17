@@ -745,3 +745,13 @@ Los campos críticos de OOS (investigación, conclusión, disposición, dictáme
 - el módulo admite además los permisos «Exportar» y «Generar documentos».
 
 Adjuntar el anexo firmado a mano queda pendiente, porque la custodia de originales firmados requiere versiones funcionales.
+
+**Ampliación del 17/10/2026 (OOS-4):** el PDF firmado a mano de los Anexos III y IV se adjunta en la ficha del OOS y se custodia como original recibido, igual que en Devoluciones. Como OOS no tiene versiones funcionales, el original se asocia a un snapshot técnico (versión 0) que se crea o refresca al recibirlo, sin ciclo de versiones ni firma electrónica. La sustitución exige motivo.
+
+Detalle técnico:
+- migraciones `20261017000500_oos_signed_document_kinds` y `20261017000600_b2_oos_signed_documents` (`covex_b2_retain_signed_original` ampliada a OOS);
+- contrato `audit-contract-oos-signed.json`;
+- la operación OO06 cubre generación y PDF firmado;
+- permiso «Adjuntar documentos».
+
+La demo local instala el PNT de OOS si se copia en `plantillas`.

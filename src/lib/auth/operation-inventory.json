@@ -979,6 +979,21 @@
       "dynamicCreate": false
     },
     {
+      "file": "src/modules/oos/signed-document-actions.ts",
+      "name": "uploadOosSignedPdfAction",
+      "params": [
+        "oosId",
+        "annex",
+        "_state",
+        "formData"
+      ],
+      "module": "OOS",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
       "file": "src/modules/returns/actions.ts",
       "name": "addReturnFollowupAction",
       "params": [
@@ -1311,6 +1326,13 @@
     },
     {
       "file": "src/app/api/oos/[id]/annex-iv/route.ts",
+      "method": "GET",
+      "module": "OOS",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/oos/[id]/signed-pdf/[annex]/route.ts",
       "method": "GET",
       "module": "OOS",
       "permission": "DOWNLOAD",

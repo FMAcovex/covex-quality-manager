@@ -30,7 +30,7 @@ const groups: Record<string, string[]> = {
   W20: ["src/modules/deviations/import/import-service.ts", "src/modules/capa/import/import-service.ts", "scripts/backfill-record-versions.ts"],
   W21: ["scripts/install-template-bundle.ts", "scripts/install-document-templates.ts", "scripts/install-capa-templates.ts", "scripts/install-change-control-templates.ts", "scripts/install-complaint-template.ts", "scripts/install-return-template.ts", "scripts/install-audit-templates.ts", "scripts/install-annual-audit-programme-templates.ts", "scripts/install-oos-templates.ts"],
   W22: ["ops/backup/backup.py", "ops/release.py", "ops/postgres/roles.sql", "ops/postgres/audit-owner.sql", "ops/postgres/audit-grants.sql"],
-  W23: ["src/modules/oos/actions.ts"],
+  W23: ["src/modules/oos/actions.ts", "src/modules/oos/signed-document-actions.ts"],
 };
 const prefixes: Record<string, string[]> = { DV: ["W01"], CA: ["W02"], CC: ["W03"], RC: ["W04"], DE: ["W05"], AU: ["W06"], PN: ["W08"], TR: [], OO: ["W23"] };
 const additional: Record<string,string[]> = {
@@ -39,7 +39,7 @@ const additional: Record<string,string[]> = {
   CC01: ["W14"], CC06: ["W12"], CC07: ["W14", "W15", "W16"],
   RC01: ["W14"], RC05: ["W14"], RC06: ["W12"], RC07: ["W15", "W16"],
   DE01: ["W14"], DE05: ["W14"], DE06: ["W12"], DE07: ["W15", "W16"],
-  OO05: ["W12"], OO06: ["W16"],
+  OO05: ["W12"], OO06: ["W14", "W15", "W16"],
   AU05: ["W12"], AU06: ["W14", "W16"], AU07: ["W12", "W14"], AU08: ["W07"], AU09: ["W07"],
   PN02: ["W09"], PN03: ["W09"], PN04: ["W09"], PN05: ["W10"], PN06: ["W11"], PN07: ["W11"], PN08: ["W10"],
   TR01: ["W13"], TR02: ["W17"], TR03: ["W17"], TR04: ["W17", "W21"], TR05: ["W18"], TR06: ["W19"], TR07: ["W20"], TR08: ["W22"], TR09: [],
@@ -57,7 +57,7 @@ function coverage(id:string, category:string) {
   if (["TR02","TR03","TR04"].includes(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/configuration-capture.test.ts: original configuration writers, activation reason and rollback"] };
   if (id === "TR05") return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: admission and role-policy proposal with authorization evidence"] };
   if (id.startsWith("AU")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "AU08" || id === "AU09" ? `${moduleEvidence}: annual plan/entry/approvers/immutable programme issuance` : id === "AU06" || id === "AU07" ? "scripts/audit-fixtures/audit-report-capture.test.ts: report issue, retained documents, rollback and closure" : `${moduleEvidence}: audit record/findings/actions/followups/relations and withdrawal`] };
-  if (id.startsWith("OO")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "OO06" ? "scripts/audit-fixtures/oos-capture.test.ts: OOS Anexo III/IV working documents with generation permission, receipt and replay (D-088, OOS-3)" : "scripts/audit-fixtures/oos-capture.test.ts: original OOS opening, Phase I/II edits, critical reason, closure, relations and annulment (D-088, OOS-2b)"] };
+  if (id.startsWith("OO")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "OO06" ? "scripts/audit-fixtures/oos-capture.test.ts: OOS Anexo III/IV working documents and received signed PDFs with custody, replacement reason and replay (D-088, OOS-3/OOS-4)" : "scripts/audit-fixtures/oos-capture.test.ts: original OOS opening, Phase I/II edits, critical reason, closure, relations and annulment (D-088, OOS-2b)"] };
   if (/^(DV|CA|CC|RC|DE)/.test(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[`${moduleEvidence}: original operational create/edit/children/followup/closure/relations/documents`, "scripts/audit-fixtures/module-actions-capture.test.ts: signed custody, administrative state and rollback"] };
   return { coverage:category === "BUSINESS_WRITE" ? "NOT_DEMONSTRATED" : "JUSTIFIED_SEPARATE_STREAM", evidence:[] };
 }

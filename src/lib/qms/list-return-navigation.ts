@@ -50,7 +50,7 @@ const detailTabs: Record<QmsListRoot, readonly string[]> = {
   "/changes": ["information", "request", "dictamen", "followups", "documents", "relations", "review", "timeline", "history"],
   "/complaints": ["summary", "part-i", "part-ii", "relations", "documents", "versions", "review", "timeline", "history"],
   "/returns": ["summary", "checks", "followups", "relations", "documents", "review", "timeline", "history"],
-  "/oos": ["summary", "phase-i", "phase-ii", "relations", "review", "timeline", "audit-trail", "history"],
+  "/oos": ["summary", "phase-i", "phase-ii", "relations", "documents", "review", "timeline", "audit-trail", "history"],
 };
 export type QmsReturnContext = { returnTo: string; tab: string };
 

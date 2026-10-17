@@ -34,6 +34,8 @@ const signedKindLabels: Readonly<Record<RecordVersionDocumentKind, string>> = {
   SIGNED_PDF: "PDF firmado",
   RETURN_ANNEX_III_SIGNED: "Anexo III firmado",
   RETURN_ANNEX_V_SIGNED: "Anexo V firmado",
+  OOS_ANNEX_III_SIGNED: "Anexo III firmado",
+  OOS_ANNEX_IV_SIGNED: "Anexo IV firmado",
 };
 
 const auditDocumentLabels: Readonly<Record<string, string>> = {
