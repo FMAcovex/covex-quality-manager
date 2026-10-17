@@ -205,7 +205,7 @@ No se añaden operaciones inexistentes: eficacia es propia de CAPA; PNT conserva
 
 ### 3.9 OOS — resultados fuera de especificación (ampliación D-088, OOS-2b, 17/10/2026)
 
-Ampliación posterior a la entrega A para el módulo OOS (PNT GC-10/014/04), con el mismo criterio y el mismo carácter de **propuesta**: la matriz pasa de 63 a 68 operaciones y la inclusión, criticidad y campos críticos de OOS siguen pendientes de aprobación por QA/DT, como el resto. OOS no tiene versiones funcionales ni documentos en esta ampliación; los anexos llegan con OOS-3. Campos críticos propuestos por analogía con investigación, conclusión y dictamen de los demás módulos: investigación y conclusión de la Fase I, disposición, dictámenes de ambas fases, revisión de la producción y conclusión de la Fase II, y resultado de la investigación.
+Ampliación posterior a la entrega A para el módulo OOS (PNT GC-10/014/04), con el mismo criterio y el mismo carácter de **propuesta**: la matriz pasa de 63 a 68 operaciones (69 con OO06, generación de los anexos en OOS-3) y la inclusión, criticidad y campos críticos de OOS siguen pendientes de aprobación por QA/DT, como el resto. OOS no tiene versiones funcionales ni documentos en esta ampliación; los anexos llegan con OOS-3. Campos críticos propuestos por analogía con investigación, conclusión y dictamen de los demás módulos: investigación y conclusión de la Fase I, disposición, dictámenes de ambas fases, revisión de la producción y conclusión de la Fase II, y resultado de la investigación.
 
 | ID / operación | Riesgo | Impacto GMP | Trazabilidad actual | Laguna | Evento propuesto | Criticidad propuesta | Prueba | Q |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -214,6 +214,7 @@ Ampliación posterior a la entrega A para el módulo OOS (PNT GC-10/014/04), con
 | OO03 Fase II: revisión de la producción, repetición, remuestreo, conclusión y dictamen | Alterar la investigación a gran escala o su dictamen | Decisión sobre el lote y lotes asociados | [oos/actions.ts](../src/modules/oos/actions.ts): ChangeHistory `__edit__` before/after | G01/G03/G07 | FIELD_CHANGED / ASSESSMENT_CHANGED | Alta | T01/T03 | D02/D03 |
 | OO04 Resultado de la investigación, estado/cierre y modificaciones posteriores hoy permitidas | Sobreinterpretar CLOSED como inmutabilidad total o cambiar el resultado sin motivo | Consistencia del resultado invalidado, confirmado o no concluyente | [oos/actions.ts](../src/modules/oos/actions.ts): ChangeHistory `__edit__` y reglas de cierre por fase | G01/G05/G07 | STATE_CHANGED / FIELD_CHANGED sin crear nuevo ciclo | Alta | T06/T08 | D02/D03 |
 | OO05 Anulación/reactivación y relaciones con CAPA/Desviación | Romper procedencia | Coherencia QMS | E06; historial `relations` del OOS | G05/G08 | ANNULLED/REACTIVATED / RELATION_CHANGED | Alta | T04/T05 | D02/D03 |
+| OO06 Anexos III y IV del OOS (documentos de trabajo) | Generar un anexo con datos o plantilla de otra versión | Evidencia documental de la investigación | Sin recibo de generación | G06 | DOCUMENT_GENERATED con tipo, versión de plantilla y hash, sin nuevo original | Alta | T07/T09 | D02/D05 |
 
 ## 4. Modelo de datos propuesto, sin cambios Prisma
 

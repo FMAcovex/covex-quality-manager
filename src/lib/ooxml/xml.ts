@@ -342,6 +342,21 @@ export function replaceWordRowsRangeBalanced(
   });
 }
 
+/** Rewrites the rows startRow..endRow (inclusive) of a table from their current XML. */
+export function transformWordRowsBalanced(
+  documentXml: string,
+  tableIndex: number,
+  startRow: number,
+  endRow: number,
+  build: (rows: string[]) => string[],
+) {
+  return transformWordTableBalanced(documentXml, tableIndex, (tableXml) => {
+    const rows = directTableRows(tableXml).slice(startRow, endRow + 1);
+    if (rows.length !== endRow - startRow + 1) throw new Error(`Word row range not found: table ${tableIndex}, rows ${startRow}-${endRow}`);
+    return tableXml.slice(0, rows[0].start) + build(rows.map((row) => row.xml)).join("") + tableXml.slice(rows.at(-1)!.end);
+  });
+}
+
 export function fillWordRowBalanced(
   rowXml: string,
   values: Array<{ text: string; color?: string }>,
@@ -375,6 +390,91 @@ export function appendWordCellTextBalanced(
   });
 }
 
+export type WordCellFillOptions = {
+  /** "inline": in the cell's last paragraph, after any label. "paragraphs": new paragraphs below the existing content. */
+  mode?: "inline" | "paragraphs";
+  /** Drops the template's guidance runs (e.g. a grey «fecha») before writing the value. */
+  replaceHint?: boolean;
+  /** Cell background, e.g. a status colour required by the controlled template. */
+  shade?: string;
+};
+
+/** Value typography comes from the paragraph mark, without the label's emphasis or the hint colour. */
+function valueRunProperties(paragraphXml: string) {
+  const markRPr = paragraphXml.match(/<w:pPr\b[\s\S]*?<\/w:pPr>/)?.[0].match(/<w:rPr\b[\s\S]*?<\/w:rPr>/)?.[0] ?? "";
+  return markRPr.replace(/<w:(?:b|bCs|i|iCs|color)\b[^>]*\/>/g, "");
+}
+
+function valueRun(text: string, rPr: string) {
+  const lines = text.split(/\r?\n/).map((line) => `<w:t xml:space="preserve">${escapeXml(line)}</w:t>`);
+  return `<w:r>${rPr}${lines.join("<w:br/>")}</w:r>`;
+}
+
+function fillCellPreservingTemplate(cellXml: string, text: string, options: WordCellFillOptions) {
+  let cell = cellXml;
+  if (options.shade) {
+    const shd = `<w:shd w:val="clear" w:color="auto" w:fill="${escapeXml(options.shade)}"/>`;
+    cell = /<w:tcPr\b[\s\S]*?<\/w:tcPr>/.test(cell)
+      ? cell.replace(/<w:tcPr\b[\s\S]*?<\/w:tcPr>/, (tcPr) => /<w:shd\b[^>]*\/>/.test(tcPr) ? tcPr.replace(/<w:shd\b[^>]*\/>/, shd) : tcPr.replace("</w:tcPr>", `${shd}</w:tcPr>`))
+      : cell.replace(/^<w:tc(?:\s[^>]*)?>/, (open) => `${open}<w:tcPr>${shd}</w:tcPr>`);
+  }
+  if (!text) return cell;
+  if (options.replaceHint) cell = cell.replace(/<w:r\b[\s\S]*?<\/w:r>|<w:proofErr\b[^>]*\/>/g, "");
+  cell = cell.replace(/<w:p(\s[^>]*)?\/>/g, "<w:p$1></w:p>");
+  const paragraphs = [...cell.matchAll(/<w:p\b[\s\S]*?<\/w:p>/g)];
+  const last = paragraphs.at(-1);
+  if (!last || last.index === undefined) throw new Error("Word template cell without paragraph.");
+  const hasText = (paragraph: string) => /<w:t(?:\s[^>]*)?>[^<]*\S/.test(paragraph);
+  if (options.mode === "paragraphs") {
+    // Below the guidance text, or at the top of an empty block, left-aligned like free text.
+    const guidance = paragraphs.filter((paragraph) => hasText(paragraph[0])).at(-1);
+    const anchor = guidance ?? paragraphs[0];
+    const pPr = (anchor[0].match(/<w:pPr\b[\s\S]*?<\/w:pPr>/)?.[0] ?? "").replace(/<w:jc\b[^>]*\/>/, "");
+    const rPr = valueRunProperties(anchor[0]);
+    const at = guidance ? anchor.index! + anchor[0].length : anchor.index!;
+    const added = text.split(/\r?\n/).map((line) => `<w:p>${pPr}${valueRun(line, rPr)}</w:p>`).join("");
+    return cell.slice(0, at) + added + cell.slice(at);
+  }
+  const rPr = valueRunProperties(last[0]);
+  const end = last.index + last[0].length;
+  const labelled = hasText(last[0]);
+  const close = end - "</w:p>".length;
+  return cell.slice(0, close) + valueRun(labelled ? ` ${text}` : text, rPr) + cell.slice(close);
+}
+
+/** Fills a controlled template cell without redesigning it: cell properties, labels and paragraph formatting stay. */
+export function fillWordCellBalanced(
+  documentXml: string,
+  tableIndex: number,
+  rowIndex: number,
+  cellIndex: number,
+  text: string,
+  options: WordCellFillOptions = {},
+) {
+  return transformWordTableBalanced(documentXml, tableIndex, (tableXml) => {
+    const rows = directTableRows(tableXml);
+    const row = rows[rowIndex];
+    if (!row) throw new Error(`Direct Word row not found: table ${tableIndex}, row ${rowIndex}`);
+    const updatedRow = fillWordRowCellsBalanced(row.xml, { [cellIndex]: text }, options);
+    return tableXml.slice(0, row.start) + updatedRow + tableXml.slice(row.end);
+  });
+}
+
+/** Row variant of fillWordCellBalanced, for listing rows cloned from the template. */
+export function fillWordRowCellsBalanced(rowXml: string, values: Record<number, string>, options: WordCellFillOptions = {}) {
+  const cells = directRowCells(rowXml);
+  let output = "";
+  let cursor = 0;
+  cells.forEach((cell, index) => {
+    output += rowXml.slice(cursor, cell.start);
+    output += index in values || options.shade ? fillCellPreservingTemplate(cell.xml, values[index] ?? "", options) : cell.xml;
+    cursor = cell.end;
+  });
+  for (const index of Object.keys(values).map(Number)) {
+    if (!cells[index]) throw new Error(`Direct Word cell not found: ${index}`);
+  }
+  return output + rowXml.slice(cursor);
+}
 
 type BodyChild = { start: number; end: number; xml: string; text: string };
 

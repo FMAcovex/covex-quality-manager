@@ -119,6 +119,8 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
       </div>
       <div className="record-actions">
         <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/oos", returnTo)} /></PermissionGate>
+        {record.qmsRecord.isActive && record.status !== "DRAFT" ? <PermissionGate permission="DOWNLOAD"><a className="button" href={`/api/oos/${id}/annex-iii`}>Anexo III</a></PermissionGate> : null}
+        {record.qmsRecord.isActive && record.status !== "DRAFT" && record.phaseIDisposition === "FULL_SCALE" ? <PermissionGate permission="DOWNLOAD"><a className="button" href={`/api/oos/${id}/annex-iv`}>Anexo IV</a></PermissionGate> : null}
         {record.qmsRecord.isActive ? <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/oos/${id}/edit?tab=${tab}`, "/oos", returnTo)}>Editar</Link></PermissionGate> : null}
       </div>
     </div>

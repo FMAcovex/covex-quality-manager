@@ -278,6 +278,9 @@ enum DocumentType {
   RETURN_ANNEX_V
   RETURN_ANNEX_VI
   RETURN_SIMPLE_LIST
+  OOS_ANNEX_III
+  OOS_ANNEX_IV
+  OOS_ANNEX_VI
 }
 
 enum HistoricalImportRowResult {

@@ -1,6 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { randomBytes } from "node:crypto";
-import businessContract from "../../ops/backup/audit-contract-oos.json";
+import businessContract from "../../ops/backup/audit-contract-oos-documents.json";
 
 // All callers create their own disposable database; never run against habitual data.
 export async function auditApplicationFixture(source: PrismaClient, url: URL, role: string, provisioner: PrismaClient = source, connection?: (url: URL) => void) {

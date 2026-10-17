@@ -20,8 +20,7 @@ export async function documentCommand(module: AccessModule, scope: { id: string;
   ]);
   const user = await requireUser();
   assertPermission(user, module, "GENERATE_DOCUMENT", scope);
-  // OOS no genera documentos todavía ni tiene operación documental en la matriz (D-088, OOS-3).
-  const codes: Partial<Record<AccessModule, string>> = { DEVIATION: "DV08", CAPA: "CA08", CHANGE_CONTROL: "CC07", COMPLAINT: "RC07", RETURN: "DE07", AUDIT: "AU06", PNT: "PN05", SYSTEM: "TR03" };
+  const codes: Partial<Record<AccessModule, string>> = { DEVIATION: "DV08", CAPA: "CA08", CHANGE_CONTROL: "CC07", COMPLAINT: "RC07", RETURN: "DE07", OOS: "OO06", AUDIT: "AU06", PNT: "PN05", SYSTEM: "TR03" };
   const code = codes[module];
   if (!code) throw new Error(`El módulo ${module} no tiene operación de generación documental.`);
   const request = requests.getStore();
