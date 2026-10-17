@@ -182,6 +182,10 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
     </> : null}
 
     {tab === "phase-i" ? <>
+      {record.qmsRecord.isActive && record.status === "OPEN" && !record.phaseIDisposition ? <div className="analytics-note oos-phase-ii-note">
+        <span><strong>Fase II:</strong> si la investigación en el laboratorio no confirma un error de laboratorio, elige la disposición final «Investigación a gran escala» para abrir la Fase II (Anexo IV).</span>
+        <PermissionGate permission="EDIT" form><Link className="button" href={qmsWithReturnTo(`/oos/${id}/edit?tab=phase-i#phase-i-disposition`, "/oos", returnTo)}>Pasar a Fase II</Link></PermissionGate>
+      </div> : null}
       <ReviewCard target={target.phaseIEvaluation} title="Evaluación del fuera de especificación">
         <div className="table-scroll"><table className="records-table">
           <thead><tr><th>Parámetro</th><th>Resultado</th></tr></thead>
