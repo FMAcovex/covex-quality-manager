@@ -62,7 +62,6 @@ const tabs = [
   ["review", "Revisión"],
   ["timeline", "Cronología"],
   ["audit-trail", "Audit Trail"],
-  ["history", "Historial"],
 ] as const;
 
 function text(value: string | null | undefined) {
@@ -741,29 +740,6 @@ async function DeviationDetailPageAuthenticatedContent({
         </div>
       ) : null}
 
-      {activeTab === "history" ? (
-        <div className="card">
-          <h2>Historial interno de modificaciones</h2>
-          <p className="muted-note">Historial operativo de V1. No constituye un audit trail GMP validado.</p>
-          {deviation.qmsRecord.history.length ? (
-            <div className="timeline">
-              {deviation.qmsRecord.history.map((event) => (
-                <div className="timeline-item history-entry" key={event.id}>
-                  <header className="history-entry-header">
-                    <strong>{formatDate(event.changedAt)}</strong>
-                    <span>{event.changedByText ?? "Sistema"}</span>
-                    <span className="badge neutral">{event.source}</span>
-                  </header>
-                  <p className="history-entry-detail">
-                    <strong>{event.fieldPath}</strong>
-                    {event.reason ? <span> · Motivo: {event.reason}</span> : null}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
-        </div>
-      ) : null}
       {activeTab === "timeline" ? <RecordTimeline qmsRecordId={deviation.qmsRecord.id} /> : null}
       {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${deviation.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>

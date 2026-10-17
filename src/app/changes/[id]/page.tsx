@@ -630,24 +630,6 @@ async function ChangeControlDetailPageAuthenticatedContent({
         <div className="card"><h2>Revisión del expediente</h2><ReviewStatusSummary /><ReviewThreadList /></div>
       ) : null}
 
-      {activeTab === "history" ? (
-        <div className="card">
-          <h2>Historial interno de modificaciones</h2>
-          <p className="muted-note">Historial operativo. Las versiones formales de seguimiento se conservan por separado.</p>
-          {record.qmsRecord.history.length ? (
-            <div className="timeline">
-              {record.qmsRecord.history.map((item) => (
-                <div className="timeline-item history-entry" key={item.id}>
-                  <div>
-                    <header className="history-entry-header"><strong>{formatDate(item.changedAt)}</strong><span>{item.changedByText ?? "Sistema"}</span><span className="badge neutral">{item.source}</span></header>
-                    <p className="history-entry-detail"><strong>{item.fieldPath}</strong>{item.reason ? <span>{` · Motivo: ${item.reason}`}</span> : null}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
-        </div>
-      ) : null}
       {activeTab === "timeline" ? <RecordTimeline qmsRecordId={record.qmsRecord.id} /> : null}
       {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${record.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>

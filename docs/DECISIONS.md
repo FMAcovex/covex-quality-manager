@@ -757,3 +757,13 @@ Detalle técnico:
 La demo local instala el PNT de OOS si se copia en `plantillas`.
 
 **Ampliación del 17/10/2026 (anexos sin encabezado):** los anexos OOS en uso de la carpeta «FUERA DE ESPECIFICACIONES» no llevan encabezado y solo numeran la página. Cada anexo se deriva desde el título de su formulario, sin encabezado, pie ni títulos del PNT, y «Página n de X» se completa con el total de páginas del formulario. La derivación anterior de OOS-3 del mismo PNT se sustituye al reinstalar, con cambio de configuración `TEMPLATE_REDERIVED`; cualquier otro binario distinto sigue sin sustituirse (`OOS_DESIGN.md` §8).
+
+## D-089 — Historial dentro de la Cronología (2026-10-17)
+
+Decisión del responsable del proyecto. Las fichas de Desviaciones, CAPA, Controles de cambios, Reclamaciones, Devoluciones y OOS dejan de tener la pestaña «Historial». Mostraba las mismas modificaciones que la Cronología (fecha, usuario, campo y motivo) y la Cronología las reúne con versiones, documentos y relaciones. Sustituye a la pestaña «Historial» de la navegación de D-028 y de `UI_SPEC.md`.
+
+- El historial operativo de D-015 se sigue registrando igual; solo cambia dónde se consulta.
+- Documentación controlada conserva su Historial: no tiene Cronología y muestra el valor anterior y el nuevo de cada campo.
+- Auditorías conserva su Historial: muestra los valores registrados de cada cambio, que la Cronología no enseña.
+- Los seguimientos legacy de Reclamaciones, que solo se veían en Historial, pasan a la pestaña «Versiones».
+- El Audit Trail no cambia.

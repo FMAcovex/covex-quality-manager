@@ -58,7 +58,6 @@ const tabs = [
   ["review", "Revisión"],
   ["timeline", "Cronología"],
   ["audit-trail", "Audit Trail"],
-  ["history", "Historial"],
 ] as const;
 
 function originRelationLabel(recordType: string) {
@@ -606,26 +605,6 @@ async function CapaDetailPageAuthenticatedContent({
         </div>
       ) : null}
 
-      {activeTab === "history" ? (
-        <div className="card">
-          <h2>Historial interno de modificaciones</h2>
-          <p className="muted-note">Historial administrativo de cambios. Los Seguimientos 00/01/02 del expediente se consultan en su pestaña propia.</p>
-          {capa.qmsRecord.history.length ? (
-            <div className="timeline">
-              {capa.qmsRecord.history.map((item) => (
-                <div className="timeline-item history-entry" key={item.id}>
-                  <header>
-                    <strong>{formatDate(item.changedAt)}</strong>
-                    <span>{item.changedByText ?? "Sistema"}</span>
-                    <span className="badge neutral">{item.source}</span>
-                  </header>
-                  <p><strong>{item.fieldPath}</strong>{item.reason ? ` · Motivo: ${item.reason}` : ""}</p>
-                </div>
-              ))}
-            </div>
-          ) : <div className="empty-panel">Sin modificaciones registradas.</div>}
-        </div>
-      ) : null}
       {activeTab === "timeline" ? <RecordTimeline qmsRecordId={capa.qmsRecord.id} /> : null}
       {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${capa.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>
