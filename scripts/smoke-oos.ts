@@ -3,12 +3,13 @@ import { randomUUID } from "node:crypto";
 import { QmsRecordType } from "@prisma/client";
 import { prisma } from "../src/lib/db";
 import { assignOperationalBusinessCode, OperationalBusinessCodeError } from "../src/lib/qms/business-code";
-import { getOosList } from "../src/modules/oos/queries";
+import { getOosList, getOosOrigins } from "../src/modules/oos/queries";
 
-// D-088, OOS-1: codificación OOS/API|MD/ZZZ/AAAA y listado sobre PostgreSQL.
+// D-088, OOS-1/OOS-2: codificación OOS/API|MD/ZZZ/AAAA, listado y relaciones con CAPA y Desviación sobre PostgreSQL.
 const year = 2097;
 const marker = `OOS-PG-${randomUUID()}`;
 const ids: string[] = [];
+const targets: string[] = [];
 
 async function open(area: "API" | "MD", values: Record<string, unknown> = {}) {
   return prisma.$transaction(async (tx) => {
@@ -54,8 +55,24 @@ async function main() {
     assert.equal((await getOosList({ ...byMarker, phase: "I" })).count, 8);
     assert.equal((await getOosList({ ...byMarker, status: ["CLOSED"], result: ["INVALIDATED"] })).count, 1);
     assert.equal((await getOosList({ q: `OOS/MD/003/${year}`, administrative: "ANNULLED" })).count, 1);
-    console.log("OOS PG OK: 9 aperturas concurrentes con correlativos API y MD independientes, código anulado reservado, códigos pedidos validados por área y filtros de listado (área, fase, estado, resultado y anulados).");
+    // OOS-2: OOS → CAPA y OOS → Desviación; búsqueda por código relacionado y OOS de origen en el destino.
+    const capa = await prisma.qmsRecord.create({ data: { recordType: QmsRecordType.CAPA, businessCode: `CAPA-${marker}`, year } });
+    const deviation = await prisma.qmsRecord.create({ data: { recordType: QmsRecordType.DEVIATION, businessCode: `DV-${marker}`, year } });
+    targets.push(capa.id, deviation.id);
+    await prisma.qmsRelation.createMany({ data: [
+      { sourceRecordId: md4.id, targetRecordId: capa.id, relationType: "GENERATES" },
+      { sourceRecordId: md4.id, targetRecordId: deviation.id, relationType: "GENERATES" },
+      { sourceRecordId: api1.id, targetRecordId: capa.id, relationType: "GENERATES", isActive: false },
+    ] });
+    const related = await getOosList({ q: `CAPA-${marker}` });
+    assert.deepEqual(related.rows.map((row) => row.qmsRecordId), [md4.id]);
+    assert.deepEqual(related.rows[0].qmsRecord.sourceRelations.map((relation) => relation.targetRecord.recordType).sort(), ["CAPA", "DEVIATION"]);
+    assert.deepEqual((await getOosOrigins(capa.id)).map((relation) => relation.sourceRecord.businessCode), [md4.businessCode]);
+    assert.deepEqual((await getOosOrigins(deviation.id)).map((relation) => relation.sourceRecord.oosRecord?.materialName), [marker]);
+    console.log("OOS PG OK: 9 aperturas concurrentes con correlativos API y MD independientes, código anulado reservado, códigos pedidos validados por área y filtros de listado (área, fase, estado, resultado y anulados), relaciones OOS → CAPA/Desviación, búsqueda por código relacionado y OOS de origen activos.");
   } finally {
+    await prisma.qmsRelation.deleteMany({ where: { sourceRecordId: { in: ids } } });
+    await prisma.qmsRecord.deleteMany({ where: { id: { in: targets } } });
     await prisma.changeHistory.deleteMany({ where: { qmsRecordId: { in: ids } } });
     await prisma.oosRecord.deleteMany({ where: { qmsRecordId: { in: ids } } });
     await prisma.qmsRecord.deleteMany({ where: { id: { in: ids } } });
