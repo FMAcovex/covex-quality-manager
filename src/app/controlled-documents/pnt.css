@@ -204,3 +204,10 @@
   .pnt-workspace.qms-list-ux-b .pnt-summary { gap: 8px; }
   .pnt-workspace.qms-list-ux-b .pnt-summary > div { padding: 10px; }
 }
+
+/* Listado con menos ruido visual: contadores en una línea y filtros rápidos en la fila de acciones. */
+.pnt-p3c4 .pnt-summary.list-counters { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 14px; }
+.pnt-p3c4 .pnt-summary.list-counters strong { font-size: 15px; }
+.pnt-p3c4 .pnt-filter-heading .pnt-quick { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+.pnt-p3c4 .pnt-filter-heading { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--border,#e2e8f0); }
+.pnt-p3c4 .pnt-summary.list-counters span { color: var(--muted,#65758a); font-size: 13px; font-weight: 400; text-transform: none; letter-spacing: 0; }

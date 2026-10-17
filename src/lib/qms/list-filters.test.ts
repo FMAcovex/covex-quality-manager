@@ -29,5 +29,6 @@ describe("list filters · D5.5", () => {
     expect(chips[2].href).toBe("/deviations?status=OPEN&status=CLOSED&q=lote+7");
     expect(activeFilterChips("/deviations", { capa: "yes" }, [capa])[0].href).toBe("/deviations");
     expect(activeFilterChips("/deviations", { year: "2031" }, [{ name: "year", label: "Año", options: [] }])[0].label).toBe("Año: 2031");
+    expect(activeFilterChips("/audits", { plannedFrom: "2026-03-01" }, [{ name: "plannedFrom", label: "Prevista desde", options: [], format: (value) => value.split("-").reverse().join("/") }])[0].label).toBe("Prevista desde: 01/03/2026");
   });
 });

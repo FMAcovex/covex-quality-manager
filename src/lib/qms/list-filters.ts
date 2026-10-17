@@ -30,7 +30,7 @@ export function validYears(values: string[] | undefined) {
 }
 
 export type FilterOption = { value: string; label: string };
-export type FilterDefinition = { name: string; label: string; options: readonly FilterOption[] };
+export type FilterDefinition = { name: string; label: string; options: readonly FilterOption[]; format?: (value: string) => string };
 export type ActiveFilterChip = { key: string; label: string; href: string };
 
 /**
@@ -52,7 +52,7 @@ export function activeFilterChips(
           if (key !== definition.name || item !== value) params.append(key, item);
         }
       }
-      const label = definition.options.find((option) => option.value === value)?.label ?? value;
+      const label = definition.options.find((option) => option.value === value)?.label ?? definition.format?.(value) ?? value;
       const search = params.toString();
       return { key: `${definition.name}:${value}`, label: `${definition.label}: ${label}`, href: search ? `${root}?${search}` : root };
     }),

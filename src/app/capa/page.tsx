@@ -22,11 +22,19 @@ import { capaColumns } from "@/modules/capa/column-config";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 import { MultiSelectFilter } from "@/components/multi-select-filter";
-import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
+import { activeFilterChips, appendFilterValues, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
+import { ListFilterToolbar } from "@/components/list-filter-toolbar";
+import { reviewFilterOptions } from "@/lib/qms/review/list-domain";
 
 export const dynamic = "force-dynamic";
 
 const param = firstQueryValue;
+
+const administrativeOptions = [{ value: "ANNULLED", label: "Anulados" }, { value: "ALL", label: "Todos" }];
+const typeOptions = [{ value: "CORRECTIVE", label: "Correctiva" }, { value: "PREVENTIVE", label: "Preventiva" }];
+const statusOptions = [{ value: "DRAFT", label: "Borrador" }, { value: "OPEN", label: "Abierta" }, { value: "CLOSED", label: "Cerrada" }, { value: "CANCELLED", label: "Cancelada" }];
+const effectivenessOptions = [{ value: "PENDING", label: "Pendiente" }, { value: "CONFORMING", label: "Conforme" }, { value: "NONCONFORMING", label: "No conforme" }, { value: "NA", label: "N/A histórico" }];
+const followupOptions = [{ value: "due", label: "Vencido" }, { value: "scheduled", label: "Programado" }, { value: "none", label: "Sin próxima fecha" }];
 
 async function CapaPageAuthenticatedContent({
   searchParams,
@@ -51,6 +59,21 @@ async function CapaPageAuthenticatedContent({
   const savedViews = await listSavedViews("/capa");
   const { rows, departments, years, origins, counters, pagination } = await getCapaList(filters);
   const officialTemplateReady = await isActiveTemplateAssetReady(QmsRecordType.CAPA, DocumentType.CAPA_ANNEX_IV);
+  const yearOptions = years.map((year) => ({ value: String(year), label: String(year) }));
+  const departmentOptions = departments.map((d) => ({ value: d.id, label: d.code }));
+  const originOptions = origins.map((value) => ({ value, label: value }));
+  const filterDefinitions: FilterDefinition[] = [
+    { name: "administrative", label: "Estado administrativo", options: administrativeOptions },
+    { name: "year", label: "Año", options: yearOptions },
+    { name: "department", label: "Departamento", options: departmentOptions },
+    { name: "type", label: "Tipo", options: typeOptions },
+    { name: "status", label: "Estado", options: statusOptions },
+    { name: "effectiveness", label: "Eficacia", options: effectivenessOptions },
+    { name: "origin", label: "Origen", options: originOptions },
+    { name: "followup", label: "Seguimiento", options: followupOptions },
+    { name: "review", label: "Revisión", options: reviewFilterOptions },
+  ];
+  const option = (options: { value: string; label: string }[]) => options.map((item) => <option key={item.value} value={item.value}>{item.label}</option>);
 
   const exportParams = new URLSearchParams();
   Object.entries(filters).forEach(([key,value]) => {
@@ -59,7 +82,7 @@ async function CapaPageAuthenticatedContent({
 
 
   return (
-    <section className="workspace qms-list-ux-b">
+    <section className="workspace qms-list-ux-b list-ux-c">
       <div className="page-heading">
         <div>
           <p className="eyebrow">Sistema de Calidad</p>
@@ -92,19 +115,12 @@ async function CapaPageAuthenticatedContent({
       </div>
 
       <form method="get" className="toolbar-form">
-        <div className="filter-panel operational capa-filters">
-          <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-          <MultiSelectFilter name="year" label="Año" selected={filters.year} options={years.map((year)=>({value:String(year),label:String(year)}))} />
-          <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departments.map((d)=>({value:d.id,label:d.code}))} />
-          <MultiSelectFilter name="type" label="Tipo" selected={filters.type} options={[{value:"CORRECTIVE",label:"Correctiva"},{value:"PREVENTIVE",label:"Preventiva"}]} />
-          <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierta"},{value:"CLOSED",label:"Cerrada"},{value:"CANCELLED",label:"Cancelada"}]} />
-          <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"CONFORMING",label:"Conforme"},{value:"NONCONFORMING",label:"No conforme"},{value:"NA",label:"N/A histórico"}]} />
-          <MultiSelectFilter name="origin" label="Origen" selected={filters.origin} options={origins.map((value)=>({value,label:value}))} />
-          <label className="filter-placeholder"><span>Seguimiento</span><select name="followup" defaultValue={filters.followup ?? ""}><option value="">Todos</option><option value="due">Vencido</option><option value="scheduled">Programado</option><option value="none">Sin próxima fecha</option></select></label>
-          <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small" type="submit">Aplicar</button><Link className="button small" href="/capa">Limpiar</Link><SavedViews listPath="/capa" views={savedViews} /></div>
-        </div>
-        <div className="search-row">
-          <SearchAutocomplete
+        <ListFilterToolbar
+          storageKey="qms.filters.capa"
+          clearHref="/capa"
+          chips={activeFilterChips("/capa", query, filterDefinitions)}
+          views={<SavedViews listPath="/capa" views={savedViews} />}
+          search={<SearchAutocomplete
             defaultValue={filters.q ?? ""}
             placeholder="Buscar código, origen, acción, causa raíz u observaciones…"
             suggestions={rows.map((row) => ({
@@ -124,20 +140,29 @@ async function CapaPageAuthenticatedContent({
                 ...row.plannedActions.map((action) => action.description),
               ].filter(Boolean).join(" "),
             }))}
-          />
-          <button className="button" type="submit">Buscar</button>
-        </div>
+          />}
+        >
+          <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative ?? ""}><option value="">Activos</option>{option(administrativeOptions)}</select></label>
+          <MultiSelectFilter name="year" label="Año" selected={filters.year} options={yearOptions} />
+          <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departmentOptions} />
+          <MultiSelectFilter name="type" label="Tipo" selected={filters.type} options={typeOptions} />
+          <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={statusOptions} />
+          <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={effectivenessOptions} />
+          <MultiSelectFilter name="origin" label="Origen" selected={filters.origin} options={originOptions} />
+          <label className="filter-placeholder"><span>Seguimiento</span><select name="followup" defaultValue={filters.followup ?? ""}><option value="">Todos</option>{option(followupOptions)}</select></label>
+          <ReviewListFilter value={filters.review} />
+        </ListFilterToolbar>
       </form>
 
-      <div className="summary-strip">
-        <div><span>Total operativas</span><strong>{counters.total}</strong></div>
-        <div><span>Borradores</span><strong>{counters.drafts}</strong></div>
-        <div><span>Abiertas</span><strong>{counters.open}</strong></div>
-        <div><span>Cerradas · eficacia pendiente</span><strong>{counters.pendingEfficacy}</strong></div>
-        <div><span>Seguimiento vencido</span><strong>{counters.overdueFollowups}</strong></div>
-      </div>
+      <p className="list-counters">
+        <span><strong>{counters.total}</strong> operativas</span>
+        <span><strong>{counters.drafts}</strong> borradores</span>
+        <span><strong>{counters.open}</strong> abiertas</span>
+        <span><strong>{counters.pendingEfficacy}</strong> cerradas con eficacia pendiente</span>
+        <span><strong>{counters.overdueFollowups}</strong> con seguimiento vencido</span>
+      </p>
 
-      <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="capa-list-table" moduleLabel="CAPA" /></PermissionGate>
+      <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="capa-list-table" moduleLabel="CAPA" hideWhenEmpty /></PermissionGate>
 
       <div className="table-card">
         <div className="table-scroll">

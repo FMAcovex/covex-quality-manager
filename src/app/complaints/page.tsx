@@ -26,11 +26,29 @@ import {
 import { getComplaintList } from "@/modules/complaints/queries";
 import { ManualReminderToolbar } from "@/components/manual-reminder-toolbar";
 import { MultiSelectFilter } from "@/components/multi-select-filter";
-import { appendFilterValues, firstQueryValue, queryList } from "@/lib/qms/list-filters";
+import { activeFilterChips, appendFilterValues, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
+import { ListFilterToolbar } from "@/components/list-filter-toolbar";
+import { reviewFilterOptions } from "@/lib/qms/review/list-domain";
 import { versionLabel } from "@/lib/qms/versioning";
 
 export const dynamic="force-dynamic";
 const p=firstQueryValue;
+
+const administrativeOptions=[{value:"ANNULLED",label:"Anulados"},{value:"ALL",label:"Todos"}];
+const typeOptions=[{value:"CUSTOMER",label:"De cliente"},{value:"PROVIDER",label:"A proveedor"}];
+const classificationOptions=[{value:"CRITICAL",label:"Crítica"},{value:"MAJOR",label:"Mayor"},{value:"MINOR",label:"Menor"},{value:"NO_GMP_IMPACT",label:"Sin impacto GMP"}];
+const statusOptions=[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierta"},{value:"CLOSED",label:"Cerrada"}];
+const situationOptions=[
+ {value:"PART_I",label:"Parte I en curso"},{value:"PART_II_DECISION_PENDING",label:"Pendiente Parte II"},
+ {value:"PART_I_CLOSURE_PENDING",label:"Pendiente cierre Parte I"},{value:"PART_II",label:"Parte II / seguimiento"},
+ {value:"EFFECTIVENESS_PENDING",label:"Pendiente eficacia"},{value:"EFFECTIVENESS_NONCONFORMING",label:"Eficacia no conforme"}
+];
+const effectivenessOptions=[{value:"PENDING",label:"Pendiente"},{value:"ACCEPTABLE",label:"Conforme"},{value:"NOT_ACCEPTABLE",label:"No conforme"},{value:"NOT_REQUIRED",label:"N/A"}];
+const followupOptions=[{value:"OVERDUE",label:"Vencido"},{value:"PENDING",label:"Pendiente"},{value:"MISSING",label:"Sin fecha"}];
+const recurrentOptions=[{value:"YES",label:"Sí"},{value:"NO",label:"No"}];
+const capaOptions=[{value:"YES",label:"Con CAPA"},{value:"NO",label:"Sin CAPA"}];
+const returnsOptions=[{value:"YES",label:"Con devolución"},{value:"NO",label:"Sin devolución"}];
+const option=(options:{value:string;label:string}[])=>options.map((item)=><option key={item.value} value={item.value}>{item.label}</option>);
 
 function efficacyTone(value:string){
  if(value==="ACCEPTABLE")return "conforming";
@@ -54,8 +72,25 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
  const pageHref=(page:number)=>{const params=new URLSearchParams(exportParams);params.set("page",String(page));return `/complaints?${params}`;};
  const currentYear=filters.year[0]??String(new Date().getFullYear());
  const today=new Date();
+ const yearOptions=years.map((y)=>({value:String(y),label:String(y)}));
+ const departmentOptions=departments.map((d)=>({value:d.id,label:d.code}));
+ const filterDefinitions:FilterDefinition[]=[
+  {name:"administrative",label:"Estado administrativo",options:administrativeOptions},
+  {name:"year",label:"Año",options:yearOptions},
+  {name:"department",label:"Departamento",options:departmentOptions},
+  {name:"type",label:"Tipo",options:typeOptions},
+  {name:"classification",label:"Clasificación",options:classificationOptions},
+  {name:"status",label:"Estado",options:statusOptions},
+  {name:"situation",label:"Situación",options:situationOptions},
+  {name:"effectiveness",label:"Eficacia",options:effectivenessOptions},
+  {name:"followup",label:"Seguimiento",options:followupOptions},
+  {name:"recurrent",label:"Recurrente",options:recurrentOptions},
+  {name:"capa",label:"CAPA vinculada",options:capaOptions},
+  {name:"returns",label:"Devolución vinculada",options:returnsOptions},
+  {name:"review",label:"Revisión",options:reviewFilterOptions},
+ ];
 
- return <section className="workspace qms-list-ux-b">
+ return <section className="workspace qms-list-ux-b list-ux-c">
   <div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Reclamaciones</h1><p>Registro, investigación, resolución, seguimiento, eficacia y cierre.</p></div>
    <div className="heading-actions"><PermissionGate permission="CREATE" module="COMPLAINT"><Link href="/complaints/new" className="button primary">+ Nueva reclamación</Link></PermissionGate><ColumnSelector tableId="complaint-list-table" storageKey="qms.columns.complaints.r1" columns={[...complaintColumns]}/>
     <PermissionGate permission="EXPORT"><details className="export-menu"><summary className="button">Exportar ▾</summary><div className="export-popover"><strong>Exportaciones</strong>{officialTemplateReady?<PermissionGate permission="EXPORT"><a className="export-link" href={`/api/complaints/export/annex-v?year=${currentYear}`}>Anexo V oficial · año {currentYear}</a></PermissionGate>:<span className="template-missing-note">Anexo V bloqueado · plantilla oficial pendiente de cargar.</span>}<PermissionGate permission="EXPORT"><a className="export-link" href={`/api/complaints/export/simple?${exportParams.toString()}`}>Listado simple · filtros actuales</a></PermissionGate><PermissionGate permission="EXPORT"><a className="export-link" href={`/api/complaints/export/simple?year=${currentYear}`}>Listado simple · año {currentYear}</a></PermissionGate></div></details></PermissionGate>
@@ -64,26 +99,13 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
 
   <div className="tabs"><Link className="tab active" href="/complaints">Expedientes</Link><Link className="tab muted" href="/complaints/indicators">Indicadores</Link></div>
 
-  <form method="get" className="toolbar-form"><div className="filter-panel operational complaint-filter-panel">
-   <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative??""}><option value="">Activos</option><option value="ANNULLED">Anulados</option><option value="ALL">Todos</option></select></label>
-   <MultiSelectFilter name="year" label="Año" selected={filters.year} options={years.map((y)=>({value:String(y),label:String(y)}))}/>
-   <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departments.map((d)=>({value:d.id,label:d.code}))}/>
-   <MultiSelectFilter name="type" label="Tipo" selected={filters.type} options={[{value:"CUSTOMER",label:"De cliente"},{value:"PROVIDER",label:"A proveedor"}]}/>
-   <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={[{value:"CRITICAL",label:"Crítica"},{value:"MAJOR",label:"Mayor"},{value:"MINOR",label:"Menor"},{value:"NO_GMP_IMPACT",label:"Sin impacto GMP"}]}/>
-   <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={[{value:"DRAFT",label:"Borrador"},{value:"OPEN",label:"Abierta"},{value:"CLOSED",label:"Cerrada"}]}/>
-   <MultiSelectFilter name="situation" label="Situación" selected={filters.situation} options={[
-    {value:"PART_I",label:"Parte I en curso"},{value:"PART_II_DECISION_PENDING",label:"Pendiente Parte II"},
-    {value:"PART_I_CLOSURE_PENDING",label:"Pendiente cierre Parte I"},{value:"PART_II",label:"Parte II / seguimiento"},
-    {value:"EFFECTIVENESS_PENDING",label:"Pendiente eficacia"},{value:"EFFECTIVENESS_NONCONFORMING",label:"Eficacia no conforme"}
-   ]}/>
-   <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={[{value:"PENDING",label:"Pendiente"},{value:"ACCEPTABLE",label:"Conforme"},{value:"NOT_ACCEPTABLE",label:"No conforme"},{value:"NOT_REQUIRED",label:"N/A"}]}/>
-   <MultiSelectFilter name="followup" label="Seguimiento" selected={filters.followup} options={[{value:"OVERDUE",label:"Vencido"},{value:"PENDING",label:"Pendiente"},{value:"MISSING",label:"Sin fecha"}]}/>
-   <label className="filter-placeholder"><span>Recurrente</span><select name="recurrent" defaultValue={filters.recurrent??""}><option value="">Todas</option><option value="YES">Sí</option><option value="NO">No</option></select></label>
-   <label className="filter-placeholder"><span>CAPA vinculada</span><select name="capa" defaultValue={filters.capa??""}><option value="">Todas</option><option value="YES">Con CAPA</option><option value="NO">Sin CAPA</option></select></label>
-   <label className="filter-placeholder"><span>Devolución vinculada</span><select name="returns" defaultValue={filters.returns??""}><option value="">Todas</option><option value="YES">Con devolución</option><option value="NO">Sin devolución</option></select></label>
-   <ReviewListFilter value={filters.review} /><div className="filter-actions"><button className="button small">Aplicar</button><Link className="button small" href="/complaints">Limpiar</Link><SavedViews listPath="/complaints" views={savedViews} /></div>
-  </div><div className="search-row">
-   <SearchAutocomplete
+  <form method="get" className="toolbar-form">
+   <ListFilterToolbar
+     storageKey="qms.filters.complaints"
+     clearHref="/complaints"
+     chips={activeFilterChips("/complaints", q, filterDefinitions)}
+     views={<SavedViews listPath="/complaints" views={savedViews} />}
+     search={<SearchAutocomplete
     defaultValue={filters.q??""}
     placeholder="Buscar código, cliente/proveedor, referencia, lote, descripción o causa raíz…"
     suggestions={rows.map((row)=>{
@@ -95,20 +117,34 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
        searchText:[row.qmsRecord.businessCode,row.partyName,row.reference,row.lotReference,row.description,row.rootCause,row.internalObservations,...row.capaPlans.map((plan)=>plan.description)].filter(Boolean).join(" ")
       };
     })}
-   />
-   <button className="button" type="submit">Buscar</button>
-  </div></form>
+   />}
+   >
+   <label className="filter-placeholder"><span>Estado administrativo</span><select name="administrative" defaultValue={filters.administrative??""}><option value="">Activos</option>{option(administrativeOptions)}</select></label>
+   <MultiSelectFilter name="year" label="Año" selected={filters.year} options={yearOptions}/>
+   <MultiSelectFilter name="department" label="Departamento" selected={filters.department} options={departmentOptions}/>
+   <MultiSelectFilter name="type" label="Tipo" selected={filters.type} options={typeOptions}/>
+   <MultiSelectFilter name="classification" label="Clasificación" selected={filters.classification} options={classificationOptions}/>
+   <MultiSelectFilter name="status" label="Estado" selected={filters.status} options={statusOptions}/>
+   <MultiSelectFilter name="situation" label="Situación" selected={filters.situation} options={situationOptions}/>
+   <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={effectivenessOptions}/>
+   <MultiSelectFilter name="followup" label="Seguimiento" selected={filters.followup} options={followupOptions}/>
+   <label className="filter-placeholder"><span>Recurrente</span><select name="recurrent" defaultValue={filters.recurrent??""}><option value="">Todas</option>{option(recurrentOptions)}</select></label>
+   <label className="filter-placeholder"><span>CAPA vinculada</span><select name="capa" defaultValue={filters.capa??""}><option value="">Todas</option>{option(capaOptions)}</select></label>
+   <label className="filter-placeholder"><span>Devolución vinculada</span><select name="returns" defaultValue={filters.returns??""}><option value="">Todas</option>{option(returnsOptions)}</select></label>
+   <ReviewListFilter value={filters.review} />
+   </ListFilterToolbar>
+  </form>
 
-  <div className="status-strip complaint-status-strip">
-   <div><strong>{counters.total}</strong><span>Operativas</span></div>
-   <div><strong>{counters.drafts}</strong><span>Borradores</span></div>
-   <div><strong>{counters.open}</strong><span>Abiertas</span></div>
-   <div><strong>{counters.pendingPartII}</strong><span>Pendientes Parte II</span></div>
-   <div><strong>{counters.pendingEfficacy}</strong><span>Eficacia pendiente</span></div>
-   <div><strong>{counters.followupDue}</strong><span>Seguimientos vencidos</span></div>
-  </div>
+  <p className="list-counters">
+   <span><strong>{counters.total}</strong> operativas</span>
+   <span><strong>{counters.drafts}</strong> borradores</span>
+   <span><strong>{counters.open}</strong> abiertas</span>
+   <span><strong>{counters.pendingPartII}</strong> pendientes Parte II</span>
+   <span><strong>{counters.pendingEfficacy}</strong> con eficacia pendiente</span>
+   <span><strong>{counters.followupDue}</strong> seguimientos vencidos</span>
+  </p>
 
-  <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="complaint-list-table" moduleLabel="Reclamaciones" /></PermissionGate>
+  <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="complaint-list-table" moduleLabel="Reclamaciones" hideWhenEmpty /></PermissionGate>
 
   <div className="table-card"><div className="table-scroll"><table id="complaint-list-table"><thead><tr><th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las reclamaciones visibles"/></PermissionGate></th>{complaintColumns.map(c=><th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>
    {rows.length?rows.map(r=>{
