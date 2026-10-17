@@ -149,3 +149,37 @@ it("captures OOS Anexo III/IV working documents (OO06) with generation permissio
     expect(await inspector.generatedDocument.count({ where: { qmsRecordId: record.qmsRecordId } })).toBe(before);
   }
 }, 60000);
+
+it("keeps OOS signed Anexo III PDFs as received originals (OO06) with replacement reason and custody chain", async () => {
+  const { uploadOosSignedPdfAction } = await import("../../src/modules/oos/signed-document-actions");
+  const record = await inspector.oosRecord.findUniqueOrThrow({ where: { id: oosId } });
+  const pdf = (text: string) => new File([new TextEncoder().encode(`%PDF-1.7\n${text}\n%%EOF`)], "anexo-iii-firmado.pdf", { type: "application/pdf" });
+  const upload = (requestId: string, text: string, replacementReason = "") => {
+    const fd = form({ actor: "Spoofed actor", replacementReason, _covexAuditRequestId: requestId }); fd.set("file", pdf(text));
+    return [record.id, "annex-iii", { error: null, success: null }, fd] as const;
+  };
+  const firstId = randomUUID();
+  await expect(asUser(reader, () => uploadOosSignedPdfAction(...upload(firstId, "Synthetic signed Anexo III")))).rejects.toMatchObject({ status: 403 });
+  expect(await asUser(qa, () => uploadOosSignedPdfAction(...upload(firstId, "Synthetic signed Anexo III")))).toMatchObject({ error: null });
+  const first = await operation(firstId);
+  expect(first.operation).toBe("OO06"); expect(first.accessPermission).toBe("ATTACH_DOCUMENT");
+  const version = await inspector.qmsRecordVersion.findFirstOrThrow({ where: { qmsRecordId: record.qmsRecordId }, include: { documents: true, signedCustodies: true } });
+  expect((version.snapshot as { recordType: string }).recordType).toBe("OOS");
+  expect(version.documents.map((document) => document.kind)).toEqual(["OOS_ANNEX_III_SIGNED"]);
+  expect(version.signedCustodies).toHaveLength(1);
+  expect(first.events.some((event) => event.entityType === "RecordVersionDocument" && event.fieldPath === "kind")).toBe(true);
+
+  // Replacing a received original needs a reason; the rejection writes nothing.
+  const totals = { operations: await inspector.auditOperation.count(), custody: await inspector.signedDocumentCustody.count() };
+  expect(await asUser(qa, () => uploadOosSignedPdfAction(...upload(randomUUID(), "Synthetic corrected scan")))).toMatchObject({ error: expect.any(String) });
+  expect({ operations: await inspector.auditOperation.count(), custody: await inspector.signedDocumentCustody.count() }).toEqual(totals);
+  const replaceId = randomUUID();
+  expect(await asUser(qa, () => uploadOosSignedPdfAction(...upload(replaceId, "Synthetic corrected scan", "Synthetic illegible first scan")))).toMatchObject({ error: null });
+  const replaced = await operation(replaceId);
+  expect(replaced.operation).toBe("OO06"); expect(replaced.reason).toBe("Synthetic illegible first scan");
+  const custody = await inspector.signedDocumentCustody.findMany({ where: { recordVersionId: version.id }, orderBy: { retainedAt: "asc" } });
+  expect(custody).toHaveLength(2); expect(custody[1].replacesId).toBe(custody[0].id);
+  const count = await inspector.auditEvent.count();
+  expect(await asUser(qa, () => uploadOosSignedPdfAction(...upload(replaceId, "Synthetic corrected scan", "Synthetic illegible first scan")))).toMatchObject({ error: null });
+  expect(await inspector.auditEvent.count()).toBe(count);
+}, 60000);

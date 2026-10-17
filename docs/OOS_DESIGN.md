@@ -106,12 +106,12 @@ Sin relación con Control de cambios, que no participa en relaciones operativas 
 
 ## 7. Permisos
 
-El módulo admite consultar, crear, editar, revisar, cerrar, anular, descargar, exportar y generar documentos (estos dos últimos desde OOS-3), que se asignan en el editor de roles (D-086). El PNT asigna:
+El módulo admite consultar, crear, editar, revisar, cerrar, anular, descargar, exportar, generar documentos (OOS-3) y adjuntar documentos (OOS-4), que se asignan en el editor de roles (D-086). El PNT asigna:
 
 - la numeración, la Fase I y su emisión a **Control de Calidad**;
 - la aprobación de la Fase I, la Fase II, la interpretación de resultados y la decisión sobre el lote a **Garantía de Calidad**.
 
-Los roles concretos se configuran en el editor de roles. La aplicación no implementa firma electrónica ni aprobación GMP (D-073, D-074): registra quién emite y aprueba; adjuntar el documento firmado a mano queda pendiente (sección 8).
+Los roles concretos se configuran en el editor de roles. La aplicación no implementa firma electrónica ni aprobación GMP (D-073, D-074): registra quién emite y aprueba; el documento firmado a mano se adjunta como PDF (sección 8, OOS-4).
 
 ## 8. Documentos
 
@@ -165,7 +165,13 @@ Implementado en OOS-3 (17/10/2026).
 - Con la política B2 se captura como operación OO06 (`PHASE_4B3_A.md` §3.9).
 - El Anexo VI es una exportación con permiso «Exportar» y no se archiva, como el Anexo VI de Devoluciones.
 
-**Pendiente.** Adjuntar el anexo firmado a mano. La custodia de originales firmados exige versiones funcionales del expediente, que OOS no tiene, y queda fuera de OOS-3.
+**PDF firmado (OOS-4).** En la pestaña «Documentos» de la ficha se adjunta el PDF escaneado del Anexo III y, con Fase II, del Anexo IV, firmados a mano.
+- Se conserva como original recibido con la custodia transversal: SHA-256 verificado al descargar, original inmutable y cadena de sustituciones.
+- Sustituirlo exige motivo.
+- OOS no tiene versiones funcionales. El PDF se asocia a un snapshot técnico del expediente (versión 0), que se crea o actualiza al recibir el PDF; cada original guarda además el snapshot observado.
+- Requiere el permiso «Adjuntar documentos».
+- Con la política B2 se captura como OO06.
+- No es firma electrónica (D-073, D-074).
 
 ## 9. Importación del histórico
 
@@ -188,5 +194,6 @@ Implementado en OOS-3 (17/10/2026).
 | OOS-2 | Relaciones con CAPA y Desviación y revisión (Review) |
 | OOS-2b | Captura del audit trail B2 en las operaciones de OOS (OO01–OO05): matriz de `PHASE_4B3_A.md` §3.9, política de captura de `OosRecord`, funciones SQL y contrato de copia de seguridad |
 | OOS-3 | Anexos III y IV y Anexo VI imprimible con las plantillas del PNT 04 corregido (sección 8), con la operación OO06 de generación documental en el audit trail |
+| OOS-4 | PDF firmado a mano de los Anexos III y IV, custodiado como original recibido (sección 8), y PNT de OOS en la demo local |
 
 Cada PR con lint, tests, Prisma validate, build y la batería CI completa. El módulo no queda validado GMP por estar implementado (D-076).

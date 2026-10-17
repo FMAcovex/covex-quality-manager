@@ -246,6 +246,8 @@ enum RecordVersionDocumentKind {
   SIGNED_PDF
   RETURN_ANNEX_III_SIGNED
   RETURN_ANNEX_V_SIGNED
+  OOS_ANNEX_III_SIGNED
+  OOS_ANNEX_IV_SIGNED
 }
 
 enum DocumentType {

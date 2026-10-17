@@ -15,7 +15,7 @@ const operations: Record<string, string> = {
   createCapaAction: "CA01", updateCapaAction: "CA02", addCapaFollowupAction: "CA04", addCapaRelationAction: "CA07", unlinkCapaOriginAction: "CA07", uploadCapaSignedPdfAction: "CA08",
   createChangeControlAction: "CC01", updateChangeControlAction: "CC02", addChangeControlFollowupAction: "CC04", updateChangeControlFollowupAction: "CC04", uploadChangeControlSignedPdfAction: "CC07",
   createComplaintAction: "RC01", updateComplaintAction: "RC02", addComplaintFollowupAction: "RC04", addComplaintRelationAction: "RC06", unlinkComplaintRelationAction: "RC06", uploadComplaintSignedPdfAction: "RC07",
-  createOosAction: "OO01", updateOosAction: "OO02", addOosRelationAction: "OO05", unlinkOosRelationAction: "OO05",
+  createOosAction: "OO01", updateOosAction: "OO02", addOosRelationAction: "OO05", unlinkOosRelationAction: "OO05", uploadOosSignedPdfAction: "OO06",
   createReturnAction: "DE01", updateReturnAction: "DE02", addReturnFollowupAction: "DE04", addReturnRelationAction: "DE06", unlinkReturnComplaintAction: "DE06", uploadReturnSignedPdfAction: "DE07",
   saveAuditAction: "AU01", saveAuditChildAction: "AU02", linkAuditFindingAction: "AU05", retireAuditChildAction: "AU03", retireAuditAttributionAction: "AU05", unlinkAuditRecordAction: "AU05",
   createPlanAction: "AU08", addPlanEntryAction: "AU08", updatePlanEntryAction: "AU08", retirePlanEntryAction: "AU08", addPlanEntryFormAction: "AU08", updatePlanEntryFormAction: "AU08", saveProgrammeApproversAction: "AU09", issueAnnualProgrammeAction: "AU09",

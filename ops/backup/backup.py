@@ -222,7 +222,12 @@ def audit_contract(connection):
     if not oos_documents and sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t":
         installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261017000400_b2_oos_documents' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
         require(installed == b"0", "audit-protection-unavailable")
-    filename = "audit-contract-oos-documents.json" if oos_documents else "audit-contract-oos.json" if oos else "audit-contract-c.json" if review else "audit-contract-b2-critical.json" if critical else "audit-contract-b2-staging.json" if staging else "audit-contract-b2-documents.json" if documents else "audit-contract-b2-integration.json" if composition else "audit-contract-b2-capture.json" if capture else "audit-contract-b2.json" if b2 else "audit-contract.json"
+    # D-088, OOS-4: OOS signed PDFs only widen covex_b2_retain_signed_original.
+    oos_signed = sql(connection, "SELECT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='covex_b2_retain_signed_original' AND p.prosrc LIKE '%OOS_ANNEX_III_SIGNED%');").strip() == b"t"
+    if not oos_signed and sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t":
+        installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261017000600_b2_oos_signed_documents' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
+        require(installed == b"0", "audit-protection-unavailable")
+    filename = "audit-contract-oos-signed.json" if oos_signed else "audit-contract-oos-documents.json" if oos_documents else "audit-contract-oos.json" if oos else "audit-contract-c.json" if review else "audit-contract-b2-critical.json" if critical else "audit-contract-b2-staging.json" if staging else "audit-contract-b2-documents.json" if documents else "audit-contract-b2-integration.json" if composition else "audit-contract-b2-capture.json" if capture else "audit-contract-b2.json" if b2 else "audit-contract.json"
     return json.loads(Path(__file__).with_name(filename).read_text())
 
 

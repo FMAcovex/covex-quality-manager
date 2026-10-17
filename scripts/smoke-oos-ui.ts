@@ -4,6 +4,7 @@ import { type Page } from "playwright";
 import { chromium } from "./auth-fixtures/browser";
 import { createHash } from "node:crypto";
 import { prisma } from "../src/lib/db";
+import { purgeLegacyFixtureDocuments } from "./audit-fixtures/legacy-cleanup";
 import { syntheticWorkingDocumentTemplate } from "./audit-fixtures/working-document-template";
 
 // D-088, OOS-1/OOS-2: alta, apertura, Fase I → Fase II, cierre, relaciones y Review desde la interfaz real.
@@ -141,8 +142,19 @@ async function main() {
     await page.getByRole("link", { name: "Anexo VI oficial · año 2096", exact: true }).click();
     assert.equal((await listing).suggestedFilename(), "Anexo_VI_Listado_general_OOS_2096.docx");
 
+    // OOS-4: PDF firmado del Anexo III desde la pestaña Documentos, con su descarga.
+    await view(page, `/oos/${draft.id}?tab=documents`);
+    const annexIII = page.locator(".document-block").filter({ hasText: "Anexo III" });
+    await annexIII.locator('input[name="file"]').setInputFiles({ name: "anexo-iii-firmado.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7\nPDF firmado ficticio\n%%EOF") });
+    await annexIII.getByRole("button", { name: "Cargar PDF firmado", exact: true }).click();
+    await annexIII.getByText("PDF firmado disponible").waitFor();
+    const signedDownload = page.waitForEvent("download");
+    await annexIII.getByRole("link", { name: "Descargar PDF firmado", exact: true }).click();
+    assert.equal((await signedDownload).suggestedFilename(), "anexo-iii-firmado.pdf");
+    assert.equal(await page.locator(".document-block").filter({ hasText: "Anexo IV" }).count(), 1);
+
     // Ficha, pestañas, listado y buscador global.
-    for (const tab of ["summary", "phase-i", "phase-ii", "relations", "review", "timeline", "audit-trail", "history"]) {
+    for (const tab of ["summary", "phase-i", "phase-ii", "relations", "documents", "review", "timeline", "audit-trail", "history"]) {
       await view(page, `/oos/${draft.id}?tab=${tab}`);
       assert.equal(await page.locator(".record-tabs a.active").count(), 1, tab);
     }
@@ -159,12 +171,14 @@ async function main() {
       }
     }
     assert.deepEqual(errors, []);
-    console.log(`OOS UI OK: borrador sin código, apertura con datos iniciales obligatorios y ${opened.qmsRecord.businessCode}, Fase I → Fase II, cierre no concluyente, vínculo y desvinculación de CAPA con origen visible en la CAPA, observación de Review sin versión, descarga de los Anexos III, IV y VI, pestañas, listado, buscador y 1440/768/390 sin desbordes.`);
+    console.log(`OOS UI OK: borrador sin código, apertura con datos iniciales obligatorios y ${opened.qmsRecord.businessCode}, Fase I → Fase II, cierre no concluyente, vínculo y desvinculación de CAPA con origen visible en la CAPA, observación de Review sin versión, descarga de los Anexos III, IV y VI, PDF firmado del Anexo III, pestañas, listado, buscador y 1440/768/390 sin desbordes.`);
   } finally {
     await browser.close();
     await prisma.reviewMessage.deleteMany({ where: { reviewThread: { qmsRecordId: { in: ids } } } });
     await prisma.reviewThread.deleteMany({ where: { qmsRecordId: { in: ids } } });
+    await purgeLegacyFixtureDocuments(prisma, { recordVersion: { qmsRecordId: { in: ids } } });
     await prisma.generatedDocument.deleteMany({ where: { qmsRecordId: { in: ids } } });
+    await prisma.qmsRecordVersion.deleteMany({ where: { qmsRecordId: { in: ids } } });
     await prisma.templateVersion.deleteMany({ where: { id: { in: templates } } });
     await prisma.qmsRelation.deleteMany({ where: { sourceRecordId: { in: ids } } });
     await prisma.changeHistory.deleteMany({ where: { qmsRecordId: { in: targets } } });
