@@ -89,7 +89,7 @@ Pestañas:
 3. Acciones.
 4. Seguimientos.
 5. Documentos.
-6. Historial.
+6. Cronología: modificaciones, versiones, documentos y relaciones (D-089).
 
 ### Resumen
 Debe permitir comprender el caso sin navegar por todas las pestañas:

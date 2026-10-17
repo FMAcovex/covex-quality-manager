@@ -76,7 +76,7 @@ async function main() {
       for (const [route, id] of [["complaints", fixture.ids[3][1]], ["returns", fixture.ids[4][1]]] as const) {
         await visit(page, "/" + route + "/" + id);
         await capture(route + "-detail");
-        for (const tab of route === "complaints" ? ["part-i", "part-ii", "versions", "documents", "history"] : ["checks", "documents", "followups", "history"]) {
+        for (const tab of route === "complaints" ? ["part-i", "part-ii", "versions", "documents", "timeline"] : ["checks", "documents", "followups", "timeline"]) {
           await visit(page, "/" + route + "/" + id + "?tab=" + tab);
           if (tab === "versions" || (route === "returns" && tab === "documents")) {
             const links = page.locator(route === "complaints" ? 'a[href*="/signed-pdf"]' : 'a[href*="/documents/"], a[href*="/signed-pdf/"]');

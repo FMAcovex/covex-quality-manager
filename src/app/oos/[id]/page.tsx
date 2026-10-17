@@ -79,7 +79,6 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
     ["review", "Revisión"],
     ["timeline", "Cronología"],
     ["audit-trail", "Audit Trail"],
-    ["history", "Historial"],
   ] as const;
   const tab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const basePath = `/oos/${id}`;
@@ -276,17 +275,6 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
 
     {tab === "timeline" ? <RecordTimeline qmsRecordId={record.qmsRecord.id} /> : null}
     {tab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${record.qmsRecord.id}`} basePath={basePath} page={Number(auditPage) || 1} /> : null}
-
-    {tab === "history" ? <div className="card">
-      <h2>Historial interno de modificaciones</h2>
-      <p className="muted-note">Historial operativo del expediente; no constituye audit trail GMP validado.</p>
-      {record.qmsRecord.history.length ? <div className="timeline">
-        {record.qmsRecord.history.map((item) => <div className="timeline-item history-entry" key={item.id}>
-          <header><strong>{formatOosDate(item.changedAt)}</strong><span>{item.changedByText ?? "Sistema"}</span><span className="badge neutral">{item.source}</span></header>
-          <p className="history-entry-detail"><strong>{item.fieldPath}</strong>{item.reason ? <span> · Motivo: {item.reason}</span> : null}</p>
-        </div>)}
-      </div> : <div className="empty-panel">Sin cambios registrados.</div>}
-    </div> : null}
   </section>
   <ReviewDrawer />
   </ReviewWorkspaceProvider>;

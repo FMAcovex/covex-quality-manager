@@ -63,7 +63,6 @@ const tabs = [
   ["review", "Revisión"],
   ["timeline", "Cronología"],
   ["audit-trail", "Audit Trail"],
-  ["history", "Historial"],
 ] as const;
 
 const txt = (value: string | null | undefined) => value || "—";
@@ -963,37 +962,6 @@ async function ReturnDetailPageAuthenticatedContent({
           </div>
         ) : null}
 
-        {tab === "history" ? (
-          <div className="card">
-            <h2>Historial interno de modificaciones</h2>
-            <p className="muted-note">
-              Historial administrativo del expediente. Devoluciones mantiene un único
-              expediente editable, sin revisiones funcionales.
-            </p>
-            {r.qmsRecord.history.length ? (
-              <div className="timeline return-timeline">
-                {r.qmsRecord.history.map((item) => (
-                  <div
-                    className="timeline-item return-timeline-item history-entry"
-                    key={item.id}
-                  >
-                    <header>
-                      <strong>{formatDate(item.changedAt)}</strong>
-                      <span>{item.changedByText ?? "Sistema"}</span>
-                      <span className="badge neutral">{item.source}</span>
-                    </header>
-                    <p className="history-entry-detail">
-                      <strong>{item.fieldPath}</strong>
-                      {item.reason ? <span> · Motivo: {item.reason}</span> : null}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-panel">Sin cambios registrados.</div>
-            )}
-          </div>
-        ) : null}
         {tab === "timeline" ? <RecordTimeline qmsRecordId={r.qmsRecord.id} /> : null}
       {tab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${r.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
       </section>

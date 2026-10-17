@@ -90,7 +90,6 @@ export function getOosDetail(id: string) {
     include: {
       department: true,
       qmsRecord: { include: {
-        history: { orderBy: { changedAt: "desc" }, take: 100 },
         sourceRelations: { where: { isActive: true }, include: { targetRecord: true }, orderBy: { createdAt: "asc" } },
         // OOS-4: PDF firmados del snapshot técnico vigente, sin cargar sus bytes.
         versions: { orderBy: { sequenceNumber: "desc" }, take: 1, select: { documents: { select: { kind: true, fileName: true, fileSize: true, uploadedAt: true, uploadedByText: true } } } },

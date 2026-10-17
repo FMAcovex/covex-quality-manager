@@ -157,7 +157,7 @@ async function main() {
     assert.equal(await page.locator(".document-block").filter({ hasText: "Anexo IV" }).count(), 1);
 
     // Ficha, pestañas, listado y buscador global.
-    for (const tab of ["summary", "phase-i", "phase-ii", "relations", "documents", "review", "timeline", "audit-trail", "history"]) {
+    for (const tab of ["summary", "phase-i", "phase-ii", "relations", "documents", "review", "timeline", "audit-trail"]) {
       await view(page, `/oos/${draft.id}?tab=${tab}`);
       assert.equal(await page.locator(".record-tabs a.active").count(), 1, tab);
     }
