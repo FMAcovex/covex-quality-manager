@@ -144,7 +144,8 @@ Los roles concretos se configuran en el editor de roles. La aplicación no imple
 | --- | --- |
 | **OOS-0 (esta)** | Diseño, decisión D-088 y fuente en GMP_SOURCES |
 | OOS-1 | Modelo y migración aditiva, contrato y registro, listado, ficha, alta y edición con datos iniciales, Fase I, Fase II, resultado y cierre, codificación, permisos, búsqueda, panel, cronología, audit trail (pestaña), anulación y pruebas |
-| OOS-2 | Relaciones con CAPA y Desviación, revisión (Review) y captura del audit trail en las operaciones de OOS |
+| OOS-2 | Relaciones con CAPA y Desviación y revisión (Review) |
+| OOS-2b | Captura del audit trail B2 en las operaciones de OOS: códigos de operación y análisis de riesgo en la matriz de `PHASE_4B3_A.md`, política de captura de `OosRecord`, funciones SQL y contratos de copia de seguridad. Pendiente de aprobación de alcance |
 | OOS-3 | Anexos III y IV y Anexo VI imprimible con las plantillas del PNT 04 corregido |
 
 Cada PR con lint, tests, Prisma validate, build y la batería CI completa. El módulo no queda validado GMP por estar implementado (D-076).

@@ -4,10 +4,11 @@ import { type Page } from "playwright";
 import { chromium } from "./auth-fixtures/browser";
 import { prisma } from "../src/lib/db";
 
-// D-088, OOS-1: alta, apertura, Fase I → Fase II y cierre desde la interfaz real.
+// D-088, OOS-1/OOS-2: alta, apertura, Fase I → Fase II, cierre, relaciones y Review desde la interfaz real.
 const base = process.env.OOS_UI_BASE_URL;
 const marker = `OOS-UI-${randomUUID()}`;
 const ids: string[] = [];
+const targets: string[] = [];
 
 async function view(page: Page, path: string) {
   await page.goto(`${base}${path}`);
@@ -78,8 +79,48 @@ async function main() {
     assert.equal(closed.qmsRecord.businessCode, opened.qmsRecord.businessCode);
     assert.deepEqual(closed.qmsRecord.history.map((item) => item.fieldPath).sort(), ["__created__", "__edit__", "__edit__"]);
 
+    // OOS-2: vincular una CAPA operativa desde la pestaña Relaciones; la CAPA muestra el OOS de origen en solo lectura.
+    const capa = await prisma.qmsRecord.create({ data: { recordType: "CAPA", businessCode: `CA-${marker}`, year: 2096, capa: { create: { actionType: "CORRECTIVE" } } }, include: { capa: true } });
+    targets.push(capa.id);
+    await view(page, `/oos/${draft.id}?tab=relations`);
+    await page.locator('select[name="recordType"]').selectOption("CAPA");
+    await page.locator('input[name="businessCode"]').fill(`CA-${marker}`);
+    await page.getByRole("option", { name: new RegExp(`CA-${marker}`) }).click();
+    await page.getByRole("button", { name: "Vincular expediente", exact: true }).click();
+    await page.getByText("vinculada correctamente").waitFor();
+    const relation = await prisma.qmsRelation.findFirstOrThrow({ where: { sourceRecordId: draft.qmsRecordId, targetRecordId: capa.id, isActive: true } });
+    assert.equal(relation.relationType, "GENERATES");
+    assert.equal(await prisma.changeHistory.count({ where: { qmsRecordId: draft.qmsRecordId, fieldPath: "relations" } }), 1);
+    await view(page, `/capa/${capa.capa!.id}?tab=relations`);
+    await page.getByRole("link", { name: opened.qmsRecord.businessCode!, exact: true }).first().waitFor();
+    await view(page, `/oos?q=${encodeURIComponent(`CA-${marker}`)}`);
+    await page.getByRole("link", { name: opened.qmsRecord.businessCode!, exact: true }).waitFor();
+
+    // Review: observación sobre la conclusión de la Fase II, sin versión funcional asociada.
+    await view(page, `/oos/${draft.id}?tab=phase-ii&review=1`);
+    await page.locator("#review-oos-phase-ii-conclusion .review-marker").click();
+    const drawer = page.locator(".review-drawer");
+    await drawer.locator(".review-form textarea").last().fill(`Review ${marker}`);
+    await drawer.getByRole("button", { name: "Crear observación", exact: true }).click();
+    await drawer.locator(".review-thread-card").filter({ hasText: `Review ${marker}` }).waitFor();
+    await page.getByRole("button", { name: "Cerrar", exact: true }).click();
+    const thread = await prisma.reviewThread.findFirstOrThrow({ where: { qmsRecordId: draft.qmsRecordId } });
+    assert.equal(thread.recordVersionId, null);
+    assert.deepEqual([thread.tabKey, thread.fieldPath], ["phase-ii", "phaseIIConclusion"]);
+    await view(page, `/oos/${draft.id}?tab=review&review=1`);
+    await page.locator(".review-thread-card").filter({ hasText: `Review ${marker}` }).getByRole("link", { name: "Ir al campo", exact: true }).click();
+    await page.locator("#review-oos-phase-ii-conclusion.review-target-highlight").waitFor();
+
+    // Desvincular conserva la relación inactiva y la CAPA deja de mostrar el origen.
+    await view(page, `/oos/${draft.id}?tab=relations`);
+    await page.getByRole("button", { name: "Desvincular", exact: true }).click();
+    await page.getByRole("button", { name: "Desvincular", exact: true }).waitFor({ state: "detached" });
+    assert.equal((await prisma.qmsRelation.findUniqueOrThrow({ where: { id: relation.id } })).isActive, false);
+    await view(page, `/capa/${capa.capa!.id}?tab=relations`);
+    assert.equal(await page.getByRole("link", { name: opened.qmsRecord.businessCode!, exact: true }).count(), 0);
+
     // Ficha, pestañas, listado y buscador global.
-    for (const tab of ["summary", "phase-i", "phase-ii", "timeline", "audit-trail", "history"]) {
+    for (const tab of ["summary", "phase-i", "phase-ii", "relations", "review", "timeline", "audit-trail", "history"]) {
       await view(page, `/oos/${draft.id}?tab=${tab}`);
       assert.equal(await page.locator(".record-tabs a.active").count(), 1, tab);
     }
@@ -96,9 +137,15 @@ async function main() {
       }
     }
     assert.deepEqual(errors, []);
-    console.log(`OOS UI OK: borrador sin código, apertura con datos iniciales obligatorios y ${opened.qmsRecord.businessCode}, Fase I → Fase II, cierre no concluyente, pestañas, listado, buscador y 1440/768/390 sin desbordes.`);
+    console.log(`OOS UI OK: borrador sin código, apertura con datos iniciales obligatorios y ${opened.qmsRecord.businessCode}, Fase I → Fase II, cierre no concluyente, vínculo y desvinculación de CAPA con origen visible en la CAPA, observación de Review sin versión, pestañas, listado, buscador y 1440/768/390 sin desbordes.`);
   } finally {
     await browser.close();
+    await prisma.reviewMessage.deleteMany({ where: { reviewThread: { qmsRecordId: { in: ids } } } });
+    await prisma.reviewThread.deleteMany({ where: { qmsRecordId: { in: ids } } });
+    await prisma.qmsRelation.deleteMany({ where: { sourceRecordId: { in: ids } } });
+    await prisma.changeHistory.deleteMany({ where: { qmsRecordId: { in: targets } } });
+    await prisma.capa.deleteMany({ where: { qmsRecordId: { in: targets } } });
+    await prisma.qmsRecord.deleteMany({ where: { id: { in: targets } } });
     await prisma.changeHistory.deleteMany({ where: { qmsRecordId: { in: ids } } });
     await prisma.oosRecord.deleteMany({ where: { qmsRecordId: { in: ids } } });
     await prisma.qmsRecord.deleteMany({ where: { id: { in: ids } } });

@@ -7,6 +7,7 @@ import { capaReviewTargets, capaPlannedActionReviewTarget, capaActionFollowupRev
 import { complaintReviewTargets, complaintCapaPlanReviewTarget } from "@/lib/qms/review/targets/complaints";
 import { returnReviewTargets, returnProductReviewTarget, returnFollowupReviewTarget } from "@/lib/qms/review/targets/returns";
 import { changeControlReviewTargets, changeControlTaskReviewTarget, changeControlFollowupReviewTarget } from "@/lib/qms/review/targets/change-control";
+import { oosReviewTargets } from "@/lib/qms/review/targets/oos";
 
 import { auditReviewTargets, auditFindingReviewTarget, auditActionReviewTarget, auditFollowupReviewTarget } from "./targets/audits";
 
@@ -17,6 +18,7 @@ const catalogs = {
   COMPLAINT: Object.values(complaintReviewTargets),
   RETURN: Object.values(returnReviewTargets),
   CHANGE_CONTROL: Object.values(changeControlReviewTargets),
+  OOS: Object.values(oosReviewTargets),
 };
 
 const dynamicTargets = [

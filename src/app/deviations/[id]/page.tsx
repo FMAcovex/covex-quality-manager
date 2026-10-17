@@ -7,6 +7,7 @@ import { AuditTrailPanel } from "@/components/audit-trail-panel";
 import { CsrfField } from "@/components/csrf";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { AuditOriginPanel } from "@/modules/audits/origin-panel";
+import { OosOriginPanel } from "@/modules/oos/origin-panel";
 import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
@@ -346,7 +347,7 @@ async function DeviationDetailPageAuthenticatedContent({
           ) : null}
 
           <div className="card related-capa-summary">
-            <AuditOriginPanel targetRecordId={deviation.qmsRecordId}/><h2>CAPA relacionadas</h2>
+            <AuditOriginPanel targetRecordId={deviation.qmsRecordId}/><OosOriginPanel targetRecordId={deviation.qmsRecordId}/><h2>CAPA relacionadas</h2>
             <p className="section-help">
               Acciones CAPA propuestas o registradas a partir de esta desviación.
             </p>
@@ -553,7 +554,7 @@ async function DeviationDetailPageAuthenticatedContent({
 
       {activeTab === "relations" ? (
         <div className="card">
-          <AuditOriginPanel targetRecordId={deviation.qmsRecordId}/><h2>CAPA relacionadas</h2>
+          <AuditOriginPanel targetRecordId={deviation.qmsRecordId}/><OosOriginPanel targetRecordId={deviation.qmsRecordId}/><h2>CAPA relacionadas</h2>
           <p className="section-help">
             Una desviación puede generar una o varias CAPA. La relación se almacena una sola vez como Desviación → CAPA.
           </p>

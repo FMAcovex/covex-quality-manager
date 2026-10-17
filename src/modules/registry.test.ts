@@ -7,7 +7,7 @@ import { qmsRelationHooks } from "@/modules/relation-hooks-registry";
 import { qmsModuleByKey, qmsModuleByRecordType, qmsModuleKeys, qmsModules, qmsRecordModules, qmsRecordTypes, registeredRelationRules } from "@/modules/registry";
 import { DASHBOARD_ALL_MODULES, DASHBOARD_MODULES } from "@/modules/dashboard/domain";
 
-// Matriz vigente antes del contrato de módulo (D-018, D-047, D-065, D-083).
+// Matriz vigente (D-018, D-047, D-065, D-083 y D-088).
 // Cambiarla exige una decisión expresa y actualizar esta referencia.
 const approvedRelationMatrix = [
   { sourceType: "DEVIATION", targetType: "CAPA", relationType: "GENERATES", label: "Desviación → CAPA" },
@@ -15,6 +15,8 @@ const approvedRelationMatrix = [
   { sourceType: "COMPLAINT", targetType: "RETURN", relationType: "GENERATES", label: "Reclamación → Devolución" },
   { sourceType: "AUDIT", targetType: "DEVIATION", relationType: "GENERATES", label: "Auditoría → Desviación" },
   { sourceType: "AUDIT", targetType: "CAPA", relationType: "GENERATES", label: "Auditoría → CAPA" },
+  { sourceType: "OOS", targetType: "CAPA", relationType: "GENERATES", label: "OOS → CAPA" },
+  { sourceType: "OOS", targetType: "DEVIATION", relationType: "GENERATES", label: "OOS → Desviación" },
 ];
 
 describe("Contrato de módulo QMS — registro (PR 2)", () => {
