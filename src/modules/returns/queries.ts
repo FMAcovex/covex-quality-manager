@@ -27,7 +27,7 @@ export async function getReturnList(filters:ReturnListFilters){
 
 export async function getReturnDetail(id:string){
  return prisma.returnRecord.findUnique({where:{id},include:{
-  qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}},versions:{orderBy:{sequenceNumber:"asc"},include:{documents:{orderBy:{uploadedAt:"desc"},select:versionDocumentMetadata}}},generatedDocuments:{orderBy:{generatedAt:"desc"},select:{id:true,documentType:true,generatedAt:true,generatedByText:true,fileName:true,checksum:true,mimeType:true}}}},
+  qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}},history:{orderBy:{changedAt:"desc"},take:100},versions:{orderBy:{sequenceNumber:"asc"},include:{documents:{orderBy:{uploadedAt:"desc"},select:versionDocumentMetadata}}},generatedDocuments:{orderBy:{generatedAt:"desc"},select:{id:true,documentType:true,generatedAt:true,generatedByText:true,fileName:true,checksum:true,mimeType:true}}}},
   department:true,products:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}],include:{department:true}},
   followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"},{id:"desc"}]},
   formVersion:true,annexIIITemplateVersion:{select:templateMetadata},annexIVTemplateVersion:{select:templateMetadata},annexVTemplateVersion:{select:templateMetadata},annexVITemplateVersion:{select:templateMetadata}

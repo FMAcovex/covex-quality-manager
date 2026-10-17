@@ -125,6 +125,7 @@ export async function getChangeControlDetail(id: string) {
         include: {
           sourceRelations: { where: { isActive: true }, include: { targetRecord: true } },
           targetRelations: { where: { isActive: true }, include: { sourceRecord: true } },
+          history: { orderBy: { changedAt: "desc" }, take: 100 },
           versions: {
             orderBy: { sequenceNumber: "asc" },
             include: {
