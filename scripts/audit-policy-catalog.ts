@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { auditWriterInventory } from "./audit-writer-inventory";
 import { auditManifestJson } from "./audit-manifest-format";
 import { auditCapturePolicy } from "./audit-capture-policy";
+import { oosCaptureTable } from "./audit-oos-build";
 
 // Design catalogue and reconciliation, NOT an activated or approved GMP policy.
 const groups: Record<string, string[]> = {
@@ -29,14 +30,16 @@ const groups: Record<string, string[]> = {
   W20: ["src/modules/deviations/import/import-service.ts", "src/modules/capa/import/import-service.ts", "scripts/backfill-record-versions.ts"],
   W21: ["scripts/install-template-bundle.ts", "scripts/install-document-templates.ts", "scripts/install-capa-templates.ts", "scripts/install-change-control-templates.ts", "scripts/install-complaint-template.ts", "scripts/install-return-template.ts", "scripts/install-audit-templates.ts", "scripts/install-annual-audit-programme-templates.ts"],
   W22: ["ops/backup/backup.py", "ops/release.py", "ops/postgres/roles.sql", "ops/postgres/audit-owner.sql", "ops/postgres/audit-grants.sql"],
+  W23: ["src/modules/oos/actions.ts"],
 };
-const prefixes: Record<string, string[]> = { DV: ["W01"], CA: ["W02"], CC: ["W03"], RC: ["W04"], DE: ["W05"], AU: ["W06"], PN: ["W08"], TR: [] };
+const prefixes: Record<string, string[]> = { DV: ["W01"], CA: ["W02"], CC: ["W03"], RC: ["W04"], DE: ["W05"], AU: ["W06"], PN: ["W08"], TR: [], OO: ["W23"] };
 const additional: Record<string,string[]> = {
   DV01: ["W14"], DV06: ["W14"], DV07: ["W12"], DV08: ["W12", "W15", "W16"],
   CA01: ["W12", "W14"], CA06: ["W14"], CA07: ["W12"], CA08: ["W15", "W16"],
   CC01: ["W14"], CC06: ["W12"], CC07: ["W14", "W15", "W16"],
   RC01: ["W14"], RC05: ["W14"], RC06: ["W12"], RC07: ["W15", "W16"],
   DE01: ["W14"], DE05: ["W14"], DE06: ["W12"], DE07: ["W15", "W16"],
+  OO05: ["W12"],
   AU05: ["W12"], AU06: ["W14", "W16"], AU07: ["W12", "W14"], AU08: ["W07"], AU09: ["W07"],
   PN02: ["W09"], PN03: ["W09"], PN04: ["W09"], PN05: ["W10"], PN06: ["W11"], PN07: ["W11"], PN08: ["W10"],
   TR01: ["W13"], TR02: ["W17"], TR03: ["W17"], TR04: ["W17", "W21"], TR05: ["W18"], TR06: ["W19"], TR07: ["W20"], TR08: ["W22"], TR09: [],
@@ -54,15 +57,16 @@ function coverage(id:string, category:string) {
   if (["TR02","TR03","TR04"].includes(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/configuration-capture.test.ts: original configuration writers, activation reason and rollback"] };
   if (id === "TR05") return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: admission and role-policy proposal with authorization evidence"] };
   if (id.startsWith("AU")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "AU08" || id === "AU09" ? `${moduleEvidence}: annual plan/entry/approvers/immutable programme issuance` : id === "AU06" || id === "AU07" ? "scripts/audit-fixtures/audit-report-capture.test.ts: report issue, retained documents, rollback and closure" : `${moduleEvidence}: audit record/findings/actions/followups/relations and withdrawal`] };
+  if (id.startsWith("OO")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/oos-capture.test.ts: original OOS opening, Phase I/II edits, critical reason, closure, relations and annulment (D-088, OOS-2b)"] };
   if (/^(DV|CA|CC|RC|DE)/.test(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[`${moduleEvidence}: original operational create/edit/children/followup/closure/relations/documents`, "scripts/audit-fixtures/module-actions-capture.test.ts: signed custody, administrative state and rollback"] };
   return { coverage:category === "BUSINESS_WRITE" ? "NOT_DEMONSTRATED" : "JUSTIFIED_SEPARATE_STREAM", evidence:[] };
 }
 export function auditPolicyCatalogue() {
-  const inventory = auditWriterInventory(), source = readFileSync("docs/PHASE_4B3_A.md", "utf8"), capture = auditCapturePolicy();
+  const inventory = auditWriterInventory(), source = readFileSync("docs/PHASE_4B3_A.md", "utf8"), capture = [...auditCapturePolicy(), oosCaptureTable];
   const prohibitedModels = new Set(["AuthSession", "AuthLoginAttempt", "AuditOperation", "AuditEvent", "AuditOperationTarget", "AuditRuntimeContext", "AuditAggregateCursor", "AuditPilotRecord", "AuditPolicyRequirement", "AuditAdministrationRoot", "AuditEventAdditionalTarget", "AuditBusinessContext", "AuditMutationWitness", "AuditRootBinding", "AuditCaptureTablePolicy", "AuditCaptureFieldPolicy", "AuditOperationEvidence", "AuditCommandResult", "AuditTechnicalContext", "AuditTechnicalEvent", "AuditRootMaturity", "AuditOperationAssessment", "AuditTrailReview", "AuditTrailReviewOperation", "AuditTrailReviewEvent", "AuditTrailExport", "AuditTrailExportEvent"]);
   const secretFields = new Set(["tokenHash", "csrfHash", "nonce", "verifier", "password", "secret", "accessToken", "refreshToken"]);
   const fieldCandidates = Object.fromEntries(Prisma.dmmf.datamodel.models.filter(model => !prohibitedModels.has(model.name)).map(model => [model.name, model.fields.filter(field => field.kind !== "object" && field.type !== "Bytes" && !secretFields.has(field.name)).map(field => ({ name: field.name, type: field.type }))]));
-  const rows = source.split("\n").filter(line => /^\| (DV|CA|CC|RC|DE|AU|PN|TR)\d{2} /.test(line));
+  const rows = source.split("\n").filter(line => /^\| (DV|CA|CC|RC|DE|AU|PN|TR|OO)\d{2} /.test(line));
   const operations = rows.map(line => {
     const cells = line.split("|").slice(1,-1).map(cell => cell.trim()), id = cells[0].slice(0,4);
     const writerGroups = [...new Set([...prefixes[id.slice(0,2)], ...additional[id] ?? []])].sort();

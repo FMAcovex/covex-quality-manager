@@ -9,7 +9,7 @@ import { withBusinessAuditResult } from "./business-service";
 import { inDocumentRequest } from "./document-command";
 
 function operation(file: string, module: AccessModule, input: Record<string, unknown> | null) {
-  if (file.endsWith("/administrative-status/route.ts")) return ({ DEVIATION: "DV07", CAPA: "CA07", CHANGE_CONTROL: "CC06", COMPLAINT: "RC06", RETURN: "DE06", AUDIT: "AU07" } as Partial<Record<AccessModule, string>>)[module];
+  if (file.endsWith("/administrative-status/route.ts")) return ({ DEVIATION: "DV07", CAPA: "CA07", CHANGE_CONTROL: "CC06", COMPLAINT: "RC06", RETURN: "DE06", OOS: "OO05", AUDIT: "AU07" } as Partial<Record<AccessModule, string>>)[module];
   if (file.endsWith("/manual-status/route.ts")) return "PN04";
   if (file.endsWith("/lifecycle/route.ts")) return input?.operation === "ACTIVATE" ? "PN03" : ["RETIRE", "ANNUL", "RECTIFY"].includes(String(input?.operation)) ? "PN04" : "PN02";
   if (file.includes("/revisions/") && file.endsWith("/documents/route.ts")) return "PN05";
