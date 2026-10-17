@@ -2,15 +2,18 @@ import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
 import {
   AnnualSummaryTable,
-  DistributionCard,
+  BacklogPanel,
   KpiCard,
-  MonthlyComparison,
+  MonthlyTrendChart,
+  ParetoCard,
   TrendChart,
+  YearToDateCard,
   deltaLabel,
   formatNumber,
   formatPercent,
 } from "@/modules/deviations/analytics/components";
-import { getDeviationAnalytics } from "@/modules/deviations/analytics/queries";
+import { PARETO_DIMENSIONS, type ParetoDimension } from "@/modules/deviations/analytics/domain";
+import { getDeviationAnalytics, getDeviationBacklog } from "@/modules/deviations/analytics/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +35,16 @@ async function DeviationIndicatorsPageAuthenticatedContent({
     capa: param(query.capa),
     status: param(query.status),
   };
-  const data = await getDeviationAnalytics(filters);
+  const [data, backlog] = await Promise.all([getDeviationAnalytics(filters), getDeviationBacklog(filters)]);
   const { current, previous, trend, selectedYear } = data;
+  const requestedPareto = param(query.pareto);
+  const paretoDimension: ParetoDimension = requestedPareto && requestedPareto in PARETO_DIMENSIONS ? requestedPareto as ParetoDimension : "area";
+  const paretoHref = (dimension: ParetoDimension) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries({ ...filters, year: String(selectedYear) })) if (value) params.set(key, value);
+    if (dimension !== "area") params.set("pareto", dimension);
+    return `/deviations/indicators?${params.toString()}#pareto`;
+  };
   const compare = (currentValue: number | null, previousValue: number | null, suffix = "") =>
     previous.dataAvailable
       ? deltaLabel(currentValue, previousValue, suffix)
@@ -76,6 +87,7 @@ async function DeviationIndicatorsPageAuthenticatedContent({
         <label><span>Estado actual</span><select name="status" defaultValue={filters.status ?? ""}>
           <option value="">Todos</option><option value="OPEN">Abiertas</option><option value="CLOSED">Cerradas</option>
         </select></label>
+        {paretoDimension !== "area" ? <input type="hidden" name="pareto" value={paretoDimension} /> : null}
         <div className="analytics-filter-actions">
           <button className="button primary" type="submit">Aplicar filtros</button>
           <Link className="button" href="/deviations/indicators">Limpiar</Link>
@@ -132,11 +144,12 @@ async function DeviationIndicatorsPageAuthenticatedContent({
         />
       </div>
 
+      <BacklogPanel backlog={backlog} />
+
       <div className="analytics-grid">
-        <MonthlyComparison current={current} previous={previous} />
-        <DistributionCard title="Desviaciones por área" items={current.areas} />
-        <DistributionCard title="Distribución por clasificación" items={current.classifications} />
-        <DistributionCard title="Distribución por origen" items={current.origins} />
+        <MonthlyTrendChart series={data.monthlySeries} />
+        <YearToDateCard ytd={data.yearToDate} />
+        <ParetoCard year={selectedYear} dimension={paretoDimension} items={data.pareto[paretoDimension]} hrefFor={paretoHref} />
       </div>
 
       <section className="trend-section">
