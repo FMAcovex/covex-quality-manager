@@ -11,7 +11,7 @@ PNT **GC-10/014/04 «Resultados fuera de especificación»**, Control de Calidad
 | `GC-10-014-04 (15-06-2025) EN REDACCION.docx` | PNT vigente. El responsable del proyecto confirma que es la revisión en vigor aunque el nombre diga «en redacción». Fuente de las plantillas de los anexos III y IV. |
 | `Anexo III.docx`, `Anexo IV.docx` (separados) | **No se usan.** El III no incluye el bloque de microbiología de la 04 y el IV contiene un informe ya cumplimentado, no la plantilla en blanco. |
 | `GC-10-014-03 (01-12-2023).docx`, `OBSOLETOS/` | No se usan. |
-| `GC-10 DPTO. CONTROL DE CALIDAD/FUERA DE ESPECIFICACIONES/LISTADO GENERAL OOS.xlsx` | Listado histórico para la importación (sección 9). |
+| `GC-10 DPTO. CONTROL DE CALIDAD/FUERA DE ESPECIFICACIONES/LISTADO GENERAL OOS.xlsx` | Registro de los OOS anteriores; no se importa (sección 9). |
 
 **Erratas detectadas en el PNT 04:** los anexos III a VI insertos en el PNT llevan en el encabezado «PNT GC-10/014/**03**», y la historia del documento fecha la revisión 03 el 01-02-2023 cuando su vigencia es 01-12-2023. El responsable del proyecto confirma que el encabezado correcto de los anexos es **04**. La corrección se hace en el documento controlado por Calidad; la aplicación no reescribe el texto de una plantilla controlada (sección 8).
 
@@ -45,7 +45,7 @@ Separado por fases, sin mezclar descripción, investigación, conclusión y dict
 
 ### 4.2 Fase I — Investigación en el laboratorio (Anexo III, páginas 2 y 3)
 
-- **Evaluación**: los 21 parámetros del anexo con su resultado, en cinco bloques: analista (5), muestra (4), equipos (4), patrones/reactivos/disolventes/disoluciones (5) y microbiología (3). El bloque de microbiología solo aplica a análisis microbiológicos. El anexo no define los valores de «Resultado»: propuesta pendiente de confirmar en la sección 10.
+- **Evaluación**: los 21 parámetros del anexo con su resultado, en cinco bloques: analista (5), muestra (4), equipos (4), patrones/reactivos/disolventes/disoluciones (5) y microbiología (3). El bloque de microbiología solo aplica a análisis microbiológicos. El anexo deja en blanco la columna «Resultado»: se registra como texto libre por parámetro, sin valores inventados (sección 10).
 - **Investigación** (causa raíz).
 - **Conclusiones**: si la investigación es concluyente y se confirma error de laboratorio.
 - **Disposición final**: «Investigación concluyente (error de laboratorio)» o «Investigación a gran escala».
@@ -106,12 +106,12 @@ Sin relación con Control de cambios, que no participa en relaciones operativas 
 
 ## 7. Permisos
 
-Mismos permisos de contrato que el resto de módulos (lectura, alta, edición, cierre, anulación, documentos, exportación e importación), asignables en el editor de roles (D-086). El PNT asigna:
+El módulo admite consultar, crear, editar, revisar, cerrar, anular y descargar, que se asignan en el editor de roles (D-086). El PNT asigna:
 
 - la numeración, la Fase I y su emisión a **Control de Calidad**;
 - la aprobación de la Fase I, la Fase II, la interpretación de resultados y la decisión sobre el lote a **Garantía de Calidad**.
 
-Los roles concretos se configuran en el editor de roles. La aplicación no implementa firma electrónica ni aprobación GMP (D-073, D-074): registra quién emite y aprueba, y el documento firmado a mano se adjunta como PDF con el mecanismo existente.
+Los roles concretos se configuran en el editor de roles. La aplicación no implementa firma electrónica ni aprobación GMP (D-073, D-074): registra quién emite y aprueba; adjuntar el documento firmado a mano llegará con los anexos (OOS-3).
 
 ## 8. Documentos
 
@@ -128,30 +128,23 @@ Los roles concretos se configuran en el editor de roles. La aplicación no imple
 
 ## 9. Importación del histórico
 
-`LISTADO GENERAL OOS.xlsx` contiene 38 OOS en hojas anuales: 3 de 2023, 5 de 2024, 9 de 2025 y 21 de 2026. Puntos que la importación debe tratar con conciliación y acta, como en Desviaciones y CAPA:
+**No se importan OOS antiguos** (decisión del responsable del proyecto, 17/10/2026). El listado `LISTADO GENERAL OOS.xlsx` (38 OOS de 2023 a 2026) sigue siendo el registro de los OOS anteriores a la aplicación. Los códigos de la aplicación empiezan en las series API y MD de cada año, que deben arrancar después del último correlativo usado en el listado para no duplicar códigos: si se empieza a usar a mitad de año, el primer OOS se registra con el código siguiente indicado a mano.
 
-- la hoja «2026 (insp)» duplica «2026» y no se importa;
-- las columnas cambian por año: 2023 tiene «Aplica a» (FARMA/QUÍMICA) y códigos `OOS/GC-10/…`; 2024 y 2025 tienen «Confirmación OOS»; 2025 y 2026 tienen «Ámbito»;
-- hay fechas con formato erróneo: un número de serie de Excel y fechas con dígitos de más o de menos;
-- «Fecha de cierre» mezcla fechas, iniciales y textos de estado («pendiente cierre», «pendiente investigación fase II»);
-- el listado de 2026 llega a `OOS/API/004/2026`, pero existe al menos un informe `OOS/API/006/2026`, así que el listado está incompleto.
+## 10. Decisiones cerradas el 17/10/2026
 
-El listado solo tiene los campos del Anexo VI: los expedientes importados se cargan con esos datos y sin el detalle de las fases. El fichero real no se versiona (AGENTS.md).
-
-## 10. Pendiente de decisión
-
-1. **Anexo VI**: el PNT 04 lo define como tabla Word; el Excel operativo añade «Ámbito» y «Confirmación OOS», y su cabecera sigue citando «Anexo V PNT GC-00/014/02». Propuesta: listado anual imprimible con las columnas del PNT para firma manuscrita, más la exportación Excel habitual con las columnas añadidas.
-2. **Valores de «Resultado»** de la evaluación de la Fase I. Propuesta: Conforme / No conforme / No aplica, más observación.
-3. **Alcance de la importación**: todo el histórico 2023-2026 o solo los abiertos.
-4. **Corrección del PNT 04** por Calidad antes de instalar las plantillas.
+1. **Anexo VI**: listado anual imprimible solo con las columnas del PNT (n.º OOS, fecha de apertura, material afectado, descripción, investigación / CAPA y fecha de cierre por Garantía de Calidad), para la firma manuscrita que exige §5.2. Sin columnas añadidas.
+2. **«Resultado» de la evaluación de la Fase I**: texto libre por parámetro, porque el anexo no define valores.
+3. **Resultado de la Fase I**: el OOS queda cerrado (error de laboratorio) o sigue abierto; la disposición «Investigación a gran escala» indica que es necesaria la Fase II y habilita la parte del registro que corresponde al Anexo IV.
+4. **Importación**: no se importan OOS antiguos.
+5. **Corrección del PNT 04**: Calidad corrige la errata de los encabezados antes de instalar las plantillas (OOS-3).
 
 ## 11. Plan de implementación
 
 | PR | Alcance |
 | --- | --- |
 | **OOS-0 (esta)** | Diseño, decisión D-088 y fuente en GMP_SOURCES |
-| OOS-1 | Modelo y migración aditiva, contrato y registro, listado, ficha, alta, datos iniciales, Fase I, estados, codificación, permisos, búsqueda y pruebas |
-| OOS-2 | Fase II, resultado, cierre, relaciones con CAPA y Desviación, cronología y captura del audit trail |
-| OOS-3 | Anexos III y IV, Anexo VI según decisión, instalación de plantillas e importador del histórico |
+| OOS-1 | Modelo y migración aditiva, contrato y registro, listado, ficha, alta y edición con datos iniciales, Fase I, Fase II, resultado y cierre, codificación, permisos, búsqueda, panel, cronología, audit trail (pestaña), anulación y pruebas |
+| OOS-2 | Relaciones con CAPA y Desviación, revisión (Review) y captura del audit trail en las operaciones de OOS |
+| OOS-3 | Anexos III y IV y Anexo VI imprimible con las plantillas del PNT 04 corregido |
 
 Cada PR con lint, tests, Prisma validate, build y la batería CI completa. El módulo no queda validado GMP por estar implementado (D-076).

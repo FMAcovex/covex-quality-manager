@@ -16,10 +16,11 @@ export function ControlledBusinessCodeField({
   auditType,
   auditScenario,
   entityCode,
+  oosArea,
   locked,
   onValueChange,
 }: {
-  recordType: "AUDIT" | "CAPA" | "CHANGE_CONTROL" | "COMPLAINT" | "RETURN";
+  recordType: "AUDIT" | "CAPA" | "CHANGE_CONTROL" | "COMPLAINT" | "RETURN" | "OOS";
   name?: string;
   label: string;
   initialValue?: string;
@@ -31,6 +32,7 @@ export function ControlledBusinessCodeField({
   auditType?: "INTERNAL" | "EXTERNAL" | null;
   auditScenario?: "INTERNAL_COVEX" | "INTERNAL_CONTRACTED" | "SUPPLIER" | "CLIENT" | "AUTHORITY" | null;
   entityCode?: string;
+  oosArea?: "API" | "MD" | null;
   locked?: boolean;
   onValueChange?: (value: string) => void;
 }) {
@@ -67,6 +69,11 @@ export function ControlledBusinessCodeField({
       setFormat("");
       return;
     }
+    if (recordType === "OOS" && !oosArea) {
+      setSuggestion("");
+      setFormat("");
+      return;
+    }
     if (recordType === "COMPLAINT" && !complaintType) {
       setSuggestion("");
       setFormat("");
@@ -85,6 +92,7 @@ export function ControlledBusinessCodeField({
     if (departmentId) params.set("departmentId", departmentId);
     if (actionType) params.set("actionType", actionType);
     if (complaintType) params.set("complaintType", complaintType);
+    if (oosArea) params.set("oosArea", oosArea);
 
     const controller = new AbortController();
     authenticatedFetch(`/api/qms/business-code-suggestion?${params.toString()}`, {
@@ -108,7 +116,7 @@ export function ControlledBusinessCodeField({
         setError(cause instanceof Error ? cause.message : "No se ha podido calcular la sugerencia.");
       });
     return () => controller.abort();
-  }, [actionType, complaintType, departmentId, isLocked, recordType, yearSource, auditType, auditScenario, entityCode]);
+  }, [actionType, complaintType, departmentId, isLocked, recordType, yearSource, auditType, auditScenario, entityCode, oosArea]);
 
   return (
     <label className="field">

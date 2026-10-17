@@ -51,7 +51,7 @@ describe("Contrato de módulo QMS — registro (PR 2)", () => {
   });
 
   it("conserva las etiquetas visibles vigentes de tipos y relaciones", () => {
-    const previousTypeLabels = { AUDIT: "Auditoría", DEVIATION: "Desviación", CAPA: "CAPA", CHANGE_CONTROL: "Control de Cambio", COMPLAINT: "Reclamación", RETURN: "Devolución" };
+    const previousTypeLabels = { AUDIT: "Auditoría", DEVIATION: "Desviación", CAPA: "CAPA", CHANGE_CONTROL: "Control de Cambio", COMPLAINT: "Reclamación", RETURN: "Devolución", OOS: "OOS" };
     for (const contract of qmsRecordModules) {
       expect(qmsRecordTypeLabel(contract.recordType)).toBe(previousTypeLabels[contract.recordType]);
     }
@@ -86,6 +86,7 @@ describe("Contrato de módulo QMS — listas derivadas (PR 3)", () => {
       ["Reclamaciones", "/complaints"],
       ["Devoluciones", "/returns"],
       ["Auditorías", "/audits"],
+      ["OOS", "/oos"],
       ["Documentación controlada", "/controlled-documents"],
     ]);
   });
@@ -98,6 +99,7 @@ describe("Contrato de módulo QMS — listas derivadas (PR 3)", () => {
       { key: "COMPLAINT", label: "Reclamaciones", href: "/complaints", indicatorHref: "/complaints/indicators" },
       { key: "RETURN", label: "Devoluciones", href: "/returns", indicatorHref: "/returns/indicators" },
       { key: "AUDIT", label: "Auditorías", href: "/audits", indicatorHref: null },
+      { key: "OOS", label: "OOS", href: "/oos", indicatorHref: null },
     ]);
     expect(DASHBOARD_ALL_MODULES).toEqual([
       ...DASHBOARD_MODULES,
@@ -106,7 +108,7 @@ describe("Contrato de módulo QMS — listas derivadas (PR 3)", () => {
   });
 
   it("reproduce los módulos del audit trail", () => {
-    expect(qmsModuleKeys).toEqual(["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT", "PNT"]);
+    expect(qmsModuleKeys).toEqual(["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT", "OOS", "PNT"]);
   });
 
   it("coincide con accessModules, que sigue siendo la fuente del tipo AccessModule", () => {
@@ -114,6 +116,6 @@ describe("Contrato de módulo QMS — listas derivadas (PR 3)", () => {
   });
 
   it("reproduce los tipos de expediente admitidos por las guardas de servidor", () => {
-    expect(qmsRecordTypes).toEqual(["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT"]);
+    expect(qmsRecordTypes).toEqual(["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT", "OOS"]);
   });
 });

@@ -14,6 +14,7 @@ enum QmsRecordType {
   CHANGE_CONTROL
   COMPLAINT
   RETURN
+  OOS
 }
 
 enum QmsRelationType {
@@ -363,6 +364,7 @@ model QmsRecord {
   changeControl       ChangeControl?
   complaint           Complaint?
   returnRecord        ReturnRecord?
+  oosRecord           OosRecord?
   sourceRelations    QmsRelation[]       @relation("RelationSource")
   targetRelations    QmsRelation[]       @relation("RelationTarget")
   history            ChangeHistory[]
@@ -418,6 +420,7 @@ model Department {
   complaints Complaint[]
   returnRecords ReturnRecord[]
   returnProducts ReturnProduct[]
+  oosRecords OosRecord[]
 }
 
 model FormVersion {
@@ -2124,6 +2127,7 @@ enum AccessModule {
  AUDIT
  PNT
  SYSTEM
+ OOS
 }
 enum AccessPermission {
  READ
@@ -2608,4 +2612,108 @@ model SavedListView {
 
   @@unique([userId, listPath, name])
   @@index([userId, listPath])
+}
+
+enum OosArea {
+  API
+  MD
+}
+
+enum OosStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum OosMaterialKind {
+  FINISHED_PRODUCT
+  RAW_OR_PACKAGING_MATERIAL
+}
+
+enum OosPhaseIDisposition {
+  LAB_ERROR
+  FULL_SCALE
+}
+
+enum OosVerdict {
+  APPROVED
+  REJECTED
+  OTHER
+}
+
+enum OosInvestigationResult {
+  INVALIDATED
+  CONFIRMED
+  INCONCLUSIVE
+}
+
+/// Resultado fuera de especificación según el PNT GC-10/014/04 (D-088).
+model OosRecord {
+  id                         String                  @id @default(uuid())
+  qmsRecordId                String                  @unique
+  qmsRecord                  QmsRecord               @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId               String?
+  department                 Department?             @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot     String?
+  departmentNameSnapshot     String?
+  status                     OosStatus               @default(DRAFT)
+  area                       OosArea?
+  createdByText              String?
+  // Anexo III: datos iniciales y detección
+  issueDate                  DateTime?               @db.Date
+  materialKind               OosMaterialKind?
+  materialName               String?
+  lotNumber                  String?
+  batchSize                  String?
+  affectedQuantity           String?
+  supplier                   String?
+  supplierLot                String?
+  process                    String?
+  oosDate                    DateTime?               @db.Date
+  oosTime                    String?
+  detectedBy                 String?
+  shift                      String?
+  detectionDescription       String?
+  // Anexo III: Fase I, investigación en el laboratorio
+  phaseIEvaluation           Json?
+  phaseIInvestigation        String?
+  phaseIConclusion           String?
+  phaseIDisposition          OosPhaseIDisposition?
+  phaseIVerdict              OosVerdict?
+  phaseIVerdictQuantity      String?
+  phaseIDestroyQuantity      String?
+  phaseIReturnQuantity       String?
+  phaseIVerdictOther         String?
+  phaseIIssuedBy             String?
+  phaseIIssuedAt             DateTime?               @db.Date
+  phaseIApprovedBy           String?
+  phaseIApprovedAt           DateTime?               @db.Date
+  // Anexo IV: Fase II, investigación a gran escala
+  phaseIIIssueDate           DateTime?               @db.Date
+  phaseIIProductionReview    String?
+  phaseIIRetesting           String?
+  phaseIIResampling          String?
+  phaseIIConclusion          String?
+  phaseIIVerdict             OosVerdict?
+  phaseIIVerdictQuantity     String?
+  phaseIIDestroyQuantity     String?
+  phaseIIReturnQuantity      String?
+  phaseIIVerdictOther        String?
+  phaseIIIssuedBy            String?
+  phaseIIIssuedAt            DateTime?               @db.Date
+  phaseIIAffectedDepartments String?
+  // Resultado y cierre
+  investigationResult        OosInvestigationResult?
+  closedAt                   DateTime?               @db.Date
+  internalObservations       String?
+  extraData                  Json?
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+
+  @@index([departmentId])
+  @@index([status])
+  @@index([area])
+  @@index([issueDate])
+  @@index([investigationResult])
+  @@index([closedAt])
 }

@@ -57,7 +57,7 @@ async function main() {
     const modules = await page.locator(".dashboard-module-card").allTextContents();
     const taskRows = await page.locator(".dashboard-task-row").allTextContents();
     assert.equal(summary.length, 5);
-    assert.equal(modules.length, 7);
+    assert.equal(modules.length, 8);
     assert(await page.locator(".is-overdue").count() > 0);
 
     if (captureDir) await mkdir(captureDir, { recursive: true });
@@ -116,7 +116,7 @@ async function main() {
     await page.getByRole("link", { name: "Limpiar", exact: true }).click();
     await page.waitForURL(url => url.pathname === "/" && !url.search);
     await page.waitForLoadState("networkidle");
-    assert.equal(await page.locator(".dashboard-module-card").count(), 7);
+    assert.equal(await page.locator(".dashboard-module-card").count(), 8);
     assert.deepEqual(errors, [], "Browser errors");
     console.log("D1C UI OK: unchanged KPI/modules/tasks, usable 1440/768/390 filters and task tray, keyboard focus, deadline filters, audit drill-down, pagination and reset.");
   } finally {

@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-export const accessModules = ["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT", "PNT", "SYSTEM"] as const;
+export const accessModules = ["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT", "OOS", "PNT", "SYSTEM"] as const;
 export type AccessModule = typeof accessModules[number];
 export const permissions = ["READ", "CREATE", "EDIT", "FOLLOWUP", "REVIEW", "CLOSE", "ANNUL", "DOWNLOAD", "EXPORT", "IMPORT", "MANAGE_CONFIGURATION", "MANAGE_USERS", "ATTACH_DOCUMENT", "GENERATE_DOCUMENT", "AUDIT_ISSUE_REPORT", "AUDIT_ISSUE_PROGRAMME", "PNT_VERIFY", "PNT_RECORD_APPROVAL", "PNT_ACCEPT_APPROVAL", "PNT_ACTIVATE", "PNT_RETIRE", "PNT_CORRECT", "PNT_LEGACY_REGISTER", "PNT_MANAGE_STATE", "AUDIT_TRAIL_REVIEW", "AUDIT_TRAIL_EXPORT", "AUDIT_TRAIL_SENSITIVE_READ"] as const;
 export type AccessPermission = typeof permissions[number];

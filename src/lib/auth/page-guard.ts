@@ -29,7 +29,7 @@ export async function authorizedPage(file: string, run: () => ReactNode | void |
     if (!params?.id) access.current = { ...access.modules[accessModule] };
     if (!params?.id && accessModule !== "SYSTEM") access.current.FOLLOWUP ||= user.departmentIds.some(id => canPresent(user, accessModule, "FOLLOWUP", { departmentIds: [id] })) || user.assignments.some(a => a.module === accessModule && canPresent(user, accessModule, "FOLLOWUP", { id: a.recordId }));
     if (params?.id && !route.includes("import-index") && !route.includes("/plans/")) {
-      const model = { DEVIATION: "deviation", CAPA: "capa", CHANGE_CONTROL: "changeControl", COMPLAINT: "complaint", RETURN: "returnRecord", AUDIT: "audit" } as const;
+      const model = { DEVIATION: "deviation", CAPA: "capa", CHANGE_CONTROL: "changeControl", COMPLAINT: "complaint", RETURN: "returnRecord", AUDIT: "audit", OOS: "oosRecord" } as const;
       if (accessModule !== "SYSTEM" && accessModule !== "PNT") {
         type Delegate = { findUnique(args: object): Promise<{ status?: string; finalStatus?: string } | null> };
         const record = await (prisma as unknown as Record<string, Delegate>)[model[accessModule]].findUnique({ where: { id: params.id }, select: accessModule === "CHANGE_CONTROL" ? { finalStatus: true } : { status: true } });

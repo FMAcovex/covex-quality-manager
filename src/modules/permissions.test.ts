@@ -14,6 +14,7 @@ const moduleDirs: Record<string, AccessModule> = {
   complaints: "COMPLAINT",
   returns: "RETURN",
   audits: "AUDIT",
+  oos: "OOS",
   "controlled-documents": "PNT",
   configuration: "SYSTEM",
 };
@@ -108,6 +109,7 @@ describe("Contrato de módulo QMS — permisos (PR 4)", () => {
       complaints: "COMPLAINT",
       returns: "RETURN",
       audits: "AUDIT",
+      oos: "OOS",
       "controlled-documents": "PNT",
       settings: "SYSTEM",
       "audit-trail": "DEVIATION",

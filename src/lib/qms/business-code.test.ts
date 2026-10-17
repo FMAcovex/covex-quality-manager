@@ -95,4 +95,18 @@ describe("business-code", () => {
       ),
     ).toThrow(/001 y 999/);
   });
+
+  it("numera los OOS por separado para API y MD (GC-10/014/04 §5.1, D-088)", () => {
+    const api = { recordType: QmsRecordType.OOS, year: 2026, oosArea: "API" as const };
+    const md = { ...api, oosArea: "MD" as const };
+    expect(buildOperationalBusinessCode(api, 6)).toBe("OOS/API/006/2026");
+    expect(buildOperationalBusinessCode(md, 17)).toBe("OOS/MD/017/2026");
+    expect(operationalBusinessCodeFormat(md)).toBe("OOS/MD/ZZZ/2026");
+    expect(extractOperationalBusinessCodeSequence("OOS/API/006/2026", api)).toBe(6);
+    expect(extractOperationalBusinessCodeSequence("OOS/MD/006/2026", api)).toBeNull();
+    expect(extractOperationalBusinessCodeSequence("OOS/API/006/2025", api)).toBeNull();
+    // El formato histórico de 2023 no forma parte de las series API/MD.
+    expect(extractOperationalBusinessCodeSequence("OOS/GC-10/001/2023", { ...api, year: 2023 })).toBeNull();
+    expect(() => operationalBusinessCodePrefix({ recordType: QmsRecordType.OOS, year: 2026 })).toThrow(/API o MD/);
+  });
 });

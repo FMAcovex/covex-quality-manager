@@ -1,0 +1,61 @@
+import type { OosEvaluationKey } from "./domain";
+
+export type OosFormState = {
+  error: string | null;
+  savedRecordId?: string;
+  fieldErrors?: string[];
+  submittedValues?: Record<string, string | string[]>;
+  formRevision?: number;
+};
+
+export type OosFormDefaults = Partial<{
+  businessCode: string;
+  status: "DRAFT" | "OPEN" | "CLOSED";
+  area: "API" | "MD";
+  departmentId: string;
+  createdByText: string;
+  issueDate: string;
+  materialKind: "FINISHED_PRODUCT" | "RAW_OR_PACKAGING_MATERIAL";
+  materialName: string;
+  lotNumber: string;
+  batchSize: string;
+  affectedQuantity: string;
+  supplier: string;
+  supplierLot: string;
+  process: string;
+  oosDate: string;
+  oosTime: string;
+  detectedBy: string;
+  shift: string;
+  detectionDescription: string;
+  phaseIInvestigation: string;
+  phaseIConclusion: string;
+  phaseIDisposition: "LAB_ERROR" | "FULL_SCALE";
+  phaseIVerdict: "APPROVED" | "REJECTED" | "OTHER";
+  phaseIVerdictQuantity: string;
+  phaseIDestroyQuantity: string;
+  phaseIReturnQuantity: string;
+  phaseIVerdictOther: string;
+  phaseIIssuedBy: string;
+  phaseIIssuedAt: string;
+  phaseIApprovedBy: string;
+  phaseIApprovedAt: string;
+  phaseIIIssueDate: string;
+  phaseIIProductionReview: string;
+  phaseIIRetesting: string;
+  phaseIIResampling: string;
+  phaseIIConclusion: string;
+  phaseIIVerdict: "APPROVED" | "REJECTED" | "OTHER";
+  phaseIIVerdictQuantity: string;
+  phaseIIDestroyQuantity: string;
+  phaseIIReturnQuantity: string;
+  phaseIIVerdictOther: string;
+  phaseIIIssuedBy: string;
+  phaseIIIssuedAt: string;
+  phaseIIAffectedDepartments: string;
+  investigationResult: "INVALIDATED" | "CONFIRMED" | "INCONCLUSIVE";
+  closedAt: string;
+  internalObservations: string;
+}> & Partial<{ [K in OosEvaluationKey as `evaluation.${K}`]: string }>;
+
+export type OosDepartmentOption = { id: string; code: string; name: string };

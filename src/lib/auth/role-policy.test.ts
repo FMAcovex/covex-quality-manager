@@ -9,7 +9,7 @@ describe("Editor de roles — permisos por módulo", () => {
       for (const permission of assignablePermissions(key)) expect(permissionsForModule(key), `${key} · ${permission}`).toContain(permission);
       expect(assignablePermissions(key)).not.toContain("MANAGE_USERS");
     }
-    expect(roleEditorModules.map(m => m.key)).toEqual(["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT", "PNT", "SYSTEM"]);
+    expect(roleEditorModules.map(m => m.key)).toEqual(["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT", "OOS", "PNT", "SYSTEM"]);
   });
 
   it("rechaza en servidor un permiso que el módulo no admite y conserva las reglas anteriores", () => {

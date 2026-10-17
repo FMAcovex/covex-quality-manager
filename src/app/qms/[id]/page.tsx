@@ -19,6 +19,7 @@ async function QmsRecordResolverPageAuthenticatedContent({
       changeControl: { select: { id: true } },
       complaint: { select: { id: true } },
       returnRecord: { select: { id: true } },
+      oosRecord: { select: { id: true } },
     },
   });
 
@@ -29,6 +30,7 @@ async function QmsRecordResolverPageAuthenticatedContent({
   if (record.changeControl) redirect(`/changes/${record.changeControl.id}`);
   if (record.complaint) redirect(`/complaints/${record.complaint.id}`);
   if (record.returnRecord) redirect(`/returns/${record.returnRecord.id}`);
+  if (record.oosRecord) redirect(`/oos/${record.oosRecord.id}`);
 
   notFound();
 }

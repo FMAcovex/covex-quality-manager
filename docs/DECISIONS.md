@@ -716,3 +716,5 @@ El responsable del proyecto decide añadir un módulo de **resultados fuera de e
 - solo OOS; OOT y resultados atípicos quedan fuera.
 
 Esta PR es documental. La implementación se hará en las PR OOS-1 a OOS-3, cada una con su aprobación de alcance, y quedan abiertas las decisiones de la sección 10 del diseño.
+
+**Ampliación del 17/10/2026 (OOS-1):** el Anexo VI es un listado imprimible solo con las columnas del PNT; el «Resultado» de cada parámetro de la Fase I es texto libre; la disposición de la Fase I cierra el OOS por error de laboratorio o lo deja abierto y habilita la Fase II (Anexo IV); no se importan OOS antiguos. OOS-1 incluye la Fase II, el resultado y el cierre; las relaciones y la captura del audit trail pasan a OOS-2 y los anexos a OOS-3.

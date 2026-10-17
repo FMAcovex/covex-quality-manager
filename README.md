@@ -11,6 +11,7 @@ Aplicación web interna de COVEX para gestionar procesos del Sistema de Calidad.
 - **Devoluciones** — GC-00/028.
 - **Auditorías internas y externas**, incluidos planes y Programas Anuales Word — GC-00/033, GC-00/034 y Planes Maestros correspondientes.
 - **PNT / documentación controlada**, maestro, revisiones, biblioteca e importación controlada.
+- **OOS / resultados fuera de especificación** — GC-10/014/04 (D-088). En construcción: ficha y Fases I y II disponibles; relaciones y anexos pendientes.
 
 Servicios compartidos: relaciones QMS, UUID/códigos de negocio, versiones y snapshots, anexos, registros históricos, catálogos, filtros, indicadores y vencimientos. El envío automático de avisos sigue desactivado.
 

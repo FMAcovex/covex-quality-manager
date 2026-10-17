@@ -2,7 +2,7 @@
  * UX C1: return to the exact QMS listing filter context without accepting
  * arbitrary destinations. Audit and PNT retain their existing navigation rules.
  */
-export const qmsListRoots = ["/deviations", "/capa", "/changes", "/complaints", "/returns"] as const;
+export const qmsListRoots = ["/deviations", "/capa", "/changes", "/complaints", "/returns", "/oos"] as const;
 export type QmsListRoot = (typeof qmsListRoots)[number];
 
 export function qmsListingReturnTo(root: QmsListRoot, value: unknown): string {
@@ -50,6 +50,7 @@ const detailTabs: Record<QmsListRoot, readonly string[]> = {
   "/changes": ["information", "request", "dictamen", "followups", "documents", "relations", "review", "timeline", "history"],
   "/complaints": ["summary", "part-i", "part-ii", "relations", "documents", "versions", "review", "timeline", "history"],
   "/returns": ["summary", "checks", "followups", "relations", "documents", "review", "timeline", "history"],
+  "/oos": ["summary", "phase-i", "phase-ii", "timeline", "audit-trail", "history"],
 };
 export type QmsReturnContext = { returnTo: string; tab: string };
 
