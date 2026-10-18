@@ -82,6 +82,7 @@ async function EditDeviationPageAuthenticatedContent({
           investigationConclusive: deviation.investigationConclusive ?? "",
           investigationMethods: deviation.investigationMethods,
           rootCause: deviation.rootCause ?? "",
+          rootCauseCategories: deviation.rootCauseCategories,
           recurrentRootCause: deviation.recurrentRootCause ?? "",
           recurrenceDetails: deviation.recurrenceDetails ?? "",
           classification: deviation.classification ?? "",

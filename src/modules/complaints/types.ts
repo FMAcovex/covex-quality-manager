@@ -51,6 +51,7 @@ export type ComplaintFormDefaults = {
   riskJustification?: string;
   investigationResult?: "PROCEDENT" | "NOT_PROCEDENT" | "INCONCLUSIVE" | "NOT_ATTRIBUTABLE_TO_COVEX";
   rootCause?: string;
+  rootCauseCategories?: string[];
   classification?: "CRITICAL" | "MAJOR" | "MINOR" | "NO_GMP_IMPACT";
   potentialRecall?: string;
   recallProcedureRequired?: string;

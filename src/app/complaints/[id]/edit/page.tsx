@@ -25,7 +25,7 @@ async function EditComplaintPageAuthenticatedContent({params,searchParams}:{para
   impactAssessment:r.impactAssessment??undefined,impactQualityGmp:r.impactQualityGmp??"",impactSafetyEfficacy:r.impactSafetyEfficacy??"",
   impactRegulatory:r.impactRegulatory??"",impactEnvironment:r.impactEnvironment??"",impactOtherSimilar:r.impactOtherSimilar??"",
   containmentActions:r.containmentActions,containmentOther:r.containmentOther??undefined,riskJustification:r.riskJustification??undefined,
-  investigationResult:r.investigationResult??undefined,rootCause:r.rootCause??undefined,classification:r.classification??undefined,
+  investigationResult:r.investigationResult??undefined,rootCause:r.rootCause??undefined,rootCauseCategories:r.rootCauseCategories,classification:r.classification??undefined,
   potentialRecall:r.potentialRecall??"",recallProcedureRequired:r.recallProcedureRequired??"",authorityNotificationRequired:r.authorityNotificationRequired??"",
   responsiblePartyCommunicationRequired:r.responsiblePartyCommunicationRequired??"",regulatoryJustification:r.regulatoryJustification??undefined,
   resolutionLines:r.resolutionLines??undefined,resolutionActions:r.resolutionActions,

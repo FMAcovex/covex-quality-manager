@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { buildMonthlyCounts,buildPareto } from "@/lib/qms/analytics/trends";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+import { rootCauseCategoryMentions } from "@/lib/qms/root-cause-categories";
 import { buildComplaintBacklog,buildComplaintYearToDate,complaintMentions,medianResponseDays,type ComplaintTrendRow } from "@/modules/complaints/analytics/domain";
 
 export type ComplaintAnalyticsFilters={year?:string;department?:string;type?:string;classification?:string;status?:string};
@@ -24,7 +25,7 @@ export async function getComplaintAnalytics(filters:ComplaintAnalyticsFilters,no
   select:{
    openedAt:true,closedAt:true,status:true,complaintType:true,classification:true,recurrent:true,effectivenessStatus:true,
    partIIRequired:true,conclusion:true,responseSummary:true,nextFollowupDate:true,departmentCodeSnapshot:true,
-   receptionDate:true,responseDate:true,categoryTypes:true,sourceTypes:true,
+   receptionDate:true,responseDate:true,categoryTypes:true,sourceTypes:true,rootCauseCategories:true,
    qmsRecord:{select:{year:true}}
   }
  });
@@ -38,7 +39,7 @@ export async function getComplaintAnalytics(filters:ComplaintAnalyticsFilters,no
  const trendRows:ComplaintTrendRow[]=rows.map(r=>({
   openingYear:r.qmsRecord.year??r.openedAt?.getUTCFullYear()??null,openedAt:r.openedAt,closedAt:r.closedAt,
   receptionDate:r.receptionDate,responseDate:r.responseDate,classification:r.classification,recurrent:r.recurrent,
-  categoryTypes:r.categoryTypes,sourceTypes:r.sourceTypes
+  categoryTypes:r.categoryTypes,sourceTypes:r.sourceTypes,rootCauseCategories:r.rootCauseCategories
  }));
  const covered=new Set(years);
  const metric=(year:number)=>{
@@ -71,6 +72,7 @@ export async function getComplaintAnalytics(filters:ComplaintAnalyticsFilters,no
    classification:buildPareto(current.classifications),
    source:buildPareto(complaintMentions(trendRows,selected,"sourceTypes")),
    department:buildPareto(current.departments),
+   rootCause:buildPareto(rootCauseCategoryMentions(trendRows.filter(r=>r.openingYear===selected))),
   },
  };
 }

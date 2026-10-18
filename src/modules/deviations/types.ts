@@ -60,6 +60,7 @@ export type DeviationFormDefaults = {
   investigationConclusive?: "YES" | "NO" | "NA" | "";
   investigationMethods?: string[];
   rootCause?: string;
+  rootCauseCategories?: string[];
   recurrentRootCause?: "YES" | "NO" | "NA" | "";
   recurrenceDetails?: string;
   classification?: "CRITICAL" | "MAJOR" | "MINOR" | "";

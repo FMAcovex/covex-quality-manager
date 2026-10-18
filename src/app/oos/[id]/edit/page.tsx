@@ -67,6 +67,7 @@ async function EditOosPageAuthenticatedContent({ params, searchParams }: { param
     phaseIIIssuedAt: day(record.phaseIIIssuedAt),
     phaseIIAffectedDepartments: str(record.phaseIIAffectedDepartments),
     investigationResult: record.investigationResult ?? undefined,
+    rootCauseCategories: record.rootCauseCategories,
     closedAt: day(record.closedAt),
     internalObservations: str(record.internalObservations),
   };

@@ -54,7 +54,7 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   recurrenceReference:v.recurrenceReference,attachedDocumentation:v.attachedDocumentation,emittedBy:v.emittedBy,qaValidatedBy:v.qaValidatedBy,
   investigation:v.investigation,impactAssessment:v.impactAssessment,impactQualityGmp:v.impactQualityGmp,impactSafetyEfficacy:v.impactSafetyEfficacy,
   impactRegulatory:v.impactRegulatory,impactEnvironment:v.impactEnvironment,impactOtherSimilar:v.impactOtherSimilar,containmentActions:v.containmentActions,
-  containmentOther:v.containmentOther,riskJustification:v.riskJustification,investigationResult:v.investigationResult,rootCause:v.rootCause,classification:v.classification,
+  containmentOther:v.containmentOther,riskJustification:v.riskJustification,investigationResult:v.investigationResult,rootCause:v.rootCause,rootCauseCategories:v.rootCauseCategories,classification:v.classification,
   potentialRecall:v.potentialRecall,recallProcedureRequired:v.recallProcedureRequired,authorityNotificationRequired:v.authorityNotificationRequired,
   responsiblePartyCommunicationRequired:v.responsiblePartyCommunicationRequired,regulatoryJustification:v.regulatoryJustification,
   resolutionLines:v.resolutionLines,resolutionActions:v.resolutionActions,hasDerivedActions:v.hasDerivedActions,nextFollowupDate:v.status==="CLOSED"?null:d(v.nextFollowupDate),

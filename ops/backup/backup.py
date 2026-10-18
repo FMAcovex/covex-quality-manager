@@ -227,7 +227,12 @@ def audit_contract(connection):
     if not oos_signed and sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t":
         installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261017000600_b2_oos_signed_documents' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
         require(installed == b"0", "audit-protection-unavailable")
-    filename = "audit-contract-oos-signed.json" if oos_signed else "audit-contract-oos-documents.json" if oos_documents else "audit-contract-oos.json" if oos else "audit-contract-c.json" if review else "audit-contract-b2-critical.json" if critical else "audit-contract-b2-staging.json" if staging else "audit-contract-b2-documents.json" if documents else "audit-contract-b2-integration.json" if composition else "audit-contract-b2-capture.json" if capture else "audit-contract-b2.json" if b2 else "audit-contract.json"
+    # Categoría de causa raíz (6M): solo amplía la política de captura con rootCauseCategories.
+    root_cause = capture and sql(connection, "SELECT EXISTS(SELECT 1 FROM \"AuditCaptureFieldPolicy\" WHERE \"entityType\"='Deviation' AND \"fieldPath\"='rootCauseCategories');").strip() == b"t"
+    if not root_cause and sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t":
+        installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261017000700_root_cause_categories' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
+        require(installed == b"0", "audit-protection-unavailable")
+    filename = "audit-contract-root-cause.json" if root_cause else "audit-contract-oos-signed.json" if oos_signed else "audit-contract-oos-documents.json" if oos_documents else "audit-contract-oos.json" if oos else "audit-contract-c.json" if review else "audit-contract-b2-critical.json" if critical else "audit-contract-b2-staging.json" if staging else "audit-contract-b2-documents.json" if documents else "audit-contract-b2-integration.json" if composition else "audit-contract-b2-capture.json" if capture else "audit-contract-b2.json" if b2 else "audit-contract.json"
     return json.loads(Path(__file__).with_name(filename).read_text())
 
 
