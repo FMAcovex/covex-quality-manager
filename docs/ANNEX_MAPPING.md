@@ -8,7 +8,7 @@ Esta matriz documenta los anexos usados por COVEX Quality Manager y su relación
 
 | Documento | Tipo | SHA-256 auditado | Fuente de datos | Reglas especiales |
 |---|---|---|---|---|
-| Anexo III · Informe | DOCX | `8639c29198101a73253f0681620c89a3e2848b335d2a4be61b946f9b7a353d43` | Expediente de desviación, investigación, CAPA y firmas | Respeta la versión histórica del expediente. |
+| Anexo III · Informe | DOCX | `8639c29198101a73253f0681620c89a3e2848b335d2a4be61b946f9b7a353d43` | Expediente de desviación, investigación, CAPA y firmas | Respeta la versión histórica del expediente. Disposición final: marca la casilla de la opción registrada y escribe la cantidad en su línea; el texto anterior no estándar se imprime como «Otro» (D-098). |
 | Anexo V · Listado anual | XLSX | `1f92410bc94e2037fe632450ce766b3ce5d44c4f55b8868056bad73c882c03f2` | Listado anual | Columna B combina fecha de apertura + departamento. Filas ABIERTA/CERRADA se colorean según la leyenda del anexo. Capacidad de la plantilla: 63 registros. |
 
 ## CAPA · GC-00/030/05
@@ -54,3 +54,5 @@ La respuesta formal al cliente no se genera desde la aplicación para v03.
 - Los listados simples de la aplicación son independientes de los anexos oficiales.
 - Los anexos anuales se generan para un año concreto a partir de los datos estructurados.
 - Si cambia la revisión de un anexo, debe revisarse esta matriz, el mapeo del generador y los campos requeridos del expediente antes de activar la nueva plantilla.
+- El texto de la plantilla no se altera: la etiqueta se conserva y el dato va a continuación o debajo. Solo se sustituyen huecos de relleno, ejemplos e indicaciones, y no se añaden opciones que la plantilla no tiene (D-098). `missingTemplateWords` (`src/lib/ooxml/template-text.ts`) comprueba que cada palabra de la plantilla sigue en su celda.
+- Última verificación completa con las plantillas oficiales: [ANNEX_VERIFICATION_2026-10-18.md](ANNEX_VERIFICATION_2026-10-18.md).

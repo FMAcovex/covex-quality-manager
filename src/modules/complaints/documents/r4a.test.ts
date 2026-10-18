@@ -13,6 +13,11 @@ describe("R4A · documentos por snapshot",()=>{
   for(const value of ["V01","7/10/2026","AC-HISTÓRICA","Primera acción","Segunda acción","Devolver","COMUNICACIÓN POSTERIOR A ACCIONES","CONCLUSIÓN PARTE I","CIERRE HISTÓRICO"])expect(xml).toContain(value);
   expect(xml.indexOf("Segunda acción")).toBeLessThan(xml.indexOf("COMUNICACIÓN POSTERIOR A ACCIONES"));
  });
+ it("F3: conserva los textos oficiales de la plantilla III v03 (D-098)",async()=>{
+  const xml=getZipEntryText(readZip(await generateComplaintAnnexIII(record())),"word/document.xml");
+  for(const label of ["Autoridad / entidad sanitaria","Aviso a cliente / proveedor / titular /Autoridad","Cierre en Parte I, sin seguimiento adicional (justificar)","No Conforme","Estado de las acciones:","Vinculadas a seguimiento independiente","Referencias / responsable del seguimiento:"])expect(xml).toContain(label);
+  expect(xml).not.toContain("Aviso a partes");
+ });
  it("genera IV v03 desde el mismo snapshot y conserva las celdas fijas",async()=>{
   const xml=getZipEntryText(readZip(await generateComplaintAnnexIV(record())),"word/document.xml");
   expect(xml).toContain("Descripción histórica V01");expect(xml).toContain("V01");expect(xml).toContain("CIERRE HISTÓRICO");expect(xml).toContain("TEST 2/0/0");

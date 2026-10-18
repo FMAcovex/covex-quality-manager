@@ -4,7 +4,7 @@ import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
 import { generateSimpleXlsx } from "@/lib/ooxml/simple-xlsx";
-import { formatDate,returnDecisionLabel,returnStatusLabel,returnTypeLabel } from "@/modules/returns/domain";
+import { formatDate,returnDecisionLabel,returnStatusLabel,returnTypeLabel,tri } from "@/modules/returns/domain";
 
 type Row=Awaited<ReturnType<typeof import("@/modules/returns/documents/export-data").getReturnExportRows>>[number];
 
@@ -55,7 +55,7 @@ export async function generateReturnAnnexVI(year:number,rows:Row[],versionCode="
  const flat=rows.flatMap(r=>(r.products.length?r.products:[null]).map((p,i)=>({r,p,i})));
  const body=flat.map(({r,p,i},index)=>{
   const n=5+index,styles=index===0?firstStyles:normalStyles;
-  const follow=[r.finalDestination?`Destino: ${r.finalDestination}`:null,r.traceabilityUpdated?`Trazabilidad: ${r.traceabilityUpdated}`:null,r.internalObservations,...r.followups.map(f=>`${formatDate(f.followupDate)}: ${f.comment}`)].filter(Boolean).join(" · ");
+  const follow=[r.finalDestination?`Destino: ${r.finalDestination}`:null,r.traceabilityUpdated?`Trazabilidad: ${tri(r.traceabilityUpdated)}`:null,r.internalObservations,...r.followups.map(f=>`${formatDate(f.followupDate)}: ${f.comment}`)].filter(Boolean).join(" · ");
   const vals=[
     r.qmsRecord.businessCode??"",formatDate(r.communicationDate),r.relatedDocument??returnTypeLabel(r.returnType),
     r.customerEntity??"",p?.productNameCode??"",p?.format??"",p?.lot??"",[p?.quantity,p?.unit].filter(Boolean).join(" "),

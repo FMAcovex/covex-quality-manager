@@ -17,6 +17,10 @@ function text(value: string | null | undefined) {
 function mark(checked: boolean, label: string) {
   return `${checked ? "☒" : "☐"} ${label}`;
 }
+/** Etiqueta de la plantilla seguida del dato; sin dato se conserva la línea de relleno. */
+function labelled(label: string, value: string | null | undefined, blank = "____________________________________________") {
+  return `${label}\n${value?.trim() ? value.trim() : blank}`;
+}
 function yesNo(value: boolean | null | undefined) {
   return `${mark(value === true, "Sí")}   ${mark(value === false, "No")}`;
 }
@@ -98,20 +102,18 @@ export async function generateChangeAnnexIV(record: ChangeDocumentRecord) {
   );
 
   xml = setWordCellTextBalanced(xml, 3, 0, 1, yesNo(record.committeeRequired));
-  xml = setWordCellTextBalanced(xml, 3, 0, 2, text(record.committeeDetails));
+  xml = setWordCellTextBalanced(xml, 3, 0, 2, labelled("Justificar e indicar personal/departamentos implicados:", record.committeeDetails));
   xml = setWordCellTextBalanced(xml, 3, 1, 1, yesNo(record.clientNotificationRequired));
-  xml = setWordCellTextBalanced(xml, 3, 1, 2, text(record.clientNotificationDetails));
+  xml = setWordCellTextBalanced(xml, 3, 1, 2, labelled("(si Sí, indicar fecha y evidencia):", record.clientNotificationDetails));
   xml = setWordCellTextBalanced(xml, 3, 2, 1, yesNo(record.authorityRequired));
-  xml = setWordCellTextBalanced(xml, 3, 2, 2, text(record.authorityDetails));
+  xml = setWordCellTextBalanced(xml, 3, 2, 2, labelled("(si Sí, indicar detalle):", record.authorityDetails));
   xml = setWordCellTextBalanced(xml, 3, 3, 1, triState(record.pqrRequired));
   xml = setWordCellTextBalanced(
     xml,
     3,
     3,
     2,
-    [record.pqrProducts ? `Producto(s): ${record.pqrProducts}` : "", record.pqrPeriod ? `Periodo PQR: ${record.pqrPeriod}` : ""]
-      .filter(Boolean)
-      .join("\n"),
+    `Producto(s): ${record.pqrProducts?.trim() || "________________"}\nPeriodo PQR: ${record.pqrPeriod?.trim() || "_______________"}`,
   );
   xml = setWordCellTextBalanced(xml, 3, 4, 1, triState(record.stabilityRequired));
   xml = setWordCellTextBalanced(
@@ -119,14 +121,15 @@ export async function generateChangeAnnexIV(record: ChangeDocumentRecord) {
     3,
     4,
     2,
-    `${mark(Boolean(record.stabilityAccelerated), "E. acelerada")}\n${mark(Boolean(record.stabilityOngoing), "E. en curso")}`,
+    // Orden de la plantilla: etiqueta y después la casilla.
+    `E. acelerada   ${record.stabilityAccelerated ? "☒" : "☐"}\nE. en curso     ${record.stabilityOngoing ? "☒" : "☐"}`,
   );
   xml = setWordCellTextBalanced(xml, 3, 5, 1, triState(record.additionalAnalysisRequired));
-  xml = setWordCellTextBalanced(xml, 3, 5, 2, text(record.additionalAnalysisDetails));
+  xml = setWordCellTextBalanced(xml, 3, 5, 2, labelled("Especificar:", record.additionalAnalysisDetails));
   xml = setWordCellTextBalanced(xml, 3, 6, 1, triState(record.additionalValidationRequired));
-  xml = setWordCellTextBalanced(xml, 3, 6, 2, text(record.additionalValidationDetails));
+  xml = setWordCellTextBalanced(xml, 3, 6, 2, labelled("Detalles:", record.additionalValidationDetails));
   xml = setWordCellTextBalanced(xml, 3, 7, 1, yesNo(record.otherImplicationRequired));
-  xml = setWordCellTextBalanced(xml, 3, 7, 2, text(record.otherImplicationDetails));
+  xml = setWordCellTextBalanced(xml, 3, 7, 2, labelled("Especificar:", record.otherImplicationDetails));
 
   xml = setWordCellTextBalanced(
     xml,

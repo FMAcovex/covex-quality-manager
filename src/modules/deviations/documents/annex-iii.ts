@@ -2,13 +2,16 @@ import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import {
   appendWordCellText,
+  escapeXml,
   markFirstCheckbox,
   replaceWordRowWithCopies,
   setTriStateCell,
   setWordCellText,
   setWordSdtCheckbox,
+  transformWordCell,
 } from "@/lib/ooxml/xml";
 import { loadAnnexIIITemplate } from "@/modules/deviations/documents/templates";
+import { dispositionAnnexMarks, dispositionChoice } from "@/modules/deviations/disposition";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 
 type AnnexIIIRecord = {
@@ -94,13 +97,37 @@ function markClassification(xml: string, classification: string | null) {
   return xml;
 }
 
-function setImpactCell(xml: string, row: number, cell: number, label: string, state: string | null, detail?: string | null) {
-  const boxes =
-    state === "YES" ? "SI ☒           NO ☐          NA ☐" :
-    state === "NO" ? "SI ☐           NO ☒          NA ☐" :
-    state === "NA" ? "SI ☐           NO ☐          NA ☒" :
-    "SI ☐           NO ☐          NA ☐";
-  return setWordCellText(xml, 3, row, cell, detail ? `${label}\n${boxes}\n${detail}` : `${label}\n${boxes}`);
+// Disposición (D-098): casillas y cantidad según la opción registrada; el texto anterior no
+// estándar se conserva como «Otro». Las etiquetas de la plantilla no se reescriben.
+export function fillDispositionCell(
+  xml: string,
+  record: Pick<AnnexIIIRecord, "disposition" | "dispositionQuantity" | "dispositionComments">,
+) {
+  const { option, legacyText } = dispositionChoice(record.disposition);
+  const marks = dispositionAnnexMarks(option);
+  marks.checkboxes.forEach((checked, index) => {
+    xml = setWordSdtCheckbox(xml, 4, 3, index, checked);
+  });
+  const quantity = record.dispositionQuantity?.trim();
+  if (quantity && marks.quantityLine !== null) {
+    xml = transformWordCell(xml, 4, 3, 0, (cell) => {
+      let seen = 0;
+      return cell.replace(/(>Cantidad )_+(<)/g, (match, start: string, end: string) => (seen++ === marks.quantityLine ? `${start}${escapeXml(quantity)}${end}` : match));
+    });
+  } else if (quantity) {
+    xml = appendWordCellText(xml, 4, 3, 0, `Cantidad: ${quantity}`);
+  }
+  if (legacyText) xml = appendWordCellText(xml, 4, 3, 0, legacyText);
+  if (record.dispositionComments) xml = appendWordCellText(xml, 4, 3, 0, record.dispositionComments);
+  return xml;
+}
+
+// Marca SI/NO/NA en las casillas de la plantilla sin reescribir su texto (cada celda tiene 3 casillas).
+export function setImpactCell(xml: string, row: number, cell: number, state: string | null, detail?: string | null) {
+  ["YES", "NO", "NA"].forEach((option, index) => {
+    xml = setWordSdtCheckbox(xml, 3, row, cell * 3 + index, state === option);
+  });
+  return detail ? appendWordCellText(xml, 3, row, cell, detail) : xml;
 }
 
 export async function generateAnnexIII(record: AnnexIIIRecord) {
@@ -180,19 +207,12 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   }
 
   xml = markClassification(xml, record.classification);
-  xml = setImpactCell(xml, 5, 0, "Impacto sobre el status de validación", record.validationImpact);
-  xml = setImpactCell(xml, 5, 1, "Impacto sobre el status de registro", record.registrationImpact);
-  xml = setImpactCell(xml, 6, 0, "Impacto sobre el status de estabilidad", record.stabilityImpact);
-  xml = setImpactCell(
-    xml,
-    6,
-    1,
-    "Impacto sobre otros procesos/productos",
-    record.otherProcessesImpact,
-    record.otherProcessesImpactDetails,
-  );
-  xml = setWordCellText(xml, 3, 7, 1, record.capaRequired === true ? "☒ SI" : "☐ SI");
-  xml = setWordCellText(xml, 3, 8, 1, record.capaRequired === false ? "☒ NO" : "☐ NO");
+  xml = setImpactCell(xml, 5, 0, record.validationImpact);
+  xml = setImpactCell(xml, 5, 1, record.registrationImpact);
+  xml = setImpactCell(xml, 6, 0, record.stabilityImpact);
+  xml = setImpactCell(xml, 6, 1, record.otherProcessesImpact, record.otherProcessesImpactDetails);
+  xml = setWordSdtCheckbox(xml, 3, 7, 0, record.capaRequired === true);
+  xml = setWordSdtCheckbox(xml, 3, 8, 0, record.capaRequired === false);
   xml = markFirstCheckbox(xml, 3, 10, 0, record.capaPlans.some((plan) => plan.actionType === "CORRECTIVE"));
   xml = markFirstCheckbox(xml, 3, 10, 1, record.capaPlans.some((plan) => plan.actionType === "PREVENTIVE"));
   if (record.capaPlans.length) {
@@ -210,13 +230,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   }
 
   xml = setWordCellText(xml, 4, 1, 0, value(record.conclusion));
-  const disposition = (record.disposition ?? "").toLocaleUpperCase("es-ES");
-  const dispositionOptions = ["APROBADO", "RECHAZADO", "DESTRUIR", "DEVOLVER", "OTRO"];
-  dispositionOptions.forEach((option, index) => {
-    xml = setWordSdtCheckbox(xml, 4, 3, index, disposition.includes(option));
-  });
-  if (record.dispositionQuantity) xml = appendWordCellText(xml, 4, 3, 0, `Cantidad registrada: ${record.dispositionQuantity}`);
-  if (record.dispositionComments) xml = appendWordCellText(xml, 4, 3, 0, record.dispositionComments);
+  xml = fillDispositionCell(xml, record);
   xml = setTriStateCell(xml, 4, 4, 1, record.clientNotification);
 
   updateZipEntry(entries, "word/document.xml", xml);

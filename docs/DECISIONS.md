@@ -863,3 +863,14 @@ Decisión del responsable de Calidad, para la carga inicial del índice de Garan
 - **Los departamentos marcados «DEPARTAMENTO ANULADO» en el índice no se dan de alta.** Sus PNT quedan sin departamento y fuera de la inclusión en bloque; se pueden decidir una a una si más adelante se crea el departamento.
 - Tras el alta, el Excel se vuelve a analizar para conciliar las filas con los departamentos nuevos. Un lote guardado antes no se actualiza: hay que analizar de nuevo y guardar un lote nuevo; el lote lo indica.
 - Requiere el permiso de gestionar la configuración. Es una operación de configuración (TR02) con su historial de cambios por departamento.
+
+## D-098 — Disposición final por opciones y relleno literal de las plantillas (2026-10-18)
+
+Decisión del responsable de Calidad tras la verificación de anexos del 18/10/2026 ([ANNEX_VERIFICATION_2026-10-18.md](ANNEX_VERIFICATION_2026-10-18.md)).
+
+- **Disposición final de Desviaciones (opción A).** El campo pasa de texto libre a una lista con las opciones del Anexo III: Aprobado, Rechazado, Rechazado – Destruir, Rechazado – Devolver y Otro, con cantidad y comentarios. El anexo marca exactamente esa casilla (Destruir y Devolver marcan también Rechazado) y escribe la cantidad en su línea «Cantidad ____». Si la opción no tiene línea propia, la cantidad se añade debajo. Un texto anterior que no coincide con ninguna opción se conserva sin cambios, se muestra en el formulario como «Otro (registrado antes)» y se imprime como «Otro» con su texto. No hay migración de datos.
+- **Observaciones internas en los listados.** Se mantienen en los listados anuales de Reclamaciones (Anexo V) y Devoluciones (Anexo VI) como seguimiento, aunque no aparezcan en los informes.
+- **Relleno literal.** Los generadores conservan el texto de la plantilla: la etiqueta se mantiene tal cual y el dato se escribe a continuación o debajo. Solo se sustituyen los huecos de relleno (`____`, fechas en blanco, códigos de ejemplo), los ejemplos y las indicaciones de relleno. No se añaden opciones que la plantilla no tiene: en Control de cambios V, «no aplica» de la eficacia va en las observaciones.
+- **Versión de un anexo.** Una versión mal escrita en la descarga de una versión anterior del Anexo III de Desviaciones da error, en lugar de descargar la vigente.
+
+Las pruebas usan plantillas sintéticas con los textos literales afectados; las plantillas reales siguen fuera del repositorio.

@@ -74,12 +74,14 @@ export async function generateChangeAnnexIII(record: ChangeDocumentRecord) {
     0,
     15,
     0,
+    // Texto de la plantilla: nombre y cargo en las dos líneas de relleno; la firma queda manuscrita.
     [
-      `Responsable de dictamen: ${text(record.requestDecisionResponsible)}`,
-      record.requestDecisionRole ? `Cargo: ${record.requestDecisionRole}` : "",
-      "Firma: __________________",
-      `Fecha: ${date(record.requestDecisionDate)}`,
-    ].filter(Boolean).join("\n"),
+      "Nombre y cargo del responsable que acepta la solicitud:",
+      record.requestDecisionResponsible?.trim() || "_________________________",
+      record.requestDecisionRole?.trim() || "_________________________",
+      "",
+      `Firma: __________________   Fecha: ${date(record.requestDecisionDate) || "____/____/______"}`,
+    ].join("\n"),
   );
 
   updateZipEntry(entries, "word/document.xml", xml);

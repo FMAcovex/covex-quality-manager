@@ -48,9 +48,9 @@
 | Clave | Prioridad | Trabajo | Evidencia de aceptación |
 | --- | --- | --- | --- |
 | A0 | P0 | Consolidar baseline, decisiones, documentación y candidatos a PR obsoletas | Documentos coherentes; sin código, schema, plantillas ni funcionalidades modificadas |
-| UX1 | P1 | Maquetar mejor filtros, indicadores y controles de listados **manteniendo diseño actual** | Comparativa visual por módulo a 1440/768/390; lógica/filtros intactos |
-| UX2 | P1 | Mejorar retorno con filtros/página/pestaña, formularios y errores contextualizados | Pruebas de ida y vuelta, guardado explícito, sin autosave, bloqueo de concurrencia preservado |
-| KPI1 | P1 | Dashboard QMS común con tareas, próximos/vencidos, tendencias y filtros | Definiciones de KPI auditables, cero doble conteo, drill-down con filtros conservados |
+| UX1 | P1 · **hecho** (#126) | Maquetar mejor filtros, indicadores y controles de listados **manteniendo diseño actual** | Comparativa visual por módulo a 1440/768/390; lógica/filtros intactos |
+| UX2 | P1 · **hecho** (#128, #129, #130) | Mejorar retorno con filtros/página/pestaña, formularios y errores contextualizados | Pruebas de ida y vuelta, guardado explícito, sin autosave, bloqueo de concurrencia preservado |
+| KPI1 | P1 · **hecho** (D1A #131, D1B #133, D1C; indicadores por módulo) | Dashboard QMS común con tareas, próximos/vencidos, tendencias y filtros | Definiciones de KPI auditables, cero doble conteo, drill-down con filtros conservados |
 | BE1 | P1 | Medición de SQL/paginación, carga y custodia de documentos, errores/logs | Línea base antes/después, índices motivados y pruebas sin regresiones |
 | CI1 | P1 | Selección de tests por impacto, paralelismo y diagnóstico, batería completa programada | Ninguna regresión crítica retirada; CI verde y duraciones medibles |
 | SEC1 | P0 antes de GMP | Identidad, RBAC, autorización servidor, segregación de funciones, audit trail según riesgos | Pruebas positivas/negativas, revisión con QA/IT y controles documentados |
@@ -58,6 +58,8 @@
 | DATA1 | P0 antes de GMP | Conciliación y carga controlada de PNT/históricos; aceptación documental | Actas de reconciliación y aceptación Word, procedencia y cambios |
 | INT1 | P2 | Alertas controladas, Teams/correo y SharePoint según IT | Consentimiento/roles, idempotencia de envíos, trazabilidad y gestión de fallos |
 | VAL1 | P0 antes de GMP | URS, evaluación de riesgos, trazabilidad requisitos-pruebas y validación de uso | Evidencias aprobadas por responsables competentes antes de liberación |
+
+Estado actualizado el 2026-10-18: UX1, UX2 y KPI1 están integrados en `main`; el resto sigue pendiente.
 
 **P0 antes de GMP** indica requisito para uso regulado, no que bloquee el desarrollo paralelo del dashboard y la UX.
 

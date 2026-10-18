@@ -33,8 +33,8 @@ describe("Reclamaciones Anexo III v03", () => {
       otherResolutionDetails:"Acción adicional",
     });
     expect(right).toContain("RETIRADA DEL MERCADO:\nRetirada lote A");
-    expect(right).toContain("ABONO:\nAbono de 10 unidades");
-    expect(right).toContain("REPOSICIÓN:\nReposición del material");
+    expect(right).toContain("ABONO\nAbono de 10 unidades");
+    expect(right).toContain("REPOSICIÓN\nReposición del material");
     expect(right).toContain("OTROS (especificar):\nAcción adicional");
   });
 });
