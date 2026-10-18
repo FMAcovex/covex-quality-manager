@@ -33,6 +33,8 @@ class Deployment(unittest.TestCase):
             self.assertEqual(app["environment"]["APP_ENV"], "production")
             self.assertEqual(app["environment"]["ALLOW_DEMO_DATA"], "false")
             self.assertEqual(app["environment"]["AUTH_SYNTHETIC_IDENTITY"], "0")
+            self.assertEqual(app["environment"]["TEMPLATE_INSTALL_DIR"], "/app/templates")
+            self.assertIn(":/app/templates:ro", " ".join(f"{v['source']}:{v['target']}:{'ro' if v.get('read_only') else 'rw'}" for v in app["volumes"]))
             self.assertEqual(len(proxy["ports"]), 1)
             self.assertEqual(proxy["ports"][0]["host_ip"], "127.0.0.1")
             self.assertEqual(proxy["ports"][0]["target"], 443)

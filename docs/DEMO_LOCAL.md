@@ -14,7 +14,7 @@ Guía para ver y probar la aplicación **en tu propio ordenador**, con datos fic
 
 1. **Instala Docker Desktop** y ábrelo. En Windows te pedirá activar WSL 2 y reiniciar: acepta. Espera a que el icono de la ballena indique que Docker está en marcha.
 2. **Descarga la aplicación**: en GitHub, en la página del repositorio, pulsa **Code → Download ZIP**. Descomprime el ZIP en una carpeta sencilla, por ejemplo `C:\covex-demo`.
-3. **Plantillas oficiales (opcional)**: para probar la generación de anexos Word y Excel, copia en la carpeta `plantillas` que hay dentro de la aplicación tus ZIP de plantillas (por ejemplo `ANEXOS PARA APP.zip` y el de Auditorías) y el PNT de OOS `GC-10-014-04 (15-06-2025) EN REDACCION.docx` corregido. La demo reconoce cada archivo por su huella SHA-256, aunque cambie de nombre, e ignora el resto. Sin plantillas, la demo funciona igual, pero no genera documentos.
+3. **Plantillas oficiales (opcional)**: para probar la generación de anexos Word y Excel, copia en la carpeta `plantillas` que hay dentro de la aplicación tus ZIP de plantillas (por ejemplo `ANEXOS PARA APP.zip` y el de Auditorías) y el PNT de OOS `GC-10-014-04 (15-06-2025) EN REDACCION.docx` corregido. Incluye también el `.docx` del programa anual interno (PMAI V04). La demo reconoce cada archivo por su huella SHA-256, aunque cambie de nombre, e ignora el resto. Sin plantillas, la demo funciona igual, pero no genera documentos.
 4. **Abre una terminal en la carpeta**: en el Explorador de Windows, entra en la carpeta de la aplicación, escribe `powershell` en la barra de direcciones y pulsa Intro.
 5. **Arranca la demo** con este comando:
 

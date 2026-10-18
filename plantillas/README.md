@@ -1,7 +1,13 @@
-# Plantillas oficiales para la demo local (opcional)
+# Plantillas oficiales (fuera de Git)
 
-Si quieres probar la generación de anexos Word y Excel en la demo, copia aquí el
-ZIP de plantillas oficiales (por ejemplo `ANEXOS PARA APP.zip`). Al arrancar,
-la demo lo instala y comprueba la huella de cada plantilla.
+Copia aquí los ZIP de plantillas oficiales (por ejemplo `ANEXOS PARA APP.zip` y el de Auditorías),
+el PNT de OOS y el `.docx` del programa anual interno. Se instalan solos:
 
-Los ZIP de esta carpeta no se suben al repositorio (`.gitignore`).
+- en la demo (`compose.demo.yaml`), al arrancar;
+- en desarrollo o Codespaces, al arrancar la aplicación si `.env` tiene `TEMPLATE_INSTALL_DIR="plantillas"` (D-107);
+- en cualquier momento, con `pnpm templates:install -- plantillas/`.
+
+Cada archivo se reconoce por su huella SHA-256 y una versión ya instalada nunca se sustituye.
+También se pueden subir desde Configuración → Versiones → «Instalar plantillas».
+
+Nada de esta carpeta, salvo este archivo, se sube al repositorio (`.gitignore`).

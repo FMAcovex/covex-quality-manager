@@ -971,3 +971,20 @@ Decisión del responsable de Calidad:
   - el `.docx` de Word conserva mejor el formato: la conversión ponía en negrita el equipo auditor y el aprobador técnico.
 - **Instalaciones anteriores.** Donde el PMAI se instaló convirtiendo el `.doc`, la instalación del `.docx` sustituye ese archivo y lo anota en el historial de configuración. Esas conversiones no daban siempre el mismo archivo, así que no se pueden enumerar como derivaciones anteriores (`replacesDocConversion`). Los programas ya emitidos no cambian: cada emisión guarda su propio documento.
 - Se mantiene la versión `PMAI-V04-01-2023-GENERAL`: es el mismo documento controlado en otro formato de archivo.
+
+## D-107 — Plantillas instaladas solas al arrancar (2026-10-18)
+
+Decisión del responsable de Calidad: en la aplicación instalada, las plantillas se cargan solas, sin que nadie tenga que subirlas.
+
+- **Carpeta del servidor.** IT deja los ZIP de plantillas, el PNT de OOS y el `.docx` del programa anual interno en la carpeta de plantillas del servidor. La aplicación lee la carpeta indicada en `TEMPLATE_INSTALL_DIR` cada vez que arranca y las instala.
+  - Con Docker, `ops/compose.production.yaml` ya monta `COVEX_ASSETS_DIR` en `/app/templates` en solo lectura y fija `TEMPLATE_INSTALL_DIR=/app/templates`.
+  - En la instalación nativa, se indica en `/etc/covex/production.env`.
+- **Mismas reglas que la terminal y el botón (D-099, D-105):**
+  - cada archivo se reconoce por su SHA-256;
+  - nada de los ZIP se ejecuta;
+  - una versión instalada nunca se sustituye;
+  - cada alta queda en el historial como «Instalación automática al arrancar».
+- **Repetir no cambia nada.** Un arranque con las plantillas ya instaladas no escribe nada.
+- **No bloquea la aplicación.** La instalación corre en segundo plano después de arrancar. Si la carpeta no existe, está vacía o algo falla, la aplicación funciona igual y las plantillas se pueden subir desde Configuración.
+- **Con el audit trail obligatorio activado no se instala al arrancar**, porque cada cambio necesita un usuario autenticado: se usa el botón «Instalar plantillas».
+- **Las plantillas siguen fuera de Git**: el repositorio es público. En la carpeta `plantillas/` del repositorio se ignora todo salvo su `README.md`. En desarrollo o Codespaces, `.env.example` propone `TEMPLATE_INSTALL_DIR="plantillas"`.

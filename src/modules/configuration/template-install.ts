@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { extractWordBodyRange } from "@/lib/ooxml/xml";
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
@@ -59,6 +61,16 @@ export function deriveTemplate(entry: CatalogTemplate, source: TemplateSource, d
     case "office-normalized":
       return normalizeOffice(data);
   }
+}
+
+/** Lee carpetas, ZIP o archivos sueltos del disco del servidor (terminal o instalación al arrancar). */
+export function collectTemplateFiles(target: string, files: InputFile[] = []) {
+  if (statSync(target).isDirectory()) {
+    for (const name of readdirSync(target).sort()) collectTemplateFiles(path.join(target, name), files);
+  } else if (/\.(zip|docx|xlsx)$/i.test(target)) {
+    files.push(...expandTemplateInput(/\.zip$/i.test(target) ? path.basename(target) : target, readFileSync(target)));
+  }
+  return files;
 }
 
 /**
