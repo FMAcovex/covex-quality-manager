@@ -28,7 +28,7 @@ const groups: Record<string, string[]> = {
   W18: ["src/lib/auth/administration.ts", "scripts/auth-provision.ts"],
   W19: ["src/lib/auth/oidc.ts", "src/lib/auth/session.ts", "src/app/api/reminders/manual/route.ts"],
   W20: ["src/modules/deviations/import/import-service.ts", "src/modules/capa/import/import-service.ts", "scripts/backfill-record-versions.ts"],
-  W21: ["scripts/install-template-bundle.ts", "scripts/install-document-templates.ts", "scripts/install-capa-templates.ts", "scripts/install-change-control-templates.ts", "scripts/install-complaint-template.ts", "scripts/install-return-template.ts", "scripts/install-audit-templates.ts", "scripts/install-annual-audit-programme-templates.ts", "scripts/install-oos-templates.ts"],
+  W21: ["scripts/install-templates.ts"],
   W22: ["ops/backup/backup.py", "ops/release.py", "ops/postgres/roles.sql", "ops/postgres/audit-owner.sql", "ops/postgres/audit-grants.sql"],
   W23: ["src/modules/oos/actions.ts", "src/modules/oos/signed-document-actions.ts"],
 };

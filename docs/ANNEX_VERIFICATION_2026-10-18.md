@@ -87,6 +87,6 @@ Usan plantillas sintéticas con los textos literales de las celdas afectadas, si
 ## Observaciones sin corregir
 
 - **Control de cambios III · Alcance.** La plantilla repite «Especificar:» dos veces tras «☐ Otros», aparentemente por error de edición. El anexo lo imprime una vez, con el dato.
-- **Instaladores sueltos.** `install-document-templates.ts` y `install-change-control-templates.ts` esperan otros nombres o huellas que el instalador del paquete y el generador. El paquete `ANEXOS_PARA_APP.zip` se instala bien con `install-template-bundle.ts`. Queda pendiente unificarlos.
+- **Instaladores sueltos.** `install-document-templates.ts` y `install-change-control-templates.ts` esperaban otros nombres o huellas que el instalador del paquete y el generador. El paquete `ANEXOS_PARA_APP.zip` se instalaba bien con `install-template-bundle.ts`. **Resuelto en D-099:** un único instalador y un único catálogo de huellas.
 - **Datos de demostración.** La CAPA DEMO guardaba el origen como «DEVIATION», y la aplicación guarda «Desviación». Se corrige en `seed-demo.ts`; no afecta a expedientes reales.
 - **Una plantilla nueva** sigue requiriendo revisar el mapeo del generador antes de activarla (`ANNEX_MAPPING.md`, «Principios de control»). La comprobación de etiquetas ayuda a revisarla, pero no se aplica automáticamente al subir la plantilla.

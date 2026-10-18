@@ -62,7 +62,7 @@ Anulados conservan consulta/descarga histórica; se bloquea generación operativ
 
 Migración aditiva `20261007000300_audits_r3c`: campos Audit, verificación local AuditFindingAction, bytes/metadatos GeneratedDocument y enums. Se reutilizan 46 modelos. Sobre R3B: backup habitual, `pnpm db:deploy`, `pnpm db:generate`; sin reset/backfill de versiones inventadas. Desde vacío se aplican las cuatro migraciones.
 
-Los binarios corporativos no se incluyen en Git. Copiar los cuatro nombres exactos a una carpeta autorizada y ejecutar `pnpm templates:audits:install /ruta/carpeta`. El instalador verifica todos los SHA-256 antes de escribir, es idempotente y rechaza sobrescribir una versión con hash diferente. Una fuente futura debe revisarse y activarse como nueva versión, adaptando el mapeo si cambia la estructura.
+Los binarios corporativos no se incluyen en Git. Copiar los cuatro archivos a una carpeta autorizada y ejecutar `pnpm templates:install -- /ruta/carpeta` (D-099). El instalador los reconoce por su SHA-256, es idempotente y rechaza sobrescribir una versión con hash diferente. Una fuente futura debe revisarse y activarse como nueva versión, adaptando el mapeo si cambia la estructura.
 
 Pruebas: cierre positivo/negativo por escenario, generación real por snapshot, 00/01, retiradas/relaciones/histórico, PDFs separados, checksum, pertenencia, Review/transiciones/deep links, concurrencia y anulación. `APP_ENV=test pnpm audits-r3c:smoke` instala y limpia plantillas sintéticas explícitamente ficticias para CI; `R3C_OFFICIAL_TEMPLATES=1` usa las reales instaladas. `R3C_QA_OUTPUT=reports/audits` permite exportar fixtures para comprobar OOXML/LibreOffice. CI nunca convierte sus fixtures en plantillas oficiales de despliegue.
 

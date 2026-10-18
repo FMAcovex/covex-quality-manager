@@ -128,7 +128,7 @@ Implementado en OOS-3 (17/10/2026).
 **Fuente controlada.** PNT `GC-10-014-04 (15-06-2025) EN REDACCION.docx`, con el encabezado de los anexos ya corregido a 04 por Calidad. Su SHA-256 es `1dc7d0a7f0937f90b75f6ba94f3cdbaf0cfdd3b6558503c2f1658d1fd837ad40`.
 
 **Instalación.**
-- `pnpm templates:oos:install -- <PNT.docx>` comprueba el SHA-256 y deriva los tres anexos.
+- `pnpm templates:install -- <PNT.docx o carpeta>` reconoce el PNT por su SHA-256 y deriva los tres anexos (instalador único, D-099).
 - Los registra como plantillas versión 04, vigentes desde el 15/06/2025, con su cambio de configuración.
 - Como los anexos en uso de la carpeta «FUERA DE ESPECIFICACIONES», cada anexo derivado empieza en el propio formulario y no lleva encabezado ni pie del PNT ni los títulos del apartado 8. La única numeración es la fila «Página n de X» del formulario.
 - Una versión ya registrada con otro binario no se sustituye. Excepción: la derivación de OOS-3 del mismo PNT, que conservaba encabezado, pie y títulos, se sustituye al reinstalar con el cambio de configuración `TEMPLATE_REDERIVED` (hash anterior y motivo).

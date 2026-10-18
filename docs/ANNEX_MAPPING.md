@@ -43,9 +43,16 @@ La respuesta formal al cliente no se genera desde la aplicación para v03.
 | Documento | Tipo | SHA-256 auditado | Fuente de datos | Reglas especiales |
 |---|---|---|---|---|
 | Anexo III · Formulario de devolución | DOCX | `9716477f2b261a4fec8b1d459fb8aa62bd42840f8fa352b4b66b15c2669745f4` | Datos generales, productos, verificaciones, decisión y firmas | Plantilla independiente aportada. |
-| Anexo IV · Hoja de devolución de producto | DOCX | `711a3cb833bd14d7aa6ddf5b2655b6e7bbc084c8331958db415feebfe69a1317` | Producto/lote individual | Se genera una hoja por producto/lote y conserva fechas separadas de recepción/verificación. |
-| Anexo V · Declaración del cliente | DOCX | `818a01a3a61cbf29546f70d99b67c2679888bfa77785ded39a17eefe624bcafd` | Cliente, productos/lotes, conservación y firmante | Plantilla separada del PNT y normalizada a una página, sin sección en blanco posterior. |
+| Anexo IV · Hoja de devolución de producto | DOCX | Recortado del PNT GC-00/028/03 (`7f6b318e936cef9d2685347decf52b8951c34585dbd2ef1ebca05232a0c59a5a`), D-099 | Producto/lote individual | Se genera una hoja por producto/lote y conserva fechas separadas de recepción/verificación. |
+| Anexo V · Declaración del cliente | DOCX | Recortado del PNT GC-00/028/03 (`7f6b318e936cef9d2685347decf52b8951c34585dbd2ef1ebca05232a0c59a5a`), D-099 | Cliente, productos/lotes, conservación y firmante | Plantilla separada del PNT y normalizada a una página, sin sección en blanco posterior. |
 | Anexo VI · Listado anual | XLSX | `fa027508995beca7e39368f92e9d75ac2fdcf0dd7dffa57dfef8d59e6696db64` | Listado anual, una fila por producto/lote | Crece dinámicamente y mantiene las 13 columnas oficiales. |
+
+## Instalación (D-099)
+
+- Las huellas aceptadas de todas las plantillas controladas (Desviaciones, CAPA, Controles de cambios, Reclamaciones, Devoluciones, OOS y Auditorías) están en un único catálogo: `src/modules/configuration/template-catalog.ts`.
+- `pnpm templates:install -- <carpetas, ZIP o archivos>` (por defecto, la carpeta `plantillas`) reconoce cada archivo por su SHA-256, no por su nombre. Recorta del PNT los anexos que proceden de él e informa de lo instalado (✓), lo que ya estaba (=) y lo que no reconoce o no puede instalar (✗).
+- Una versión ya instalada no se sustituye por otro archivo. Solo se completa una versión registrada sin archivo o se sustituye una derivación anterior documentada del mismo PNT (OOS). Una revisión nueva se registra como versión nueva en Configuración → Versiones.
+- Las plantillas se guardan en la base de datos; los generadores ya no buscan copias en la carpeta `templates/`.
 
 ## Principios de control
 
