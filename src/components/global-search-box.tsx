@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 /**
  * Buscador global en la barra superior: un campo discreto en el que se escribe y, al pulsar
  * Intro, se abren los resultados en /search. Ctrl+K (⌘K) lleva el foco al campo. En /search
- * no se muestra, porque la propia página tiene el campo de búsqueda.
+ * no se muestra, porque la propia página tiene el campo de búsqueda. El campo no lleva `name`
+ * para no confundirse con los buscadores `q` de los listados; el envío lo hace el formulario.
  */
 export function GlobalSearchBox() {
   const pathname = usePathname();
+  const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -26,11 +28,14 @@ export function GlobalSearchBox() {
   }, []);
   if (pathname === "/search") return null;
   return (
-    <form action="/search" method="get" role="search" className="topbar-search" aria-label="Buscar en todos los módulos">
+    <form action="/search" method="get" role="search" className="topbar-search" aria-label="Buscar en todos los módulos" onSubmit={(event) => {
+      event.preventDefault();
+      const value = input.current?.value.trim() ?? "";
+      if (value) router.push(`/search?q=${encodeURIComponent(value)}`);
+    }}>
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
       <input
         ref={input}
-        name="q"
         type="search"
         placeholder="Buscar… (Ctrl+K)"
         aria-label="Buscar en todos los módulos (Ctrl+K)"
