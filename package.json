@@ -33,6 +33,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "preview": "prisma generate && next build && next start",
     "lint": "eslint .",
     "test": "vitest run",
     "db:generate": "prisma generate",

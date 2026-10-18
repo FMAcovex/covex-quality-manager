@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SessionControls } from "./session-controls";
 import { GlobalSearchBox } from "./global-search-box";
+import { NavigationProgress } from "./navigation-progress";
 import { useCanAct } from "./permissions";
 import { qmsModules } from "@/modules/registry";
 
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-frame">
+      <NavigationProgress />
       <header className="topbar">
         <Link className="brand" href="/">
           <span className="brand-mark">C</span>
