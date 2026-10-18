@@ -293,6 +293,7 @@ enum DocumentType {
   OOS_ANNEX_III
   OOS_ANNEX_IV
   OOS_ANNEX_VI
+  RECORD_EVIDENCE
 }
 
 enum HistoricalImportRowResult {

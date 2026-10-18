@@ -210,7 +210,7 @@ export async function getDeviationDetail(id: string) {
               },
             },
           },
-          generatedDocuments: { orderBy: { generatedAt: "desc" } },
+          generatedDocuments: { where: { documentType: { not: "RECORD_EVIDENCE" } }, orderBy: { generatedAt: "desc" } },
         },
       },
       department: true,

@@ -4,6 +4,7 @@ export const changeControlDetailTabs = [
   ["dictamen", "Dictamen"],
   ["followups", "Seguimiento"],
   ["documents", "Documentos"],
+  ["evidence", "Evidencias"],
   ["relations", "Relaciones"],
   ["review", "Revisión"],
   ["timeline", "Cronología"],

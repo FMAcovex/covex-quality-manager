@@ -2,6 +2,8 @@ import { getSimilarDeviations } from "@/modules/deviations/recurrence-queries";
 import { SimilarDeviations } from "@/modules/deviations/components/similar-deviations";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
+import { RecordEvidencePanel } from "@/components/record-evidence-panel";
+import { uploadDeviationEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
@@ -63,6 +65,7 @@ const tabs = [
   ["relations", "Relaciones"],
   ["versions", "Versiones"],
   ["documents", "Documentos"],
+  ["evidence", "Evidencias"],
   ["review", "Revisión"],
   ["timeline", "Cronología"],
   ["audit-trail", "Audit Trail"],
@@ -748,6 +751,7 @@ async function DeviationDetailPageAuthenticatedContent({
         </div>
       ) : null}
 
+      {activeTab === "evidence" ? <RecordEvidencePanel qmsRecordId={deviation.qmsRecord.id} active={deviation.qmsRecord.isActive} action={uploadDeviationEvidenceAction.bind(null, id)} /> : null}
       {activeTab === "timeline" ? <RecordTimeline qmsRecordId={deviation.qmsRecord.id} /> : null}
       {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${deviation.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>

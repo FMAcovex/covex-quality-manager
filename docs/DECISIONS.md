@@ -838,3 +838,17 @@ Decisión del responsable de Calidad. Junto a «¿Causa raíz recurrente?» (edi
 - **misma área y procedencia.**
 
 Se ordenan por número de coincidencias y fecha, como máximo 10, con enlace a cada una. Solo informa: la valoración de la recurrencia la sigue haciendo quien investiga y no se guarda nada nuevo.
+
+## D-096 — Evidencias adjuntas por expediente (2026-10-18)
+
+Decisión del responsable de Calidad. Desviaciones, CAPA, Controles de cambios, Reclamaciones, Devoluciones y OOS tienen una pestaña **«Evidencias»** para adjuntar archivos que respaldan el expediente (fotografías, registros, certificados…). Auditorías ya tenía su propio registro de documentos recibidos y no cambia.
+
+- **Formatos:** PDF, DOCX, XLSX, PNG y JPG, de hasta 15 MB. Se comprueba el contenido real (cabecera PDF, paquete Office o firma de imagen), no solo la extensión.
+- **Datos de cada evidencia:** descripción (obligatoria), referencia opcional (seguimiento, acción, documento…), quién la adjunta y cuándo, tamaño y huella SHA-256.
+- **Solo se añaden.** Una evidencia no se sustituye ni se borra desde la interfaz. Los expedientes anulados no admiten nuevas evidencias. Se pueden adjuntar en cualquier otro estado, incluido después del cierre.
+- **No se imprimen** en los anexos: las plantillas aprobadas no cambian. Tampoco aparecen entre los documentos generados.
+- **Permisos:** adjuntar requiere «Adjuntar documento» del módulo; descargar requiere «Descargar». La descarga vuelve a verificar la huella.
+- **Trazabilidad:** la carga queda en el historial operativo y en la cronología. Con la captura B2 activa se registra con la operación de documentos de cada módulo (DV08, CA08, CC07, RC07, DE07, OO06).
+- **Pendiente:** no hay análisis antivirus de los archivos (como en el resto de adjuntos, ver `PNT_P2A.md`).
+
+Técnicamente, la evidencia se guarda en `GeneratedDocument` con el tipo `RECORD_EVIDENCE`. Esa tabla ya está capturada por B2 y es inmutable una vez guardado el archivo, así que no hace falta un contrato B2 nuevo.

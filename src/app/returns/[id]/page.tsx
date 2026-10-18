@@ -1,3 +1,5 @@
+import { RecordEvidencePanel } from "@/components/record-evidence-panel";
+import { uploadReturnEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
@@ -60,6 +62,7 @@ const tabs = [
   ["followups", "Seguimientos"],
   ["relations", "Relaciones"],
   ["documents", "Documentos"],
+  ["evidence", "Evidencias"],
   ["review", "Revisión"],
   ["timeline", "Cronología"],
   ["audit-trail", "Audit Trail"],
@@ -962,6 +965,7 @@ async function ReturnDetailPageAuthenticatedContent({
           </div>
         ) : null}
 
+        {tab === "evidence" ? <RecordEvidencePanel qmsRecordId={r.qmsRecord.id} active={r.qmsRecord.isActive} action={uploadReturnEvidenceAction.bind(null, r.id)} /> : null}
         {tab === "timeline" ? <RecordTimeline qmsRecordId={r.qmsRecord.id} /> : null}
       {tab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${r.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
       </section>

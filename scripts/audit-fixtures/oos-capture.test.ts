@@ -183,3 +183,39 @@ it("keeps OOS signed Anexo III PDFs as received originals (OO06) with replacemen
   expect(await asUser(qa, () => uploadOosSignedPdfAction(...upload(replaceId, "Synthetic corrected scan", "Synthetic illegible first scan")))).toMatchObject({ error: null });
   expect(await inspector.auditEvent.count()).toBe(count);
 }, 60000);
+
+it("captures record evidence uploads (D-096) as append-only received documents with replay", async () => {
+  const { uploadOosEvidenceAction, uploadDeviationEvidenceAction } = await import("../../src/lib/qms/record-evidence-actions");
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
+  const upload = (id: string, requestId: string, name = "label.png") => {
+    const fd = form({ actor: "Spoofed actor", description: "Synthetic label photograph", reference: "Synthetic follow-up 1", _covexAuditRequestId: requestId });
+    fd.set("file", new File([name === "label.png" ? png : new TextEncoder().encode("not an image")], name, { type: "image/png" }));
+    return [id, { error: null, success: null }, fd] as const;
+  };
+  const evidence = () => inspector.generatedDocument.count({ where: { documentType: "RECORD_EVIDENCE" } });
+  const record = await inspector.oosRecord.findUniqueOrThrow({ where: { id: oosId } });
+  const oosRequest = randomUUID();
+  expect(await asUser(qa, () => uploadOosEvidenceAction(...upload(oosId, oosRequest)))).toMatchObject({ error: null });
+  const oos = await operation(oosRequest);
+  expect(oos.operation).toBe("OO06"); expect(oos.accessPermission).toBe("ATTACH_DOCUMENT");
+  const stored = await inspector.generatedDocument.findFirstOrThrow({ where: { qmsRecordId: record.qmsRecordId, documentType: "RECORD_EVIDENCE" } });
+  expect(stored.generatedByText).toBe(qa.name); expect(stored.mimeType).toBe("image/png");
+  expect(oos.events.some(event => event.entityType === "GeneratedDocument" && event.entityId === stored.id)).toBe(true);
+
+  // Content that does not match its extension is rejected before writing anything.
+  const before = { ...(await totals()), documents: await evidence() };
+  expect(await asUser(qa, () => uploadOosEvidenceAction(...upload(oosId, randomUUID(), "fake.png")))).toMatchObject({ error: expect.any(String) });
+  expect({ ...(await totals()), documents: await evidence() }).toEqual(before);
+
+  const deviation = await inspector.deviation.findFirstOrThrow({ where: { qmsRecord: { isActive: true } } });
+  const requestId = randomUUID();
+  await expect(asUser(reader, () => uploadDeviationEvidenceAction(...upload(deviation.id, requestId)))).rejects.toMatchObject({ status: 403 });
+  expect(await asUser(qa, () => uploadDeviationEvidenceAction(...upload(deviation.id, requestId)))).toMatchObject({ error: null });
+  const captured = await operation(requestId);
+  expect(captured.operation).toBe("DV08"); expect(captured.accessPermission).toBe("ATTACH_DOCUMENT");
+  expect(captured.events.some(event => event.entityType === "GeneratedDocument")).toBe(true);
+  // Replaying the same request returns the receipt without a second document.
+  const count = await evidence();
+  expect(await asUser(qa, () => uploadDeviationEvidenceAction(...upload(deviation.id, requestId)))).toMatchObject({ error: null });
+  expect(await evidence()).toBe(count);
+}, 60000);

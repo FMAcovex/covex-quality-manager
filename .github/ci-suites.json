@@ -83,6 +83,7 @@
       "complaints-r4a:ui:smoke",
       "returns-r4b:ui:smoke",
       "oos:ui:smoke",
+      "evidence:ui:smoke",
       "complaints-returns-r4c:smoke"
     ]
   },

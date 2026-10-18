@@ -7,6 +7,8 @@ import { CsrfField } from "@/components/csrf";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { ActorField, PermissionGate } from "@/components/permissions";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { RecordEvidencePanel } from "@/components/record-evidence-panel";
+import { uploadOosEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { ReviewDrawer, ReviewMarker, ReviewModeToggle, ReviewStatusSummary, ReviewThreadList, ReviewWorkspaceProvider } from "@/components/review";
@@ -78,6 +80,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
     ...(phase === "II" ? [["phase-ii", "Fase II"]] : []),
     ["relations", "Relaciones"],
     ["documents", "Documentos"],
+    ["evidence", "Evidencias"],
     ["review", "Revisión"],
     ["timeline", "Cronología"],
     ["audit-trail", "Audit Trail"],
@@ -277,6 +280,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
       <ReviewThreadList />
     </div> : null}
 
+    {tab === "evidence" ? <RecordEvidencePanel qmsRecordId={record.qmsRecord.id} active={record.qmsRecord.isActive} action={uploadOosEvidenceAction.bind(null, record.id)} /> : null}
     {tab === "timeline" ? <RecordTimeline qmsRecordId={record.qmsRecord.id} /> : null}
     {tab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${record.qmsRecord.id}`} basePath={basePath} page={Number(auditPage) || 1} /> : null}
   </section>

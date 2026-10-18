@@ -22,7 +22,7 @@ const groups: Record<string, string[]> = {
   W12: ["src/lib/qms/relation-service.ts", "src/lib/qms/administrative-status.ts"],
   W13: ["src/lib/qms/review/service.ts"],
   W14: ["src/lib/qms/versioning.ts", "src/modules/complaints/version-service.ts", "src/modules/returns/snapshot-service.ts"],
-  W15: ["src/lib/qms/signed-version-document.ts", "src/lib/qms/signed-custody-service.ts"],
+  W15: ["src/lib/qms/signed-version-document.ts", "src/lib/qms/signed-custody-service.ts", "src/lib/qms/record-evidence.ts"],
   W16: ["src/lib/qms/working-document.ts", "src/app/api/deviations/[id]/annex-iii/route.ts", "src/app/api/capa/[id]/annex-iii/route.ts", "src/app/api/changes/[id]/annex-iii/route.ts", "src/app/api/changes/[id]/annex-iv/route.ts", "src/app/api/changes/[id]/annex-v/route.ts", "src/app/api/complaints/[id]/annex-iii/route.ts", "src/app/api/complaints/[id]/annex-iv/route.ts", "src/modules/returns/documents/archive.ts", "src/modules/audits/documents/service.ts", "src/modules/oos/documents/route-helpers.ts"],
   W17: ["src/modules/configuration/admin-actions.ts"],
   W18: ["src/lib/auth/administration.ts", "scripts/auth-provision.ts"],
@@ -57,7 +57,7 @@ function coverage(id:string, category:string) {
   if (["TR02","TR03","TR04"].includes(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/configuration-capture.test.ts: original configuration writers, activation reason and rollback"] };
   if (id === "TR05") return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: admission and role-policy proposal with authorization evidence"] };
   if (id.startsWith("AU")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "AU08" || id === "AU09" ? `${moduleEvidence}: annual plan/entry/approvers/immutable programme issuance` : id === "AU06" || id === "AU07" ? "scripts/audit-fixtures/audit-report-capture.test.ts: report issue, retained documents, rollback and closure" : `${moduleEvidence}: audit record/findings/actions/followups/relations and withdrawal`] };
-  if (id.startsWith("OO")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "OO06" ? "scripts/audit-fixtures/oos-capture.test.ts: OOS Anexo III/IV working documents and received signed PDFs with custody, replacement reason and replay (D-088, OOS-3/OOS-4)" : "scripts/audit-fixtures/oos-capture.test.ts: original OOS opening, Phase I/II edits, critical reason, closure, relations and annulment (D-088, OOS-2b)"] };
+  if (id.startsWith("OO")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "OO06" ? "scripts/audit-fixtures/oos-capture.test.ts: OOS Anexo III/IV working documents and received signed PDFs with custody, replacement reason and replay (D-088, OOS-3/OOS-4); record evidence uploads, content rejection and replay (D-096)" : "scripts/audit-fixtures/oos-capture.test.ts: original OOS opening, Phase I/II edits, critical reason, closure, relations and annulment (D-088, OOS-2b)"] };
   if (/^(DV|CA|CC|RC|DE)/.test(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[`${moduleEvidence}: original operational create/edit/children/followup/closure/relations/documents`, "scripts/audit-fixtures/module-actions-capture.test.ts: signed custody, administrative state and rollback"] };
   return { coverage:category === "BUSINESS_WRITE" ? "NOT_DEMONSTRATED" : "JUSTIFIED_SEPARATE_STREAM", evidence:[] };
 }

@@ -1075,6 +1075,90 @@
       "resourceKind": "RECORD",
       "dynamicCreate": false,
       "guard": "AUTH_ADMINISTRATION"
+    },
+    {
+      "file": "src/lib/qms/record-evidence-actions.ts",
+      "name": "uploadDeviationEvidenceAction",
+      "params": [
+        "deviationId",
+        "_state",
+        "formData"
+      ],
+      "module": "DEVIATION",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/qms/record-evidence-actions.ts",
+      "name": "uploadCapaEvidenceAction",
+      "params": [
+        "capaId",
+        "_state",
+        "formData"
+      ],
+      "module": "CAPA",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/qms/record-evidence-actions.ts",
+      "name": "uploadChangeControlEvidenceAction",
+      "params": [
+        "changeControlId",
+        "_state",
+        "formData"
+      ],
+      "module": "CHANGE_CONTROL",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/qms/record-evidence-actions.ts",
+      "name": "uploadComplaintEvidenceAction",
+      "params": [
+        "complaintId",
+        "_state",
+        "formData"
+      ],
+      "module": "COMPLAINT",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/qms/record-evidence-actions.ts",
+      "name": "uploadReturnEvidenceAction",
+      "params": [
+        "returnId",
+        "_state",
+        "formData"
+      ],
+      "module": "RETURN",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/lib/qms/record-evidence-actions.ts",
+      "name": "uploadOosEvidenceAction",
+      "params": [
+        "oosId",
+        "_state",
+        "formData"
+      ],
+      "module": "OOS",
+      "permission": "ATTACH_DOCUMENT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
     }
   ],
   "routes": [
@@ -1354,6 +1438,13 @@
     },
     {
       "file": "src/app/api/qms/[id]/document-originals/[custodyId]/route.ts",
+      "method": "GET",
+      "module": "QMS",
+      "permission": "DOWNLOAD",
+      "public": false
+    },
+    {
+      "file": "src/app/api/qms/[id]/evidence/[documentId]/route.ts",
       "method": "GET",
       "module": "QMS",
       "permission": "DOWNLOAD",

@@ -48,6 +48,7 @@ const auditDocumentLabels: Readonly<Record<string, string>> = {
   AUDIT_RECEIVED: "Documento recibido de auditoría",
   AUDIT_RESPONSE: "Respuesta de auditoría",
   AUDIT_EVIDENCE: "Evidencia de auditoría",
+  RECORD_EVIDENCE: "Evidencia adjunta",
 };
 
 /** «DEVIATION_ANNEX_III» → «Anexo III»; «CAPA_SIMPLE_LIST» → «Listado simple». */
@@ -64,6 +65,7 @@ const technicalFieldLabels: Readonly<Record<string, string>> = {
   __edit__: "Edición",
   __version__: "Versión",
   __signed_document__: "Documento firmado",
+  __evidence__: "Evidencia adjunta",
   __administrative_status__: "Estado administrativo (anulación o reactivación)",
   __historical_import__: "Importación histórica",
   relations: "Relaciones",
