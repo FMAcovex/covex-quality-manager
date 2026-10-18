@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db";
 import { withDatabaseTransaction } from "@/lib/transaction-context";
 import { configurationAuditBoundary } from "@/lib/audit/configuration-boundary";
 import { isAllowedDocumentType } from "@/modules/configuration/admin-domain";
+import { parseDepartmentList } from "@/modules/configuration/department-list";
 
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"?v.trim():"";}
 function bool(fd:FormData,name:string){return text(fd,name)==="true";}
@@ -29,6 +30,28 @@ async function createDepartmentActionAuthenticatedContent(fd:FormData){
   const created=await prisma.department.create({data:{code,name,isActive:true,validFrom:dateOrNull(text(fd,"validFrom"))}});
   await logChange("Department",code,"CREATE",null,created,fd);
   revalidatePath("/settings/catalogs");
+}
+
+export type IndexDepartmentsState = { error: string | null; created: string[]; skipped: string[] };
+
+/** Alta de los departamentos que faltan, con el nombre de la cabecera de su hoja del índice (D-097). Los existentes no se tocan. */
+async function createIndexDepartmentsActionAuthenticatedContent(_state:IndexDepartmentsState,fd:FormData):Promise<IndexDepartmentsState>{
+  const {departments,error}=parseDepartmentList(fd.get("departments"));
+  if(error)return {error,created:[],skipped:[]};
+  if(!reason(fd))fd.set("reason","Alta desde el índice de PNT de Garantía de Calidad");
+  const created:string[]=[],skipped:string[]=[];
+  try{
+    await configurationAuditBoundary("createIndexDepartmentsAction",[fd],async()=>{
+      for(const d of departments){
+        if(await prisma.department.findUnique({where:{code:d.code},select:{id:true}})){skipped.push(d.code);continue;}
+        const department=await prisma.department.create({data:{code:d.code,name:d.name,isActive:true}});
+        await logChange("Department",d.code,"CREATE",null,department,fd);
+        created.push(d.code);
+      }
+    });
+  }catch(e){return {error:e instanceof Error?e.message:"No se han podido dar de alta los departamentos.",created:[],skipped:[]};}
+  revalidatePath("/settings/catalogs");
+  return {error:null,created,skipped};
 }
 
 async function updateDepartmentActionAuthenticatedContent(id:string,fd:FormData){
@@ -190,6 +213,10 @@ async function updateFormFieldConfigActionAuthenticatedContent(id:string,fd:Form
 
 export async function createDepartmentAction(...args: Parameters<typeof createDepartmentActionAuthenticatedContent>) {
   return authorizedAction("createDepartmentAction", args, authenticated => configurationAuditBoundary("createDepartmentAction", authenticated, () => createDepartmentActionAuthenticatedContent(...authenticated as Parameters<typeof createDepartmentActionAuthenticatedContent>)));
+}
+
+export async function createIndexDepartmentsAction(...args: Parameters<typeof createIndexDepartmentsActionAuthenticatedContent>) {
+  return authorizedAction("createIndexDepartmentsAction", args, authenticated => createIndexDepartmentsActionAuthenticatedContent(...authenticated as Parameters<typeof createIndexDepartmentsActionAuthenticatedContent>));
 }
 
 export async function updateDepartmentAction(...args: Parameters<typeof updateDepartmentActionAuthenticatedContent>) {

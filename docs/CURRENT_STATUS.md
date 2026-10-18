@@ -132,6 +132,10 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - PDF, DOCX, XLSX, PNG o JPG de hasta 15 MB, con descripción y huella SHA-256. Solo se añaden; no se sustituyen ni borran.
 - No se imprimen en los anexos. Sin análisis antivirus (pendiente).
 
+**Alta de departamentos desde el índice de PNT (2026-10-18, D-097):**
+- La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
+- Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
+
 **4B3-C consolidado para verificación integral:** pestañas de Audit Trail en siete módulos, bandeja transversal, permisos independientes, revisión append-only, corte exacto con microsegundos, exportación conservada/idempotente y contrato de protección/backup C. Se conservan B2 `49bfe417`, checkpoint parcial `a474575` y corrección `f590b275`. Las pruebas focalizadas C pasan; la entrega comunica quality y los cinco grupos/gate sobre su SHA final. No hay PR de la rama ni ejecución remota de Actions implícita. Alcance, pruebas, operación y dependencias QA/IT en [PHASE_4B3_C.md](PHASE_4B3_C.md). Sin activación corporativa, despliegue ni validación GMP. Este párrafo sustituye el estado de C en curso de los cortes anteriores, conservados como historia.
 
 **Checkpoint técnico B2 completado:** `49bfe41718fb6bbc0870ecb5a086e166f82106bc`. La matriz ejecutable reconcilia las 63 operaciones: 57 escrituras de negocio demostradas aisladamente, cinco streams/exclusiones justificados y probados, y TR09 transferida a C. OLD/NEW tipado, identidad autenticada, objetivos, atomicidad, idempotencia, criticidad técnica, documentos/originales, recuperación y negativas de bypass pasan sobre bases sintéticas. `pnpm quality` valida Prisma, 727 pruebas y build. Sin activación corporativa, aceptación GMP ni datos reales. C continúa desde este SHA en la misma rama y PR final; detalle en [PHASE_4B3_B2.md](PHASE_4B3_B2.md).

@@ -93,3 +93,24 @@ it("covers catalog children, parameters, alert rules and form/template activatio
   }))).rejects.toThrow();
   expect(Array.from((await inspector.templateVersion.findUniqueOrThrow({where:{id:template.id}})).fileData!)).toEqual(Array.from(bytes));
 },20000);
+
+it("captures the bulk department creation from the PNT index (D-097) as one TR02 operation, skipping existing codes and replaying idempotently",async()=>{
+  const {createDepartmentAction,createIndexDepartmentsAction}=await import("../../src/modules/configuration/admin-actions");
+  await asQa(()=>createDepartmentAction(form({code:"ZZ-91",name:"Synthetic existing"})));
+  const requestId=randomUUID(), state={error:null,created:[],skipped:[]};
+  const departments=JSON.stringify([{code:"ZZ-91",name:"Must not overwrite"},{code:"zz-92",name:"Synthetic index department"}]);
+  const run=()=>asQa(()=>createIndexDepartmentsAction(state,form({departments,_covexAuditRequestId:requestId})));
+  expect(await run()).toEqual({error:null,created:["ZZ-92"],skipped:["ZZ-91"]});
+  expect((await inspector.department.findUniqueOrThrow({where:{code:"ZZ-91"}})).name).toBe("Synthetic existing");
+  const created=await inspector.department.findUniqueOrThrow({where:{code:"ZZ-92"}});
+  expect(created).toMatchObject({name:"Synthetic index department",isActive:true});
+  const history=await inspector.configurationChange.findFirstOrThrow({where:{entityKey:"ZZ-92"}});
+  expect(history.changedByText).toBe(qa.name);expect(history.reason).toBe("Alta desde el índice de PNT de Garantía de Calidad");
+  const evidence=await inspector.auditOperationEvidence.findFirstOrThrow({where:{configurationChangeId:history.id},include:{operation:{include:{events:true}}}});
+  expect(evidence.operation.operation).toBe("TR02");expect(evidence.operation.actorUserId).toBe(qa.id);
+  expect(evidence.operation.events.some(e=>e.entityType==="Department"&&e.fieldPath==="code"&&JSON.stringify(e.newValue).includes("ZZ-92"))).toBe(true);
+  const count={operations:await inspector.auditOperation.count(),departments:await inspector.department.count()};
+  await run();
+  expect({operations:await inspector.auditOperation.count(),departments:await inspector.department.count()}).toEqual(count);
+  expect((await asQa(()=>createIndexDepartmentsAction(state,form({departments:"[]"})))).error).toMatch(/al menos un departamento/);
+});

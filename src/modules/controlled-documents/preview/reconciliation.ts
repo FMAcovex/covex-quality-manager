@@ -6,6 +6,7 @@ export type ExistingDepartment = {
     id: string;
     code: string;
     isActive: boolean;
+    name?: string;
 };
 export type ExistingDocument = {
     id: string;
@@ -31,6 +32,12 @@ export type ExistingDocument = {
 const iso = (d: Date | null) => d ? d.toISOString().slice(0, 10) : null;
 export function reconcileIndex(report: PreviewReport, departments: ExistingDepartment[], documents: ExistingDocument[]) {
     const deps = new Map(departments.map(d => [d.code, d])), docs = new Map(documents.filter(d => d.baseCode).map(d => [d.baseCode!, d]));
+    for (const d of report.departments ?? []) {
+        const existing = deps.get(d.code);
+        d.status = existing ? (existing.isActive ? "EXISTING" : "INACTIVE") : d.annulled ? "ANNULLED_IN_INDEX" : "MISSING";
+        if (existing?.name)
+            d.existingName = existing.name;
+    }
     for (const row of report.rows) {
         if (row.classification !== "PNT")
             continue;

@@ -7,6 +7,7 @@ import { authenticatedFetch } from "@/lib/auth/client";
 import { useMemo, useState, useRef, type FormEvent } from "react";
 import { type PreviewReport, issueLabels, declaredStateLabels, reconciliationLabels } from "../preview/types";
 import { DocumentLink } from "./document-link";
+import { IndexDepartments } from "./index-departments";
 import { displayDate } from "../domain";
 export function IndexPreview() {
     const fileRef = useRef<File | null>(null);
@@ -31,10 +32,21 @@ export function IndexPreview() {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         fileRef.current = form.get("file") as File;
+        setReport(null);
+        await runAnalysis(form);
+    }
+    /** Tras dar de alta departamentos (D-097), vuelve a analizar el mismo archivo para conciliarlos. */
+    async function reanalyze() {
+        if (!fileRef.current)
+            return;
+        const form = new FormData();
+        form.set("file", fileRef.current);
+        await runAnalysis(form);
+    }
+    async function runAnalysis(form: FormData) {
         batchRequest.current = null;
         setError("");
         setPending(true);
-        setReport(null);
         try {
             const response = await authenticatedFetch("/api/controlled-documents/index-preview", { method: "POST", body: form, cache: "no-store" });
             const value = await response.json();
@@ -69,6 +81,7 @@ export function IndexPreview() {
                 string,
                 number
             ][]).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+ {report.departments ? <IndexDepartments departments={report.departments} onCreated={reanalyze} /> : null}
  <details><summary>Hojas y exclusiones</summary><p>Interpretadas: {report.interpretedSheets.join(", ")}</p><ul>{report.excludedSheets.map(s => <li key={s.name}>{s.name}: {s.reason}</li>)}</ul></details>
  <h2>Examinar filas</h2><div className="inline-form">
  <label>Buscar código o título<input value={query} onChange={e => { setQuery(e.target.value); setPage(1); }}/></label>
