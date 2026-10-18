@@ -922,3 +922,13 @@ Decisión del responsable de Calidad: cada usuario debe poder ver lo pendiente a
   - Auditoría con una acción de hallazgo activa a su cargo abierta, en curso o pendiente de verificar.
   - Las acciones inmediatas de una desviación ya están ejecutadas y no cuentan.
 - Solo cuentan los responsables con usuario vinculado; un nombre escrito en el texto libre no se interpreta. Es una ayuda de trabajo: no envía avisos ni sustituye a los plazos y reglas de alertas.
+
+## D-103 — Ajustes tras las pruebas: Arial 11 en los anexos Word, OOS sin plantilla y buscador en la barra superior (2026-10-18)
+
+Decisiones del responsable de Calidad tras probar la aplicación:
+
+- **Anexos Word en Arial 11.** Todo dato que la aplicación escribe en un anexo Word sale en Arial 11. Se conserva el resto del formato de la plantilla (color, negrita, alineación) y las etiquetas de la plantilla no cambian. Cuando el dato va dentro de una etiqueta («Cantidad ____», «D./D.ª ____», «AÑO: ____», «Nombre y Apellidos: …»), solo el dato pasa a Arial 11. Los listados Excel conservan el formato de celda de su plantilla.
+- **OOS sin plantilla instalada.** Los anexos III, IV y VI de OOS se obtienen del PNT GC-10/014/04 con `pnpm templates:install`. Si faltan:
+  - Configuración → Versiones los lista como pendientes y recuerda cómo instalarlos;
+  - en el expediente, los botones «Anexo III» y «Anexo IV» aparecen desactivados con el motivo, en vez de dar error al pulsarlos.
+- **Buscador global discreto.** La barra superior tiene un campo de búsqueda pequeño en el que se escribe directamente; Intro abre los resultados en /search y Ctrl+K (⌘K) lleva el foco al campo. Al escribir se ensancha. En /search no aparece, porque la página tiene su propio campo. En móvil ocupa su propia línea.

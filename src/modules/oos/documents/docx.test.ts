@@ -50,7 +50,9 @@ describe("Anexos OOS del PNT GC-10/014/04", () => {
   it("Anexo VI: año, una fila por OOS con su estado en color y filas en blanco conservadas", () => {
     const open = { ...record, status: "OPEN" as const, investigationResult: null, closedAt: null, phaseIDisposition: null, qmsRecord: { businessCode: "OOS/API/001/2096", sourceRelations: [] } };
     const [listing] = cells(fillOosAnnexVI(template([[17, 6]], "AÑO:_"), 2096, [record, open]));
-    expect(listing[1][1].text).toBe("AÑO: 2096");
+    // D-103: el año va en su propio run con Arial 11.
+    expect(listing[1][1].text).toBe("AÑO:| 2096");
+    expect(listing[1][1].xml).toMatch(/<w:sz w:val="22"\/><w:szCs w:val="22"\/><\/w:rPr><w:t xml:space="preserve"> 2096<\/w:t>/);
     expect(listing[4].map((cell) => cell.text)).toEqual(["OOS/MD/001/2096", "10/03/2096", "Materia ficticia|Lote L-1", "Descripción ficticia", "No concluyente|CAPA CA-1", "20/03/2096"]);
     expect(listing[4].every((cell) => cell.xml.includes(`w:fill="${oosListingShades.closed}"`))).toBe(true);
     expect(listing[5][4].text).toBe("En curso · Fase I");

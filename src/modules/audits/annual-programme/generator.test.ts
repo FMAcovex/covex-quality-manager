@@ -10,7 +10,10 @@ describe("Programa anual sobre plantilla oficial compatible", () => {
     const out = readZip(generateAnnualProgramme(source, content)), xml = getZipEntryText(out, "word/document.xml");
     expect(xml).toContain("Entidad ficticia 20 &amp; departamento");
     expect(xml).toContain("Notas &lt;editables&gt;");
-    expect(xml).toContain("AÑO: 2027");
+    // D-103: el año y el ámbito van en su propio run (Arial 11); se comprueba el texto visible.
+    const visibleText = xml.replace(/<[^>]+>/g, "");
+    expect(visibleText).toContain("AÑO: 2027");
+    expect(xml).toMatch(/<w:sz w:val="22"\/><w:szCs w:val="22"\/><\/w:rPr><w:t xml:space="preserve">2027<\/w:t>/);
     expect(xml).toContain("Aprobador calidad ficticio");
     expect(xml).toContain("Dirección Garantía de Calidad");
     expect(xml).toContain("<w:tblHeader/>");
@@ -19,7 +22,7 @@ describe("Programa anual sobre plantilla oficial compatible", () => {
     }
     for (const name of ["word/styles.xml", "word/header1.xml", "word/footer1.xml"]) expect(getZipEntryText(out, name)).toBe(getZipEntryText(readZip(source), name));
     expect(getZipEntryText(out, "docProps/core.xml")).not.toContain("Autor plantilla");
-    if (!internal) { expect(xml).not.toContain("CUERPO MAESTRO"); expect(xml).toContain('w:start="1"'); expect(xml).toContain('r:id="rId1"'); expect(xml).toContain("ÁMBITO Servicios"); }
+    if (!internal) { expect(xml).not.toContain("CUERPO MAESTRO"); expect(xml).toContain('w:start="1"'); expect(xml).toContain('r:id="rId1"'); expect(visibleText).toContain("ÁMBITO Servicios"); }
   });
   it("rechaza otra plantilla en vez de fabricar un formato", () => expect(() => generateAnnualProgramme(syntheticAnnualProgramme(false), syntheticProgrammeContent())).toThrow());
   it("rechaza estructura inesperada de aprobación", () => {

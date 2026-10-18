@@ -2,7 +2,9 @@ import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import {
   appendWordCellText,
+  applyValueMarks,
   escapeXml,
+  markValue,
   markFirstCheckbox,
   replaceWordRowWithCopies,
   setTriStateCell,
@@ -112,8 +114,9 @@ export function fillDispositionCell(
   if (quantity && marks.quantityLine !== null) {
     xml = transformWordCell(xml, 4, 3, 0, (cell) => {
       let seen = 0;
-      return cell.replace(/(>Cantidad )_+(<)/g, (match, start: string, end: string) => (seen++ === marks.quantityLine ? `${start}${escapeXml(quantity)}${end}` : match));
+      return cell.replace(/(>Cantidad )_+(<)/g, (match, start: string, end: string) => (seen++ === marks.quantityLine ? `${start}${markValue(escapeXml(quantity))}${end}` : match));
     });
+    xml = applyValueMarks(xml);
   } else if (quantity) {
     xml = appendWordCellText(xml, 4, 3, 0, `Cantidad: ${quantity}`);
   }

@@ -1,7 +1,7 @@
 import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import type { OosInvestigationResult, OosMaterialKind, OosPhaseIDisposition, OosStatus, OosVerdict, QmsRecordType } from "@prisma/client";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
-import { fillWordCellBalanced, fillWordRowCellsBalanced, transformWordRowsBalanced, transformWordTableBalanced } from "@/lib/ooxml/xml";
+import { applyValueMarks, fillWordCellBalanced, fillWordRowCellsBalanced, markValue, transformWordRowsBalanced, transformWordTableBalanced } from "@/lib/ooxml/xml";
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import { qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { formatOosDate, oosEvaluationKeys, oosInvestigationResultLabels, readOosEvaluation } from "@/modules/oos/domain";
@@ -177,11 +177,12 @@ export function fillOosAnnexVI(template: Buffer, year: number, records: OosDocum
       let replaced = false;
       // «AÑO:____»: the first underscore run takes the year, the remaining blanks are cleared.
       return table.replace(/(<w:t(?:\s[^>]*)?>)([^<]*_[^<]*)(<\/w:t>)/g, (_match, open: string, content: string, close: string) => {
-        const value = replaced ? content.replace(/_+/g, "") : content.replace(/_+/, ` ${year}`).replace(/_+/g, "");
+        const value = replaced ? content.replace(/_+/g, "") : content.replace(/_+/, markValue(` ${year}`)).replace(/_+/g, "");
         replaced = true;
         return `${open.includes("xml:space") ? open : open.replace("<w:t", '<w:t xml:space="preserve"')}${value}${close}`;
       });
     });
+    xml = applyValueMarks(xml);
     // The template rows are filled in place; more OOS than rows repeat the last template row.
     xml = transformWordRowsBalanced(xml, 0, 4, 4 + templateDataRows - 1, (rows) => {
       const filled = records.map((record, index) => fillWordRowCellsBalanced(rows[Math.min(index, rows.length - 1)], {
