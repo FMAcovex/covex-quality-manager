@@ -55,9 +55,9 @@ pnpm db:deploy
 pnpm templates:install -- /ruta/a/originales-vigentes
 ```
 
-Desde D-099 el instalador único reconoce cada fuente por su huella, no por su nombre. El catálogo (`src/modules/configuration/template-catalog.ts`) fija SHA-256 del original interno (`fa1296da0c6bbb9561e2ab992e717b7b2e31f73cc70ce274bac0a79a3b457e36`) y externo (`e55c7b2623604c45aa7282c6601479189a56395cbfa05fc421742a7e9db98cda`). Rechaza cualquier otro binario antes de escribir en BD.
+Desde D-099 el instalador único reconoce cada fuente por su huella, no por su nombre. El catálogo (`src/modules/configuration/template-catalog.ts`) fija el SHA-256 del programa interno en `.docx` guardado en Word (`8dc8c00c04dd2138f1352a903dc18727a48909ab9f7c898eb8c36bb5d53fdea9`, D-106) y del externo (`e55c7b2623604c45aa7282c6601479189a56395cbfa05fc421742a7e9db98cda`). Rechaza cualquier otro binario antes de escribir en BD. Ambos se pueden subir también en Configuración → Versiones → «Instalar plantillas» (D-105).
 
-Desde D-105 las fuentes `.docx` también se pueden subir en Configuración → Versiones → «Instalar plantillas». La fuente interna `.doc` solo se instala con el comando, porque necesita LibreOffice. La fuente interna `.doc` se convierte en una copia temporal mediante LibreOffice (`soffice`, o `LIBREOFFICE_BIN`). Se registra el checksum del DOCX convertido; nunca se sustituye una plantilla instalada ni se modifica el original. La conversión puede variar entre versiones de LibreOffice: revisar el Word instalado antes del uso operativo. Las fechas del catálogo expresan el mes de referencia de la fuente (primer día), no fechas de firma inferidas. Un cambio futuro de fuente exige adaptar y verificar instalador/generador y registrar otra versión.
+El `.doc` original del programa interno ya no se usa: se convertía con LibreOffice y la conversión variaba entre instalaciones. Donde se instaló así, el `.docx` sustituye esa conversión (D-106). Al instalar solo se limpian los metadatos del archivo; nunca se sustituye otra plantilla instalada ni se modifica el original. Las fechas del catálogo expresan el mes de referencia de la fuente (primer día), no fechas de firma inferidas. Un cambio futuro de fuente exige adaptar y verificar instalador/generador y registrar otra versión.
 
 ## Generación y verificación
 

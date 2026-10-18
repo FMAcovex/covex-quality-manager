@@ -958,4 +958,16 @@ Decisión del responsable de Calidad:
 - **Resultado por plantilla** en la propia página: instalada, ya estaba, no sustituida o error, y la lista de archivos no reconocidos.
 - **Permiso «gestionar la configuración»** (`installTemplatesAction`, operación TR04 del diseño de audit trail).
 - **Revisiones nuevas.** Un archivo que no está en el catálogo no se instala. La revisión nueva de un anexo se registra con «Registrar nueva plantilla» y solo se activa si es compatible con la versión vigente (D-100). Si cambian las casillas, hay que adaptar la aplicación y añadir la versión al catálogo.
-- **Programa anual interno (PMAI V04).** El original es `.doc` y solo se puede convertir con LibreOffice desde la terminal. La página lo indica. Queda pendiente sustituirlo en el catálogo por su versión `.docx`, cuando Calidad la facilite.
+- **Programa anual interno (PMAI V04).** El original es `.doc` y solo se puede convertir con LibreOffice desde la terminal. La página lo indica. Queda pendiente sustituirlo en el catálogo por su versión `.docx`, cuando Calidad la facilite (resuelto en D-106).
+
+## D-106 — Programa anual interno desde su .docx (2026-10-18)
+
+Decisión del responsable de Calidad:
+
+- **El PMAI V04 se instala desde el `.docx` guardado en Word por Calidad** (SHA-256 `8dc8c00c04dd2138f1352a903dc18727a48909ab9f7c898eb8c36bb5d53fdea9`), no desde el `.doc` original. Ya no hace falta LibreOffice para instalar ninguna plantilla; el instalador deja de leer `.doc`.
+- **Comprobado antes de cambiarlo:**
+  - mismas casillas y etiquetas que la conversión del `.doc` (comprobación D-100, sin diferencias);
+  - el programa generado tiene el mismo texto y el mismo diseño;
+  - el `.docx` de Word conserva mejor el formato: la conversión ponía en negrita el equipo auditor y el aprobador técnico.
+- **Instalaciones anteriores.** Donde el PMAI se instaló convirtiendo el `.doc`, la instalación del `.docx` sustituye ese archivo y lo anota en el historial de configuración. Esas conversiones no daban siempre el mismo archivo, así que no se pueden enumerar como derivaciones anteriores (`replacesDocConversion`). Los programas ya emitidos no cambian: cada emisión guarda su propio documento.
+- Se mantiene la versión `PMAI-V04-01-2023-GENERAL`: es el mismo documento controlado en otro formato de archivo.

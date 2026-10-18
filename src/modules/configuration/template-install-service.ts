@@ -7,7 +7,6 @@ import {
   resolveCatalogTemplates,
   sha256,
   templateMimeType,
-  type DocConverter,
   type InputFile,
 } from "@/modules/configuration/template-install";
 
@@ -38,9 +37,9 @@ export const installProblems = (report: TemplateInstallReport) =>
  */
 export async function installTemplateFiles(
   files: InputFile[],
-  options: { actor: string; origin: string; convertDoc?: DocConverter; catalog?: CatalogTemplate[] },
+  options: { actor: string; origin: string; catalog?: CatalogTemplate[] },
 ): Promise<TemplateInstallReport> {
-  const { resolved, missing, unrecognized, failed } = resolveCatalogTemplates(files, options.convertDoc, options.catalog ?? templateCatalog);
+  const { resolved, missing, unrecognized, failed } = resolveCatalogTemplates(files, options.catalog ?? templateCatalog);
   const lines: InstallLine[] = failed.map(({ entry, error }) => ({ status: "failed", label: entry.label, versionCode: entry.versionCode, message: `no se ha podido preparar: ${error}` }));
 
   await withDatabaseTransaction(prisma, async (tx) => {
@@ -78,7 +77,7 @@ export async function installTemplateFiles(
       });
       line("installed", decision.action === "create"
         ? `instalada${saved.isActive ? "" : " (inactiva: actívala en Configuración → Versiones)"}`
-        : decision.action === "fill" ? "instalada" : "sustituida la derivación anterior del mismo PNT");
+        : decision.action === "fill" ? "instalada" : entry.replacesDocConversion ? "sustituida la conversión anterior del .doc" : "sustituida la derivación anterior del mismo PNT");
     }
   });
 

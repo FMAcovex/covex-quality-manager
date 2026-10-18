@@ -14,7 +14,7 @@ export const sha256 = (data: Buffer | Uint8Array) => createHash("sha256").update
 
 export type InputFile = { name: string; data: Buffer };
 
-const officeFile = /\.(docx|xlsx|doc)$/i;
+const officeFile = /\.(docx|xlsx)$/i;
 
 /**
  * Archivos de Office de una entrada: el propio archivo, o los que contiene un ZIP. Solo se leen;
@@ -37,16 +37,13 @@ export type ResolvedTemplate = {
   derived: boolean;
 };
 
-/** Convierte un .doc a .docx (LibreOffice); se inyecta para no depender de él en las pruebas. */
-export type DocConverter = (doc: Buffer) => Buffer;
-
 function normalizeOffice(data: Buffer) {
   const entries = readZip(data, { maxExpandedBytes: 40 * 1024 * 1024, verifyIntegrity: true });
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);
 }
 
-export function deriveTemplate(entry: CatalogTemplate, source: TemplateSource, data: Buffer, convertDoc?: DocConverter) {
+export function deriveTemplate(entry: CatalogTemplate, source: TemplateSource, data: Buffer) {
   switch (source.kind) {
     case "file":
       return data;
@@ -59,11 +56,8 @@ export function deriveTemplate(entry: CatalogTemplate, source: TemplateSource, d
     }
     case "oos-pnt":
       return deriveOosAnnex(data, entry.documentType as OosAnnexType);
-    case "office-normalized": {
-      if (!source.convertDoc) return normalizeOffice(data);
-      if (!convertDoc) throw new Error("el original es .doc y aquí no se puede convertir; instálalo con «pnpm templates:install» en un equipo con LibreOffice.");
-      return normalizeOffice(convertDoc(data));
-    }
+    case "office-normalized":
+      return normalizeOffice(data);
   }
 }
 
@@ -71,7 +65,7 @@ export function deriveTemplate(entry: CatalogTemplate, source: TemplateSource, d
  * Reconoce los archivos por su SHA-256 y prepara cada plantilla del catálogo que tenga
  * origen entre ellos. Los nombres de archivo no intervienen.
  */
-export function resolveCatalogTemplates(files: InputFile[], convertDoc?: DocConverter, catalog = templateCatalog) {
+export function resolveCatalogTemplates(files: InputFile[], catalog = templateCatalog) {
   const byHash = new Map<string, InputFile>();
   for (const file of files) {
     const hash = sha256(file.data);
@@ -89,7 +83,7 @@ export function resolveCatalogTemplates(files: InputFile[], convertDoc?: DocConv
     }
     const input = byHash.get(source.sha256)!;
     try {
-      const data = deriveTemplate(entry, source, input.data, convertDoc);
+      const data = deriveTemplate(entry, source, input.data);
       resolved.push({ entry, data, checksum: sha256(data), sourceName: input.name, derived: source.kind !== "file" });
     } catch (error) {
       // Un anexo que no se puede preparar no impide instalar los demás.
@@ -123,9 +117,7 @@ export function decideInstall(
   if (!existing) return { action: "create", isActive: !otherActiveVersion };
   if (!existing.hasBinary) return { action: "fill" };
   if (existing.checksum === checksum) return { action: "unchanged" };
-  // La conversión de .doc cambia entre instalaciones de LibreOffice: no se repite.
-  if (entry.sources.some((source) => source.kind === "office-normalized" && source.convertDoc)) return { action: "unchanged" };
-  if (existing.checksum && entry.supersededChecksums?.includes(existing.checksum)) return { action: "replace-superseded" };
+  if (entry.replacesDocConversion || (existing.checksum && entry.supersededChecksums?.includes(existing.checksum))) return { action: "replace-superseded" };
   return {
     action: "conflict",
     reason: `ya tiene instalado otro archivo (SHA-256 ${existing.checksum?.slice(0, 12) ?? "desconocido"}…); no se sustituye. Una revisión nueva se registra como versión nueva en Configuración → Versiones.`,
