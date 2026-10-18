@@ -28,7 +28,7 @@ const groups: Record<string, string[]> = {
   W18: ["src/lib/auth/administration.ts", "scripts/auth-provision.ts"],
   W19: ["src/lib/auth/oidc.ts", "src/lib/auth/session.ts", "src/app/api/reminders/manual/route.ts"],
   W20: ["src/modules/deviations/import/import-service.ts", "src/modules/capa/import/import-service.ts", "scripts/backfill-record-versions.ts"],
-  W21: ["scripts/install-templates.ts"],
+  W21: ["src/modules/configuration/template-install-service.ts"],
   W22: ["ops/backup/backup.py", "ops/release.py", "ops/postgres/roles.sql", "ops/postgres/audit-owner.sql", "ops/postgres/audit-grants.sql"],
   W23: ["src/modules/oos/actions.ts", "src/modules/oos/signed-document-actions.ts"],
 };
@@ -54,7 +54,7 @@ function coverage(id:string, category:string) {
   if (id === "TR09") return { coverage:"DEMONSTRATED_CONTROLLED_REVIEW_EXPORT", evidence:["scripts/audit-fixtures/trail-c.test.ts: exact microsecond cut, explicit permissions, immutable review/export, replay, conflicts and protection", "scripts/audit-fixtures/trail-c-ui.ts: seven modules, ordinary/sensitive consultation and controlled review/export", "scripts/smoke-phase4b2-recovery.ts: exact review/export receipts, bytes, manifests and protected replay after recovery"] };
   if (id.startsWith("PN")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "PN06" ? "scripts/audit-fixtures/pnt-import-capture.test.ts: original proposal/confirmation, rollback and concurrency" : "scripts/audit-fixtures/module-actions-capture.test.ts: original PNT master/document/lifecycle actions"] };
   if (id === "TR01") return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: original Review append-only lifecycle"] };
-  if (["TR02","TR03","TR04"].includes(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/configuration-capture.test.ts: original configuration writers, activation reason and rollback; bulk department creation from the PNT index (D-097)"] };
+  if (["TR02","TR03","TR04"].includes(id)) return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/configuration-capture.test.ts: original configuration writers, activation reason and rollback; bulk department creation from the PNT index (D-097); template installation from Configuración by catalog fingerprint (D-105)"] };
   if (id === "TR05") return { coverage:"DEMONSTRATED_ISOLATED", evidence:["scripts/audit-fixtures/module-actions-capture.test.ts: admission and role-policy proposal with authorization evidence"] };
   if (id.startsWith("AU")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "AU08" || id === "AU09" ? `${moduleEvidence}: annual plan/entry/approvers/immutable programme issuance` : id === "AU06" || id === "AU07" ? "scripts/audit-fixtures/audit-report-capture.test.ts: report issue, retained documents, rollback and closure" : `${moduleEvidence}: audit record/findings/actions/followups/relations and withdrawal`] };
   if (id.startsWith("OO")) return { coverage:"DEMONSTRATED_ISOLATED", evidence:[id === "OO06" ? "scripts/audit-fixtures/oos-capture.test.ts: OOS Anexo III/IV working documents and received signed PDFs with custody, replacement reason and replay (D-088, OOS-3/OOS-4); record evidence uploads, content rejection and replay (D-096)" : "scripts/audit-fixtures/oos-capture.test.ts: original OOS opening, Phase I/II edits, critical reason, closure, relations and annulment (D-088, OOS-2b)"] };

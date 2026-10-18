@@ -943,3 +943,19 @@ Decisión del responsable de Calidad tras medir los tiempos:
   - en producción, el servidor responde a cada apartado en 40–100 ms;
   - el clic en el menú pasa de ~850 ms a ~170–290 ms, medido con el navegador de pruebas;
   - con `pnpm dev`, la primera visita a cada apartado tarda 1,3–2,7 s y las siguientes ~0,5 s.
+
+## D-105 — Instalar plantillas desde Configuración (2026-10-18)
+
+Decisión del responsable de Calidad:
+
+- **Botón «Instalar plantillas»** en Configuración → Versiones, dentro de la tarjeta «Plantillas controladas». Se suben a la vez los ZIP de plantillas, el PNT de OOS o anexos sueltos (.zip, .docx, .xlsx; hasta 15 MB por envío). No hace falta la terminal.
+- **Mismas reglas que `pnpm templates:install`.** Ambos usan el mismo servicio (`template-install-service.ts`):
+  - cada archivo se reconoce por su SHA-256 con el catálogo único (D-099), no por su nombre;
+  - de los ZIP solo se leen los archivos de Office; nada de lo que traiga el paquete se ejecuta;
+  - una versión instalada nunca se sustituye por otro archivo;
+  - todo se guarda en una transacción y se comprueba lo guardado antes de confirmarla;
+  - cada alta queda en el historial de configuración con el usuario y el origen.
+- **Resultado por plantilla** en la propia página: instalada, ya estaba, no sustituida o error, y la lista de archivos no reconocidos.
+- **Permiso «gestionar la configuración»** (`installTemplatesAction`, operación TR04 del diseño de audit trail).
+- **Revisiones nuevas.** Un archivo que no está en el catálogo no se instala. La revisión nueva de un anexo se registra con «Registrar nueva plantilla» y solo se activa si es compatible con la versión vigente (D-100). Si cambian las casillas, hay que adaptar la aplicación y añadir la versión al catálogo.
+- **Programa anual interno (PMAI V04).** El original es `.doc` y solo se puede convertir con LibreOffice desde la terminal. La página lo indica. Queda pendiente sustituirlo en el catálogo por su versión `.docx`, cuando Calidad la facilite.

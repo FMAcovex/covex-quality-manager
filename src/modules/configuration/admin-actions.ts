@@ -11,6 +11,8 @@ import { withDatabaseTransaction } from "@/lib/transaction-context";
 import { configurationAuditBoundary } from "@/lib/audit/configuration-boundary";
 import { isAllowedDocumentType } from "@/modules/configuration/admin-domain";
 import { parseDepartmentList } from "@/modules/configuration/department-list";
+import { expandTemplateInput, type InputFile } from "@/modules/configuration/template-install";
+import { installTemplateFiles, type TemplateInstallReport } from "@/modules/configuration/template-install-service";
 
 function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"?v.trim():"";}
 function bool(fd:FormData,name:string){return text(fd,name)==="true";}
@@ -149,6 +151,37 @@ async function registerTemplateVersionActionAuthenticatedContent(fd:FormData){
   revalidatePath("/settings/versions");
 }
 
+export type InstallTemplatesState = { error: string | null; report: TemplateInstallReport | null };
+
+const MAX_TEMPLATE_UPLOAD_BYTES = 15 * 1024 * 1024;
+
+/**
+ * Instalación de plantillas desde el navegador (D-105): ZIP, PNT y anexos sueltos, reconocidos por
+ * su SHA-256 con el mismo catálogo y las mismas reglas que `pnpm templates:install`.
+ */
+async function installTemplatesActionAuthenticatedContent(_state:InstallTemplatesState,fd:FormData):Promise<InstallTemplatesState>{
+  const uploads=fd.getAll("files").filter((value):value is File=>value instanceof File&&value.size>0);
+  if(!uploads.length)return {error:"Selecciona al menos un archivo.",report:null};
+  if(uploads.reduce((total,file)=>total+file.size,0)>MAX_TEMPLATE_UPLOAD_BYTES)return {error:"Lo seleccionado supera 15 MB. Sube los archivos en varias veces.",report:null};
+  const files:InputFile[]=[];
+  for(const upload of uploads){
+    try{files.push(...expandTemplateInput(upload.name,Buffer.from(await upload.arrayBuffer()),200*1024*1024));}
+    catch{return {error:`«${upload.name}» no se puede abrir como ZIP.`,report:null};}
+  }
+  if(!files.length)return {error:"No hay ningún archivo .docx, .xlsx o .doc en lo seleccionado.",report:null};
+  if(!reason(fd))fd.set("reason","Instalación de plantillas controladas desde Configuración");
+  let report=null as TemplateInstallReport|null;
+  try{
+    await configurationAuditBoundary("installTemplatesAction",[fd],async()=>{
+      report=await installTemplateFiles(files,{actor:actor(fd),origin:"Configuración → Versiones"});
+    });
+  }catch(e){return {error:e instanceof Error?e.message:"No se han podido instalar las plantillas.",report:null};}
+  revalidatePath("/settings/versions");
+  revalidatePath("/settings/history");
+  revalidatePath("/settings");
+  return report?{error:null,report}:{error:"Esta instalación ya se había procesado. Recarga la página para ver el estado de las plantillas.",report:null};
+}
+
 async function activateTemplateVersionActionAuthenticatedContent(id:string,fd:FormData){
   const target=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
   const currentActive=await prisma.templateVersion.findFirst({where:{module:target.module,documentType:target.documentType,isActive:true,id:{not:id}},orderBy:{effectiveFrom:"desc"}});
@@ -253,6 +286,10 @@ export async function activateFormVersionAction(...args: Parameters<typeof activ
 
 export async function registerTemplateVersionAction(...args: Parameters<typeof registerTemplateVersionActionAuthenticatedContent>) {
   return authorizedAction("registerTemplateVersionAction", args, authenticated => configurationAuditBoundary("registerTemplateVersionAction", authenticated, () => registerTemplateVersionActionAuthenticatedContent(...authenticated as Parameters<typeof registerTemplateVersionActionAuthenticatedContent>)));
+}
+
+export async function installTemplatesAction(...args: Parameters<typeof installTemplatesActionAuthenticatedContent>) {
+  return authorizedAction("installTemplatesAction", args, authenticated => installTemplatesActionAuthenticatedContent(...authenticated as Parameters<typeof installTemplatesActionAuthenticatedContent>));
 }
 
 export async function activateTemplateVersionAction(...args: Parameters<typeof activateTemplateVersionActionAuthenticatedContent>) {

@@ -125,3 +125,16 @@ it("captures the bulk department creation from the PNT index (D-097) as one TR02
   expect({operations:await inspector.auditOperation.count(),departments:await inspector.department.count()}).toEqual(count);
   expect((await asQa(()=>createIndexDepartmentsAction(state,form({departments:"[]"})))).error).toMatch(/al menos un departamento/);
 });
+
+it("installs templates from Configuración (D-105) only by catalog fingerprint: unknown files and damaged ZIPs write nothing",async()=>{
+  const {installTemplatesAction}=await import("../../src/modules/configuration/admin-actions");
+  const state={error:null,report:null};
+  const upload=(...files:File[])=>{const f=new FormData();for(const file of files) f.append("files",file);return f;};
+  const before={templates:await inspector.templateVersion.count(),history:await inspector.configurationChange.count(),operations:await inspector.auditOperation.count()};
+  const unknown=await asQa(()=>installTemplatesAction(state,upload(new File([new Uint8Array([80,75,3,4,1,2,3])],"Anexo nuevo.docx"),new File(["x"],"LEEME.txt"))));
+  expect(unknown.error).toBeNull();
+  expect(unknown.report).toMatchObject({lines:[],unrecognized:["Anexo nuevo.docx"]});
+  expect((await asQa(()=>installTemplatesAction(state,upload(new File(["no es un zip"],"plantillas.zip"))))).error).toMatch(/no se puede abrir como ZIP/);
+  expect((await asQa(()=>installTemplatesAction(state,upload()))).error).toMatch(/al menos un archivo/);
+  expect({templates:await inspector.templateVersion.count(),history:await inspector.configurationChange.count(),operations:await inspector.auditOperation.count()}).toEqual(before);
+});

@@ -57,7 +57,7 @@ pnpm templates:install -- /ruta/a/originales-vigentes
 
 Desde D-099 el instalador único reconoce cada fuente por su huella, no por su nombre. El catálogo (`src/modules/configuration/template-catalog.ts`) fija SHA-256 del original interno (`fa1296da0c6bbb9561e2ab992e717b7b2e31f73cc70ce274bac0a79a3b457e36`) y externo (`e55c7b2623604c45aa7282c6601479189a56395cbfa05fc421742a7e9db98cda`). Rechaza cualquier otro binario antes de escribir en BD.
 
-La fuente interna `.doc` se convierte en una copia temporal mediante LibreOffice (`soffice`, o `LIBREOFFICE_BIN`). Se registra el checksum del DOCX convertido; nunca se sustituye una plantilla instalada ni se modifica el original. La conversión puede variar entre versiones de LibreOffice: revisar el Word instalado antes del uso operativo. Las fechas del catálogo expresan el mes de referencia de la fuente (primer día), no fechas de firma inferidas. Un cambio futuro de fuente exige adaptar y verificar instalador/generador y registrar otra versión.
+Desde D-105 las fuentes `.docx` también se pueden subir en Configuración → Versiones → «Instalar plantillas». La fuente interna `.doc` solo se instala con el comando, porque necesita LibreOffice. La fuente interna `.doc` se convierte en una copia temporal mediante LibreOffice (`soffice`, o `LIBREOFFICE_BIN`). Se registra el checksum del DOCX convertido; nunca se sustituye una plantilla instalada ni se modifica el original. La conversión puede variar entre versiones de LibreOffice: revisar el Word instalado antes del uso operativo. Las fechas del catálogo expresan el mes de referencia de la fuente (primer día), no fechas de firma inferidas. Un cambio futuro de fuente exige adaptar y verificar instalador/generador y registrar otra versión.
 
 ## Generación y verificación
 

@@ -51,6 +51,7 @@ La respuesta formal al cliente no se genera desde la aplicación para v03.
 
 - Las huellas aceptadas de todas las plantillas controladas (Desviaciones, CAPA, Controles de cambios, Reclamaciones, Devoluciones, OOS y Auditorías) están en un único catálogo: `src/modules/configuration/template-catalog.ts`.
 - `pnpm templates:install -- <carpetas, ZIP o archivos>` (por defecto, la carpeta `plantillas`) reconoce cada archivo por su SHA-256, no por su nombre. Recorta del PNT los anexos que proceden de él e informa de lo instalado (✓), lo que ya estaba (=) y lo que no reconoce o no puede instalar (✗).
+- Lo mismo se hace desde Configuración → Versiones → «Instalar plantillas», subiendo los ZIP, el PNT o los anexos (D-105).
 - Una versión ya instalada no se sustituye por otro archivo. Solo se completa una versión registrada sin archivo o se sustituye una derivación anterior documentada del mismo PNT (OOS). Una revisión nueva se registra como versión nueva en Configuración → Versiones.
 - Las plantillas se guardan en la base de datos; los generadores ya no buscan copias en la carpeta `templates/`.
 

@@ -2829,3 +2829,9 @@ button[disabled] {
 .index-department-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
 .index-department-row .field { flex: 1 1 320px; }
 .index-department-row .checkbox-field { min-width: 90px; padding-bottom: 10px; }
+
+/* D-105: instalar plantillas desde Configuración → Versiones. */
+.template-install-form { display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
+.template-install-form .field { flex:1 1 320px; min-width:0; }
+.template-install-result { margin-top:10px; }
+.template-install-result ul { margin:6px 0; padding-left:20px; }
