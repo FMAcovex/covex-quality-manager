@@ -4,6 +4,7 @@ import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { complaintListWhere, type ComplaintListFilters } from "@/modules/complaints/list-filters";
 export type { ComplaintListFilters } from "@/modules/complaints/list-filters";
 
@@ -56,8 +57,8 @@ export async function getComplaintDetail(id:string){
     generatedDocuments:{where:{documentType:{not:"RECORD_EVIDENCE"}},orderBy:{generatedAt:"desc"},select:generatedDocumentMetadata}
   }},
   department:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}]},
-  capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:{include:{capa:true}}}},
-  derivedActions:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}]},
+  capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:{include:{capa:true}},responsibleUser:responsibleUserSelect}},
+  derivedActions:{orderBy:[{sortOrder:"asc"},{createdAt:"asc"}],include:{responsibleUser:responsibleUserSelect}},
   formVersion:true,annexIIITemplateVersion:{select:templateMetadata},annexIVTemplateVersion:{select:templateMetadata},annexVTemplateVersion:{select:templateMetadata}
  }});
 }

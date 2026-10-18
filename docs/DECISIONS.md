@@ -896,3 +896,14 @@ Decisión del responsable de Calidad: cuando se añadan, quiten o muevan campos 
 - **No compatible** (falta, cambia o se añade un campo, cambian filas, casillas, tablas u hojas, o la aplicación rellena esa versión con otro mapeo): se muestra la lista de diferencias y **no se deja activar**; el servidor también lo impide. Hay que adaptar la aplicación (campo en el expediente y relleno de esa versión) y añadir la versión al catálogo de plantillas (D-099). Una versión del catálogo con la misma huella se puede activar.
 - Sin versión activa con archivo no hay con qué comparar y la activación se permite como hasta ahora.
 - Los generadores y la comprobación usan la misma definición de qué parte del documento se rellena y con qué mapeo (`src/modules/configuration/annex-generator-views.ts`). Reclamaciones III y IV y Devoluciones III, IV y V rellenan la v03 con un mapeo propio y el resto de versiones con el del PNT completo; una versión nueva de esos anexos necesita adaptación.
+
+## D-101 — Usuario de la aplicación junto al responsable en texto libre (2026-10-18)
+
+Decisión del responsable de Calidad: los campos de responsable de acciones y tareas pueden vincularse, además, a un usuario de la aplicación, para poder filtrar después lo asignado a cada persona.
+
+- Campos: «Ejecutada por» de las acciones inmediatas y «Responsable» de las CAPA propuestas (Desviaciones); «Responsable» de las acciones propuestas (CAPA); responsable de dictamen, responsable de seguimiento, responsable de cada acción del plan y responsable de cada seguimiento (Controles de cambios); responsable de las CAPA propuestas y de las devoluciones propuestas (Reclamaciones); responsable de ejecución de las acciones de hallazgo (Auditorías).
+- El **texto libre se conserva** y es lo único que se imprime en los anexos. El usuario es opcional y no se imprime. Al elegir un usuario con el texto vacío, se propone su nombre; si el texto ya tiene contenido, no se toca.
+- Solo se pueden elegir usuarios **activos y autorizados**. Un usuario ya asignado que después se desactiva se conserva y se muestra como «(inactivo)»; asignar uno nuevo inactivo no se permite (el servidor también lo comprueba).
+- En un Control de cambios con el Dictamen aprobado, el plan sigue bloqueado, pero se puede vincular o cambiar el usuario de sus acciones, porque no forma parte del plan impreso.
+- El seguimiento 00 que se abre al aprobar el Dictamen hereda el usuario del responsable de seguimiento.
+- Las columnas nuevas entran en la captura del historial B2 (contrato `B2_RESPONSIBLE_USERS`) y en las versiones del expediente. El vínculo no sustituye a la firma ni identifica a quien aprueba.

@@ -12,6 +12,7 @@ export type ChangeTaskInput = {
   departmentId: string;
   description: string;
   responsible: string;
+  responsibleUserId?: string | null;
   plannedDate: string;
 };
 
@@ -28,6 +29,7 @@ export type ChangeControlFormDefaults = {
   providedDocuments?: string;
   requestDecision?: "PENDING" | "ACCEPTED" | "DENIED";
   requestDecisionResponsible?: string;
+  requestDecisionResponsibleUserId?: string | null;
   requestDecisionRole?: string;
   requestDecisionDate?: string;
   evaluation?: string;
@@ -54,6 +56,7 @@ export type ChangeControlFormDefaults = {
   dictamenResult?: "PENDING" | "APPROVED" | "REJECTED";
   dictamenDate?: string;
   followupResponsible?: string;
+  followupResponsibleUserId?: string | null;
   nextFollowupDate?: string;
   dictamenObservations?: string;
   internalObservations?: string;
@@ -68,6 +71,7 @@ export type ChangeFollowupTaskInput = {
   departmentId: string;
   description: string;
   responsible: string;
+  responsibleUserId?: string | null;
   plannedDate: string;
   status: "PENDING" | "COMPLETED" | "NOT_APPLICABLE";
   actualDate: string;

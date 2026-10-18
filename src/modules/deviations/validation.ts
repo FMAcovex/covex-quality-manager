@@ -1,6 +1,7 @@
 import { parseAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
+import { rowUserIdSchema } from "@/lib/qms/responsible-user";
 import type { CapaPlanInput, ImmediateActionInput } from "@/modules/deviations/types";
 
 const triState = z.enum(["YES", "NO", "NA"]);
@@ -19,6 +20,7 @@ const originType = z.enum([
 const immediateActionSchema = z.object({
   description: z.string().trim().min(1),
   executedBy: z.string().trim(),
+  executedByUserId: rowUserIdSchema,
   executedAt: z.string().trim(),
 });
 
@@ -27,6 +29,7 @@ const capaPlanSchema = z.object({
   description: z.string().trim().min(1),
   plannedExecutionDate: z.string().trim(),
   responsible: z.string().trim(),
+  responsibleUserId: rowUserIdSchema,
 });
 
 function text(formData: FormData, name: string): string | null {
@@ -42,7 +45,7 @@ function enumValue<T extends z.ZodTypeAny>(schema: T, value: string | null) {
   return parsed.success ? parsed.data : null;
 }
 
-function parseArray<T>(raw: string | null, schema: z.ZodType<T>): T[] {
+function parseArray<T>(raw: string | null, schema: z.ZodType<T, z.ZodTypeDef, unknown>): T[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);

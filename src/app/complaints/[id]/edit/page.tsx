@@ -1,6 +1,7 @@
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
+import { appUserOptions } from "@/lib/auth/app-users";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import { updateComplaintAction } from "@/modules/complaints/actions";
@@ -14,6 +15,7 @@ async function EditComplaintPageAuthenticatedContent({params,searchParams}:{para
  const {id}=await params;
  const {returnTo,tab}=await searchParams;
  const cancelHref=qmsDetailUrl("/complaints",id,returnTo,tab);const [r,l]=await Promise.all([getComplaintDetail(id),getComplaintLookups()]);if(!r)notFound();
+ const users=await appUserOptions([...r.capaPlans.map(x=>x.responsibleUserId),...r.derivedActions.map(x=>x.responsibleUserId)]);
  const defaults:ComplaintFormDefaults={
   businessCode:r.qmsRecord.businessCode??undefined,departmentId:r.departmentId??undefined,openedAt:r.openedAt?.toISOString().slice(0,10),detectionDate:r.detectionDate?.toISOString().slice(0,10),
   receptionDate:r.receptionDate?.toISOString().slice(0,10),detectedBy:r.detectedBy??undefined,createdByText:r.createdByText??undefined,complaintType:r.complaintType,
@@ -44,10 +46,10 @@ async function EditComplaintPageAuthenticatedContent({params,searchParams}:{para
   closeActionReferences:r.closeActionReferences??undefined,closeConclusion:r.closeConclusion??undefined,
   approvalNames:r.approvalNames??undefined,closeApprovalNames:r.closeApprovalNames??undefined,closedAt:r.closedAt?.toISOString().slice(0,10),status:r.status,
   internalObservations:r.internalObservations??undefined,signedDocumentAvailable:b(r.signedDocumentAvailable),dataQualityStatus:r.dataQualityStatus,
-  capaPlans:r.capaPlans.map(x=>({id:x.id,actionType:x.actionType,description:x.description,plannedExecutionDate:x.plannedExecutionDate?.toISOString().slice(0,10)??"",responsible:x.responsible??"",businessCapaCode:x.businessCapaCode??""})),
-  derivedActions:r.derivedActions.map(x=>({id:x.id,actionType:x.actionType,businessCode:x.businessCode??"",description:x.description??"",responsible:x.responsible??"",plannedExecutionDate:x.plannedExecutionDate?.toISOString().slice(0,10)??"",sortOrder:x.sortOrder}))
+  capaPlans:r.capaPlans.map(x=>({id:x.id,actionType:x.actionType,description:x.description,plannedExecutionDate:x.plannedExecutionDate?.toISOString().slice(0,10)??"",responsible:x.responsible??"",responsibleUserId:x.responsibleUserId,businessCapaCode:x.businessCapaCode??""})),
+  derivedActions:r.derivedActions.map(x=>({id:x.id,actionType:x.actionType,businessCode:x.businessCode??"",description:x.description??"",responsible:x.responsible??"",responsibleUserId:x.responsibleUserId,plannedExecutionDate:x.plannedExecutionDate?.toISOString().slice(0,10)??"",sortOrder:x.sortOrder}))
  };
- return <section className="workspace"><div className="page-heading"><div><p className="eyebrow">Reclamaciones</p><h1>Editar {r.qmsRecord.businessCode}</h1></div></div><PermissionGate permission="EDIT"><ComplaintForm mode="edit" action={updateComplaintAction.bind(null,id)} departments={l.departments} defaults={defaults} complaintId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/complaints",returnTo)} detailTab={qmsDetailTab("/complaints",tab)}/></PermissionGate></section>;
+ return <section className="workspace"><div className="page-heading"><div><p className="eyebrow">Reclamaciones</p><h1>Editar {r.qmsRecord.businessCode}</h1></div></div><PermissionGate permission="EDIT"><ComplaintForm mode="edit" action={updateComplaintAction.bind(null,id)} departments={l.departments} users={users} defaults={defaults} complaintId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/complaints",returnTo)} detailTab={qmsDetailTab("/complaints",tab)}/></PermissionGate></section>;
 }
 
 export default async function EditComplaintPage(...args: Parameters<typeof EditComplaintPageAuthenticatedContent>) {

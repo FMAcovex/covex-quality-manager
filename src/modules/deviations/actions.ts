@@ -1,4 +1,5 @@
 "use server";
+import { responsibleUsersProblem } from "@/lib/auth/app-users";
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
@@ -87,6 +88,8 @@ async function createDeviationActionAuthenticatedContent(
   }
 
   const v = parsed.values;
+  const userProblem = await responsibleUsersProblem([...v.immediateActions.map((item) => item.executedByUserId), ...v.capaPlans.map((item) => item.responsibleUserId)]);
+  if (userProblem) return formError(previous, formData, "No se puede guardar el expediente.", [userProblem]);
   let deviationId: string;
   try {
     const department = v.departmentId
@@ -195,6 +198,7 @@ async function createDeviationActionAuthenticatedContent(
             create: v.immediateActions.map((action, index) => ({
               description: action.description,
               executedBy: action.executedBy || null,
+              executedByUserId: action.executedByUserId ?? null,
               executedAt: toDate(action.executedAt),
               sortOrder: index,
             })),
@@ -205,6 +209,7 @@ async function createDeviationActionAuthenticatedContent(
               description: plan.description,
               plannedExecutionDate: toDate(plan.plannedExecutionDate),
               responsible: plan.responsible || null,
+              responsibleUserId: plan.responsibleUserId ?? null,
             })),
           },
         },
@@ -305,6 +310,11 @@ async function updateDeviationActionAuthenticatedContent(
   if (!existing) return formError(previous, formData, "La desviación ya no existe.");
 
   const v = parsed.values;
+  const userProblem = await responsibleUsersProblem(
+    [...v.immediateActions.map((item) => item.executedByUserId), ...v.capaPlans.map((item) => item.responsibleUserId)],
+    [...existing.immediateActions.map((item) => item.executedByUserId), ...existing.capaPlans.map((item) => item.responsibleUserId)],
+  );
+  if (userProblem) return formError(previous, formData, "No se puede guardar el expediente.", [userProblem]);
   const requestedBusinessCode = v.businessCode;
   v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
   if (!keepsOperationalStatus(existing.status, v.status)) {
@@ -386,6 +396,7 @@ async function updateDeviationActionAuthenticatedContent(
     immediateActions: existing.immediateActions.map((item) => ({
       description: item.description,
       executedBy: item.executedBy ?? "",
+      executedByUserId: item.executedByUserId ?? null,
       executedAt: item.executedAt?.toISOString().slice(0, 10) ?? "",
     })),
     capaPlans: existing.capaPlans.map((item) => ({
@@ -393,6 +404,7 @@ async function updateDeviationActionAuthenticatedContent(
       description: item.description,
       plannedExecutionDate: item.plannedExecutionDate?.toISOString().slice(0, 10) ?? "",
       responsible: item.responsible ?? "",
+      responsibleUserId: item.responsibleUserId ?? null,
     })),
   };
 
@@ -558,6 +570,7 @@ async function updateDeviationActionAuthenticatedContent(
             deviationId: id,
             description: action.description,
             executedBy: action.executedBy || null,
+            executedByUserId: action.executedByUserId ?? null,
             executedAt: toDate(action.executedAt),
             sortOrder: index,
           })),
@@ -575,6 +588,7 @@ async function updateDeviationActionAuthenticatedContent(
             description: plan.description,
             plannedExecutionDate: toDate(plan.plannedExecutionDate),
             responsible: plan.responsible || null,
+            responsibleUserId: plan.responsibleUserId ?? null,
             proposalStatus: "PROPOSED",
           })),
         });

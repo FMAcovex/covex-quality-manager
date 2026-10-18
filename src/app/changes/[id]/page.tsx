@@ -6,6 +6,8 @@ import { currentActor } from "@/lib/auth/presentation";
 import { AuditTrailPanel } from "@/components/audit-trail-panel";
 
 import { authorizedPage } from "@/lib/auth/page-guard";
+import { appUserOptions } from "@/lib/auth/app-users";
+import { ResponsibleUserNote } from "@/components/responsible-user-note";
 import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
@@ -73,6 +75,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
     getChangeControlLookups(),
   ]);
   if (!record) notFound();
+  const users = await appUserOptions([record.followupResponsibleUserId]);
 
   const currentVersion = record.qmsRecord.versions.at(-1) ?? null;
   const nextFollowupDate = nextFollowupDateFromHistory(record.followups);
@@ -292,7 +295,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
               <span className={`badge ${requestDecisionTone(record.requestDecision)}`}>{requestDecisionLabel(record.requestDecision)}</span>
             </div>
             <dl className="info-grid">
-              <div id={reviewTarget.requestDecisionResponsible.anchorId} className="review-target info-item"><dt><span>Responsable de dictamen</span><ReviewMarker target={reviewTarget.requestDecisionResponsible} /></dt><dd>{displayValue(record.requestDecisionResponsible)}</dd></div>
+              <div id={reviewTarget.requestDecisionResponsible.anchorId} className="review-target info-item"><dt><span>Responsable de dictamen</span><ReviewMarker target={reviewTarget.requestDecisionResponsible} /></dt><dd>{displayValue(record.requestDecisionResponsible)}<ResponsibleUserNote user={record.requestDecisionResponsibleUser} /></dd></div>
               <div id={reviewTarget.requestDecisionRole.anchorId} className="review-target info-item"><dt><span>Cargo / función</span><ReviewMarker target={reviewTarget.requestDecisionRole} /></dt><dd>{displayValue(record.requestDecisionRole)}</dd></div>
               <div id={reviewTarget.requestDecisionDate.anchorId} className="review-target info-item"><dt><span>Fecha de aceptación/denegación</span><ReviewMarker target={reviewTarget.requestDecisionDate} /></dt><dd>{formatDate(record.requestDecisionDate)}</dd></div>
             </dl>
@@ -354,7 +357,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
                       <td>{item.origin === "FOLLOWUP" ? <span className="badge new-task">NUEVA S{String(item.introducedInFollowup ?? 0).padStart(2,"0")}</span> : <span className="badge neutral">DICTAMEN</span>}</td>
                       <td>{item.departmentCodeSnapshot ?? "—"}</td>
                       <td className="table-cell-wrap"><span>{item.description}</span><ReviewMarker target={taskTargetById.get(item.id)!} /></td>
-                      <td>{item.responsible ?? "—"}</td>
+                      <td>{item.responsible ?? "—"}<ResponsibleUserNote user={item.responsibleUser} /></td>
                       <td>{formatDate(item.plannedDate)}</td>
                     </tr>
                   ))}
@@ -368,7 +371,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
             <section>
               <h2>Seguimiento previsto</h2>
               <dl className="info-grid">
-                <div id={reviewTarget.followupResponsible.anchorId} className="review-target info-item wide"><dt><span>Responsable de seguimiento</span><ReviewMarker target={reviewTarget.followupResponsible} /></dt><dd>{displayValue(record.followupResponsible)}</dd></div>
+                <div id={reviewTarget.followupResponsible.anchorId} className="review-target info-item wide"><dt><span>Responsable de seguimiento</span><ReviewMarker target={reviewTarget.followupResponsible} /></dt><dd>{displayValue(record.followupResponsible)}<ResponsibleUserNote user={record.followupResponsibleUser} /></dd></div>
                 <div id={reviewTarget.nextFollowupDate.anchorId} className="review-target info-item wide"><dt><span>Fecha del próximo seguimiento</span><ReviewMarker target={reviewTarget.nextFollowupDate} /></dt><dd>{nextFollowupDate ? formatDate(nextFollowupDate) : "Pendiente de establecer en el seguimiento"}</dd></div>
               </dl>
             </section>
@@ -417,7 +420,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
                           <span className={`badge ${item.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>{executionStatusLabel(item.executionStatus)}</span>
                           <span className={`badge ${item.effectivenessStatus === "ACCEPTABLE" ? "closed" : item.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : item.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>{effectivenessStatusLabel(item.effectivenessStatus)}</span>
                         </header>
-                        <p>Responsable: {item.responsible} · Próximo: {formatDate(item.nextFollowupDate)}</p>
+                        <p>Responsable: {item.responsible}{item.responsibleUser ? ` (usuario: ${item.responsibleUser.displayName})` : ""} · Próximo: {formatDate(item.nextFollowupDate)}</p>
                         {item.remainOpenReason ? <p><strong>Motivo abierto:</strong> {item.remainOpenReason}</p> : null}
                         {item.conclusion ? <p><strong>Conclusión:</strong> {item.conclusion}</p> : null}
                         <div className="document-actions">
@@ -510,7 +513,9 @@ async function ChangeControlDetailPageAuthenticatedContent({
                 action={addChangeControlFollowupAction.bind(null, id)}
                 departments={lookups.departments}
                 tasks={followupTasks}
+                users={users}
                 defaultResponsible={record.followupResponsible}
+                defaultResponsibleUserId={record.followupResponsibleUserId}
               /></PermissionGate>
             </div>
           ) : null}

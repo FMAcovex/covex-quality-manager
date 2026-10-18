@@ -1,4 +1,5 @@
 import { parseAdditionalLots } from "@/lib/qms/additional-lots";
+import { optionalUserId } from "@/lib/qms/responsible-user";
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import type { ComplaintDerivedActionInput } from "@/modules/complaints/types";
@@ -35,6 +36,7 @@ function parseCapaPlans(raw:string|null){
     description:typeof x.description==="string"?x.description.trim():"",
     plannedExecutionDate:typeof x.plannedExecutionDate==="string"?x.plannedExecutionDate:"",
     responsible:typeof x.responsible==="string"?x.responsible:"",
+    responsibleUserId:optionalUserId(x.responsibleUserId)??null,
     businessCapaCode:typeof x.businessCapaCode==="string"?x.businessCapaCode:""
   })).filter((x)=>x.description||x.responsible||x.plannedExecutionDate||x.businessCapaCode);
  }catch{return [];}
@@ -51,6 +53,7 @@ function parseDerivedActions(raw:string|null):ComplaintDerivedActionInput[]{
    businessCode:typeof x.businessCode==="string"?x.businessCode.trim():"",
    description:typeof x.description==="string"?x.description.trim():"",
    responsible:typeof x.responsible==="string"?x.responsible.trim():"",
+   responsibleUserId:optionalUserId(x.responsibleUserId)??null,
    plannedExecutionDate:typeof x.plannedExecutionDate==="string"?x.plannedExecutionDate:"",
    sortOrder:typeof x.sortOrder==="number"?x.sortOrder:i*10,
   })).filter(x=>x.actionType||x.businessCode||x.description||x.responsible||x.plannedExecutionDate);

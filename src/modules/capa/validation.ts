@@ -1,5 +1,6 @@
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
+import { rowUserIdSchema } from "@/lib/qms/responsible-user";
 import type {
   CapaActionFollowupInput,
   CapaOriginInput,
@@ -16,6 +17,7 @@ const saveIntent = z.enum(["SAVE_DRAFT", "UPDATE_CURRENT", "CREATE_FOLLOWUP_VERS
 const plannedActionSchema = z.object({
   description: z.string().trim().min(1),
   responsible: z.string().trim(),
+  responsibleUserId: rowUserIdSchema,
   plannedExecutionDate: z.string().trim(),
   impact: z.string().trim(),
 });
@@ -44,7 +46,7 @@ function enumValue<T extends z.ZodTypeAny>(schema: T, value: string | null) {
   const parsed = schema.safeParse(value);
   return parsed.success ? parsed.data : null;
 }
-function parseArray<T>(raw: string | null, schema: z.ZodType<T>): T[] {
+function parseArray<T>(raw: string | null, schema: z.ZodType<T, z.ZodTypeDef, unknown>): T[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);

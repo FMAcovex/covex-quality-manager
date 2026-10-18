@@ -1,5 +1,6 @@
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
+import { appUserOptions } from "@/lib/auth/app-users";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateChangeControlFollowupAction } from "@/modules/change-control/actions";
@@ -26,6 +27,7 @@ async function EditChangeControlFollowupPageAuthenticatedContent({
 
   const followup = record.followups.find((item) => item.sequenceNumber === sequenceNumber);
   if (!followup) notFound();
+  const users = await appUserOptions([followup.responsibleUserId]);
 
   const tasks = followup.taskStates.map((state) => ({
     id: state.task.id,
@@ -59,11 +61,13 @@ async function EditChangeControlFollowupPageAuthenticatedContent({
           action={updateChangeControlFollowupAction.bind(null, id, followup.id)}
           departments={lookups.departments}
           tasks={tasks}
+          users={users}
           defaultResponsible={record.followupResponsible}
           editing
           defaults={{
             followupDate: followup.followupDate,
             responsible: followup.responsible,
+            responsibleUserId: followup.responsibleUserId,
             observations: followup.observations,
             executionStatus: followup.executionStatus,
             executionDate: followup.executionDate,

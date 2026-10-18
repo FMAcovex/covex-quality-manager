@@ -5,6 +5,7 @@ import { authorizedAction } from "@/lib/auth/action-guard";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { responsibleUsersProblem } from "@/lib/auth/app-users";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
 import { allowedOutgoingRelationTypes } from "@/lib/qms/relation-rules";
@@ -71,6 +72,9 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
  };
 }
 
+/** Usuarios responsables de las propuestas CAPA y acciones derivadas (D-101). */
+function complaintUserIds(v:ReturnType<typeof parseComplaintForm>["values"]){return [...v.capaPlans.map(x=>x.responsibleUserId),...v.derivedActions.map(x=>x.responsibleUserId)];}
+
 async function replaceCapaPlans(tx:Prisma.TransactionClient,complaintId:string,plans:ReturnType<typeof parseComplaintForm>["values"]["capaPlans"]){
  const existing=await tx.complaintCapaPlan.findMany({where:{complaintId}});
  const owned=new Map(existing.map(row=>[row.id,row]));
@@ -78,7 +82,7 @@ async function replaceCapaPlans(tx:Prisma.TransactionClient,complaintId:string,p
  const retained=plans.flatMap(row=>row.id?[row.id]:[]);
  await tx.complaintCapaPlan.deleteMany({where:{complaintId,linkedCapaRecordId:null,id:{notIn:retained}}});
  for(const p of plans){
-  const data={actionType:p.actionType,description:p.description,plannedExecutionDate:d(p.plannedExecutionDate),responsible:p.responsible||null,businessCapaCode:p.businessCapaCode||null};
+  const data={actionType:p.actionType,description:p.description,plannedExecutionDate:d(p.plannedExecutionDate),responsible:p.responsible||null,responsibleUserId:p.responsibleUserId??null,businessCapaCode:p.businessCapaCode||null};
   if(p.id)await tx.complaintCapaPlan.update({where:{id:p.id},data});
   else await tx.complaintCapaPlan.create({data:{complaintId,...data}});
  }
@@ -90,7 +94,7 @@ async function replaceDerivedActions(tx:Prisma.TransactionClient,complaintId:str
  if(actions.some(row=>row.id&&!owned.has(row.id)))throw new Error("Una acción derivada no pertenece a esta reclamación.");
  await tx.complaintDerivedAction.deleteMany({where:{complaintId,id:{notIn:actions.flatMap(row=>row.id?[row.id]:[])}}});
  for(let i=0;i<actions.length;i++){
-  const a=actions[i],data={actionType:a.actionType||"OTRA",businessCode:a.businessCode||null,description:a.description||null,responsible:a.responsible||null,plannedExecutionDate:d(a.plannedExecutionDate),sortOrder:a.sortOrder??i*10};
+  const a=actions[i],data={actionType:a.actionType||"OTRA",businessCode:a.businessCode||null,description:a.description||null,responsible:a.responsible||null,responsibleUserId:a.responsibleUserId??null,plannedExecutionDate:d(a.plannedExecutionDate),sortOrder:a.sortOrder??i*10};
   if(a.id)await tx.complaintDerivedAction.update({where:{id:a.id},data});
   else await tx.complaintDerivedAction.create({data:{complaintId,...data}});
  }
@@ -99,6 +103,7 @@ async function replaceDerivedActions(tx:Prisma.TransactionClient,complaintId:str
 async function createComplaintActionAuthenticatedContent(previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
  const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values; let createdId:string;
+ const userProblem=await responsibleUsersProblem(complaintUserIds(v)); if(userProblem)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:[userProblem]});
  try{
   const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
   if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
@@ -150,6 +155,8 @@ async function updateComplaintActionAuthenticatedContent(id:string,previous:Comp
  const linked={capa:existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="CAPA"),returns:existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="RETURN")};
  const parsed=parseComplaintForm(fd,linked); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
  const v=parsed.values;
+ const assigned=await Promise.all([prisma.complaintCapaPlan.findMany({where:{complaintId:id},select:{responsibleUserId:true}}),prisma.complaintDerivedAction.findMany({where:{complaintId:id},select:{responsibleUserId:true}})]);
+ const userProblem=await responsibleUsersProblem(complaintUserIds(v),assigned.flat().map(x=>x.responsibleUserId)); if(userProblem)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:[userProblem]});
  const saveMode=complaintSaveMode(fd.get("saveMode"));
  const versionReason=String(fd.get("changeReason")??"").trim();
  const versionFollowupDate=String(fd.get("versionFollowupDate")??"").trim();

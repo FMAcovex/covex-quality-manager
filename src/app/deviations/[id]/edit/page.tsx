@@ -1,3 +1,4 @@
+import { appUserOptions } from "@/lib/auth/app-users";
 import { getSimilarDeviations } from "@/modules/deviations/recurrence-queries";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -31,7 +32,10 @@ async function EditDeviationPageAuthenticatedContent({
     getDeviationFormLookups(),
   ]);
   if (!deviation) notFound();
-  const similarDeviations = await getSimilarDeviations(deviation);
+  const [similarDeviations, users] = await Promise.all([
+    getSimilarDeviations(deviation),
+    appUserOptions([...deviation.immediateActions.map((item) => item.executedByUserId), ...deviation.capaPlans.map((item) => item.responsibleUserId)]),
+  ]);
 
   const action = updateDeviationAction.bind(null, id);
 
@@ -53,6 +57,7 @@ async function EditDeviationPageAuthenticatedContent({
         deviationId={id}
         currentVersionSequence={deviation.qmsRecord.versions.at(-1)?.sequenceNumber ?? 0}
         similarDeviations={similarDeviations}
+        users={users}
         defaults={{
           businessCode: deviation.qmsRecord.businessCode ?? "",
           departmentId: deviation.departmentId ?? "",
@@ -111,6 +116,7 @@ async function EditDeviationPageAuthenticatedContent({
           immediateActions: deviation.immediateActions.map((item) => ({
             description: item.description,
             executedBy: item.executedBy ?? "",
+            executedByUserId: item.executedByUserId,
             executedAt: date(item.executedAt),
           })),
           capaPlans: deviation.capaPlans
@@ -120,6 +126,7 @@ async function EditDeviationPageAuthenticatedContent({
               description: item.description,
               plannedExecutionDate: date(item.plannedExecutionDate),
               responsible: item.responsible ?? "",
+              responsibleUserId: item.responsibleUserId,
             })),
         }}
       />

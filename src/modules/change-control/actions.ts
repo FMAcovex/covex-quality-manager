@@ -12,6 +12,8 @@ import {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { responsibleUsersProblem } from "@/lib/auth/app-users";
+import { optionalUserId } from "@/lib/qms/responsible-user";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
 import {
@@ -36,6 +38,11 @@ import {
 import { acceptsFollowup, keepsOperationalStatus } from "@/modules/lifecycle";
 import { followupFinalStatus } from "@/modules/change-control/lifecycle";
 
+/** Usuarios responsables del formulario principal (D-101). */
+function changeUserIds(v: ReturnType<typeof parseChangeControlForm>["values"]) {
+  return [v.requestDecisionResponsibleUserId, v.followupResponsibleUserId, ...v.tasks.map((item) => item.responsibleUserId)];
+}
+
 function toDate(value: string | null | undefined) {
   return value ? new Date(value) : null;
 }
@@ -58,6 +65,7 @@ function scalarSnapshot(v: ReturnType<typeof parseChangeControlForm>["values"]) 
     providedDocuments: v.providedDocuments,
     requestDecision: v.requestDecision,
     requestDecisionResponsible: v.requestDecisionResponsible,
+    requestDecisionResponsibleUserId: v.requestDecisionResponsibleUserId,
     requestDecisionRole: v.requestDecisionRole,
     requestDecisionDate: v.requestDecisionDate,
     evaluation: v.evaluation,
@@ -84,6 +92,7 @@ function scalarSnapshot(v: ReturnType<typeof parseChangeControlForm>["values"]) 
     dictamenResult: v.dictamenResult,
     dictamenDate: v.dictamenDate,
     followupResponsible: v.followupResponsible,
+    followupResponsibleUserId: v.followupResponsibleUserId,
     dictamenObservations: v.dictamenObservations,
     internalObservations: v.internalObservations,
     signedDocumentAvailable: v.signedDocumentAvailable,
@@ -116,6 +125,7 @@ async function taskCreateData(
       departmentNameSnapshot: department.name,
       description: item.description,
       responsible: item.responsible || null,
+      responsibleUserId: item.responsibleUserId ?? null,
       plannedDate: toDate(item.plannedDate),
       origin,
       introducedInFollowup,
@@ -130,6 +140,7 @@ async function createOpeningFollowup00(
   qmsRecordId: string,
   dictamenDate: string,
   responsible: string,
+  responsibleUserId: string | null,
   nextFollowupDate: string,
   actor: string,
 ) {
@@ -148,6 +159,7 @@ async function createOpeningFollowup00(
       sequenceNumber: 0,
       followupDate: new Date(dictamenDate),
       responsible,
+      responsibleUserId,
       executionStatus: "NOT_EXECUTED",
       effectivenessStatus: "PENDING",
       closeChange: false,
@@ -190,6 +202,8 @@ async function createChangeControlActionAuthenticatedContent(
     return preserveFormState(previous, formData, { error: "No se puede guardar el Control de Cambio.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
   }
   const v = parsed.values;
+  const userProblem = await responsibleUsersProblem(changeUserIds(v));
+  if (userProblem) return preserveFormState(previous, formData, { error: "No se puede guardar el Control de Cambio.", fieldErrors: [userProblem] });
   let createdId: string;
   try {
     const department = v.departmentId
@@ -251,6 +265,7 @@ async function createChangeControlActionAuthenticatedContent(
           providedDocuments: v.providedDocuments,
           requestDecision: v.requestDecision,
           requestDecisionResponsible: v.requestDecisionResponsible,
+          requestDecisionResponsibleUserId: v.requestDecisionResponsibleUserId,
           requestDecisionRole: v.requestDecisionRole,
           requestDecisionDate: toDate(v.requestDecisionDate),
           evaluation: v.evaluation,
@@ -277,6 +292,7 @@ async function createChangeControlActionAuthenticatedContent(
           dictamenResult: v.dictamenResult,
           dictamenDate: toDate(v.dictamenDate),
           followupResponsible: v.followupResponsible,
+          followupResponsibleUserId: v.followupResponsibleUserId,
           dictamenObservations: v.dictamenObservations,
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
@@ -307,6 +323,7 @@ async function createChangeControlActionAuthenticatedContent(
           qmsRecord.id,
           v.dictamenDate,
           v.followupResponsible,
+          v.followupResponsibleUserId,
           v.nextFollowupDate,
           parsed.actor,
         );
@@ -394,6 +411,12 @@ async function updateChangeControlActionAuthenticatedContent(
   if (!existing) return preserveFormState(previous, formData, { error: "El Control de Cambio ya no existe." });
 
   const v = parsed.values;
+  const userProblem = await responsibleUsersProblem(changeUserIds(v), [
+    existing.requestDecisionResponsibleUserId,
+    existing.followupResponsibleUserId,
+    ...existing.tasks.map((item) => item.responsibleUserId),
+  ]);
+  if (userProblem) return preserveFormState(previous, formData, { error: "No se puede guardar el Control de Cambio.", fieldErrors: [userProblem] });
   const requestedBusinessCode = v.businessCode;
   v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
   if (!keepsOperationalStatus(existing.finalStatus, v.finalStatus)) {
@@ -409,9 +432,10 @@ async function updateChangeControlActionAuthenticatedContent(
     return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
   }
 
+  // El usuario vinculado no forma parte del plan aprobado: se puede asignar después (D-101).
+  const approvedDictamenTasks = existing.tasks.filter((item) => item.origin === "DICTAMEN");
   if (existing.dictamenResult === "APPROVED") {
-    const oldBaseline = existing.tasks
-      .filter((item) => item.origin === "DICTAMEN")
+    const oldBaseline = approvedDictamenTasks
       .map((item) => ({
         departmentId: item.departmentId ?? "",
         description: item.description,
@@ -446,11 +470,13 @@ async function updateChangeControlActionAuthenticatedContent(
     justification: existing.justification,
     providedDocuments: existing.providedDocuments,
     requestDecision: existing.requestDecision,
+    requestDecisionResponsibleUserId: existing.requestDecisionResponsibleUserId,
     evaluation: existing.evaluation,
     classification: existing.classification,
     plannedImplementationDate: existing.plannedImplementationDate?.toISOString().slice(0, 10) ?? null,
     dictamenResult: existing.dictamenResult,
     dictamenDate: existing.dictamenDate?.toISOString().slice(0, 10) ?? null,
+    followupResponsibleUserId: existing.followupResponsibleUserId,
   };
 
   try {
@@ -510,6 +536,7 @@ async function updateChangeControlActionAuthenticatedContent(
           providedDocuments: v.providedDocuments,
           requestDecision: v.requestDecision,
           requestDecisionResponsible: v.requestDecisionResponsible,
+          requestDecisionResponsibleUserId: v.requestDecisionResponsibleUserId,
           requestDecisionRole: v.requestDecisionRole,
           requestDecisionDate: toDate(v.requestDecisionDate),
           evaluation: v.evaluation,
@@ -536,6 +563,7 @@ async function updateChangeControlActionAuthenticatedContent(
           dictamenResult: v.dictamenResult,
           dictamenDate: toDate(v.dictamenDate),
           followupResponsible: v.followupResponsible,
+          followupResponsibleUserId: v.followupResponsibleUserId,
           dictamenObservations: v.dictamenObservations,
           internalObservations: v.internalObservations,
           signedDocumentAvailable: v.signedDocumentAvailable,
@@ -544,7 +572,14 @@ async function updateChangeControlActionAuthenticatedContent(
         },
       });
 
-      if (existing.dictamenResult !== "APPROVED") {
+      if (existing.dictamenResult === "APPROVED") {
+        for (const [index, task] of approvedDictamenTasks.entries()) {
+          const responsibleUserId = v.tasks[index]?.responsibleUserId ?? null;
+          if (task.responsibleUserId !== responsibleUserId) {
+            await tx.changeControlTask.update({ where: { id: task.id }, data: { responsibleUserId } });
+          }
+        }
+      } else {
         await tx.changeControlTask.deleteMany({
           where: { changeControlId: id, origin: "DICTAMEN" },
         });
@@ -585,6 +620,7 @@ async function updateChangeControlActionAuthenticatedContent(
           existing.qmsRecordId,
           v.dictamenDate,
           v.followupResponsible,
+          v.followupResponsibleUserId,
           v.nextFollowupDate,
           parsed.actor,
         );
@@ -695,6 +731,7 @@ function parseFollowupTasks(raw: string): ChangeFollowupTaskInput[] {
         departmentId: typeof item.departmentId === "string" ? item.departmentId : "",
         description: typeof item.description === "string" ? item.description.trim() : "",
         responsible: typeof item.responsible === "string" ? item.responsible.trim() : "",
+        responsibleUserId: optionalUserId(item.responsibleUserId) ?? null,
         plannedDate: typeof item.plannedDate === "string" ? item.plannedDate : "",
         status:
           item.status === "COMPLETED" || item.status === "NOT_APPLICABLE"
@@ -736,6 +773,7 @@ async function addChangeControlFollowupActionAuthenticatedContent(id: string, _s
 
   const followupDate = String(formData.get("followupDate") ?? "").trim();
   const responsible = String(formData.get("responsible") ?? "").trim();
+  const responsibleUserId = optionalUserId(formData.get("responsibleUserId")) ?? null;
   const observations = String(formData.get("observations") ?? "").trim();
   const executionStatus = String(formData.get("executionStatus") ?? "NOT_EXECUTED");
   const executionDate = String(formData.get("executionDate") ?? "").trim();
@@ -754,6 +792,8 @@ async function addChangeControlFollowupActionAuthenticatedContent(id: string, _s
     return { error: "Estado de eficacia no válido." };
   }
   if (!tasks.length) return { error: "El seguimiento debe incluir el estado de las acciones." };
+  const followupUserProblem = await responsibleUsersProblem([responsibleUserId, ...tasks.filter((item) => item.isNew).map((item) => item.responsibleUserId)]);
+  if (followupUserProblem) return { error: followupUserProblem };
 
   const sequenceNumber = Math.max(-1, ...change.followups.map((item) => item.sequenceNumber)) + 1;
   const existingTaskIds = new Set(change.tasks.map((item) => item.id));
@@ -791,6 +831,7 @@ async function addChangeControlFollowupActionAuthenticatedContent(id: string, _s
           departmentId: item.departmentId,
           description: item.description,
           responsible: item.responsible,
+          responsibleUserId: item.responsibleUserId ?? null,
           plannedDate: item.plannedDate,
         })),
         id,
@@ -809,6 +850,7 @@ async function addChangeControlFollowupActionAuthenticatedContent(id: string, _s
         sequenceNumber,
         followupDate: new Date(followupDate),
         responsible,
+        responsibleUserId,
         observations: observations || null,
         executionStatus: executionStatus as "NOT_EXECUTED" | "EXECUTED",
         executionDate: toDate(executionDate),
@@ -933,6 +975,7 @@ async function updateChangeControlFollowupActionAuthenticatedContent(
 
   const followupDate = String(formData.get("followupDate") ?? "").trim();
   const responsible = String(formData.get("responsible") ?? "").trim();
+  const responsibleUserId = optionalUserId(formData.get("responsibleUserId")) ?? null;
   const observations = String(formData.get("observations") ?? "").trim();
   const executionStatus = String(formData.get("executionStatus") ?? "NOT_EXECUTED");
   const executionDate = String(formData.get("executionDate") ?? "").trim();
@@ -953,6 +996,8 @@ async function updateChangeControlFollowupActionAuthenticatedContent(
   if (tasks.some((item) => item.isNew)) {
     return { error: "La edición histórica no permite introducir acciones nuevas retroactivamente." };
   }
+  const followupUserProblem = await responsibleUsersProblem([responsibleUserId], [followup.responsibleUserId]);
+  if (followupUserProblem) return { error: followupUserProblem };
 
   const expectedTaskIds = new Set(followup.taskStates.map((item) => item.taskId));
   const submittedTaskIds = new Set(tasks.map((item) => item.taskId).filter((value): value is string => Boolean(value)));
@@ -992,6 +1037,7 @@ async function updateChangeControlFollowupActionAuthenticatedContent(
       data: {
         followupDate: new Date(followupDate),
         responsible,
+        responsibleUserId,
         observations: observations || null,
         executionStatus: executionStatus as "NOT_EXECUTED" | "EXECUTED",
         executionDate: toDate(executionDate),
@@ -1087,6 +1133,7 @@ async function updateChangeControlFollowupActionAuthenticatedContent(
             ...current,
             followupDate,
             responsible,
+            responsibleUserId,
             observations: observations || null,
             executionStatus,
             executionDate: executionDate || null,

@@ -1,5 +1,7 @@
 "use client";
 import { AdditionalLotsField } from "@/components/additional-lots-field";
+import { ResponsibleUserPicker } from "@/components/responsible-user-select";
+import type { AppUserOption } from "@/lib/qms/responsible-user";
 import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { complaintCategoryOptions as categoryOptions, complaintSourceOptions as sourceOptions } from "@/modules/complaints/domain";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
@@ -47,7 +49,7 @@ const objectOptions=[["PRODUCT_MATERIAL","Producto / material"],["SERVICE","Serv
 const containmentOptions=[["QUARANTINE","Bloqueo / cuarentena"],["SUSPEND_USE_DISTRIBUTION","Suspender uso / distribución"],["NOTIFY_PARTIES","Aviso a cliente / proveedor / titular / Autoridad"],["NONE","Ninguna"],["OTHER","Otra"]] as const;
 const resolutionOptions=[["RETURN","Devolución"],["CORRECTIVE_ACTION","Acc. correctora"],["PREVENTIVE_ACTION","Acc. preventiva"],["IMMEDIATE_ACTION","Acc. inmediata"],["RECALL","Retirada del mercado"],["CREDIT","Abono"],["REPLACEMENT","Reposición"],["OTHER","Otros"]] as const;
 
-export function ComplaintForm({mode,action,departments,defaults={},complaintId,cancelHref,returnTo,detailTab}:{mode:"create"|"edit";action:(s:ComplaintFormState,fd:FormData)=>Promise<ComplaintFormState>;departments:DepartmentOption[];defaults?:ComplaintFormDefaults;complaintId?:string
+export function ComplaintForm({mode,action,departments,users=[],defaults={},complaintId,cancelHref,returnTo,detailTab}:{mode:"create"|"edit";action:(s:ComplaintFormState,fd:FormData)=>Promise<ComplaintFormState>;departments:DepartmentOption[];users?:AppUserOption[];defaults?:ComplaintFormDefaults;complaintId?:string
   cancelHref?: string;
   returnTo?: string;
   detailTab?: string;}) {
@@ -207,11 +209,12 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
     <div className="dynamic-list">
      {capas.map((x,i)=>{
       const visible=(x.actionType==="CORRECTIVE"&&actionSelected("CORRECTIVE_ACTION"))||(x.actionType==="PREVENTIVE"&&actionSelected("PREVENTIVE_ACTION"));
-      return visible?<div className="dynamic-row capa" key={x.id??i}>
+      return visible?<div className="dynamic-row capa complaint-capa-row" key={x.id??i}>
        <div className="field"><span>Tipo</span><strong className="action-kind">{x.actionType==="CORRECTIVE"?"Correctora":"Preventiva"}</strong></div>
        <label className="field"><span>Descripción *</span><input value={x.description} onChange={e=>patchCapa(i,{description:e.target.value})}/></label>
        <label className="field"><span>Fecha prevista *</span><input type="date" value={x.plannedExecutionDate} onChange={e=>patchCapa(i,{plannedExecutionDate:e.target.value})}/></label>
        <label className="field"><span>Responsable *</span><input value={x.responsible} onChange={e=>patchCapa(i,{responsible:e.target.value})}/></label>
+       <ResponsibleUserPicker users={users} value={x.responsibleUserId} text={x.responsible} onChange={({userId,text})=>patchCapa(i,{responsibleUserId:userId||null,responsible:text})}/>
        <label className="field"><span>Referencia CAPA histórica</span><input readOnly value={x.businessCapaCode??""} onChange={e=>patchCapa(i,{businessCapaCode:e.target.value})} placeholder="Pendiente de crear/vincular"/></label>
        <button className="button danger small" type="button" onClick={()=>setCapas(a=>a.filter((_,n)=>n!==i))}>Quitar</button>
       </div>:null;
@@ -233,6 +236,7 @@ export function ComplaintForm({mode,action,departments,defaults={},complaintId,c
       <label className="field"><span>Referencia devolución histórica</span><input readOnly value={x.businessCode} onChange={e=>patchDerived(i,{businessCode:e.target.value})} placeholder="Pendiente de crear/vincular"/></label>
       <label className="field"><span>Acción / detalle *</span><input value={x.description} onChange={e=>patchDerived(i,{description:e.target.value})}/></label>
       <label className="field"><span>Responsable *</span><input value={x.responsible} onChange={e=>patchDerived(i,{responsible:e.target.value})}/></label>
+      <ResponsibleUserPicker users={users} value={x.responsibleUserId} text={x.responsible} onChange={({userId,text})=>patchDerived(i,{responsibleUserId:userId||null,responsible:text})}/>
       <label className="field"><span>Fecha prevista *</span><input type="date" value={x.plannedExecutionDate} onChange={e=>patchDerived(i,{plannedExecutionDate:e.target.value})}/></label>
       <button className="button danger small" type="button" onClick={()=>setDerived(a=>a.filter((_,n)=>n!==i))}>Quitar</button>
      </div>:null)}

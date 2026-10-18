@@ -1,6 +1,7 @@
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
 import { authorizedPage } from "@/lib/auth/page-guard";
+import { appUserOptions } from "@/lib/auth/app-users";
 import { createCapaAction } from "@/modules/capa/actions";
 import { CapaForm } from "@/modules/capa/components/capa-form";
 import { getCapaLookups, getComplaintPlanPrefill, getComplaintPrefill, getDeviationPlanPrefill } from "@/modules/capa/queries";
@@ -46,6 +47,7 @@ async function NewCapaPageAuthenticatedContent({
         plannedActions: [{
           description: deviationPlan.description,
           responsible: deviationPlan.responsible ?? "",
+          responsibleUserId: deviationPlan.responsibleUserId,
           plannedExecutionDate: deviationPlan.plannedExecutionDate?.toISOString().slice(0,10) ?? "",
           impact: "",
         }],
@@ -71,6 +73,7 @@ async function NewCapaPageAuthenticatedContent({
           plannedActions: [{
             description: complaintPlan.description,
             responsible: complaintPlan.responsible ?? "",
+          responsibleUserId: complaintPlan.responsibleUserId,
             plannedExecutionDate: complaintPlan.plannedExecutionDate?.toISOString().slice(0,10) ?? "",
             impact: "",
           }],
@@ -99,6 +102,7 @@ async function NewCapaPageAuthenticatedContent({
           openedAt: new Date().toISOString().slice(0, 10),
           createdByText: currentActor(),
         };
+  const users = await appUserOptions([deviationPlan?.responsibleUserId, complaintPlan?.responsibleUserId]);
 
   return (
     <section className="workspace">
@@ -112,6 +116,7 @@ async function NewCapaPageAuthenticatedContent({
         mode="create"
         action={createCapaAction}
         departments={departments}
+        users={users}
         defaults={defaults}
         fromDeviationPlanId={fromDeviationPlanId}
         fromComplaintPlanId={fromComplaintPlanId}

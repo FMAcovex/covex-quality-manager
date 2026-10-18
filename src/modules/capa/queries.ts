@@ -3,6 +3,7 @@ import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { qmsListPagination } from "@/lib/qms/list-pagination";
 import { listRecordWithRelations } from "@/lib/qms/list-projections";
@@ -188,7 +189,7 @@ export async function getCapaDetail(id: string) {
         },
       },
       department: true,
-      plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      plannedActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], include: { responsibleUser: responsibleUserSelect } },
       actionFollowups: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
       followups: { orderBy: [{ followupDate: "desc" }, { sequenceNumber: "desc" }] },
       formVersion: true,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { optionalUserId, rowUserIdSchema } from "@/lib/qms/responsible-user";
 import type { ChangeTaskInput } from "@/modules/change-control/types";
 
 const scope = z.enum([
@@ -22,6 +23,7 @@ const taskSchema = z.object({
   departmentId: z.string().trim().min(1),
   description: z.string().trim().min(1),
   responsible: z.string().trim().min(1),
+  responsibleUserId: rowUserIdSchema,
   plannedDate: z.string().trim().min(1),
 });
 
@@ -59,7 +61,7 @@ function parseTasks(raw: string | null) {
     const parsed = relevant.map((item) => taskSchema.safeParse(item));
     return {
       tasks: parsed
-        .filter((item): item is z.SafeParseSuccess<ChangeTaskInput> => item.success)
+        .filter((item): item is z.SafeParseSuccess<z.output<typeof taskSchema>> => item.success)
         .map((item) => item.data),
       hasIncompleteTask: parsed.some((item) => !item.success),
     };
@@ -197,6 +199,7 @@ export function parseChangeControlForm(formData: FormData) {
       providedDocuments: text(formData, "providedDocuments"),
       requestDecision: decision,
       requestDecisionResponsible: text(formData, "requestDecisionResponsible"),
+      requestDecisionResponsibleUserId: optionalUserId(formData.get("requestDecisionResponsibleUserId")) ?? null,
       requestDecisionRole: text(formData, "requestDecisionRole"),
       requestDecisionDate: text(formData, "requestDecisionDate"),
       evaluation: text(formData, "evaluation"),
@@ -223,6 +226,7 @@ export function parseChangeControlForm(formData: FormData) {
       dictamenResult: result,
       dictamenDate: text(formData, "dictamenDate"),
       followupResponsible: text(formData, "followupResponsible"),
+      followupResponsibleUserId: optionalUserId(formData.get("followupResponsibleUserId")) ?? null,
       nextFollowupDate: text(formData, "nextFollowupDate"),
       dictamenObservations: text(formData, "dictamenObservations"),
       internalObservations: text(formData, "internalObservations"),
