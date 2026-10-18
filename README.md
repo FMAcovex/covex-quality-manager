@@ -39,6 +39,8 @@ Después se abre <http://localhost:3000> y se elige un perfil de demostración (
 
 Desarrollo sin Docker: PostgreSQL local, `.env` a partir de `.env.example`, `pnpm install`, `pnpm db:deploy`, `pnpm db:seed` y `pnpm dev`. El acceso requiere la identidad corporativa configurada (4B1) o las variables de la demo local descritas en [DEMO_LOCAL.md](docs/DEMO_LOCAL.md#para-desarrolladores).
 
+Para **probar** la aplicación (por ejemplo en Codespaces) usa `pnpm preview` en lugar de `pnpm dev`: compila en modo producción y arranca el servidor. `pnpm dev` compila cada apartado la primera vez que se abre (1–3 s) y responde varias veces más lento; solo conviene mientras se programa. Después de `git pull`, vuelve a ejecutar `pnpm db:deploy` y `pnpm preview`.
+
 ## Backup lógico de demo / contingencia técnica
 
 Exportación: `pnpm backup:export`; ruta opcional: `pnpm backup:export -- --out ./backups/mi-backup.json`. Verificación: `pnpm backup:verify -- ./backups/mi-backup.json`.

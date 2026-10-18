@@ -136,6 +136,10 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Velocidad al cambiar de apartado (2026-10-18, D-104):**
+- Al cambiar de apartado ya no aparece la pantalla «Cargando información…» (solo en la primera carga), sino una barra fina de progreso arriba; el clic en el menú pasa de ~850 ms a ~170–290 ms.
+- `pnpm preview` arranca en modo producción para probar (Codespaces). `pnpm dev` es varias veces más lento y compila cada apartado la primera vez.
+
 **Ajustes tras las pruebas (2026-10-18, D-103):**
 - Los datos que se escriben en los anexos Word salen en Arial 11; las etiquetas de la plantilla no cambian. Comprobado con las plantillas reales en los 22 anexos Word.
 - Sin las plantillas de OOS, Configuración las lista como pendientes y el expediente muestra los botones de anexo desactivados con el motivo.

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AppShell } from "@/components/app-shell";
+import { PageLoading } from "@/components/page-loading";
 import { CsrfProvider } from "@/components/csrf";
 import { cookies } from "next/headers";
 import { PermissionProvider } from "@/components/permissions";
@@ -21,7 +23,7 @@ export default async function RootLayout({
   let access = null;
   try { if (jar.has("__Host-covex-session") || jar.has("covex-session")) access = presentationAccess(await requireUser(), "SYSTEM"); }
   catch (error) { if (!(error instanceof AccessError)) throw error; }
-  const shell = <AppShell>{children}</AppShell>;
+  const shell = <AppShell><Suspense fallback={<PageLoading />}>{children}</Suspense></AppShell>;
   return (
     <html lang="es">
       <body>

@@ -932,3 +932,14 @@ Decisiones del responsable de Calidad tras probar la aplicación:
   - Configuración → Versiones los lista como pendientes y recuerda cómo instalarlos;
   - en el expediente, los botones «Anexo III» y «Anexo IV» aparecen desactivados con el motivo, en vez de dar error al pulsarlos.
 - **Buscador global discreto.** La barra superior tiene un campo de búsqueda pequeño en el que se escribe directamente; Intro abre los resultados en /search y Ctrl+K (⌘K) lleva el foco al campo. Al escribir se ensancha. En /search no aparece, porque la página tiene su propio campo. En móvil ocupa su propia línea.
+
+## D-104 — Velocidad al cambiar de apartado (2026-10-18)
+
+Decisión del responsable de Calidad tras medir los tiempos:
+
+- **Barra fina de progreso al cambiar de apartado.** La pantalla «Cargando información…» (`src/app/loading.tsx`) se mostraba en cada clic y React la mantenía un mínimo de unos 300 ms, aunque la página ya hubiera llegado. Ahora, al cambiar de apartado, sigue visible la página anterior y aparece una barra de 3 px arriba (`NavigationProgress`), solo si la navegación tarda más de 120 ms. La pantalla de carga se conserva únicamente para la primera carga de la página: va en un `<Suspense>` fijo del layout (`PageLoading`), que React no vuelve a mostrar durante las navegaciones.
+- **Modo producción para probar.** `pnpm preview` compila y arranca la aplicación en modo producción. Es el modo recomendado para probarla (por ejemplo en Codespaces). `pnpm dev` queda solo para programar, porque compila cada apartado la primera vez y responde varias veces más lento.
+- Mediciones con unas 4.500 expedientes sintéticos:
+  - en producción, el servidor responde a cada apartado en 40–100 ms;
+  - el clic en el menú pasa de ~850 ms a ~170–290 ms, medido con el navegador de pruebas;
+  - con `pnpm dev`, la primera visita a cada apartado tarda 1,3–2,7 s y las siguientes ~0,5 s.
