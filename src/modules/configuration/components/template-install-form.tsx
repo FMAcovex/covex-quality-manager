@@ -36,7 +36,7 @@ export function TemplateInstallForm() {
     <form onSubmit={submit} className="template-install-form"><CsrfField />
       <label className="field">
         <span>ZIP de plantillas, PNT o anexos (.zip, .docx, .xlsx)</span>
-        <input name="files" type="file" multiple required accept=".zip,.docx,.xlsx,.doc" />
+        <input name="files" type="file" multiple required accept=".zip,.docx,.xlsx" />
       </label>
       <ActorField type="hidden" name="actor" />
       <button className="button primary" disabled={busy}>{busy ? "Instalando…" : "Instalar plantillas"}</button>

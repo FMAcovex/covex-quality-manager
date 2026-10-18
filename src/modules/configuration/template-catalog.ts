@@ -9,13 +9,13 @@ import type { DocumentType, QmsRecordType } from "@prisma/client";
  * - `file`: el archivo se guarda tal cual.
  * - `pnt-range`: el anexo se recorta del PNT completo entre dos textos.
  * - `oos-pnt`: Anexos de OOS derivados del PNT GC-10/014/04 (sin encabezado ni pie del PNT).
- * - `office-normalized`: se limpian los metadatos; `convertDoc` convierte antes un .doc a .docx.
+ * - `office-normalized`: se limpian los metadatos.
  */
 export type TemplateSource =
   | { kind: "file"; sha256: string }
   | { kind: "pnt-range"; sha256: string; start: string; end?: string }
   | { kind: "oos-pnt"; sha256: string }
-  | { kind: "office-normalized"; sha256: string; convertDoc?: boolean };
+  | { kind: "office-normalized"; sha256: string };
 
 export type CatalogTemplate = {
   module: QmsRecordType;
@@ -27,6 +27,11 @@ export type CatalogTemplate = {
   sources: TemplateSource[];
   /** Derivaciones anteriores del mismo origen que se pueden sustituir por la actual. */
   supersededChecksums?: string[];
+  /**
+   * Sustituye cualquier archivo instalado antes para esta versión: eran conversiones de un .doc
+   * con LibreOffice, que no dan siempre el mismo archivo y por eso no se pueden enumerar.
+   */
+  replacesDocConversion?: boolean;
 };
 
 const RETURN_PNT_V03 = "7f6b318e936cef9d2685347decf52b8951c34585dbd2ef1ebca05232a0c59a5a";
@@ -73,9 +78,9 @@ export const templateCatalog: CatalogTemplate[] = [
   { module: "AUDIT", documentType: "AUDIT_EXTERNAL_REPORT", versionCode: "04", label: "Auditorías · Informe externo", fileName: "A3. INFORME AUDITORIA_V04.docx", effectiveFrom: "2026-06-08", sources: file("ed09292702a08c73a26a42d019e81c1d7d74ac63264b278dd6d6fa6e2acbc40d") },
   // El generador extrae el Anexo IV del PNT completo de auditorías externas.
   { module: "AUDIT", documentType: "AUDIT_EXTERNAL_PLAN", versionCode: "04", label: "Auditorías · Plan externo (PNT fuente)", fileName: "GC-00.034.04 Auditorías externas.docx", effectiveFrom: "2026-06-08", sources: file("1c73fa4fbe06b42a797000ce0a95ccee034261a230ddc7602920ace17bcae6af") },
-  // El original del programa interno es .doc: se convierte con LibreOffice y la conversión no es
-  // idéntica entre instalaciones, así que una versión ya instalada nunca se vuelve a convertir.
-  { module: "AUDIT", documentType: "AUDIT_ANNUAL_INTERNAL_PROGRAMME", versionCode: "PMAI-V04-01-2023-GENERAL", label: "Auditorías · Programa anual interno (PMAI V04)", fileName: "PMAI-V04-01-2023-GENERAL.docx", effectiveFrom: "2023-01-01", sources: [{ kind: "office-normalized", sha256: "fa1296da0c6bbb9561e2ab992e717b7b2e31f73cc70ce274bac0a79a3b457e36", convertDoc: true }] },
+  // D-106: el programa interno se instala desde el .docx guardado en Word por Calidad, no desde el
+  // .doc original (sha fa1296da…), que necesitaba LibreOffice. Sustituye una conversión anterior.
+  { module: "AUDIT", documentType: "AUDIT_ANNUAL_INTERNAL_PROGRAMME", versionCode: "PMAI-V04-01-2023-GENERAL", label: "Auditorías · Programa anual interno (PMAI V04)", fileName: "PMAI-V04-01-2023-GENERAL.docx", effectiveFrom: "2023-01-01", sources: [{ kind: "office-normalized", sha256: "8dc8c00c04dd2138f1352a903dc18727a48909ab9f7c898eb8c36bb5d53fdea9" }], replacesDocConversion: true },
   { module: "AUDIT", documentType: "AUDIT_ANNUAL_EXTERNAL_PROGRAMME", versionCode: "PMAE-V05-06-2026-ANEXO-I", label: "Auditorías · Programa anual externo (PMAE V05)", fileName: "PMAE-V05-06-2026-ANEXO-I.docx", effectiveFrom: "2026-06-01", sources: [{ kind: "office-normalized", sha256: "e55c7b2623604c45aa7282c6601479189a56395cbfa05fc421742a7e9db98cda" }] },
 ];
 
