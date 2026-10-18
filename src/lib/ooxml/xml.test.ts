@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fillWordCellBalanced, fillWordRowCellsBalanced, setWordSdtCheckbox } from "@/lib/ooxml/xml";
+import { annexValueRunProperties, applyValueMarks, fillWordCellBalanced, fillWordRowCellsBalanced, markValue, setWordCellText, setWordCellTextBalanced, setWordSdtCheckbox, setWordVariableCellText } from "@/lib/ooxml/xml";
 
 const XML = `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><w:tbl><w:tr><w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:tc><w:p><w:r><w:t>☐</w:t></w:r></w:p></w:tc></w:sdtContent></w:sdt><w:tc><w:p><w:r><w:t>Etiqueta</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>`;
 
@@ -19,7 +19,8 @@ describe("relleno de celdas de plantillas controladas", () => {
   it("añade el valor tras la etiqueta sin negrita y conserva propiedades de celda", () => {
     const xml = fillWordCellBalanced(cell(label), 0, 0, 0, "OOS/MD/001/2026");
     expect(xml).toContain("<w:t>Nº INFORME:</w:t>");
-    expect(xml).toContain('<w:r><w:rPr><w:sz w:val="20"/></w:rPr><w:t xml:space="preserve"> OOS/MD/001/2026</w:t></w:r>');
+    // D-103: los datos van en Arial 11 aunque la etiqueta tenga otro tamaño.
+    expect(xml).toContain('<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve"> OOS/MD/001/2026</w:t></w:r>');
     expect(xml).toContain('<w:tcW w:w="100"/>');
   });
 
@@ -38,5 +39,31 @@ describe("relleno de celdas de plantillas controladas", () => {
     expect(filled.match(/w:fill="92D050"/g)).toHaveLength(2);
     expect(filled).not.toContain('w:fill="FFFFFF"');
     expect(filled).toContain(">Cerrado<");
+  });
+});
+
+describe("tipografía de los datos de los anexos (D-103)", () => {
+  const arial = '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/>';
+  it("pone Arial 11 conservando el resto del formato y el orden de w:rPr", () => {
+    expect(annexValueRunProperties()).toBe(`<w:rPr>${arial}<w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>`);
+    expect(annexValueRunProperties('<w:rPr><w:rStyle w:val="X"/><w:rFonts w:ascii="Calibri"/><w:b/><w:color w:val="FF0000"/><w:sz w:val="16"/><w:szCs w:val="16"/><w:u w:val="single"/><w:lang w:val="es-ES"/></w:rPr>'))
+      .toBe(`<w:rPr><w:rStyle w:val="X"/>${arial}<w:b/><w:color w:val="FF0000"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:u w:val="single"/><w:lang w:val="es-ES"/></w:rPr>`);
+  });
+
+  it("separa un dato escrito dentro de una etiqueta en su propio run", () => {
+    const run = `<w:p><w:r w:rsidR="1"><w:rPr><w:b/><w:sz w:val="18"/></w:rPr><w:t>Cantidad ${markValue("25 kg")} y más</w:t></w:r></w:p>`;
+    expect(applyValueMarks(run)).toBe(
+      '<w:p><w:r w:rsidR="1"><w:rPr><w:b/><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve">Cantidad </w:t></w:r>' +
+      `<w:r w:rsidR="1"><w:rPr>${arial}<w:b/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">25 kg</w:t></w:r>` +
+      '<w:r w:rsidR="1"><w:rPr><w:b/><w:sz w:val="18"/></w:rPr><w:t xml:space="preserve"> y más</w:t></w:r></w:p>',
+    );
+    expect(applyValueMarks("<w:r><w:t>sin marcas</w:t></w:r>")).toBe("<w:r><w:t>sin marcas</w:t></w:r>");
+  });
+
+  it("los textos que escribe la aplicación en celdas van en Arial 11", () => {
+    const doc = '<w:document><w:body><w:tbl><w:tr><w:tc><w:p><w:r><w:t>x</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>';
+    for (const xml of [setWordCellText(doc, 0, 0, 0, "dato"), setWordCellTextBalanced(doc, 0, 0, 0, "dato", "FF0000"), setWordVariableCellText(doc, 0, 0, 0, "dato")]) {
+      expect(xml).toMatch(/<w:rPr><w:rFonts w:ascii="Arial"[^>]*\/>(?:<w:color w:val="FF0000"\/>)?<w:sz w:val="22"\/><w:szCs w:val="22"\/><\/w:rPr><w:t xml:space="preserve">dato<\/w:t>/);
+    }
   });
 });

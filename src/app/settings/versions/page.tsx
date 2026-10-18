@@ -69,7 +69,7 @@ async function VersionsPageAuthenticatedContent() {
             <p className="muted-note">
               {readiness.complete
                 ? "Todas las plantillas necesarias para generar anexos y listados oficiales están cargadas."
-                : "Faltan archivos controlados. Las descargas oficiales afectadas permanecerán bloqueadas hasta cargarlos."}
+                : "Faltan archivos controlados. Las descargas oficiales afectadas permanecerán bloqueadas hasta cargarlos. Se instalan con «pnpm templates:install -- plantillas/», con los ZIP de plantillas y el PNT GC-10/014/04 de OOS en esa carpeta."}
             </p>
           </div>
           <span className={`badge ${readiness.complete ? "open" : "warning"}`}>

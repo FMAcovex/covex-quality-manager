@@ -1,6 +1,6 @@
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { escapeXml,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { applyValueMarks,escapeXml,markValue,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { annexGeneratorXml } from "@/modules/configuration/annex-generator-views";
 import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
@@ -83,7 +83,7 @@ export async function generateReturnAnnexV(r:ReturnDocumentRecord){
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,1,1,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.qmsRecord.businessCode));
  xml=setWordCellTextBalanced(xml,1,2,1,r.products.map(x=>x.productNameCode).join(" · "));xml=setWordCellTextBalanced(xml,1,2,3,r.products.map(x=>text(x.lot)).filter(Boolean).join(" · "));xml=setWordCellTextBalanced(xml,1,3,1,text(r.conservationConditions));
  // Solo la línea del firmante («D./D.ª ____»); «Otra documentación: ____» no se toca.
- if(r.customerDeclarationSignatoryName)xml=xml.replace(/(D\.\/D\.ª )_{8,}/,(_m,label:string)=>label+escapeXml(r.customerDeclarationSignatoryName!));
+ if(r.customerDeclarationSignatoryName)xml=xml.replace(/(D\.\/D\.ª )_{8,}/,(_m,label:string)=>label+markValue(escapeXml(r.customerDeclarationSignatoryName!)));xml=applyValueMarks(xml);
  xml=setWordCellTextBalanced(xml,3,0,0,text(r.customerDeclarationObservations));
  xml=setWordCellTextBalanced(xml,4,0,1,["Nombre/Puesto/Firma/Fecha:",text(r.customerDeclarationSignatoryName),text(r.customerDeclarationSignatoryRole),date(r.customerDeclarationSignedAt)].filter(Boolean).join(" / "));
  xml=setWordCellTextBalanced(xml,5,0,1,`Nombre/Firma/Fecha:\n${text(r.qaApprovalName)}`);

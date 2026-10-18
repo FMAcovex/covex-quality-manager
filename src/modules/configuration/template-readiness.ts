@@ -30,6 +30,10 @@ export const requiredControlledTemplates = [
   { module: QmsRecordType.RETURN, documentType: DocumentType.RETURN_ANNEX_IV, versionCode: "03", label: "Devoluciones · Anexo IV" },
   { module: QmsRecordType.RETURN, documentType: DocumentType.RETURN_ANNEX_V, versionCode: "03", label: "Devoluciones · Anexo V" },
   { module: QmsRecordType.RETURN, documentType: DocumentType.RETURN_ANNEX_VI, versionCode: "03", label: "Devoluciones · Anexo VI" },
+  // D-103: los anexos de OOS se obtienen del PNT GC-10/014/04 con `pnpm templates:install`.
+  { module: QmsRecordType.OOS, documentType: DocumentType.OOS_ANNEX_III, versionCode: "04", label: "OOS · Anexo III (del PNT GC-10/014/04)" },
+  { module: QmsRecordType.OOS, documentType: DocumentType.OOS_ANNEX_IV, versionCode: "04", label: "OOS · Anexo IV (del PNT GC-10/014/04)" },
+  { module: QmsRecordType.OOS, documentType: DocumentType.OOS_ANNEX_VI, versionCode: "04", label: "OOS · Anexo VI (del PNT GC-10/014/04)" },
 ] as const;
 
 export function templateAssetReady(template: {

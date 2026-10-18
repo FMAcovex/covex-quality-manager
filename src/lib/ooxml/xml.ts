@@ -7,6 +7,70 @@ export function escapeXml(value: string) {
     .replaceAll("'", "&apos;");
 }
 
+/**
+ * Tipografía de los datos que la aplicación escribe en los anexos Word: Arial 11. Se respeta el
+ * resto del formato de la plantilla (color, negrita, subrayado…) y el orden de elementos de
+ * `w:rPr` que exige Word.
+ */
+const VALUE_FONT = '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/>';
+const VALUE_SIZE = '<w:sz w:val="22"/><w:szCs w:val="22"/>';
+const AFTER_SIZE = /<w:(?:highlight|u|effect|bdr|shd|fitText|vertAlign|rtl|cs|em|lang|eastAsianLayout|specVanish|oMath|rPrChange)\b/;
+
+export function annexValueRunProperties(rPr = "") {
+  let inner = rPr.replace(/^<w:rPr(?:\s[^>]*)?>/, "").replace(/<\/w:rPr>$/, "").replace(/^<w:rPr\s*\/>$/, "");
+  inner = inner.replace(/<w:rFonts\b[^>]*\/>|<w:sz\b[^>]*\/>|<w:szCs\b[^>]*\/>/g, "");
+  const style = inner.match(/^<w:rStyle\b[^>]*\/>/)?.[0] ?? "";
+  inner = inner.slice(style.length);
+  const at = inner.search(AFTER_SIZE);
+  inner = at < 0 ? inner + VALUE_SIZE : inner.slice(0, at) + VALUE_SIZE + inner.slice(at);
+  return `<w:rPr>${style}${VALUE_FONT}${inner}</w:rPr>`;
+}
+
+const VALUE_START = "\uE000", VALUE_END = "\uE001";
+
+/** Marca un dato escrito dentro del texto de una etiqueta («Cantidad ____»); ver `applyValueMarks`. */
+export function markValue(text: string) {
+  return VALUE_START + text + VALUE_END;
+}
+
+/** `markValue` línea a línea, para textos que se escriben como un párrafo por línea. */
+export function markValueLines(text: string) {
+  return text.split(/\r?\n/).map((line) => (line ? markValue(line) : line)).join("\n");
+}
+
+/** Separa cada dato marcado con `markValue` en su propio run con la tipografía de los datos. */
+export function applyValueMarks(documentXml: string) {
+  if (!documentXml.includes(VALUE_START)) return documentXml;
+  return documentXml.replace(/<w:r(\s[^>]*)?>((?:(?!<\/w:r>)[\s\S])*?)<\/w:r>/g, (run, attrs: string | undefined, inner: string) => {
+    if (!inner.includes(VALUE_START)) return run;
+    const open = `<w:r${attrs ?? ""}>`;
+    const rPr = inner.match(/^<w:rPr\b[\s\S]*?<\/w:rPr>/)?.[0] ?? "";
+    const valuePr = annexValueRunProperties(rPr);
+    const runs: string[] = [];
+    let label = "";
+    const flush = () => {
+      if (label) runs.push(`${open}${rPr}${label}</w:r>`);
+      label = "";
+    };
+    for (const piece of inner.slice(rPr.length).split(/(<w:t(?:\s[^>]*)?>[^<]*<\/w:t>)/)) {
+      const text = piece.match(/^<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>$/)?.[1];
+      if (text === undefined || !text.includes(VALUE_START)) {
+        label += piece;
+        continue;
+      }
+      for (const part of text.split(/(\uE000[^\uE001]*\uE001)/)) {
+        if (!part) continue;
+        if (part.startsWith(VALUE_START)) {
+          flush();
+          runs.push(`${open}${valuePr}<w:t xml:space="preserve">${part.slice(1, -1)}</w:t></w:r>`);
+        } else label += `<w:t xml:space="preserve">${part}</w:t>`;
+      }
+    }
+    flush();
+    return runs.join("");
+  });
+}
+
 function transformNth(source: string, regex: RegExp, index: number, transform: (value: string) => string) {
   let seen = 0;
   let found = false;
@@ -26,7 +90,7 @@ function transformNth(source: string, regex: RegExp, index: number, transform: (
 function paragraphXml(text: string) {
   const parts = text.split(/\r?\n/);
   return parts
-    .map((part) => `<w:p><w:r><w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`)
+    .map((part) => `<w:p><w:r>${annexValueRunProperties()}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`)
     .join("");
 }
 
@@ -61,7 +125,7 @@ function variableParagraphXml(text: string) {
     .split(/\r?\n/)
     .map(
       (part) =>
-        `<w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`,
+        `<w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r>${annexValueRunProperties()}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`,
     )
     .join("");
 }
@@ -276,7 +340,7 @@ function paragraphXmlWithColor(text: string, color?: string) {
   return text
     .split(/\r?\n/)
     .map((part) => {
-      const rPr = color ? `<w:rPr><w:color w:val="${escapeXml(color)}"/></w:rPr>` : "";
+      const rPr = annexValueRunProperties(color ? `<w:color w:val="${escapeXml(color)}"/>` : "");
       return `<w:p><w:r>${rPr}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`;
     })
     .join("");
@@ -402,7 +466,7 @@ export type WordCellFillOptions = {
 /** Value typography comes from the paragraph mark, without the label's emphasis or the hint colour. */
 function valueRunProperties(paragraphXml: string) {
   const markRPr = paragraphXml.match(/<w:pPr\b[\s\S]*?<\/w:pPr>/)?.[0].match(/<w:rPr\b[\s\S]*?<\/w:rPr>/)?.[0] ?? "";
-  return markRPr.replace(/<w:(?:b|bCs|i|iCs|color)\b[^>]*\/>/g, "");
+  return annexValueRunProperties(markRPr.replace(/<w:(?:b|bCs|i|iCs|color)\b[^>]*\/>/g, ""));
 }
 
 function valueRun(text: string, rPr: string) {

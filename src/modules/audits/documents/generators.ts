@@ -1,5 +1,5 @@
 import { readZip, getZipEntryText, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
-import { escapeXml, transformWordCell, setXlsxCell } from "@/lib/ooxml/xml";
+import { applyValueMarks, escapeXml, markValue, markValueLines, transformWordCell, setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { auditDate, auditScenarioLabels } from "../domain";
 import { findingTypeLabels, criticalityLabels, actionStatusLabels } from "../finding-domain";
@@ -14,7 +14,8 @@ function cellText(cell: string, text: string) {
   const open = cell.match(/^<w:tc(?:\s[^>]*)?>/)![0], pr = cell.match(/<w:tcPr[\s\S]*?<\/w:tcPr>/)?.[0] ?? "";
   return `${open}${pr}${styledParagraph(cell, text)}</w:tc>`;
 }
-function fill(xml: string, table: number, row: number, col: number, text: string) { return transformWordCell(xml, table, row, col, c => cellText(c, text)); }
+// D-103: los datos van marcados (`markValue`) y salen en Arial 11; las etiquetas conservan su formato.
+function fill(xml: string, table: number, row: number, col: number, text: string) { return transformWordCell(xml, table, row, col, c => cellText(c, markValueLines(text))); }
 function cloneRows(xml: string, table: number, row: number, values: string[][], replaceRemainder = false) {
   let ti = 0;
   return xml.replace(/<w:tbl(?:\s[^>]*)?>[\s\S]*?<\/w:tbl>/g, t => {
@@ -24,7 +25,7 @@ function cloneRows(xml: string, table: number, row: number, values: string[][], 
       const currentRow = ri++;
       if (replaceRemainder && currentRow > row) return "";
       if (currentRow !== row) return r;
-      return (values.length ? values : [["", ""]]).map(v => { let ci = 0; return r.replace(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g, c => cellText(c, v[ci++] ?? "")); }).join("");
+      return (values.length ? values : [["", ""]]).map(v => { let ci = 0; return r.replace(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g, c => cellText(c, markValueLines(v[ci++] ?? ""))); }).join("");
     });
   });
 }
@@ -33,7 +34,7 @@ function section(xml: string, heading: string, text: string) {
   let found = false, filled = false;
   const result = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, p => {
     if (!found && plain(p) === heading) { found = true; return p; }
-    if (found && !filled && !plain(p) && !p.includes("<w:drawing")) { filled = true; return styledParagraph(p, text); }
+    if (found && !filled && !plain(p) && !p.includes("<w:drawing")) { filled = true; return styledParagraph(p, markValueLines(text)); }
     return p;
   });
   if (!filled) throw new Error(`Sección controlada no encontrada: ${heading}`);
@@ -112,7 +113,7 @@ export function generateAuditReport(template: Buffer, s: AuditReportSnapshot, se
   xml = fill(xml, 1, supplier ? 5 : 2, 1, [a.title, a.scope].filter(Boolean).join("\n"));
   const team = (auditee: boolean) => a.participants.filter(p => p.isActive && (auditee ? p.role === "AUDITEE" : p.role !== "AUDITEE")).map(p => [p.displayName, [p.position, p.organization].filter(Boolean).join(" · ")]);
   xml = cloneRows(xml, 1, supplier ? 12 : 9, team(false)); xml = cloneRows(xml, 1, supplier ? 9 : 6, team(true));
-  for (const [col, name, position] of [[0,a.preparedBy,a.preparedPosition],[1,a.reviewedBy,a.reviewedPosition],[2,a.receivedBy,a.receivedPosition]] as const) xml = fill(xml, 2, 1, col, `Nombre y Apellidos: ${name ?? ""}\nPosición: ${position ?? ""}\nFecha:\nFirma:`);
+  for (const [col, name, position] of [[0,a.preparedBy,a.preparedPosition],[1,a.reviewedBy,a.reviewedPosition],[2,a.receivedBy,a.receivedPosition]] as const) xml = transformWordCell(xml, 2, 1, col, c => cellText(c, `Nombre y Apellidos: ${name ? markValue(name) : ""}\nPosición: ${position ? markValue(position) : ""}\nFecha:\nFirma:`));
   const findings = a.findings.filter(f => f.isActive);
   for (const [row, criticality] of [[6,"MINOR"],[4,"MAJOR"],[2,"CRITICAL"]] as const) xml = cloneRows(xml, 4, row, findings.filter(f => f.findingType !== "RECOMMENDATION" && f.criticality === criticality).map(f => [f.reference, f.description]));
   xml = section(xml, "RECOMENDACIONES:", findings.filter(f => f.findingType === "RECOMMENDATION").map(f => `${f.reference}: ${f.description}`).join("\n"));
@@ -126,7 +127,7 @@ export function generateAuditReport(template: Buffer, s: AuditReportSnapshot, se
     if (!auditCode) throw new Error("El informe externo requiere un código de auditoría para completar el pie de página.");
     fillExternalReportFooters(entries, auditCode);
   }
-  updateZipEntry(entries, "word/document.xml", xml); sanitizeOfficeMetadata(entries); return writeZip(entries);
+  updateZipEntry(entries, "word/document.xml", applyValueMarks(xml)); sanitizeOfficeMetadata(entries); return writeZip(entries);
 }
 /** Anexo IV «Plan de Auditoría» recortado del PNT de auditorías externas (también para D-100). */
 export function auditExternalPlanXml(xml: string) {
@@ -142,13 +143,13 @@ export function generateAuditExternalPlan(template: Buffer, s: AuditReportSnapsh
   if (!a.auditedEntityName || !a.plannedDate || !a.scope || !a.programme || !a.activityDuration || !a.planIntroduction) throw new Error("Completa entidad, fecha prevista, introducción, alcance, duración y programa para generar el Plan.");
   const entries = readZip(template); let xml = auditExternalPlanXml(getZipEntryText(entries, "word/document.xml"));
   for (const [prefix, value] of [["Entidad Auditada:", a.auditedEntityName],["Fecha:",auditDate(a.plannedDate)],["Lugar de auditoría:",a.auditedEntityAddress ?? ""]]) {
-    let done = false; xml = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, p => !done && plain(p).startsWith(prefix) ? (done = true, styledParagraph(p, `${prefix} ${value}`)) : p);
+    let done = false; xml = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, p => !done && plain(p).startsWith(prefix) ? (done = true, styledParagraph(p, `${prefix} ${value ? markValue(value) : ""}`)) : p);
   }
   for (const [heading, value] of [["INTRODUCCIÓN",a.planIntroduction],["OBJETIVO/ALCANCE DE LA AUDITORIA",a.scope],["PERSONAL RESPONSABLE DEL DEPARTAMENTO AUDITADO",a.participants.filter(p=>p.isActive&&p.role==='AUDITEE').map(p=>p.displayName).join("; ")],["EQUIPO AUDITOR",a.participants.filter(p=>p.isActive&&p.role!=='AUDITEE').map(p=>p.displayName).join("; ")],["DURACION DE CADA ACTIVIDAD",a.activityDuration],["ELABORACIÓN Y DISTRIBUCIÓN DEL INFORME DE AUDITORIA",a.reportDistribution ?? ""]]) xml = section(xml,heading,value);
   xml = cloneRows(xml,0,1,(a.programme ?? "").split(/\r?\n/).filter(Boolean).map(line=>{ const [time,...activity]=line.split("|"); return [activity.length ? time.trim() : "", activity.length ? activity.join("|").trim() : time]; }), true);
   // The PNT's example working times and personal names are not audit data.
   xml = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g,p=>plain(p).startsWith("Durante el horario laboral de XX") ? styledParagraph(p,"") : p);
-  updateZipEntry(entries,"word/document.xml",xml); sanitizeOfficeMetadata(entries); return writeZip(entries);
+  updateZipEntry(entries,"word/document.xml",applyValueMarks(xml)); sanitizeOfficeMetadata(entries); return writeZip(entries);
 }
 export function auditCapaPlanRows(s: AuditReportSnapshot) {
   return s.audit.findings.filter(f=>f.isActive).map(f=>{

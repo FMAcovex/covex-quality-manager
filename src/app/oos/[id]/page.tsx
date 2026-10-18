@@ -35,6 +35,7 @@ import {
   readOosEvaluation,
 } from "@/modules/oos/domain";
 import { getOosDetail } from "@/modules/oos/queries";
+import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
 import { uploadOosSignedPdfAction } from "@/modules/oos/signed-document-actions";
 import { oosSignedAnnexes, type OosSignedAnnex } from "@/modules/oos/signed-documents";
 
@@ -70,8 +71,12 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
 }) {
   const { id } = await params;
   const { tab: rawTab, returnTo, auditPage, review, thread } = await searchParams;
-  const record = await getOosDetail(id);
+  const [record, annexIIIReady, annexIVReady] = await Promise.all([getOosDetail(id), isActiveTemplateAssetReady("OOS", "OOS_ANNEX_III"), isActiveTemplateAssetReady("OOS", "OOS_ANNEX_IV")]);
   if (!record) notFound();
+  // D-103: sin la plantilla instalada, el botón se muestra desactivado con el motivo, en vez de dar error al pulsarlo.
+  const annexButton = (ready: boolean, annex: "iii" | "iv", label: string) => ready
+    ? <a className="button" href={`/api/oos/${id}/annex-${annex}`}>{label}</a>
+    : <span className="template-missing-inline"><button className="button" type="button" disabled>{label}</button><span className="template-missing-note">Plantilla oficial pendiente de cargar (PNT GC-10/014/04).</span></span>;
 
   const phase = oosPhase(record.phaseIDisposition);
   const tabs = [
@@ -127,8 +132,8 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
       </div>
       <div className="record-actions">
         <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/oos", returnTo)} /></PermissionGate>
-        {record.qmsRecord.isActive && record.status !== "DRAFT" ? <PermissionGate permission="DOWNLOAD"><a className="button" href={`/api/oos/${id}/annex-iii`}>Anexo III</a></PermissionGate> : null}
-        {record.qmsRecord.isActive && record.status !== "DRAFT" && record.phaseIDisposition === "FULL_SCALE" ? <PermissionGate permission="DOWNLOAD"><a className="button" href={`/api/oos/${id}/annex-iv`}>Anexo IV</a></PermissionGate> : null}
+        {record.qmsRecord.isActive && record.status !== "DRAFT" ? <PermissionGate permission="DOWNLOAD">{annexButton(annexIIIReady, "iii", "Anexo III")}</PermissionGate> : null}
+        {record.qmsRecord.isActive && record.status !== "DRAFT" && record.phaseIDisposition === "FULL_SCALE" ? <PermissionGate permission="DOWNLOAD">{annexButton(annexIVReady, "iv", "Anexo IV")}</PermissionGate> : null}
         {record.qmsRecord.isActive ? <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/oos/${id}/edit?tab=${tab}`, "/oos", returnTo)}>Editar</Link></PermissionGate> : null}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { readZip, writeZip, updateZipEntry, getZipEntryText } from "@/lib/ooxml/zip";
-import { escapeXml } from "@/lib/ooxml/xml";
+import { applyValueMarks, escapeXml, markValue, markValueLines } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { externalProgrammeNotes, type ProgrammeContent } from "./domain";
 
@@ -70,7 +70,7 @@ export function generateAnnualProgramme(template: Buffer, content: ProgrammeCont
       const repeating = header.includes("<w:tblHeader") ? header : header.replace(/(<w:tr[^>]*>)/, '$1<w:trPr><w:tblHeader/></w:trPr>');
       let data = "";
       if (internal) {
-        content.rows.forEach((r, i) => { data += row(rows[1], [String(i + 1), r.target, r.planned, r.auditors, r.performed, r.partial, r.notes]); });
+        content.rows.forEach((r, i) => { data += row(rows[1], [String(i + 1), r.target, r.planned, r.auditors, r.performed, r.partial, r.notes].map(markValueLines)); });
       } else {
         const band = rows.find(r => visible(r).includes("ÁMBITO"));
         const styles = rows.filter(r => !visible(r).includes("ÁMBITO")).slice(1);
@@ -78,8 +78,8 @@ export function generateAnnualProgramme(template: Buffer, content: ProgrammeCont
         const groups = new Map<string, ProgrammeContent['rows']>();
         for (const r of content.rows) { const group = r.area || "Sin especificar"; groups.set(group, [...(groups.get(group) ?? []), r]); }
         for (const [area, items] of groups) {
-          data += row(band, [`ÁMBITO ${area}`]);
-          items.forEach((r, i) => { data += row(styles[i % 2], [[r.target, r.productService, r.scope].filter(Boolean).join("\n"), r.planned, r.auditors, r.performed, externalProgrammeNotes(r)]); });
+          data += row(band, [`ÁMBITO ${markValue(area)}`]);
+          items.forEach((r, i) => { data += row(styles[i % 2], [[r.target, r.productService, r.scope].filter(Boolean).join("\n"), r.planned, r.auditors, r.performed, externalProgrammeNotes(r)].map(markValueLines)); });
         }
       }
       return table.slice(0, table.indexOf(rows[0])) + repeating + data + "</w:tbl>";
@@ -90,7 +90,7 @@ export function generateAnnualProgramme(template: Buffer, content: ProgrammeCont
       if (rows.length !== names.length + 1) throw Error("Bloque de aprobación no compatible con la plantilla general.");
       return table.slice(0, table.indexOf(rows[0])) + rows[0] + names.map((name, i) => {
         const cells = [...rows[i + 1].matchAll(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g)].map(m => m[0]);
-        return row(rows[i + 1], [[name, visible(cells[0])].filter(Boolean).join("\n"), ""]);
+        return row(rows[i + 1], [[name ? markValue(name) : "", visible(cells[0])].filter(Boolean).join("\n"), ""]);
       }).join("") + "</w:tbl>";
     }
     return table;
@@ -99,13 +99,13 @@ export function generateAnnualProgramme(template: Buffer, content: ProgrammeCont
   let yearCount = 0;
   xml = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, p => {
     if (/^AÑO:/.test(visible(p)) || (!internal && visible(p).includes("PROGRAMA ANUAL DE AUDITORIAS EXTERNAS AÑO:"))) {
-      yearCount++; return paragraph(p, visible(p).replace(/AÑO:.*$/, `AÑO: ${content.year}`));
+      yearCount++; return paragraph(p, visible(p).replace(/AÑO:.*$/, `AÑO: ${markValue(String(content.year))}`));
     }
     return p;
   });
   if (yearCount !== 1) throw Error("Año editable no encontrado una sola vez.");
   if (!xml.includes(internal ? "PMAI/V04/01-2023" : "PMAE/V05/06-2026") && !entries.some(e => /word\/header/.test(e.name) && e.data.toString().includes("PMAI/V04/01-2023"))) throw Error("Referencia documental no compatible.");
-  updateZipEntry(entries, "word/document.xml", xml);
+  updateZipEntry(entries, "word/document.xml", applyValueMarks(xml));
   // No signature images or approval dates are fabricated; fields stay editable.
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);
