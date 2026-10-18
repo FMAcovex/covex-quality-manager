@@ -5,6 +5,8 @@ import { ListFilterToolbar } from "@/components/list-filter-toolbar";
 import { activeFilterChips, type FilterDefinition } from "@/lib/qms/list-filters";
 import "./dashboard.css";
 import { getDashboardData } from "@/modules/dashboard/queries";
+import { getAssignedItems, type AssignedItem } from "@/modules/dashboard/assigned-query";
+import { currentIdentity } from "@/lib/auth/context";
 import {
   DASHBOARD_ALL_MODULES, DASHBOARD_MODULES, moduleListHref, queryOption, queryPage, queryYear,
   type DashboardModule, type DashboardState, type DashboardTaskView,
@@ -16,12 +18,15 @@ type Query = Record<string, string | string[] | undefined>;
 const modules = DASHBOARD_ALL_MODULES;
 const moduleKeys = ["ALL", ...modules.map(m => m.key)] as const;
 const stateOptions = ["ALL", "OPEN", "CLOSED", "DRAFT"] as const;
-const taskOptions = ["all", "overdue", "upcoming"] as const;
+const taskOptions = ["all", "overdue", "upcoming", "mine"] as const;
 const number = (value: number) => value.toLocaleString("es-ES");
 const date = (value: Date) => new Intl.DateTimeFormat("es-ES", { timeZone: "UTC", day: "2-digit", month: "2-digit", year: "numeric" }).format(value);
 const moduleName = (key: DashboardModule) => modules.find(m => m.key === key)?.label ?? key;
 const stateLabels = [{ value: "OPEN", label: "Abiertos" }, { value: "CLOSED", label: "Cerrados" }, { value: "DRAFT", label: "Borradores" }];
-const taskLabels = [{ value: "overdue", label: "Solo vencidos" }, { value: "upcoming", label: "Solo próximos" }];
+const taskLabels = [{ value: "overdue", label: "Solo vencidos" }, { value: "upcoming", label: "Solo próximos" }, { value: "mine", label: "Asignadas a mí" }];
+const assignedPageSize = 15;
+const assignedStateLabel: Record<AssignedItem["state"], string> = { OVERDUE: "Vencida", UPCOMING: "Próxima", PENDING: "Pendiente" };
+const assignedStateBadge: Record<AssignedItem["state"], string> = { OVERDUE: "critical", UPCOMING: "warning", PENDING: "neutral" };
 
 function queryLink(query: Query, page: number): string {
   const params = new URLSearchParams();
@@ -45,7 +50,7 @@ async function HomePageAuthenticatedContent({
   const state = queryOption(query.state, stateOptions, "ALL") as DashboardState;
   const taskView = queryOption(query.tasks, taskOptions, "all") as DashboardTaskView;
   const now = new Date();
-  const data = await getDashboardData({
+  const filters = {
     year,
     department: requestedDepartment && /^[a-f0-9-]{36}$/i.test(requestedDepartment) ? requestedDepartment : "",
     module: selectedScope,
@@ -53,7 +58,18 @@ async function HomePageAuthenticatedContent({
     taskView,
     page: queryPage(query.page),
     asOf: now,
-  });
+  };
+  const [data, assignedItems] = await Promise.all([getDashboardData(filters), getAssignedItems(currentIdentity()?.principal.id, filters)]);
+  const mine = taskView === "mine";
+  const assignedCounts = {
+    total: assignedItems.length,
+    overdue: assignedItems.filter(item => item.state === "OVERDUE").length,
+    upcoming: assignedItems.filter(item => item.state === "UPCOMING").length,
+  };
+  const assignedPageCount = Math.max(1, Math.ceil(assignedItems.length / assignedPageSize));
+  const assignedPage = Math.min(filters.page, assignedPageCount);
+  const assignedRows = assignedItems.slice((assignedPage - 1) * assignedPageSize, assignedPage * assignedPageSize);
+  const page = mine ? assignedPage : data.page, pageCount = mine ? assignedPageCount : data.pageCount;
   const department = data.departments.some(d => d.id === requestedDepartment) ? requestedDepartment! : "";
   // El análisis histórico está en la pestaña Indicadores de cada módulo (no en el inicio).
   const indicatorsHref = (module: DashboardModule) => {
@@ -123,7 +139,7 @@ async function HomePageAuthenticatedContent({
               {stateLabels.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </label>
-          <label className="filter-placeholder"><span>Plazos</span>
+          <label className="filter-placeholder"><span>Plazos y asignadas</span>
             <select name="tasks" defaultValue={taskView}>
               <option value="all">Vencidos y próximos</option>
               {taskLabels.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -150,6 +166,10 @@ async function HomePageAuthenticatedContent({
         <div className="dashboard-attention-item">
           <strong>{number(draft)}</strong><span>borradores sin abrir</span>
         </div>
+        <Link href={queryLink({ ...query, tasks: "mine" }, 1) + "#dashboard-tasks"} className={"dashboard-attention-item" + (assignedCounts.overdue ? " is-critical" : assignedCounts.total ? " is-warning" : "")}>
+          <strong>{number(assignedCounts.total)}</strong><span>asignadas a mí</span>
+          {assignedCounts.overdue ? <small>{assignedCounts.overdue} vencidas</small> : null}
+        </Link>
       </section>
 
       <section className="dashboard-section" aria-labelledby="dashboard-modules-title">
@@ -189,35 +209,63 @@ async function HomePageAuthenticatedContent({
       <div className="dashboard-tasks-row">
         <section id="dashboard-tasks" className="dashboard-section dashboard-task-section" aria-labelledby="dashboard-tasks-title">
           <div className="dashboard-heading">
-            <div><p className="eyebrow">Acción y seguimiento</p><h2 id="dashboard-tasks-title">Plazos vencidos y próximos</h2></div>
+            <div><p className="eyebrow">Acción y seguimiento</p><h2 id="dashboard-tasks-title">{mine ? "Asignadas a mí" : "Plazos vencidos y próximos"}</h2></div>
             <PermissionGate permission="READ" module="SYSTEM"><Link href="/settings/alerts" className="summary-link">Reglas de alertas →</Link></PermissionGate>
           </div>
-          <div className="dashboard-task-summary" aria-label="Resumen de plazos">
-            <span className="dashboard-deadline-count overdue"><strong>{number(data.taskCounts.overdue)}</strong> vencidas</span>
-            <span className="dashboard-deadline-count upcoming"><strong>{number(data.taskCounts.upcoming)}</strong> próximas · 30 días</span>
-          </div>
-          <p className="dashboard-hint">Revisiones y seguimientos con fecha según las reglas activas. Solo informativo: no envía avisos ni es una lista de tareas personal.</p>
-          <div className="dashboard-task-table">
-            <table aria-label="Plazos vencidos y próximos">
-              <thead><tr><th>Vencimiento</th><th>Expediente</th><th>Motivo</th><th>Estado</th></tr></thead>
-              <tbody>
-                {data.tasks.map(task => (
-                  <tr key={task.key} className={"dashboard-task-row " + (task.state === "OVERDUE" ? "is-overdue" : "is-upcoming")}>
-                    <td className="dashboard-task-date" data-label="Vencimiento"><time dateTime={task.dueDate.toISOString().slice(0, 10)}>{date(task.dueDate)}</time></td>
-                    <td className="dashboard-task-record"><Link href={task.href} className="summary-link">{task.code}</Link><small>{moduleName(task.module)}</small></td>
-                    <td className="dashboard-task-reason" title={task.source}>{task.label}</td>
-                    <td className="dashboard-task-state"><span className={"badge " + (task.state === "OVERDUE" ? "critical" : "warning")}>{task.state === "OVERDUE" ? "Vencida" : "Próxima"}</span></td>
-                  </tr>
-                ))}
-                {!data.tasks.length && <tr><td colSpan={4} className="dashboard-empty">No hay plazos vencidos ni próximos con estos filtros. Esto no confirma que no existan otras acciones pendientes.</td></tr>}
-              </tbody>
-            </table>
-          </div>
-          <nav className="dashboard-pagination" aria-label="Páginas de plazos">
-            <span>{number(data.taskCounts.total)} plazos · Página {data.page} de {data.pageCount}</span>
+          {mine ? (
+            <>
+              <div className="dashboard-task-summary" aria-label="Resumen de asignadas">
+                <span className="dashboard-deadline-count overdue"><strong>{number(assignedCounts.overdue)}</strong> vencidas</span>
+                <span className="dashboard-deadline-count upcoming"><strong>{number(assignedCounts.upcoming)}</strong> próximas · 30 días</span>
+              </div>
+              <p className="dashboard-hint">Acciones pendientes en las que figuras como usuario responsable. Solo aparecen las que tienen el usuario vinculado, no las que solo tienen tu nombre escrito.</p>
+              <div className="dashboard-task-table">
+                <table aria-label="Asignadas a mí">
+                  <thead><tr><th>Fecha prevista</th><th>Expediente</th><th>Acción</th><th>Estado</th></tr></thead>
+                  <tbody>
+                    {assignedRows.map(item => (
+                      <tr key={item.key} className={"dashboard-task-row " + (item.state === "OVERDUE" ? "is-overdue" : "is-upcoming")}>
+                        <td className="dashboard-task-date" data-label="Fecha prevista">{item.dueDate ? <time dateTime={item.dueDate.toISOString().slice(0, 10)}>{date(item.dueDate)}</time> : "Sin fecha"}</td>
+                        <td className="dashboard-task-record"><Link href={item.href} className="summary-link">{item.code}</Link><small>{moduleName(item.module)}</small></td>
+                        <td className="dashboard-task-reason" title={item.detail}>{item.label}{item.detail ? <small>{item.detail}</small> : null}</td>
+                        <td className="dashboard-task-state"><span className={"badge " + assignedStateBadge[item.state]}>{assignedStateLabel[item.state]}</span></td>
+                      </tr>
+                    ))}
+                    {!assignedRows.length && <tr><td colSpan={4} className="dashboard-empty">No tienes acciones pendientes asignadas con estos filtros.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="dashboard-task-summary" aria-label="Resumen de plazos">
+                <span className="dashboard-deadline-count overdue"><strong>{number(data.taskCounts.overdue)}</strong> vencidas</span>
+                <span className="dashboard-deadline-count upcoming"><strong>{number(data.taskCounts.upcoming)}</strong> próximas · 30 días</span>
+              </div>
+              <p className="dashboard-hint">Revisiones y seguimientos con fecha según las reglas activas. Solo informativo: no envía avisos ni es una lista de tareas personal.</p>
+              <div className="dashboard-task-table">
+                <table aria-label="Plazos vencidos y próximos">
+                  <thead><tr><th>Vencimiento</th><th>Expediente</th><th>Motivo</th><th>Estado</th></tr></thead>
+                  <tbody>
+                    {data.tasks.map(task => (
+                      <tr key={task.key} className={"dashboard-task-row " + (task.state === "OVERDUE" ? "is-overdue" : "is-upcoming")}>
+                        <td className="dashboard-task-date" data-label="Vencimiento"><time dateTime={task.dueDate.toISOString().slice(0, 10)}>{date(task.dueDate)}</time></td>
+                        <td className="dashboard-task-record"><Link href={task.href} className="summary-link">{task.code}</Link><small>{moduleName(task.module)}</small></td>
+                        <td className="dashboard-task-reason" title={task.source}>{task.label}</td>
+                        <td className="dashboard-task-state"><span className={"badge " + (task.state === "OVERDUE" ? "critical" : "warning")}>{task.state === "OVERDUE" ? "Vencida" : "Próxima"}</span></td>
+                      </tr>
+                    ))}
+                    {!data.tasks.length && <tr><td colSpan={4} className="dashboard-empty">No hay plazos vencidos ni próximos con estos filtros. Esto no confirma que no existan otras acciones pendientes.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+          <nav className="dashboard-pagination" aria-label={mine ? "Páginas de asignadas" : "Páginas de plazos"}>
+            <span>{number(mine ? assignedCounts.total : data.taskCounts.total)} {mine ? "asignadas" : "plazos"} · Página {page} de {pageCount}</span>
             <div>
-            {data.page > 1 && <Link className="button small" href={queryLink(query, data.page - 1)}>Anterior</Link>}
-            {data.page < data.pageCount && <Link className="button small" href={queryLink(query, data.page + 1)}>Siguiente</Link>}
+            {page > 1 && <Link className="button small" href={queryLink(query, page - 1)}>Anterior</Link>}
+            {page < pageCount && <Link className="button small" href={queryLink(query, page + 1)}>Siguiente</Link>}
             </div>
           </nav>
         </section>

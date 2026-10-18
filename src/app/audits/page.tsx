@@ -18,6 +18,8 @@ import { pendingAuditReviewDate } from "@/modules/audits/followup-review";
 import { activeFilterChips, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
 import { ListFilterToolbar } from "@/components/list-filter-toolbar";
 import { reviewFilterOptions } from "@/lib/qms/review/list-domain";
+import { AssignedListFilter } from "@/components/assigned-list-filter";
+import { assignedFilterOptions } from "@/lib/qms/assigned";
 export const dynamic = "force-dynamic";
 const administrativeOptions = [{ value: "ANNULLED", label: "Anulados" }, { value: "ALL", label: "Todos" }];
 const planningOptions = [{ value: "PLANNED", label: "En plan anual" }, { value: "OUT_OF_PLAN", label: "Fuera de plan" }, { value: "UNCLASSIFIED", label: "Pendiente de clasificación" }];
@@ -34,7 +36,7 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
   const query = await searchParams;
   const filters: AuditListFilters = {};
   for (const key of ["year","type","scenario","department","status","modality","quality","criticality"] as const) filters[key] = queryList(query[key]);
-  for (const key of ["q","administrative","plannedFrom","plannedTo","performedFrom","performedTo","page","findings","pendingActions","relatedDeviation","relatedCapa","nextReviewFrom","nextReviewTo","review","report","signedPdf","situation","planning","planId"] as const) filters[key] = firstQueryValue(query[key]);
+  for (const key of ["q","administrative","plannedFrom","plannedTo","performedFrom","performedTo","page","findings","pendingActions","relatedDeviation","relatedCapa","nextReviewFrom","nextReviewTo","review","assigned","report","signedPdf","situation","planning","planId"] as const) filters[key] = firstQueryValue(query[key]);
   const savedViews = await listSavedViews("/audits");
   const [{rows,departments,years,total,page,pages,errors},annualPlans] = await Promise.all([getAuditList(filters),listAnnualPlans()]);
   const listParams = new URLSearchParams();
@@ -73,6 +75,7 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
     ...yesNoFilters.map(([name, label]) => ({ name, label, options: yesNoOptions })),
     ...dateFilters.map(([name, label]) => ({ name, label, options: [], format: isoDate })),
     { name: "review", label: "Revisión", options: reviewFilterOptions },
+    { name: "assigned", label: "Asignación", options: assignedFilterOptions },
     ...choiceFilters.map(([name, label, choices]) => ({ name, label, options: choices })),
   ];
   return <section className="workspace audits-workspace qms-list-ux-b list-ux-c"><div className="page-heading"><div><p className="eyebrow">Sistema de Calidad</p><h1>Auditorías</h1><p>Expedientes, planificación, hallazgos y seguimiento.</p></div><div className="heading-actions"><Link className="button" href="/audits/plans">Planes anuales</Link><PermissionGate permission="CREATE" module="AUDIT"><Link className="button primary" href="/audits/new">+ Nueva auditoría</Link></PermissionGate><ColumnSelector tableId="audit-list-table" storageKey="qms.columns.audits" columns={auditColumns}/></div></div>
@@ -99,7 +102,7 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
       <MultiSelectFilter name="criticality" label="Criticidad de hallazgos" selected={filters.criticality ?? []} options={options(criticalityLabels)}/>
       {yesNoFilters.map(([name,label]) => <label key={name} className="filter-placeholder"><span>{label}</span><select name={name} defaultValue={String(filters[name] ?? "")}><option value="">Todos</option>{yesNoOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>)}
       {dateFilters.map(([name,label]) => <label className="filter-placeholder" key={name}><span>{label}</span><input type="date" name={name} defaultValue={String(filters[name] ?? "")}/></label>)}
-      <ReviewListFilter value={filters.review}/>{choiceFilters.map(([name,label,choices])=><label className="filter-placeholder" key={name}><span>{label}</span><select name={name} defaultValue={String(filters[name] ?? "")}><option value="">Todos</option>{choices.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>)}
+      <ReviewListFilter value={filters.review}/><AssignedListFilter value={filters.assigned}/>{choiceFilters.map(([name,label,choices])=><label className="filter-placeholder" key={name}><span>{label}</span><select name={name} defaultValue={String(filters[name] ?? "")}><option value="">Todos</option>{choices.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>)}
       </ListFilterToolbar>
     </form>
     <p className="list-counters"><span><strong>{total}</strong> expedientes · página {page} de {pages}</span></p>

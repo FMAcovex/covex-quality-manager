@@ -2,13 +2,17 @@ import { reviewListWhere } from "@/lib/qms/review/list-domain";
 import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import { Prisma, type AuditFindingCriticality } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { assignedListWhere, assignedWhere } from "@/lib/qms/assigned";
+import { currentIdentity } from "@/lib/auth/context";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { pendingActionStatuses } from "./finding-domain";
 import { nextReviewRange } from "./list-date-filters";
 import { auditTypeLabels, auditScenarioLabels, auditStatusLabels, auditModalityLabels, auditQualityLabels } from "./domain";
 
 export type AuditListFilters = {
-  review?: string; report?: string; signedPdf?: string; situation?: string;
+  review?: string; report?: string;
+  /** «Asignadas a mí» (D-102): `assignedUserId` lo pone la consulta con el usuario de la sesión. */
+  assigned?: string; assignedUserId?: string | null; signedPdf?: string; situation?: string;
   findings?: string; criticality?: string[]; pendingActions?: string; relatedDeviation?: string; relatedCapa?: string; nextReviewFrom?: string; nextReviewTo?: string;
   planning?: string; planId?: string;
   q?: string; administrative?: string; year?: string[]; type?: string[]; scenario?: string[]; department?: string[]; status?: string[]; modality?: string[]; quality?: string[];
@@ -21,6 +25,7 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
   if (filters.administrative === "ANNULLED") and.push({ qmsRecord: { isActive: false } });
   else if (filters.administrative !== "ALL") and.push({ qmsRecord: { isActive: true } });
   const review = reviewListWhere(filters.review); if (review) and.push({qmsRecord:review});
+  const assigned = assignedListWhere(filters.assigned, filters.assignedUserId, assignedWhere.audit); if (assigned) and.push(assigned);
   const reportVersion = { versions: { some: { kind: { in: ["INITIAL", "AUDIT_REVISION"] as ("INITIAL"|"AUDIT_REVISION")[] } } } };
   if (filters.report === "issued") and.push({qmsRecord:reportVersion});
   if (filters.report === "pending") and.push({qmsRecord:{versions:{none:{}}}});
@@ -62,7 +67,7 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
   return { AND: and };
 }
 export async function getAuditList(filters: AuditListFilters) {
-  const where = auditListWhere(filters), pageSize = 25;
+  const where = auditListWhere({ ...filters, assignedUserId: currentIdentity()?.principal.id }), pageSize = 25;
   const { from, to, errors } = nextReviewRange(filters);
   // An invalid restrictive filter must never silently widen the result set.
   if (errors.length) (where.AND as Prisma.AuditWhereInput[]).push({ id: { in: [] } });

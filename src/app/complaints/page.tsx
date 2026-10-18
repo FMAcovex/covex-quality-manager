@@ -29,6 +29,8 @@ import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { activeFilterChips, appendFilterValues, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
 import { ListFilterToolbar } from "@/components/list-filter-toolbar";
 import { reviewFilterOptions } from "@/lib/qms/review/list-domain";
+import { AssignedListFilter } from "@/components/assigned-list-filter";
+import { assignedFilterOptions } from "@/lib/qms/assigned";
 import { versionLabel } from "@/lib/qms/versioning";
 
 export const dynamic="force-dynamic";
@@ -60,7 +62,7 @@ function efficacyTone(value:string){
 async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
  const q=await searchParams;
   const toDetail = (id: string) => qmsWithReturnTo("/complaints/" + id, "/complaints", qmsListingUrl("/complaints", q));
- const filters={page:p(q.page),recurrent:p(q.recurrent),capa:p(q.capa),returns:p(q.returns),review:p(q.review),
+ const filters={page:p(q.page),recurrent:p(q.recurrent),capa:p(q.capa),returns:p(q.returns),review:p(q.review),assigned:p(q.assigned),
   q:p(q.q),administrative:p(q.administrative),year:queryList(q.year),department:queryList(q.department),
   type:queryList(q.type),status:queryList(q.status),classification:queryList(q.classification),
   effectiveness:queryList(q.effectiveness),situation:queryList(q.situation),followup:queryList(q.followup)
@@ -88,6 +90,7 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
   {name:"capa",label:"CAPA vinculada",options:capaOptions},
   {name:"returns",label:"Devolución vinculada",options:returnsOptions},
   {name:"review",label:"Revisión",options:reviewFilterOptions},
+  {name:"assigned",label:"Asignación",options:assignedFilterOptions},
  ];
 
  return <section className="workspace qms-list-ux-b list-ux-c">
@@ -132,6 +135,7 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
    <label className="filter-placeholder"><span>CAPA vinculada</span><select name="capa" defaultValue={filters.capa??""}><option value="">Todas</option>{option(capaOptions)}</select></label>
    <label className="filter-placeholder"><span>Devolución vinculada</span><select name="returns" defaultValue={filters.returns??""}><option value="">Todas</option>{option(returnsOptions)}</select></label>
    <ReviewListFilter value={filters.review} />
+   <AssignedListFilter value={filters.assigned} />
    </ListFilterToolbar>
   </form>
 

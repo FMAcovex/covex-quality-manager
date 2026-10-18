@@ -20,6 +20,8 @@ import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { activeFilterChips, appendFilterValues, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
 import { ListFilterToolbar } from "@/components/list-filter-toolbar";
 import { reviewFilterOptions } from "@/lib/qms/review/list-domain";
+import { AssignedListFilter } from "@/components/assigned-list-filter";
+import { assignedFilterOptions } from "@/lib/qms/assigned";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +44,7 @@ async function DeviationsPageAuthenticatedContent({
   const filters = {
     page: param(query.page),
     review: firstQueryValue(query.review),
+    assigned: firstQueryValue(query.assigned),
     q: param(query.q),
     administrative: param(query.administrative),
     year: queryList(query.year),
@@ -74,6 +77,7 @@ async function DeviationsPageAuthenticatedContent({
     { name: "capa", label: "CAPA", options: capaOptions },
     { name: "deadline", label: "En plazo", options: deadlineOptions },
     { name: "review", label: "Revisión", options: reviewFilterOptions },
+    { name: "assigned", label: "Asignación", options: assignedFilterOptions },
   ];
   const option = (options: { value: string; label: string }[]) => options.map((item) => <option key={item.value} value={item.value}>{item.label}</option>);
 
@@ -160,6 +164,7 @@ async function DeviationsPageAuthenticatedContent({
           <label className="filter-placeholder"><span>CAPA</span><select name="capa" defaultValue={filters.capa ?? ""}><option value="">Todas</option>{option(capaOptions)}</select></label>
           <label className="filter-placeholder"><span>En plazo</span><select name="deadline" defaultValue={filters.deadline ?? ""}><option value="">Todos</option>{option(deadlineOptions)}</select></label>
           <ReviewListFilter value={filters.review} />
+          <AssignedListFilter value={filters.assigned} />
         </ListFilterToolbar>
       </form>
 

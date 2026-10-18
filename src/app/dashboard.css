@@ -195,7 +195,7 @@
 .dashboard-home .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .dashboard-home .dashboard-filters .list-toolbar { margin: 0; }
 .dashboard-home .dashboard-filters .filter-panel.operational { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
-.dashboard-home .dashboard-attention { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.dashboard-home .dashboard-attention { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
 .dashboard-home .dashboard-attention-item { min-width: 0; display: grid; grid-template-columns: auto 1fr; align-items: baseline; column-gap: 10px; row-gap: 2px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid #c9d6e6; border-radius: 10px; color: var(--dashboard-subtle); text-decoration: none; }
 .dashboard-home a.dashboard-attention-item:hover { border-color: var(--blue); }
 .dashboard-home .dashboard-attention-item > strong { color: var(--dashboard-ink); font-size: 30px; line-height: 1.1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
@@ -242,3 +242,4 @@
   .dashboard-home .dashboard-filters .filter-panel.operational .filter-placeholder > :is(input, select),
   .dashboard-home .dashboard-filters .filter-actions .button { min-height: 44px; }
 }
+.dashboard-home .dashboard-task-reason > small { display: block; font-size: 11px; color: var(--dashboard-subtle); }

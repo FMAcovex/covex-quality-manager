@@ -29,6 +29,8 @@ import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { activeFilterChips, appendFilterValues, firstQueryValue, queryList, type FilterDefinition } from "@/lib/qms/list-filters";
 import { ListFilterToolbar } from "@/components/list-filter-toolbar";
 import { reviewFilterOptions } from "@/lib/qms/review/list-domain";
+import { AssignedListFilter } from "@/components/assigned-list-filter";
+import { assignedFilterOptions } from "@/lib/qms/assigned";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +52,7 @@ async function ChangeControlPageAuthenticatedContent({
   const filters = {
     page: param(query.page),
     review: firstQueryValue(query.review),
+    assigned: firstQueryValue(query.assigned),
     q: param(query.q),
     administrative: param(query.administrative),
     year: queryList(query.year),
@@ -74,6 +77,7 @@ async function ChangeControlPageAuthenticatedContent({
     { name: "effectiveness", label: "Eficacia", options: effectivenessOptions },
     { name: "status", label: "Estado final", options: statusOptions },
     { name: "review", label: "Revisión", options: reviewFilterOptions },
+    { name: "assigned", label: "Asignación", options: assignedFilterOptions },
   ];
   const simpleParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => { if (key !== "page") appendFilterValues(simpleParams, key, value); });
@@ -148,6 +152,7 @@ async function ChangeControlPageAuthenticatedContent({
           <MultiSelectFilter name="effectiveness" label="Eficacia" selected={filters.effectiveness} options={effectivenessOptions} />
           <MultiSelectFilter name="status" label="Estado final" selected={filters.status} options={statusOptions} />
           <ReviewListFilter value={filters.review} />
+          <AssignedListFilter value={filters.assigned} />
         </ListFilterToolbar>
       </form>
 

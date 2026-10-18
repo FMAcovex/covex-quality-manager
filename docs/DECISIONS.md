@@ -907,3 +907,18 @@ Decisión del responsable de Calidad: los campos de responsable de acciones y ta
 - En un Control de cambios con el Dictamen aprobado, el plan sigue bloqueado, pero se puede vincular o cambiar el usuario de sus acciones, porque no forma parte del plan impreso.
 - El seguimiento 00 que se abre al aprobar el Dictamen hereda el usuario del responsable de seguimiento.
 - Las columnas nuevas entran en la captura del historial B2 (contrato `B2_RESPONSIBLE_USERS`) y en las versiones del expediente. El vínculo no sustituye a la firma ni identifica a quien aprueba.
+
+## D-102 — «Asignadas a mí» en el panel y en los listados (2026-10-18)
+
+Decisión del responsable de Calidad: cada usuario debe poder ver lo pendiente a su cargo a partir del usuario vinculado al responsable (D-101).
+
+- **Panel:** indicador «asignadas a mí» (con las vencidas) y opción «Asignadas a mí» en el filtro de plazos. La bandeja muestra cada acción pendiente con su fecha prevista (o «Sin fecha»), el expediente y el estado Vencida, Próxima (30 días) o Pendiente. Respeta los filtros de área, departamento y año.
+- **Listados:** filtro «Asignación → Asignadas a mí» en Desviaciones, CAPA, Controles de cambios, Reclamaciones y Auditorías. Devoluciones y OOS no tienen responsables vinculados.
+- Qué cuenta como pendiente (misma regla en panel y listados, `src/lib/qms/assigned.ts`):
+  - Desviación no cerrada con una CAPA propuesta a su cargo todavía sin crear.
+  - CAPA en borrador o abierta con una acción propuesta a su cargo.
+  - Control de cambios no cerrado: decisión de la solicitud pendiente a su cargo; seguimiento a su cargo con el Dictamen aprobado; acción del plan a su cargo que no está completada ni marcada No aplica en ningún seguimiento.
+  - Reclamación no cerrada con una CAPA propuesta sin crear o una acción derivada a su cargo.
+  - Auditoría con una acción de hallazgo activa a su cargo abierta, en curso o pendiente de verificar.
+  - Las acciones inmediatas de una desviación ya están ejecutadas y no cuentan.
+- Solo cuentan los responsables con usuario vinculado; un nombre escrito en el texto libre no se interpreta. Es una ayuda de trabajo: no envía avisos ni sustituye a los plazos y reglas de alertas.
