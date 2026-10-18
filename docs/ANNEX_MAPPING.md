@@ -60,6 +60,6 @@ La respuesta formal al cliente no se genera desde la aplicación para v03.
 - La aplicación almacena el binario de plantilla en PostgreSQL, junto a nombre, tamaño y SHA-256.
 - Los listados simples de la aplicación son independientes de los anexos oficiales.
 - Los anexos anuales se generan para un año concreto a partir de los datos estructurados.
-- Si cambia la revisión de un anexo, debe revisarse esta matriz, el mapeo del generador y los campos requeridos del expediente antes de activar la nueva plantilla.
+- Si cambia la revisión de un anexo, debe revisarse esta matriz, el mapeo del generador y los campos requeridos del expediente antes de activar la nueva plantilla. La aplicación lo comprueba al activar (D-100): una versión con campos quitados, cambiados o añadidos respecto a la activa no se activa hasta adaptar la aplicación y añadirla al catálogo.
 - El texto de la plantilla no se altera: la etiqueta se conserva y el dato va a continuación o debajo. Solo se sustituyen huecos de relleno, ejemplos e indicaciones, y no se añaden opciones que la plantilla no tiene (D-098). `missingTemplateWords` (`src/lib/ooxml/template-text.ts`) comprueba que cada palabra de la plantilla sigue en su celda.
 - Última verificación completa con las plantillas oficiales: [ANNEX_VERIFICATION_2026-10-18.md](ANNEX_VERIFICATION_2026-10-18.md).

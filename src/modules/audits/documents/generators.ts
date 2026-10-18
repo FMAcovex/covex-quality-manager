@@ -128,16 +128,19 @@ export function generateAuditReport(template: Buffer, s: AuditReportSnapshot, se
   }
   updateZipEntry(entries, "word/document.xml", xml); sanitizeOfficeMetadata(entries); return writeZip(entries);
 }
-export function generateAuditExternalPlan(template: Buffer, s: AuditReportSnapshot) {
-  const a = s.audit;
-  if (a.scenario !== "SUPPLIER") throw new Error("El Plan externo solo aplica a proveedor/tercero.");
-  if (!a.auditedEntityName || !a.plannedDate || !a.scope || !a.programme || !a.activityDuration || !a.planIntroduction) throw new Error("Completa entidad, fecha prevista, introducción, alcance, duración y programa para generar el Plan.");
-  const entries = readZip(template); let xml = getZipEntryText(entries, "word/document.xml");
+/** Anexo IV «Plan de Auditoría» recortado del PNT de auditorías externas (también para D-100). */
+export function auditExternalPlanXml(xml: string) {
   const bodyStart = xml.indexOf("<w:body>") + 8, bodyEnd = xml.lastIndexOf("</w:body>");
   const body = xml.slice(bodyStart, bodyEnd), blocks = bodyBlocks(body);
   const start = blocks.findIndex(p => /^Anexo IV:\s*Plan de Auditoría/.test(plain(p)));
   if (start < 0) throw new Error("El PNT no contiene el Anexo IV controlado esperado.");
-  xml = xml.slice(0, bodyStart) + blocks.slice(start).join("") + xml.slice(bodyEnd);
+  return xml.slice(0, bodyStart) + blocks.slice(start).join("") + xml.slice(bodyEnd);
+}
+export function generateAuditExternalPlan(template: Buffer, s: AuditReportSnapshot) {
+  const a = s.audit;
+  if (a.scenario !== "SUPPLIER") throw new Error("El Plan externo solo aplica a proveedor/tercero.");
+  if (!a.auditedEntityName || !a.plannedDate || !a.scope || !a.programme || !a.activityDuration || !a.planIntroduction) throw new Error("Completa entidad, fecha prevista, introducción, alcance, duración y programa para generar el Plan.");
+  const entries = readZip(template); let xml = auditExternalPlanXml(getZipEntryText(entries, "word/document.xml"));
   for (const [prefix, value] of [["Entidad Auditada:", a.auditedEntityName],["Fecha:",auditDate(a.plannedDate)],["Lugar de auditoría:",a.auditedEntityAddress ?? ""]]) {
     let done = false; xml = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, p => !done && plain(p).startsWith(prefix) ? (done = true, styledParagraph(p, `${prefix} ${value}`)) : p);
   }

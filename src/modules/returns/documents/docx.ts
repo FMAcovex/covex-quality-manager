@@ -1,7 +1,8 @@
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { escapeXml,extractWordBodyRange,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { escapeXml,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
+import { annexGeneratorXml } from "@/modules/configuration/annex-generator-views";
 import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
 
 import {contextFromExtraData} from "../rules";
@@ -42,7 +43,7 @@ export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
  const version=r.annexIIITemplateVersion?.versionCode??"03";
  const entries=readZip(await loadReturnPntTemplate(version,DocumentType.RETURN_ANNEX_III));
  let xml=getZipEntryText(entries,"word/document.xml");
- if(version!=="03")xml=extractWordBodyRange(xml,"Anexo III:", "Anexo IV:", "last");
+ xml=annexGeneratorXml(DocumentType.RETURN_ANNEX_III,version,xml);
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,1,0,3,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,1,date(r.receivedAt));
  xml=setWordCellTextBalanced(xml,1,1,3,[box(r.returnType==="COMMERCIAL","Comercial"),box(r.returnType==="COMPLAINT","Reclamación"),box(r.returnType==="RECALL","Retirada"),box(r.returnType==="EXPIRY","Caducidad"),box(r.returnType==="TRANSPORT","Transporte"),box(r.returnType==="OTHER",`Otra: ${text(r.otherReturnType)}`)].join("   "));
  xml=setWordCellTextBalanced(xml,1,2,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,2,3,text(r.country));xml=setWordCellTextBalanced(xml,1,3,1,text(r.address));xml=setWordCellTextBalanced(xml,1,4,1,text(r.relatedDocument));
@@ -63,7 +64,7 @@ export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Produ
  const version=r.annexIVTemplateVersion?.versionCode??"03";
  const entries=readZip(await loadReturnPntTemplate(version,DocumentType.RETURN_ANNEX_IV));
  let xml=getZipEntryText(entries,"word/document.xml");
- if(version!=="03")xml=extractWordBodyRange(xml,"Anexo IV:", "Anexo V:", "last");
+ xml=annexGeneratorXml(DocumentType.RETURN_ANNEX_IV,version,xml);
  xml=setWordCellTextBalanced(xml,0,1,0,`FECHA RECEPCIÓN: ${date(r.receivedAt)}`);
  xml=setWordCellTextBalanced(xml,0,2,0,`CÓDIGO DEVOLUCIÓN: ${text(r.qmsRecord.businessCode)}\nPRODUCTO: ${product.productNameCode}\nLOTE: ${text(product.lot)}`);
  xml=setWordCellTextBalanced(xml,0,3,0,`CLIENTE: ${text(r.customerEntity)}\nPAÍS: ${text(r.country)}`);
@@ -78,7 +79,7 @@ export async function generateReturnAnnexV(r:ReturnDocumentRecord){
  const version=r.annexVTemplateVersion?.versionCode??"03";
  const entries=readZip(await loadReturnPntTemplate(version,DocumentType.RETURN_ANNEX_V));
  let xml=getZipEntryText(entries,"word/document.xml");
- if(version!=="03")xml=extractWordBodyRange(xml,"Anexo V:", "Anexo VI:", "last");
+ xml=annexGeneratorXml(DocumentType.RETURN_ANNEX_V,version,xml);
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,1,1,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.qmsRecord.businessCode));
  xml=setWordCellTextBalanced(xml,1,2,1,r.products.map(x=>x.productNameCode).join(" · "));xml=setWordCellTextBalanced(xml,1,2,3,r.products.map(x=>text(x.lot)).filter(Boolean).join(" · "));xml=setWordCellTextBalanced(xml,1,3,1,text(r.conservationConditions));
  // Solo la línea del firmante («D./D.ª ____»); «Otra documentación: ____» no se toca.

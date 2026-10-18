@@ -9,15 +9,18 @@ import { escapeXml } from "@/lib/ooxml/xml";
  */
 const FILL_GAPS = /_+/g;
 
-function templateWords(text: string) {
-  return (text.replace(/☒/g, "☐").replace(FILL_GAPS, " ").match(/[^\s☐]+|☐/g) ?? []).filter((word) => word.replace(/[/()]/g, ""));
+function templateWords(text: string, ignoreDigits = false) {
+  return (text.replace(/☒/g, "☐").replace(FILL_GAPS, " ").match(/[^\s☐]+|☐/g) ?? [])
+    .filter((word) => word.replace(/[/()]/g, ""))
+    // Entre versiones de una plantilla cambian códigos, revisiones y fechas; no son etiquetas.
+    .filter((word) => !ignoreDigits || !/\d/.test(word));
 }
 
-export function missingTemplateWords(templateText: string, outputText: string) {
-  const output = templateWords(outputText);
+export function missingTemplateWords(templateText: string, outputText: string, options: { ignoreDigits?: boolean } = {}) {
+  const output = templateWords(outputText, options.ignoreDigits);
   const missing: string[] = [];
   let position = 0;
-  for (const word of templateWords(templateText)) {
+  for (const word of templateWords(templateText, options.ignoreDigits)) {
     const found = output.indexOf(word, position);
     if (found === -1) missing.push(word);
     else position = found + 1;

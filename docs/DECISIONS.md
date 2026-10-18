@@ -885,3 +885,14 @@ Decisión del responsable de Calidad, tras detectar en la verificación de anexo
 - **Devoluciones IV y V (opción A):** se aceptan solo recortados del PNT GC-00/028/03 (con su título «Anexo IV: HOJA DE DEVOLUCIÓN DE PRODUCTO» y «Anexo V: DECLARACIÓN…»), que es lo que se verificó. Los archivos sueltos «A4 PETICION DEV 03» y «A5 DECLARACION CLIENTE 03» ya no se aceptan. Una instalación anterior con esos archivos no se toca: el instalador la informa como conflicto.
 - **Sin copia en disco:** los generadores leen la plantilla de la base de datos, verificada con su SHA-256 registrado; ya no buscan archivos en la carpeta `templates/`.
 - Siguiente paso aprobado, en una PR aparte: al registrar una versión nueva en Configuración, avisar si le faltan o se le añaden campos respecto a lo que el generador rellena, antes de activarla.
+
+## D-100 — Comprobación de una versión nueva de plantilla antes de activarla (2026-10-18)
+
+Decisión del responsable de Calidad: cuando se añadan, quiten o muevan campos en una revisión del PNT, la aplicación debe evitar que se active una plantilla que todavía no sabe rellenar.
+
+- Al registrar una versión nueva en Configuración → Versiones, la aplicación la compara con la **versión activa del mismo anexo**: tablas, filas, casillas y texto de cada casilla, el texto fuera de las tablas y, en los listados Excel, las hojas y el texto de cada celda. Compara lo que de verdad rellena el generador: si el anexo se recorta del PNT, compara el anexo recortado.
+- **No cuentan** como diferencia los códigos, números de revisión ni fechas (palabras con cifras), ni los huecos de relleno, ni las casillas marcadas.
+- **Compatible** (mismas casillas y etiquetas): se puede activar. Los expedientes nuevos usan la versión nueva y los anteriores conservan la suya.
+- **No compatible** (falta, cambia o se añade un campo, cambian filas, casillas, tablas u hojas, o la aplicación rellena esa versión con otro mapeo): se muestra la lista de diferencias y **no se deja activar**; el servidor también lo impide. Hay que adaptar la aplicación (campo en el expediente y relleno de esa versión) y añadir la versión al catálogo de plantillas (D-099). Una versión del catálogo con la misma huella se puede activar.
+- Sin versión activa con archivo no hay con qué comparar y la activación se permite como hasta ahora.
+- Los generadores y la comprobación usan la misma definición de qué parte del documento se rellena y con qué mapeo (`src/modules/configuration/annex-generator-views.ts`). Reclamaciones III y IV y Devoluciones III, IV y V rellenan la v03 con un mapeo propio y el resto de versiones con el del PNT completo; una versión nueva de esos anexos necesita adaptación.
