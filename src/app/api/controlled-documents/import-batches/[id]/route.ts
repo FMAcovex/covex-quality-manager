@@ -1,6 +1,6 @@
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { z } from "zod";
-import { getBatch, decide, prepare, confirm } from "@/modules/controlled-documents/import/service";
+import { getBatch, decide, decideBulk, prepare, confirm } from "@/modules/controlled-documents/import/service";
 import { decisionSchema, actorSchema } from "@/modules/controlled-documents/import/domain";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store" };
@@ -22,6 +22,7 @@ async function POSTAuthenticatedContent(request: Request, { params }: {params: P
         const v = JSON.parse(Buffer.concat(chunks).toString("utf8")), id = await idValue(params);
         const auditRequest = { requestId: request.headers.get("idempotency-key") ?? undefined };
         if (v.operation === "DECIDE") { await decide(id, decisionSchema.parse(v.input), undefined, auditRequest); return Response.json({ batch: await getBatch(id) }, { headers }); }
+        if (v.operation === "DECIDE_BULK") { const result = await decideBulk(id, v.input, undefined, auditRequest); return Response.json({ batch: await getBatch(id), bulk: result }, { headers }); }
         if (v.operation === "PREPARE") return Response.json({ plan: await prepare(id, undefined, actorSchema.parse(v.input?.actor), auditRequest) }, { headers });
         if (v.operation === "CONFIRM") return Response.json({ result: await confirm(id, confirmation.parse(v.input), undefined, auditRequest), batch: await getBatch(id) }, { headers });
         throw new Error("Operación desconocida.");

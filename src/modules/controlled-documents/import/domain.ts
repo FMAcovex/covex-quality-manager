@@ -17,6 +17,7 @@ export const resolutionSchema = z.object({
 export type Resolution = z.infer<typeof resolutionSchema>;
 export const decisionSchema = z.object({ sourceKey: z.string().regex(/^[a-f0-9]{64}$/), decision: z.enum(["INCLUDE", "EXCLUDED", "PENDING"]), scope: z.enum(["ROW", "GROUP"]).default("ROW"), actor: actorSchema, reason: z.string().trim().min(1).max(2000), resolution: resolutionSchema.optional(), version: z.number().int().nonnegative() });
 export type DecisionInput = z.infer<typeof decisionSchema>;
+export const bulkDecisionSchema = z.object({ actor: actorSchema, reason: z.string().trim().min(1, "Indica el motivo.").max(2000), version: z.number().int().nonnegative() });
 export const hash = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
 export function validateCandidate(row: PreviewRow, resolution: Resolution) {
     if (row.classification !== "PNT" || row.source.sheet === "GC-00" || !row.normalized.baseCode || !validBaseCode(row.normalized.baseCode))
