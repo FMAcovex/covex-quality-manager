@@ -2798,3 +2798,9 @@ button[disabled] {
 .similar-deviations ul { margin: 6px 0; padding-left: 18px; display: grid; gap: 4px; }
 .similar-deviations p { margin: 6px 0; color: var(--muted); }
 .similar-deviations span { color: var(--muted); }
+
+/* Evidencias adjuntas al expediente (D-096) */
+.evidence-card h3 { margin-top: 22px; }
+.evidence-table td { vertical-align: top; }
+.evidence-checksum { display: block; font-family: ui-monospace, monospace; font-size: 11px; }
+.evidence-form { margin-top: 8px; }

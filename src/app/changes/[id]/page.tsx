@@ -1,3 +1,5 @@
+import { RecordEvidencePanel } from "@/components/record-evidence-panel";
+import { uploadChangeControlEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
@@ -630,6 +632,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
         <div className="card"><h2>Revisión del expediente</h2><ReviewStatusSummary /><ReviewThreadList /></div>
       ) : null}
 
+      {activeTab === "evidence" ? <RecordEvidencePanel qmsRecordId={record.qmsRecord.id} active={record.qmsRecord.isActive} action={uploadChangeControlEvidenceAction.bind(null, record.id)} /> : null}
       {activeTab === "timeline" ? <RecordTimeline qmsRecordId={record.qmsRecord.id} /> : null}
       {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${record.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>

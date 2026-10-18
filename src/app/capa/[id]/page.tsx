@@ -1,4 +1,6 @@
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
+import { RecordEvidencePanel } from "@/components/record-evidence-panel";
+import { uploadCapaEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
 import { PermissionGate } from "@/components/permissions";
@@ -56,6 +58,7 @@ const tabs = [
   ["relations", "Relaciones"],
   ["versions", "Seguimientos"],
   ["documents", "Documentos"],
+  ["evidence", "Evidencias"],
   ["review", "Revisión"],
   ["timeline", "Cronología"],
   ["audit-trail", "Audit Trail"],
@@ -607,6 +610,7 @@ async function CapaDetailPageAuthenticatedContent({
         </div>
       ) : null}
 
+      {activeTab === "evidence" ? <RecordEvidencePanel qmsRecordId={capa.qmsRecord.id} active={capa.qmsRecord.isActive} action={uploadCapaEvidenceAction.bind(null, capa.id)} /> : null}
       {activeTab === "timeline" ? <RecordTimeline qmsRecordId={capa.qmsRecord.id} /> : null}
       {activeTab === "audit-trail" ? <AuditTrailPanel rootKey={`QMS_RECORD:${capa.qmsRecord.id}`} basePath={basePath} page={Number(auditPage)||1}/> : null}
     </section>

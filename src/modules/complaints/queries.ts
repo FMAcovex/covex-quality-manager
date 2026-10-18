@@ -53,7 +53,7 @@ export async function getComplaintDetail(id:string){
     targetRelations:{where:{isActive:true},include:{sourceRecord:true}},
     history:{orderBy:{changedAt:"desc"},take:100},
     versions:{orderBy:{sequenceNumber:"asc"},include:{documents:{orderBy:{uploadedAt:"desc"},select:versionDocumentMetadata}}},
-    generatedDocuments:{orderBy:{generatedAt:"desc"},select:generatedDocumentMetadata}
+    generatedDocuments:{where:{documentType:{not:"RECORD_EVIDENCE"}},orderBy:{generatedAt:"desc"},select:generatedDocumentMetadata}
   }},
   department:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"}]},
   capaPlans:{orderBy:{createdAt:"asc"},include:{linkedCapaRecord:{include:{capa:true}}}},

@@ -105,6 +105,7 @@
     "returns-r4b:ui:smoke": "tsx scripts/smoke-returns-r4b-ui.ts",
     "oos:smoke": "node --conditions=react-server --import tsx scripts/smoke-oos.ts",
     "oos:ui:smoke": "tsx scripts/smoke-oos-ui.ts",
+    "evidence:ui:smoke": "tsx scripts/smoke-record-evidence-ui.ts",
     "complaints-returns-r4c:smoke": "node --conditions=react-server --import tsx scripts/smoke-complaints-returns-r4c.ts",
     "pnt-p1a:smoke": "tsx scripts/smoke-pnt-p1a.ts",
     "pnt-p1a:ui:smoke": "tsx scripts/smoke-pnt-p1a-ui.ts",

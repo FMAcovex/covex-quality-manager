@@ -17,6 +17,7 @@ describe("modelo visual del expediente de Control de Cambios · CC2", () => {
       ["dictamen", "Dictamen"],
       ["followups", "Seguimiento"],
       ["documents", "Documentos"],
+      ["evidence", "Evidencias"],
       ["relations", "Relaciones"],
       ["review", "Revisión"],
       ["timeline", "Cronología"],
