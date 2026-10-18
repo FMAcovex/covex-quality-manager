@@ -34,3 +34,22 @@ export async function loadStoredTemplateAsset(
   }
   return buffer;
 }
+
+/** Instrucción común cuando falta una plantilla controlada (D-099). */
+export const templateInstallHint = "Instálala con «pnpm templates:install -- <carpeta de plantillas>» o regístrala en Configuración → Versiones.";
+
+/**
+ * Plantilla guardada para esa versión, verificada contra su SHA-256 registrado. Las
+ * plantillas se instalan siempre en la base de datos; no hay copia de respaldo en disco.
+ */
+export async function requireStoredTemplate(
+  module: QmsRecordType,
+  documentType: DocumentType,
+  versionCode: string,
+  label: string,
+  ErrorType: new (message: string) => TemplateAssetError = TemplateAssetError,
+) {
+  const stored = await loadStoredTemplateAsset(module, documentType, versionCode);
+  if (!stored) throw new ErrorType(`Plantilla no instalada: ${label} versión ${versionCode}. ${templateInstallHint}`);
+  return stored;
+}

@@ -874,3 +874,14 @@ Decisión del responsable de Calidad tras la verificación de anexos del 18/10/2
 - **Versión de un anexo.** Una versión mal escrita en la descarga de una versión anterior del Anexo III de Desviaciones da error, en lugar de descargar la vigente.
 
 Las pruebas usan plantillas sintéticas con los textos literales afectados; las plantillas reales siguen fuera del repositorio.
+
+## D-099 — Instalador único de plantillas y catálogo de huellas (2026-10-18)
+
+Decisión del responsable de Calidad, tras detectar en la verificación de anexos que los instaladores sueltos esperaban otras huellas o nombres que los generadores.
+
+- **Un catálogo** (`src/modules/configuration/template-catalog.ts`) es la única fuente de las huellas SHA-256 aceptadas, la vigencia y el origen de cada plantilla controlada: archivo directo, anexo recortado del PNT, anexos de OOS derivados del PNT o programa anual normalizado.
+- **Un comando**, `pnpm templates:install -- <carpetas, ZIP o archivos>`, reconoce cada archivo por su huella, no por su nombre, y sustituye a los nueve instaladores anteriores, que se eliminan. La demo lo usa con la carpeta `plantillas`. Solo lee los archivos: no ejecuta nada de los paquetes.
+- **Nunca se sustituye una versión instalada por otro archivo.** Se completa una versión registrada sin archivo, no se repite una ya instalada y se rechaza otro contenido para la misma versión. Única excepción: las derivaciones anteriores documentadas de los anexos de OOS (OOS-3), que se sustituyen por la actual del mismo PNT. Una versión nueva queda activa solo si no hay otra activa de ese anexo.
+- **Devoluciones IV y V (opción A):** se aceptan solo recortados del PNT GC-00/028/03 (con su título «Anexo IV: HOJA DE DEVOLUCIÓN DE PRODUCTO» y «Anexo V: DECLARACIÓN…»), que es lo que se verificó. Los archivos sueltos «A4 PETICION DEV 03» y «A5 DECLARACION CLIENTE 03» ya no se aceptan. Una instalación anterior con esos archivos no se toca: el instalador la informa como conflicto.
+- **Sin copia en disco:** los generadores leen la plantilla de la base de datos, verificada con su SHA-256 registrado; ya no buscan archivos en la carpeta `templates/`.
+- Siguiente paso aprobado, en una PR aparte: al registrar una versión nueva en Configuración, avisar si le faltan o se le añaden campos respecto a lo que el generador rellena, antes de activarla.

@@ -14,16 +14,6 @@ export const oosAnnexRanges: Record<OosAnnexType, { start: string; end?: string;
   OOS_ANNEX_VI: { start: "LISTADO GENERAL DE OOS AÑO", fileName: "Anexo VI Listado general OOS GC-10-014-04.docx" },
 };
 
-/**
- * OOS-3 derivations that still carried the PNT header/footer and headings. An
- * installer may replace exactly these with the current derivation of the same PNT.
- */
-export const supersededOosAnnexChecksums: Record<OosAnnexType, string> = {
-  OOS_ANNEX_III: "66d885876c2ef9b6de56aed21f8b4b6a81b06a6b3142674e17c3dbeaa1ee6903",
-  OOS_ANNEX_IV: "bb30562e5893887f5f932d8696e526971dd31fc46e25874295e55dbd591fd391",
-  OOS_ANNEX_VI: "40c851beff49620f41fcda800028d0b33869d83c8af100c874a09b5054d85007",
-};
-
 export function deriveOosAnnex(pnt: Buffer, type: OosAnnexType) {
   const entries = readZip(pnt);
   const range = oosAnnexRanges[type];

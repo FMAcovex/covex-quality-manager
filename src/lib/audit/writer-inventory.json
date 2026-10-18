@@ -287,17 +287,9 @@
     {"file":"scripts/auth-provision.ts","line":31,"function":"main","model":"AuthAuthorizationChange","method":"create","inputFields":["action","actorUserId","data","grants","newValue","reason","reference","roleId","source"],"nested":[],"dynamicInput":false},
     {"file":"scripts/backfill-record-versions.ts","line":28,"function":"backfillDeviations","model":"QmsRecordVersion","method":"create","inputFields":["createdByText","data","kind","qmsRecordId","reason","sequenceNumber","snapshot","source"],"nested":[],"dynamicInput":false},
     {"file":"scripts/backfill-record-versions.ts","line":69,"function":"backfillCapas","model":"QmsRecordVersion","method":"create","inputFields":["createdByText","data","kind","qmsRecordId","reason","sequenceNumber","snapshot","source","versionFollowupDate"],"nested":[],"dynamicInput":false},
-    {"file":"scripts/install-annual-audit-programme-templates.ts","line":51,"function":"main","model":"TemplateVersion","method":"create","inputFields":["checksum","data","effectiveFrom","fileData","fileName","fileSize","isActive","mimeType"],"nested":[],"dynamicInput":true},
-    {"file":"scripts/install-audit-templates.ts","line":18,"function":"main","model":"TemplateVersion","method":"create","inputFields":["checksum","data","documentType","effectiveFrom","fileData","fileName","fileSize","isActive","mimeType","module","versionCode"],"nested":[],"dynamicInput":false},
-    {"file":"scripts/install-complaint-template.ts","line":29,"function":"main","model":"TemplateVersion","method":"update","inputFields":["data","id","where"],"nested":[],"dynamicInput":false},
-    {"file":"scripts/install-complaint-template.ts","line":30,"function":"main","model":"TemplateVersion","method":"create","inputFields":["data","effectiveFrom","isActive"],"nested":[],"dynamicInput":true},
-    {"file":"scripts/install-oos-templates.ts","line":31,"function":"main","model":"TemplateVersion","method":"update","inputFields":["data","id","where"],"nested":[],"dynamicInput":false},
-    {"file":"scripts/install-oos-templates.ts","line":32,"function":"main","model":"TemplateVersion","method":"create","inputFields":["data","effectiveFrom","isActive"],"nested":[],"dynamicInput":true},
-    {"file":"scripts/install-oos-templates.ts","line":33,"function":"main","model":"ConfigurationChange","method":"create","inputFields":["action","changedByText","checksum","data","entityKey","entityType","fileName","fileSize","isActive","newValue","oldValue","reason"],"nested":[],"dynamicInput":false},
-    {"file":"scripts/install-return-template.ts","line":34,"function":"main","model":"TemplateVersion","method":"upsert","inputFields":["create","documentType","effectiveFrom","module","update","versionCode","where"],"nested":[],"dynamicInput":true},
-    {"file":"scripts/install-template-bundle.ts","line":301,"function":"main","model":"TemplateVersion","method":"update","inputFields":["data","id","where"],"nested":[],"dynamicInput":false},
-    {"file":"scripts/install-template-bundle.ts","line":302,"function":"main","model":"TemplateVersion","method":"create","inputFields":["data","effectiveFrom","isActive"],"nested":[],"dynamicInput":true},
-    {"file":"scripts/install-template-bundle.ts","line":311,"function":"main","model":"ConfigurationChange","method":"create","inputFields":["action","changedByText","checksum","data","entityKey","entityType","fileName","fileSize","isActive","newValue","oldValue","reason"],"nested":[],"dynamicInput":false}
+    {"file":"scripts/install-templates.ts","line":83,"function":"main","model":"TemplateVersion","method":"create","inputFields":["data","effectiveFrom","isActive"],"nested":[],"dynamicInput":true},
+    {"file":"scripts/install-templates.ts","line":84,"function":"main","model":"TemplateVersion","method":"update","inputFields":["data","id","where"],"nested":[],"dynamicInput":false},
+    {"file":"scripts/install-templates.ts","line":86,"function":"main","model":"ConfigurationChange","method":"create","inputFields":["action","changedByText","checksum","data","entityKey","entityType","fileName","fileSize","isActive","newValue","oldValue","reason"],"nested":[],"dynamicInput":false}
   ],
   "rawSql": [
     {"file":"src/app/api/health/route.ts","line":8,"function":"GET","method":"$queryRaw","reviewRequired":true},
@@ -389,9 +381,7 @@
     {"file":"src/lib/db.ts","line":9,"function":"<module>"},
     {"file":"src/modules/controlled-documents/import/database.ts","line":6,"function":"<module>"},
     {"file":"scripts/backfill-record-versions.ts","line":9,"function":"<module>"},
-    {"file":"scripts/export-backup.ts","line":6,"function":"<module>"},
-    {"file":"scripts/install-return-template.ts","line":27,"function":"main"},
-    {"file":"scripts/install-template-bundle.ts","line":7,"function":"<module>"}
+    {"file":"scripts/export-backup.ts","line":6,"function":"<module>"}
   ],
   "fingerprints": {
     "src/app/api/health/route.ts": "37c535c43a592af93810ecb44dd38f808681caa0ae5c7d0dfa41753ddf1dd943",
@@ -457,11 +447,6 @@
     "scripts/auth-provision.ts": "e01953605888b361031204aa9c43c4761d2b1e2e94aa93df2260d04d5d38b567",
     "scripts/backfill-record-versions.ts": "aa1e502d227c0a8e0931c944a280994b588ca8fe17ab36b56258fc75699b684b",
     "scripts/export-backup.ts": "2bf6a8ee14a2c7c71d823a3be2464afbe76737d33a75b817ad6229ed85f752c4",
-    "scripts/install-annual-audit-programme-templates.ts": "ab11d9638cbd6dcc180a0c303dedc36ed9928aa8656bd10175dfcefc19d38e25",
-    "scripts/install-audit-templates.ts": "1b9010ddbbdbf9e20224c9daf9b98dc9bfd432c8818605e35915b1a72f5e018c",
-    "scripts/install-complaint-template.ts": "5aeed2275709cb12e5db3733c00635de59864ea79c2fb4b244ca5b8b00510833",
-    "scripts/install-oos-templates.ts": "da1fe05cc68e53b5b0de99451e0da1d185cff52ed64413e48d99c63d9251971f",
-    "scripts/install-return-template.ts": "8210aa63659bf548e52ab2863edb715a70d9d48cb7a98f92cb86bd82a2f264fe",
-    "scripts/install-template-bundle.ts": "58679ac286ce80dac9e94412085d7b56715cbdf64b8e28c4c0f7c0e33ea096cd"
+    "scripts/install-templates.ts": "3219a2f89c347cd40b8c679cceeba81977f68034e2f7e61d7a130376206adc49"
   }
 }

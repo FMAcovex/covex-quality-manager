@@ -227,7 +227,7 @@ R4B: se han revisado los cinco binarios reales GC-00/028/03 (26/05/2026), A3 FOR
 
 ## OOS · GC-10/014/04 (OOS-3, D-088)
 
-Los Anexos III (Fase I), IV (Fase II) y VI (Listado general de OOS) se derivan del propio PNT GC-10/014/04, con el encabezado de los anexos corregido a 04. Se instalan con `pnpm templates:oos:install -- <PNT.docx>`, que verifica el SHA-256, y se cumplimentan sin rediseño. Los rangos, la correspondencia de celdas, los hashes y las reglas de versión están en [OOS_DESIGN.md](OOS_DESIGN.md) §8.
+Los Anexos III (Fase I), IV (Fase II) y VI (Listado general de OOS) se derivan del propio PNT GC-10/014/04, con el encabezado de los anexos corregido a 04. Se instalan con `pnpm templates:install -- <PNT.docx o carpeta>` (D-099), que reconoce el PNT por su SHA-256, y se cumplimentan sin rediseño. Los rangos, la correspondencia de celdas, los hashes y las reglas de versión están en [OOS_DESIGN.md](OOS_DESIGN.md) §8.
 
 - Los Anexos III y IV son documentos de trabajo: cada descarga deja un recibo con plantilla, versión y SHA-256, y no crea un original oficial.
 - El Anexo VI es el listado anual imprimible para la firma manuscrita de §5.2 y no se archiva.

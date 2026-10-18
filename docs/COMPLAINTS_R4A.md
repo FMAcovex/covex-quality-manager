@@ -51,7 +51,7 @@ La carga del PDF confirma el commit y recarga el detalle únicamente en Reclamac
 
 Consulta y conteo filtrados en SQL; páginas de 25 registros, filtro por situación/seguimiento/recurrencia/CAPA/devolución/Review, búsqueda por código relacionado, conservación de ColumnSelector. Versiones y Review se consultan por lotes, sin consultas por fila. Sin migración ni modificación de schema.prisma.
 
-Instalar binarios autorizados en una carpeta fuera de Git con sus nombres reales y ejecutar `pnpm templates:complaints:install /ruta/carpeta`. El modo de fichero PNT v02 sigue disponible para históricos. La CI usa OOXML ficticio explícitamente etiquetado TEST solo para comprobar los flujos; la comprobación local utiliza los tres anexos reales instalados en la BD aislada.
+Instalar binarios autorizados desde una carpeta fuera de Git con `pnpm templates:install -- /ruta/carpeta` (D-099), que los reconoce por su SHA-256. El PNT v02 histórico se instala igual y queda guardado para los anexos v02. La CI usa OOXML ficticio explícitamente etiquetado TEST solo para comprobar los flujos; la comprobación local utiliza los tres anexos reales instalados en la BD aislada.
 
 ## Validación
 

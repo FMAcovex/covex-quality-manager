@@ -1,1 +1,0 @@
-# Devoluciones v03\n\nInstalar una copia controlada de GC-00/028/03 mediante `pnpm templates:returns:install -- <ruta.docx>`. El binario no se versiona en Git y se valida por SHA-256.\n

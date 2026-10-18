@@ -136,6 +136,12 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Instalador único de plantillas (2026-10-18, D-099):**
+- `pnpm templates:install -- <carpetas, ZIP o archivos>` sustituye a los nueve instaladores anteriores y reconoce cada archivo por su SHA-256 según un catálogo único.
+- Nunca sustituye una versión instalada por otro archivo. Devoluciones IV y V solo recortados del PNT.
+- Los generadores leen las plantillas solo de la base de datos.
+- Probado con los paquetes reales: instala las 24 plantillas con las mismas huellas que la verificación del 18/10/2026; una segunda ejecución no cambia nada.
+
 **Verificación de anexos con las plantillas oficiales (2026-10-18, D-098):**
 - 24 anexos comprobados casilla a casilla con las plantillas oficiales. Resultado y método en [ANNEX_VERIFICATION_2026-10-18.md](ANNEX_VERIFICATION_2026-10-18.md).
 - Corregidos 11 fallos:
