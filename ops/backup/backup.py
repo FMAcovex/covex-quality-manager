@@ -237,7 +237,12 @@ def audit_contract(connection):
     if not additional_lots and sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t":
         installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261018000100_additional_lots' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
         require(installed == b"0", "audit-protection-unavailable")
-    filename = "audit-contract-additional-lots.json" if additional_lots else "audit-contract-root-cause.json" if root_cause else "audit-contract-oos-signed.json" if oos_signed else "audit-contract-oos-documents.json" if oos_documents else "audit-contract-oos.json" if oos else "audit-contract-c.json" if review else "audit-contract-b2-critical.json" if critical else "audit-contract-b2-staging.json" if staging else "audit-contract-b2-documents.json" if documents else "audit-contract-b2-integration.json" if composition else "audit-contract-b2-capture.json" if capture else "audit-contract-b2.json" if b2 else "audit-contract.json"
+    # D-101: usuario de la aplicación junto a cada responsable; solo amplía la política de captura.
+    responsible_users = capture and sql(connection, "SELECT EXISTS(SELECT 1 FROM \"AuditCaptureFieldPolicy\" WHERE \"entityType\"='CapaPlannedAction' AND \"fieldPath\"='responsibleUserId');").strip() == b"t"
+    if not responsible_users and sql(connection, "SELECT to_regclass('public._prisma_migrations') IS NOT NULL;").strip() == b"t":
+        installed = sql(connection, "SELECT count(*) FROM \"_prisma_migrations\" WHERE migration_name='20261018000300_responsible_users' AND finished_at IS NOT NULL AND rolled_back_at IS NULL;").strip()
+        require(installed == b"0", "audit-protection-unavailable")
+    filename = "audit-contract-responsible-users.json" if responsible_users else "audit-contract-additional-lots.json" if additional_lots else "audit-contract-root-cause.json" if root_cause else "audit-contract-oos-signed.json" if oos_signed else "audit-contract-oos-documents.json" if oos_documents else "audit-contract-oos.json" if oos else "audit-contract-c.json" if review else "audit-contract-b2-critical.json" if critical else "audit-contract-b2-staging.json" if staging else "audit-contract-b2-documents.json" if documents else "audit-contract-b2-integration.json" if composition else "audit-contract-b2-capture.json" if capture else "audit-contract-b2.json" if b2 else "audit-contract.json"
     return json.loads(Path(__file__).with_name(filename).read_text())
 
 

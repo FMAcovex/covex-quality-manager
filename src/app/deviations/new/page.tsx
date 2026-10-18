@@ -1,3 +1,4 @@
+import { appUserOptions } from "@/lib/auth/app-users";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
@@ -8,7 +9,7 @@ import { getDeviationFormLookups } from "@/modules/deviations/queries";
 export const dynamic = "force-dynamic";
 
 async function NewDeviationPageAuthenticatedContent() {
-  const { departments } = await getDeviationFormLookups();
+  const [{ departments }, users] = await Promise.all([getDeviationFormLookups(), appUserOptions()]);
 
   return (
     <section className="form-page">
@@ -20,7 +21,7 @@ async function NewDeviationPageAuthenticatedContent() {
         </div>
         <Link className="button" href="/deviations">← Volver</Link>
       </div>
-      <PermissionGate permission="CREATE"><DeviationForm action={createDeviationAction} departments={departments} mode="create" /></PermissionGate>
+      <PermissionGate permission="CREATE"><DeviationForm action={createDeviationAction} departments={departments} users={users} mode="create" /></PermissionGate>
     </section>
   );
 }

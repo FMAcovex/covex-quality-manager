@@ -1,7 +1,7 @@
 import type { AdditionalLot } from "@/lib/qms/additional-lots";
 
-export type ComplaintCapaPlanInput={id?:string;actionType:"CORRECTIVE"|"PREVENTIVE";description:string;plannedExecutionDate:string;responsible:string;businessCapaCode?:string};
-export type ComplaintDerivedActionInput={id?:string;actionType:string;businessCode:string;description:string;responsible:string;plannedExecutionDate:string;sortOrder?:number};
+export type ComplaintCapaPlanInput={id?:string;actionType:"CORRECTIVE"|"PREVENTIVE";description:string;plannedExecutionDate:string;responsible:string;responsibleUserId?:string|null;businessCapaCode?:string};
+export type ComplaintDerivedActionInput={id?:string;actionType:string;businessCode:string;description:string;responsible:string;responsibleUserId?:string|null;plannedExecutionDate:string;sortOrder?:number};
 export type ComplaintFormState = {
   error: string | null;
   savedRecordId?: string;

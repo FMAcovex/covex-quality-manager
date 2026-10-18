@@ -1,7 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 export const auditFindingInclude = {
-  actions: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
+  actions: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }], include: { responsibleUser: responsibleUserSelect } },
   relations: { where: { isActive: true }, include: { qmsRelation: { include: { targetRecord: { include: { capa: { select: { status: true, effectivenessStatus: true } }, deviation: { select: { status: true } } } } } } } },
 } satisfies Prisma.AuditFindingInclude;
 export async function getAuditWork(auditId: string) {

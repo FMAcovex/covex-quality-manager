@@ -11,6 +11,7 @@ export type CapaSaveIntent = "SAVE_DRAFT" | "UPDATE_CURRENT" | "CREATE_FOLLOWUP_
 export type CapaPlannedActionInput = {
   description: string;
   responsible: string;
+  responsibleUserId?: string | null;
   plannedExecutionDate: string;
   impact: string;
 };

@@ -3,6 +3,7 @@ import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { idsWithAdditionalLot } from "@/lib/qms/additional-lots-search";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { qmsListPagination } from "@/lib/qms/list-pagination";
@@ -214,9 +215,9 @@ export async function getDeviationDetail(id: string) {
         },
       },
       department: true,
-      immediateActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      immediateActions: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], include: { executedByUser: responsibleUserSelect } },
       followups: { orderBy: [{ followupDate: "desc" }, { createdAt: "desc" }] },
-      capaPlans: { orderBy: { createdAt: "asc" }, include: { linkedCapaRecord: true } },
+      capaPlans: { orderBy: { createdAt: "asc" }, include: { linkedCapaRecord: true, responsibleUser: responsibleUserSelect } },
       formVersion: true,
       anexoIIITemplateVersion: true,
     },

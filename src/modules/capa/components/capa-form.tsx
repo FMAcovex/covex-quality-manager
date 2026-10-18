@@ -8,6 +8,8 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
+import { ResponsibleUserPicker } from "@/components/responsible-user-select";
+import type { AppUserOption } from "@/lib/qms/responsible-user";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import { CapaOriginSelector } from "@/modules/capa/components/capa-origin-selector";
 import type {
@@ -118,6 +120,7 @@ export function CapaForm({
   mode,
   action,
   departments,
+  users = [],
   defaults = {},
   capaId,
   cancelHref,
@@ -131,6 +134,7 @@ export function CapaForm({
   mode: "create" | "edit";
   action: (state: CapaFormState, formData: FormData) => Promise<CapaFormState>;
   departments: Department[];
+  users?: AppUserOption[];
   defaults?: CapaFormDefaults;
   capaId?: string;
   cancelHref?: string;
@@ -418,6 +422,7 @@ export function CapaForm({
                     onChange={(event) => updateAction(index, { responsible: event.target.value })}
                   />
                 </label>
+                <ResponsibleUserPicker users={users} value={item.responsibleUserId} text={item.responsible} onChange={({ userId, text }) => updateAction(index, { responsibleUserId: userId || null, responsible: text })} />
                 <label className="field">
                   <span>Fecha prevista</span>
                   <input

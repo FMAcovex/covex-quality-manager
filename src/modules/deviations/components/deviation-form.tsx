@@ -6,6 +6,8 @@ import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 import { dispositionChoice, dispositionOptions } from "@/modules/deviations/disposition";
+import { ResponsibleUserPicker } from "@/components/responsible-user-select";
+import type { AppUserOption } from "@/lib/qms/responsible-user";
 
 
 import { authenticatedFetch } from "@/lib/auth/client";
@@ -175,6 +177,7 @@ export function DeviationForm({
   detailTab,
   currentVersionSequence = 0,
   similarDeviations,
+  users = [],
 }: {
   action: FormAction;
   departments: DepartmentOption[];
@@ -187,6 +190,8 @@ export function DeviationForm({
   currentVersionSequence?: number;
   /** Ayuda de recurrencia (D-095), calculada en el servidor al editar. */
   similarDeviations?: SimilarDeviation[];
+  /** Usuarios que se pueden elegir junto al responsable en texto (D-101). */
+  users?: AppUserOption[];
 }) {
   const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, { error: null });
@@ -468,7 +473,7 @@ export function DeviationForm({
         {issues.immediateActionsJson?.length ? <div className="field-error-block"><FieldIssue messages={issues.immediateActionsJson} /></div> : null}
         <div className="dynamic-list">
           {actions.map((item, index) => (
-            <div className="dynamic-row" key={index}>
+            <div className="dynamic-row with-user" key={index}>
               <label className="field">
                 <span>Acción ejecutada</span>
                 <input value={item.description} onChange={(e) => updateAction(index, { description: e.target.value })} />
@@ -477,6 +482,7 @@ export function DeviationForm({
                 <span>Ejecutada por</span>
                 <input value={item.executedBy} onChange={(e) => updateAction(index, { executedBy: e.target.value })} />
               </label>
+              <ResponsibleUserPicker users={users} value={item.executedByUserId} text={item.executedBy} onChange={({ userId, text }) => updateAction(index, { executedByUserId: userId || null, executedBy: text })} />
               <label className="field">
                 <span>Fecha</span>
                 <input type="date" value={item.executedAt} onChange={(e) => updateAction(index, { executedAt: e.target.value })} />
@@ -586,7 +592,7 @@ export function DeviationForm({
         {issues.capaPlansJson?.length ? <div className="field-error-block"><FieldIssue messages={issues.capaPlansJson} /></div> : null}
         <div className="dynamic-list" style={{ marginTop: 12 }}>
           {capas.map((item, index) => (
-            <div className="dynamic-row capa" key={index}>
+            <div className="dynamic-row capa with-user" key={index}>
               <label className="field">
                 <span>Tipo</span>
                 <select value={item.actionType} onChange={(e) => updateCapa(index, { actionType: e.target.value as CapaPlanInput["actionType"] })}>
@@ -606,6 +612,7 @@ export function DeviationForm({
                 <span>Responsable</span>
                 <input value={item.responsible} onChange={(e) => updateCapa(index, { responsible: e.target.value })} />
               </label>
+              <ResponsibleUserPicker users={users} value={item.responsibleUserId} text={item.responsible} onChange={({ userId, text }) => updateCapa(index, { responsibleUserId: userId || null, responsible: text })} />
               <button type="button" className="button danger small" onClick={() => setCapas((current) => current.filter((_, i) => i !== index))}>Quitar</button>
             </div>
           ))}

@@ -1,6 +1,7 @@
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
 import { authorizedPage } from "@/lib/auth/page-guard";
+import { appUserOptions } from "@/lib/auth/app-users";
 import { createChangeControlAction } from "@/modules/change-control/actions";
 import { ChangeControlForm } from "@/modules/change-control/components/change-control-form";
 import { getChangeControlLookups } from "@/modules/change-control/queries";
@@ -8,7 +9,7 @@ import { getChangeControlLookups } from "@/modules/change-control/queries";
 export const dynamic = "force-dynamic";
 
 async function NewChangeControlPageAuthenticatedContent() {
-  const { departments } = await getChangeControlLookups();
+  const [{ departments }, users] = await Promise.all([getChangeControlLookups(), appUserOptions()]);
   return (
     <section className="workspace">
       <div className="page-heading">
@@ -22,6 +23,7 @@ async function NewChangeControlPageAuthenticatedContent() {
         mode="create"
         action={createChangeControlAction}
         departments={departments}
+        users={users}
         defaults={{
           requestDate: new Date().toISOString().slice(0, 10),
           requesterName: currentActor(),

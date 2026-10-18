@@ -1,5 +1,6 @@
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
+import { ResponsibleUserNote } from "@/components/responsible-user-note";
 import { uploadCapaEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
@@ -320,7 +321,7 @@ async function CapaDetailPageAuthenticatedContent({
                         <tr id={target.anchorId} className="review-target" key={item.id}>
                           <td>{String(index + 1).padStart(2, "0")}</td>
                           <td className="table-cell-wrap"><span>{item.description}</span><ReviewMarker target={target} /></td>
-                          <td>{item.responsible ?? "—"}</td>
+                          <td>{item.responsible ?? "—"}<ResponsibleUserNote user={item.responsibleUser} /></td>
                           <td>{formatDate(item.plannedExecutionDate)}</td>
                           <td className="table-cell-wrap">{item.impact ?? "—"}</td>
                         </tr>

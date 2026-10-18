@@ -17,6 +17,7 @@ export type DepartmentOption = {
 export type ImmediateActionInput = {
   description: string;
   executedBy: string;
+  executedByUserId?: string | null;
   executedAt: string;
 };
 
@@ -25,6 +26,7 @@ export type CapaPlanInput = {
   description: string;
   plannedExecutionDate: string;
   responsible: string;
+  responsibleUserId?: string | null;
 };
 
 export type DeviationFormDefaults = {

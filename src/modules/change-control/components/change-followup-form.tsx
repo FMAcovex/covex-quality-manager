@@ -6,6 +6,8 @@ import { CsrfField } from "@/components/csrf";
 import { useActionState, useMemo, useState } from "react";
 import type { FollowupActionState } from "@/components/basic-followup-form";
 import type { ChangeFollowupTaskInput } from "@/modules/change-control/types";
+import { ResponsibleUserPicker, ResponsibleUserSelect } from "@/components/responsible-user-select";
+import type { AppUserOption } from "@/lib/qms/responsible-user";
 
 type Department = { id: string; code: string; name: string };
 type Task = {
@@ -23,6 +25,7 @@ type Task = {
 type FollowupDefaults = {
   followupDate?: Date | string | null;
   responsible?: string | null;
+  responsibleUserId?: string | null;
   observations?: string | null;
   executionStatus?: "NOT_EXECUTED" | "EXECUTED";
   executionDate?: Date | string | null;
@@ -51,14 +54,18 @@ export function ChangeFollowupForm({
   action,
   departments,
   tasks,
+  users = [],
   defaultResponsible,
+  defaultResponsibleUserId,
   defaults,
   editing = false,
 }: {
   action: (state: FollowupActionState, formData: FormData) => Promise<FollowupActionState>;
   departments: Department[];
   tasks: Task[];
+  users?: AppUserOption[];
   defaultResponsible?: string | null;
+  defaultResponsibleUserId?: string | null;
   defaults?: FollowupDefaults;
   editing?: boolean;
 }) {
@@ -98,10 +105,11 @@ export function ChangeFollowupForm({
           <span>Fecha del seguimiento *</span>
           <input type="date" name="followupDate" defaultValue={dateInput(defaults?.followupDate)} required />
         </label>
-        <label className="field span-2">
+        <label className="field">
           <span>Responsable de seguimiento *</span>
           <input name="responsible" defaultValue={defaults?.responsible ?? defaultResponsible ?? ""} required />
         </label>
+        <ResponsibleUserSelect users={users} name="responsibleUserId" textName="responsible" defaultValue={defaults ? defaults.responsibleUserId : defaultResponsibleUserId} />
         <label className="field">
           <span>Estado de ejecución</span>
           <select name="executionStatus" defaultValue={defaults?.executionStatus ?? "NOT_EXECUTED"}>
@@ -148,7 +156,10 @@ export function ChangeFollowupForm({
                   </select>
                 </td>
                 <td><textarea value={item.description} disabled={!item.isNew} onChange={(e) => patch(index, { description: e.target.value })} /></td>
-                <td><input value={item.responsible} disabled={!item.isNew} onChange={(e) => patch(index, { responsible: e.target.value })} /></td>
+                <td>
+                  <input value={item.responsible} disabled={!item.isNew} onChange={(e) => patch(index, { responsible: e.target.value })} />
+                  {item.isNew ? <ResponsibleUserPicker users={users} value={item.responsibleUserId} text={item.responsible} onChange={({ userId, text }) => patch(index, { responsibleUserId: userId || null, responsible: text })} /> : null}
+                </td>
                 <td><input type="date" value={item.plannedDate} disabled={!item.isNew} onChange={(e) => patch(index, { plannedDate: e.target.value })} /></td>
                 <td>
                   <select value={item.status} onChange={(e) => patch(index, { status: e.target.value as ChangeFollowupTaskInput["status"] })}>

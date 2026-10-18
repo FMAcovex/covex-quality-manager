@@ -361,36 +361,36 @@ enum ReviewTargetKind {
 }
 
 model QmsRecord {
-  auditCursors AuditAggregateCursor[]
-  auditPilot AuditPilotRecord?
-  id                 String              @id @default(uuid())
-  recordType         QmsRecordType
-  businessCode       String?
-  annulledBusinessCode String?
-  year               Int?
-  isActive           Boolean             @default(true)
-  annulledAt         DateTime?
-  annulledByText     String?
-  annulledReason     String?              @db.Text
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  audit              Audit?
-  deviation          Deviation?
-  capa               Capa?
-  changeControl       ChangeControl?
-  complaint           Complaint?
-  returnRecord        ReturnRecord?
-  oosRecord           OosRecord?
-  sourceRelations    QmsRelation[]       @relation("RelationSource")
-  targetRelations    QmsRelation[]       @relation("RelationTarget")
-  history            ChangeHistory[]
-  versions           QmsRecordVersion[]
-  reviewThreads      ReviewThread[]
-  generatedDocuments GeneratedDocument[]
-  reminders          ReminderLog[]
-  linkedCapaPlans    DeviationCapaPlan[] @relation("LinkedCapaRecord")
-  complaintLinkedCapaPlans ComplaintCapaPlan[] @relation("ComplaintLinkedCapaRecord")
-  historicalImports  HistoricalImportRow[]
+  auditCursors             AuditAggregateCursor[]
+  auditPilot               AuditPilotRecord?
+  id                       String                 @id @default(uuid())
+  recordType               QmsRecordType
+  businessCode             String?
+  annulledBusinessCode     String?
+  year                     Int?
+  isActive                 Boolean                @default(true)
+  annulledAt               DateTime?
+  annulledByText           String?
+  annulledReason           String?                @db.Text
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  audit                    Audit?
+  deviation                Deviation?
+  capa                     Capa?
+  changeControl            ChangeControl?
+  complaint                Complaint?
+  returnRecord             ReturnRecord?
+  oosRecord                OosRecord?
+  sourceRelations          QmsRelation[]          @relation("RelationSource")
+  targetRelations          QmsRelation[]          @relation("RelationTarget")
+  history                  ChangeHistory[]
+  versions                 QmsRecordVersion[]
+  reviewThreads            ReviewThread[]
+  generatedDocuments       GeneratedDocument[]
+  reminders                ReminderLog[]
+  linkedCapaPlans          DeviationCapaPlan[]    @relation("LinkedCapaRecord")
+  complaintLinkedCapaPlans ComplaintCapaPlan[]    @relation("ComplaintLinkedCapaRecord")
+  historicalImports        HistoricalImportRow[]
 
   @@unique([recordType, businessCode])
   @@index([recordType, year])
@@ -401,16 +401,16 @@ model QmsRecord {
 
 model QmsRelation {
   auditFindingRelations AuditFindingRelation[]
-  id             String          @id @default(uuid())
-  sourceRecordId String
-  sourceRecord   QmsRecord       @relation("RelationSource", fields: [sourceRecordId], references: [id], onDelete: Restrict)
-  targetRecordId String
-  targetRecord   QmsRecord       @relation("RelationTarget", fields: [targetRecordId], references: [id], onDelete: Restrict)
-  relationType   QmsRelationType
-  createdAt      DateTime        @default(now())
-  createdByText  String?
-  notes          String?
-  isActive       Boolean         @default(true)
+  id                    String                 @id @default(uuid())
+  sourceRecordId        String
+  sourceRecord          QmsRecord              @relation("RelationSource", fields: [sourceRecordId], references: [id], onDelete: Restrict)
+  targetRecordId        String
+  targetRecord          QmsRecord              @relation("RelationTarget", fields: [targetRecordId], references: [id], onDelete: Restrict)
+  relationType          QmsRelationType
+  createdAt             DateTime               @default(now())
+  createdByText         String?
+  notes                 String?
+  isActive              Boolean                @default(true)
 
   @@unique([sourceRecordId, targetRecordId, relationType])
   @@index([sourceRecordId, isActive])
@@ -418,44 +418,44 @@ model QmsRelation {
 }
 
 model Department {
-  authorizedUsers AuthUserDepartment[]
-  id         String      @id @default(uuid())
-  code       String      @unique
-  name       String
-  isActive   Boolean     @default(true)
-  validFrom  DateTime?   @db.Date
-  validTo    DateTime?   @db.Date
+  authorizedUsers     AuthUserDepartment[]
+  id                  String               @id @default(uuid())
+  code                String               @unique
+  name                String
+  isActive            Boolean              @default(true)
+  validFrom           DateTime?            @db.Date
+  validTo             DateTime?            @db.Date
   controlledDocuments ControlledDocument[]
-  auditDepartments AuditDepartment[]
-  codingAudits Audit[] @relation("AuditCodingDepartment")
-  auditPlanEntries AuditPlanEntry[]
-  deviations Deviation[]
-  capas      Capa[]
-  changeControls ChangeControl[]
-  changeTasks ChangeControlTask[]
-  complaints Complaint[]
-  returnRecords ReturnRecord[]
-  returnProducts ReturnProduct[]
-  oosRecords OosRecord[]
+  auditDepartments    AuditDepartment[]
+  codingAudits        Audit[]              @relation("AuditCodingDepartment")
+  auditPlanEntries    AuditPlanEntry[]
+  deviations          Deviation[]
+  capas               Capa[]
+  changeControls      ChangeControl[]
+  changeTasks         ChangeControlTask[]
+  complaints          Complaint[]
+  returnRecords       ReturnRecord[]
+  returnProducts      ReturnProduct[]
+  oosRecords          OosRecord[]
 }
 
 model FormVersion {
-  id            String            @id @default(uuid())
-  module        QmsRecordType
-  versionCode   String
-  effectiveFrom DateTime          @db.Date
-  effectiveTo   DateTime?         @db.Date
-  isActive      Boolean           @default(true)
-  status        FormVersionStatus @default(ACTIVE)
-  notes         String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  deviations    Deviation[]
-  capas         Capa[]
+  id             String            @id @default(uuid())
+  module         QmsRecordType
+  versionCode    String
+  effectiveFrom  DateTime          @db.Date
+  effectiveTo    DateTime?         @db.Date
+  isActive       Boolean           @default(true)
+  status         FormVersionStatus @default(ACTIVE)
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deviations     Deviation[]
+  capas          Capa[]
   changeControls ChangeControl[]
-  complaints Complaint[]
-  returnRecords ReturnRecord[]
-  fieldConfigs  FormFieldConfig[]
+  complaints     Complaint[]
+  returnRecords  ReturnRecord[]
+  fieldConfigs   FormFieldConfig[]
 
   @@unique([module, versionCode])
   @@index([module, isActive, effectiveFrom])
@@ -463,9 +463,9 @@ model FormVersion {
 }
 
 model FormFieldConfig {
-  id                   String           @id @default(uuid())
+  id                   String          @id @default(uuid())
   formVersionId        String
-  formVersion          FormVersion      @relation(fields: [formVersionId], references: [id], onDelete: Cascade)
+  formVersion          FormVersion     @relation(fields: [formVersionId], references: [id], onDelete: Cascade)
   fieldKey             String
   label                String
   sectionKey           String
@@ -473,16 +473,16 @@ model FormFieldConfig {
   sortOrder            Int
   kind                 ConfigFieldKind
   valueType            ConfigValueType
-  required             Boolean          @default(false)
-  listAvailable        Boolean          @default(false)
-  listVisibleByDefault Boolean          @default(false)
-  filterable           Boolean          @default(false)
-  simpleExport         Boolean          @default(false)
-  officialAnnexField   Boolean          @default(false)
-  editableDefinition   Boolean          @default(false)
+  required             Boolean         @default(false)
+  listAvailable        Boolean         @default(false)
+  listVisibleByDefault Boolean         @default(false)
+  filterable           Boolean         @default(false)
+  simpleExport         Boolean         @default(false)
+  officialAnnexField   Boolean         @default(false)
+  editableDefinition   Boolean         @default(false)
   options              Json?
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
   @@unique([formVersionId, fieldKey])
   @@index([formVersionId, sectionKey, sortOrder])
@@ -490,112 +490,112 @@ model FormFieldConfig {
 }
 
 model TemplateVersion {
-  annualProgrammes AuditAnnualProgrammeVersion[]
-  id                  String              @id @default(uuid())
-  module              QmsRecordType
-  documentType        DocumentType
-  versionCode         String
-  filePath            String?
-  fileName            String?
-  mimeType            String?
-  fileData            Bytes?
-  fileSize            Int?
-  checksum            String?
-  effectiveFrom       DateTime            @db.Date
-  effectiveTo         DateTime?           @db.Date
-  isActive            Boolean             @default(true)
-  createdAt           DateTime            @default(now())
-  deviationsAnnexIII  Deviation[]         @relation("DeviationAnnexIIITemplate")
-  capasAnnexIII       Capa[]              @relation("CapaAnnexIIITemplate")
-  changeRequests      ChangeControl[]      @relation("ChangeAnnexIIITemplate")
-  changeDictamens     ChangeControl[]      @relation("ChangeAnnexIVTemplate")
-  changeFollowups     ChangeControl[]      @relation("ChangeAnnexVTemplate")
-  complaintsAnnexIII  Complaint[]          @relation("ComplaintAnnexIIITemplate")
-  complaintsAnnexIV   Complaint[]          @relation("ComplaintAnnexIVTemplate")
-  complaintsAnnexV    Complaint[]          @relation("ComplaintAnnexVTemplate")
-  returnsAnnexIII     ReturnRecord[]       @relation("ReturnAnnexIIITemplate")
-  returnsAnnexIV      ReturnRecord[]       @relation("ReturnAnnexIVTemplate")
-  returnsAnnexV       ReturnRecord[]       @relation("ReturnAnnexVTemplate")
-  returnsAnnexVI      ReturnRecord[]       @relation("ReturnAnnexVITemplate")
-  generatedDocuments  GeneratedDocument[]
+  annualProgrammes   AuditAnnualProgrammeVersion[]
+  id                 String                        @id @default(uuid())
+  module             QmsRecordType
+  documentType       DocumentType
+  versionCode        String
+  filePath           String?
+  fileName           String?
+  mimeType           String?
+  fileData           Bytes?
+  fileSize           Int?
+  checksum           String?
+  effectiveFrom      DateTime                      @db.Date
+  effectiveTo        DateTime?                     @db.Date
+  isActive           Boolean                       @default(true)
+  createdAt          DateTime                      @default(now())
+  deviationsAnnexIII Deviation[]                   @relation("DeviationAnnexIIITemplate")
+  capasAnnexIII      Capa[]                        @relation("CapaAnnexIIITemplate")
+  changeRequests     ChangeControl[]               @relation("ChangeAnnexIIITemplate")
+  changeDictamens    ChangeControl[]               @relation("ChangeAnnexIVTemplate")
+  changeFollowups    ChangeControl[]               @relation("ChangeAnnexVTemplate")
+  complaintsAnnexIII Complaint[]                   @relation("ComplaintAnnexIIITemplate")
+  complaintsAnnexIV  Complaint[]                   @relation("ComplaintAnnexIVTemplate")
+  complaintsAnnexV   Complaint[]                   @relation("ComplaintAnnexVTemplate")
+  returnsAnnexIII    ReturnRecord[]                @relation("ReturnAnnexIIITemplate")
+  returnsAnnexIV     ReturnRecord[]                @relation("ReturnAnnexIVTemplate")
+  returnsAnnexV      ReturnRecord[]                @relation("ReturnAnnexVTemplate")
+  returnsAnnexVI     ReturnRecord[]                @relation("ReturnAnnexVITemplate")
+  generatedDocuments GeneratedDocument[]
 
   @@unique([module, documentType, versionCode])
   @@index([module, documentType, isActive, effectiveFrom])
 }
 
 model Deviation {
-  id                         String                   @id @default(uuid())
-  qmsRecordId                String                   @unique
-  qmsRecord                  QmsRecord                @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  departmentId               String?
-  department                 Department?              @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  departmentCodeSnapshot     String?
-  departmentNameSnapshot     String?
-  issueDate                  DateTime?                @db.Date
-  eventDateTime              DateTime?
-  detectedBy                 String?
+  id                          String                     @id @default(uuid())
+  qmsRecordId                 String                     @unique
+  qmsRecord                   QmsRecord                  @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId                String?
+  department                  Department?                @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot      String?
+  departmentNameSnapshot      String?
+  issueDate                   DateTime?                  @db.Date
+  eventDateTime               DateTime?
+  detectedBy                  String?
   createdByText               String?
   materialProcessAffected     String?
   provenance                  String?
-  deadlineStatus              DeadlineStatus           @default(NOT_EVALUATED)
-  formVersionId              String?
-  formVersion                FormVersion?             @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
-  anexoIIITemplateVersionId  String?
-  anexoIIITemplateVersion    TemplateVersion?         @relation("DeviationAnnexIIITemplate", fields: [anexoIIITemplateVersionId], references: [id], onDelete: Restrict)
-  processEquipmentSystem     String?
-  finishedProductSystem      String?
-  productLot                 String?
-  lotSize                    String?
-  affectedQuantity           String?
-  client                     String?
-  rawOrPackagingMaterial     String?
-  materialLot                String?
-  materialLotSize            String?
-  materialAffectedQuantity   String?
-  supplier                   String?
-  supplierLot                String?
-  additionalLots             Json                     @default("[]")
-  affectedEquipmentLine      String?
-  otherOrigin                String?
-  affectedDocumentation      String?
-  whatHappened               String?
-  whoInvolved                String?
-  whenHappened               String?
-  whereHappened              String?
-  howHappened                String?
-  investigation              String?
-  investigationConclusive    TriState?
-  investigationMethods       InvestigationMethod[]    @default([])
-  rootCause                  String?
-  rootCauseCategories        RootCauseCategory[]      @default([])
-  recurrentRootCause         TriState?
-  recurrenceDetails          String?
-  classification             DeviationClassification?
-  validationImpact           TriState?
-  registrationImpact         TriState?
-  stabilityImpact            TriState?
-  otherProcessesImpact       TriState?
+  deadlineStatus              DeadlineStatus             @default(NOT_EVALUATED)
+  formVersionId               String?
+  formVersion                 FormVersion?               @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  anexoIIITemplateVersionId   String?
+  anexoIIITemplateVersion     TemplateVersion?           @relation("DeviationAnnexIIITemplate", fields: [anexoIIITemplateVersionId], references: [id], onDelete: Restrict)
+  processEquipmentSystem      String?
+  finishedProductSystem       String?
+  productLot                  String?
+  lotSize                     String?
+  affectedQuantity            String?
+  client                      String?
+  rawOrPackagingMaterial      String?
+  materialLot                 String?
+  materialLotSize             String?
+  materialAffectedQuantity    String?
+  supplier                    String?
+  supplierLot                 String?
+  additionalLots              Json                       @default("[]")
+  affectedEquipmentLine       String?
+  otherOrigin                 String?
+  affectedDocumentation       String?
+  whatHappened                String?
+  whoInvolved                 String?
+  whenHappened                String?
+  whereHappened               String?
+  howHappened                 String?
+  investigation               String?
+  investigationConclusive     TriState?
+  investigationMethods        InvestigationMethod[]      @default([])
+  rootCause                   String?
+  rootCauseCategories         RootCauseCategory[]        @default([])
+  recurrentRootCause          TriState?
+  recurrenceDetails           String?
+  classification              DeviationClassification?
+  validationImpact            TriState?
+  registrationImpact          TriState?
+  stabilityImpact             TriState?
+  otherProcessesImpact        TriState?
   otherProcessesImpactDetails String?
-  affectsFinishedProduct     TriState?
-  capaRequired               Boolean?
-  conclusion                 String?
-  disposition                String?
-  dispositionQuantity        String?
-  dispositionComments        String?
-  clientNotification         TriState?
-  closedAt                   DateTime?                @db.Date
-  status                     DeviationStatus          @default(OPEN)
-  internalObservations       String?
-  signedDocumentAvailable    Boolean?
-  dataQualityStatus          DataQualityStatus        @default(REVIEW_REQUIRED)
-  includeInKpi              Boolean                  @default(true)
-  kpiExclusionReason        String?
-  extraData                  Json?
-  createdAt                  DateTime                 @default(now())
-  updatedAt                  DateTime                 @updatedAt
-  immediateActions           DeviationImmediateAction[]
-  followups                  DeviationFollowup[]
-  capaPlans                  DeviationCapaPlan[]
+  affectsFinishedProduct      TriState?
+  capaRequired                Boolean?
+  conclusion                  String?
+  disposition                 String?
+  dispositionQuantity         String?
+  dispositionComments         String?
+  clientNotification          TriState?
+  closedAt                    DateTime?                  @db.Date
+  status                      DeviationStatus            @default(OPEN)
+  internalObservations        String?
+  signedDocumentAvailable     Boolean?
+  dataQualityStatus           DataQualityStatus          @default(REVIEW_REQUIRED)
+  includeInKpi                Boolean                    @default(true)
+  kpiExclusionReason          String?
+  extraData                   Json?
+  createdAt                   DateTime                   @default(now())
+  updatedAt                   DateTime                   @updatedAt
+  immediateActions            DeviationImmediateAction[]
+  followups                   DeviationFollowup[]
+  capaPlans                   DeviationCapaPlan[]
 
   @@index([departmentId])
   @@index([status])
@@ -608,16 +608,19 @@ model Deviation {
 }
 
 model DeviationImmediateAction {
-  id          String    @id @default(uuid())
-  deviationId String
-  deviation   Deviation @relation(fields: [deviationId], references: [id], onDelete: Cascade)
-  description String
-  executedBy  String?
-  executedAt  DateTime? @db.Date
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
+  id               String    @id @default(uuid())
+  deviationId      String
+  deviation        Deviation @relation(fields: [deviationId], references: [id], onDelete: Cascade)
+  description      String
+  executedBy       String?
+  executedByUserId String?   @db.Uuid
+  executedByUser   AuthUser? @relation("DeviationImmediateActionExecutedBy", fields: [executedByUserId], references: [id], onDelete: Restrict)
+  executedAt       DateTime? @db.Date
+  sortOrder        Int       @default(0)
+  createdAt        DateTime  @default(now())
 
   @@index([deviationId, sortOrder])
+  @@index([executedByUserId])
 }
 
 model DeviationFollowup {
@@ -644,6 +647,8 @@ model DeviationCapaPlan {
   description          String
   plannedExecutionDate DateTime?          @db.Date
   responsible          String?
+  responsibleUserId    String?            @db.Uuid
+  responsibleUser      AuthUser?          @relation("DeviationCapaPlanResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
   businessCapaCode     String?
   linkedCapaRecordId   String?
   linkedCapaRecord     QmsRecord?         @relation("LinkedCapaRecord", fields: [linkedCapaRecordId], references: [id], onDelete: SetNull)
@@ -654,54 +659,54 @@ model DeviationCapaPlan {
   @@index([deviationId])
   @@index([linkedCapaRecordId])
   @@index([plannedExecutionDate])
+  @@index([responsibleUserId])
 }
 
-
 model Capa {
-  id                        String                  @id @default(uuid())
-  qmsRecordId               String                  @unique
-  qmsRecord                 QmsRecord               @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  actionType                CapaActionType
-  departmentId              String?
-  department                Department?             @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  departmentCodeSnapshot    String?
-  departmentNameSnapshot    String?
-  openedAt                  DateTime?               @db.Date
-  createdByText             String?
-  originType                String?
-  originCode                String?
-  applicableTo              String?
-  defectDescription         String?
-  rootCause                 String?
-  rootCauseCategories        RootCauseCategory[]      @default([])
-  impactAssessment          String?
-  nextFollowupDate          DateTime?               @db.Date
-  actionFollowupObservations String?
+  id                           String                  @id @default(uuid())
+  qmsRecordId                  String                  @unique
+  qmsRecord                    QmsRecord               @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  actionType                   CapaActionType
+  departmentId                 String?
+  department                   Department?             @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot       String?
+  departmentNameSnapshot       String?
+  openedAt                     DateTime?               @db.Date
+  createdByText                String?
+  originType                   String?
+  originCode                   String?
+  applicableTo                 String?
+  defectDescription            String?
+  rootCause                    String?
+  rootCauseCategories          RootCauseCategory[]     @default([])
+  impactAssessment             String?
+  nextFollowupDate             DateTime?               @db.Date
+  actionFollowupObservations   String?
   operationalStatusDescription String?
-  operationalClosedAt       DateTime?               @db.Date
-  status                    CapaStatus              @default(OPEN)
-  cancellationReason        String?
-  effectivenessStatus       CapaEffectivenessStatus @default(PENDING)
-  effectivenessCriteria     String?
-  effectivenessAssessment   String?
-  effectivenessEvidence     String?
-  effectiveClosedAt         DateTime?               @db.Date
-  conclusion                String?
-  internalObservations      String?
-  signedDocumentAvailable   Boolean?
-  dataQualityStatus         DataQualityStatus       @default(REVIEW_REQUIRED)
-  includeInKpi              Boolean                 @default(true)
-  kpiExclusionReason        String?
-  formVersionId             String?
-  formVersion               FormVersion?            @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
-  annexIIITemplateVersionId String?
-  annexIIITemplateVersion   TemplateVersion?        @relation("CapaAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
-  extraData                 Json?
-  createdAt                 DateTime                @default(now())
-  updatedAt                 DateTime                @updatedAt
-  plannedActions            CapaPlannedAction[]
-  actionFollowups           CapaActionFollowup[]
-  followups                 CapaFollowup[]
+  operationalClosedAt          DateTime?               @db.Date
+  status                       CapaStatus              @default(OPEN)
+  cancellationReason           String?
+  effectivenessStatus          CapaEffectivenessStatus @default(PENDING)
+  effectivenessCriteria        String?
+  effectivenessAssessment      String?
+  effectivenessEvidence        String?
+  effectiveClosedAt            DateTime?               @db.Date
+  conclusion                   String?
+  internalObservations         String?
+  signedDocumentAvailable      Boolean?
+  dataQualityStatus            DataQualityStatus       @default(REVIEW_REQUIRED)
+  includeInKpi                 Boolean                 @default(true)
+  kpiExclusionReason           String?
+  formVersionId                String?
+  formVersion                  FormVersion?            @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  annexIIITemplateVersionId    String?
+  annexIIITemplateVersion      TemplateVersion?        @relation("CapaAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
+  extraData                    Json?
+  createdAt                    DateTime                @default(now())
+  updatedAt                    DateTime                @updatedAt
+  plannedActions               CapaPlannedAction[]
+  actionFollowups              CapaActionFollowup[]
+  followups                    CapaFollowup[]
 
   @@index([departmentId])
   @@index([actionType])
@@ -715,48 +720,51 @@ model Capa {
 }
 
 model CapaPlannedAction {
-  id                   String   @id @default(uuid())
+  id                   String    @id @default(uuid())
   capaId               String
-  capa                 Capa     @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  capa                 Capa      @relation(fields: [capaId], references: [id], onDelete: Cascade)
   description          String
   responsible          String?
+  responsibleUserId    String?   @db.Uuid
+  responsibleUser      AuthUser? @relation("CapaPlannedActionResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
   plannedExecutionDate DateTime? @db.Date
   impact               String?
-  sortOrder            Int      @default(0)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  sortOrder            Int       @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@index([capaId, sortOrder])
   @@index([plannedExecutionDate])
+  @@index([responsibleUserId])
 }
 
 model CapaActionFollowup {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   capaId       String
-  capa         Capa     @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  capa         Capa      @relation(fields: [capaId], references: [id], onDelete: Cascade)
   followupDate DateTime? @db.Date
   description  String?
-  sortOrder    Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([capaId, sortOrder])
   @@index([followupDate])
 }
 
 model CapaFollowup {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   capaId            String
-  capa              Capa     @relation(fields: [capaId], references: [id], onDelete: Cascade)
+  capa              Capa      @relation(fields: [capaId], references: [id], onDelete: Cascade)
   sequenceNumber    Int
-  followupDate      DateTime @db.Date
+  followupDate      DateTime  @db.Date
   completedByText   String
   reason            String?
   description       String
   observations      String?
   evidenceReference String?
   nextFollowupDate  DateTime? @db.Date
-  createdAt         DateTime @default(now())
+  createdAt         DateTime  @default(now())
 
   @@unique([capaId, sequenceNumber])
   @@index([capaId, followupDate])
@@ -764,76 +772,80 @@ model CapaFollowup {
 }
 
 model ChangeControl {
-  id                         String                    @id @default(uuid())
-  qmsRecordId                String                    @unique
-  qmsRecord                  QmsRecord                 @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  departmentId               String?
-  department                 Department?               @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  departmentCodeSnapshot     String?
-  departmentNameSnapshot     String?
-  requestDate                DateTime?                 @db.Date
-  requesterName              String?
-  requesterPosition          String?
-  scope                      ChangeControlScope[]      @default([])
-  otherScope                 String?
-  description                String?
-  justification              String?
-  providedDocuments          String?
-  requestDecision            ChangeRequestDecision     @default(PENDING)
-  requestDecisionResponsible String?
-  requestDecisionRole        String?
-  requestDecisionDate        DateTime?                 @db.Date
-  evaluation                 String?
-  classification             ChangeControlClassification?
-  plannedImplementationDate  DateTime?                 @db.Date
-  committeeRequired          Boolean?
-  committeeDetails           String?
-  clientNotificationRequired Boolean?
-  clientNotificationDetails  String?
-  authorityRequired          Boolean?
-  authorityDetails           String?
-  pqrRequired                TriState?
-  pqrProducts                String?
-  pqrPeriod                  String?
-  stabilityRequired          TriState?
-  stabilityAccelerated       Boolean                   @default(false)
-  stabilityOngoing           Boolean                   @default(false)
-  additionalAnalysisRequired TriState?
-  additionalAnalysisDetails  String?
-  additionalValidationRequired TriState?
-  additionalValidationDetails String?
-  otherImplicationRequired   Boolean?
-  otherImplicationDetails    String?
-  dictamenResult             ChangeDictamenResult      @default(PENDING)
-  dictamenDate               DateTime?                 @db.Date
-  followupResponsible        String?
-  dictamenObservations       String?
-  approvalNames              String?
-  executionStatus            ChangeExecutionStatus     @default(NOT_EXECUTED)
-  executionDate              DateTime?                 @db.Date
-  operationalClosedAt        DateTime?                 @db.Date
-  effectivenessStatus        ChangeEffectivenessStatus @default(PENDING)
-  effectiveClosedAt          DateTime?                 @db.Date
-  finalStatus                ChangeFinalStatus         @default(OPEN)
-  closureConclusion          String?
-  internalObservations       String?
-  signedDocumentAvailable    Boolean?
-  dataQualityStatus          DataQualityStatus         @default(REVIEW_REQUIRED)
-  includeInKpi               Boolean                   @default(true)
-  kpiExclusionReason         String?
-  formVersionId              String?
-  formVersion                FormVersion?              @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
-  annexIIITemplateVersionId  String?
-  annexIIITemplateVersion    TemplateVersion?          @relation("ChangeAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
-  annexIVTemplateVersionId   String?
-  annexIVTemplateVersion     TemplateVersion?          @relation("ChangeAnnexIVTemplate", fields: [annexIVTemplateVersionId], references: [id], onDelete: Restrict)
-  annexVTemplateVersionId    String?
-  annexVTemplateVersion      TemplateVersion?          @relation("ChangeAnnexVTemplate", fields: [annexVTemplateVersionId], references: [id], onDelete: Restrict)
-  extraData                  Json?
-  createdAt                  DateTime                  @default(now())
-  updatedAt                  DateTime                  @updatedAt
-  tasks                      ChangeControlTask[]
-  followups                  ChangeControlFollowup[]
+  id                               String                       @id @default(uuid())
+  qmsRecordId                      String                       @unique
+  qmsRecord                        QmsRecord                    @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId                     String?
+  department                       Department?                  @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot           String?
+  departmentNameSnapshot           String?
+  requestDate                      DateTime?                    @db.Date
+  requesterName                    String?
+  requesterPosition                String?
+  scope                            ChangeControlScope[]         @default([])
+  otherScope                       String?
+  description                      String?
+  justification                    String?
+  providedDocuments                String?
+  requestDecision                  ChangeRequestDecision        @default(PENDING)
+  requestDecisionResponsible       String?
+  requestDecisionResponsibleUserId String?                      @db.Uuid
+  requestDecisionResponsibleUser   AuthUser?                    @relation("ChangeControlRequestDecisionResponsible", fields: [requestDecisionResponsibleUserId], references: [id], onDelete: Restrict)
+  requestDecisionRole              String?
+  requestDecisionDate              DateTime?                    @db.Date
+  evaluation                       String?
+  classification                   ChangeControlClassification?
+  plannedImplementationDate        DateTime?                    @db.Date
+  committeeRequired                Boolean?
+  committeeDetails                 String?
+  clientNotificationRequired       Boolean?
+  clientNotificationDetails        String?
+  authorityRequired                Boolean?
+  authorityDetails                 String?
+  pqrRequired                      TriState?
+  pqrProducts                      String?
+  pqrPeriod                        String?
+  stabilityRequired                TriState?
+  stabilityAccelerated             Boolean                      @default(false)
+  stabilityOngoing                 Boolean                      @default(false)
+  additionalAnalysisRequired       TriState?
+  additionalAnalysisDetails        String?
+  additionalValidationRequired     TriState?
+  additionalValidationDetails      String?
+  otherImplicationRequired         Boolean?
+  otherImplicationDetails          String?
+  dictamenResult                   ChangeDictamenResult         @default(PENDING)
+  dictamenDate                     DateTime?                    @db.Date
+  followupResponsible              String?
+  followupResponsibleUserId        String?                      @db.Uuid
+  followupResponsibleUser          AuthUser?                    @relation("ChangeControlFollowupResponsible", fields: [followupResponsibleUserId], references: [id], onDelete: Restrict)
+  dictamenObservations             String?
+  approvalNames                    String?
+  executionStatus                  ChangeExecutionStatus        @default(NOT_EXECUTED)
+  executionDate                    DateTime?                    @db.Date
+  operationalClosedAt              DateTime?                    @db.Date
+  effectivenessStatus              ChangeEffectivenessStatus    @default(PENDING)
+  effectiveClosedAt                DateTime?                    @db.Date
+  finalStatus                      ChangeFinalStatus            @default(OPEN)
+  closureConclusion                String?
+  internalObservations             String?
+  signedDocumentAvailable          Boolean?
+  dataQualityStatus                DataQualityStatus            @default(REVIEW_REQUIRED)
+  includeInKpi                     Boolean                      @default(true)
+  kpiExclusionReason               String?
+  formVersionId                    String?
+  formVersion                      FormVersion?                 @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  annexIIITemplateVersionId        String?
+  annexIIITemplateVersion          TemplateVersion?             @relation("ChangeAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
+  annexIVTemplateVersionId         String?
+  annexIVTemplateVersion           TemplateVersion?             @relation("ChangeAnnexIVTemplate", fields: [annexIVTemplateVersionId], references: [id], onDelete: Restrict)
+  annexVTemplateVersionId          String?
+  annexVTemplateVersion            TemplateVersion?             @relation("ChangeAnnexVTemplate", fields: [annexVTemplateVersionId], references: [id], onDelete: Restrict)
+  extraData                        Json?
+  createdAt                        DateTime                     @default(now())
+  updatedAt                        DateTime                     @updatedAt
+  tasks                            ChangeControlTask[]
+  followups                        ChangeControlFollowup[]
 
   @@index([departmentId])
   @@index([requestDate])
@@ -844,54 +856,62 @@ model ChangeControl {
   @@index([finalStatus])
   @@index([plannedImplementationDate])
   @@index([includeInKpi])
+  @@index([requestDecisionResponsibleUserId])
+  @@index([followupResponsibleUserId])
 }
 
 model ChangeControlTask {
-  id                    String             @id @default(uuid())
-  changeControlId       String
-  changeControl         ChangeControl      @relation(fields: [changeControlId], references: [id], onDelete: Cascade)
-  departmentId          String?
-  department            Department?        @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  id                     String                   @id @default(uuid())
+  changeControlId        String
+  changeControl          ChangeControl            @relation(fields: [changeControlId], references: [id], onDelete: Cascade)
+  departmentId           String?
+  department             Department?              @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   departmentCodeSnapshot String?
   departmentNameSnapshot String?
-  description           String
-  responsible           String?
-  plannedDate           DateTime?          @db.Date
-  origin                ChangeTaskOrigin
-  introducedInFollowup  Int?
-  sortOrder             Int                @default(0)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  states                ChangeControlTaskState[]
+  description            String
+  responsible            String?
+  responsibleUserId      String?                  @db.Uuid
+  responsibleUser        AuthUser?                @relation("ChangeControlTaskResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
+  plannedDate            DateTime?                @db.Date
+  origin                 ChangeTaskOrigin
+  introducedInFollowup   Int?
+  sortOrder              Int                      @default(0)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  states                 ChangeControlTaskState[]
 
   @@index([changeControlId, origin, sortOrder])
   @@index([departmentId])
   @@index([plannedDate])
+  @@index([responsibleUserId])
 }
 
 model ChangeControlFollowup {
-  id                    String                    @id @default(uuid())
-  changeControlId       String
-  changeControl         ChangeControl             @relation(fields: [changeControlId], references: [id], onDelete: Cascade)
-  sequenceNumber        Int
-  followupDate          DateTime                  @db.Date
-  responsible           String
-  observations          String?
-  executionStatus       ChangeExecutionStatus
-  executionDate         DateTime?                 @db.Date
-  effectivenessStatus   ChangeEffectivenessStatus
+  id                        String                    @id @default(uuid())
+  changeControlId           String
+  changeControl             ChangeControl             @relation(fields: [changeControlId], references: [id], onDelete: Cascade)
+  sequenceNumber            Int
+  followupDate              DateTime                  @db.Date
+  responsible               String
+  responsibleUserId         String?                   @db.Uuid
+  responsibleUser           AuthUser?                 @relation("ChangeControlFollowupEntryResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
+  observations              String?
+  executionStatus           ChangeExecutionStatus
+  executionDate             DateTime?                 @db.Date
+  effectivenessStatus       ChangeEffectivenessStatus
   effectivenessObservations String?
-  closeChange           Boolean                   @default(false)
-  nextFollowupDate      DateTime?                 @db.Date
-  remainOpenReason      String?
-  conclusion            String?
-  approvalByText        String?
-  createdAt             DateTime                  @default(now())
-  taskStates            ChangeControlTaskState[]
+  closeChange               Boolean                   @default(false)
+  nextFollowupDate          DateTime?                 @db.Date
+  remainOpenReason          String?
+  conclusion                String?
+  approvalByText            String?
+  createdAt                 DateTime                  @default(now())
+  taskStates                ChangeControlTaskState[]
 
   @@unique([changeControlId, sequenceNumber])
   @@index([changeControlId, followupDate])
   @@index([nextFollowupDate])
+  @@index([responsibleUserId])
 }
 
 model ChangeControlTaskState {
@@ -910,112 +930,112 @@ model ChangeControlTaskState {
 }
 
 model Complaint {
-  id                         String                       @id @default(uuid())
-  qmsRecordId                String                       @unique
-  qmsRecord                  QmsRecord                    @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  departmentId               String?
-  department                 Department?                 @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  departmentCodeSnapshot     String?
-  departmentNameSnapshot     String?
-  openedAt                   DateTime?                    @db.Date
-  detectionDate              DateTime?                    @db.Date
-  detectedBy                 String?
-  createdByText              String?
-  complaintType              ComplaintType
-  receptionDate              DateTime?                    @db.Date
-  sourceTypes                String[]                      @default([])
-  sourceOther                String?
-  scopeTypes                 String[]                      @default([])
-  scopeOther                 String?
-  affectedObjectTypes        String[]                      @default([])
-  affectedObjectOther        String?
-  categoryTypes              String[]                      @default([])
-  categoryOther              String?
-  partyName                  String?
-  contact                    String?
-  affectedScope              String?
-  reference                  String?
-  lotReference               String?
-  additionalLots             Json                     @default("[]")
-  quantity                   String?
-  expiryReanalysis           String?
-  purchaseDeliveryReference  String?
-  description                String?
-  recurrent                  Boolean?
-  recurrenceReference        String?
-  attachedDocumentation      String?
-  emittedBy                  String?
-  qaValidatedBy              String?
-  investigation              String?
-  impactAssessment           String?
-  impactQualityGmp           TriState?
-  impactSafetyEfficacy       TriState?
-  impactRegulatory           TriState?
-  impactEnvironment          TriState?
-  impactOtherSimilar         TriState?
-  containmentActions         String[]                      @default([])
-  containmentOther           String?
-  riskJustification          String?
-  investigationResult        ComplaintInvestigationResult?
-  rootCause                  String?
-  rootCauseCategories        RootCauseCategory[]      @default([])
-  classification             ComplaintClassification?
-  potentialRecall            TriState?
-  recallProcedureRequired    TriState?
-  authorityNotificationRequired TriState?
+  id                                    String                        @id @default(uuid())
+  qmsRecordId                           String                        @unique
+  qmsRecord                             QmsRecord                     @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId                          String?
+  department                            Department?                   @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot                String?
+  departmentNameSnapshot                String?
+  openedAt                              DateTime?                     @db.Date
+  detectionDate                         DateTime?                     @db.Date
+  detectedBy                            String?
+  createdByText                         String?
+  complaintType                         ComplaintType
+  receptionDate                         DateTime?                     @db.Date
+  sourceTypes                           String[]                      @default([])
+  sourceOther                           String?
+  scopeTypes                            String[]                      @default([])
+  scopeOther                            String?
+  affectedObjectTypes                   String[]                      @default([])
+  affectedObjectOther                   String?
+  categoryTypes                         String[]                      @default([])
+  categoryOther                         String?
+  partyName                             String?
+  contact                               String?
+  affectedScope                         String?
+  reference                             String?
+  lotReference                          String?
+  additionalLots                        Json                          @default("[]")
+  quantity                              String?
+  expiryReanalysis                      String?
+  purchaseDeliveryReference             String?
+  description                           String?
+  recurrent                             Boolean?
+  recurrenceReference                   String?
+  attachedDocumentation                 String?
+  emittedBy                             String?
+  qaValidatedBy                         String?
+  investigation                         String?
+  impactAssessment                      String?
+  impactQualityGmp                      TriState?
+  impactSafetyEfficacy                  TriState?
+  impactRegulatory                      TriState?
+  impactEnvironment                     TriState?
+  impactOtherSimilar                    TriState?
+  containmentActions                    String[]                      @default([])
+  containmentOther                      String?
+  riskJustification                     String?
+  investigationResult                   ComplaintInvestigationResult?
+  rootCause                             String?
+  rootCauseCategories                   RootCauseCategory[]           @default([])
+  classification                        ComplaintClassification?
+  potentialRecall                       TriState?
+  recallProcedureRequired               TriState?
+  authorityNotificationRequired         TriState?
   responsiblePartyCommunicationRequired TriState?
-  regulatoryJustification    String?
-  resolutionLines            String?
-  resolutionActions          ComplaintResolutionAction[] @default([])
-  immediateActionDetails     String?
-  recallActionDetails        String?
-  creditActionDetails        String?
-  replacementActionDetails   String?
-  otherResolutionDetails     String?
-  externalCommunication      String?
-  communicationDate          DateTime?                    @db.Date
-  communicationMedium        String?
-  communicationParties       String?
-  communicationSummary       String?
-  partIIRequired             Boolean?
-  hasDerivedActions          Boolean?
-  nextFollowupDate           DateTime?                    @db.Date
-  conclusion                 String?
-  effectivenessRequired      Boolean?
-  initialEvaluationDate      DateTime?                    @db.Date
-  initialConclusionDate      DateTime?                    @db.Date
-  responseDate               DateTime?                    @db.Date
-  responseMedium             String?
-  responseSummary            String?
-  responseSufficient         Boolean?
-  effectivenessStatus        ComplaintEffectivenessStatus @default(PENDING)
-  effectivenessAssessment    String?
-  closeConclusion            String?
-  closeActionStatus          String?
-  closeActionReferences      String?
-  approvalNames              String?
-  closeApprovalNames         String?
-  closedAt                   DateTime?                    @db.Date
-  status                     ComplaintStatus             @default(OPEN)
-  internalObservations       String?
-  signedDocumentAvailable    Boolean?
-  dataQualityStatus          DataQualityStatus           @default(REVIEW_REQUIRED)
-  includeInKpi               Boolean                     @default(true)
-  kpiExclusionReason         String?
-  formVersionId              String?
-  formVersion                FormVersion?                @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
-  annexIIITemplateVersionId  String?
-  annexIIITemplateVersion    TemplateVersion?            @relation("ComplaintAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
-  annexIVTemplateVersionId   String?
-  annexIVTemplateVersion     TemplateVersion?            @relation("ComplaintAnnexIVTemplate", fields: [annexIVTemplateVersionId], references: [id], onDelete: Restrict)
-  annexVTemplateVersionId    String?
-  annexVTemplateVersion      TemplateVersion?            @relation("ComplaintAnnexVTemplate", fields: [annexVTemplateVersionId], references: [id], onDelete: Restrict)
-  extraData                  Json?
-  createdAt                  DateTime                     @default(now())
-  updatedAt                  DateTime                     @updatedAt
-  followups                  ComplaintFollowup[]
-  capaPlans                  ComplaintCapaPlan[]
-  derivedActions             ComplaintDerivedAction[]
+  regulatoryJustification               String?
+  resolutionLines                       String?
+  resolutionActions                     ComplaintResolutionAction[]   @default([])
+  immediateActionDetails                String?
+  recallActionDetails                   String?
+  creditActionDetails                   String?
+  replacementActionDetails              String?
+  otherResolutionDetails                String?
+  externalCommunication                 String?
+  communicationDate                     DateTime?                     @db.Date
+  communicationMedium                   String?
+  communicationParties                  String?
+  communicationSummary                  String?
+  partIIRequired                        Boolean?
+  hasDerivedActions                     Boolean?
+  nextFollowupDate                      DateTime?                     @db.Date
+  conclusion                            String?
+  effectivenessRequired                 Boolean?
+  initialEvaluationDate                 DateTime?                     @db.Date
+  initialConclusionDate                 DateTime?                     @db.Date
+  responseDate                          DateTime?                     @db.Date
+  responseMedium                        String?
+  responseSummary                       String?
+  responseSufficient                    Boolean?
+  effectivenessStatus                   ComplaintEffectivenessStatus  @default(PENDING)
+  effectivenessAssessment               String?
+  closeConclusion                       String?
+  closeActionStatus                     String?
+  closeActionReferences                 String?
+  approvalNames                         String?
+  closeApprovalNames                    String?
+  closedAt                              DateTime?                     @db.Date
+  status                                ComplaintStatus               @default(OPEN)
+  internalObservations                  String?
+  signedDocumentAvailable               Boolean?
+  dataQualityStatus                     DataQualityStatus             @default(REVIEW_REQUIRED)
+  includeInKpi                          Boolean                       @default(true)
+  kpiExclusionReason                    String?
+  formVersionId                         String?
+  formVersion                           FormVersion?                  @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  annexIIITemplateVersionId             String?
+  annexIIITemplateVersion               TemplateVersion?              @relation("ComplaintAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
+  annexIVTemplateVersionId              String?
+  annexIVTemplateVersion                TemplateVersion?              @relation("ComplaintAnnexIVTemplate", fields: [annexIVTemplateVersionId], references: [id], onDelete: Restrict)
+  annexVTemplateVersionId               String?
+  annexVTemplateVersion                 TemplateVersion?              @relation("ComplaintAnnexVTemplate", fields: [annexVTemplateVersionId], references: [id], onDelete: Restrict)
+  extraData                             Json?
+  createdAt                             DateTime                      @default(now())
+  updatedAt                             DateTime                      @updatedAt
+  followups                             ComplaintFollowup[]
+  capaPlans                             ComplaintCapaPlan[]
+  derivedActions                        ComplaintDerivedAction[]
 
   @@index([departmentId])
   @@index([openedAt])
@@ -1037,6 +1057,8 @@ model ComplaintCapaPlan {
   description          String
   plannedExecutionDate DateTime?          @db.Date
   responsible          String?
+  responsibleUserId    String?            @db.Uuid
+  responsibleUser      AuthUser?          @relation("ComplaintCapaPlanResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
   businessCapaCode     String?
   linkedCapaRecordId   String?
   linkedCapaRecord     QmsRecord?         @relation("ComplaintLinkedCapaRecord", fields: [linkedCapaRecordId], references: [id], onDelete: SetNull)
@@ -1047,6 +1069,7 @@ model ComplaintCapaPlan {
   @@index([complaintId])
   @@index([linkedCapaRecordId])
   @@index([plannedExecutionDate])
+  @@index([responsibleUserId])
 }
 
 model ComplaintDerivedAction {
@@ -1057,6 +1080,8 @@ model ComplaintDerivedAction {
   businessCode         String?
   description          String?
   responsible          String?
+  responsibleUserId    String?   @db.Uuid
+  responsibleUser      AuthUser? @relation("ComplaintDerivedActionResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
   plannedExecutionDate DateTime? @db.Date
   sortOrder            Int       @default(0)
   createdAt            DateTime  @default(now())
@@ -1064,6 +1089,7 @@ model ComplaintDerivedAction {
 
   @@index([complaintId, sortOrder])
   @@index([businessCode])
+  @@index([responsibleUserId])
 }
 
 model ComplaintFollowup {
@@ -1083,79 +1109,79 @@ model ComplaintFollowup {
 }
 
 model ReturnRecord {
-  id                              String         @id @default(uuid())
-  qmsRecordId                     String         @unique
-  qmsRecord                       QmsRecord      @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  departmentId                    String?
-  department                      Department?    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  departmentCodeSnapshot          String?
-  departmentNameSnapshot          String?
-  communicationDate               DateTime?      @db.Date
-  receivedAt                      DateTime?      @db.Date
-  createdByText                   String?
-  returnType                      ReturnType
-  otherReturnType                 String?
-  customerEntity                  String?
-  country                         String?
-  address                         String?
-  relatedDocument                 String?
-  conservationConditions          String?
-  deliveryNote                    String?
-  reasonObservations              String?
-  attachedDocumentation           String?
-  withinAcceptedReturnPeriod      TriState?
-  roomTemperatureWithinTenDays    TriState?
-  coldChainWithinFortyEightHours  TriState?
-  uniqueIdentifierActive          TriState?
-  tamperEvidenceIntact            TriState?
-  packagingIntegrityOk            TriState?
-  customerDeclarationAvailable    TriState?
+  id                               String            @id @default(uuid())
+  qmsRecordId                      String            @unique
+  qmsRecord                        QmsRecord         @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  departmentId                     String?
+  department                       Department?       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot           String?
+  departmentNameSnapshot           String?
+  communicationDate                DateTime?         @db.Date
+  receivedAt                       DateTime?         @db.Date
+  createdByText                    String?
+  returnType                       ReturnType
+  otherReturnType                  String?
+  customerEntity                   String?
+  country                          String?
+  address                          String?
+  relatedDocument                  String?
+  conservationConditions           String?
+  deliveryNote                     String?
+  reasonObservations               String?
+  attachedDocumentation            String?
+  withinAcceptedReturnPeriod       TriState?
+  roomTemperatureWithinTenDays     TriState?
+  coldChainWithinFortyEightHours   TriState?
+  uniqueIdentifierActive           TriState?
+  tamperEvidenceIntact             TriState?
+  packagingIntegrityOk             TriState?
+  customerDeclarationAvailable     TriState?
   customerDeclarationSignatoryName String?
   customerDeclarationSignatoryRole String?
-  customerDeclarationSignedAt      DateTime?      @db.Date
+  customerDeclarationSignedAt      DateTime?         @db.Date
   customerDeclarationObservations  String?
-  storageTransportConditionsOk    TriState?
-  noUseDamageContamination        TriState?
-  noRecallAlertBlock              TriState?
-  expiryAcceptable                TriState?
-  qcAssessmentCompleted           TriState?
-  storageTemperatureRecord        TriState?
-  returnTransportTempEvidence     TriState?
-  transportPackagingSuitable      TriState?
-  receiptTemperatureAcceptable    TriState?
-  temperatureExcursionEvaluated   TriState?
-  coldChainReturnSystemValidated  TriState?
-  decision                        ReturnDecision @default(PENDING)
-  finalDestination                String?
-  decisionObservations            String?
-  qaApprovalName                  String?
-  technicalApprovalName           String?
-  decisionDate                    DateTime?       @db.Date
-  destructionManagedBy            String?
-  destructionCertificate         String?
-  traceabilityUpdated             TriState?
-  closedAt                        DateTime?       @db.Date
-  status                          ReturnStatus    @default(OPEN)
-  internalObservations            String?
-  signedDocumentAvailable         Boolean?
-  dataQualityStatus               DataQualityStatus @default(REVIEW_REQUIRED)
-  includeInKpi                    Boolean        @default(true)
-  kpiExclusionReason              String?
-  formVersionId                   String?
-  formVersion                     FormVersion?   @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
-  annexIIITemplateVersionId       String?
-  annexIIITemplateVersion         TemplateVersion? @relation("ReturnAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
-  annexIVTemplateVersionId        String?
-  annexIVTemplateVersion          TemplateVersion? @relation("ReturnAnnexIVTemplate", fields: [annexIVTemplateVersionId], references: [id], onDelete: Restrict)
-  annexVTemplateVersionId         String?
-  annexVTemplateVersion           TemplateVersion? @relation("ReturnAnnexVTemplate", fields: [annexVTemplateVersionId], references: [id], onDelete: Restrict)
-  annexVITemplateVersionId        String?
-  annexVITemplateVersion          TemplateVersion? @relation("ReturnAnnexVITemplate", fields: [annexVITemplateVersionId], references: [id], onDelete: Restrict)
-  extraData                       Json?
-  createdAt                       DateTime       @default(now())
-  updatedAt                       DateTime       @updatedAt
-  products                        ReturnProduct[]
-  followups                       ReturnFollowup[]
+  storageTransportConditionsOk     TriState?
+  noUseDamageContamination         TriState?
+  noRecallAlertBlock               TriState?
+  expiryAcceptable                 TriState?
+  qcAssessmentCompleted            TriState?
+  storageTemperatureRecord         TriState?
+  returnTransportTempEvidence      TriState?
+  transportPackagingSuitable       TriState?
+  receiptTemperatureAcceptable     TriState?
+  temperatureExcursionEvaluated    TriState?
+  coldChainReturnSystemValidated   TriState?
+  decision                         ReturnDecision    @default(PENDING)
+  finalDestination                 String?
+  decisionObservations             String?
+  qaApprovalName                   String?
+  technicalApprovalName            String?
+  decisionDate                     DateTime?         @db.Date
+  destructionManagedBy             String?
+  destructionCertificate           String?
+  traceabilityUpdated              TriState?
+  closedAt                         DateTime?         @db.Date
+  status                           ReturnStatus      @default(OPEN)
+  internalObservations             String?
+  signedDocumentAvailable          Boolean?
+  dataQualityStatus                DataQualityStatus @default(REVIEW_REQUIRED)
+  includeInKpi                     Boolean           @default(true)
+  kpiExclusionReason               String?
+  formVersionId                    String?
+  formVersion                      FormVersion?      @relation(fields: [formVersionId], references: [id], onDelete: Restrict)
+  annexIIITemplateVersionId        String?
+  annexIIITemplateVersion          TemplateVersion?  @relation("ReturnAnnexIIITemplate", fields: [annexIIITemplateVersionId], references: [id], onDelete: Restrict)
+  annexIVTemplateVersionId         String?
+  annexIVTemplateVersion           TemplateVersion?  @relation("ReturnAnnexIVTemplate", fields: [annexIVTemplateVersionId], references: [id], onDelete: Restrict)
+  annexVTemplateVersionId          String?
+  annexVTemplateVersion            TemplateVersion?  @relation("ReturnAnnexVTemplate", fields: [annexVTemplateVersionId], references: [id], onDelete: Restrict)
+  annexVITemplateVersionId         String?
+  annexVITemplateVersion           TemplateVersion?  @relation("ReturnAnnexVITemplate", fields: [annexVITemplateVersionId], references: [id], onDelete: Restrict)
+  extraData                        Json?
+  createdAt                        DateTime          @default(now())
+  updatedAt                        DateTime          @updatedAt
+  products                         ReturnProduct[]
+  followups                        ReturnFollowup[]
 
   @@index([departmentId])
   @@index([communicationDate])
@@ -1186,9 +1212,9 @@ model ReturnProduct {
   grossWeight           String?
   receptionObservations String?
   receivedBy            String?
-  receivedByDate        DateTime?          @db.Date
+  receivedByDate        DateTime?         @db.Date
   verifiedBy            String?
-  verifiedByDate        DateTime?          @db.Date
+  verifiedByDate        DateTime?         @db.Date
   sortOrder             Int               @default(0)
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
@@ -1214,45 +1240,45 @@ model ReturnFollowup {
 }
 
 model ChangeHistory {
-  auditEvidence AuditOperationEvidence[]
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id            String        @id @default(uuid())
-  qmsRecordId   String
-  qmsRecord     QmsRecord     @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  changedAt     DateTime      @default(now())
-  changedByText String?
-  fieldPath     String
-  oldValue      Json?
-  newValue      Json?
-  reason        String?
-  source        HistorySource @default(UI)
+  auditEvidence       AuditOperationEvidence[]
+  authenticatedUserId String?                  @db.Uuid
+  authenticatedUser   AuthUser?                @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String                   @id @default(uuid())
+  qmsRecordId         String
+  qmsRecord           QmsRecord                @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  changedAt           DateTime                 @default(now())
+  changedByText       String?
+  fieldPath           String
+  oldValue            Json?
+  newValue            Json?
+  reason              String?
+  source              HistorySource            @default(UI)
 
   @@index([qmsRecordId, changedAt])
   @@index([source])
 }
 
 model QmsRecordVersion {
-  auditEvents AuditEvent[]
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id                 String            @id @default(uuid())
-  qmsRecordId        String
-  qmsRecord          QmsRecord         @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  sequenceNumber     Int
-  kind               RecordVersionKind
-  snapshot           Json
-  reason             String?
-  sourceEntityId     String?
-  createdByText      String?
-  source             HistorySource     @default(UI)
-  frozenAt           DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  generatedDocuments GeneratedDocument[]
-  documents          RecordVersionDocument[]
-  signedCustodies    SignedDocumentCustody[]
-  reviewThreads      ReviewThread[]
+  auditEvents         AuditEvent[]
+  authenticatedUserId String?                 @db.Uuid
+  authenticatedUser   AuthUser?               @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String                  @id @default(uuid())
+  qmsRecordId         String
+  qmsRecord           QmsRecord               @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  sequenceNumber      Int
+  kind                RecordVersionKind
+  snapshot            Json
+  reason              String?
+  sourceEntityId      String?
+  createdByText       String?
+  source              HistorySource           @default(UI)
+  frozenAt            DateTime?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  generatedDocuments  GeneratedDocument[]
+  documents           RecordVersionDocument[]
+  signedCustodies     SignedDocumentCustody[]
+  reviewThreads       ReviewThread[]
 
   @@unique([qmsRecordId, sequenceNumber])
   @@index([qmsRecordId, frozenAt])
@@ -1260,31 +1286,31 @@ model QmsRecordVersion {
 }
 
 model ReviewThread {
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id                 String             @id @default(uuid())
-  qmsRecordId        String
-  qmsRecord          QmsRecord          @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  recordVersionId    String?
-  recordVersion      QmsRecordVersion?  @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
-  targetKind         ReviewTargetKind
-  tabKey             String?
-  sectionKey         String?
-  fieldPath          String?
-  targetEntityType   String?
-  targetEntityId     String?
-  fieldLabelSnapshot String?
-  valueSnapshot      Json?
-  status             ReviewThreadStatus @default(PENDING)
-  createdByText      String
-  createdAt          DateTime           @default(now())
-  acceptedByText     String?
-  acceptedAt         DateTime?
-  resolvedByText     String?
-  resolvedAt         DateTime?
-  resolutionNote     String?            @db.Text
-  updatedAt          DateTime           @updatedAt
-  messages           ReviewMessage[]
+  authenticatedUserId String?            @db.Uuid
+  authenticatedUser   AuthUser?          @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String             @id @default(uuid())
+  qmsRecordId         String
+  qmsRecord           QmsRecord          @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  recordVersionId     String?
+  recordVersion       QmsRecordVersion?  @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  targetKind          ReviewTargetKind
+  tabKey              String?
+  sectionKey          String?
+  fieldPath           String?
+  targetEntityType    String?
+  targetEntityId      String?
+  fieldLabelSnapshot  String?
+  valueSnapshot       Json?
+  status              ReviewThreadStatus @default(PENDING)
+  createdByText       String
+  createdAt           DateTime           @default(now())
+  acceptedByText      String?
+  acceptedAt          DateTime?
+  resolvedByText      String?
+  resolvedAt          DateTime?
+  resolutionNote      String?            @db.Text
+  updatedAt           DateTime           @updatedAt
+  messages            ReviewMessage[]
 
   @@index([qmsRecordId, status])
   @@index([recordVersionId])
@@ -1294,32 +1320,32 @@ model ReviewThread {
 }
 
 model ReviewMessage {
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id             String       @id @default(uuid())
-  reviewThreadId String
-  reviewThread   ReviewThread @relation(fields: [reviewThreadId], references: [id], onDelete: Restrict)
-  message        String       @db.Text
-  createdByText  String
-  createdAt      DateTime     @default(now())
+  authenticatedUserId String?      @db.Uuid
+  authenticatedUser   AuthUser?    @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String       @id @default(uuid())
+  reviewThreadId      String
+  reviewThread        ReviewThread @relation(fields: [reviewThreadId], references: [id], onDelete: Restrict)
+  message             String       @db.Text
+  createdByText       String
+  createdAt           DateTime     @default(now())
 
   @@index([reviewThreadId, createdAt])
 }
 
 model RecordVersionDocument {
-  id               String                    @id @default(uuid())
-  recordVersionId  String
-  recordVersion    QmsRecordVersion          @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
-  kind             RecordVersionDocumentKind
-  fileName         String
-  mimeType         String                    @default("application/pdf")
-  fileData         Bytes
-  fileSize         Int
-  checksum         String
-  uploadedByText   String?
-  uploadedAt       DateTime                  @default(now())
-  custodyId        String? @unique @db.Uuid
-  custody          SignedDocumentCustody? @relation("CurrentSignedCustody", fields: [custodyId], references: [id], onDelete: Restrict)
+  id              String                    @id @default(uuid())
+  recordVersionId String
+  recordVersion   QmsRecordVersion          @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  kind            RecordVersionDocumentKind
+  fileName        String
+  mimeType        String                    @default("application/pdf")
+  fileData        Bytes
+  fileSize        Int
+  checksum        String
+  uploadedByText  String?
+  uploadedAt      DateTime                  @default(now())
+  custodyId       String?                   @unique @db.Uuid
+  custody         SignedDocumentCustody?    @relation("CurrentSignedCustody", fields: [custodyId], references: [id], onDelete: Restrict)
 
   @@unique([recordVersionId, kind])
   @@index([recordVersionId, uploadedAt])
@@ -1329,53 +1355,53 @@ model RecordVersionDocument {
 // Exact received bytes remain in GeneratedDocument. This append-only record
 // distinguishes authenticated custody now from labels/dates observed in legacy uploads.
 model SignedDocumentCustody {
-  id String @id @default(uuid()) @db.Uuid
-  originalDocumentId String @unique
-  originalDocument GeneratedDocument @relation(fields: [originalDocumentId], references: [id], onDelete: Restrict)
-  recordVersionId String
-  recordVersion QmsRecordVersion @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
-  kind RecordVersionDocumentKind
-  sourceKind String
-  identitySource String
-  retainedByUserId String? @db.Uuid
-  retainedByUser AuthUser? @relation(fields: [retainedByUserId], references: [id], onDelete: Restrict)
-  retainedByName String?
-  retainedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
-  replacesId String? @unique @db.Uuid
-  replaces SignedDocumentCustody? @relation("SignedCustodySupersession", fields: [replacesId], references: [id], onDelete: Restrict)
-  replacement SignedDocumentCustody? @relation("SignedCustodySupersession")
-  reason String?
-  currentSlot RecordVersionDocument? @relation("CurrentSignedCustody")
+  id                 String                    @id @default(uuid()) @db.Uuid
+  originalDocumentId String                    @unique
+  originalDocument   GeneratedDocument         @relation(fields: [originalDocumentId], references: [id], onDelete: Restrict)
+  recordVersionId    String
+  recordVersion      QmsRecordVersion          @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  kind               RecordVersionDocumentKind
+  sourceKind         String
+  identitySource     String
+  retainedByUserId   String?                   @db.Uuid
+  retainedByUser     AuthUser?                 @relation(fields: [retainedByUserId], references: [id], onDelete: Restrict)
+  retainedByName     String?
+  retainedAt         DateTime                  @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  replacesId         String?                   @unique @db.Uuid
+  replaces           SignedDocumentCustody?    @relation("SignedCustodySupersession", fields: [replacesId], references: [id], onDelete: Restrict)
+  replacement        SignedDocumentCustody?    @relation("SignedCustodySupersession")
+  reason             String?
+  currentSlot        RecordVersionDocument?    @relation("CurrentSignedCustody")
+
   @@index([recordVersionId, retainedAt, id])
 }
 
 model GeneratedDocument {
-  signedCustody SignedDocumentCustody?
-  auditEvents AuditEvent[]
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  fileData          Bytes?
-  fileName          String?
-  mimeType          String?
-  id                String            @id @default(uuid())
-  qmsRecordId       String
-  qmsRecord         QmsRecord         @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  recordVersionId   String?
-  recordVersion     QmsRecordVersion? @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
-  documentType      DocumentType
-  templateVersionId String?
-  templateVersion   TemplateVersion?  @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
-  generatedAt       DateTime          @default(now())
-  generatedByText   String?
-  checksum          String?
-  metadata          Json?
+  signedCustody       SignedDocumentCustody?
+  auditEvents         AuditEvent[]
+  authenticatedUserId String?                @db.Uuid
+  authenticatedUser   AuthUser?              @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  fileData            Bytes?
+  fileName            String?
+  mimeType            String?
+  id                  String                 @id @default(uuid())
+  qmsRecordId         String
+  qmsRecord           QmsRecord              @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  recordVersionId     String?
+  recordVersion       QmsRecordVersion?      @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  documentType        DocumentType
+  templateVersionId   String?
+  templateVersion     TemplateVersion?       @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  generatedAt         DateTime               @default(now())
+  generatedByText     String?
+  checksum            String?
+  metadata            Json?
 
   @@index([qmsRecordId, generatedAt])
   @@index([recordVersionId])
   @@index([templateVersionId])
   @@index([documentType, generatedAt])
 }
-
 
 model LookupCatalog {
   id          String              @id @default(uuid())
@@ -1392,18 +1418,18 @@ model LookupCatalog {
 }
 
 model LookupCatalogItem {
-  id          String        @id @default(uuid())
-  catalogId   String
-  catalog     LookupCatalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
-  key         String
-  label       String
-  sortOrder   Int           @default(0)
-  isActive    Boolean       @default(true)
-  validFrom   DateTime?     @db.Date
-  validTo     DateTime?     @db.Date
-  notes       String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String        @id @default(uuid())
+  catalogId String
+  catalog   LookupCatalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  key       String
+  label     String
+  sortOrder Int           @default(0)
+  isActive  Boolean       @default(true)
+  validFrom DateTime?     @db.Date
+  validTo   DateTime?     @db.Date
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@unique([catalogId, key])
   @@index([catalogId, isActive, sortOrder])
@@ -1442,39 +1468,39 @@ model AlertRule {
 }
 
 model ConfigurationChange {
-  auditEvidence AuditOperationEvidence[]
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id            String   @id @default(uuid())
-  entityType    String
-  entityKey     String
-  action        String
-  oldValue      Json?
-  newValue      Json?
-  changedByText String?
-  reason        String?
-  createdAt     DateTime @default(now())
+  auditEvidence       AuditOperationEvidence[]
+  authenticatedUserId String?                  @db.Uuid
+  authenticatedUser   AuthUser?                @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String                   @id @default(uuid())
+  entityType          String
+  entityKey           String
+  action              String
+  oldValue            Json?
+  newValue            Json?
+  changedByText       String?
+  reason              String?
+  createdAt           DateTime                 @default(now())
 
   @@index([entityType, entityKey, createdAt])
   @@index([createdAt])
 }
 
 model HistoricalImportBatch {
-  id              String                @id @default(uuid())
-  recordType      QmsRecordType         @default(DEVIATION)
-  sourceFileName  String
-  sourceSha256    String
-  years           Int[]
-  importedByText  String?
-  createdAt       DateTime              @default(now())
-  appliedAt       DateTime?
-  totalRows       Int                   @default(0)
-  importedRows    Int                   @default(0)
-  duplicateRows   Int                   @default(0)
-  rejectedRows    Int                   @default(0)
-  reviewRows      Int                   @default(0)
-  report          Json?
-  rows            HistoricalImportRow[]
+  id             String                @id @default(uuid())
+  recordType     QmsRecordType         @default(DEVIATION)
+  sourceFileName String
+  sourceSha256   String
+  years          Int[]
+  importedByText String?
+  createdAt      DateTime              @default(now())
+  appliedAt      DateTime?
+  totalRows      Int                   @default(0)
+  importedRows   Int                   @default(0)
+  duplicateRows  Int                   @default(0)
+  rejectedRows   Int                   @default(0)
+  reviewRows     Int                   @default(0)
+  report         Json?
+  rows           HistoricalImportRow[]
 
   @@index([recordType])
   @@index([sourceSha256])
@@ -1482,18 +1508,18 @@ model HistoricalImportBatch {
 }
 
 model HistoricalImportRow {
-  id            String                    @id @default(uuid())
-  batchId       String
-  batch         HistoricalImportBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  qmsRecordId   String?
-  qmsRecord     QmsRecord?                @relation(fields: [qmsRecordId], references: [id], onDelete: SetNull)
-  sourceSheet   String
-  sourceRow     Int
-  businessCode  String?
-  result        HistoricalImportRowResult
-  issues        Json?
+  id             String                    @id @default(uuid())
+  batchId        String
+  batch          HistoricalImportBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  qmsRecordId    String?
+  qmsRecord      QmsRecord?                @relation(fields: [qmsRecordId], references: [id], onDelete: SetNull)
+  sourceSheet    String
+  sourceRow      Int
+  businessCode   String?
+  result         HistoricalImportRowResult
+  issues         Json?
   sourceSnapshot Json?
-  createdAt     DateTime                  @default(now())
+  createdAt      DateTime                  @default(now())
 
   @@unique([batchId, sourceSheet, sourceRow])
   @@index([businessCode])
@@ -1501,26 +1527,24 @@ model HistoricalImportRow {
   @@index([result])
 }
 
-
 model ReminderLog {
-  id             String         @id @default(uuid())
-  qmsRecordId    String
-  qmsRecord      QmsRecord      @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  batchId        String
-  channel        String         @default("EMAIL")
-  status         ReminderStatus @default(PREPARED)
-  recipients     String[]
-  ccRecipients   String[]
-  subject        String
-  message        String         @db.Text
-  createdByText  String?
-  createdAt      DateTime       @default(now())
+  id            String         @id @default(uuid())
+  qmsRecordId   String
+  qmsRecord     QmsRecord      @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  batchId       String
+  channel       String         @default("EMAIL")
+  status        ReminderStatus @default(PREPARED)
+  recipients    String[]
+  ccRecipients  String[]
+  subject       String
+  message       String         @db.Text
+  createdByText String?
+  createdAt     DateTime       @default(now())
 
   @@index([qmsRecordId, createdAt])
   @@index([batchId])
   @@index([createdAt])
 }
-
 
 enum AuditType {
   INTERNAL
@@ -1560,67 +1584,67 @@ enum AuditParticipantRole {
 }
 
 model Audit {
-  reportDate                   DateTime?          @db.Date
-  conclusion                   String?            @db.Text
-  programme                    String?            @db.Text
-  previousAuditBackground      String?            @db.Text
+  reportDate                   DateTime?           @db.Date
+  conclusion                   String?             @db.Text
+  programme                    String?             @db.Text
+  previousAuditBackground      String?             @db.Text
   supplierType                 String?
-  auditedContact               String?            @db.Text
-  planIntroduction             String?            @db.Text
-  activityDuration             String?            @db.Text
-  reportDistribution           String?            @db.Text
+  auditedContact               String?             @db.Text
+  planIntroduction             String?             @db.Text
+  activityDuration             String?             @db.Text
+  reportDistribution           String?             @db.Text
   preparedBy                   String?
   preparedPosition             String?
   reviewedBy                   String?
   reviewedPosition             String?
   receivedBy                   String?
   receivedPosition             String?
-  capaPlanDate                 DateTime?          @db.Date
-  capaPlanEstablishedAt        DateTime?          @db.Date
-  reportSentAt                 DateTime?          @db.Date
-  supplierResponseReceivedAt   DateTime?          @db.Date
-  responseRequired             Boolean            @default(false)
-  responseSentAt               DateTime?          @db.Date
-  closureEvidence              String?            @db.Text
-  supplierAssessment           String?            @db.Text
-  supplierException            Boolean            @default(false)
-  supplierExceptionReason      String?            @db.Text
+  capaPlanDate                 DateTime?           @db.Date
+  capaPlanEstablishedAt        DateTime?           @db.Date
+  reportSentAt                 DateTime?           @db.Date
+  supplierResponseReceivedAt   DateTime?           @db.Date
+  responseRequired             Boolean             @default(false)
+  responseSentAt               DateTime?           @db.Date
+  closureEvidence              String?             @db.Text
+  supplierAssessment           String?             @db.Text
+  supplierException            Boolean             @default(false)
+  supplierExceptionReason      String?             @db.Text
   supplierExceptionBy          String?
-  supplierExceptionAt          DateTime?          @db.Date
-  verifyAtNextAudit            Boolean            @default(false)
-  id                           String             @id @default(uuid())
-  qmsRecordId                  String             @unique
-  qmsRecord                    QmsRecord          @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  supplierExceptionAt          DateTime?           @db.Date
+  verifyAtNextAudit            Boolean             @default(false)
+  id                           String              @id @default(uuid())
+  qmsRecordId                  String              @unique
+  qmsRecord                    QmsRecord           @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
   auditType                    AuditType?
   scenario                     AuditScenario?
-  status                       AuditStatus        @default(DRAFT)
+  status                       AuditStatus         @default(DRAFT)
   planningStatus               AuditPlanningStatus @default(UNCLASSIFIED)
-  outsidePlanReason            String?            @db.Text
-  planEntryId                  String?            @unique
-  planEntry                    AuditPlanEntry?    @relation(fields: [planEntryId], references: [id], onDelete: Restrict)
-  title                        String?            @db.Text
-  scope                        String?            @db.Text
-  referenceText                String?            @db.Text
+  outsidePlanReason            String?             @db.Text
+  planEntryId                  String?             @unique
+  planEntry                    AuditPlanEntry?     @relation(fields: [planEntryId], references: [id], onDelete: Restrict)
+  title                        String?             @db.Text
+  scope                        String?             @db.Text
+  referenceText                String?             @db.Text
   externalReference            String?
   auditedEntityName            String?
-  auditedEntityAddress         String?            @db.Text
+  auditedEntityAddress         String?             @db.Text
   auditingEntityName           String?
   entityCode                   String?
   codingDepartmentId           String?
-  codingDepartment             Department?        @relation("AuditCodingDepartment", fields: [codingDepartmentId], references: [id], onDelete: Restrict)
+  codingDepartment             Department?         @relation("AuditCodingDepartment", fields: [codingDepartmentId], references: [id], onDelete: Restrict)
   codingDepartmentCodeSnapshot String?
   codingDepartmentNameSnapshot String?
-  plannedDate                  DateTime?          @db.Date
-  performedDate                DateTime?          @db.Date
-  openedAt                     DateTime?          @db.Date
-  closedAt                     DateTime?          @db.Date
+  plannedDate                  DateTime?           @db.Date
+  performedDate                DateTime?           @db.Date
+  openedAt                     DateTime?           @db.Date
+  closedAt                     DateTime?           @db.Date
   modality                     AuditModality?
-  internalObservations         String?            @db.Text
-  dataQualityStatus            DataQualityStatus  @default(INCOMPLETE)
+  internalObservations         String?             @db.Text
+  dataQualityStatus            DataQualityStatus   @default(INCOMPLETE)
   createdByText                String?
   updatedByText                String?
-  createdAt                    DateTime           @default(now())
-  updatedAt                    DateTime           @updatedAt
+  createdAt                    DateTime            @default(now())
+  updatedAt                    DateTime            @updatedAt
   departments                  AuditDepartment[]
   participants                 AuditParticipant[]
   findings                     AuditFinding[]
@@ -1633,67 +1657,67 @@ model Audit {
 }
 
 model AuditAnnualPlan {
-  auditCursors AuditAggregateCursor[]
+  auditCursors          AuditAggregateCursor[]
   technicalApproverName String?
-  qualityApproverName String?
-  programmeVersions AuditAnnualProgrammeVersion[]
-  id            String         @id @default(uuid())
-  year          Int
-  auditType     AuditType
-  title         String
-  notes         String?        @db.Text
-  createdByText String
-  updatedByText String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  entries       AuditPlanEntry[]
-  changes       AuditPlanChange[]
+  qualityApproverName   String?
+  programmeVersions     AuditAnnualProgrammeVersion[]
+  id                    String                        @id @default(uuid())
+  year                  Int
+  auditType             AuditType
+  title                 String
+  notes                 String?                       @db.Text
+  createdByText         String
+  updatedByText         String?
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  entries               AuditPlanEntry[]
+  changes               AuditPlanChange[]
 
   @@unique([year, auditType])
   @@index([auditType, year])
 }
 
 model AuditPlanEntry {
-  plannedPeriodText String?
-  plannedAuditorsText String? @db.Text
-  productService String? @db.Text
-  plannedScope String? @db.Text
-  plannedModality AuditModality?
-  programmeArea String?
-  id             String         @id @default(uuid())
-  planId         String
-  plan           AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
-  subject        String         @db.Text
-  targetName     String?
-  departmentId   String?
-  department     Department?    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  plannedDate    DateTime?      @db.Date
-  notes          String?        @db.Text
-  sortOrder      Int            @default(0)
-  isActive       Boolean        @default(true)
-  createdByText  String
-  updatedByText  String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  audit          Audit?
+  plannedPeriodText   String?
+  plannedAuditorsText String?         @db.Text
+  productService      String?         @db.Text
+  plannedScope        String?         @db.Text
+  plannedModality     AuditModality?
+  programmeArea       String?
+  id                  String          @id @default(uuid())
+  planId              String
+  plan                AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  subject             String          @db.Text
+  targetName          String?
+  departmentId        String?
+  department          Department?     @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  plannedDate         DateTime?       @db.Date
+  notes               String?         @db.Text
+  sortOrder           Int             @default(0)
+  isActive            Boolean         @default(true)
+  createdByText       String
+  updatedByText       String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  audit               Audit?
 
   @@index([planId, isActive, sortOrder])
 }
 
 model AuditPlanChange {
-  auditEvidence AuditOperationEvidence[]
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id          String         @id @default(uuid())
-  planId      String
-  plan        AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
-  entryId     String?
-  event       String
-  oldValue    Json?
-  newValue    Json?
-  actor       String
-  reason      String         @db.Text
-  createdAt   DateTime       @default(now())
+  auditEvidence       AuditOperationEvidence[]
+  authenticatedUserId String?                  @db.Uuid
+  authenticatedUser   AuthUser?                @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String                   @id @default(uuid())
+  planId              String
+  plan                AuditAnnualPlan          @relation(fields: [planId], references: [id], onDelete: Restrict)
+  entryId             String?
+  event               String
+  oldValue            Json?
+  newValue            Json?
+  actor               String
+  reason              String                   @db.Text
+  createdAt           DateTime                 @default(now())
 
   @@index([planId, createdAt])
 }
@@ -1730,7 +1754,6 @@ model AuditParticipant {
   @@index([auditId, sortOrder])
 }
 
-
 enum AuditFindingType {
   FINDING
   RECOMMENDATION
@@ -1754,33 +1777,33 @@ enum AuditActionStatus {
 }
 
 model AuditFinding {
-  id String @id @default(uuid())
-  auditId String
-  audit Audit @relation(fields: [auditId], references: [id], onDelete: Restrict)
-  reference String
-  findingType AuditFindingType
-  criticality AuditFindingCriticality @default(NA)
-  description String @db.Text
-  criterionReference String? @db.Text
-  objectiveEvidence String? @db.Text
-  treatment String? @db.Text
-  treatmentStatus AuditActionStatus @default(OPEN)
-  closedAt DateTime? @db.Date
-  evidence String? @db.Text
-  evidenceReference String? @db.Text
-  verificationComment String? @db.Text
-  sortOrder Int @default(0)
-  isActive Boolean @default(true)
-  retiredAt DateTime?
-  retiredByText String?
-  retirementReason String? @db.Text
-  createdByText String
-  updatedByText String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  actions AuditFindingAction[]
-  followups AuditFollowup[]
-  relations AuditFindingRelation[]
+  id                  String                  @id @default(uuid())
+  auditId             String
+  audit               Audit                   @relation(fields: [auditId], references: [id], onDelete: Restrict)
+  reference           String
+  findingType         AuditFindingType
+  criticality         AuditFindingCriticality @default(NA)
+  description         String                  @db.Text
+  criterionReference  String?                 @db.Text
+  objectiveEvidence   String?                 @db.Text
+  treatment           String?                 @db.Text
+  treatmentStatus     AuditActionStatus       @default(OPEN)
+  closedAt            DateTime?               @db.Date
+  evidence            String?                 @db.Text
+  evidenceReference   String?                 @db.Text
+  verificationComment String?                 @db.Text
+  sortOrder           Int                     @default(0)
+  isActive            Boolean                 @default(true)
+  retiredAt           DateTime?
+  retiredByText       String?
+  retirementReason    String?                 @db.Text
+  createdByText       String
+  updatedByText       String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  actions             AuditFindingAction[]
+  followups           AuditFollowup[]
+  relations           AuditFindingRelation[]
 
   @@unique([auditId, reference])
   @@index([auditId, isActive, sortOrder])
@@ -1791,71 +1814,73 @@ model AuditFindingAction {
   verificationResult  CapaEffectivenessStatus @default(PENDING)
   verifiedAt          DateTime?               @db.Date
   verifiedBy          String?
-  id String @id @default(uuid())
-  findingId String
-  finding AuditFinding @relation(fields: [findingId], references: [id], onDelete: Restrict)
-  description String @db.Text
-  responsible String?
-  targetDate DateTime? @db.Date
-  status AuditActionStatus @default(OPEN)
-  closedAt DateTime? @db.Date
-  evidence String? @db.Text
-  evidenceReference String? @db.Text
-  verificationComment String? @db.Text
-  sortOrder Int @default(0)
-  isActive Boolean @default(true)
-  retiredAt DateTime?
-  retiredByText String?
-  retirementReason String? @db.Text
-  createdByText String
-  updatedByText String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String                  @id @default(uuid())
+  findingId           String
+  finding             AuditFinding            @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  description         String                  @db.Text
+  responsible         String?
+  responsibleUserId   String?                 @db.Uuid
+  responsibleUser     AuthUser?               @relation("AuditFindingActionResponsible", fields: [responsibleUserId], references: [id], onDelete: Restrict)
+  targetDate          DateTime?               @db.Date
+  status              AuditActionStatus       @default(OPEN)
+  closedAt            DateTime?               @db.Date
+  evidence            String?                 @db.Text
+  evidenceReference   String?                 @db.Text
+  verificationComment String?                 @db.Text
+  sortOrder           Int                     @default(0)
+  isActive            Boolean                 @default(true)
+  retiredAt           DateTime?
+  retiredByText       String?
+  retirementReason    String?                 @db.Text
+  createdByText       String
+  updatedByText       String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
 
   @@index([findingId, isActive, sortOrder])
   @@index([status, targetDate])
+  @@index([responsibleUserId])
 }
 
 model AuditFindingRelation {
-  id String @id @default(uuid())
-  findingId String
-  finding AuditFinding @relation(fields: [findingId], references: [id], onDelete: Restrict)
-  qmsRelationId String
-  qmsRelation QmsRelation @relation(fields: [qmsRelationId], references: [id], onDelete: Restrict)
-  isActive Boolean @default(true)
-  createdByText String
-  updatedByText String?
-  retiredAt DateTime?
-  retiredByText String?
-  retirementReason String? @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String       @id @default(uuid())
+  findingId        String
+  finding          AuditFinding @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  qmsRelationId    String
+  qmsRelation      QmsRelation  @relation(fields: [qmsRelationId], references: [id], onDelete: Restrict)
+  isActive         Boolean      @default(true)
+  createdByText    String
+  updatedByText    String?
+  retiredAt        DateTime?
+  retiredByText    String?
+  retirementReason String?      @db.Text
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   @@unique([findingId, qmsRelationId])
   @@index([qmsRelationId, isActive])
 }
 
 model AuditFollowup {
-  id String @id @default(uuid())
-  auditId String
-  audit Audit @relation(fields: [auditId], references: [id], onDelete: Restrict)
-  findingId String?
-  finding AuditFinding? @relation(fields: [findingId], references: [id], onDelete: Restrict)
-  followupDate DateTime @db.Date
-  completedByText String
-  description String @db.Text
-  nextReviewDate DateTime? @db.Date
-  evidenceReference String? @db.Text
-  createdByText String
-  updatedByText String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String        @id @default(uuid())
+  auditId           String
+  audit             Audit         @relation(fields: [auditId], references: [id], onDelete: Restrict)
+  findingId         String?
+  finding           AuditFinding? @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  followupDate      DateTime      @db.Date
+  completedByText   String
+  description       String        @db.Text
+  nextReviewDate    DateTime?     @db.Date
+  evidenceReference String?       @db.Text
+  createdByText     String
+  updatedByText     String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   @@index([auditId, followupDate])
   @@index([findingId, followupDate])
   @@index([nextReviewDate])
 }
-
 
 // P1A: independent master/revisions. Approval events and assets belong to P2/P3.
 enum ControlledDocumentType {
@@ -1887,62 +1912,62 @@ enum ControlledDocumentVerificationStatus {
 }
 
 model ControlledDocument {
-  auditCursors AuditAggregateCursor[]
-  id String @id @default(uuid())
-  baseCode String? @unique
-  title String? @db.Text
-  documentType ControlledDocumentType @default(PNT)
-  departmentId String?
-  department Department? @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  auditCursors           AuditAggregateCursor[]
+  id                     String                                 @id @default(uuid())
+  baseCode               String?                                @unique
+  title                  String?                                @db.Text
+  documentType           ControlledDocumentType                 @default(PNT)
+  departmentId           String?
+  department             Department?                            @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   departmentCodeSnapshot String?
   departmentNameSnapshot String?
-  administrativeStatus ControlledDocumentAdministrativeStatus @default(DRAFT)
-  observations String? @db.Text
-  sourceMetadata Json?
-  verificationStatus ControlledDocumentVerificationStatus @default(UNVERIFIED)
-  createdByText String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  annulledAt DateTime?
-  annulledByText String?
-  annulmentReason String? @db.Text
-  revisions ControlledDocumentRevision[]
-  changes ControlledDocumentChange[]
+  administrativeStatus   ControlledDocumentAdministrativeStatus @default(DRAFT)
+  observations           String?                                @db.Text
+  sourceMetadata         Json?
+  verificationStatus     ControlledDocumentVerificationStatus   @default(UNVERIFIED)
+  createdByText          String
+  createdAt              DateTime                               @default(now())
+  updatedAt              DateTime                               @updatedAt
+  annulledAt             DateTime?
+  annulledByText         String?
+  annulmentReason        String?                                @db.Text
+  revisions              ControlledDocumentRevision[]
+  changes                ControlledDocumentChange[]
 
   @@index([departmentId, administrativeStatus])
   @@index([administrativeStatus, createdAt])
 }
 
 model ControlledDocumentRevision {
-  id String @id @default(uuid())
-  documentId String
-  document ControlledDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
-  revisionCode String
-  baseCodeSnapshot String?
-  titleSnapshot String? @db.Text
+  id                     String                               @id @default(uuid())
+  documentId             String
+  document               ControlledDocument                   @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  revisionCode           String
+  baseCodeSnapshot       String?
+  titleSnapshot          String?                              @db.Text
   departmentCodeSnapshot String?
   departmentNameSnapshot String?
-  revisionReason String? @db.Text
-  status ControlledDocumentRevisionStatus @default(DRAFT)
-  effectiveFrom DateTime? @db.Date
-  reviewDueAt DateTime? @db.Date
-  obsoletedAt DateTime? @db.Date
-  previousRevisionId String?
-  previousRevision ControlledDocumentRevision? @relation("ControlledPreviousRevision", fields: [documentId, previousRevisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
-  followingRevisions ControlledDocumentRevision[] @relation("ControlledPreviousRevision")
-  sourceReference String? @db.Text
-  sourceMetadata Json?
-  verificationStatus ControlledDocumentVerificationStatus @default(UNVERIFIED)
-  verifiedByText String?
-  verifiedAt DateTime?
-  consolidatedAt DateTime?
-  registeredByText String
-  registeredAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  changes ControlledDocumentChange[]
-  documents ControlledRevisionDocument[]
-  lifecycle ControlledRevisionLifecycle?
-  decisions ControlledRevisionDecision[]
+  revisionReason         String?                              @db.Text
+  status                 ControlledDocumentRevisionStatus     @default(DRAFT)
+  effectiveFrom          DateTime?                            @db.Date
+  reviewDueAt            DateTime?                            @db.Date
+  obsoletedAt            DateTime?                            @db.Date
+  previousRevisionId     String?
+  previousRevision       ControlledDocumentRevision?          @relation("ControlledPreviousRevision", fields: [documentId, previousRevisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  followingRevisions     ControlledDocumentRevision[]         @relation("ControlledPreviousRevision")
+  sourceReference        String?                              @db.Text
+  sourceMetadata         Json?
+  verificationStatus     ControlledDocumentVerificationStatus @default(UNVERIFIED)
+  verifiedByText         String?
+  verifiedAt             DateTime?
+  consolidatedAt         DateTime?
+  registeredByText       String
+  registeredAt           DateTime                             @default(now())
+  updatedAt              DateTime                             @updatedAt
+  changes                ControlledDocumentChange[]
+  documents              ControlledRevisionDocument[]
+  lifecycle              ControlledRevisionLifecycle?
+  decisions              ControlledRevisionDecision[]
 
   @@unique([documentId, revisionCode])
   @@unique([documentId, id])
@@ -1951,21 +1976,21 @@ model ControlledDocumentRevision {
 }
 
 model ControlledDocumentChange {
-  auditEvidence AuditOperationEvidence[]
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id String @id @default(uuid())
-  documentId String
-  document ControlledDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
-  revisionId String?
-  revision ControlledDocumentRevision? @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
-  action String
-  oldValue Json?
-  newValue Json?
-  changedByText String
-  reason String @db.Text
-  source HistorySource @default(UI)
-  changedAt DateTime @default(now())
+  auditEvidence       AuditOperationEvidence[]
+  authenticatedUserId String?                     @db.Uuid
+  authenticatedUser   AuthUser?                   @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String                      @id @default(uuid())
+  documentId          String
+  document            ControlledDocument          @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  revisionId          String?
+  revision            ControlledDocumentRevision? @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  action              String
+  oldValue            Json?
+  newValue            Json?
+  changedByText       String
+  reason              String                      @db.Text
+  source              HistorySource               @default(UI)
+  changedAt           DateTime                    @default(now())
 
   @@index([documentId, changedAt, id])
   @@index([revisionId])
@@ -1973,30 +1998,30 @@ model ControlledDocumentChange {
 
 // P2A: immutable documentary objects, separate from revision snapshots.
 model ControlledRevisionDocument {
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id String @id @default(uuid())
-  documentId String
-  revisionId String
-  revision ControlledDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
-  originalName String
-  kind String
-  state String
-  mimeType String?
-  sizeBytes Int?
-  sha256 String?
-  fileData Bytes?
-  storageReference String @unique
-  externalReference String? @db.Text
-  description String? @db.Text
-  incorporatedAt DateTime @default(now())
-  incorporatedBy String
-  identitySource String
-  replacesId String? @unique
-  replacementReason String? @db.Text
-  replaces ControlledRevisionDocument? @relation("DocumentReplacement", fields: [revisionId, replacesId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
-  replacement ControlledRevisionDocument? @relation("DocumentReplacement")
-  decisionEvidence ControlledDecisionEvidence[]
+  authenticatedUserId String?                      @db.Uuid
+  authenticatedUser   AuthUser?                    @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String                       @id @default(uuid())
+  documentId          String
+  revisionId          String
+  revision            ControlledDocumentRevision   @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  originalName        String
+  kind                String
+  state               String
+  mimeType            String?
+  sizeBytes           Int?
+  sha256              String?
+  fileData            Bytes?
+  storageReference    String                       @unique
+  externalReference   String?                      @db.Text
+  description         String?                      @db.Text
+  incorporatedAt      DateTime                     @default(now())
+  incorporatedBy      String
+  identitySource      String
+  replacesId          String?                      @unique
+  replacementReason   String?                      @db.Text
+  replaces            ControlledRevisionDocument?  @relation("DocumentReplacement", fields: [revisionId, replacesId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
+  replacement         ControlledRevisionDocument?  @relation("DocumentReplacement")
+  decisionEvidence    ControlledDecisionEvidence[]
 
   @@unique([revisionId, id])
   @@unique([revisionId, replacesId])
@@ -2005,134 +2030,140 @@ model ControlledRevisionDocument {
 
 // P2B: operational dates are separate from frozen imported/legacy dates.
 model ControlledRevisionLifecycle {
-  revisionId String @id
-  documentId String
-  revision ControlledDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
-  version Int @default(0)
-  legacyOrigin Boolean @default(false)
-  approvalAt DateTime? @db.Date
-  effectiveFrom DateTime? @db.Date
-  reviewDueAt DateTime? @db.Date
-  obsoletedAt DateTime? @db.Date
+  revisionId    String                     @id
+  documentId    String
+  revision      ControlledDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  version       Int                        @default(0)
+  legacyOrigin  Boolean                    @default(false)
+  approvalAt    DateTime?                  @db.Date
+  effectiveFrom DateTime?                  @db.Date
+  reviewDueAt   DateTime?                  @db.Date
+  obsoletedAt   DateTime?                  @db.Date
+
   @@unique([documentId, revisionId])
 }
 
 model ControlledRevisionDecision {
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id String @id @default(uuid())
-  documentId String
-  revisionId String
-  revision ControlledDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
-  sequence Int
-  requestId String @unique
-  requestHash String
-  operation String
-  result String?
-  actor String
-  identitySource String
-  decidedAt DateTime @default(now())
-  reason String @db.Text
-  oldState ControlledDocumentRevisionStatus
-  newState ControlledDocumentRevisionStatus
-  details Json
-  before Json
-  after Json
-  rectifiesId String?
-  rectifies ControlledRevisionDecision? @relation("DecisionCorrection", fields: [revisionId, rectifiesId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
-  corrections ControlledRevisionDecision[] @relation("DecisionCorrection")
-  evidence ControlledDecisionEvidence[]
+  authenticatedUserId String?                          @db.Uuid
+  authenticatedUser   AuthUser?                        @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String                           @id @default(uuid())
+  documentId          String
+  revisionId          String
+  revision            ControlledDocumentRevision       @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  sequence            Int
+  requestId           String                           @unique
+  requestHash         String
+  operation           String
+  result              String?
+  actor               String
+  identitySource      String
+  decidedAt           DateTime                         @default(now())
+  reason              String                           @db.Text
+  oldState            ControlledDocumentRevisionStatus
+  newState            ControlledDocumentRevisionStatus
+  details             Json
+  before              Json
+  after               Json
+  rectifiesId         String?
+  rectifies           ControlledRevisionDecision?      @relation("DecisionCorrection", fields: [revisionId, rectifiesId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
+  corrections         ControlledRevisionDecision[]     @relation("DecisionCorrection")
+  evidence            ControlledDecisionEvidence[]
+
   @@unique([revisionId, id])
   @@unique([revisionId, sequence])
   @@index([documentId, revisionId, decidedAt])
 }
 
 model ControlledDecisionEvidence {
-  id String @id @default(uuid())
-  revisionId String
-  decisionId String
+  id               String                     @id @default(uuid())
+  revisionId       String
+  decisionId       String
   documentObjectId String
-  decision ControlledRevisionDecision @relation(fields: [revisionId, decisionId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
-  documentObject ControlledRevisionDocument @relation(fields: [revisionId, documentObjectId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
-  snapshot Json
+  decision         ControlledRevisionDecision @relation(fields: [revisionId, decisionId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
+  documentObject   ControlledRevisionDocument @relation(fields: [revisionId, documentObjectId], references: [revisionId, id], onDelete: Restrict, onUpdate: NoAction)
+  snapshot         Json
+
   @@unique([decisionId, documentObjectId])
 }
 
 // P1B-2: bounded staging; no original workbook binary.
 model ControlledDocumentImportBatch {
   auditTechnicalEvents AuditTechnicalEvent[]
-  id String @id @default(uuid())
-  fileName String
-  sha256 String
-  analyzedAt DateTime
-  actor String
-  state String @default("PENDING")
-  version Int @default(0)
-  summary Json
-  reportMetadata Json
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-  confirmedAt DateTime?
-  rows ControlledDocumentImportRow[]
-  events ControlledDocumentImportEvent[]
+  id                   String                          @id @default(uuid())
+  fileName             String
+  sha256               String
+  analyzedAt           DateTime
+  actor                String
+  state                String                          @default("PENDING")
+  version              Int                             @default(0)
+  summary              Json
+  reportMetadata       Json
+  createdAt            DateTime                        @default(now())
+  expiresAt            DateTime
+  confirmedAt          DateTime?
+  rows                 ControlledDocumentImportRow[]
+  events               ControlledDocumentImportEvent[]
+
   @@index([state, expiresAt])
   @@index([sha256])
 }
 
 model ControlledDocumentImportRow {
-  id String @id @default(uuid())
-  batchId String
-  batch ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
-  sourceKey String
-  baseCode String?
-  data Json
-  decision String @default("PENDING")
+  id         String                        @id @default(uuid())
+  batchId    String
+  batch      ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  sourceKey  String
+  baseCode   String?
+  data       Json
+  decision   String                        @default("PENDING")
   resolution Json?
-  baseline String?
-  decidedBy String?
-  decidedAt DateTime?
-  result Json?
+  baseline   String?
+  decidedBy  String?
+  decidedAt  DateTime?
+  result     Json?
+
   @@unique([batchId, sourceKey])
   @@index([batchId, decision])
 }
 
 model ControlledDocumentImportEvent {
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id String @id @default(uuid())
-  batchId String
-  batch ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
-  action String
-  actor String
-  detail Json
-  createdAt DateTime @default(now())
+  authenticatedUserId String?                       @db.Uuid
+  authenticatedUser   AuthUser?                     @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String                        @id @default(uuid())
+  batchId             String
+  batch               ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  action              String
+  actor               String
+  detail              Json
+  createdAt           DateTime                      @default(now())
+
   @@index([batchId, createdAt, id])
 }
 
 // Programme issuance is independent from individual audit record versions.
 model AuditAnnualProgrammeVersion {
-  authenticatedUserId String? @db.Uuid
-  authenticatedUser AuthUser? @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
-  id String @id @default(uuid())
-  planId String
-  plan AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
-  sequenceNumber Int
-  requestId String
-  requestHash String
-  contentFingerprint String
-  snapshot Json
-  templateVersionId String
-  templateVersion TemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
-  templateChecksum String
-  reference String
-  generatedAt DateTime @default(now())
-  generatedBy String
-  reason String @db.Text
-  fileName String
-  mimeType String
-  fileData Bytes
-  fileSize Int
-  checksum String
+  authenticatedUserId String?         @db.Uuid
+  authenticatedUser   AuthUser?       @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+  id                  String          @id @default(uuid())
+  planId              String
+  plan                AuditAnnualPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  sequenceNumber      Int
+  requestId           String
+  requestHash         String
+  contentFingerprint  String
+  snapshot            Json
+  templateVersionId   String
+  templateVersion     TemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  templateChecksum    String
+  reference           String
+  generatedAt         DateTime        @default(now())
+  generatedBy         String
+  reason              String          @db.Text
+  fileName            String
+  mimeType            String
+  fileData            Bytes
+  fileSize            Int
+  checksum            String
 
   @@unique([planId, sequenceNumber])
   @@unique([planId, requestId])
@@ -2140,348 +2171,383 @@ model AuditAnnualProgrammeVersion {
 }
 
 enum AccessModule {
- DEVIATION
- CAPA
- CHANGE_CONTROL
- COMPLAINT
- RETURN
- AUDIT
- PNT
- SYSTEM
- OOS
+  DEVIATION
+  CAPA
+  CHANGE_CONTROL
+  COMPLAINT
+  RETURN
+  AUDIT
+  PNT
+  SYSTEM
+  OOS
 }
+
 enum AccessPermission {
- READ
- CREATE
- EDIT
- FOLLOWUP
- REVIEW
- CLOSE
- ANNUL
- DOWNLOAD
- EXPORT
- IMPORT
- MANAGE_CONFIGURATION
- MANAGE_USERS
- ATTACH_DOCUMENT
- GENERATE_DOCUMENT
- AUDIT_ISSUE_REPORT
- AUDIT_ISSUE_PROGRAMME
- PNT_VERIFY
- PNT_RECORD_APPROVAL
- PNT_ACCEPT_APPROVAL
- PNT_ACTIVATE
- PNT_RETIRE
- PNT_CORRECT
- PNT_LEGACY_REGISTER
- PNT_MANAGE_STATE
- AUDIT_TRAIL_REVIEW
- AUDIT_TRAIL_EXPORT
- AUDIT_TRAIL_SENSITIVE_READ
+  READ
+  CREATE
+  EDIT
+  FOLLOWUP
+  REVIEW
+  CLOSE
+  ANNUL
+  DOWNLOAD
+  EXPORT
+  IMPORT
+  MANAGE_CONFIGURATION
+  MANAGE_USERS
+  ATTACH_DOCUMENT
+  GENERATE_DOCUMENT
+  AUDIT_ISSUE_REPORT
+  AUDIT_ISSUE_PROGRAMME
+  PNT_VERIFY
+  PNT_RECORD_APPROVAL
+  PNT_ACCEPT_APPROVAL
+  PNT_ACTIVATE
+  PNT_RETIRE
+  PNT_CORRECT
+  PNT_LEGACY_REGISTER
+  PNT_MANAGE_STATE
+  AUDIT_TRAIL_REVIEW
+  AUDIT_TRAIL_EXPORT
+  AUDIT_TRAIL_SENSITIVE_READ
 }
+
 enum AccessScope {
- ALL
- ASSIGNED
+  ALL
+  ASSIGNED
 }
+
 model AuthUser {
- signedCustodies SignedDocumentCustody[]
- auditOperations AuditOperation[]
- auditTrailReviews AuditTrailReview[]
- auditTrailExports AuditTrailExport[]
- savedListViews SavedListView[]
- id String @id @default(uuid()) @db.Uuid
- tenantId String @db.Uuid
- objectId String @db.Uuid
- displayName String
- email String
- active Boolean @default(false)
- authorizedAt DateTime?
- createdAt DateTime @default(now())
- updatedAt DateTime @updatedAt
- roles AuthUserRole[]
- departments AuthUserDepartment[]
- assignments AuthRecordAssignment[]
- sessions AuthSession[]
- administrativeChanges AuthAuthorizationChange[]
- authoredChangeHistory ChangeHistory[]
- authoredQmsRecordVersion QmsRecordVersion[]
- authoredReviewThread ReviewThread[]
- authoredReviewMessage ReviewMessage[]
- authoredGeneratedDocument GeneratedDocument[]
- authoredConfigurationChange ConfigurationChange[]
- authoredAuditPlanChange AuditPlanChange[]
- authoredControlledDocumentChange ControlledDocumentChange[]
- authoredControlledRevisionDocument ControlledRevisionDocument[]
- authoredControlledRevisionDecision ControlledRevisionDecision[]
- authoredControlledDocumentImportEvent ControlledDocumentImportEvent[]
- authoredAuditAnnualProgrammeVersion AuditAnnualProgrammeVersion[]
- triggeredAuditTechnicalEvents AuditTechnicalEvent[]
- @@unique([tenantId, objectId])
+  signedCustodies                         SignedDocumentCustody[]
+  auditOperations                         AuditOperation[]
+  auditTrailReviews                       AuditTrailReview[]
+  auditTrailExports                       AuditTrailExport[]
+  savedListViews                          SavedListView[]
+  deviationImmediateActionExecutedBy      DeviationImmediateAction[]      @relation("DeviationImmediateActionExecutedBy")
+  deviationCapaPlanResponsible            DeviationCapaPlan[]             @relation("DeviationCapaPlanResponsible")
+  capaPlannedActionResponsible            CapaPlannedAction[]             @relation("CapaPlannedActionResponsible")
+  changeControlRequestDecisionResponsible ChangeControl[]                 @relation("ChangeControlRequestDecisionResponsible")
+  changeControlFollowupResponsible        ChangeControl[]                 @relation("ChangeControlFollowupResponsible")
+  changeControlTaskResponsible            ChangeControlTask[]             @relation("ChangeControlTaskResponsible")
+  changeControlFollowupEntryResponsible   ChangeControlFollowup[]         @relation("ChangeControlFollowupEntryResponsible")
+  complaintCapaPlanResponsible            ComplaintCapaPlan[]             @relation("ComplaintCapaPlanResponsible")
+  complaintDerivedActionResponsible       ComplaintDerivedAction[]        @relation("ComplaintDerivedActionResponsible")
+  auditFindingActionResponsible           AuditFindingAction[]            @relation("AuditFindingActionResponsible")
+  id                                      String                          @id @default(uuid()) @db.Uuid
+  tenantId                                String                          @db.Uuid
+  objectId                                String                          @db.Uuid
+  displayName                             String
+  email                                   String
+  active                                  Boolean                         @default(false)
+  authorizedAt                            DateTime?
+  createdAt                               DateTime                        @default(now())
+  updatedAt                               DateTime                        @updatedAt
+  roles                                   AuthUserRole[]
+  departments                             AuthUserDepartment[]
+  assignments                             AuthRecordAssignment[]
+  sessions                                AuthSession[]
+  administrativeChanges                   AuthAuthorizationChange[]
+  authoredChangeHistory                   ChangeHistory[]
+  authoredQmsRecordVersion                QmsRecordVersion[]
+  authoredReviewThread                    ReviewThread[]
+  authoredReviewMessage                   ReviewMessage[]
+  authoredGeneratedDocument               GeneratedDocument[]
+  authoredConfigurationChange             ConfigurationChange[]
+  authoredAuditPlanChange                 AuditPlanChange[]
+  authoredControlledDocumentChange        ControlledDocumentChange[]
+  authoredControlledRevisionDocument      ControlledRevisionDocument[]
+  authoredControlledRevisionDecision      ControlledRevisionDecision[]
+  authoredControlledDocumentImportEvent   ControlledDocumentImportEvent[]
+  authoredAuditAnnualProgrammeVersion     AuditAnnualProgrammeVersion[]
+  triggeredAuditTechnicalEvents           AuditTechnicalEvent[]
+
+  @@unique([tenantId, objectId])
 }
+
 model AuthRole {
- id String @id @default(uuid()) @db.Uuid
- key String @unique
- name String
- qaAcceptedAt DateTime?
- qaAcceptedBy String?
- createdAt DateTime @default(now())
- users AuthUserRole[]
- permissions AuthRolePermission[]
+  id           String               @id @default(uuid()) @db.Uuid
+  key          String               @unique
+  name         String
+  qaAcceptedAt DateTime?
+  qaAcceptedBy String?
+  createdAt    DateTime             @default(now())
+  users        AuthUserRole[]
+  permissions  AuthRolePermission[]
 }
+
 model AuthRolePermission {
- id String @id @default(uuid()) @db.Uuid
- roleId String @db.Uuid
- role AuthRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
- module AccessModule
- permission AccessPermission
- scope AccessScope
- @@unique([roleId, module, permission])
+  id         String           @id @default(uuid()) @db.Uuid
+  roleId     String           @db.Uuid
+  role       AuthRole         @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  module     AccessModule
+  permission AccessPermission
+  scope      AccessScope
+
+  @@unique([roleId, module, permission])
 }
+
 model AuthUserRole {
- userId String @db.Uuid
- roleId String @db.Uuid
- user AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
- role AuthRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
- assignedAt DateTime @default(now())
- @@id([userId, roleId])
+  userId     String   @db.Uuid
+  roleId     String   @db.Uuid
+  user       AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role       AuthRole @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  assignedAt DateTime @default(now())
+
+  @@id([userId, roleId])
 }
+
 model AuthUserDepartment {
- userId String @db.Uuid
- departmentId String
- user AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
- department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
- @@id([userId, departmentId])
+  userId       String     @db.Uuid
+  departmentId String
+  user         AuthUser   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  @@id([userId, departmentId])
 }
+
 model AuthRecordAssignment {
- id String @id @default(uuid()) @db.Uuid
- userId String @db.Uuid
- user AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
- module AccessModule
- recordId String @db.Uuid
- @@unique([userId, module, recordId])
+  id       String       @id @default(uuid()) @db.Uuid
+  userId   String       @db.Uuid
+  user     AuthUser     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  module   AccessModule
+  recordId String       @db.Uuid
+
+  @@unique([userId, module, recordId])
 }
+
 model AuthSession {
- id String @id @default(uuid()) @db.Uuid
- tokenHash String @unique
- csrfHash String
- userId String @db.Uuid
- user AuthUser @relation(fields: [userId], references: [id], onDelete: Restrict)
- createdAt DateTime @default(now())
- expiresAt DateTime
- lastSeenAt DateTime @default(now())
- revokedAt DateTime?
- @@index([userId, revokedAt])
- @@index([expiresAt])
+  id         String    @id @default(uuid()) @db.Uuid
+  tokenHash  String    @unique
+  csrfHash   String
+  userId     String    @db.Uuid
+  user       AuthUser  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
 }
+
 model AuthLoginAttempt {
- id String @id
- state String
- nonce String
- verifier String
- returnTo String
- expiresAt DateTime
- @@index([expiresAt])
+  id        String   @id
+  state     String
+  nonce     String
+  verifier  String
+  returnTo  String
+  expiresAt DateTime
+
+  @@index([expiresAt])
 }
+
 model AuthAuthorizationChange {
- auditEvidence AuditOperationEvidence[]
- id String @id @default(uuid()) @db.Uuid
- actorUserId String? @db.Uuid
- actorUser AuthUser? @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
- source String
- targetUserId String?
- action String
- oldValue Json?
- newValue Json?
- reason String
- createdAt DateTime @default(now())
+  auditEvidence AuditOperationEvidence[]
+  id            String                   @id @default(uuid()) @db.Uuid
+  actorUserId   String?                  @db.Uuid
+  actorUser     AuthUser?                @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  source        String
+  targetUserId  String?
+  action        String
+  oldValue      Json?
+  newValue      Json?
+  reason        String
+  createdAt     DateTime                 @default(now())
 }
 
 // 4B3-B1 infrastructure. No production QMS capture policy is activated.
 model AuditOperation {
-  assessment AuditOperationAssessment?
-  trailReviews AuditTrailReviewOperation[]
-  id String @id @db.Uuid
-  actorUserId String @db.Uuid
-  actorUser AuthUser @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
-  actorName String
-  origin String
-  operation String
-  requestId String @db.Uuid
-  requestDigest String
-  reason String?
-  policyVersion String
-  schemaVersion Int
-  occurredAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  assessment        AuditOperationAssessment?
+  trailReviews      AuditTrailReviewOperation[]
+  id                String                      @id @db.Uuid
+  actorUserId       String                      @db.Uuid
+  actorUser         AuthUser                    @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorName         String
+  origin            String
+  operation         String
+  requestId         String                      @db.Uuid
+  requestDigest     String
+  reason            String?
+  policyVersion     String
+  schemaVersion     Int
+  occurredAt        DateTime                    @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
   databasePrincipal String
-  accessModule String?
-  accessPermission String?
-  targets AuditOperationTarget[]
-  events AuditEvent[]
-  evidence AuditOperationEvidence[]
-  commandResult AuditCommandResult?
-  context AuditRuntimeContext?
+  accessModule      String?
+  accessPermission  String?
+  targets           AuditOperationTarget[]
+  events            AuditEvent[]
+  evidence          AuditOperationEvidence[]
+  commandResult     AuditCommandResult?
+  context           AuditRuntimeContext?
+
   @@unique([actorUserId, origin, requestId])
   @@index([occurredAt, id])
 }
 
 model AuditAggregateCursor {
-  rootKey String @id
-  rootKind String
-  qmsRecordId String? @unique
-  qmsRecord QmsRecord? @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  controlledDocumentId String? @unique
-  controlledDocument ControlledDocument? @relation(fields: [controlledDocumentId], references: [id], onDelete: Restrict)
-  auditAnnualPlanId String? @unique
-  auditAnnualPlan AuditAnnualPlan? @relation(fields: [auditAnnualPlanId], references: [id], onDelete: Restrict)
-  administrationRootId String? @unique
-  administrationRoot AuditAdministrationRoot? @relation(fields: [administrationRootId], references: [id], onDelete: Restrict)
-  lastSequence BigInt @default(0)
-  targets AuditOperationTarget[]
+  rootKey              String                   @id
+  rootKind             String
+  qmsRecordId          String?                  @unique
+  qmsRecord            QmsRecord?               @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  controlledDocumentId String?                  @unique
+  controlledDocument   ControlledDocument?      @relation(fields: [controlledDocumentId], references: [id], onDelete: Restrict)
+  auditAnnualPlanId    String?                  @unique
+  auditAnnualPlan      AuditAnnualPlan?         @relation(fields: [auditAnnualPlanId], references: [id], onDelete: Restrict)
+  administrationRootId String?                  @unique
+  administrationRoot   AuditAdministrationRoot? @relation(fields: [administrationRootId], references: [id], onDelete: Restrict)
+  lastSequence         BigInt                   @default(0)
+  targets              AuditOperationTarget[]
 }
 
 model AuditOperationTarget {
-  operationId String @db.Uuid
-  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
-  rootKey String
-  root AuditAggregateCursor @relation(fields: [rootKey], references: [rootKey], onDelete: Restrict)
+  operationId       String                       @db.Uuid
+  operation         AuditOperation               @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  rootKey           String
+  root              AuditAggregateCursor         @relation(fields: [rootKey], references: [rootKey], onDelete: Restrict)
   aggregateSequence BigInt
-  events AuditEvent[]
-  additionalEvents AuditEventAdditionalTarget[]
+  events            AuditEvent[]
+  additionalEvents  AuditEventAdditionalTarget[]
+
   @@id([operationId, rootKey])
   @@unique([rootKey, aggregateSequence])
 }
 
 model AuditEvent {
-  id String @id @db.Uuid
-  operationId String @db.Uuid
-  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
-  rootKey String
-  target AuditOperationTarget @relation(fields: [operationId, rootKey], references: [operationId, rootKey], onDelete: Restrict)
-  eventOrdinal Int
-  entityType String
-  entityId String
-  fieldPath String
-  oldValue Json
-  newValue Json
-  capturedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
-  recordVersionId String?
-  recordVersion QmsRecordVersion? @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
+  id                  String                       @id @db.Uuid
+  operationId         String                       @db.Uuid
+  operation           AuditOperation               @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  rootKey             String
+  target              AuditOperationTarget         @relation(fields: [operationId, rootKey], references: [operationId, rootKey], onDelete: Restrict)
+  eventOrdinal        Int
+  entityType          String
+  entityId            String
+  fieldPath           String
+  oldValue            Json
+  newValue            Json
+  capturedAt          DateTime                     @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  recordVersionId     String?
+  recordVersion       QmsRecordVersion?            @relation(fields: [recordVersionId], references: [id], onDelete: Restrict)
   generatedDocumentId String?
-  generatedDocument GeneratedDocument? @relation(fields: [generatedDocumentId], references: [id], onDelete: Restrict)
-  documentChecksum String?
-  mutationId String? @db.Uuid
-  additionalTargets AuditEventAdditionalTarget[]
-  trailExports AuditTrailExportEvent[]
-  trailReviews AuditTrailReviewEvent[]
+  generatedDocument   GeneratedDocument?           @relation(fields: [generatedDocumentId], references: [id], onDelete: Restrict)
+  documentChecksum    String?
+  mutationId          String?                      @db.Uuid
+  additionalTargets   AuditEventAdditionalTarget[]
+  trailExports        AuditTrailExportEvent[]
+  trailReviews        AuditTrailReviewEvent[]
+
   @@unique([operationId, eventOrdinal])
   @@index([rootKey, capturedAt, id])
 }
 
 // Private transaction lease, removed by deferred coverage validation at commit.
 model AuditRuntimeContext {
-  operationId String @id @db.Uuid
-  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
-  transactionId BigInt @unique
-  backendPid Int
+  operationId       String         @id @db.Uuid
+  operation         AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  transactionId     BigInt         @unique
+  backendPid        Int
   databasePrincipal String
 }
 
 // Synthetic fixture only. No production endpoint and no business fields altered.
 model AuditPilotRecord {
-  qmsRecordId String @id
-  qmsRecord QmsRecord @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
-  value Int @default(0)
-  revision Int @default(0)
-  updatedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  qmsRecordId String    @id
+  qmsRecord   QmsRecord @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  value       Int       @default(0)
+  revision    Int       @default(0)
+  updatedAt   DateTime  @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
 }
 
 // Durable requirement, never an HTTP/environment toggle. Installation adds no row.
 model AuditPolicyRequirement {
-  policyVersion String @id
-  requirementReference String
+  policyVersion                String   @id
+  requirementReference         String
   requestedByDatabasePrincipal String
-  requestedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  requestedAt                  DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
 }
 
 // B2 SQL capture foundation. No migration/startup activates a corporate policy.
 model AuditAdministrationRoot {
-  id String @id
-  category String
-  createdAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
-  cursor AuditAggregateCursor?
+  id        String                @id
+  category  String
+  createdAt DateTime              @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  cursor    AuditAggregateCursor?
 }
 
 // A relationship change is one event correlated with both affected roots.
 model AuditEventAdditionalTarget {
-  eventId String @db.Uuid
-  event AuditEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
-  operationId String @db.Uuid
-  rootKey String
-  target AuditOperationTarget @relation(fields: [operationId, rootKey], references: [operationId, rootKey], onDelete: Restrict)
+  eventId     String               @db.Uuid
+  event       AuditEvent           @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  operationId String               @db.Uuid
+  rootKey     String
+  target      AuditOperationTarget @relation(fields: [operationId, rootKey], references: [operationId, rootKey], onDelete: Restrict)
+
   @@id([eventId, rootKey])
 }
 
 // Private, transaction-local state. Never writable/readable by the runtime role.
 model AuditBusinessContext {
-  rootMaturity AuditRootMaturity[]
-  transactionId BigInt @id
-  backendPid Int
-  databasePrincipal String
-  actorUserId String @db.Uuid
-  actorName String
-  requestId String @db.Uuid
-  requestDigest String
-  operationCode String
-  accessModule String
-  accessPermission String
-  reason String?
-  operationId String? @db.Uuid
-  authorizationClaims Json @default("[]")
-  commandOutcome Json?
+  rootMaturity        AuditRootMaturity[]
+  transactionId       BigInt              @id
+  backendPid          Int
+  databasePrincipal   String
+  actorUserId         String              @db.Uuid
+  actorName           String
+  requestId           String              @db.Uuid
+  requestDigest       String
+  operationCode       String
+  accessModule        String
+  accessPermission    String
+  reason              String?
+  operationId         String?             @db.Uuid
+  authorizationClaims Json                @default("[]")
+  commandOutcome      Json?
 }
 
 model AuditCommandResult {
-  operationId String @id @db.Uuid
-  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
-  outcome Json
+  operationId         String         @id @db.Uuid
+  operation           AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  outcome             Json
   authorizationClaims Json
-  recordedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  recordedAt          DateTime       @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
 }
 
 model AuditMutationWitness {
-  requiresReason Boolean @default(false)
-  id String @id @db.Uuid
-  transactionId BigInt
-  entityType String
-  entityKey String
-  verb String
-  beforeRoots String[]
-  expected Json?
-  completed Boolean @default(false)
+  requiresReason Boolean  @default(false)
+  id             String   @id @db.Uuid
+  transactionId  BigInt
+  entityType     String
+  entityKey      String
+  verb           String
+  beforeRoots    String[]
+  expected       Json?
+  completed      Boolean  @default(false)
+
   @@index([transactionId, entityType, entityKey])
 }
 
 model AuditRootBinding {
   transactionId BigInt
-  entityType String
-  entityKey String
-  roots String[]
+  entityType    String
+  entityKey     String
+  roots         String[]
+
   @@id([transactionId, entityType, entityKey])
 }
 
 model AuditCaptureTablePolicy {
-  entityType String @id
-  primaryKey String[]
-  rootPaths Json
+  entityType  String   @id
+  primaryKey  String[]
+  rootPaths   Json
   captureMode String
 }
 
 model AuditCaptureFieldPolicy {
   entityType String
-  fieldPath String
-  valueType String
-  transform String
-  critical Boolean
+  fieldPath  String
+  valueType  String
+  transform  String
+  critical   Boolean
+
   @@id([entityType, fieldPath])
 }
 
@@ -2489,134 +2555,146 @@ model AuditCaptureFieldPolicy {
 // SQL-only bounded technical cleanup. Application cannot read or write leases.
 model AuditRootMaturity {
   transactionId BigInt
-  context AuditBusinessContext @relation(fields: [transactionId], references: [transactionId], onDelete: Restrict)
-  rootKey String
-  module String
-  isDraft Boolean
-  @@id([transactionId,rootKey])
+  context       AuditBusinessContext @relation(fields: [transactionId], references: [transactionId], onDelete: Restrict)
+  rootKey       String
+  module        String
+  isDraft       Boolean
+
+  @@id([transactionId, rootKey])
 }
+
 model AuditOperationAssessment {
-  operationId String @id @db.Uuid
-  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
-  policyVersion String
+  operationId      String         @id @db.Uuid
+  operation        AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  policyVersion    String
   proposedCritical Boolean
-  reasonRequired Boolean
-  assessedAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
-  @@index([proposedCritical,operationId])
+  reasonRequired   Boolean
+  assessedAt       DateTime       @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+
+  @@index([proposedCritical, operationId])
 }
 
 // 4B3-C review receipts and controlled exports. Both families are append-only;
 // they document an exact cut without changing the source operation/event.
 model AuditTrailReview {
-  id String @id @db.Uuid
-  requestId String @db.Uuid
-  requestDigest String
-  reviewerUserId String @db.Uuid
-  reviewerUser AuthUser @relation(fields: [reviewerUserId], references: [id], onDelete: Restrict)
-  reviewerName String
-  result String
-  notes String?
-  scopeManifest Json
-  cutoffOccurredAt DateTime @db.Timestamptz(6)
-  cutoffOperationId String @db.Uuid
-  supersedesId String? @db.Uuid
-  supersedes AuditTrailReview? @relation("AuditTrailReviewCorrections", fields: [supersedesId], references: [id], onDelete: Restrict)
-  corrections AuditTrailReview[] @relation("AuditTrailReviewCorrections")
-  createdAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
-  operations AuditTrailReviewOperation[]
-  events AuditTrailReviewEvent[]
+  id                String                      @id @db.Uuid
+  requestId         String                      @db.Uuid
+  requestDigest     String
+  reviewerUserId    String                      @db.Uuid
+  reviewerUser      AuthUser                    @relation(fields: [reviewerUserId], references: [id], onDelete: Restrict)
+  reviewerName      String
+  result            String
+  notes             String?
+  scopeManifest     Json
+  cutoffOccurredAt  DateTime                    @db.Timestamptz(6)
+  cutoffOperationId String                      @db.Uuid
+  supersedesId      String?                     @db.Uuid
+  supersedes        AuditTrailReview?           @relation("AuditTrailReviewCorrections", fields: [supersedesId], references: [id], onDelete: Restrict)
+  corrections       AuditTrailReview[]          @relation("AuditTrailReviewCorrections")
+  createdAt         DateTime                    @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  operations        AuditTrailReviewOperation[]
+  events            AuditTrailReviewEvent[]
+
   @@unique([reviewerUserId, requestId])
   @@index([createdAt, id])
   @@index([result, createdAt])
 }
 
 model AuditTrailReviewOperation {
-  reviewId String @db.Uuid
-  review AuditTrailReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
-  operationId String @db.Uuid
-  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  reviewId    String           @db.Uuid
+  review      AuditTrailReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+  operationId String           @db.Uuid
+  operation   AuditOperation   @relation(fields: [operationId], references: [id], onDelete: Restrict)
+
   @@id([reviewId, operationId])
   @@index([operationId, reviewId])
 }
 
 model AuditTrailReviewEvent {
-  reviewId String @db.Uuid
-  review AuditTrailReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
-  eventId String @db.Uuid
-  event AuditEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  reviewId String           @db.Uuid
+  review   AuditTrailReview @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+  eventId  String           @db.Uuid
+  event    AuditEvent       @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
   @@id([reviewId, eventId])
   @@index([eventId, reviewId])
 }
 
 model AuditTrailExport {
-  id String @id @db.Uuid
-  requestId String @db.Uuid
-  requestDigest String
-  actorUserId String @db.Uuid
-  actorUser AuthUser @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
-  actorName String
-  format String
-  fileName String
-  fileData Bytes
-  contentSha256 String
-  rowCount Int
-  scopeManifest Json
-  cutoffOccurredAt DateTime @db.Timestamptz(6)
-  cutoffOperationId String @db.Uuid
-  createdAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
-  events AuditTrailExportEvent[]
+  id                String                  @id @db.Uuid
+  requestId         String                  @db.Uuid
+  requestDigest     String
+  actorUserId       String                  @db.Uuid
+  actorUser         AuthUser                @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorName         String
+  format            String
+  fileName          String
+  fileData          Bytes
+  contentSha256     String
+  rowCount          Int
+  scopeManifest     Json
+  cutoffOccurredAt  DateTime                @db.Timestamptz(6)
+  cutoffOperationId String                  @db.Uuid
+  createdAt         DateTime                @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  events            AuditTrailExportEvent[]
+
   @@unique([actorUserId, requestId])
   @@index([createdAt, id])
 }
 
 model AuditTrailExportEvent {
-  exportId String @db.Uuid
-  export AuditTrailExport @relation(fields: [exportId], references: [id], onDelete: Restrict)
-  eventId String @db.Uuid
-  event AuditEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  exportId String           @db.Uuid
+  export   AuditTrailExport @relation(fields: [exportId], references: [id], onDelete: Restrict)
+  eventId  String           @db.Uuid
+  event    AuditEvent       @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
   @@id([exportId, eventId])
   @@index([eventId, exportId])
 }
+
 model AuditTechnicalContext {
-  transactionId BigInt @id
-  backendPid Int
-  databasePrincipal String
-  batchId String
-  triggeredByUserId String @db.Uuid
-  triggeredByName String
-  cutoff DateTime @db.Timestamptz(6)
+  transactionId         BigInt   @id
+  backendPid            Int
+  databasePrincipal     String
+  batchId               String
+  triggeredByUserId     String   @db.Uuid
+  triggeredByName       String
+  cutoff                DateTime @db.Timestamptz(6)
   retainedConfirmedRows Int
 }
+
 model AuditTechnicalEvent {
-  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  channel String
-  operation String
-  actorKind String
-  triggeredByUserId String @db.Uuid
-  triggeredByUser AuthUser @relation(fields: [triggeredByUserId], references: [id], onDelete: Restrict)
-  triggeredByName String
-  batchId String
-  batch ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
-  occurredAt DateTime @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
-  deletedPendingRows Int
+  id                    String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channel               String
+  operation             String
+  actorKind             String
+  triggeredByUserId     String                        @db.Uuid
+  triggeredByUser       AuthUser                      @relation(fields: [triggeredByUserId], references: [id], onDelete: Restrict)
+  triggeredByName       String
+  batchId               String
+  batch                 ControlledDocumentImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  occurredAt            DateTime                      @default(dbgenerated("clock_timestamp()")) @db.Timestamptz(6)
+  deletedPendingRows    Int
   retainedConfirmedRows Int
-  @@index([occurredAt,id])
+
+  @@index([occurredAt, id])
   @@index([batchId])
 }
+
 model AuditOperationEvidence {
-  id String @id @db.Uuid
-  operationId String @db.Uuid
-  operation AuditOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
-  changeHistoryId String?
-  changeHistory ChangeHistory? @relation(fields: [changeHistoryId], references: [id], onDelete: Restrict)
-  configurationChangeId String?
-  configurationChange ConfigurationChange? @relation(fields: [configurationChangeId], references: [id], onDelete: Restrict)
-  authorizationChangeId String? @db.Uuid
-  authorizationChange AuthAuthorizationChange? @relation(fields: [authorizationChangeId], references: [id], onDelete: Restrict)
-  auditPlanChangeId String?
-  auditPlanChange AuditPlanChange? @relation(fields: [auditPlanChangeId], references: [id], onDelete: Restrict)
+  id                         String                    @id @db.Uuid
+  operationId                String                    @db.Uuid
+  operation                  AuditOperation            @relation(fields: [operationId], references: [id], onDelete: Restrict)
+  changeHistoryId            String?
+  changeHistory              ChangeHistory?            @relation(fields: [changeHistoryId], references: [id], onDelete: Restrict)
+  configurationChangeId      String?
+  configurationChange        ConfigurationChange?      @relation(fields: [configurationChangeId], references: [id], onDelete: Restrict)
+  authorizationChangeId      String?                   @db.Uuid
+  authorizationChange        AuthAuthorizationChange?  @relation(fields: [authorizationChangeId], references: [id], onDelete: Restrict)
+  auditPlanChangeId          String?
+  auditPlanChange            AuditPlanChange?          @relation(fields: [auditPlanChangeId], references: [id], onDelete: Restrict)
   controlledDocumentChangeId String?
-  controlledDocumentChange ControlledDocumentChange? @relation(fields: [controlledDocumentChangeId], references: [id], onDelete: Restrict)
+  controlledDocumentChange   ControlledDocumentChange? @relation(fields: [controlledDocumentChangeId], references: [id], onDelete: Restrict)
 }
 
 /// Vista guardada de un listado: preferencia personal (nombre + filtros de la URL).

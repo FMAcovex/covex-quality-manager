@@ -3,6 +3,7 @@ import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { qmsListPagination } from "@/lib/qms/list-pagination";
 import { listRecordWithRelations, listAdministrativeSql } from "@/lib/qms/list-projections";
@@ -140,10 +141,13 @@ export async function getChangeControlDetail(id: string) {
         },
       },
       department: true,
+      requestDecisionResponsibleUser: responsibleUserSelect,
+      followupResponsibleUser: responsibleUserSelect,
       tasks: {
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
         include: {
           department: true,
+          responsibleUser: responsibleUserSelect,
           states: {
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -154,6 +158,7 @@ export async function getChangeControlDetail(id: string) {
       followups: {
         orderBy: [{ sequenceNumber: "desc" }, { followupDate: "desc" }],
         include: {
+          responsibleUser: responsibleUserSelect,
           taskStates: {
             include: { task: { include: { department: true } } },
             orderBy: { createdAt: "asc" },

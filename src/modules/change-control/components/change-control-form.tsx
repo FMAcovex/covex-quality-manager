@@ -6,6 +6,8 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 
 import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
+import { ResponsibleUserPicker, ResponsibleUserSelect } from "@/components/responsible-user-select";
+import type { AppUserOption } from "@/lib/qms/responsible-user";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import { useActionState, useEffect, useState } from "react";
 import type {
@@ -138,6 +140,7 @@ export function ChangeControlForm({
   mode,
   action,
   departments,
+  users = [],
   defaults = {},
   changeId,
   cancelHref,
@@ -148,6 +151,7 @@ export function ChangeControlForm({
   mode: "create" | "edit";
   action: (state: ChangeControlFormState, formData: FormData) => Promise<ChangeControlFormState>;
   departments: Department[];
+  users?: AppUserOption[];
   defaults?: ChangeControlFormDefaults;
   changeId?: string;
   cancelHref?: string;
@@ -269,6 +273,7 @@ export function ChangeControlForm({
             </select>
           </label>
           <Field label="Responsable de dictamen" name="requestDecisionResponsible" defaultValue={formDefaults.requestDecisionResponsible} issues={issues.requestDecisionResponsible} />
+          <ResponsibleUserSelect users={users} name="requestDecisionResponsibleUserId" textName="requestDecisionResponsible" defaultValue={formDefaults.requestDecisionResponsibleUserId} />
           <Field label="Cargo / función" name="requestDecisionRole" defaultValue={formDefaults.requestDecisionRole} issues={issues.requestDecisionRole} />
           <Field label="Fecha aceptación/denegación" name="requestDecisionDate" type="date" defaultValue={formDefaults.requestDecisionDate} issues={issues.requestDecisionDate} />
         </div>
@@ -415,6 +420,7 @@ export function ChangeControlForm({
                   onChange={(e) => updateTask(index, { responsible: e.target.value })}
                 />
               </label>
+              <ResponsibleUserPicker users={users} value={item.responsibleUserId} text={item.responsible} onChange={({ userId, text }) => updateTask(index, baselineLocked ? { responsibleUserId: userId || null } : { responsibleUserId: userId || null, responsible: text })} />
               <label className="field">
                 <span>Fecha prevista</span>
                 <input
@@ -461,7 +467,8 @@ export function ChangeControlForm({
           </label>
           <Field label="Fecha del dictamen" name="dictamenDate" type="date" defaultValue={formDefaults.dictamenDate} required={!draft && dictamenResult !== "PENDING"} issues={issues.dictamenDate} />
           <Field label="Fecha del próximo seguimiento" name="nextFollowupDate" type="date" defaultValue={formDefaults.nextFollowupDate} required={!draft && dictamenResult === "APPROVED"} issues={issues.nextFollowupDate} />
-          <Field label="Responsable de seguimiento" name="followupResponsible" defaultValue={formDefaults.followupResponsible} required={!draft && dictamenResult === "APPROVED"} span="span-2" issues={issues.followupResponsible} />
+          <Field label="Responsable de seguimiento" name="followupResponsible" defaultValue={formDefaults.followupResponsible} required={!draft && dictamenResult === "APPROVED"} issues={issues.followupResponsible} />
+          <ResponsibleUserSelect users={users} name="followupResponsibleUserId" textName="followupResponsible" defaultValue={formDefaults.followupResponsibleUserId} />
           <TextArea label="Observaciones" name="dictamenObservations" defaultValue={formDefaults.dictamenObservations} required={!draft && dictamenResult !== "PENDING"} issues={issues.dictamenObservations} />
         </div>
       </section>

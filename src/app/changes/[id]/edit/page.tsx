@@ -1,5 +1,6 @@
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
+import { appUserOptions } from "@/lib/auth/app-users";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import { updateChangeControlAction } from "@/modules/change-control/actions";
@@ -21,6 +22,7 @@ async function EditChangeControlPageAuthenticatedContent({ params, searchParams 
   if (!record) notFound();
 
   const baselineTasks = record.tasks.filter((item) => item.origin === "DICTAMEN");
+  const users = await appUserOptions([record.requestDecisionResponsibleUserId, record.followupResponsibleUserId, ...baselineTasks.map((item) => item.responsibleUserId)]);
   const nextFollowupDate = nextFollowupDateFromHistory(record.followups);
   const defaults = {
     businessCode: record.qmsRecord.businessCode ?? undefined,
@@ -35,6 +37,7 @@ async function EditChangeControlPageAuthenticatedContent({ params, searchParams 
     providedDocuments: record.providedDocuments ?? undefined,
     requestDecision: record.requestDecision,
     requestDecisionResponsible: record.requestDecisionResponsible ?? undefined,
+    requestDecisionResponsibleUserId: record.requestDecisionResponsibleUserId,
     requestDecisionRole: record.requestDecisionRole ?? undefined,
     requestDecisionDate: record.requestDecisionDate?.toISOString().slice(0, 10),
     evaluation: record.evaluation ?? undefined,
@@ -61,6 +64,7 @@ async function EditChangeControlPageAuthenticatedContent({ params, searchParams 
     dictamenResult: record.dictamenResult,
     dictamenDate: record.dictamenDate?.toISOString().slice(0, 10),
     followupResponsible: record.followupResponsible ?? undefined,
+    followupResponsibleUserId: record.followupResponsibleUserId,
     nextFollowupDate: nextFollowupDate instanceof Date
       ? nextFollowupDate.toISOString().slice(0, 10)
       : nextFollowupDate?.slice(0, 10),
@@ -74,6 +78,7 @@ async function EditChangeControlPageAuthenticatedContent({ params, searchParams 
       departmentId: item.departmentId ?? "",
       description: item.description,
       responsible: item.responsible ?? "",
+      responsibleUserId: item.responsibleUserId,
       plannedDate: item.plannedDate?.toISOString().slice(0, 10) ?? "",
     })),
   };
@@ -87,6 +92,7 @@ async function EditChangeControlPageAuthenticatedContent({ params, searchParams 
         mode="edit"
         action={updateChangeControlAction.bind(null,id)}
         departments={lookups.departments}
+        users={users}
         defaults={defaults}
         changeId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/changes",returnTo)} detailTab={qmsDetailTab("/changes",tab)}
         baselineLocked={record.dictamenResult === "APPROVED"}

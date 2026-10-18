@@ -1,4 +1,5 @@
 import { authorizedPage } from "@/lib/auth/page-guard";
+import { appUserOptions } from "@/lib/auth/app-users";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
 import { updateCapaAction } from "@/modules/capa/actions";
@@ -13,6 +14,7 @@ async function EditCapaPageAuthenticatedContent({ params, searchParams }: { para
  const cancelHref=qmsDetailUrl("/capa",id,returnTo,tab);
   const [capa, lookups] = await Promise.all([getCapaDetail(id), getCapaLookups()]);
   if (!capa) notFound();
+  const users = await appUserOptions(capa.plannedActions.map((item) => item.responsibleUserId));
 
   const pendingOriginIds =
     capa.status === "DRAFT" && capa.extraData && typeof capa.extraData === "object" && !Array.isArray(capa.extraData)
@@ -73,6 +75,7 @@ async function EditCapaPageAuthenticatedContent({ params, searchParams }: { para
     plannedActions: capa.plannedActions.map((item) => ({
       description: item.description,
       responsible: item.responsible ?? "",
+      responsibleUserId: item.responsibleUserId,
       plannedExecutionDate: item.plannedExecutionDate?.toISOString().slice(0,10) ?? "",
       impact: item.impact ?? "",
     })),
@@ -82,7 +85,7 @@ async function EditCapaPageAuthenticatedContent({ params, searchParams }: { para
   return (
     <section className="workspace">
       <div className="page-heading"><div><p className="eyebrow">CAPA</p><h1>Editar {capa.qmsRecord.businessCode}</h1><p>Los expedientes cerrados permanecen editables en V1 con historial de cambios.</p></div></div>
-      <CapaForm mode="edit" action={action} departments={lookups.departments} defaults={defaults} capaId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/capa",returnTo)} detailTab={qmsDetailTab("/capa",tab)} qmsRecordId={capa.qmsRecord.id} />
+      <CapaForm mode="edit" action={action} departments={lookups.departments} users={users} defaults={defaults} capaId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/capa",returnTo)} detailTab={qmsDetailTab("/capa",tab)} qmsRecordId={capa.qmsRecord.id} />
     </section>
   );
 }

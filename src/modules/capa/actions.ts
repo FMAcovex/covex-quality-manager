@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { refreshCapaVersionAfterRelationChange } from "./relation-version-service";
 import { prisma } from "@/lib/db";
+import { responsibleUsersProblem } from "@/lib/auth/app-users";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
 import {
@@ -134,6 +135,8 @@ async function createCapaActionAuthenticatedContent(
     return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
   }
   const v = parsed.values;
+  const userProblem = await responsibleUsersProblem(v.plannedActions.map((item) => item.responsibleUserId));
+  if (userProblem) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: [userProblem], fieldIssues: { plannedActionsJson: [userProblem] } });
   let capaId: string;
   try {
     const department = v.departmentId
@@ -256,6 +259,7 @@ async function createCapaActionAuthenticatedContent(
             create: v.plannedActions.map((item, index) => ({
               description: item.description,
               responsible: item.responsible || null,
+              responsibleUserId: item.responsibleUserId ?? null,
               plannedExecutionDate: toDate(item.plannedExecutionDate),
               impact: item.impact || null,
               sortOrder: index,
@@ -419,6 +423,8 @@ async function updateCapaActionAuthenticatedContent(
   }
 
   const v = parsed.values;
+  const userProblem = await responsibleUsersProblem(v.plannedActions.map((item) => item.responsibleUserId), existing.plannedActions.map((item) => item.responsibleUserId));
+  if (userProblem) return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: [userProblem], fieldIssues: { plannedActionsJson: [userProblem] } });
   const historyReason = v.saveIntent === "CREATE_FOLLOWUP_VERSION" ? v.changeReason : null;
   const requestedBusinessCode = v.businessCode;
   v.businessCode = existing.qmsRecord.businessCode ?? requestedBusinessCode;
@@ -513,6 +519,7 @@ async function updateCapaActionAuthenticatedContent(
     plannedActions: existing.plannedActions.map((item) => ({
       description: item.description,
       responsible: item.responsible ?? "",
+      responsibleUserId: item.responsibleUserId,
       plannedExecutionDate: item.plannedExecutionDate?.toISOString().slice(0, 10) ?? "",
       impact: item.impact ?? "",
     })),
@@ -647,6 +654,7 @@ async function updateCapaActionAuthenticatedContent(
             create: v.plannedActions.map((item, index) => ({
               description: item.description,
               responsible: item.responsible || null,
+              responsibleUserId: item.responsibleUserId ?? null,
               plannedExecutionDate: toDate(item.plannedExecutionDate),
               impact: item.impact || null,
               sortOrder: index,

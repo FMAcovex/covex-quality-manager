@@ -151,6 +151,7 @@ export function serializeDeviationVersion(record: DeviationVersionSource) {
       immediateActions: record.immediateActions.map((item) => ({
         description: item.description,
         executedBy: item.executedBy ?? null,
+        executedByUserId: item.executedByUserId ?? null,
         executedAt: iso(item.executedAt),
         sortOrder: item.sortOrder,
       })),
@@ -159,6 +160,7 @@ export function serializeDeviationVersion(record: DeviationVersionSource) {
         description: item.description,
         plannedExecutionDate: iso(item.plannedExecutionDate),
         responsible: item.responsible ?? null,
+        responsibleUserId: item.responsibleUserId ?? null,
         businessCapaCode: item.businessCapaCode ?? null,
         linkedCapaRecordId: item.linkedCapaRecordId ?? null,
         linkedCapaBusinessCode: item.linkedCapaRecord?.businessCode ?? null,
@@ -239,6 +241,7 @@ export function serializeCapaVersion(
       plannedActions: record.plannedActions.map((item) => ({
         description: item.description,
         responsible: item.responsible ?? null,
+        responsibleUserId: item.responsibleUserId ?? null,
         plannedExecutionDate: iso(item.plannedExecutionDate),
         impact: item.impact ?? null,
         sortOrder: item.sortOrder,
@@ -283,6 +286,7 @@ export function serializeChangeControlVersion(record: ChangeControlVersionSource
       providedDocuments: record.providedDocuments ?? null,
       requestDecision: record.requestDecision,
       requestDecisionResponsible: record.requestDecisionResponsible ?? null,
+      requestDecisionResponsibleUserId: record.requestDecisionResponsibleUserId ?? null,
       requestDecisionRole: record.requestDecisionRole ?? null,
       requestDecisionDate: iso(record.requestDecisionDate),
       evaluation: record.evaluation ?? null,
@@ -309,6 +313,7 @@ export function serializeChangeControlVersion(record: ChangeControlVersionSource
       dictamenResult: record.dictamenResult,
       dictamenDate: iso(record.dictamenDate),
       followupResponsible: record.followupResponsible ?? null,
+      followupResponsibleUserId: record.followupResponsibleUserId ?? null,
       dictamenObservations: record.dictamenObservations ?? null,
       approvalNames: record.approvalNames ?? null,
       executionStatus: record.executionStatus,
@@ -338,6 +343,7 @@ export function serializeChangeControlVersion(record: ChangeControlVersionSource
         departmentNameSnapshot: item.departmentNameSnapshot ?? null,
         description: item.description,
         responsible: item.responsible ?? null,
+        responsibleUserId: item.responsibleUserId ?? null,
         plannedDate: iso(item.plannedDate),
         origin: item.origin,
         introducedInFollowup: item.introducedInFollowup ?? null,
@@ -348,6 +354,7 @@ export function serializeChangeControlVersion(record: ChangeControlVersionSource
         sequenceNumber: item.sequenceNumber,
         followupDate: iso(item.followupDate),
         responsible: item.responsible,
+        responsibleUserId: item.responsibleUserId ?? null,
         observations: item.observations ?? null,
         executionStatus: item.executionStatus,
         executionDate: iso(item.executionDate),
@@ -431,8 +438,8 @@ export function serializeComplaintVersion(
       annexIVTemplateVersionId: record.annexIVTemplateVersionId ?? null, annexIVTemplateVersionCode: record.annexIVTemplateVersion?.versionCode ?? null,
       annexVTemplateVersionId: record.annexVTemplateVersionId ?? null, annexVTemplateVersionCode: record.annexVTemplateVersion?.versionCode ?? null,
       relations: (record.qmsRecord.sourceRelations ?? []).map(x=>({id:x.id,targetRecordId:x.targetRecordId,recordType:x.targetRecord.recordType,businessCode:x.targetRecord.businessCode??x.targetRecord.annulledBusinessCode??null,relationType:x.relationType})),
-      capaPlans: record.capaPlans.map(x=>({id:x.id,actionType:x.actionType,description:x.description,plannedExecutionDate:iso(x.plannedExecutionDate),responsible:x.responsible??null,businessCapaCode:x.businessCapaCode??null,linkedCapaRecordId:x.linkedCapaRecordId??null,linkedCapaBusinessCode:x.linkedCapaRecord?.businessCode??null,proposalStatus:x.proposalStatus})),
-      derivedActions: record.derivedActions.map(x=>({id:x.id,actionType:x.actionType,businessCode:x.businessCode??null,description:x.description??null,responsible:x.responsible??null,plannedExecutionDate:iso(x.plannedExecutionDate),sortOrder:x.sortOrder})),
+      capaPlans: record.capaPlans.map(x=>({id:x.id,actionType:x.actionType,description:x.description,plannedExecutionDate:iso(x.plannedExecutionDate),responsible:x.responsible??null,responsibleUserId:x.responsibleUserId??null,businessCapaCode:x.businessCapaCode??null,linkedCapaRecordId:x.linkedCapaRecordId??null,linkedCapaBusinessCode:x.linkedCapaRecord?.businessCode??null,proposalStatus:x.proposalStatus})),
+      derivedActions: record.derivedActions.map(x=>({id:x.id,actionType:x.actionType,businessCode:x.businessCode??null,description:x.description??null,responsible:x.responsible??null,responsibleUserId:x.responsibleUserId??null,plannedExecutionDate:iso(x.plannedExecutionDate),sortOrder:x.sortOrder})),
       followups: record.followups.map(x=>({id:x.id,followupDate:iso(x.followupDate),completedByText:x.completedByText,followupType:x.followupType??null,comment:x.comment,nextFollowupDate:iso(x.nextFollowupDate),evidenceReference:x.evidenceReference??null}))
     }
   };

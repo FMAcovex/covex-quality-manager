@@ -2,6 +2,8 @@
 import { ActorField, PermissionGate } from "@/components/permissions";
 
 import { CsrfField } from "@/components/csrf";
+import { ResponsibleUserSelect } from "@/components/responsible-user-select";
+import type { AppUserOption } from "@/lib/qms/responsible-user";
 
 import { useActionState, useEffect } from "react";
 import { auditWithReturnTo } from "./navigation";
@@ -18,7 +20,7 @@ function useSavedAuditNavigation(savedHref?: string) {
     } else window.location.assign(target.href);
   }, [savedHref]);
 }
-export function AuditChildForm({ action, kind, defaults = {}, findings = [], buttonLabel = "Guardar" }: { action: (state: AuditChildFormState, form: FormData) => Promise<AuditChildFormState>; kind: "finding" | "action" | "followup"; defaults?: Record<string,string>; findings?: {id:string;reference:string;isActive:boolean}[]; buttonLabel?: string }) {
+export function AuditChildForm({ action, kind, defaults = {}, findings = [], users = [], buttonLabel = "Guardar" }: { action: (state: AuditChildFormState, form: FormData) => Promise<AuditChildFormState>; kind: "finding" | "action" | "followup"; defaults?: Record<string,string>; users?: AppUserOption[]; findings?: {id:string;reference:string;isActive:boolean}[]; buttonLabel?: string }) {
   const [state, formAction, pending] = useActionState(action, { error: null } as AuditChildFormState);
   useSavedAuditNavigation(state.savedHref);
   const values = { ...defaults, ...state.values };
@@ -30,7 +32,7 @@ export function AuditChildForm({ action, kind, defaults = {}, findings = [], but
     {kind === "finding" ? <><h3 className="full">Identificación</h3><p className="full">Referencia: <strong>{defaults.reference || "Se asignará al guardar (OBS / Rk)"}</strong></p>{select("findingType", "Tipo", findingTypeLabels, "FINDING")}{select("criticality", "Criticidad", criticalityLabels, "NA")}{field("sortOrder", "Orden visual", "number")}
       <h3 className="full">Descripción</h3>{field("description", "Descripción", "textarea", true)}{field("criterionReference", "Criterio / referencia", "textarea")}{field("objectiveEvidence", "Evidencia objetiva", "textarea")}
       <h3 className="full">Tratamiento</h3>{field("treatment", "Acciones / justificación", "textarea")}{select("treatmentStatus", "Estado del tratamiento sin acciones", actionStatusLabels, "OPEN")}<p className="muted-note full">Con acciones activas, el estado del hallazgo se calcula a partir de ellas. Las recomendaciones pueden permanecer sin expediente derivado.</p></> : null}
-    {kind === "action" ? <><h3 className="full">Acción del CAPA Plan</h3>{field("description", "Descripción de acción", "textarea", true)}{field("responsible", "Responsable de ejecución")}{field("targetDate", "Fecha objetivo", "date")}{select("status", "Estado de acción", actionStatusLabels, "OPEN")}{field("sortOrder", "Orden visual", "number")}{select("verificationResult", "Resultado de verificación", { PENDING: "Pendiente", CONFORMING: "Conforme / eficaz", NONCONFORMING: "No conforme / no eficaz", NA: "No aplica" }, "PENDING")}{field("verifiedAt", "Fecha de verificación", "date")}{field("verifiedBy", "Verificado por")}</> : null}
+    {kind === "action" ? <><h3 className="full">Acción del CAPA Plan</h3>{field("description", "Descripción de acción", "textarea", true)}{field("responsible", "Responsable de ejecución")}<ResponsibleUserSelect users={users} name="responsibleUserId" textName="responsible" defaultValue={values.responsibleUserId}/>{field("targetDate", "Fecha objetivo", "date")}{select("status", "Estado de acción", actionStatusLabels, "OPEN")}{field("sortOrder", "Orden visual", "number")}{select("verificationResult", "Resultado de verificación", { PENDING: "Pendiente", CONFORMING: "Conforme / eficaz", NONCONFORMING: "No conforme / no eficaz", NA: "No aplica" }, "PENDING")}{field("verifiedAt", "Fecha de verificación", "date")}{field("verifiedBy", "Verificado por")}</> : null}
     {kind === "followup" ? <><h3 className="full">Seguimiento</h3><label className="field"><span>Ámbito</span><select name="findingId" defaultValue={values.findingId ?? ""}><option value="">General de la auditoría</option>{findings.filter(f => f.isActive || f.id === values.findingId).map(f => <option key={f.id} value={f.id}>{f.reference}{!f.isActive ? " · Retirado" : ""}</option>)}</select></label>{field("followupDate", "Fecha de seguimiento", "date", true)}{field("completedByText", "Responsable del seguimiento", "text", true)}{field("description", "Descripción del seguimiento", "textarea", true)}{field("nextReviewDate", "Próxima revisión", "date")}{field("evidenceReference", "Referencia de evidencia", "textarea")}</> : <>{field("closedAt", "Fecha de cierre", "date")}{field("evidence", "Evidencia / observaciones", "textarea")}{field("evidenceReference", "Referencia documental", "textarea")}{field("verificationComment", "Comentario de verificación", "textarea")}</>}
     {field("actor", "Registrado por", "text", true)}{field("changeReason", "Motivo del cambio")}
     <div className="full"><button className="button primary" disabled={pending}>{pending ? "Guardando…" : buttonLabel}</button></div>

@@ -27,6 +27,7 @@ import {
   capaProposalStatusLabel,
 } from "@/modules/capa/proposal-ui";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
+import { ResponsibleUserNote } from "@/components/responsible-user-note";
 import { uploadDeviationSignedPdfAction } from "@/modules/deviations/signed-document-actions";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 
@@ -388,7 +389,7 @@ async function DeviationDetailPageAuthenticatedContent({
                           </td>
                           <td className="action-description-cell">{plan.description}</td>
                           <td>{formatDate(plan.plannedExecutionDate)}</td>
-                          <td>{text(plan.responsible)}</td>
+                          <td>{text(plan.responsible)}<ResponsibleUserNote user={plan.responsibleUser} /></td>
                           <td><span className="badge neutral">{capaProposalStatusLabel(plan.proposalStatus)}</span></td>
                           <td className="action-link-cell">
                             {navigation.kind === "OPEN" ? (
@@ -484,7 +485,7 @@ async function DeviationDetailPageAuthenticatedContent({
                         <tr id={target.anchorId} className="review-target" key={action.id}>
                           <td className="action-number-cell">{String(index + 1).padStart(2, "0")}</td>
                           <td className="action-description-cell"><span>{action.description}</span><ReviewMarker target={target} /></td>
-                          <td>{text(action.executedBy)}</td>
+                          <td>{text(action.executedBy)}<ResponsibleUserNote user={action.executedByUser} /></td>
                           <td>{formatDate(action.executedAt)}</td>
                         </tr>
                       );
@@ -528,7 +529,7 @@ async function DeviationDetailPageAuthenticatedContent({
                           </td>
                           <td className="action-description-cell"><span>{plan.description}</span><ReviewMarker target={target} /></td>
                           <td>{formatDate(plan.plannedExecutionDate)}</td>
-                          <td>{text(plan.responsible)}</td>
+                          <td>{text(plan.responsible)}<ResponsibleUserNote user={plan.responsibleUser} /></td>
                           <td>{capaProposalStatusLabel(plan.proposalStatus)}</td>
                           <td className="action-link-cell">
                             {navigation.kind === "OPEN" ? (
