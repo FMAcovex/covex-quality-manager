@@ -136,6 +136,10 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Instalar plantillas desde Configuración (2026-10-18, D-105):**
+- Botón «Instalar plantillas» en Configuración → Versiones: se suben los ZIP de plantillas y el PNT de OOS, y se instalan con las mismas reglas que `pnpm templates:install` (huella SHA-256, sin sustituir versiones instaladas, historial). Muestra el resultado por plantilla.
+- Comprobado con los paquetes reales: se instalan todas las plantillas reconocidas y repetir no cambia nada. El programa anual interno (PMAI V04, `.doc`) sigue necesitando la terminal con LibreOffice hasta tener su `.docx`.
+
 **Velocidad al cambiar de apartado (2026-10-18, D-104):**
 - Al cambiar de apartado ya no aparece la pantalla «Cargando información…» (solo en la primera carga), sino una barra fina de progreso arriba; el clic en el menú pasa de ~850 ms a ~170–290 ms.
 - `pnpm preview` arranca en modo producción para probar (Codespaces). `pnpm dev` es varias veces más lento y compila cada apartado la primera vez.

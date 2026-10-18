@@ -44,7 +44,8 @@
       "audits-annual:smoke",
       "review-r2c:smoke",
       "hito10:smoke",
-      "assigned-d102:smoke"
+      "assigned-d102:smoke",
+      "template-install-d105:smoke"
     ],
     "ui": [],
     "security": ["phase4b1:smoke", "phase4b2:smoke", "phase4b3-b1:smoke", "phase4b3-b2:configuration:smoke", "phase4b3-b2:requirement:smoke", "phase4b3-b2:capture:smoke", "phase4b3-b2:auth:smoke"]

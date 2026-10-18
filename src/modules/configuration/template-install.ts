@@ -7,11 +7,27 @@ import type { OosAnnexType } from "@/modules/oos/documents/templates";
 import { templateCatalog, type CatalogTemplate, type TemplateSource } from "@/modules/configuration/template-catalog";
 
 // D-099: instalación de plantillas reconociendo cada archivo por su huella. Lógica sin
-// base de datos; `scripts/install-templates.ts` la aplica dentro de una transacción.
+// base de datos; `template-install-service.ts` la aplica dentro de una transacción, tanto
+// desde `pnpm templates:install` como desde Configuración → Versiones (D-105).
 
 export const sha256 = (data: Buffer | Uint8Array) => createHash("sha256").update(data).digest("hex");
 
 export type InputFile = { name: string; data: Buffer };
+
+const officeFile = /\.(docx|xlsx|doc)$/i;
+
+/**
+ * Archivos de Office de una entrada: el propio archivo, o los que contiene un ZIP. Solo se leen;
+ * nada de lo que traiga el paquete se ejecuta. El resto de archivos se ignora.
+ */
+export function expandTemplateInput(name: string, data: Buffer, maxExpandedBytes = 512 * 1024 * 1024): InputFile[] {
+  if (/\.zip$/i.test(name)) {
+    return readZip(data, { maxExpandedBytes })
+      .filter((entry) => !entry.name.endsWith("/") && !entry.name.startsWith("__MACOSX/") && officeFile.test(entry.name))
+      .map((entry) => ({ name: `${name} › ${entry.name}`, data: entry.data }));
+  }
+  return officeFile.test(name) ? [{ name, data }] : [];
+}
 
 export type ResolvedTemplate = {
   entry: CatalogTemplate;
@@ -45,7 +61,7 @@ export function deriveTemplate(entry: CatalogTemplate, source: TemplateSource, d
       return deriveOosAnnex(data, entry.documentType as OosAnnexType);
     case "office-normalized": {
       if (!source.convertDoc) return normalizeOffice(data);
-      if (!convertDoc) throw new Error(`${entry.label}: hace falta LibreOffice para convertir el original .doc.`);
+      if (!convertDoc) throw new Error("el original es .doc y aquí no se puede convertir; instálalo con «pnpm templates:install» en un equipo con LibreOffice.");
       return normalizeOffice(convertDoc(data));
     }
   }

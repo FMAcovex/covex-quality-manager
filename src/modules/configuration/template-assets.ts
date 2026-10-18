@@ -36,7 +36,7 @@ export async function loadStoredTemplateAsset(
 }
 
 /** Instrucción común cuando falta una plantilla controlada (D-099). */
-export const templateInstallHint = "Instálala con «pnpm templates:install -- <carpeta de plantillas>» o regístrala en Configuración → Versiones.";
+export const templateInstallHint = "Instálala en Configuración → Versiones → «Instalar plantillas» (o con «pnpm templates:install -- <carpeta de plantillas>»).";
 
 /**
  * Plantilla guardada para esa versión, verificada contra su SHA-256 registrado. Las

@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { getZipEntryText, readZip, writeZip } from "@/lib/ooxml/zip";
 import { templateCatalog, templateKey, type CatalogTemplate } from "@/modules/configuration/template-catalog";
-import { decideInstall, resolveCatalogTemplates, sha256 } from "@/modules/configuration/template-install";
+import { decideInstall, expandTemplateInput, resolveCatalogTemplates, sha256 } from "@/modules/configuration/template-install";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
@@ -49,6 +49,30 @@ describe("Catálogo único de plantillas", () => {
       const entry = templateCatalog.find((item) => item.documentType === type)!;
       expect(entry.sources.map((source) => source.kind)).toEqual(["pnt-range"]);
     }
+  });
+});
+
+describe("Archivos recibidos (terminal o Configuración)", () => {
+  it("de un ZIP toma solo los archivos de Office y no ejecuta ni guarda lo demás", () => {
+    const zip = writeZip([
+      { name: "plantillas/", data: Buffer.alloc(0) },
+      { name: "plantillas/Anexo.docx", data: annex },
+      { name: "plantillas/Listado.XLSX", data: Buffer.from("xlsx") },
+      { name: "plantillas/instalar.sh", data: Buffer.from("echo no") },
+      { name: "__MACOSX/plantillas/._Anexo.docx", data: Buffer.from("meta") },
+    ]);
+    expect(expandTemplateInput("paquete.zip", zip).map((file) => file.name)).toEqual(["paquete.zip › plantillas/Anexo.docx", "paquete.zip › plantillas/Listado.XLSX"]);
+  });
+
+  it("un anexo suelto se toma tal cual y lo que no es de Office se ignora", () => {
+    expect(expandTemplateInput("Anexo III.docx", annex)).toEqual([{ name: "Anexo III.docx", data: annex }]);
+    expect(expandTemplateInput("LEEME.txt", Buffer.from("x"))).toEqual([]);
+  });
+
+  it("un ZIP dañado no se acepta y un ZIP que se expande demasiado tampoco", () => {
+    expect(() => expandTemplateInput("roto.zip", Buffer.from("no es un zip"))).toThrow();
+    const big = writeZip([{ name: "a.docx", data: Buffer.alloc(2 * 1024 * 1024) }]);
+    expect(() => expandTemplateInput("grande.zip", big, 1024 * 1024)).toThrow();
   });
 });
 

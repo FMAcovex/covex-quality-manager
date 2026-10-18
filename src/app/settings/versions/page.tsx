@@ -18,6 +18,7 @@ import { getAdministrationOverview, moduleLabel } from "@/modules/configuration/
 import { evaluateRequiredTemplateReadiness } from "@/modules/configuration/template-readiness";
 import { pendingTemplateActivationChecks } from "@/modules/configuration/template-activation";
 import type { TemplateActivationCheck } from "@/modules/configuration/template-compatibility";
+import { TemplateInstallForm } from "@/modules/configuration/components/template-install-form";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,7 @@ async function VersionsPageAuthenticatedContent() {
             <p className="muted-note">
               {readiness.complete
                 ? "Todas las plantillas necesarias para generar anexos y listados oficiales están cargadas."
-                : "Faltan archivos controlados. Las descargas oficiales afectadas permanecerán bloqueadas hasta cargarlos. Se instalan con «pnpm templates:install -- plantillas/», con los ZIP de plantillas y el PNT GC-10/014/04 de OOS en esa carpeta."}
+                : "Faltan archivos controlados. Las descargas oficiales afectadas permanecerán bloqueadas hasta cargarlos. Sube aquí los ZIP de plantillas y el PNT GC-10/014/04 de OOS con «Instalar plantillas» (o, en el servidor, «pnpm templates:install -- plantillas/»)."}
             </p>
           </div>
           <span className={`badge ${readiness.complete ? "open" : "warning"}`}>
@@ -86,6 +87,12 @@ async function VersionsPageAuthenticatedContent() {
             ))}
           </div>
         ) : null}
+        <PermissionGate permission="MANAGE_CONFIGURATION" module="SYSTEM">
+          <details className="admin-create-panel" open={!readiness.complete}>
+            <summary className="button">Instalar plantillas</summary>
+            <TemplateInstallForm />
+          </details>
+        </PermissionGate>
       </section>
 
       <div className="analytics-note">
