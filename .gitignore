@@ -56,5 +56,6 @@ release-manifest.json
 .env.*
 !.env.example
 
-# Plantillas oficiales copiadas para la demo local: nunca se versionan.
-plantillas/*.zip
+# Plantillas oficiales (demo, Codespaces o instalación al arrancar, D-107): nunca se versionan.
+plantillas/*
+!plantillas/README.md

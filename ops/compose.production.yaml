@@ -32,6 +32,8 @@ services:
       AUTH_ENTRA_CLIENT_SECRET_FILE: /run/secrets/entra_secret
       HOSTNAME: 0.0.0.0
       PORT: '3000'
+      # D-107: al arrancar se instalan las plantillas controladas de esta carpeta (solo lectura).
+      TEMPLATE_INSTALL_DIR: /app/templates
     secrets: [database_url, entra_secret, pg_ca_cert]
     volumes:
       - ${COVEX_ASSETS_DIR:?controlled assets directory required}:/app/templates:ro
