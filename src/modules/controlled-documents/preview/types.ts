@@ -78,6 +78,18 @@ export type DuplicateGroup = {
     rowKeys: string[];
     kinds: IssueCode[];
 };
+/** Departamento de una hoja del índice (D-097): código de la hoja y nombre de su cabecera. */
+export type IndexDepartmentStatus = "EXISTING" | "INACTIVE" | "MISSING" | "ANNULLED_IN_INDEX";
+export type IndexDepartment = {
+    code: string;
+    name: string | null;
+    annulled: boolean;
+    sheets: string[];
+    pntRows: number;
+    status?: IndexDepartmentStatus;
+    existingName?: string;
+};
+export const indexDepartmentStatusLabels: Record<IndexDepartmentStatus, string> = { EXISTING: "Ya existe", INACTIVE: "Existe inactivo", MISSING: "Falta en Configuración", ANNULLED_IN_INDEX: "Anulado en el índice: no se da de alta" };
 export type PreviewReport = {
     contractVersion: 1;
     fileName: string;
@@ -88,6 +100,8 @@ export type PreviewReport = {
     excludedSheets: Workbook["excludedSheets"];
     rows: PreviewRow[];
     groups: DuplicateGroup[];
+    /** Ausente en lotes guardados antes de D-097. */
+    departments?: IndexDepartment[];
     summary: {
         analyzedRows: number;
         pntCandidates: number;

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { WorkbookSheet, SheetRow, PreviewRow, PreviewReport, IssueCode } from "./types";
+import type { WorkbookSheet, SheetRow, PreviewRow, PreviewReport, IssueCode, IndexDepartment } from "./types";
 import { readWorkbook } from "./workbook";
 import { departmentFromSheet, normalizeCode, normalizeDate, normalizeRevision, marker, fold, family } from "./normalization";
 type Layout = {
@@ -78,6 +78,44 @@ function dataRows(sheet: WorkbookSheet): {
         result.push({ row, layout });
     }
     return result;
+}
+/**
+ * Nombre del departamento según la cabecera de la hoja: la fila con «Nº XX-00» lleva el nombre
+ * en otra celda. «DEPARTAMENTO ANULADO» en ese nombre marca el departamento como anulado (D-097).
+ */
+export function sheetDepartmentHeader(sheet: WorkbookSheet, code: string): { name: string | null; annulled: boolean } {
+    for (const row of sheet.rows.slice(0, 12)) {
+        const marker = row.cells.find(c => fold(c.value).match(/^N\s*[º°O.]?\s*([A-Z]{2}-\d{2})$/)?.[1] === code);
+        if (!marker)
+            continue;
+        const raw = row.cells.find(c => c !== marker && c.value.trim())?.value ?? "";
+        const annulled = /DEPARTAMENTO\s+ANULADO/.test(fold(raw));
+        const name = raw.replace(/departamento\s+anulado/gi, " ").replace(/\s+/g, " ").trim().replace(/[\s:;,-]+$/, "").slice(0, 200);
+        return { name: name || null, annulled };
+    }
+    return { name: null, annulled: false };
+}
+function indexDepartments(sheets: WorkbookSheet[], rows: PreviewRow[]): IndexDepartment[] {
+    const result = new Map<string, IndexDepartment>();
+    for (const sheet of sheets) {
+        const code = departmentFromSheet(sheet.name);
+        if (!code)
+            continue;
+        const header = sheetDepartmentHeader(sheet, code), current = result.get(code);
+        if (current) {
+            current.sheets.push(sheet.name);
+            current.name ??= header.name;
+            current.annulled ||= header.annulled;
+        }
+        else
+            result.set(code, { code, name: header.name, annulled: header.annulled, sheets: [sheet.name], pntRows: 0 });
+    }
+    for (const row of rows) {
+        const department = row.classification === "PNT" && row.normalized.departmentCode ? result.get(row.normalized.departmentCode) : undefined;
+        if (department)
+            department.pntRows++;
+    }
+    return [...result.values()].sort((a, b) => a.code.localeCompare(b.code));
 }
 export function parseIndex(buffer: Buffer, fileName: string, asOf = new Date().toISOString().slice(0, 10)): PreviewReport {
     const workbook = readWorkbook(buffer);
@@ -161,7 +199,7 @@ export function parseIndex(buffer: Buffer, fileName: string, asOf = new Date().t
             row.issues = [...new Set([...row.issues, ...kinds])];
         groups.push({ baseCode, rowKeys: members.map(r => r.sourceKey), kinds });
     }
-    const report: PreviewReport = { contractVersion: 1, fileName, sha256, asOf, sheetCount: workbook.sheetCount, interpretedSheets: workbook.sheets.map(s => s.name), excludedSheets: workbook.excludedSheets, rows, groups, summary: {} as PreviewReport["summary"] };
+    const report: PreviewReport = { contractVersion: 1, fileName, sha256, asOf, sheetCount: workbook.sheetCount, interpretedSheets: workbook.sheets.map(s => s.name), excludedSheets: workbook.excludedSheets, rows, groups, departments: indexDepartments(workbook.sheets, rows), summary: {} as PreviewReport["summary"] };
     return refreshSummary(report);
 }
 export function refreshSummary(report: PreviewReport) {

@@ -6,7 +6,7 @@ export type PreviewReader = {
     documents: (codes: string[]) => Promise<ExistingDocument[]>;
 };
 export const databaseReader: PreviewReader = {
-    departments: () => prisma.department.findMany({ select: { id: true, code: true, isActive: true } }),
+    departments: () => prisma.department.findMany({ select: { id: true, code: true, isActive: true, name: true } }),
     documents: codes => prisma.controlledDocument.findMany({ where: { baseCode: { in: codes } }, select: { id: true, baseCode: true, title: true, departmentId: true, departmentCodeSnapshot: true, administrativeStatus: true, documentType: true, revisions: { select: { id: true, revisionCode: true, titleSnapshot: true, departmentCodeSnapshot: true, effectiveFrom: true, reviewDueAt: true, verificationStatus: true, status: true, consolidatedAt: true, sourceMetadata: true } } } })
 };
 export async function previewIndex(buffer: Buffer, fileName: string, reader: PreviewReader = databaseReader, asOf?: string) {

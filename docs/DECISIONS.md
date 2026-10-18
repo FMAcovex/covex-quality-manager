@@ -852,3 +852,14 @@ Decisión del responsable de Calidad. Desviaciones, CAPA, Controles de cambios, 
 - **Pendiente:** no hay análisis antivirus de los archivos (como en el resto de adjuntos, ver `PNT_P2A.md`).
 
 Técnicamente, la evidencia se guarda en `GeneratedDocument` con el tipo `RECORD_EVIDENCE`. Esa tabla ya está capturada por B2 y es inmutable una vez guardado el archivo, así que no hace falta un contrato B2 nuevo.
+
+## D-097 — Alta de departamentos desde el índice de PNT (2026-10-18)
+
+Decisión del responsable de Calidad, para la carga inicial del índice de Garantía de Calidad.
+
+- Al analizar el Excel, cada hoja aporta su departamento: el código de la hoja y el nombre de su cabecera (la fila «Nº XX-00»). Las hojas MC-20_1, MC-20_2… se agrupan en un solo departamento.
+- La previsualización muestra un bloque «Departamentos del índice» con la situación de cada uno: ya existe, existe inactivo, falta en Configuración o anulado en el índice.
+- Los que faltan se dan de alta de una vez, con el nombre del índice. Se puede corregir el nombre o desmarcar alguno antes de guardar. Los existentes no se modifican.
+- **Los departamentos marcados «DEPARTAMENTO ANULADO» en el índice no se dan de alta.** Sus PNT quedan sin departamento y fuera de la inclusión en bloque; se pueden decidir una a una si más adelante se crea el departamento.
+- Tras el alta, el Excel se vuelve a analizar para conciliar las filas con los departamentos nuevos. Un lote guardado antes no se actualiza: hay que analizar de nuevo y guardar un lote nuevo; el lote lo indica.
+- Requiere el permiso de gestionar la configuración. Es una operación de configuración (TR02) con su historial de cambios por departamento.

@@ -109,6 +109,22 @@ describe("P1B-1: fuentes autorizadas, normalización y conciliación", () => {
         expect(r.rows.find(x => x.identityKey === doc.baseCode)?.reconciliation.kind).toBe("PERSISTED_CONFLICT");
         expect(r.rows.find(x => x.identityKey === "SG-20/001")?.issues).toContain("DEPARTMENT_UNKNOWN");
     });
+    it("lee el departamento de la cabecera de cada hoja y marca los anulados en el índice (D-097)", () => {
+        const book = syntheticWorkbook([
+            { name: "GC-11", rows: [{ number: 1, cells: { B: "PROCEDIMIENTOS NORMALIZADOS DE TRABAJO" } }, { number: 2, cells: { B: "CONTROL DE CALIDAD: ÁREA DE ANÁLISIS", F: "Nº GC-11" } }, { number: 4, cells: headings }, { number: 5, cells: { B: "GC-11/001", C: "Análisis ficticio", D: 1, E: "01/01/2026", F: "01/01/2031" } }] },
+            { name: "RH-30", rows: [{ number: 2, cells: { B: "RECURSOS HUMANOS: ÁREA DE FORMACIÓN\n\nDEPARTAMENTO ANULADO", F: "Nº RH-30" } }, { number: 4, cells: headings }, { number: 5, cells: { B: "RH-30/001", C: "Formación ficticia", D: "ANULADO", E: "ANULADO", F: "NA" } }] },
+            { name: "MC-20_1", rows: [{ number: 2, cells: { B: "MANTENIMIENTO", F: "Nº MC-20" } }, { number: 4, cells: headings }, { number: 5, cells: { B: "MC-20/001", C: "Uno", D: 1, E: "01/01/2026", F: "01/01/2031" } }] },
+            { name: "MC-20_2", rows: [{ number: 4, cells: headings }, { number: 5, cells: { B: "MC-20/002", C: "Dos", D: 1, E: "01/01/2026", F: "01/01/2031" } }] },
+            { name: "SG-20", rows: [{ number: 4, cells: headings }, { number: 5, cells: { B: "SG-20/001", C: "Sin cabecera", D: 1, E: "01/01/2026", F: "01/01/2031" } }] },
+        ]);
+        const report = reconcileIndex(parse(book), [{ id: "mc", code: "MC-20", isActive: true, name: "Mantenimiento (Configuración)" }, { id: "sg", code: "SG-20", isActive: false }], []);
+        expect(report.departments).toEqual([
+            { code: "GC-11", name: "CONTROL DE CALIDAD: ÁREA DE ANÁLISIS", annulled: false, sheets: ["GC-11"], pntRows: 1, status: "MISSING" },
+            { code: "MC-20", name: "MANTENIMIENTO", annulled: false, sheets: ["MC-20_1", "MC-20_2"], pntRows: 2, status: "EXISTING", existingName: "Mantenimiento (Configuración)" },
+            { code: "RH-30", name: "RECURSOS HUMANOS: ÁREA DE FORMACIÓN", annulled: true, sheets: ["RH-30"], pntRows: 1, status: "ANNULLED_IN_INDEX" },
+            { code: "SG-20", name: null, annulled: false, sheets: ["SG-20"], pntRows: 1, status: "INACTIVE" },
+        ]);
+    });
     it("no resuelve automáticamente revisión incrustada contra columna contradictoria", () => {
         const r = parse(syntheticWorkbook([{ name: "GC-00(", rows: [{ number: 1, cells: headings }, { number: 2, cells: { B: "GC-00/001/03", C: "Título", D: 4 } }] }]));
         expect(r.rows[0].normalized.revisionCode).toBe(null);

@@ -619,6 +619,19 @@
     },
     {
       "file": "src/modules/configuration/admin-actions.ts",
+      "name": "createIndexDepartmentsAction",
+      "params": [
+        "_state",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/configuration/admin-actions.ts",
       "name": "createDepartmentAction",
       "params": [
         "fd"

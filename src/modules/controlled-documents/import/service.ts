@@ -57,7 +57,7 @@ export async function expireBatches(db: PrismaClient = prisma) {
 export async function createBatch(buffer: Buffer, fileName: string, actorValue: string, db: PrismaClient = prisma, request?: ImportAuditRequest) {
     const actor = actorSchema.parse(importActor(actorValue));
     const report = await previewIndex(buffer, fileName, {
-        departments: () => db.department.findMany({ select: { id: true, code: true, isActive: true } }),
+        departments: () => db.department.findMany({ select: { id: true, code: true, isActive: true, name: true } }),
         documents: codes => db.controlledDocument.findMany({ where: { baseCode: { in: codes } }, include: { revisions: true } })
     });
     if (Buffer.byteLength(JSON.stringify(report)) > MAX_BATCH_BYTES) throw new Error("El análisis supera el límite de staging de 16 MiB.");

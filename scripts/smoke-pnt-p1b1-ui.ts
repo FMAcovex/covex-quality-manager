@@ -29,7 +29,7 @@ async function main() {
         await page.getByRole("button", { name: "Analizar Excel", exact: true }).click();
         await page.getByRole("heading", { name: "Resumen", exact: true }).waitFor();
         assert.equal(await page.getByRole("button", { name: /Importar definitivamente|Confirmar importación/ }).count(), 0);
-        const rows = page.locator("tbody tr");
+        const rows = page.locator("table.data-table tbody tr");
         assert.equal(await rows.count(), 9);
         await page.getByLabel("Buscar código o título", { exact: true }).fill("GC-00/001");
         assert.equal(await rows.count(), 1);
