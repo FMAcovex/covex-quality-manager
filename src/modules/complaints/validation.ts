@@ -1,3 +1,4 @@
+import { parseAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import type { ComplaintDerivedActionInput } from "@/modules/complaints/types";
@@ -76,6 +77,8 @@ export function parseComplaintForm(fd:FormData,linked:{capa?:boolean;returns?:bo
   const nextFollowupDate=text(fd,"nextFollowupDate");
   const recurrent=bool(fd,"recurrent");
   const errors:string[]=[];
+  const additional=parseAdditionalLots(fd.get("additionalLotsJson"));
+  if(additional.error)errors.push(additional.error);
   if(!complaintType)errors.push("Debe seleccionarse el tipo de reclamación.");
 
   if(status!=="DRAFT"){
@@ -184,7 +187,7 @@ export function parseComplaintForm(fd:FormData,linked:{capa?:boolean;returns?:bo
     complaintType,sourceTypes,sourceOther:text(fd,"sourceOther"),scopeTypes,scopeOther:text(fd,"scopeOther"),
     affectedObjectTypes,affectedObjectOther:text(fd,"affectedObjectOther"),categoryTypes,categoryOther:text(fd,"categoryOther"),
     partyName,contact:text(fd,"contact"),affectedScope:text(fd,"affectedScope"),reference:text(fd,"reference"),
-    lotReference:text(fd,"lotReference"),quantity:text(fd,"quantity"),expiryReanalysis:text(fd,"expiryReanalysis"),
+    lotReference:text(fd,"lotReference"),additionalLots:additional.lots,quantity:text(fd,"quantity"),expiryReanalysis:text(fd,"expiryReanalysis"),
     purchaseDeliveryReference:text(fd,"purchaseDeliveryReference"),description,recurrent,
     recurrenceReference:text(fd,"recurrenceReference"),attachedDocumentation:text(fd,"attachedDocumentation"),
     emittedBy:text(fd,"emittedBy"),qaValidatedBy:text(fd,"qaValidatedBy"),investigation:text(fd,"investigation"),

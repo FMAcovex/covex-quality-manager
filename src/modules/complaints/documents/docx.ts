@@ -1,3 +1,4 @@
+import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
 import {
@@ -14,7 +15,7 @@ export type ComplaintDocumentRecord={
  relations?:Array<{recordType:string;businessCode:string|null}>;
  qmsRecord:{businessCode:string|null};recordVersionLabel?:string|null;versionFollowupDate?:Date|null;purchaseDeliveryReference?:string|null;openedAt:Date|null;detectionDate:Date|null;receptionDate:Date|null;detectedBy:string|null;complaintType:string;
  sourceTypes:string[];sourceOther:string|null;scopeTypes:string[];scopeOther:string|null;affectedObjectTypes:string[];affectedObjectOther:string|null;
- categoryTypes:string[];categoryOther:string|null;partyName:string|null;contact:string|null;affectedScope:string|null;reference:string|null;lotReference:string|null;
+ categoryTypes:string[];categoryOther:string|null;partyName:string|null;contact:string|null;affectedScope:string|null;reference:string|null;lotReference:string|null;additionalLots?:unknown;
  quantity:string|null;expiryReanalysis:string|null;description:string|null;recurrent:boolean|null;
  recurrenceReference:string|null;attachedDocumentation:string|null;emittedBy:string|null;qaValidatedBy:string|null;investigation:string|null;impactAssessment:string|null;
  impactQualityGmp:string|null;impactSafetyEfficacy:string|null;impactRegulatory:string|null;impactEnvironment:string|null;impactOtherSimilar:string|null;
@@ -83,7 +84,13 @@ export function complaintResolutionCells(r:Pick<ComplaintDocumentRecord,"resolut
  return [left,right] as const;
 }
 
+// D-094: los otros lotes van en las mismas casillas que la referencia, el lote y la cantidad, uno por línea.
+function withAdditionalLots(r:ComplaintDocumentRecord):ComplaintDocumentRecord{
+ const lots=storedAdditionalLots(r.additionalLots);
+ return lots.length?{...r,reference:lotColumn(r.reference,lots,"name"),lotReference:lotColumn(r.lotReference,lots,"lot"),quantity:lotColumn(r.quantity,lots,"quantity")}:r;
+}
 export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
+ r=withAdditionalLots(r);
  const version=r.annexIIITemplateVersion?.versionCode??"03";
  const entries=readZip(await loadComplaintPntTemplate(version,DocumentType.COMPLAINT_ANNEX_III));
  if(version!=="03"){
@@ -170,6 +177,7 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
 }
 
 export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
+ r=withAdditionalLots(r);
  const version=r.annexIVTemplateVersion?.versionCode??r.annexIIITemplateVersion?.versionCode??"03";
  if(version==="03"){
   const entries=readZip(await loadComplaintPntTemplate(version,DocumentType.COMPLAINT_ANNEX_IV));
@@ -196,6 +204,7 @@ export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
 }
 
 export async function generateComplaintAnnexV(year:number,rows:ComplaintDocumentRecord[]){
+ rows=rows.map(withAdditionalLots);
  const entries=readZip(await loadComplaintPntTemplate("02",DocumentType.COMPLAINT_ANNEX_V));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo V:",undefined,"last");
  xml=setWordCellTextBalanced(xml,0,1,0,`LISTADO DE RECLAMACIONES\n${year}`);
  xml=replaceWordRowsRangeBalanced(xml,0,4,9,({first})=>rows.map(r=>fillWordRowBalanced(first,[

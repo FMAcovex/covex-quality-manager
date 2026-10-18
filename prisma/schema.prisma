@@ -553,6 +553,7 @@ model Deviation {
   materialAffectedQuantity   String?
   supplier                   String?
   supplierLot                String?
+  additionalLots             Json                     @default("[]")
   affectedEquipmentLine      String?
   otherOrigin                String?
   affectedDocumentation      String?
@@ -934,6 +935,7 @@ model Complaint {
   affectedScope              String?
   reference                  String?
   lotReference               String?
+  additionalLots             Json                     @default("[]")
   quantity                   String?
   expiryReanalysis           String?
   purchaseDeliveryReference  String?
@@ -2682,6 +2684,7 @@ model OosRecord {
   materialKind               OosMaterialKind?
   materialName               String?
   lotNumber                  String?
+  additionalLots             Json                    @default("[]")
   batchSize                  String?
   affectedQuantity           String?
   supplier                   String?

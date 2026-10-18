@@ -1,3 +1,4 @@
+import { parseAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import type { CapaPlanInput, ImmediateActionInput } from "@/modules/deviations/types";
@@ -151,6 +152,8 @@ export function parseDeviationForm(formData: FormData) {
   const materialAffectedQuantity = text(formData, "materialAffectedQuantity");
   const supplier = text(formData, "supplier");
   const supplierLot = text(formData, "supplierLot");
+  const additional = parseAdditionalLots(formData.get("additionalLotsJson"));
+  if (additional.error) addIssue("additionalLotsJson", additional.error, true);
   const affectedEquipmentLine = text(formData, "affectedEquipmentLine");
   const otherOrigin = text(formData, "otherOrigin");
 
@@ -284,6 +287,7 @@ export function parseDeviationForm(formData: FormData) {
       materialAffectedQuantity,
       supplier,
       supplierLot,
+      additionalLots: additional.lots,
       affectedEquipmentLine,
       otherOrigin,
       whatHappened,

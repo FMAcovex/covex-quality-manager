@@ -1,3 +1,4 @@
+import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { notFound } from "next/navigation";
@@ -19,7 +20,7 @@ async function EditComplaintPageAuthenticatedContent({params,searchParams}:{para
   sourceTypes:r.sourceTypes,sourceOther:r.sourceOther??undefined,scopeTypes:r.scopeTypes,scopeOther:r.scopeOther??undefined,
   affectedObjectTypes:r.affectedObjectTypes,affectedObjectOther:r.affectedObjectOther??undefined,categoryTypes:r.categoryTypes,categoryOther:r.categoryOther??undefined,
   partyName:r.partyName??undefined,contact:r.contact??undefined,
-  affectedScope:r.affectedScope??undefined,reference:r.reference??undefined,lotReference:r.lotReference??undefined,quantity:r.quantity??undefined,expiryReanalysis:r.expiryReanalysis??undefined,
+  affectedScope:r.affectedScope??undefined,reference:r.reference??undefined,lotReference:r.lotReference??undefined,additionalLots:storedAdditionalLots(r.additionalLots),quantity:r.quantity??undefined,expiryReanalysis:r.expiryReanalysis??undefined,
   purchaseDeliveryReference:r.purchaseDeliveryReference??undefined,description:r.description??undefined,recurrent:b(r.recurrent),recurrenceReference:r.recurrenceReference??undefined,
   attachedDocumentation:r.attachedDocumentation??undefined,emittedBy:r.emittedBy??undefined,qaValidatedBy:r.qaValidatedBy??undefined,investigation:r.investigation??undefined,
   impactAssessment:r.impactAssessment??undefined,impactQualityGmp:r.impactQualityGmp??"",impactSafetyEfficacy:r.impactSafetyEfficacy??"",

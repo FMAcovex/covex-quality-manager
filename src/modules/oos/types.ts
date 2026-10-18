@@ -1,3 +1,4 @@
+import type { AdditionalLot } from "@/lib/qms/additional-lots";
 import type { OosEvaluationKey } from "./domain";
 
 export type OosFormState = {
@@ -20,6 +21,7 @@ export type OosFormDefaults = Partial<{
   lotNumber: string;
   batchSize: string;
   affectedQuantity: string;
+  additionalLots: AdditionalLot[];
   supplier: string;
   supplierLot: string;
   process: string;

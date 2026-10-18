@@ -1,3 +1,4 @@
+import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
@@ -143,6 +144,7 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
        <div><dt>N.º lote</dt><dd>{txt(r.lotReference)}</dd></div>
        <div><dt>Cantidad</dt><dd>{txt(r.quantity)}</dd></div>
        <div><dt>Caducidad / reanálisis</dt><dd>{txt(r.expiryReanalysis)}</dd></div>
+       {storedAdditionalLots(r.additionalLots).length?<div><dt>Otros lotes afectados</dt><dd>{storedAdditionalLots(r.additionalLots).map(lot=>[lot.name,`lote ${lot.lot}`,lot.quantity&&`cantidad ${lot.quantity}`].filter(Boolean).join(" · ")).join("; ")}</dd></div>:null}
       </dl>
      </div>
      <div className="info-item full"><dt>Descripción</dt><dd className="prose-value">{txt(r.description)}</dd></div>

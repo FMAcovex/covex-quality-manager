@@ -49,7 +49,7 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   departmentNameSnapshot:department?(existing?.departmentId===department.id?(existing.departmentNameSnapshot??department.name):department.name):null,
   openedAt:d(v.openedAt),detectionDate:d(v.detectionDate),receptionDate:d(v.receptionDate),detectedBy:existing?.detectedBy??v.detectedBy,createdByText:v.createdByText,complaintType:v.complaintType!,
   sourceTypes:v.sourceTypes,sourceOther:v.sourceOther,scopeTypes:v.scopeTypes,scopeOther:v.scopeOther,affectedObjectTypes:v.affectedObjectTypes,affectedObjectOther:v.affectedObjectOther,
-  categoryTypes:v.categoryTypes,categoryOther:v.categoryOther,partyName:v.partyName,contact:v.contact,affectedScope:existing?.affectedScope??v.affectedScope,reference:v.reference,lotReference:v.lotReference,quantity:v.quantity,
+  categoryTypes:v.categoryTypes,categoryOther:v.categoryOther,partyName:v.partyName,contact:v.contact,affectedScope:existing?.affectedScope??v.affectedScope,reference:v.reference,lotReference:v.lotReference,additionalLots:v.additionalLots,quantity:v.quantity,
   expiryReanalysis:v.expiryReanalysis,purchaseDeliveryReference:v.purchaseDeliveryReference,description:v.description,recurrent:v.recurrent,
   recurrenceReference:v.recurrenceReference,attachedDocumentation:v.attachedDocumentation,emittedBy:v.emittedBy,qaValidatedBy:v.qaValidatedBy,
   investigation:v.investigation,impactAssessment:v.impactAssessment,impactQualityGmp:v.impactQualityGmp,impactSafetyEfficacy:v.impactSafetyEfficacy,

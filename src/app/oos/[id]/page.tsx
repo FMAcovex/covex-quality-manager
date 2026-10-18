@@ -1,3 +1,4 @@
+import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -157,6 +158,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
           <Item label="N.º lote">{txt(record.lotNumber)}</Item>
           <Item label="Tamaño lote">{txt(record.batchSize)}</Item>
           <Item label="Cantidad afectada">{txt(record.affectedQuantity)}</Item>
+          {storedAdditionalLots(record.additionalLots).length ? <Item label="Otros lotes afectados">{storedAdditionalLots(record.additionalLots).map((lot) => [lot.name, `lote ${lot.lot}`, lot.quantity && `cantidad ${lot.quantity}`].filter(Boolean).join(" · ")).join("; ")}</Item> : null}
           {record.materialKind === "RAW_OR_PACKAGING_MATERIAL" ? <>
             <Item label="Proveedor">{txt(record.supplier)}</Item>
             <Item label="Lote proveedor">{txt(record.supplierLot)}</Item>

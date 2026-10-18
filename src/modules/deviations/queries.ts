@@ -3,6 +3,7 @@ import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { idsWithAdditionalLot } from "@/lib/qms/additional-lots-search";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { qmsListPagination } from "@/lib/qms/list-pagination";
 import { listRecordWithRelations, listAdministrativeSql } from "@/lib/qms/list-projections";
@@ -34,8 +35,10 @@ export async function getDeviationList(filters: DeviationListFilters) {
   }
 
   if (filters.q) {
+    const lotIds = await idsWithAdditionalLot("DEVIATION", filters.q);
     and.push({
       OR: [
+        ...(lotIds.length ? [{ id: { in: lotIds } }] : []),
         { qmsRecord: { businessCode: { contains: filters.q, mode: "insensitive" } } },
         { qmsRecord: { annulledBusinessCode: { contains: filters.q, mode: "insensitive" } } },
         { materialProcessAffected: { contains: filters.q, mode: "insensitive" } },

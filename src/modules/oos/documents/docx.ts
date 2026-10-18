@@ -1,3 +1,4 @@
+import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import type { OosInvestigationResult, OosMaterialKind, OosPhaseIDisposition, OosStatus, OosVerdict, QmsRecordType } from "@prisma/client";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { fillWordCellBalanced, fillWordRowCellsBalanced, transformWordRowsBalanced, transformWordTableBalanced } from "@/lib/ooxml/xml";
@@ -16,6 +17,7 @@ export type OosDocumentRecord = {
   lotNumber: string | null;
   batchSize: string | null;
   affectedQuantity: string | null;
+  additionalLots?: unknown;
   supplier: string | null;
   supplierLot: string | null;
   process: string | null;
@@ -102,10 +104,12 @@ export function fillOosAnnexIII(template: Buffer, record: OosDocumentRecord) {
     set(0, 1, 1, date(record.issueDate));
     const block = record.materialKind === "FINISHED_PRODUCT" ? 3 : record.materialKind === "RAW_OR_PACKAGING_MATERIAL" ? 6 : null;
     if (block !== null) {
-      set(0, block, 1, text(record.materialName));
-      set(0, block, 3, text(record.lotNumber));
-      set(0, block + 1, 3, text(record.batchSize));
-      set(0, block + 2, 3, text(record.affectedQuantity));
+      // D-094: los otros lotes van en las mismas casillas, uno por línea.
+      const lots = storedAdditionalLots(record.additionalLots);
+      set(0, block, 1, text(lotColumn(record.materialName, lots, "name")));
+      set(0, block, 3, text(lotColumn(record.lotNumber, lots, "lot")));
+      set(0, block + 1, 3, text(lotColumn(record.batchSize, lots, "size")));
+      set(0, block + 2, 3, text(lotColumn(record.affectedQuantity, lots, "quantity")));
     }
     if (record.materialKind === "RAW_OR_PACKAGING_MATERIAL") {
       set(0, 9, 1, text(record.supplier));
@@ -183,7 +187,7 @@ export function fillOosAnnexVI(template: Buffer, year: number, records: OosDocum
       const filled = records.map((record, index) => fillWordRowCellsBalanced(rows[Math.min(index, rows.length - 1)], {
         0: text(record.qmsRecord.businessCode),
         1: date(record.issueDate),
-        2: [text(record.materialName), record.lotNumber ? `Lote ${text(record.lotNumber)}` : ""].filter(Boolean).join("\n"),
+        2: [text(record.materialName), ...[record.lotNumber, ...storedAdditionalLots(record.additionalLots).map((lot) => lot.lot)].filter(Boolean).map((lot) => `Lote ${text(lot)}`)].filter(Boolean).join("\n"),
         3: text(record.detectionDescription),
         4: oosInvestigationSummary(record),
         5: date(record.closedAt),
