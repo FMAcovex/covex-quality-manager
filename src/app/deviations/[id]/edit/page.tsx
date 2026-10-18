@@ -1,3 +1,4 @@
+import { getSimilarDeviations } from "@/modules/deviations/recurrence-queries";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { notFound } from "next/navigation";
@@ -30,6 +31,7 @@ async function EditDeviationPageAuthenticatedContent({
     getDeviationFormLookups(),
   ]);
   if (!deviation) notFound();
+  const similarDeviations = await getSimilarDeviations(deviation);
 
   const action = updateDeviationAction.bind(null, id);
 
@@ -50,6 +52,7 @@ async function EditDeviationPageAuthenticatedContent({
         mode="edit"
         deviationId={id}
         currentVersionSequence={deviation.qmsRecord.versions.at(-1)?.sequenceNumber ?? 0}
+        similarDeviations={similarDeviations}
         defaults={{
           businessCode: deviation.qmsRecord.businessCode ?? "",
           departmentId: deviation.departmentId ?? "",
