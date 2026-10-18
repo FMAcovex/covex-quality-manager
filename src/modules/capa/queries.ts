@@ -3,12 +3,15 @@ import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { assignedListWhere, assignedWhere } from "@/lib/qms/assigned";
+import { currentIdentity } from "@/lib/auth/context";
 import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { qmsListPagination } from "@/lib/qms/list-pagination";
 import { listRecordWithRelations } from "@/lib/qms/list-projections";
 
 export type CapaListFilters = {
+  assigned?: string;
   page?: string;
   review?: string;
   q?: string;
@@ -26,6 +29,8 @@ export async function getCapaList(filters: CapaListFilters) {
   const and: Prisma.CapaWhereInput[] = [];
   const reviewWhere = reviewListWhere(filters.review);
   if (reviewWhere) and.push({ qmsRecord: reviewWhere });
+  const assigned = assignedListWhere(filters.assigned, currentIdentity()?.principal.id, assignedWhere.capa);
+  if (assigned) and.push(assigned);
 
   if (filters.administrative === "ANNULLED") {
     and.push({ qmsRecord: { isActive: false } });

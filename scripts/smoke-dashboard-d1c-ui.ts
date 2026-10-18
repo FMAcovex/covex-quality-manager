@@ -58,7 +58,7 @@ async function main() {
     const summary = await page.locator(".dashboard-attention-item > strong").allTextContents();
     const modules = await page.locator(".dashboard-module-row, .dashboard-pnt-line").allTextContents();
     const taskRows = await page.locator(".dashboard-task-row").allTextContents();
-    assert.equal(summary.length, 4);
+    assert.equal(summary.length, 5);
     assert.equal(modules.length, 8);
     assert(await page.locator(".is-overdue").count() > 0);
 

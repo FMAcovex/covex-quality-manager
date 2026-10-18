@@ -3,6 +3,8 @@ import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { assignedListWhere, assignedWhere } from "@/lib/qms/assigned";
+import { currentIdentity } from "@/lib/auth/context";
 import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { idsWithAdditionalLot } from "@/lib/qms/additional-lots-search";
 import { validValues, validYears } from "@/lib/qms/list-filters";
@@ -10,6 +12,7 @@ import { qmsListPagination } from "@/lib/qms/list-pagination";
 import { listRecordWithRelations, listAdministrativeSql } from "@/lib/qms/list-projections";
 
 export type DeviationListFilters = {
+  assigned?: string;
   page?: string;
   review?: string;
   q?: string;
@@ -28,6 +31,8 @@ export async function getDeviationList(filters: DeviationListFilters) {
   const and: Prisma.DeviationWhereInput[] = [];
   const reviewWhere = reviewListWhere(filters.review);
   if (reviewWhere) and.push({ qmsRecord: reviewWhere });
+  const assigned = assignedListWhere(filters.assigned, currentIdentity()?.principal.id, assignedWhere.deviation);
+  if (assigned) and.push(assigned);
 
   if (filters.administrative === "ANNULLED") {
     and.push({ qmsRecord: { isActive: false } });

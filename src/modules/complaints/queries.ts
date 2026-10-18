@@ -4,12 +4,13 @@ import { withActiveReviewCounts } from "@/lib/qms/review/list-queries";
 import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { currentIdentity } from "@/lib/auth/context";
 import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { complaintListWhere, type ComplaintListFilters } from "@/modules/complaints/list-filters";
 export type { ComplaintListFilters } from "@/modules/complaints/list-filters";
 
 export async function getComplaintList(filters:ComplaintListFilters){
- const where=complaintListWhere(filters,new Date(),filters.q?await idsWithAdditionalLot("COMPLAINT",filters.q):[]);
+ const where=complaintListWhere({...filters,assignedUserId:currentIdentity()?.principal.id},new Date(),filters.q?await idsWithAdditionalLot("COMPLAINT",filters.q):[]);
  const pageSize=25;
  const filteredTotal=await prisma.complaint.count({where});
  const pageCount=Math.max(1,Math.ceil(filteredTotal/pageSize));

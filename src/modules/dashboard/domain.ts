@@ -15,7 +15,8 @@ export const DASHBOARD_ALL_MODULES = qmsModules.map(dashboardEntry);
 
 export type DashboardModule = QmsModuleKey;
 export type DashboardState = "ALL" | "OPEN" | "CLOSED" | "DRAFT";
-export type DashboardTaskView = "all" | "overdue" | "upcoming";
+/** `mine`: acciones pendientes asignadas al usuario de la sesión (D-102). */
+export type DashboardTaskView = "all" | "overdue" | "upcoming" | "mine";
 export type DashboardFilters = {
   year: number | null;
   department: string;

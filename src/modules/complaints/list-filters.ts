@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { reviewListWhere } from "@/lib/qms/review/list-domain";
+import { assignedListWhere, assignedWhere } from "@/lib/qms/assigned";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import type { ComplaintOperationalSituation } from "@/modules/complaints/domain";
 
@@ -9,6 +10,9 @@ export type ComplaintListFilters={
   capa?:string;
   returns?:string;
   review?: string;
+  /** «Asignadas a mí» (D-102): `assignedUserId` lo pone la consulta con el usuario de la sesión. */
+  assigned?:string;
+  assignedUserId?:string|null;
   q?:string;
   administrative?:string;
   year?:string[];
@@ -32,6 +36,7 @@ export function complaintListWhere(filters:ComplaintListFilters,now=new Date(),l
  const and:Prisma.ComplaintWhereInput[]=[];
   const reviewWhere = reviewListWhere(filters.review);
   if (reviewWhere) and.push({ qmsRecord: reviewWhere });
+ const assigned=assignedListWhere(filters.assigned,filters.assignedUserId,assignedWhere.complaint);if(assigned)and.push(assigned);
  if(filters.administrative==="ANNULLED")and.push({qmsRecord:{isActive:false}});
  else if(filters.administrative!=="ALL")and.push({qmsRecord:{isActive:true}});
  if(filters.q)and.push({OR:[
