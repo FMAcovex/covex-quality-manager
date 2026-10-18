@@ -78,18 +78,14 @@ export async function generateChangeAnnexV(
 
   xml = setWordCellTextBalanced(xml, 0, 1, 1, text(record.qmsRecord.businessCode));
   xml = setWordCellTextBalanced(xml, 0, 1, 3, date(followup.followupDate));
+  // Fila 2: «N.º de seguimiento:» | número | «Historial de Seguimientos:» | historial (sustituye al ejemplo).
+  // La celda del número va envuelta en un control de contenido y cuenta como celda.
+  xml = setWordCellTextBalanced(xml, 0, 2, 1, String(followup.sequenceNumber).padStart(2, "0"));
   xml = setWordCellTextBalanced(
     xml,
     0,
     2,
-    0,
-    `N.º de seguimiento: ${String(followup.sequenceNumber).padStart(2, "0")}`,
-  );
-  xml = setWordCellTextBalanced(
-    xml,
-    0,
-    2,
-    2,
+    3,
     record.followups
       .filter((item) => item.sequenceNumber <= followup.sequenceNumber)
       .sort((a, b) => a.sequenceNumber - b.sequenceNumber)
@@ -148,12 +144,20 @@ export async function generateChangeAnnexV(
     2,
     4,
     2,
-    [
-      mark(followup.effectivenessStatus === "PENDING", "PENDIENTE"),
-      mark(followup.effectivenessStatus === "NOT_APPLICABLE", "NO APLICA"),
-    ].join("\n"),
+    mark(followup.effectivenessStatus === "PENDING", "PENDIENTE"),
   );
-  xml = setWordCellTextBalanced(xml, 2, 5, 1, text(followup.effectivenessObservations));
+  // La plantilla solo ofrece Aceptable / No aceptable / Pendiente: «no aplica» se deja sin
+  // casilla marcada y se indica en las observaciones de la comprobación.
+  xml = setWordCellTextBalanced(
+    xml,
+    2,
+    5,
+    1,
+    [
+      followup.effectivenessStatus === "NOT_APPLICABLE" ? "Comprobación de la eficacia: no aplica." : "",
+      text(followup.effectivenessObservations),
+    ].filter(Boolean).join("\n"),
+  );
   xml = setWordCellTextBalanced(xml, 2, 7, 1, mark(followup.closeChange, "SI"));
   xml = setWordCellTextBalanced(xml, 2, 7, 2, mark(!followup.closeChange, "NO"));
   xml = setWordCellTextBalanced(xml, 2, 7, 4, date(followup.nextFollowupDate));
@@ -164,12 +168,16 @@ export async function generateChangeAnnexV(
     2,
     11,
     0,
+    // Los dos bloques de la plantilla se conservan; la aprobación se escribe bajo su etiqueta.
     [
       "Cierre del Seguimiento:",
-      "Firma: ________________________",
-      `Fecha: ${date(followup.followupDate)}`,
-      followup.approvalByText ? `Aprobación: ${followup.approvalByText}` : "",
-    ].filter(Boolean).join("    "),
+      "",
+      `Firma: ________________________ Fecha: ${date(followup.followupDate) || "____/____/______"}`,
+      "",
+      "Aprobación y cierre del cambio, si aplica (Gª Calidad / Dirección Técnica/Responsable Técnico actividad IPS)",
+      text(followup.approvalByText),
+      "Firma: _________________________Fecha: ____/____/______",
+    ].join("\n"),
   );
 
   updateZipEntry(entries, "word/document.xml", xml);

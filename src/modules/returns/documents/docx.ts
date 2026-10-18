@@ -1,6 +1,6 @@
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { escapeXml,extractWordBodyRange,fillWordRowBalanced,replaceWordRowWithCopies,replaceWordRowsRangeBalanced,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { escapeXml,extractWordBodyRange,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
 
@@ -23,7 +23,6 @@ const date=(v:Date|null|undefined)=>v?new Intl.DateTimeFormat("es-ES").format(v)
 const text=(v:string|null|undefined)=>v??"";
 const tri=(v:string|null|undefined)=>v==="YES"?"Sí":v==="NO"?"No":v==="NA"?"N.A.":"";
 const box=(on:boolean,label:string)=>`${on?"☒":"☐"} ${label}`;
-const typeLabel=(v:string,o:string|null)=>v==="COMMERCIAL"?"Comercial":v==="COMPLAINT"?"Reclamación":v==="RECALL"?"Retirada":v==="EXPIRY"?"Caducidad":v==="TRANSPORT"?"Transporte":o||"Otra";
 const productType=(v:string)=>({API:"API",INTERMEDIATE:"Intermedio",MEDICINE:"Medicamento",SUPPLEMENT:"Complemento alimenticio",IMPORTED_PRODUCT:"Producto importado",MEDICAL_DEVICE:"Producto sanitario",COSMETIC:"Cosmético",OTHER:"Otro"} as Record<string,string>)[v]??v;
 
 function keepOnlyFinalSectionProperties(xml:string){
@@ -82,23 +81,12 @@ export async function generateReturnAnnexV(r:ReturnDocumentRecord){
  if(version!=="03")xml=extractWordBodyRange(xml,"Anexo V:", "Anexo VI:", "last");
  xml=setWordCellTextBalanced(xml,1,0,1,text(r.customerEntity));xml=setWordCellTextBalanced(xml,1,1,1,date(r.communicationDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.qmsRecord.businessCode));
  xml=setWordCellTextBalanced(xml,1,2,1,r.products.map(x=>x.productNameCode).join(" · "));xml=setWordCellTextBalanced(xml,1,2,3,r.products.map(x=>text(x.lot)).filter(Boolean).join(" · "));xml=setWordCellTextBalanced(xml,1,3,1,text(r.conservationConditions));
- if(r.customerDeclarationSignatoryName)xml=xml.replace(/_{8,}/g,()=>escapeXml(r.customerDeclarationSignatoryName!));
+ // Solo la línea del firmante («D./D.ª ____»); «Otra documentación: ____» no se toca.
+ if(r.customerDeclarationSignatoryName)xml=xml.replace(/(D\.\/D\.ª )_{8,}/,(_m,label:string)=>label+escapeXml(r.customerDeclarationSignatoryName!));
  xml=setWordCellTextBalanced(xml,3,0,0,text(r.customerDeclarationObservations));
  xml=setWordCellTextBalanced(xml,4,0,1,["Nombre/Puesto/Firma/Fecha:",text(r.customerDeclarationSignatoryName),text(r.customerDeclarationSignatoryRole),date(r.customerDeclarationSignedAt)].filter(Boolean).join(" / "));
  xml=setWordCellTextBalanced(xml,5,0,1,`Nombre/Firma/Fecha:\n${text(r.qaApprovalName)}`);
  xml=setWordCellTextBalanced(xml,5,1,1,`Nombre/Firma/Fecha:\n${text(r.technicalApprovalName)}`);
  xml=keepOnlyFinalSectionProperties(xml);
- updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
-}
-
-export async function generateReturnAnnexVI(year:number,records:ReturnDocumentRecord[]){
- const entries=readZip(await loadReturnPntTemplate("03",DocumentType.RETURN_ANNEX_VI));let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo VI:",undefined,"last");
- xml=setWordCellTextBalanced(xml,0,2,0,String(year));
- const rows=records.flatMap(r=>r.products.map(p=>[
-  text(r.qmsRecord.businessCode),date(r.communicationDate),text(r.relatedDocument)||typeLabel(r.returnType,r.otherReturnType),text(r.customerEntity),p.productNameCode,text(p.format),text(p.lot),
-  [p.quantity,p.unit].filter(Boolean).join(" "),text(p.expiryReanalysis),text(r.country),text(r.destructionManagedBy),text(r.destructionCertificate),
-  [r.internalObservations,...r.followups.map(f=>`${date(f.followupDate)}: ${f.comment}`)].filter(Boolean).join(" · ")
- ]));
- xml=replaceWordRowsRangeBalanced(xml,0,5,17,({first})=>rows.map(values=>fillWordRowBalanced(first,values.map(v=>({text:v})))));
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }

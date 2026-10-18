@@ -5,6 +5,7 @@ import { AdditionalLotsField } from "@/components/additional-lots-field";
 import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
+import { dispositionChoice, dispositionOptions } from "@/modules/deviations/disposition";
 
 
 import { authenticatedFetch } from "@/lib/auth/client";
@@ -147,6 +148,22 @@ function TriStateSelect({
   );
 }
 
+function DispositionSelect({ defaultValue, issues }: { defaultValue?: string; issues?: string[] }) {
+  const { option, legacyText } = dispositionChoice(defaultValue);
+  return (
+    <label className={`field span-2 ${issues?.length ? "has-error" : ""}`}>
+      <span>Disposición final *</span>
+      <select name="disposition" defaultValue={legacyText ?? option ?? ""} required aria-invalid={issues?.length ? true : undefined}>
+        <option value="">Seleccionar</option>
+        {/* Un texto anterior que no es una opción del anexo se conserva tal cual; en el anexo sale como «OTRO». */}
+        {legacyText ? <option value={legacyText}>Otro (registrado antes): {legacyText}</option> : null}
+        {dispositionOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+      </select>
+      <FieldIssue messages={issues} />
+    </label>
+  );
+}
+
 export function DeviationForm({
   action,
   departments,
@@ -202,7 +219,7 @@ export function DeviationForm({
     const departmentId = selectedDepartmentId;
     const departmentCode = departments.find((item) => item.id === departmentId)?.code ?? "";
     const issueYear =
-      /^\\d{4}-/.test(issueDateValue)
+      /^\d{4}-/.test(issueDateValue)
         ? Number(issueDateValue.slice(0, 4))
         : new Date().getFullYear();
 
@@ -601,7 +618,7 @@ export function DeviationForm({
         <p className="section-help">La conclusión sintetiza investigación, causa, impacto, CAPA y disposición. No debe introducir información nueva.</p>
         <div className="form-grid">
           <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={formDefaults.conclusion} required issues={issues.conclusion} />
-          <Field label="Disposición final" name="disposition" defaultValue={formDefaults.disposition} span="span-2" required issues={issues.disposition} />
+          <DispositionSelect defaultValue={formDefaults.disposition} issues={issues.disposition} />
           <Field label="Cantidad" name="dispositionQuantity" defaultValue={formDefaults.dispositionQuantity} required issues={issues.dispositionQuantity} />
           <TriStateSelect label="Notificación al cliente" name="clientNotification" defaultValue={formDefaults.clientNotification} required issues={issues.clientNotification} />
           <TextArea label="Comentarios de disposición" name="dispositionComments" defaultValue={formDefaults.dispositionComments} required issues={issues.dispositionComments} />

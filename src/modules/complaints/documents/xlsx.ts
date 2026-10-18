@@ -1,3 +1,4 @@
+import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { complaintSnapshotVersionFollowupDate } from "@/lib/qms/versioning";
 import { readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
 import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
@@ -64,14 +65,15 @@ export async function generateComplaintAnnexV(year:number,rows:Row[],versionCode
  const styles=rowStyles(template);
  const headers=source.filter(x=>x.n<=4).map(x=>x.xml);
  const body=rows.map((r,i)=>{
-  const n=5+i, f=r.followups[0];
+  const n=5+i, f=r.followups[0], lots=storedAdditionalLots(r.additionalLots);
   const vals=[
    r.qmsRecord.businessCode??"",
    complaintTypeLabel(r.complaintType),
    formatDate(r.openedAt),
    r.partyName??"",
-   r.reference??r.affectedScope??"",
-   r.lotReference??"",
+   // D-094: los otros lotes afectados, uno por línea en la misma casilla.
+   lotColumn(r.reference??r.affectedScope,lots,"name"),
+   lotColumn(r.lotReference,lots,"lot"),
    complaintClassificationLabel(r.classification),
    complaintStatusLabel(r.status),
    formatDate(r.closedAt),

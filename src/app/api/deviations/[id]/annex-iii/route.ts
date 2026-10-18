@@ -2,6 +2,7 @@ import { storeWorkingDocument } from "@/lib/qms/working-document";
 import { currentIdentity } from "@/lib/auth/context";
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
+import { parseCapaAnnexVersion } from "@/modules/capa/documents/version-query";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { generateAnnexIII } from "@/modules/deviations/documents/annex-iii";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
@@ -29,11 +30,12 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
     );
   }
 
-  const requestedVersion = new URL(request.url).searchParams.get("version");
-  const sequenceNumber =
-    requestedVersion !== null && /^\\d+$/.test(requestedVersion)
-      ? Number(requestedVersion)
-      : null;
+  // Misma validación que CAPA: una versión mal escrita no descarga en silencio la vigente.
+  const parsedVersion = parseCapaAnnexVersion(new URL(request.url).searchParams.get("version"));
+  if (!parsedVersion.valid) {
+    return NextResponse.json({ error: "La versión solicitada no es válida." }, { status: 400 });
+  }
+  const sequenceNumber = parsedVersion.sequenceNumber;
   const storedVersion =
     sequenceNumber === null
       ? deviation.qmsRecord.versions.at(-1) ?? null
