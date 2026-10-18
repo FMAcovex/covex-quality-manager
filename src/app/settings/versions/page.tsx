@@ -16,14 +16,38 @@ import {
 } from "@/modules/configuration/admin-actions";
 import { getAdministrationOverview, moduleLabel } from "@/modules/configuration/admin-queries";
 import { evaluateRequiredTemplateReadiness } from "@/modules/configuration/template-readiness";
+import { pendingTemplateActivationChecks } from "@/modules/configuration/template-activation";
+import type { TemplateActivationCheck } from "@/modules/configuration/template-compatibility";
 
 export const dynamic = "force-dynamic";
 
 const docLabel = (value: DocumentType) => value.replaceAll("_", " ");
 
+const MAX_SHOWN_DIFFERENCES = 15;
+
+// D-100: resultado de comparar una versión inactiva con la activa antes de activarla.
+function TemplateActivationNote({ check }: { check?: TemplateActivationCheck }) {
+  if (!check) return null;
+  if (check.status === "supported") return <small className="muted-note">✓ Versión preparada en la aplicación.</small>;
+  if (check.status === "first") return <small className="muted-note">Sin versión activa con la que comparar.</small>;
+  if (check.status === "compatible") return <small className="muted-note">✓ Mismas casillas y etiquetas que la versión {check.referenceVersion}.</small>;
+  return (
+    <details className="field-error field-error-block">
+      <summary>
+        ✗ No compatible con la versión {check.referenceVersion}: {check.differences.length} diferencia(s). Hay que adaptar la aplicación antes de activarla.
+      </summary>
+      <ul>
+        {check.differences.slice(0, MAX_SHOWN_DIFFERENCES).map((difference) => <li key={difference}>{difference}</li>)}
+      </ul>
+      {check.differences.length > MAX_SHOWN_DIFFERENCES ? <p>Y {check.differences.length - MAX_SHOWN_DIFFERENCES} más.</p> : null}
+    </details>
+  );
+}
+
 async function VersionsPageAuthenticatedContent() {
   const data = await getAdministrationOverview();
   const readiness = evaluateRequiredTemplateReadiness(data.templates);
+  const activationChecks = await pendingTemplateActivationChecks(data.templates);
 
   return (
     <section className="workspace">
@@ -260,7 +284,10 @@ async function VersionsPageAuthenticatedContent() {
                         </a></PermissionGate>
                       ) : null}
 
-                      {!template.isActive ? (
+                      {!template.isActive && activationChecks.get(template.id)?.status === "incompatible" ? (
+                        <TemplateActivationNote check={activationChecks.get(template.id)} />
+                      ) : !template.isActive ? (
+                        <><TemplateActivationNote check={activationChecks.get(template.id)} />
                         <PermissionGate permission="MANAGE_CONFIGURATION" module={template.module}><form action={activateTemplateVersionAction.bind(null, template.id)}><CsrfField requestId={randomUUID()} />
                           <ActorField
                             type="hidden"
@@ -273,7 +300,7 @@ async function VersionsPageAuthenticatedContent() {
                             value="Activación de plantilla controlada"
                           />
                           <button className="button small primary">Activar</button>
-                        </form></PermissionGate>
+                        </form></PermissionGate></>
                       ) : (
                         <span className="muted-note">Aplicable</span>
                       )}
@@ -368,8 +395,10 @@ async function VersionsPageAuthenticatedContent() {
           guarda automáticamente su SHA-256 y el binario queda en PostgreSQL. Registrar
           una plantilla no significa que cualquier Word/Excel nuevo sea compatible: si
           cambia la estructura de tablas/campos del anexo, el generador debe adaptarse y
-          validarse antes de activar la versión. Para Reclamaciones y Devoluciones debe
-          cargarse el PNT DOCX completo, porque sus anexos se extraen de esa fuente controlada.
+          validarse antes de activar la versión. Por eso, antes de activar una versión nueva, la
+          aplicación la compara con la versión activa del mismo anexo: si se quita, se mueve o se
+          añade un campo, no deja activarla hasta adaptar la aplicación (D-100). Los cambios de
+          código, revisión o fecha no cuentan como diferencia.
         </div>
       </section>
     </section>

@@ -76,7 +76,18 @@ it("covers catalog children, parameters, alert rules and form/template activatio
   await asQa(()=>actions.activateFormVersionAction(cloned.id,form({reason:"Synthetic official version activation"})));
   expect((await inspector.formVersion.findUniqueOrThrow({where:{id:source.id}})).status).toBe("RETIRED");
   expect((await inspector.formVersion.findUniqueOrThrow({where:{id:cloned.id}})).status).toBe("ACTIVE");
-  const bytes=new Uint8Array([80,75,3,4,83,89,78,84,72]);
+  // D-100: la activación compara con la versión activa del anexo. Si tiene archivo, se registra una copia
+  // válida de ella (compatible) y se comprueba que un archivo que no es Word no se puede activar.
+  const activeTemplate=await inspector.templateVersion.findFirst({where:{module:"DEVIATION",documentType:"DEVIATION_ANNEX_III",isActive:true,fileData:{not:null}}});
+  const bytes=activeTemplate?.fileData?new Uint8Array(activeTemplate.fileData):new Uint8Array([80,75,3,4,83,89,78,84,72]);
+  if(activeTemplate){
+    const invalid=form({module:"DEVIATION",documentType:"DEVIATION_ANNEX_III",versionCode:"SYNTH_CAPTURE_INVALID",effectiveFrom:"2099-01-01"});
+    invalid.set("file",new File([new Uint8Array([80,75,3,4,83,89,78,84,72])],"synthetic-invalid.docx",{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"}));
+    await asQa(()=>actions.registerTemplateVersionAction(invalid));
+    const rejected=await inspector.templateVersion.findFirstOrThrow({where:{module:"DEVIATION",versionCode:"SYNTH_CAPTURE_INVALID"}});
+    await expect(asQa(()=>actions.activateTemplateVersionAction(rejected.id,form({reason:"Synthetic incompatible template activation"})))).rejects.toThrow();
+    expect((await inspector.templateVersion.findUniqueOrThrow({where:{id:rejected.id}})).isActive).toBe(false);
+  }
   const registration=form({module:"DEVIATION",documentType:"DEVIATION_ANNEX_III",versionCode:"SYNTH_CAPTURE",effectiveFrom:"2099-01-01"});
   registration.set("file",new File([bytes],"synthetic-template.docx",{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"}));
   await asQa(()=>actions.registerTemplateVersionAction(registration));

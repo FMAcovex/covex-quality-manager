@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { AlertRuleKind,AlertSeverity,DocumentType,FormVersionStatus,ParameterValueType,Prisma,QmsRecordType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { templateActivationCheck } from "@/modules/configuration/template-activation";
 import { withDatabaseTransaction } from "@/lib/transaction-context";
 import { configurationAuditBoundary } from "@/lib/audit/configuration-boundary";
 import { isAllowedDocumentType } from "@/modules/configuration/admin-domain";
@@ -152,6 +153,9 @@ async function activateTemplateVersionActionAuthenticatedContent(id:string,fd:Fo
   const target=await prisma.templateVersion.findUniqueOrThrow({where:{id}});
   const currentActive=await prisma.templateVersion.findFirst({where:{module:target.module,documentType:target.documentType,isActive:true,id:{not:id}},orderBy:{effectiveFrom:"desc"}});
   if(currentActive&&target.effectiveFrom<=currentActive.effectiveFrom)throw new Error("La nueva plantilla debe tener una vigencia posterior a la plantilla activa.");
+  // D-100: no se activa una plantilla que la aplicación aún no sabe rellenar.
+  const check=await templateActivationCheck(target);
+  if(check.status==="incompatible")throw new Error(`No se activa: la plantilla no es compatible con la versión ${check.referenceVersion} (${check.differences.length} diferencia(s); la primera: ${check.differences[0]}). Hay que adaptar la aplicación antes de activarla.`);
   await withDatabaseTransaction(prisma, async tx=>{
     const active=await tx.templateVersion.findMany({where:{module:target.module,documentType:target.documentType,isActive:true,id:{not:id}}});
     for(const old of active)await tx.templateVersion.update({where:{id:old.id},data:{isActive:false,effectiveTo:new Date(target.effectiveFrom.getTime()-86400000)}});

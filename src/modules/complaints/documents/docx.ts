@@ -1,11 +1,9 @@
 import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import {
-  extractWordBodyRange,
-  replaceWordRowWithCopies,setWordCellTextBalanced
-} from "@/lib/ooxml/xml";
+import { replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
+import { annexGeneratorView, annexGeneratorXml } from "@/modules/configuration/annex-generator-views";
 import { loadComplaintPntTemplate } from "@/modules/complaints/documents/templates";
 
 type Capa={actionType:string;description:string;plannedExecutionDate:Date|null;responsible:string|null;businessCapaCode?:string|null};
@@ -93,8 +91,8 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
  r=withAdditionalLots(r);
  const version=r.annexIIITemplateVersion?.versionCode??"03";
  const entries=readZip(await loadComplaintPntTemplate(version,DocumentType.COMPLAINT_ANNEX_III));
- if(version!=="03"){
-  let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo III", "Anexo IV:", "last");
+ if(annexGeneratorView(DocumentType.COMPLAINT_ANNEX_III,version).mapping!=="v03"){
+  let xml=annexGeneratorXml(DocumentType.COMPLAINT_ANNEX_III,version,getZipEntryText(entries,"word/document.xml"));
   xml=setWordCellTextBalanced(xml,0,1,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,0,1,3,date(r.openedAt));
   xml=setWordCellTextBalanced(xml,1,1,1,date(r.detectionDate));xml=setWordCellTextBalanced(xml,1,1,3,text(r.detectedBy));
   xml=setWordCellTextBalanced(xml,1,2,1,box(r.complaintType==="PROVIDER","A PROVEEDOR"));xml=setWordCellTextBalanced(xml,1,2,2,box(r.complaintType==="CUSTOMER","DE CLIENTE"));
@@ -198,7 +196,7 @@ export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
  }
 
  const entries=readZip(await loadComplaintPntTemplate(version,DocumentType.COMPLAINT_ANNEX_IV));
- let xml=extractWordBodyRange(getZipEntryText(entries,"word/document.xml"),"Anexo IV:", "Anexo V:", "last");
+ let xml=annexGeneratorXml(DocumentType.COMPLAINT_ANNEX_IV,version,getZipEntryText(entries,"word/document.xml"));
  xml=setWordCellTextBalanced(xml,0,1,1,text(r.qmsRecord.businessCode));xml=setWordCellTextBalanced(xml,0,1,3,date(r.openedAt));xml=setWordCellTextBalanced(xml,0,2,1,text(r.partyName));xml=setWordCellTextBalanced(xml,0,3,1,text(r.contact));
  xml=setWordCellTextBalanced(xml,0,4,1,text(r.reference));xml=setWordCellTextBalanced(xml,0,4,3,text(r.lotReference));xml=setWordCellTextBalanced(xml,0,5,3,text(r.quantity));xml=setWordCellTextBalanced(xml,0,6,3,text(r.expiryReanalysis));
  xml=setWordCellTextBalanced(xml,0,8,0,text(r.description));xml=setWordCellTextBalanced(xml,0,10,0,resolutionText(r));{const [left,right]=complaintResolutionCells(r);xml=setWordCellTextBalanced(xml,0,12,0,left);xml=setWordCellTextBalanced(xml,0,12,1,right);}
