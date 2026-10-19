@@ -1,4 +1,5 @@
 "use server";
+import { attributeAuditFinding } from "@/modules/audits/finding-service";
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
@@ -330,6 +331,13 @@ async function createCapaActionAuthenticatedContent(
             changedByText: parsed.actor,
           });
         }
+      }
+
+      // R5B2: CAPA abierta desde un hallazgo de auditoría; solo se atribuye si la auditoría sigue entre los orígenes.
+      const fromAuditFindingId = String(formData.get("fromAuditFindingId") ?? "").trim();
+      if (fromAuditFindingId) {
+        const finding = await tx.auditFinding.findUnique({ where: { id: fromAuditFindingId }, select: { audit: { select: { qmsRecordId: true } } } });
+        if (finding && v.origins.some((origin) => origin.id === finding.audit.qmsRecordId)) await attributeAuditFinding(tx, { findingId: fromAuditFindingId, targetRecordId: qmsRecord.id, actor: parsed.actor });
       }
 
       const versionRecord = await tx.capa.findUniqueOrThrow({

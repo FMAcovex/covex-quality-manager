@@ -52,6 +52,21 @@ async function main() {
     };
     await link(obs.id,"CAPA",capa.q.businessCode!); await link(rk.id,"CAPA",capa.q.businessCode!); await link(obs.id,"DEVIATION",deviation.q.businessCode!);
     assert.equal(await prisma.qmsRelation.count({where:{sourceRecordId:audit.qmsRecordId,targetRecordId:capa.q.id}}),1);
+    // R5B2: «Abrir CAPA» y «Abrir desviación» llevan al alta rellenada y lo guardado queda atribuido al hallazgo.
+    const openFrom=async(label:string,newPath:RegExp,field:string,savedPath:RegExp)=>{
+      await view(page,`/audits/${audit.id}?tab=findings`);
+      await page.locator(`#audit-finding-${obs.id}`).getByRole("link",{name:label,exact:true}).click();
+      await page.waitForURL(newPath); await page.waitForLoadState("networkidle");
+      assert.equal(await page.locator(`[name="${field}"]`).inputValue(),`OBS editada ${marker}`,`${label}: descripción del hallazgo`);
+      await page.getByRole("button",{name:"Guardar borrador",exact:true}).first().click();
+      await page.waitForURL(savedPath,{timeout:30000});
+      return new URL(page.url()).pathname.split("/").pop()!;
+    };
+    const newCapa=await prisma.capa.findUniqueOrThrow({where:{id:await openFrom("Abrir CAPA",/\/capa\/new\?fromAuditFindingId=/,"defectDescription",/\/capa\/[0-9a-f-]{36}$/)}}); records.push(newCapa.qmsRecordId);
+    const newDeviation=await prisma.deviation.findUniqueOrThrow({where:{id:await openFrom("Abrir desviación",/\/deviations\/new\?fromAuditFindingId=/,"whatHappened",/\/deviations\/[0-9a-f-]{36}$/)}}); records.push(newDeviation.qmsRecordId);
+    for (const target of [newCapa.qmsRecordId,newDeviation.qmsRecordId]) assert.equal(await prisma.auditFindingRelation.count({where:{findingId:obs.id,isActive:true,qmsRelation:{targetRecordId:target,isActive:true}}}),1,"El alta desde el hallazgo queda atribuida");
+    assert.equal(newCapa.status,"DRAFT"); assert.equal(newDeviation.status,"DRAFT");
+    await view(page,`/audits/${audit.id}?tab=findings`); assert.equal(await page.locator(`#audit-finding-${obs.id} .relation-card`).filter({hasText:"Borrador sin código"}).count(),2);
     await view(page,`/capa/${capa.entity.id}?tab=relations`);await page.locator(".audit-origin-panel").getByRole("link",{name:"OBS 01",exact:true}).click();await page.waitForURL(new RegExp(`audit-finding-${obs.id}`)); await page.locator(`#audit-finding-${obs.id}`).waitFor();
     await view(page,`/deviations/${deviation.entity.id}?tab=relations`);assert(await page.locator(".audit-origin-panel").getByRole("link",{name:"OBS 01",exact:true}).count());
     await view(page,`/audits/${audit.id}?tab=followup`);await page.locator("summary").filter({hasText:"+ Añadir seguimiento"}).click();form=page.locator(".audit-child-form").first();await form.locator('[name="followupDate"]').fill("2026-10-07");await form.locator('[name="completedByText"]').fill("Responsable UI");await form.locator('[name="description"]').fill("Seguimiento general UI");await form.locator('[name="nextReviewDate"]').fill("2026-11-10");await saveChild(page,form,"Guardar seguimiento");await page.locator("p.prose-value").filter({hasText:/^Seguimiento general UI$/}).waitFor();

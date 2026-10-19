@@ -101,20 +101,31 @@ export async function saveAuditFollowup(auditId: string, raw: unknown, followupI
 export async function linkAuditFinding(auditId: string, findingId: string, targetRecordId: string, actor: string) {
   parse(retirementInputSchema, { actor, reason: "Vinculación" });
   return prisma.$transaction(async tx => {
-    const audit = await lockAudit(tx, auditId); await ownedFinding(tx, auditId, findingId);
-    const target = await tx.qmsRecord.findUnique({ where: { id: targetRecordId }, include: { capa: { select: { status: true } }, deviation: { select: { status: true } } } });
-    // R5B1 (D-110): se admiten auditorías y destinos en borrador; el destino debe existir y estar activo.
-    if (!target || !target.isActive || !["DEVIATION", "CAPA"].includes(target.recordType)) throw new Error("Selecciona una Desviación o CAPA existente y activa.");
-    const existing = await tx.qmsRelation.findUnique({ where: { sourceRecordId_targetRecordId_relationType: { sourceRecordId: audit.qmsRecordId, targetRecordId, relationType: "GENERATES" } } });
-    const relation = await createQmsRelation(tx, { sourceRecordId: audit.qmsRecordId, targetRecordId, createdByText: actor });
-    if (!existing?.isActive) await event(tx, audit.qmsRecordId, actor, "relations", existing, relation, "Auditoría genera expediente existente");
-    const before = await tx.auditFindingRelation.findUnique({ where: { findingId_qmsRelationId: { findingId, qmsRelationId: relation.id } } });
-    if (before?.isActive) throw new Error("El expediente ya está atribuido a este hallazgo.");
-    const after = before
-      ? await tx.auditFindingRelation.update({ where: { id: before.id }, data: { isActive: true, updatedByText: actor, retiredAt: null, retiredByText: null, retirementReason: null } })
-      : await tx.auditFindingRelation.create({ data: { findingId, qmsRelationId: relation.id, createdByText: actor } });
-    await event(tx, audit.qmsRecordId, actor, `audit.attributions.${after.id}`, before, after, "Atribución de expediente a hallazgo"); await refreshCapaOriginSnapshot(tx,targetRecordId,actor); return after;
+    await lockAudit(tx, auditId); await ownedFinding(tx, auditId, findingId);
+    return attributeAuditFinding(tx, { findingId, targetRecordId, actor });
   });
+}
+/**
+ * Atribuye una Desviación o CAPA a un hallazgo dentro de una transacción: relación global
+ * AUDIT GENERATES (creada o reutilizada) y atribución. La usan «Vincular existente» y el alta de
+ * CAPA o Desviación desde el hallazgo (R5B2), que la llama la acción del módulo de destino.
+ */
+export async function attributeAuditFinding(tx: Prisma.TransactionClient, { findingId, targetRecordId, actor }: { findingId: string; targetRecordId: string; actor: string }) {
+  const finding = await tx.auditFinding.findUnique({ where: { id: findingId }, select: { auditId: true, isActive: true } });
+  if (!finding?.isActive) throw new Error("El hallazgo no existe o está retirado.");
+  const audit = await lockAudit(tx, finding.auditId);
+  const target = await tx.qmsRecord.findUnique({ where: { id: targetRecordId }, include: { capa: { select: { status: true } }, deviation: { select: { status: true } } } });
+  // R5B1 (D-110): se admiten auditorías y destinos en borrador; el destino debe existir y estar activo.
+  if (!target || !target.isActive || !["DEVIATION", "CAPA"].includes(target.recordType)) throw new Error("Selecciona una Desviación o CAPA existente y activa.");
+  const existing = await tx.qmsRelation.findUnique({ where: { sourceRecordId_targetRecordId_relationType: { sourceRecordId: audit.qmsRecordId, targetRecordId, relationType: "GENERATES" } } });
+  const relation = await createQmsRelation(tx, { sourceRecordId: audit.qmsRecordId, targetRecordId, createdByText: actor });
+  if (!existing?.isActive) await event(tx, audit.qmsRecordId, actor, "relations", existing, relation, "Auditoría genera expediente existente");
+  const before = await tx.auditFindingRelation.findUnique({ where: { findingId_qmsRelationId: { findingId, qmsRelationId: relation.id } } });
+  if (before?.isActive) throw new Error("El expediente ya está atribuido a este hallazgo.");
+  const after = before
+    ? await tx.auditFindingRelation.update({ where: { id: before.id }, data: { isActive: true, updatedByText: actor, retiredAt: null, retiredByText: null, retirementReason: null } })
+    : await tx.auditFindingRelation.create({ data: { findingId, qmsRelationId: relation.id, createdByText: actor } });
+  await event(tx, audit.qmsRecordId, actor, `audit.attributions.${after.id}`, before, after, "Atribución de expediente a hallazgo"); await refreshCapaOriginSnapshot(tx,targetRecordId,actor); return after;
 }
 export async function retireAuditAttribution(auditId: string, findingId: string, attributionId: string, raw: unknown) {
   const v = parse(retirementInputSchema, raw);

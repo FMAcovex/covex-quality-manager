@@ -62,6 +62,16 @@ describe("4B1 protección directa de entradas", () => {
     const closer: Principal = { ...editor, grants: [...editor.grants, { module: "AUDIT", permission: "CLOSE", scope: "ALL" }] };
     await identityContext.run({ principal: closer, unitTest: true }, () => expect(authorizedAction("saveAuditChildAction", args("CLOSED"), run)).resolves.toBe("saved"));
   });
+  it("crear una CAPA o Desviación desde un hallazgo exige EDIT en Auditorías (R5B2)", async () => {
+    configureTest();
+    const creator: Principal = { ...principal, id: "synthetic-capa-creator", grants: [{ module: "CAPA", permission: "CREATE", scope: "ALL" }, { module: "DEVIATION", permission: "CREATE", scope: "ALL" }] };
+    const run = vi.fn(async () => "saved");
+    const form = () => { const data = new FormData(); data.set("fromAuditFindingId", "6f2b1c7e-9a4d-4b8e-8c1f-2d3e4f5a6b7c"); return data; };
+    for (const name of ["createCapaAction", "createDeviationAction"]) {
+      await identityContext.run({ principal: creator, unitTest: true }, () => expect(authorizedAction(name, [{ error: null }, form()], run)).rejects.toMatchObject({ status: 403 }));
+    }
+    expect(run).not.toHaveBeenCalled();
+  });
   it("cerrar una reclamación exige CLOSE aunque el estado llegue en saveStatus", async () => {
     configureTest();
     const editor: Principal = { ...principal, id: "synthetic-complaint-editor", grants: [{ module: "COMPLAINT", permission: "CREATE", scope: "ALL" }] };

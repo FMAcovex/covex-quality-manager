@@ -15,3 +15,25 @@ export async function getAuditWork(auditId: string) {
 export async function getAuditOrigins(targetRecordId: string) {
   return prisma.qmsRelation.findMany({ where: { targetRecordId, isActive: true, relationType: "GENERATES", sourceRecord: { recordType: "AUDIT" } }, include: { sourceRecord: { include: { audit: { select: { id: true, title: true, externalReference: true } } } }, auditFindingRelations: { where: { isActive: true }, include: { finding: { select: { id: true, reference: true, isActive: true } } } } }, orderBy: { createdAt: "asc" } });
 }
+
+/**
+ * Datos de un hallazgo para rellenar el alta de una CAPA o Desviación desde él (R5B2).
+ * Devuelve null si el hallazgo está retirado o la auditoría anulada.
+ */
+export async function getAuditFindingOrigin(findingId: string) {
+  const finding = await prisma.auditFinding.findUnique({
+    where: { id: findingId },
+    select: {
+      id: true, reference: true, description: true, isActive: true,
+      audit: { select: { id: true, title: true, codingDepartmentId: true, departments: { where: { isActive: true }, select: { departmentId: true }, take: 1 }, qmsRecord: { select: { id: true, businessCode: true, year: true, isActive: true } } } },
+    },
+  });
+  if (!finding?.isActive || !finding.audit.qmsRecord.isActive) return null;
+  const audit = finding.audit;
+  return {
+    findingId: finding.id, reference: finding.reference, description: finding.description,
+    auditId: audit.id, auditTitle: audit.title, auditRecord: audit.qmsRecord,
+    auditLabel: audit.qmsRecord.businessCode ?? audit.title ?? "Auditoría sin código",
+    departmentId: audit.codingDepartmentId ?? audit.departments[0]?.departmentId ?? null,
+  };
+}

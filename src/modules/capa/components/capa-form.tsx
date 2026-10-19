@@ -130,6 +130,7 @@ export function CapaForm({
   fromDeviationPlanId,
   fromComplaintPlanId,
   fromComplaintId,
+  fromAuditFindingId,
 }: {
   mode: "create" | "edit";
   action: (state: CapaFormState, formData: FormData) => Promise<CapaFormState>;
@@ -144,6 +145,8 @@ export function CapaForm({
   fromDeviationPlanId?: string;
   fromComplaintPlanId?: string;
   fromComplaintId?: string;
+  /** R5B2: alta desde un hallazgo de auditoría; al guardar queda atribuida. */
+  fromAuditFindingId?: string;
 }) {
   const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -245,6 +248,7 @@ export function CapaForm({
       {fromDeviationPlanId ? <input type="hidden" name="fromDeviationPlanId" value={fromDeviationPlanId} /> : null}
       {fromComplaintPlanId ? <input type="hidden" name="fromComplaintPlanId" value={fromComplaintPlanId} /> : null}
       {fromComplaintId ? <input type="hidden" name="fromComplaintId" value={fromComplaintId} /> : null}
+      {fromAuditFindingId ? <input type="hidden" name="fromAuditFindingId" value={fromAuditFindingId} /> : null}
 
       {state.error ? (
         <div className="form-errors">

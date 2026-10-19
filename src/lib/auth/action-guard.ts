@@ -73,6 +73,8 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
       if (entry) assertPermission(user, "AUDIT", "EDIT", { id: entry.planId });
     }
   }
+  // R5B2: crear una CAPA o Desviación desde un hallazgo exige poder editar Auditorías (el ámbito se comprueba abajo).
+  if (form?.get("fromAuditFindingId")) assertPermission(user, "AUDIT", "EDIT");
   if (!unit && form) {
     const ids = new Set<string>();
     const collect = (value: unknown) => {
@@ -101,6 +103,11 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
       if (parent) assertPermission(user, parentModule, "EDIT", await resourceScope(parentModule, parent.deviationId ?? parent.complaintId));
     }
     if (form.get("fromComplaintId")) assertPermission(user, "COMPLAINT", "EDIT", await resourceScope("COMPLAINT", String(form.get("fromComplaintId"))));
+    // R5B2: crear una CAPA o Desviación desde un hallazgo escribe la atribución en la auditoría.
+    if (form.get("fromAuditFindingId")) {
+      const finding = await prisma.auditFinding.findUnique({ where: { id: String(form.get("fromAuditFindingId")) }, select: { auditId: true } });
+      if (finding) assertPermission(user, "AUDIT", "EDIT", await resourceScope("AUDIT", finding.auditId));
+    }
   }
   // Relations can refresh snapshots at both endpoints; authorize every affected record.
   if (!unit && /Relation|unlink|linkAudit|Attribution/.test(name)) {

@@ -34,8 +34,8 @@ const groups: Record<string, string[]> = {
 };
 const prefixes: Record<string, string[]> = { DV: ["W01"], CA: ["W02"], CC: ["W03"], RC: ["W04"], DE: ["W05"], AU: ["W06"], PN: ["W08"], TR: [], OO: ["W23"] };
 const additional: Record<string,string[]> = {
-  DV01: ["W14"], DV06: ["W14"], DV07: ["W12"], DV08: ["W12", "W15", "W16"],
-  CA01: ["W12", "W14"], CA06: ["W14"], CA07: ["W12"], CA08: ["W15", "W16"],
+  DV01: ["W14", "W12", "W06"], DV06: ["W14"], DV07: ["W12"], DV08: ["W12", "W15", "W16"],
+  CA01: ["W12", "W14", "W06"], CA06: ["W14"], CA07: ["W12"], CA08: ["W15", "W16"],
   CC01: ["W14"], CC06: ["W12"], CC07: ["W14", "W15", "W16"],
   RC01: ["W14"], RC05: ["W14"], RC06: ["W12"], RC07: ["W15", "W16"],
   DE01: ["W14"], DE05: ["W14"], DE06: ["W12"], DE07: ["W15", "W16"],

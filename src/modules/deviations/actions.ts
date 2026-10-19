@@ -1,4 +1,5 @@
 "use server";
+import { attributeAuditFinding } from "@/modules/audits/finding-service";
 import { responsibleUsersProblem } from "@/lib/auth/app-users";
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
@@ -224,6 +225,10 @@ async function createDeviationActionAuthenticatedContent(
           source: "UI",
         },
       });
+
+      // R5B2: desviación abierta desde un hallazgo de auditoría; queda atribuida al hallazgo.
+      const fromAuditFindingId = String(formData.get("fromAuditFindingId") ?? "").trim();
+      if (fromAuditFindingId) await attributeAuditFinding(tx, { findingId: fromAuditFindingId, targetRecordId: qmsRecord.id, actor: parsed.actor });
 
       const versionRecord = await tx.deviation.findUniqueOrThrow({
         where: { id: created.id },
