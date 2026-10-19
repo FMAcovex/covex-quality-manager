@@ -27,15 +27,15 @@ export DEFAULT_ACTOR_NAME="Demo Codespaces"
 export TEMPLATE_INSTALL_DIR=plantillas
 
 echo "2/4 · Preparando la base de la demo (migraciones, catálogos, datos y usuarios ficticios)..."
-pnpm -s exec prisma migrate deploy >/dev/null
-pnpm -s db:seed >/dev/null
-pnpm -s demo:seed >/dev/null
-pnpm -s demo:users >/dev/null
+pnpm exec prisma migrate deploy >/dev/null
+pnpm exec tsx prisma/seed.ts >/dev/null
+pnpm exec tsx scripts/seed-demo.ts >/dev/null
+pnpm exec tsx scripts/demo/install-users.ts >/dev/null
 
 echo "3/4 · Compilando la aplicación (un par de minutos)..."
-pnpm -s exec prisma generate >/dev/null
-pnpm -s exec next build >/dev/null
+pnpm exec prisma generate >/dev/null
+pnpm exec next build >/dev/null
 
 # Los puertos de un Codespace son privados por defecto: solo tu cuenta de GitHub puede abrirlos.
 echo "4/4 · Demo lista: abre ${AUTH_ORIGIN} y elige un perfil."
-exec pnpm -s exec next start -p 3000
+exec pnpm exec next start -p 3000
