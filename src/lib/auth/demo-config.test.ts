@@ -29,6 +29,27 @@ describe("Demo local (D-087)", () => {
     expect(config).toMatchObject({ demo: true, synthetic: false, secure: false, tenantId: demoTenant, origin: "http://localhost:3000" });
   });
 
+  describe("en GitHub Codespaces (D-108)", () => {
+    const codespace = { CODESPACES: "true", CODESPACE_NAME: "fmacovex-demo-x7q9", GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: "app.github.dev" };
+    const origin = "https://fmacovex-demo-x7q9-3000.app.github.dev";
+    it("admite la dirección del propio Codespace", () => {
+      expect(localDemoEnvironment({ ...demo, ...codespace, AUTH_ORIGIN: origin })).toBe(true);
+      expect(authConfiguration({ ...demo, ...codespace, AUTH_ORIGIN: origin })).toMatchObject({ demo: true, origin, secure: false });
+    });
+    it.each([
+      ["fuera de un Codespace", { CODESPACES: undefined }],
+      ["otro Codespace", { AUTH_ORIGIN: "https://otro-codespace-3000.app.github.dev" }],
+      ["otro dominio", { AUTH_ORIGIN: "https://fmacovex-demo-x7q9-3000.app.github.dev.example.com" }],
+      ["subdominio añadido", { AUTH_ORIGIN: "https://x.fmacovex-demo-x7q9-3000.app.github.dev" }],
+      ["http", { AUTH_ORIGIN: "http://fmacovex-demo-x7q9-3000.app.github.dev" }],
+      ["con ruta", { AUTH_ORIGIN: origin + "/app" }],
+      ["otra base de datos", { DATABASE_URL: "postgresql://covex:x@localhost:5432/covex_quality" }],
+      ["producción", { APP_ENV: "production" }],
+    ])("no se habilita %s", (_case, change) => {
+      expect(localDemoEnvironment({ ...demo, ...codespace, AUTH_ORIGIN: origin, ...change })).toBe(false);
+    });
+  });
+
   it("Entra sigue exigiendo HTTPS y no se confunde con la demo", () => {
     expect(() => authConfiguration({ APP_ENV: "demo", AUTH_PROVIDER: "entra", AUTH_ORIGIN: "http://localhost:3000" })).toThrow();
   });

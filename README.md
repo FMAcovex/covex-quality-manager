@@ -35,7 +35,7 @@ Para ver y probar la aplicación en tu ordenador con datos ficticios basta con D
 docker compose -f compose.demo.yaml up --build
 ```
 
-Después se abre <http://localhost:3000> y se elige un perfil de demostración (Garantía de Calidad, responsable de departamento, consulta o administrador técnico). Guía paso a paso para Windows, perfiles, plantillas opcionales y resolución de problemas: [DEMO_LOCAL.md](docs/DEMO_LOCAL.md). La demo solo es accesible desde el propio equipo, no usa Entra ni activa el audit trail GMP y no admite datos reales (D-087).
+Sin Docker, en GitHub Codespaces: `pnpm demo:codespace` (D-108). Después se abre <http://localhost:3000> (o la dirección del Codespace) y se elige un perfil de demostración (Garantía de Calidad, responsable de departamento, consulta o administrador técnico). Guía paso a paso para Windows, perfiles, plantillas opcionales y resolución de problemas: [DEMO_LOCAL.md](docs/DEMO_LOCAL.md). La demo solo es accesible desde el propio equipo, no usa Entra ni activa el audit trail GMP y no admite datos reales (D-087).
 
 Desarrollo sin Docker: PostgreSQL local, `.env` a partir de `.env.example`, `pnpm install`, `pnpm db:deploy`, `pnpm db:seed` y `pnpm dev`. El acceso requiere la identidad corporativa configurada (4B1) o las variables de la demo local descritas en [DEMO_LOCAL.md](docs/DEMO_LOCAL.md#para-desarrolladores).
 

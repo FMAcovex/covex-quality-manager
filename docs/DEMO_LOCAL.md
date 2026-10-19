@@ -25,6 +25,29 @@ Guía para ver y probar la aplicación **en tu propio ordenador**, con datos fic
    La primera vez tarda varios minutos (descarga e instala todo). Cuando veas el mensaje **«Demo lista: abre http://localhost:3000 en el navegador»**, ya está.
 6. **Abre <http://localhost:3000>** en el navegador y elige un perfil.
 
+## Sin instalar nada: GitHub Codespaces
+
+Si no puedes instalar Docker Desktop, la misma demo funciona en el Codespace del repositorio, desde el navegador (D-108):
+
+1. En GitHub, en el repositorio, pulsa **Code → Codespaces** y abre tu Codespace (o **Create codespace on main**).
+2. En el terminal de abajo, actualiza el código e instala las dependencias:
+
+   ```
+   git pull
+   pnpm install
+   ```
+
+3. Opcional: arrastra el ZIP de plantillas a la carpeta `plantillas` del explorador de la izquierda; se instala al arrancar. También puedes subirlo después en Configuración → Versiones → «Instalar plantillas».
+4. Arranca la demo:
+
+   ```
+   pnpm demo:codespace
+   ```
+
+   Tarda unos minutos. Cuando veas **«Demo lista: abre https://… y elige un perfil»**, abre ese enlace (o el del puerto 3000 en la pestaña **Puertos**).
+
+La demo usa una base de datos aparte (`covex_demo`): lo que tengas en la base habitual del Codespace no se toca. El puerto es privado: solo tu cuenta de GitHub puede abrirlo; no lo hagas público.
+
 ## Perfiles de demostración
 
 | Perfil | Qué puede hacer |

@@ -12,15 +12,27 @@ export function isolatedTestEnvironment(env: Record<string, string | undefined> 
 /** Tenant ficticio de los usuarios de la demo local; nunca coincide con un tenant de Entra real. */
 export const demoTenant = "00000000-0000-4000-8000-00000000de00";
 /**
+ * Dirección con la que GitHub Codespaces publica un puerto del propio Codespace (D-108):
+ * `https://<nombre>-<puerto>.<dominio>`, tomada de las variables que fija GitHub. Fuera de un
+ * Codespace no hay ninguna.
+ */
+function codespacesOrigin(origin: URL, env: Record<string, string | undefined>) {
+  const name = env.CODESPACE_NAME ?? "", domain = env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN ?? "";
+  if (env.CODESPACES !== "true" || !/^[a-z0-9-]+$/i.test(name) || !/^[a-z0-9.-]+$/i.test(domain)) return false;
+  return origin.protocol === "https:" && !origin.port && new RegExp(`^${name}-\\d{2,5}\\.${domain.replaceAll(".", "\\.")}$`, "i").test(origin.hostname);
+}
+/**
  * Demo local (D-087): solo con APP_ENV=demo, AUTH_PROVIDER=demo, la base de datos
- * `covex_demo` y un origen http en localhost. Un servidor publicado (https o con
- * dominio) y el arranque de producción, que exige Entra, no pueden usarla.
+ * `covex_demo` y un origen http en localhost o, dentro de GitHub Codespaces, la dirección
+ * del propio Codespace (D-108). Un servidor publicado y el arranque de producción, que
+ * exige Entra, no pueden usarla.
  */
 export function localDemoEnvironment(env: Record<string, string | undefined> = process.env) {
   if (env.APP_ENV !== "demo" || env.AUTH_PROVIDER !== "demo" || env.AUTH_SYNTHETIC_IDENTITY === "1") return false;
   try {
     const database = new URL(env.DATABASE_URL ?? ""), origin = new URL(env.AUTH_ORIGIN ?? "");
-    return database.pathname === "/covex_demo" && origin.protocol === "http:" && ["localhost", "127.0.0.1"].includes(origin.hostname)
+    const local = origin.protocol === "http:" && ["localhost", "127.0.0.1"].includes(origin.hostname);
+    return database.pathname === "/covex_demo" && (local || codespacesOrigin(origin, env))
       && !origin.username && !origin.password && origin.pathname === "/" && !origin.search && !origin.hash;
   } catch { return false; }
 }
