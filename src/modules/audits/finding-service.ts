@@ -6,6 +6,7 @@ import { refreshCapaOriginSnapshot } from "@/modules/capa/relation-version-servi
 import { AuditValidationError } from "./service";
 import { findingInputSchema, findingActionInputSchema, followupInputSchema, retirementInputSchema } from "./finding-validation";
 import { nextFindingReference } from "./finding-domain";
+import { allowedFindingTypes } from "./domain";
 import type { z } from "zod";
 
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -44,6 +45,8 @@ export async function saveAuditFinding(auditId: string, raw: unknown, findingId?
     const audit = await lockAudit(tx, auditId);
     const before = findingId ? await ownedFinding(tx, auditId, findingId) : null;
     if (before) checkRevision(before, v.expectedUpdatedAt);
+    // D-110 (R5D): tipos por escenario; un tipo ya guardado se conserva aunque el escenario cambie.
+    if (v.findingType !== before?.findingType && !allowedFindingTypes(audit.scenario).includes(v.findingType)) throw new Error("Tipo de hallazgo no permitido en este escenario.");
     const reserved = before ? [] : await tx.auditFinding.findMany({ where: { auditId }, select: { reference: true } });
     const data = { findingType: v.findingType, criticality: v.criticality, description: v.description, criterionReference: nullable(v.criterionReference), objectiveEvidence: nullable(v.objectiveEvidence), treatment: nullable(v.treatment), treatmentStatus: v.treatmentStatus, closedAt: day(v.closedAt), evidence: nullable(v.evidence), evidenceReference: nullable(v.evidenceReference), verificationComment: nullable(v.verificationComment), sortOrder: v.sortOrder, updatedByText: v.actor };
     const after = before ? await tx.auditFinding.update({ where: { id: before.id }, data }) : await tx.auditFinding.create({ data: { ...data, auditId, reference: nextFindingReference(v.findingType, reserved.map(r => r.reference)), createdByText: v.actor } });
