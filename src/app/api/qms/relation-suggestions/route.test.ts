@@ -110,4 +110,22 @@ describe("relation suggestions API", () => {
       }),
     );
   });
+
+  it("desde una auditoría ofrece también borradores sin código, por su descripción (R5B1)", async () => {
+    findUnique.mockResolvedValue({ id: "audit", recordType: QmsRecordType.AUDIT, isActive: true });
+    findManyRecords.mockResolvedValue([
+      { id: "draft", recordType: QmsRecordType.CAPA, businessCode: null, year: null, capa: { status: "DRAFT", defectDescription: "Revisar balanzas de proceso" } },
+      { id: "open", recordType: QmsRecordType.CAPA, businessCode: "AC/GC-00/001/2026", year: 2026, capa: { status: "OPEN", defectDescription: "Otra" } },
+    ]);
+    const response = await GET(new Request("http://localhost/api/qms/relation-suggestions?currentRecordId=audit&currentType=AUDIT&relatedType=CAPA&q=balanzas"));
+    expect(response.status).toBe(200);
+    const where = findManyRecords.mock.calls[0][0].where;
+    expect(JSON.stringify(where)).not.toContain('"not":"DRAFT"');
+    expect(JSON.stringify(where)).toContain("defectDescription");
+    const body = await response.json();
+    expect(body.suggestions.map((s: { id: string; displayLabel: string }) => [s.id, s.displayLabel])).toEqual([
+      ["open", "AC/GC-00/001/2026"],
+      ["draft", "Borrador · Revisar balanzas de proceso"],
+    ]);
+  });
 });

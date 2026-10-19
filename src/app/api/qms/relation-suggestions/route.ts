@@ -24,6 +24,13 @@ function normalized(value: string) {
     .toLocaleLowerCase("es");
 }
 
+/** Descripción de un borrador de CAPA o Desviación sin código, para ofrecerlo desde una auditoría. */
+function draftDescription(record: { capa?: { status: string; defectDescription: string | null } | null; deviation?: { status: string; whatHappened: string | null } | null }) {
+  if (record.capa?.status === "DRAFT") return record.capa.defectDescription?.trim() || null;
+  if (record.deviation?.status === "DRAFT") return record.deviation.whatHappened?.trim() || null;
+  return null;
+}
+
 async function GETAuthenticatedContent(request: Request) {
   const url = new URL(request.url);
   const currentRecordId = url.searchParams.get("currentRecordId")?.trim() || "";
@@ -108,9 +115,12 @@ async function GETAuthenticatedContent(request: Request) {
       ...(relatedType === "AUDIT" ? {
         audit: { status: { not: "DRAFT" } },
         OR: [{ businessCode: { contains: query, mode: "insensitive" } }, { audit: { OR: [{ title: { contains: query, mode: "insensitive" } }, { externalReference: { contains: query, mode: "insensitive" } }] } }],
+      } : currentType === "AUDIT" && relatedType === "CAPA" ? {
+        // R5B1: desde una auditoría también se vinculan borradores, que no tienen código hasta abrirse.
+        OR: [{ businessCode: { not: null, contains: query, mode: "insensitive" } }, { businessCode: null, capa: { status: "DRAFT", defectDescription: { contains: query, mode: "insensitive" } } }],
+      } : currentType === "AUDIT" && relatedType === "DEVIATION" ? {
+        OR: [{ businessCode: { not: null, contains: query, mode: "insensitive" } }, { businessCode: null, deviation: { status: "DRAFT", whatHappened: { contains: query, mode: "insensitive" } } }],
       } : { businessCode: { not: null, contains: query, mode: "insensitive" } }),
-      ...(currentType === "AUDIT" && relatedType === "CAPA" ? { capa: { status: { not: "DRAFT" } } } : {}),
-      ...(currentType === "AUDIT" && relatedType === "DEVIATION" ? { deviation: { status: { not: "DRAFT" } } } : {}),
     },
     select: {
       id: true,
@@ -118,18 +128,23 @@ async function GETAuthenticatedContent(request: Request) {
       businessCode: true,
       year: true,
       ...(relatedType === "AUDIT" ? { audit: { select: { title: true, externalReference: true } } } : {}),
+      ...(currentType === "AUDIT" && relatedType === "CAPA" ? { capa: { select: { status: true, defectDescription: true } } } : {}),
+      ...(currentType === "AUDIT" && relatedType === "DEVIATION" ? { deviation: { select: { status: true, whatHappened: true } } } : {}),
     },
     take: 30,
   });
 
   const queryNormalized = normalized(query);
   const suggestions = records
-    .filter((record) => record.recordType === "AUDIT" || Boolean(record.businessCode))
+    .filter((record) => record.recordType === "AUDIT" || Boolean(record.businessCode) || Boolean(draftDescription(record)))
     .map((record) => {
-      const code = record.businessCode || record.audit?.externalReference || record.audit?.title || record.id;
+      const draft = !record.businessCode ? draftDescription(record) : null;
+      const code = record.businessCode || record.audit?.externalReference || record.audit?.title || (draft ? `Borrador · ${draft.slice(0, 60)}` : record.id);
       const codeNormalized = normalized(code);
       const score =
-        codeNormalized === queryNormalized
+        draft
+          ? 3
+          : codeNormalized === queryNormalized
           ? 0
           : codeNormalized.startsWith(queryNormalized)
             ? 1

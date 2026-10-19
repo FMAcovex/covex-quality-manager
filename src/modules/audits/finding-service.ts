@@ -102,9 +102,9 @@ export async function linkAuditFinding(auditId: string, findingId: string, targe
   parse(retirementInputSchema, { actor, reason: "Vinculación" });
   return prisma.$transaction(async tx => {
     const audit = await lockAudit(tx, auditId); await ownedFinding(tx, auditId, findingId);
-    if (audit.status === "DRAFT") throw new Error("Abre la auditoría antes de vincular expedientes.");
     const target = await tx.qmsRecord.findUnique({ where: { id: targetRecordId }, include: { capa: { select: { status: true } }, deviation: { select: { status: true } } } });
-    if (!target || !target.isActive || !["DEVIATION", "CAPA"].includes(target.recordType) || target.capa?.status === "DRAFT" || target.deviation?.status === "DRAFT") throw new Error("Selecciona una Desviación o CAPA operativa, existente y activa.");
+    // R5B1 (D-110): se admiten auditorías y destinos en borrador; el destino debe existir y estar activo.
+    if (!target || !target.isActive || !["DEVIATION", "CAPA"].includes(target.recordType)) throw new Error("Selecciona una Desviación o CAPA existente y activa.");
     const existing = await tx.qmsRelation.findUnique({ where: { sourceRecordId_targetRecordId_relationType: { sourceRecordId: audit.qmsRecordId, targetRecordId, relationType: "GENERATES" } } });
     const relation = await createQmsRelation(tx, { sourceRecordId: audit.qmsRecordId, targetRecordId, createdByText: actor });
     if (!existing?.isActive) await event(tx, audit.qmsRecordId, actor, "relations", existing, relation, "Auditoría genera expediente existente");
