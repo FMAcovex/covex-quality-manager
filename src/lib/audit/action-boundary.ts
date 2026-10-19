@@ -18,7 +18,7 @@ const operations: Record<string, string> = {
   createOosAction: "OO01", updateOosAction: "OO02", addOosRelationAction: "OO05", unlinkOosRelationAction: "OO05", uploadOosSignedPdfAction: "OO06",
   createReturnAction: "DE01", updateReturnAction: "DE02", addReturnFollowupAction: "DE04", addReturnRelationAction: "DE06", unlinkReturnComplaintAction: "DE06", uploadReturnSignedPdfAction: "DE07",
   saveAuditAction: "AU01", saveAuditChildAction: "AU02", linkAuditFindingAction: "AU05", retireAuditChildAction: "AU03", retireAuditAttributionAction: "AU05", unlinkAuditRecordAction: "AU05",
-  createPlanAction: "AU08", addPlanEntryAction: "AU08", updatePlanEntryAction: "AU08", retirePlanEntryAction: "AU08", addPlanEntryFormAction: "AU08", updatePlanEntryFormAction: "AU08", saveProgrammeApproversAction: "AU09", issueAnnualProgrammeAction: "AU09",
+  createPlanAction: "AU08", addPlanEntryAction: "AU08", updatePlanEntryAction: "AU08", retirePlanEntryAction: "AU08", addPlanEntryFormAction: "AU08", updatePlanEntryFormAction: "AU08", createPlanFormAction: "AU08", retirePlanEntryFormAction: "AU08", saveProgrammeApproversAction: "AU09", issueAnnualProgrammeAction: "AU09",
   saveAuditReportAction: "AU06", issueAuditReportAction: "AU06", closeAuditAction: "AU07", registerAuditAttachmentAction: "AU06", storeAuditSignedPdfAction: "AU06",
   uploadDeviationEvidenceAction: "DV08", uploadCapaEvidenceAction: "CA08", uploadChangeControlEvidenceAction: "CC07", uploadComplaintEvidenceAction: "RC07", uploadReturnEvidenceAction: "DE07", uploadOosEvidenceAction: "OO06",
   masterAction: "PN01", revisionAction: "PN01",

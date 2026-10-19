@@ -2,6 +2,7 @@
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { redirect } from "next/navigation";
 import { addPlanEntry, createAnnualPlan, retirePlanEntry, updatePlanEntry } from "./plans";
+import { preserveFormState, type PreservedFormState } from "@/lib/forms/preserved-state";
 const programmeFields=(fd:FormData)=>Object.fromEntries(["plannedPeriodText","plannedAuditorsText","productService","plannedScope","plannedModality","programmeArea"].map(k=>[k,String(fd.get(k)??"").trim()]));
 const str=(fd:FormData,key:string)=>String(fd.get(key)??"").trim();
 async function createPlanActionAuthenticatedContent(fd:FormData) {
@@ -23,7 +24,9 @@ async function retirePlanEntryActionAuthenticatedContent(planId:string,entryId:s
   redirect("/audits/plans/"+planId);
 }
 
-export type PlanEntryActionState = { error?: string };
+// R5A: los formularios devuelven lo enviado para no perderlo ante un error (preserveFormState).
+export type PlanFormState = { error?: string; success?: string } & PreservedFormState;
+export type PlanEntryActionState = PlanFormState;
 const planEntryInput = (fd: FormData, updating: boolean) => ({
   ...programmeFields(fd), subject: str(fd, "subject"), targetName: str(fd, "targetName"),
   departmentId: str(fd, "departmentId"), plannedDate: str(fd, "plannedDate"),
@@ -35,14 +38,25 @@ const errorText = (e: unknown) => {
   }
   return e instanceof Error ? e.message : "No se pudo guardar la planificación.";
 };
-async function addPlanEntryFormActionAuthenticatedContent(planId: string, _state: PlanEntryActionState, fd: FormData): Promise<PlanEntryActionState> {
+async function addPlanEntryFormActionAuthenticatedContent(planId: string, _state: PlanFormState, fd: FormData): Promise<PlanFormState> {
   try { await addPlanEntry(planId, planEntryInput(fd, false)); }
-  catch (e) { return { error: errorText(e) }; }
+  catch (e) { return preserveFormState(_state, fd, { error: errorText(e) }); }
   redirect("/audits/plans/" + planId);
 }
-async function updatePlanEntryFormActionAuthenticatedContent(planId: string, entryId: string, _state: PlanEntryActionState, fd: FormData): Promise<PlanEntryActionState> {
+async function updatePlanEntryFormActionAuthenticatedContent(planId: string, entryId: string, _state: PlanFormState, fd: FormData): Promise<PlanFormState> {
   try { await updatePlanEntry(planId, entryId, planEntryInput(fd, true)); }
-  catch (e) { return { error: errorText(e) }; }
+  catch (e) { return preserveFormState(_state, fd, { error: errorText(e) }); }
+  redirect("/audits/plans/" + planId);
+}
+async function createPlanFormActionAuthenticatedContent(_state: PlanFormState, fd: FormData): Promise<PlanFormState> {
+  let id: string;
+  try { id = (await createAnnualPlan({ year: str(fd, "year"), auditType: str(fd, "auditType"), title: str(fd, "title"), notes: str(fd, "notes"), actor: str(fd, "actor") })).id; }
+  catch (e) { return preserveFormState(_state, fd, { error: errorText(e) }); }
+  redirect("/audits/plans/" + id);
+}
+async function retirePlanEntryFormActionAuthenticatedContent(planId: string, entryId: string, _state: PlanFormState, fd: FormData): Promise<PlanFormState> {
+  try { await retirePlanEntry(planId, entryId, str(fd, "actor"), str(fd, "reason")); }
+  catch (e) { return preserveFormState(_state, fd, { error: errorText(e) }); }
   redirect("/audits/plans/" + planId);
 }
 
@@ -68,4 +82,12 @@ export async function addPlanEntryFormAction(...args: Parameters<typeof addPlanE
 
 export async function updatePlanEntryFormAction(...args: Parameters<typeof updatePlanEntryFormActionAuthenticatedContent>) {
   return authorizedAction("updatePlanEntryFormAction", args, authenticated => updatePlanEntryFormActionAuthenticatedContent(...authenticated as Parameters<typeof updatePlanEntryFormActionAuthenticatedContent>));
+}
+
+export async function createPlanFormAction(...args: Parameters<typeof createPlanFormActionAuthenticatedContent>) {
+  return authorizedAction("createPlanFormAction", args, authenticated => createPlanFormActionAuthenticatedContent(...authenticated as Parameters<typeof createPlanFormActionAuthenticatedContent>));
+}
+
+export async function retirePlanEntryFormAction(...args: Parameters<typeof retirePlanEntryFormActionAuthenticatedContent>) {
+  return authorizedAction("retirePlanEntryFormAction", args, authenticated => retirePlanEntryFormActionAuthenticatedContent(...authenticated as Parameters<typeof retirePlanEntryFormActionAuthenticatedContent>));
 }
