@@ -49,7 +49,8 @@ async function authorizeAndRunRoute<T extends Response>(file: string, method: st
     if (file.endsWith("/documents/route.ts") && accessModule === "PNT" && method === "POST") permission = "ATTACH_DOCUMENT";
     assertPermission(user, accessModule, permission, scope);
     const url = new URL(request.url);
-    if ((params.id && /\/annex-/.test(file)) || (file === "src/app/api/audits/[id]/documents/route.ts" && !url.searchParams.has("document"))) assertPermission(user, accessModule, "GENERATE_DOCUMENT", scope);
+    // Archivos conservados (documento o versión congelada del CAPA plan): solo DOWNLOAD; generar exige además GENERATE_DOCUMENT.
+    if ((params.id && /\/annex-/.test(file)) || (file === "src/app/api/audits/[id]/documents/route.ts" && !url.searchParams.has("document") && !url.searchParams.has("capaPlanVersion"))) assertPermission(user, accessModule, "GENERATE_DOCUMENT", scope);
     if (body && "actor" in body) body.actor = user.name;
     if (body?.input && typeof body.input === "object") body.input = { ...body.input, actor: user.name };
     const authenticated = [...args];

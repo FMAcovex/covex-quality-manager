@@ -72,6 +72,15 @@ describe("4B1 protección directa de entradas", () => {
     }
     expect(run).not.toHaveBeenCalled();
   });
+  it("descargar una versión congelada del CAPA plan exige DOWNLOAD, no GENERATE_DOCUMENT (R5C1)", async () => {
+    configureTest();
+    const downloader: Principal = { ...principal, id: "synthetic-audit-downloader", grants: [{ module: "AUDIT", permission: "READ", scope: "ALL" }, { module: "AUDIT", permission: "DOWNLOAD", scope: "ALL" }] };
+    const run = vi.fn(async () => new Response("xlsx"));
+    const call = (query: string) => identityContext.run({ principal: downloader, unitTest: true }, () => authorizedRoute("src/app/api/audits/[id]/documents/route.ts", "GET", [new Request(`http://127.0.0.1:3000/api/audits/a/documents?${query}`), { params: Promise.resolve({ id: "a" }) }], run));
+    expect((await call("capaPlanVersion=0")).status).toBe(200);
+    expect((await call("type=AUDIT_CAPA_PLAN")).status).toBe(403);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
   it("cerrar una reclamación exige CLOSE aunque el estado llegue en saveStatus", async () => {
     configureTest();
     const editor: Principal = { ...principal, id: "synthetic-complaint-editor", grants: [{ module: "COMPLAINT", permission: "CREATE", scope: "ALL" }] };

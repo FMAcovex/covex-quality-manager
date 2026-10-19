@@ -9,6 +9,8 @@ import type { AuditReportSnapshot } from "./report-service";
 export const capaPlanSequenceLabel = (sequence: number) => String(sequence).padStart(2, "0");
 export const capaPlanFileName = (code: string | null, sequence: number) =>
   safeSignedPdfFileName(`${code || "Auditoria_sin_codigo"}_CAPA_PLAN_${capaPlanSequenceLabel(sequence)}.xlsx`);
+/** Al establecer la 00 se propone la fecha del CAPA plan ya registrada (expedientes antiguos) o la de hoy. */
+export const capaPlanDefaultDate = (existing: Date | null, today: string) => existing ? existing.toISOString().slice(0, 10) : today;
 export const capaPlanKindLabels = { ESTABLISHED: "Establecido", FOLLOWUP: "Seguimiento" } as const;
 
 type SnapshotFinding = AuditReportSnapshot["audit"]["findings"][number];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capaPlanFileName, capaPlanFingerprint, capaPlanSequenceLabel, establishCapaPlanSchema } from "./capa-plan-domain";
+import { capaPlanDefaultDate, capaPlanFileName, capaPlanFingerprint, capaPlanSequenceLabel, establishCapaPlanSchema } from "./capa-plan-domain";
 import type { AuditReportSnapshot } from "./report-service";
 
 const snapshot = (actionStatus = "OPEN", updatedAt = "2026-10-19T10:00:00.000Z") => ({
@@ -26,6 +26,10 @@ describe("CAPA plan con versiones (D-110, R5C1)", () => {
     expect(capaPlanFingerprint(snapshot("OPEN", "2026-10-20T00:00:00.000Z"))).toBe(capaPlanFingerprint(snapshot()));
     expect(capaPlanFingerprint(snapshot("CLOSED"))).not.toBe(capaPlanFingerprint(snapshot()));
     expect(capaPlanFingerprint(snapshot())).toMatch(/^[a-f0-9]{64}$/);
+  });
+  it("propone la fecha del CAPA plan ya registrada y, si no hay, la de hoy", () => {
+    expect(capaPlanDefaultDate(new Date("2026-03-10T00:00:00.000Z"), "2026-10-19")).toBe("2026-03-10");
+    expect(capaPlanDefaultDate(null, "2026-10-19")).toBe("2026-10-19");
   });
   it("valida la solicitud de establecimiento", () => {
     expect(establishCapaPlanSchema.safeParse({ requestId: "x", capaPlanDate: "2026-10-19", actor: "Ana" }).success).toBe(false);
