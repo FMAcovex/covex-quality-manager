@@ -33,6 +33,12 @@ pnpm exec tsx scripts/seed-demo.ts >/dev/null
 pnpm exec tsx scripts/demo/install-users.ts >/dev/null
 # D-109: ejemplos ficticios de cada módulo (solo la primera vez; si ya están, no hace nada).
 pnpm exec tsx scripts/demo/seed-examples.ts
+# D-110: las versiones del CAPA plan de los ejemplos congelan su A4.03, así que las plantillas
+# se instalan antes (el instalador no repite las que ya están).
+if [ -d plantillas ] && [ -n "$(ls -A plantillas 2>/dev/null)" ]; then
+  pnpm exec tsx scripts/install-templates.ts plantillas >/dev/null || echo "Alguna plantilla no se ha podido instalar; la demo sigue con las demás."
+fi
+node --conditions=react-server --import tsx scripts/demo/seed-capa-plans.ts || echo "No se han podido añadir las versiones del CAPA plan de ejemplo; la demo sigue."
 
 echo "3/4 · Compilando la aplicación (un par de minutos)..."
 pnpm exec prisma generate >/dev/null

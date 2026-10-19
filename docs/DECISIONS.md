@@ -1020,6 +1020,7 @@ Decisión del responsable de Calidad: la demo debe enseñar cómo funciona cada 
 - **Una sola vez.** Si los ejemplos ya están, no hace nada. Los PNT cuyo código ya exista no se tocan.
 - **Cuándo se carga:** `pnpm demo:codespace` y la demo Docker lo ejecutan al preparar la base.
 - **Límites:** el historial de modificaciones de cada ejemplo solo registra el alta («Ejemplo de la demo»). Los anexos se generan solo si las plantillas están instaladas.
+- **CAPA plan de los ejemplos (D-110):** `scripts/demo/seed-capa-plans.ts` (`pnpm demo:capa-plans`) establece la versión 00 de las auditorías abiertas de ejemplo y registra un seguimiento 01 en la interna. Se ejecuta después de instalar las plantillas porque cada versión congela su A4.03; sin esa plantilla no hace nada, y no toca las auditorías que ya tienen versiones.
 
 ## D-110 — Auditorías: CAPA plan con versiones, hallazgos y aspecto (2026-10-19)
 
@@ -1082,4 +1083,10 @@ Decisión del responsable de Calidad tras revisar el módulo. El diseño complet
   - **Situación y listado:** la situación no queda en «informe pendiente» (Planificada, Realizada, En seguimiento o Cerrada); la columna Informe muestra «No aplica»; el filtro «Informe: pendiente» las excluye y «En seguimiento» no exige versión de informe. Cargar un PDF firmado en una versión antigua se rechaza también en el servidor.
   - **Tipos de hallazgo por escenario:** cliente, `CLIENT_OBSERVATION` y `RECOMMENDATION`; inspección, `AUTHORITY_OBSERVATION` y `RECOMMENDATION`; el resto, `FINDING` y `RECOMMENDATION`. Se valida en el servidor («Tipo de hallazgo no permitido en este escenario.») y el desplegable solo ofrece esos tipos. Un hallazgo existente de otro tipo (por ejemplo, tras cambiar el escenario) conserva su tipo al guardarse.
   - Sin migración. El CAPA plan, sus versiones y su A4.03 funcionan igual que en los demás escenarios.
+- **Ajustes posteriores a R5 (implantados):**
+  - El seguimiento del CAPA plan solo comprueba las filas que cambian: una fila intacta no lo bloquea por su marca de edición ni por sus validaciones.
+  - La fecha objetivo de cada acción se valida también en el servidor.
+  - Si otra persona cambió una fila, el error «cambió» ofrece «Recargar con los datos actuales».
+  - Las fechas propuestas (CAPA plan y seguimiento) son las de hoy en Madrid, no en UTC.
+  - La demo siembra versiones del CAPA plan cuando la plantilla A4.03 está instalada (D-109).
 

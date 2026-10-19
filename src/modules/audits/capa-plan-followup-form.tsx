@@ -22,7 +22,7 @@ export function CapaPlanFollowupForm({ action, actions, findings, followupDate, 
     <td><textarea aria-label="Evidencia u observación" name={`${prefix}.evidence`} defaultValue={value(`${prefix}.evidence`, row.evidence)}/><input type="hidden" name={`${prefix}.updatedAt`} value={row.updatedAt}/></td>
   </>;
   return <form action={submit} key={state.revision ?? 0} className="audit-child-form capa-plan-followup"><CsrfField/>
-    {state.error ? <p className="form-errors full" role="alert">{state.error}</p> : null}
+    {state.error ? <p className="form-errors full" role="alert">{state.error}{state.reload ? <> <button type="button" className="button small" onClick={() => window.location.reload()}>Recargar con los datos actuales</button></> : null}</p> : null}
     <input type="hidden" name="requestId" value={value("requestId", requestId)}/>
     {actions.length ? <div className="full table-scroll"><table className="capa-plan-followup-table"><caption>Acciones del CAPA plan</caption><thead><tr><th>Hallazgo</th><th>Acción</th><th>Fecha objetivo</th><th>Estado</th><th>Fecha de cierre</th><th>Referencia de evidencia</th><th>Evidencia u observación</th></tr></thead><tbody>
       {actions.map(row => { const p = `a.${row.id}`; return <tr key={row.id}><th scope="row">{row.reference}</th><td>{row.description}{row.responsible ? <small> · {row.responsible}</small> : null}</td>

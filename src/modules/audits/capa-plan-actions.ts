@@ -2,6 +2,7 @@
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { establishCapaPlan, recordCapaPlanFollowup } from "./capa-plan-service";
 import type { AuditReportActionState } from "./report-actions";
+import { CapaPlanStaleError } from "./capa-plan-domain";
 
 const values = (fd: FormData) => Object.fromEntries([...fd.entries()].filter((entry): entry is [string,string] => typeof entry[1] === "string"));
 async function establishCapaPlanActionAuthenticatedContent(id: string, previous: AuditReportActionState, fd: FormData): Promise<AuditReportActionState> {
@@ -10,7 +11,7 @@ async function establishCapaPlanActionAuthenticatedContent(id: string, previous:
 }
 async function recordCapaPlanFollowupActionAuthenticatedContent(id: string, previous: AuditReportActionState, fd: FormData): Promise<AuditReportActionState> {
   try { await recordCapaPlanFollowup(id, values(fd)); return { error: null, savedHref: `/audits/${id}?tab=followup` }; }
-  catch (error) { return { error: error instanceof Error ? error.message : "No se pudo registrar el seguimiento.", values: values(fd), revision: (previous.revision ?? 0) + 1 }; }
+  catch (error) { return { error: error instanceof Error ? error.message : "No se pudo registrar el seguimiento.", values: values(fd), revision: (previous.revision ?? 0) + 1, reload: error instanceof CapaPlanStaleError }; }
 }
 
 export async function establishCapaPlanAction(...args: Parameters<typeof establishCapaPlanActionAuthenticatedContent>) {

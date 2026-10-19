@@ -10,6 +10,7 @@ import { saveAuditReport, issueAuditReport, closeAudit, readAuditSnapshot } from
 import { generateAuditDocument, storeAuditSignedPdf, getAuditDocument, registerAuditAttachment, getAuditReportView } from "../src/modules/audits/documents/service";
 import { auditClosureChecklist } from "../src/modules/audits/closure-policy";
 import { establishCapaPlan, getCapaPlanVersionFile, recordCapaPlanFollowup } from "../src/modules/audits/capa-plan-service";
+import { CapaPlanStaleError } from "../src/modules/audits/capa-plan-domain";
 import { getAuditList } from "../src/modules/audits/queries";
 import { createValidatedReviewThread, acceptValidatedReviewThread, resolveValidatedReviewThread, replyToValidatedReviewThread } from "../src/lib/qms/review/mutation-service";
 import { auditFindingReviewTarget, auditActionReviewTarget, auditReviewTargets } from "../src/lib/qms/review/targets/audits";
@@ -62,9 +63,12 @@ async function main(){
  assert.equal((await prisma.auditFindingAction.findUniqueOrThrow({where:{id:fuAction.id}})).status,'CLOSED');assert.equal((await prisma.auditFinding.findUniqueOrThrow({where:{id:fuRk.id}})).treatmentStatus,'NOT_APPLICABLE');
  const sheet01=getZipEntryText(readZip(Buffer.from((await getCapaPlanVersionFile(fu.id,1)).fileData)),'xl/worksheets/sheet1.xml');assert(sheet01.includes('Cerrada'));assert(sheet01.includes('REG-R5C2'));
  assert.equal((await recordCapaPlanFollowup(fu.id,closeForm)).id,fu01.id,'Reenviar el mismo seguimiento devuelve la misma versión.');
- const stale=await followupForm({observations:'Observación tardía'});stale[`a.${fuAction.id}.updatedAt`]=new Date(0).toISOString();
- await assert.rejects(recordCapaPlanFollowup(fu.id,stale),/cambió/);
- const fu02=await recordCapaPlanFollowup(fu.id,await followupForm({observations:'Solo observación, sin cambios'}));assert.equal(fu02.sequenceNumber,2);
+ const stale=await followupForm({observations:'Observación tardía',[`a.${fuAction.id}.evidence`]:'Evidencia añadida tarde'});stale[`a.${fuAction.id}.updatedAt`]=new Date(0).toISOString();
+ await assert.rejects(recordCapaPlanFollowup(fu.id,stale),(e:unknown)=>e instanceof CapaPlanStaleError&&/cambió/.test(e.message));
+ await assert.rejects(recordCapaPlanFollowup(fu.id,await followupForm({[`a.${fuAction.id}.targetDate`]:'2096-02-30'})),/Fecha objetivo no válida/);
+ // Solo se comprueban las filas que cambian: una fila intacta con marca antigua no bloquea el seguimiento.
+ const untouched=await followupForm({observations:'Solo observación, sin cambios'});untouched[`a.${fuAction.id}.updatedAt`]=new Date(0).toISOString();
+ const fu02=await recordCapaPlanFollowup(fu.id,untouched);assert.equal(fu02.sequenceNumber,2);
  assert.equal(await prisma.auditCapaPlanVersion.count({where:{auditId:fu.id}}),3);
  const v00=await issueAuditReport(a.id,{actor});assert.equal(v00.sequenceNumber,0);assert(v00.frozenAt);
  const before=JSON.stringify(v00.snapshot), s00=readAuditSnapshot(v00.snapshot);assert.equal(s00.audit.findings.length,2);
