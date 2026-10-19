@@ -102,6 +102,14 @@ describe("auditStatusBadgeClass", () => {
   });
 });
 describe("Cliente e inspección (D-110, R5D)", () => {
+  it("la situación no queda en «informe pendiente»: depende del seguimiento", () => {
+    const audit = {status:"OPEN" as const,performedDate:"2026-10-07",reportIssued:false,scenario:"CLIENT" as const};
+    expect(auditSituation(audit)).toBe("Realizada");
+    expect(auditSituation({...audit,performedDate:null})).toBe("Planificada");
+    expect(auditSituation({...audit,status:"DRAFT"})).toBe("Borrador");
+    expect(auditSituation({...audit,scenario:"AUTHORITY",findings:[{isActive:true,treatment:"",treatmentStatus:"OPEN",actions:[{isActive:true,status:"OPEN"}]}]})).toBe("En seguimiento");
+    expect(auditSituation({...audit,status:"CLOSED"})).toBe("Cerrada");
+  });
   it("identifica los escenarios con informe recibido", () => {
     expect(["CLIENT", "AUTHORITY"].every(s => receivedAuditScenario(s as never))).toBe(true);
     expect([null, "SUPPLIER", "INTERNAL_COVEX", "INTERNAL_CONTRACTED"].some(s => receivedAuditScenario(s as never))).toBe(false);

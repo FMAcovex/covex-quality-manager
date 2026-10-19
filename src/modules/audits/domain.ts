@@ -28,6 +28,12 @@ export function auditSituation(audit: { status: AuditStatus; performedDate: Date
   if (audit.status === "CLOSED") return "Cerrada";
   // D-110: el cierre parcial es el CAPA plan establecido (internas) o el informe enviado (proveedor).
   if (audit.status !== "DRAFT" && (audit.scenario === "SUPPLIER" ? audit.reportSentAt : audit.scenario?.startsWith("INTERNAL") && audit.capaPlanEstablishedAt)) return "Cierre parcial";
+  // D-110 (R5D): en cliente e inspección no hay informe COVEX; la situación depende del seguimiento.
+  if (receivedAuditScenario(audit.scenario)) {
+    if (audit.status === "DRAFT") return "Borrador";
+    if (audit.findings?.some(f=>f.isActive && f.actions.some(a=>a.isActive && !["CLOSED","NOT_APPLICABLE"].includes(a.status))) || audit.followups?.length) return "En seguimiento";
+    return audit.performedDate ? "Realizada" : "Planificada";
+  }
   if (audit.reportIssued) {
     if (audit.findings?.some(f=>f.isActive && f.actions.some(a=>a.isActive && !["CLOSED","NOT_APPLICABLE"].includes(a.status))) || audit.followups?.length) return "En seguimiento";
     return "Informe emitido";

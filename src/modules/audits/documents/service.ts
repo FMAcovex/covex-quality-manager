@@ -14,6 +14,7 @@ import { generateAuditReport, generateAuditCapaPlan, generateAuditExternalPlan }
 import { validateAuditAttachment } from "./attachment-validation";
 import { auditDocumentBlocker } from "./availability";
 import { listCapaPlanVersions } from "../capa-plan-service";
+import { receivedAuditScenario } from "../domain";
 const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -76,6 +77,7 @@ export async function storeAuditSignedPdf(auditId: string, versionId: string, fi
   return prisma.$transaction(async tx=>{
     const a=await lockReportAudit(tx,auditId);
     if(a.status==='DRAFT')throw new Error("El PDF requiere un informe emitido.");
+    if(receivedAuditScenario(a.scenario))throw new Error("En auditorías de cliente o inspección las versiones anteriores del informe son de solo lectura.");
     const version=await tx.qmsRecordVersion.findFirst({where:{id:versionId,qmsRecordId:a.qmsRecordId}});
     if(!version)throw new Error("La versión no pertenece a esta auditoría.");
     if(await tx.recordVersionDocument.findUnique({where:{recordVersionId_kind:{recordVersionId:versionId,kind:'SIGNED_PDF'}}}))throw new Error("Esta versión ya conserva un PDF firmado; no se sobrescribe. Emite una revisión formal si procede.");

@@ -137,7 +137,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
 **Auditorías R5D: cliente e inspección (2026-10-19, D-110):**
-- **Informe:** en cliente e inspección no se emite informe COVEX; «Informe y cierre» muestra el informe recibido, la respuesta y observaciones internas, y Versiones no ofrece «Emitir». Las versiones antiguas quedan en solo lectura.
+- **Informe:** en cliente e inspección no se emite informe COVEX; «Informe y cierre» muestra el informe recibido, la respuesta y observaciones internas, y Versiones no ofrece «Emitir». Las versiones antiguas quedan en solo lectura. En el listado y la cabecera ya no aparecen como «informe pendiente».
 - **Hallazgos:** solo los tipos del escenario (observación de cliente o de autoridad y recomendación; en el resto, hallazgo y recomendación), validados también en el servidor. Los hallazgos existentes conservan su tipo.
 - **Comprobado** con:
   - las 5 pruebas de navegador de Auditorías (r3c recorre una auditoría de cliente);
