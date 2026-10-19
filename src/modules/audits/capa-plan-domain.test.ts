@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capaPlanDefaultDate, capaPlanFileName, capaPlanFingerprint, capaPlanSequenceLabel, establishCapaPlanSchema } from "./capa-plan-domain";
+import { capaPlanDefaultDate, capaPlanFileName, capaPlanFingerprint, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
 import type { AuditReportSnapshot } from "./report-service";
 
 const snapshot = (actionStatus = "OPEN", updatedAt = "2026-10-19T10:00:00.000Z") => ({
@@ -35,5 +35,38 @@ describe("CAPA plan con versiones (D-110, R5C1)", () => {
     expect(establishCapaPlanSchema.safeParse({ requestId: "x", capaPlanDate: "2026-10-19", actor: "Ana" }).success).toBe(false);
     expect(establishCapaPlanSchema.safeParse({ requestId: crypto.randomUUID(), capaPlanDate: "", actor: "Ana" }).success).toBe(false);
     expect(establishCapaPlanSchema.safeParse({ requestId: crypto.randomUUID(), capaPlanDate: "2026-10-19", actor: "Ana" }).success).toBe(true);
+  });
+  it("interpreta el formulario de seguimiento por filas de acción y de hallazgo (R5C2)", () => {
+    const parsed = parseCapaPlanFollowupForm({ followupDate: "2026-10-20", nextReviewDate: "", observations: " Revisado ", changeReason: "", actor: "Ana", requestId: "r",
+      "a.x1.status": "CLOSED", "a.x1.closedAt": "2026-10-20", "a.x1.targetDate": "", "a.x1.evidenceReference": "REG-1", "a.x1.evidence": "", "a.x1.updatedAt": "t1",
+      "f.f2.treatmentStatus": "NOT_APPLICABLE", "f.f2.treatment": "No procede", "f.f2.closedAt": "", "f.f2.evidenceReference": "", "f.f2.evidence": "Justificado", "f.f2.updatedAt": "t2" });
+    expect(parsed.observations).toBe("Revisado");
+    expect(parsed.actions).toEqual([{ id: "x1", status: "CLOSED", closedAt: "2026-10-20", targetDate: "", evidenceReference: "REG-1", evidence: "", updatedAt: "t1" }]);
+    expect(parsed.findings).toEqual([{ id: "f2", treatmentStatus: "NOT_APPLICABLE", treatment: "No procede", closedAt: "", evidenceReference: "", evidence: "Justificado", updatedAt: "t2" }]);
+  });
+  it("aplica las validaciones de cierre de siempre a cada fila", () => {
+    expect(capaPlanRowProblem({ status: "CLOSED", closedAt: "", evidence: "x", evidenceReference: "", verificationComment: "" })).toMatch(/fecha/);
+    expect(capaPlanRowProblem({ status: "CLOSED", closedAt: "2026-10-20", evidence: "", evidenceReference: "", verificationComment: "" })).toMatch(/evidencia/);
+    expect(capaPlanRowProblem({ status: "NOT_APPLICABLE", closedAt: "", evidence: "", evidenceReference: "", verificationComment: "" })).toMatch(/evidencia/);
+    expect(capaPlanRowProblem({ status: "NOT_APPLICABLE", closedAt: "", evidence: "", evidenceReference: "", verificationComment: "", treatment: "" })).toMatch(/tratamiento|evidencia/);
+    expect(capaPlanRowProblem({ status: "OPEN", closedAt: "", evidence: "", evidenceReference: "", verificationComment: "" })).toBeNull();
+    expect(capaPlanRowProblem({ status: "CLOSED", closedAt: "2026-10-20", evidence: "", evidenceReference: "REG", verificationComment: "" })).toBeNull();
+  });
+  it("no normaliza el estado (un valor no canónico es inválido) y unifica los saltos de línea", () => {
+    const parsed = parseCapaPlanFollowupForm({ "a.x1.status": " CLOSED", "a.x1.evidence": "línea 1\r\nlínea 2" });
+    expect(parsed.actions[0].status).toBe(" CLOSED");
+    expect(capaPlanRowProblem({ status: parsed.actions[0].status, closedAt: "2026-10-20", evidence: "x", evidenceReference: "", verificationComment: "" })).toMatch(/Estado no válido/);
+    expect(parsed.actions[0].evidence).toBe("línea 1\nlínea 2");
+  });
+  it("cambiar una evidencia ya registrada es crítico, como en el audit trail B2", () => {
+    expect(isCriticalRowChange({ status: "OPEN", closedAt: null, evidence: "Registro A" }, { status: "OPEN", closedAt: null, evidence: "Registro B" })).toBe(true);
+    expect(isCriticalRowChange({ status: "OPEN", closedAt: null, evidence: null }, { status: "OPEN", closedAt: null, evidence: "Primera evidencia" })).toBe(false);
+  });
+  it("considera crítico cerrar, dar por no aplicable, reabrir o cambiar una fecha de cierre ya registrada", () => {
+    expect(isCriticalRowChange({ status: "OPEN", closedAt: null }, { status: "CLOSED", closedAt: "2026-10-20" })).toBe(true);
+    expect(isCriticalRowChange({ status: "CLOSED", closedAt: "2026-10-01" }, { status: "OPEN", closedAt: null })).toBe(true);
+    expect(isCriticalRowChange({ status: "CLOSED", closedAt: "2026-10-01" }, { status: "CLOSED", closedAt: "2026-10-02" })).toBe(true);
+    expect(isCriticalRowChange({ status: "OPEN", closedAt: null }, { status: "IN_PROGRESS", closedAt: null })).toBe(false);
+    expect(isCriticalRowChange({ status: "CLOSED", closedAt: "2026-10-01" }, { status: "CLOSED", closedAt: "2026-10-01" })).toBe(false);
   });
 });

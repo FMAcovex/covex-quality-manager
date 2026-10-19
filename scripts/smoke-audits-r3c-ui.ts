@@ -29,13 +29,26 @@ async function main(){
   const planForm=planCard().locator('form');await planForm.locator('[name="capaPlanDate"]').fill('2096-11-15');await save(page,planForm,'Establecer CAPA plan (versión 00)');
   await planCard().getByText('Versión vigente 00').waitFor();assert.equal(await planCard().getByRole('button',{name:'Establecer CAPA plan (versión 00)'}).count(),0);
   assert.equal(await prisma.auditCapaPlanVersion.count({where:{auditId:audit.id}}),1);
+  // R5C2: seguimiento del CAPA plan. Un error conserva lo escrito; después se emite la versión 01.
+  await planCard().locator('summary').filter({hasText:'Registrar seguimiento del CAPA plan'}).click();
+  let followupForm=planCard().locator('form.capa-plan-followup');
+  await followupForm.locator(`[name="a.${action.id}.status"]`).selectOption('CLOSED');await followupForm.locator('[name="changeReason"]').fill('Cierre UI sin fecha');
+  await followupForm.getByRole('button',{name:'Registrar seguimiento',exact:true}).click();
+  await followupForm.getByRole('alert').filter({hasText:/fecha/}).waitFor();followupForm=planCard().locator('form.capa-plan-followup');
+  assert.equal(await followupForm.locator(`[name="a.${action.id}.status"]`).inputValue(),'CLOSED');assert.equal(await followupForm.locator('[name="changeReason"]').inputValue(),'Cierre UI sin fecha');
+  await followupForm.locator(`[name="a.${action.id}.status"]`).selectOption('IN_PROGRESS');await followupForm.locator('[name="changeReason"]').fill('');await followupForm.locator('[name="observations"]').fill('Revisión UI del CAPA plan');
+  await save(page,followupForm,'Registrar seguimiento');await planCard().getByText('Versión vigente 01').waitFor();
+  assert.equal((await prisma.auditFindingAction.findUniqueOrThrow({where:{id:action.id}})).status,'IN_PROGRESS');
+  assert.equal((await prisma.auditCapaPlanVersion.findFirstOrThrow({where:{auditId:audit.id,sequenceNumber:1}})).observations,'Revisión UI del CAPA plan');
   await view(page,`/audits/${audit.id}?tab=versions`);const planVersions=page.locator('section.card').filter({has:page.getByRole('heading',{name:'CAPA plan',exact:true})});
   const [planDownload]=await Promise.all([page.waitForEvent('download'),planVersions.getByRole('link',{name:'CAPA plan · 00',exact:true}).click()]);assert.equal(await planDownload.failure(),null);assert.match(planDownload.suggestedFilename(),/_CAPA_PLAN_00\.xlsx$/);
   await view(page,`/audits/${audit.id}?tab=report`);let form=page.locator('form').filter({has:page.locator('[name="reportDate"]')});await form.locator('[name="reportDate"]').fill('2096-11-16');await form.locator('[name="conclusion"]').fill('Conclusión UI versión 00');await form.locator('[name="programme"]').fill('09:00 | Revisión documental');await save(page,form,'Guardar datos del informe');await page.waitForLoadState('networkidle');assert.equal((await prisma.audit.findUniqueOrThrow({where:{id:audit.id}})).conclusion,'Conclusión UI versión 00');
   await view(page,`/audits/${audit.id}?tab=versions`);form=page.locator('form').filter({has:page.getByRole('button',{name:'Emitir informe inicial 00',exact:true})});await save(page,form,'Emitir informe inicial 00');await page.getByRole('heading',{name:'Versión 00',exact:true}).waitFor();
   const v00=await prisma.qmsRecordVersion.findFirstOrThrow({where:{qmsRecordId:audit.qmsRecordId,sequenceNumber:0}}),snapshot00=JSON.stringify(v00.snapshot);
   let section=page.locator('section.card').filter({has:page.getByRole('heading',{name:'Versión 00',exact:true})});
-  for(const label of ['Informe de Auditoría Interna · 00','CAPA Plan · 00']){const [download]=await Promise.all([page.waitForEvent('download'),section.getByRole('link',{name:label,exact:true}).click()]);assert.equal(await download.failure(),null);}
+  // D-110 (R5C2): la versión del informe ya no ofrece su propio A4.03.
+  assert.equal(await section.getByRole('link',{name:'CAPA Plan · 00',exact:true}).count(),0);
+  for(const label of ['Informe de Auditoría Interna · 00']){const [download]=await Promise.all([page.waitForEvent('download'),section.getByRole('link',{name:label,exact:true}).click()]);assert.equal(await download.failure(),null);}
   const signedForm=section.locator('form');await signedForm.locator('[name="file"]').setInputFiles({name:'firmado-00.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7\n% Fixture firmado 00')});await save(page,signedForm,'Cargar PDF firmado de esta versión');await page.getByRole('link',{name:'Descargar PDF firmado · 00',exact:true}).waitFor();
   await view(page,`/audits/${audit.id}?tab=findings&review=1`);await page.locator(`#audit-finding-${obs.id} > .review-marker`).click();let drawer=page.locator('.review-drawer');let reviewForm=drawer.locator('.review-form').last();await reviewForm.locator('textarea').fill('Comentario UI histórico sobre OBS');await reviewForm.getByRole('button',{name:'Crear observación',exact:true}).click();await drawer.locator('.review-message').getByText('Comentario UI histórico sobre OBS',{exact:true}).waitFor();
   const thread=await prisma.reviewThread.findFirstOrThrow({where:{qmsRecordId:audit.qmsRecordId,targetEntityId:obs.id}});assert.equal(thread.recordVersionId,v00.id);

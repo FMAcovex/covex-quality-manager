@@ -114,4 +114,19 @@ it("captures the CAPA plan version 00 (AU06) with scoped authorization, replay a
   }
   expect(await inspector.auditCapaPlanVersion.count({where:{auditId:audit.id}})).toBe(1);
   expect((await asUser(qa,()=>GET(new Request(`http://127.0.0.1/api/audits/${audit.id}/documents?capaPlanVersion=x`),params))).status).toBe(400);
+  // R5C2: el seguimiento (AU04, FOLLOWUP) cierra la acción y emite la versión 01 en la misma operación.
+  const {saveAuditChildAction}=await import("../../src/modules/audits/finding-actions");
+  const {recordCapaPlanFollowupAction}=await import("../../src/modules/audits/capa-plan-actions");
+  expect(await asUser(qa,()=>saveAuditChildAction(audit.id,"finding",undefined,undefined,{error:null},form({findingType:"FINDING",criticality:"MINOR",description:"Synthetic follow-up finding",actor:"x",_covexAuditRequestId:randomUUID()})))).toHaveProperty("error",null);
+  const finding=await inspector.auditFinding.findFirstOrThrow({where:{auditId:audit.id}});
+  expect(await asUser(qa,()=>saveAuditChildAction(audit.id,"action",finding.id,undefined,{error:null},form({description:"Synthetic follow-up action",status:"OPEN",actor:"x",_covexAuditRequestId:randomUUID()})))).toHaveProperty("error",null);
+  const action=await inspector.auditFindingAction.findFirstOrThrow({where:{findingId:finding.id}});
+  const followupId=randomUUID(),followup=form({requestId:randomUUID(),followupDate:"2026-10-13",actor:"x",changeReason:"Synthetic closure on follow-up",observations:"",[`a.${action.id}.status`]:"CLOSED",[`a.${action.id}.closedAt`]:"2026-10-13",[`a.${action.id}.targetDate`]:"",[`a.${action.id}.evidenceReference`]:"REG-SYN",[`a.${action.id}.evidence`]:"",[`a.${action.id}.updatedAt`]:action.updatedAt.toISOString(),_covexAuditRequestId:followupId});
+  await expect(asUser(reader,()=>recordCapaPlanFollowupAction(audit.id,{error:null},followup))).rejects.toMatchObject({status:403});
+  expect(await asUser(qa,()=>recordCapaPlanFollowupAction(audit.id,{error:null},followup))).toHaveProperty("error",null);
+  const followupOp=await inspector.auditOperation.findUniqueOrThrow({where:{actorUserId_origin_requestId:{actorUserId:qa.id,origin:"QMS_SERVER",requestId:followupId}},include:{events:true}});
+  expect(followupOp.operation).toBe("AU04");expect(followupOp.reason).toBe("Synthetic closure on follow-up");
+  expect(followupOp.events.some(e=>e.entityType==="AuditFindingAction"&&e.fieldPath==="status")).toBe(true);
+  expect(followupOp.events.some(e=>e.entityType==="AuditCapaPlanVersion"&&e.fieldPath==="checksum")).toBe(true);
+  expect((await inspector.auditCapaPlanVersion.findFirstOrThrow({where:{auditId:audit.id,sequenceNumber:1}})).kind).toBe("FOLLOWUP");
 },60000);

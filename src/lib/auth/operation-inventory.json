@@ -161,6 +161,20 @@
       "dynamicCreate": false
     },
     {
+      "file": "src/modules/audits/capa-plan-actions.ts",
+      "name": "recordCapaPlanFollowupAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "FOLLOWUP",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
       "file": "src/modules/audits/finding-actions.ts",
       "name": "saveAuditChildAction",
       "params": [

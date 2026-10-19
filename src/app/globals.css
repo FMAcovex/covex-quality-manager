@@ -2844,3 +2844,12 @@ button[disabled] {
 .audit-action-grid .audit-action-evidence { margin:0; padding:0; border:0; color:var(--muted); font-size:12px; }
 .audit-cell-label { display:block; font-size:11px; font-weight:700; color:#526479; margin-bottom:2px; }
 @media (max-width: 900px) { .audit-action-grid { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .audit-action-main { grid-column:1 / -1; } }
+/* R5C2: seguimiento del CAPA plan (tabla editable de acciones y hallazgos). */
+.capa-plan-followup-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.capa-plan-followup-table caption { text-align: left; font-weight: 600; padding: 4px 0 8px; }
+.capa-plan-followup-table th, .capa-plan-followup-table td { border-bottom: 1px solid var(--border, #dce1e8); padding: 6px; text-align: left; vertical-align: top; }
+.capa-plan-followup-table input, .capa-plan-followup-table select, .capa-plan-followup-table textarea { width: 100%; min-width: 120px; }
+.capa-plan-followup-table textarea { min-height: 2.4em; }
+.capa-plan-followup-table small { color: var(--muted, #5b6573); }
+.capa-plan-followup-table td:nth-child(2), .capa-plan-followup-table th[scope="row"] small { max-width: 280px; }
+.capa-plan-followup-table td:nth-child(2) { width: 24%; }

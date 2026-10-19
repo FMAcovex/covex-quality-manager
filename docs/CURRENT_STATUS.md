@@ -136,6 +136,18 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Auditorías R5C2: seguimiento del CAPA plan y cierre nuevo (2026-10-19, D-110):**
+- **Seguimiento:** «Registrar seguimiento del CAPA plan» actualiza las acciones y los hallazgos sin acciones y emite la versión 01, 02… con su A4.03.
+- **Seguimientos anteriores:** quedan en solo lectura.
+- **Cierre:** sigue la regla de D-110 y avisa si el CAPA plan no está al día.
+- **Cierre parcial:** coherente en la cabecera, el listado y el programa anual.
+- **Informe:** sus versiones ya no tienen A4.03 propio.
+- **Comprobado** con:
+  - las 5 pruebas de navegador de Auditorías;
+  - las pruebas de base de datos de Auditorías;
+  - la prueba de captura del audit trail.
+- **Demo:** sin versiones sembradas, porque las plantillas se instalan después de los ejemplos; la auditoría interna de ejemplo queda lista para establecer la 00 y registrar seguimientos.
+
 **Auditorías R5C1: versiones del CAPA plan (2026-10-19, D-110):**
 - **Versión 00:** «Establecer CAPA plan (versión 00)» en Seguimiento congela hallazgos, acciones y vínculos con su A4.03, aunque estén incompletos y sin informe emitido.
 - **Inmutabilidad:** cada versión es inmutable (tabla `AuditCapaPlanVersion`, migración `20261019000100_audit_capa_plan_versions`).

@@ -30,7 +30,7 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
   if (filters.report === "issued") and.push({qmsRecord:reportVersion});
   if (filters.report === "pending") and.push({qmsRecord:{versions:{none:{}}}});
   if (filters.situation === "closed") and.push({status:"CLOSED"});
-  if (filters.situation === "partial") and.push({status:"OPEN",qmsRecord:reportVersion,OR:[{scenario:{in:["INTERNAL_COVEX","INTERNAL_CONTRACTED"]},capaPlanEstablishedAt:{not:null}},{scenario:"SUPPLIER",reportSentAt:{not:null}}]});
+  if (filters.situation === "partial") and.push({status:"OPEN",OR:[{scenario:{in:["INTERNAL_COVEX","INTERNAL_CONTRACTED"]},capaPlanEstablishedAt:{not:null}},{scenario:"SUPPLIER",reportSentAt:{not:null}}]});
   if (filters.situation === "followup") and.push({status:"OPEN",qmsRecord:reportVersion,NOT:{OR:[{scenario:{in:["INTERNAL_COVEX","INTERNAL_CONTRACTED"]},capaPlanEstablishedAt:{not:null}},{scenario:"SUPPLIER",reportSentAt:{not:null}}]},OR:[{findings:{some:{isActive:true,actions:{some:{isActive:true,status:{in:pendingActionStatuses}}}}}},{followups:{some:{}}}]});
   const years = validYears(filters.year); if (years.length) and.push({ qmsRecord: { year: { in: years } } });
   for (const [key, values, labels] of [["auditType", filters.type, auditTypeLabels], ["scenario", filters.scenario, auditScenarioLabels], ["status", filters.status, auditStatusLabels], ["modality", filters.modality, auditModalityLabels], ["dataQualityStatus", filters.quality, auditQualityLabels]] as const) {

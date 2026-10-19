@@ -39,6 +39,8 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
       if (existing) { if (!existing.checksum || digest(existing.fileData!) !== existing.checksum) throw new Error("El documento histórico no coincide con su checksum."); return existing; }
     }
     const pinned = snapshot.templates.find(t => t.documentType === type);
+    // D-110 (R5C2): las versiones del informe nuevas no fijan A4.03; el CAPA plan tiene versiones propias.
+    if (version && type === "AUDIT_CAPA_PLAN" && !pinned) throw new Error("El CAPA plan tiene versiones propias: descárgalo en Versiones → CAPA plan.");
     const template = version ? pinned ? await tx.templateVersion.findUnique({ where: { id: pinned.id } }) : null : await tx.templateVersion.findFirst({ where: { module: "AUDIT", documentType: type, isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }] });
     if (!template || template.module !== "AUDIT" || template.documentType !== type || !template.checksum) throw new TemplateAssetError("Plantilla controlada no disponible para este documento/versión.");
     const bytes = template.fileData ? Buffer.from(template.fileData) : template.filePath ? await readFile(path.resolve(process.cwd(), template.filePath)) : null;

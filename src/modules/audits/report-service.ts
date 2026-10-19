@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { AuditValidationError } from "./service";
 import { reportInputSchema, reportDateFields, reportTextFields, issueReportSchema, closeAuditSchema } from "./report-validation";
 import { auditClosureChecklist, type ClosureContext } from "./closure-policy";
+import { capaPlanFingerprint } from "./capa-plan-domain";
 import { auditAlreadyClosed } from "./lifecycle";
 
 type Tx = Prisma.TransactionClient;
@@ -70,7 +71,8 @@ export async function issueAuditReport(id: string, raw: unknown) {
     if (received && !a.qmsRecord.generatedDocuments.some(d => d.documentType === "AUDIT_RECEIVED")) throw new Error("Registra el documento externo primario antes de emitir su snapshot.");
     const last = await tx.qmsRecordVersion.findFirst({ where: { qmsRecordId: a.qmsRecordId }, orderBy: { sequenceNumber: "desc" } });
     if (last && !v.reason.trim()) throw new Error("La revisión 01+ exige motivo obligatorio.");
-    const types: DocumentType[] = [DocumentType.AUDIT_CAPA_PLAN, ...(received ? [] : [a.scenario === "SUPPLIER" ? DocumentType.AUDIT_EXTERNAL_REPORT : DocumentType.AUDIT_INTERNAL_REPORT]), ...(a.scenario === "SUPPLIER" ? [DocumentType.AUDIT_EXTERNAL_PLAN] : [])];
+    // D-110: el CAPA plan tiene versiones propias (AuditCapaPlanVersion); el informe ya no fija su A4.03.
+    const types: DocumentType[] = [...(received ? [] : [a.scenario === "SUPPLIER" ? DocumentType.AUDIT_EXTERNAL_REPORT : DocumentType.AUDIT_INTERNAL_REPORT]), ...(a.scenario === "SUPPLIER" ? [DocumentType.AUDIT_EXTERNAL_PLAN] : [])];
     const templates = await tx.templateVersion.findMany({ where: { module: "AUDIT", documentType: { in: types }, isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }] });
     const selected = types.map(type => templates.find(t => t.documentType === type));
     if (selected.some(t => !t || (!t.fileData && !t.filePath) || !t.checksum)) throw new Error("Instala/revisa las plantillas controladas de este escenario antes de emitir.");
@@ -82,22 +84,18 @@ export async function issueAuditReport(id: string, raw: unknown) {
 }
 export async function auditClosureContext(tx: Tx, a: ReportAudit): Promise<ClosureContext> {
   const versions = await tx.qmsRecordVersion.findMany({ where: { qmsRecordId: a.qmsRecordId }, include: { documents: { select: { kind: true } } }, orderBy: { sequenceNumber: "desc" } });
-  const latestByScope = new Map<string, typeof a.followups[number]>();
-  for (const f of a.followups) if (!latestByScope.has(f.findingId ?? "general")) latestByScope.set(f.findingId ?? "general", f);
-  return { ...a, supplierResponseReceivedAt: a.supplierResponseReceivedAt ?? a.qmsRecord.generatedDocuments.find(d => d.documentType === "AUDIT_RESPONSE")?.generatedAt ?? null, isActive: a.qmsRecord.isActive, reportIssued: versions.length > 0, primaryDocument: a.qmsRecord.generatedDocuments.some(d => d.documentType === "AUDIT_RECEIVED"), signedPdf: Boolean(versions[0]?.documents.some(d => d.kind === "SIGNED_PDF")), pendingFollowups: [...latestByScope.values()].some(f => f.nextReviewDate && (!f.findingId || a.findings.some(x => x.id === f.findingId && x.isActive))) };
+  const capaPlan = await tx.auditCapaPlanVersion.findMany({ where: { auditId: a.id }, orderBy: { sequenceNumber: "desc" }, take: 1, select: { contentFingerprint: true } });
+  const capaPlanVersions = await tx.auditCapaPlanVersion.count({ where: { auditId: a.id } });
+  // D-110: aviso si la última versión del CAPA plan no refleja hallazgos, acciones y vínculos actuales.
+  const capaPlanOutdated = Boolean(capaPlan[0]) && capaPlan[0].contentFingerprint !== capaPlanFingerprint(snapshotAudit(a, []));
+  return { ...a, supplierResponseReceivedAt: a.supplierResponseReceivedAt ?? a.qmsRecord.generatedDocuments.find(d => d.documentType === "AUDIT_RESPONSE")?.generatedAt ?? null, isActive: a.qmsRecord.isActive, reportIssued: versions.length > 0, primaryDocument: a.qmsRecord.generatedDocuments.some(d => d.documentType === "AUDIT_RECEIVED"), signedPdf: Boolean(versions[0]?.documents.some(d => d.kind === "SIGNED_PDF")), capaPlanVersions, capaPlanOutdated };
 }
 export async function closeAudit(id: string, raw: unknown) {
   const v = parse(closeAuditSchema, raw);
   return prisma.$transaction(async tx => {
     const a = await lockReportAudit(tx, id);
     if (auditAlreadyClosed(a.status)) throw new Error("La auditoría ya está cerrada.");
-    // Keep necessary CAPA status/efficacy and administrative state stable until
-    // the QA decision commits, including concurrent edits in the CAPA module.
-    const capaRecordIds = [...new Set(a.findings.filter(f => f.isActive).flatMap(f => f.relations.filter(r => r.isActive && r.qmsRelation.isActive && r.qmsRelation.targetRecord.capa).map(r => r.qmsRelation.targetRecord.id)))].sort();
-    for (const recordId of capaRecordIds) {
-      await tx.$queryRaw(Prisma.sql`SELECT id FROM "QmsRecord" WHERE id = ${recordId} FOR NO KEY UPDATE`);
-      await tx.$queryRaw(Prisma.sql`SELECT id FROM "Capa" WHERE "qmsRecordId" = ${recordId} FOR NO KEY UPDATE`);
-    }
+    // D-110: las CAPA y Desviaciones vinculadas siguen su propio ciclo y no condicionan el cierre.
     const current = await tx.audit.findUniqueOrThrow({ where: { id }, include: auditReportInclude });
     const checklist = auditClosureChecklist(await auditClosureContext(tx, current), v.supplierException);
     if (v.supplierException && (!v.reason || !v.verifyAtNextAudit)) checklist.blockers.push("Documenta justificación y verificación pendiente en la siguiente auditoría.");

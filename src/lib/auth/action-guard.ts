@@ -73,6 +73,16 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
       if (entry) assertPermission(user, "AUDIT", "EDIT", { id: entry.planId });
     }
   }
+  // R5C2: el seguimiento del CAPA plan (FOLLOWUP) cierra filas con nombres a.<id>.status / f.<id>.treatmentStatus.
+  // Cerrar exige CLOSE; con base de datos solo cuentan las filas que aún no estaban cerradas.
+  if (name === "recordCapaPlanFollowupAction" && form) {
+    const closing = [...form.entries()].filter(([key, value]) => String(value).trim() === "CLOSED" && /^[af]\.[^.]+\.(status|treatmentStatus)$/.test(key)).map(([key]) => ({ kind: key[0], id: key.split(".")[1] }));
+    const ids = (kind: string) => closing.filter(row => row.kind === kind).map(row => row.id).filter(id => /^[0-9a-f-]{36}$/i.test(id));
+    const newlyClosed = unit ? closing.length > 0 : closing.length > 0 && (
+      (await prisma.auditFindingAction.count({ where: { id: { in: ids("a") }, status: { not: "CLOSED" } } })) +
+      (await prisma.auditFinding.count({ where: { id: { in: ids("f") }, treatmentStatus: { not: "CLOSED" } } })) > 0);
+    if (newlyClosed) assertPermission(user, "AUDIT", "CLOSE", scope);
+  }
   // R5B2: crear una CAPA o Desviación desde un hallazgo exige poder editar su auditoría. Sin base de datos
   // (modo unitario) solo se puede comprobar el permiso del módulo; el ámbito se comprueba abajo.
   if (unit && form?.get("fromAuditFindingId")) assertPermission(user, "AUDIT", "EDIT");

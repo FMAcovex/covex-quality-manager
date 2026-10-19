@@ -37,7 +37,7 @@ function declared(lifecycle: ModuleLifecycle, operation: string) {
 }
 
 const passes = (check: () => void) => { try { check(); return true; } catch { return false; } };
-const closable = (status: string): ClosureContext => ({ scenario: "INTERNAL_COVEX", status, isActive: true, reportIssued: true, conclusion: "Conclusión", primaryDocument: false, capaPlanEstablishedAt: null, reportSentAt: null, supplierResponseReceivedAt: null, responseRequired: false, responseSentAt: null, closureEvidence: null, findings: [], pendingFollowups: false, signedPdf: false });
+const closable = (status: string): ClosureContext => ({ scenario: "INTERNAL_COVEX", status, isActive: true, reportIssued: true, primaryDocument: false, capaPlanEstablishedAt: null, reportSentAt: null, supplierResponseReceivedAt: null, responseRequired: false, responseSentAt: null, findings: [], capaPlanVersions: 0, capaPlanOutdated: false, signedPdf: false });
 const today = "2026-10-16";
 const manualInput = (targetStatus: string) => ({ requestId: "00000000-0000-4000-8000-000000000000", expectedVersion: 0, expectedUpdatedAt: `${today}T00:00:00.000Z`, reason: "Motivo", targetStatus, effectiveFrom: today }) as ManualStatusInput;
 const editableRevision = (status: string) => ({ status, consolidatedAt: null, lifecycle: null, decisions: [] });
