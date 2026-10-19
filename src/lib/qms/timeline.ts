@@ -81,7 +81,7 @@ const auditFieldLabels: Readonly<Record<string, string>> = {
   "audit.report.version": "Emisión / revisión formal del informe", "audit.document.generated": "Documento generado",
   "audit.document.received": "Documento recibido / adjunto", "audit.document.signed": "PDF firmado de versión",
   "audit.closure": "Cierre definitivo / excepción proveedor", "audit.conclusion": "Conclusión del informe",
-  "audit.reportSentAt": "Envío del informe / cierre parcial", "audit.capaPlanEstablishedAt": "CAPA Plan establecido / cierre parcial",
+  "audit.reportSentAt": "Envío del informe / cierre parcial", "audit.capaPlanEstablishedAt": "CAPA Plan establecido / cierre parcial", "audit.capaPlan.version": "Versión del CAPA plan", "audit.capaPlanDate": "Fecha del CAPA plan",
 };
 const auditFieldPrefixes: ReadonlyArray<[string, string]> = [
   ["audit.findings.", "Hallazgo / tratamiento / retirada"], ["audit.actions.", "Acción del CAPA Plan"],

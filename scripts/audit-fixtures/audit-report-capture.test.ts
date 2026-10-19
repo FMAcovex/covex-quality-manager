@@ -12,11 +12,12 @@ vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw Object.as
 const url = new URL(process.env.DATABASE_URL!), ownerUrl = new URL(process.env.B2_CAPTURE_INSPECTOR_URL!);
 if (!isolatedTestEnvironment() || !["localhost", "127.0.0.1"].includes(url.hostname) || url.pathname !== ownerUrl.pathname || !/^\/covex_phase4b1_test_b2_capture_[a-f0-9]+$/.test(url.pathname)) throw Error("Own disposable capture fixture required");
 const inspector = new PrismaClient({ datasourceUrl: ownerUrl.href, log: [] });
-let qa: Principal, reader: Principal;
+let qa: Principal, reader: Principal, admin: Principal;
 beforeAll(async () => {
   const { issueSession, sessionFromToken } = await import("../../src/lib/auth/session");
   qa = (await sessionFromToken((await issueSession(fixtureUsers.qa.id)).token)).principal;
   reader = (await sessionFromToken((await issueSession(fixtureUsers.reader.id)).token)).principal;
+  admin = (await sessionFromToken((await issueSession(fixtureUsers.admin.id)).token)).principal;
 });
 afterAll(async () => { await inspector.$disconnect(); await (await import("../../src/lib/db")).prisma.$disconnect(); });
 const asUser = <T>(user: Principal, execute: () => Promise<T>) => identityContext.run({ principal: user, testHarness: true }, execute);
@@ -80,4 +81,37 @@ it("captures original report issuance/closure and retained document generation w
   const closure=await inspector.auditOperation.findUniqueOrThrow({where:{actorUserId_origin_requestId:{actorUserId:qa.id,origin:"QMS_SERVER",requestId:closureId}},include:{assessment:true,events:true}});
   expect(closure.assessment?.proposedCritical).toBe(true);expect(closure.events.some(e=>e.entityType==="Audit"&&e.fieldPath==="status")).toBe(true);
   expect((await inspector.qmsRecordVersion.findUniqueOrThrow({where:{id:version.id}})).snapshot).toEqual(version.snapshot);
+},60000);
+
+it("captures the CAPA plan version 00 (AU06) with scoped authorization, replay and download (D-110, R5C1)",async()=>{
+  const {createHash}=await import("node:crypto");
+  const {saveAuditAction}=await import("../../src/modules/audits/actions");
+  const {establishCapaPlanAction}=await import("../../src/modules/audits/capa-plan-actions");
+  const department=await inspector.department.findUniqueOrThrow({where:{code:"GC-00"}}),title="Synthetic B2 CAPA plan version fixture";
+  expect(await settled(()=>asUser(qa,()=>saveAuditAction(null,{error:null},form({...operationalValues("AUDIT",department.id),title,performedDate:"2026-10-10",_covexAuditRequestId:randomUUID()}))))).toHaveProperty("error",null);
+  const audit=await inspector.audit.findFirstOrThrow({where:{title}});
+  const operationId=randomUUID(),planRequest=randomUUID(),values={requestId:planRequest,capaPlanDate:"2026-10-12",actor:"Spoofed actor",_covexAuditRequestId:operationId};
+  await expect(asUser(reader,()=>establishCapaPlanAction(audit.id,{error:null},form(values)))).rejects.toMatchObject({status:403});
+  expect(await inspector.auditCapaPlanVersion.count({where:{auditId:audit.id}})).toBe(0);
+  const established=await asUser(qa,()=>establishCapaPlanAction(audit.id,{error:null},form(values)));expect(established.error).toBeNull();
+  const version=await inspector.auditCapaPlanVersion.findFirstOrThrow({where:{auditId:audit.id}});
+  expect(version.sequenceNumber).toBe(0);expect(version.generatedBy).toBe(qa.name);expect(version.authenticatedUserId).toBe(qa.id);
+  const op=await inspector.auditOperation.findUniqueOrThrow({where:{actorUserId_origin_requestId:{actorUserId:qa.id,origin:"QMS_SERVER",requestId:operationId}},include:{events:true,targets:true}});
+  expect(op.operation).toBe("AU06");
+  expect(op.events.some(e=>e.entityType==="AuditCapaPlanVersion"&&e.fieldPath==="checksum")).toBe(true);
+  expect(op.events.some(e=>e.entityType==="AuditCapaPlanVersion"&&e.fieldPath==="fileData")).toBe(false);
+  expect(op.events.some(e=>e.entityType==="Audit"&&e.fieldPath==="capaPlanDate")).toBe(true);
+  expect(op.targets.some(t=>t.rootKey==="QMS_RECORD:"+audit.qmsRecordId)).toBe(true);
+  expect(await asUser(qa,()=>establishCapaPlanAction(audit.id,{error:null},form(values)))).toEqual(established);
+  expect(await inspector.auditCapaPlanVersion.count({where:{auditId:audit.id}})).toBe(1);
+  const {GET}=await import("../../src/app/api/audits/[id]/documents/route");
+  const params={params:Promise.resolve({id:audit.id})},request=()=>new Request(`http://127.0.0.1/api/audits/${audit.id}/documents?capaPlanVersion=0`);
+  // A frozen version is a retained file: DOWNLOAD suffices (reader), GENERATE_DOCUMENT is not required; no AUDIT grant → 403.
+  expect((await asUser(admin,()=>GET(request(),params))).status).toBe(403);
+  for(const user of [reader,qa]){
+    const downloaded=await asUser(user,()=>GET(request(),params));expect(downloaded.status).toBe(200);
+    expect(createHash("sha256").update(new Uint8Array(await downloaded.arrayBuffer())).digest("hex")).toBe(version.checksum);
+  }
+  expect(await inspector.auditCapaPlanVersion.count({where:{auditId:audit.id}})).toBe(1);
+  expect((await asUser(qa,()=>GET(new Request(`http://127.0.0.1/api/audits/${audit.id}/documents?capaPlanVersion=x`),params))).status).toBe(400);
 },60000);

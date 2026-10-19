@@ -480,6 +480,18 @@ Las operaciones transversales crean eventos ligeros en `ChangeHistory` para alta
 
 AuditFinding: UUID, FK Audit, referencia única por auditoría, naturaleza AuditFindingType, criticidad AuditFindingCriticality, contenido/criterio/evidencia, tratamiento y AuditActionStatus para tratamiento sin acciones, cierre DATE, orden y retirada con autor/motivo/fecha. AuditFindingAction: UUID y FK hallazgo, múltiples acciones con responsable, objetivo/cierre DATE, AuditActionStatus, evidencia/referencia/verificación y retirada lógica. AuditFollowup: UUID, Audit y hallazgo opcional propio, fechas DATE, responsable, descripción, próxima revisión/evidencia. AuditFindingRelation: UUID y FKs reales a hallazgo/QmsRelation, unicidad del par, activación/retirada trazable. Detalle e índices en schema y docs/AUDITS_R3B.md. No se modifica estructura base R3A ni se añaden versiones de informe.
 
+AuditCapaPlanVersion (D-110, R5C1): versiones propias del CAPA plan.
+- **Identidad y secuencia:** UUID, FK Audit, secuencia 00, 01… única por auditoría, tipo `ESTABLISHED` / `FOLLOWUP`.
+- **Datos del seguimiento:** fecha, observaciones y próxima revisión.
+- **Idempotencia:** `requestId` y `requestHash`, únicos por auditoría.
+- **Contenido congelado:**
+  - huella del contenido;
+  - foto JSON;
+  - plantilla A4.03 con su checksum;
+  - archivo XLSX con su checksum;
+  - autoría (`generatedBy` y usuario autenticado).
+- **Protección:** un trigger impide modificarla o borrarla; captura B2 sin copiar el binario.
+
 ## Auditorías R3C
 
 Campos mínimos Audit de informe/conclusión/programa/firmas manuales, Plan externo, fechas de hechos parciales/respuestas y decisión QA/excepción proveedor. AuditFindingAction reutiliza CapaEffectivenessStatus para verificación local más verifiedAt/verifiedBy. GeneratedDocument incorpora bytes opcionales, nombre/MIME; tipos AUDIT_INTERNAL_REPORT, AUDIT_EXTERNAL_REPORT, AUDIT_CAPA_PLAN, AUDIT_EXTERNAL_PLAN y recibido/respuesta/evidencia. No se añaden modelos.

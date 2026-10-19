@@ -1051,5 +1051,12 @@ Decisión del responsable de Calidad tras revisar el módulo. El diseño complet
   - la acción de alta del módulo de destino crea la relación y la atribución, y exige EDIT en la auditoría;
   - si en la CAPA se quita la auditoría de los orígenes antes de guardar, no se vincula;
   - se descartó crearlo con un clic: el audit trail asigna cada operación a un único módulo.
-- **Pendiente de las siguientes PR:** R5C (versiones del CAPA plan, seguimiento y cierre) y R5D (cliente e inspección).
+- **R5C1 (implantada):**
+  - tabla nueva `AuditCapaPlanVersion`, de solo anexado: la versión no se modifica ni se borra; captura B2 y contrato `audit-contract-capa-plan.json`, sin cambiar funciones `covex_b2_*`;
+  - «Establecer CAPA plan (versión 00)» en Seguimiento, con la auditoría abierta y permiso EDIT (operación AU06), aunque los hallazgos estén incompletos y sin informe emitido;
+  - fija la fecha del CAPA plan y la de establecimiento (si ya existía, se conserva) y congela la foto y el A4.03 con «00»;
+  - las fechas del CAPA plan salen del formulario del informe;
+  - la pestaña Versiones separa «Informe» y «CAPA plan», con la descarga de cada versión;
+  - sin la plantilla A4.03 no se emite y se avisa de cómo instalarla.
+- **Pendiente de las siguientes PR:** R5C2 (seguimiento con versiones 01+, cierre nuevo y seguimientos antiguos en solo lectura) y R5D (cliente e inspección).
 

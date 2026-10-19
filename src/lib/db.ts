@@ -13,10 +13,10 @@ const configuredPrisma =
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
           const identity = currentIdentity();
-          const authored = new Set(["ChangeHistory", "QmsRecordVersion", "ReviewThread", "ReviewMessage", "GeneratedDocument", "ConfigurationChange", "AuditPlanChange", "ControlledDocumentChange", "ControlledRevisionDocument", "ControlledRevisionDecision", "ControlledDocumentImportEvent", "AuditAnnualProgrammeVersion"]);
+          const authored = new Set(["ChangeHistory", "QmsRecordVersion", "ReviewThread", "ReviewMessage", "GeneratedDocument", "ConfigurationChange", "AuditPlanChange", "ControlledDocumentChange", "ControlledRevisionDocument", "ControlledRevisionDecision", "ControlledDocumentImportEvent", "AuditAnnualProgrammeVersion", "AuditCapaPlanVersion"]);
           if (identity && !identity.unitTest && authored.has(model) && ["create", "createMany", "createManyAndReturn", "upsert"].includes(operation)) {
             const data = (args as { data?: unknown }).data;
-            const names: Record<string, string> = { ChangeHistory: "changedByText", QmsRecordVersion: "createdByText", ReviewThread: "createdByText", ReviewMessage: "createdByText", GeneratedDocument: "generatedByText", ConfigurationChange: "changedByText", AuditPlanChange: "actor", ControlledDocumentChange: "changedByText", ControlledRevisionDocument: "incorporatedBy", ControlledRevisionDecision: "actor", ControlledDocumentImportEvent: "actor", AuditAnnualProgrammeVersion: "generatedBy" };
+            const names: Record<string, string> = { ChangeHistory: "changedByText", QmsRecordVersion: "createdByText", ReviewThread: "createdByText", ReviewMessage: "createdByText", GeneratedDocument: "generatedByText", ConfigurationChange: "changedByText", AuditPlanChange: "actor", ControlledDocumentChange: "changedByText", ControlledRevisionDocument: "incorporatedBy", ControlledRevisionDecision: "actor", ControlledDocumentImportEvent: "actor", AuditAnnualProgrammeVersion: "generatedBy", AuditCapaPlanVersion: "generatedBy" };
             const stamp = (row: unknown) => {
               const value = { ...(row as Record<string, unknown>), authenticatedUserId: identity.principal.id, [names[model]]: identity.principal.name };
               if (model === "ReviewThread" && value.messages) {

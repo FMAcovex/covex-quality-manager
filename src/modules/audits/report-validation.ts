@@ -2,7 +2,8 @@ import { z } from "zod";
 import { dateInput } from "./finding-validation";
 const text = z.string().trim().max(20000).default("");
 export const reportTextFields = ["conclusion", "programme", "previousAuditBackground", "supplierType", "auditedContact", "planIntroduction", "activityDuration", "reportDistribution", "preparedBy", "preparedPosition", "reviewedBy", "reviewedPosition", "receivedBy", "receivedPosition", "closureEvidence", "supplierAssessment"] as const;
-export const reportDateFields = ["reportDate", "capaPlanDate", "capaPlanEstablishedAt", "reportSentAt", "supplierResponseReceivedAt", "responseSentAt"] as const;
+// D-110 (R5C1): las fechas del CAPA plan las fija «Establecer CAPA plan», no el formulario del informe.
+export const reportDateFields = ["reportDate", "reportSentAt", "supplierResponseReceivedAt", "responseSentAt"] as const;
 export const reportInputSchema = z.object({
   ...Object.fromEntries(reportTextFields.map(k => [k, text])) as Record<typeof reportTextFields[number], typeof text>,
   ...Object.fromEntries(reportDateFields.map(k => [k, dateInput])) as Record<typeof reportDateFields[number], typeof dateInput>,

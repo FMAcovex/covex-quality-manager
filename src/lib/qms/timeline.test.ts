@@ -53,6 +53,7 @@ describe("Cronología del expediente", () => {
     expect(historyFieldLabel("audit.findings.abc")).toBe("Hallazgo / tratamiento / retirada");
     expect(historyFieldLabel("audit.actions.abc")).toBe("Acción del CAPA Plan");
     expect(historyFieldLabel("audit.capaPlanEstablishedAt")).toBe("CAPA Plan establecido / cierre parcial");
+    expect(historyFieldLabel("audit.capaPlan.version")).toBe("Versión del CAPA plan");
     expect(historyFieldLabel("otro.campo")).toBe("otro.campo");
   });
 });
