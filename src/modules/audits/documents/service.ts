@@ -12,6 +12,7 @@ import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { auditReportInclude, lockReportAudit, auditReportEvent, readAuditSnapshot, snapshotAudit } from "../report-service";
 import { generateAuditReport, generateAuditCapaPlan, generateAuditExternalPlan } from "./generators";
 import { validateAuditAttachment } from "./attachment-validation";
+import { auditDocumentBlocker } from "./availability";
 const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -22,8 +23,8 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
   if (!scope.id) throw Error("Auditoría no disponible");
   const id = await documentCommand("AUDIT", { ...scope, id: scope.id }, { auditId, type, sequence }, () => prisma.$transaction(async tx => {
     const a = await lockReportAudit(tx, auditId);
-    if (a.status === "DRAFT") throw new Error("Abre la auditoría antes de generar documentos operativos.");
-    if (sequence === null && type !== "AUDIT_CAPA_PLAN" && type !== "AUDIT_EXTERNAL_PLAN") throw new Error("El informe se genera desde una versión formal concreta.");
+    const blocker = auditDocumentBlocker({ status: a.status, type, sequence });
+    if (blocker) throw new Error(blocker);
     const version = sequence === null ? null : await tx.qmsRecordVersion.findUnique({ where: { qmsRecordId_sequenceNumber: { qmsRecordId: a.qmsRecordId, sequenceNumber: sequence } } });
     if (sequence !== null && !version) throw new Error("La versión no existe en este expediente.");
     const snapshot = version ? readAuditSnapshot(version.snapshot) : snapshotAudit(a, []);
