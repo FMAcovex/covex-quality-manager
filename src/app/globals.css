@@ -2544,10 +2544,12 @@ button[disabled] {
 .audit-section-heading,.audit-panel-heading,.audit-subsection-heading { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; min-width:0; }
 .audit-section-heading h2,.audit-panel-heading h2 { margin-bottom:5px; }
 .audit-section-heading .muted-note,.audit-panel-heading .muted-note { margin:0 0 14px; }
-.audit-info-grid { gap:10px; }
-.audit-info-field { border:1px solid var(--border); border-radius:9px; padding:13px 15px; background:var(--surface); min-width:0; }
-.audit-info-field dt { font-size:.77rem; font-weight:650; }
-.audit-info-field dd { font-weight:500; overflow-wrap:anywhere; }
+/* D-111 (V1): mismos campos etiqueta/valor que el resto de módulos (antes, una caja con borde por campo). */
+.audit-info-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.audit-info-field { min-width:0; }
+.audit-info-field dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.audit-info-field dd { margin: 0; line-height: 1.45; overflow-wrap:anywhere; }
+@media (max-width: 1199px) { .audit-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .audit-info-wide { grid-column:1 / -1; }
 .audit-qms-id { display:block; margin-top:13px; overflow-wrap:anywhere; }
 .audit-info-layout .audit-team { grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); }
@@ -2868,3 +2870,10 @@ button[disabled] {
 .capa-plan-followup-table small { color: var(--muted, #5b6573); }
 .capa-plan-followup-table td:nth-child(2), .capa-plan-followup-table th[scope="row"] small { max-width: 280px; }
 .capa-plan-followup-table td:nth-child(2) { width: 24%; }
+
+/* D-111 (V1): en móvil, pestañas en una fila desplazable y menú con indicio de que hay más. */
+@media (max-width: 759px) {
+  .record-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  .record-tabs a { flex: 0 0 auto; white-space: nowrap; }
+  .module-nav { mask-image: linear-gradient(to right, #000 85%, transparent); -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); }
+}

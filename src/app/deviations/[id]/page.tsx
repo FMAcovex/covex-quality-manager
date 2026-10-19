@@ -33,6 +33,7 @@ import { SignedVersionDocumentForm } from "@/components/signed-version-document-
 
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { RecordHeader } from "@/components/record-header";
+import { RecordKeyFacts } from "@/components/record-key-facts";
 import { draftRecordTitle } from "@/lib/qms/record-title";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import {
@@ -332,6 +333,14 @@ async function DeviationDetailPageAuthenticatedContent({
 
       {activeTab === "summary" ? (
         <>
+          <RecordKeyFacts facts={[
+            { label: "Estado", value: deviation.status === "DRAFT" ? "Borrador" : deviation.status === "OPEN" ? "Abierta" : "Cerrada", badgeClass: deviation.status === "DRAFT" ? "neutral" : deviation.status === "OPEN" ? "open" : "closed" },
+            { label: "Apertura", value: deviation.issueDate ? formatDate(deviation.issueDate) : null },
+            { label: "Plazo", value: deadlineLabel(deviation.deadlineStatus) },
+            { label: "Clasificación", value: deviation.classification ? classificationLabel(deviation.classification) : null },
+            { label: "Departamento", value: deviation.departmentCodeSnapshot ?? deviation.department?.code ?? null },
+            { label: "Cierre", value: deviation.closedAt ? formatDate(deviation.closedAt) : null },
+          ]} />
           <div className="card deviation-summary-card">
             <h2>Resumen del expediente</h2>
             <dl className="info-grid compact-info-grid">

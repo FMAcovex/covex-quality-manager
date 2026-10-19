@@ -51,6 +51,8 @@ import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { RecordHeader } from "@/components/record-header";
+import { RecordKeyFacts } from "@/components/record-key-facts";
+import { dueTone } from "@/lib/qms/key-facts";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { uploadChangeControlSignedPdfAction } from "@/modules/change-control/signed-document-actions";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
@@ -230,6 +232,15 @@ async function ChangeControlDetailPageAuthenticatedContent({
       </nav>
 
       {activeTab === "information" ? (
+        <>
+        <RecordKeyFacts facts={[
+          { label: "Estado", value: functionalStatusLabel(record), badgeClass: functionalStatusTone(record) },
+          { label: "Solicitud", value: formatDate(record.requestDate) },
+          { label: "Implantación prevista", value: formatDate(record.plannedImplementationDate), tone: dueTone(record.plannedImplementationDate, new Date(), record.finalStatus === "CLOSED" || record.executionStatus === "EXECUTED") },
+          { label: "Dictamen", value: formatDate(record.dictamenDate) },
+          { label: "Responsable del seguimiento", value: record.followupResponsible },
+          { label: "Cierre", value: formatDate(record.operationalClosedAt) },
+        ]} />
         <div className="card change-overview-card">
           <div className="section-title-row">
             <div>
@@ -258,6 +269,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
             </div>
           </dl>
         </div>
+        </>
       ) : null}
 
       {activeTab === "request" ? (

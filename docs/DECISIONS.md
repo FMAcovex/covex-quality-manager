@@ -1090,3 +1090,27 @@ Decisión del responsable de Calidad tras revisar el módulo. El diseño complet
   - Las fechas propuestas (CAPA plan y seguimiento) son las de hoy en Madrid, no en UTC.
   - La demo siembra versiones del CAPA plan cuando la plantilla A4.03 está instalada (D-109).
 
+
+## D-111 — Mejoras visuales de los expedientes y del inicio (2026-10-19)
+
+Decisión del responsable de Calidad, a partir de un comentario de IT: los expedientes recogen mucha información y está poco señalizada. Diseño en `docs/superpowers/specs/2026-10-19-expedientes-visual-design.md` y plan en `docs/superpowers/plans/2026-10-19-expedientes-visual.md`.
+
+- **Solo presentación.** No se quita ningún dato, campo, flujo ni permiso. Sin migraciones ni funciones nuevas. Lenguaje visual corporativo (D-070). Prioridad escritorio.
+- **Cuatro entregas:**
+  - V1: cabecera común y franja de datos clave;
+  - V2: índice lateral en los formularios;
+  - V3: pestaña única «Desviación»;
+  - V4: «Mis tareas» como primer bloque del inicio, sin selector de departamento.
+- **V1 (implantada):**
+  - **Cabecera común** (`RecordHeader`) en Desviaciones, CAPA, Cambios, Reclamaciones, Devoluciones, OOS y Auditorías, con las acciones siempre en el mismo orden: «Anular expediente» separado a la izquierda, «Modo revisión», las acciones propias del módulo y la acción principal («Editar…») la última. El aviso de expediente anulado sigue bajo la cabecera.
+  - **Borradores sin código** de Desviaciones y CAPA: se titulan con su texto descriptivo (material o proceso, o descripción del defecto) y el chip «Borrador · sin código».
+  - **Franja de datos clave** (`RecordKeyFacts`) como primera tarjeta del resumen o de la información de los 8 módulos:
+    - el estado con su color;
+    - las fechas principales en negrita;
+    - el plazo o próximo seguimiento en rojo («Vencido») o ámbar («Próximo», 30 días) con la misma regla que el panel (`classifyDue`), y sin color si el expediente está cerrado.
+
+    Los datos siguen también en su sitio.
+  - **Auditorías:** los campos de Información pasan de cajas con borde al estilo etiqueta/valor de los demás módulos.
+  - **Vacíos atenuados** en la franja y en la información de Auditorías.
+  - **Móvil:** pestañas en una sola fila desplazable.
+  - **Documentación controlada** conserva su cabecera propia y recibe la franja (estado, revisión vigente, vigente desde, próxima revisión con su tono y departamento).

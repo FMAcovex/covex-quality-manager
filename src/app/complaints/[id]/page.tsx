@@ -33,6 +33,8 @@ import { capaPlanNavigation, capaProposalStatusLabel } from "@/modules/capa/prop
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { RecordHeader } from "@/components/record-header";
+import { RecordKeyFacts } from "@/components/record-key-facts";
+import { dueTone } from "@/lib/qms/key-facts";
 import { complaintSnapshotVersionFollowupDate,recordVersionSummary,versionLabel } from "@/lib/qms/versioning";
 import { uploadComplaintSignedPdfAction } from "@/modules/complaints/signed-document-actions";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
@@ -139,6 +141,13 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
   <nav className="record-tabs">{tabs.map(([k,l])=><Link key={k} className={tab===k?"active":""} href={qmsWithReturnTo(reviewTabHref(basePath,k,reviewMode), "/complaints", returnTo)}>{k==="review"?`${l} (${reviewActiveCount})`:l}</Link>)}</nav>
 
   {tab==="summary"?<>
+   <RecordKeyFacts facts={[
+    { label: "Situación", value: complaintOperationalSituationLabel(situation), badgeClass: complaintOperationalSituationTone(situation) },
+    { label: "Apertura", value: formatDate(r.openedAt) },
+    { label: "Próximo seguimiento", value: formatDate(r.nextFollowupDate), tone: dueTone(r.nextFollowupDate, new Date(), r.status !== "OPEN") },
+    { label: "Respuesta", value: formatDate(r.responseDate) },
+    { label: "Cierre", value: formatDate(r.closedAt) },
+   ]} />
    <div className="card"><div className="section-title-row"><div><h2>Resumen del expediente</h2><p className="muted-note">Situación actual y próximos pasos de la reclamación.</p></div>{currentVersion?<span className="badge neutral">Actual {complaintFollowupLabel(currentVersion.sequenceNumber)}</span>:null}</div>
     <dl className="info-grid">
      <div className="info-item"><dt>Objeto afectado</dt><dd>{joinLabels(r.affectedObjectTypes,objectLabels)}</dd></div>

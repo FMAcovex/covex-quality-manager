@@ -30,6 +30,7 @@ import { qmsRecordHref, qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { RecordHeader } from "@/components/record-header";
+import { RecordKeyFacts } from "@/components/record-key-facts";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { uploadReturnSignedPdfAction } from "@/modules/returns/signed-document-actions";
 import {
@@ -305,6 +306,13 @@ async function ReturnDetailPageAuthenticatedContent({
 
         {tab === "summary" ? (
           <>
+            <RecordKeyFacts facts={[
+              { label: "Estado", value: returnStatusLabel(r.status), badgeClass: r.status === "DRAFT" ? "neutral" : r.status === "OPEN" ? "open" : "closed" },
+              { label: "Comunicación", value: formatDate(r.communicationDate) },
+              { label: "Recepción", value: formatDate(r.receivedAt) },
+              { label: "Decisión", value: formatDate(r.decisionDate) },
+              { label: "Cierre", value: formatDate(r.closedAt) },
+            ]} />
             <div className="return-summary-hero">
               <div
                 id={reviewTarget.generalData.anchorId}

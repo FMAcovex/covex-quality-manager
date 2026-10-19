@@ -28,6 +28,8 @@ import { OperationalRelationForm } from "@/components/operational-relation-form"
 import { OosOriginPanel } from "@/modules/oos/origin-panel";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { RecordHeader } from "@/components/record-header";
+import { RecordKeyFacts } from "@/components/record-key-facts";
+import { dueTone } from "@/lib/qms/key-facts";
 import { draftRecordTitle } from "@/lib/qms/record-title";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { uploadCapaSignedPdfAction } from "@/modules/capa/signed-document-actions";
@@ -272,6 +274,14 @@ async function CapaDetailPageAuthenticatedContent({
 
       {activeTab === "summary" ? (
         <>
+          <RecordKeyFacts facts={[
+            { label: "Estado", value: capaStatusLabel(capa.status), badgeClass: capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral" },
+            { label: "Eficacia", value: effectivenessLabel(capa.effectivenessStatus) },
+            { label: "Apertura", value: formatDate(capa.openedAt) },
+            { label: "Próximo seguimiento", value: formatDate(capa.nextFollowupDate), tone: dueTone(capa.nextFollowupDate, new Date(), capa.status === "CLOSED" || capa.status === "CANCELLED") },
+            { label: "Cierre operativo", value: formatDate(capa.operationalClosedAt) },
+            { label: "Cierre efectivo", value: formatDate(capa.effectiveClosedAt) },
+          ]} />
           <div className="card">
             <h2>Resumen del expediente</h2>
             <dl className="info-grid">

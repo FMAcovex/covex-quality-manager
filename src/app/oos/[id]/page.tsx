@@ -8,6 +8,7 @@ import { OperationalRelationForm } from "@/components/operational-relation-form"
 import { ActorField, PermissionGate } from "@/components/permissions";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { RecordHeader } from "@/components/record-header";
+import { RecordKeyFacts } from "@/components/record-key-facts";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
 import { uploadOosEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
@@ -163,6 +164,13 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
     </nav>
 
     {tab === "summary" ? <>
+      <RecordKeyFacts facts={[
+        { label: "Estado", value: oosStatusLabels[record.status], badgeClass: statusBadge },
+        { label: "Fecha del OOS", value: formatOosDate(record.oosDate) },
+        { label: "Emisión", value: formatOosDate(record.issueDate) },
+        { label: "Detectado por", value: record.detectedBy },
+        { label: "Cierre", value: formatOosDate(record.closedAt) },
+      ]} />
       <ReviewCard target={target.initialData} title="Datos iniciales">
         <dl className="info-grid">
           <Item label="Área">{record.area ? oosAreaLabels[record.area] : "—"}</Item>

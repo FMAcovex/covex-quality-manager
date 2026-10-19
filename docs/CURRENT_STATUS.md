@@ -136,6 +136,14 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Expedientes V1: cabecera común y datos clave (2026-10-19, D-111):**
+- **Cabecera:** igual en 7 módulos, con las acciones en el mismo orden; «Anular» queda separado y la acción principal es la última.
+- **Datos clave:** primera tarjeta del resumen en los 8 módulos, con el estado en color, las fechas en negrita y el plazo vencido o próximo coloreado.
+- **Auditorías:** campos de Información con el estilo de los demás módulos.
+- **Borradores sin código:** se titulan con su descripción.
+- **Móvil:** pestañas en una fila desplazable.
+- **Comprobado** con la nueva prueba de navegador `ux-v1:ui:smoke` (grupo `browser-qms`), los grupos `browser-qms` y `browser-audits`, la prueba de OOS y capturas antes y después a 1440 y 390 px.
+
 **Auditorías: ajustes del CAPA plan tras R5 (2026-10-19, D-110):**
 - **Seguimiento:**
   - solo se comprueban las filas que cambian;
