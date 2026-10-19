@@ -764,7 +764,7 @@ Decisión del responsable del proyecto. Las fichas de Desviaciones, CAPA, Contro
 
 - El historial operativo de D-015 se sigue registrando igual; solo cambia dónde se consulta.
 - Documentación controlada conserva su Historial: no tiene Cronología y muestra el valor anterior y el nuevo de cada campo.
-- Auditorías conserva su Historial: muestra los valores registrados de cada cambio, que la Cronología no enseña.
+- Auditorías conserva su Historial: muestra los valores registrados de cada cambio, que la Cronología no enseña. *(Sustituido por D-110 · R5A: Auditorías también usa Cronología, que en este módulo muestra los «Valores registrados» de cada cambio.)*
 - Los seguimientos legacy de Reclamaciones, que solo se veían en Historial, pasan a la pestaña «Versiones».
 - El Audit Trail no cambia.
 
@@ -1020,4 +1020,24 @@ Decisión del responsable de Calidad: la demo debe enseñar cómo funciona cada 
 - **Una sola vez.** Si los ejemplos ya están, no hace nada. Los PNT cuyo código ya exista no se tocan.
 - **Cuándo se carga:** `pnpm demo:codespace` y la demo Docker lo ejecutan al preparar la base.
 - **Límites:** el historial de modificaciones de cada ejemplo solo registra el alta («Ejemplo de la demo»). Los anexos se generan solo si las plantillas están instaladas.
+
+## D-110 — Auditorías: CAPA plan con versiones, hallazgos y aspecto (2026-10-19)
+
+Decisión del responsable de Calidad tras revisar el módulo. El diseño completo está en `docs/AUDITS_R5.md` y se implanta en cuatro PR (R5A–R5D).
+
+| Tema | Decisión |
+|---|---|
+| Versiones del CAPA plan | Numeración propia 00, 01, 02…, independiente del informe. 00 al establecer el CAPA plan; cada seguimiento genera la versión siguiente. |
+| Cierre de la auditoría | Todas las acciones cerradas o no aplicables, con evidencia o justificación, y cada hallazgo tratado. Las Desviaciones y CAPA vinculadas siguen su propio ciclo y no bloquean. |
+| Cliente e inspección | Solo CAPA plan: el informe recibido se adjunta, sin textos obligatorios ni informe COVEX. |
+
+- Sustituye de D-066 la regla «solo se versiona al emitir el informe» y los requisitos de cierre de las acciones (verificación de cada acción, CAPA atribuidas cerradas y eficaces). El resto de D-064/D-065/D-066 sigue vigente.
+- **R5A (implantada):**
+  - el expediente usa la cabecera, las pestañas y los estados en color de los demás módulos;
+  - el historial operativo pasa a Cronología, como en D-089: la pestaña «Historial» desaparece y sus enlaces abren Cronología. En Auditorías, cada cambio de la Cronología conserva sus «Valores registrados» (anterior y nuevo), que antes solo enseñaba Historial;
+  - Documentos reúne todas las descargas;
+  - el CAPA plan del estado actual se descarga siempre, también en borrador, y desde Hallazgos;
+  - los errores de descarga se muestran como página legible;
+  - los formularios de planes y programas anuales conservan lo escrito ante un error.
+- **Pendiente de las siguientes PR:** R5B (hallazgos), R5C (versiones del CAPA plan, seguimiento y cierre) y R5D (cliente e inspección).
 

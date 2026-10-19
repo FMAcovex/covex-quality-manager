@@ -51,6 +51,24 @@ async function main(){
     await submitAndWait(page,"Crear plan",/\/audits\/plans\/[a-f0-9-]+$/);
     const internalId=new URL(page.url()).pathname.split("/").pop()!;
     assert.equal((await prisma.auditAnnualPlan.findUniqueOrThrow({where:{id:internalId}})).auditType,"INTERNAL");
+    // R5A: un error de validación no borra lo escrito (alta de plan duplicado y entrada con fecha y período).
+    await navigate(page,"/audits/plans");
+    await page.locator('input[name="year"]').fill("2091");
+    await page.locator('select[name="auditType"]').selectOption("INTERNAL");
+    await page.locator('input[name="title"]').fill(marker+" duplicado");
+    await page.getByRole("button",{name:"Crear plan",exact:true}).click();
+    await page.getByRole("alert").filter({hasText:"Ya existe un plan"}).waitFor();
+    assert.equal(await page.locator('input[name="title"]').inputValue(),marker+" duplicado");
+    assert.equal(await page.locator('select[name="auditType"]').inputValue(),"INTERNAL");
+    await navigate(page,"/audits/plans/"+internalId);
+    await page.locator('input[name="subject"]').first().fill("Entrada con error UI");
+    await page.locator('input[name="plannedDate"]').first().fill("2091-06-11");
+    await page.locator('input[name="plannedPeriodText"]').first().fill("Primer trimestre");
+    await page.getByRole("button",{name:"Añadir al plan",exact:true}).click();
+    await page.getByRole("alert").filter({hasText:"no ambos"}).waitFor();
+    assert.equal(await page.locator('input[name="subject"]').first().inputValue(),"Entrada con error UI");
+    assert.equal(await page.locator('input[name="plannedPeriodText"]').first().inputValue(),"Primer trimestre");
+    await page.locator('input[name="plannedPeriodText"]').first().fill("");
     const department=await prisma.department.findUniqueOrThrow({where:{code:"GC-00"}});
     const subject=marker+" auditoría prevista";
     await page.locator('input[name="subject"]').fill(subject);

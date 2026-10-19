@@ -308,6 +308,34 @@
       "dynamicCreate": false
     },
     {
+      "file": "src/modules/audits/plan-actions.ts",
+      "name": "createPlanFormAction",
+      "params": [
+        "_state",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "CREATE",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/audits/plan-actions.ts",
+      "name": "retirePlanEntryFormAction",
+      "params": [
+        "planId",
+        "entryId",
+        "_state",
+        "fd"
+      ],
+      "module": "AUDIT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "AUDIT_PLAN",
+      "dynamicCreate": false
+    },
+    {
       "file": "src/modules/audits/report-actions.ts",
       "name": "saveAuditReportAction",
       "params": [

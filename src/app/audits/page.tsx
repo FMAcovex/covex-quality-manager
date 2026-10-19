@@ -6,7 +6,7 @@ import { ReviewListFilter, ReviewListIndicator } from "@/components/review/revie
 import Link from "next/link";
 import { listAnnualPlans } from "@/modules/audits/plans";
 import { getAuditList, type AuditListFilters } from "@/modules/audits/queries";
-import { auditTypeLabels, auditScenarioLabels, auditStatusLabels, auditModalityLabels, auditQualityLabels, auditDate, auditSituation } from "@/modules/audits/domain";
+import { auditStatusBadgeClass, auditTypeLabels, auditScenarioLabels, auditStatusLabels, auditModalityLabels, auditQualityLabels, auditDate, auditSituation } from "@/modules/audits/domain";
 import { criticalityLabels, isTerminalAction } from "@/modules/audits/finding-domain";
 import { auditColumns } from "@/modules/audits/column-config";
 import { ColumnSelector } from "@/components/column-selector";
@@ -106,12 +106,12 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
       </ListFilterToolbar>
     </form>
     <p className="list-counters"><span><strong>{total}</strong> expedientes · página {page} de {pages}</span></p>
-    <div className="table-wrap"><table id="audit-list-table" className="data-table"><thead><tr>{auditColumns.map(c => <th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>{rows.map(r => {
+    <div className="table-wrap"><table id="audit-list-table"><thead><tr>{auditColumns.map(c => <th key={c.key} data-column-key={c.key}>{c.label}</th>)}</tr></thead><tbody>{rows.map(r => {
       const cells = {
         reportVersion: r.qmsRecord.versions[0]?String(r.qmsRecord.versions[0].sequenceNumber).padStart(2,"0"):"Pendiente", reportDate:auditDate(r.reportDate),signedPdf:r.qmsRecord.versions[0]?.documents.length?"Disponible":"No disponible",partial:r.capaPlanEstablishedAt||r.reportSentAt?"Sí":"No",
-        control: <span className="badge">{auditQualityLabels[r.dataQualityStatus]}</span>, review: <ReviewListIndicator counts={r.reviewCounts} basePath={toDetail(r.id)}/>, code: <Link href={toDetail(r.id)}>{qmsRecordDisplayCode(r.qmsRecord, "Sin código")}</Link>,
-        type: r.auditType ? auditTypeLabels[r.auditType] : "—", scenario: r.scenario ? auditScenarioLabels[r.scenario] : "—", title: <Link href={`/audits/${r.id}`}>{r.title || "Sin objeto"}</Link>, area: r.scenario === "SUPPLIER" ? r.auditedEntityName : r.departments.map(d => d.departmentCodeSnapshot).join(", ") || "COVEX",
-        planned: auditDate(r.plannedDate), performed: auditDate(r.performedDate), status: auditStatusLabels[r.status], situation: auditSituation({...r,reportIssued:r.qmsRecord.versions.length>0}), modality: r.modality ? auditModalityLabels[r.modality] : "—", team: r.participants.filter(p => p.role !== "AUDITEE").map(p => p.displayName).join(", "), scope: r.scope, opening: auditDate(r.openedAt), closing: auditDate(r.closedAt), reference: r.externalReference,
+        control: r.dataQualityStatus !== "COMPLETE" ? <span className="control-flag">⚠ {auditQualityLabels[r.dataQualityStatus]}</span> : "—", review: <ReviewListIndicator counts={r.reviewCounts} basePath={toDetail(r.id)}/>, code: <><Link className="summary-link" href={toDetail(r.id)}>{qmsRecordDisplayCode(r.qmsRecord, "Sin código")}</Link>{!r.qmsRecord.isActive ? <span className="badge neutral">Anulado</span> : null}</>,
+        type: r.auditType ? auditTypeLabels[r.auditType] : "—", scenario: r.scenario ? auditScenarioLabels[r.scenario] : "—", title: <Link className="summary-link" href={toDetail(r.id)}>{r.title || "Sin objeto"}</Link>, area: r.scenario === "SUPPLIER" ? r.auditedEntityName : r.departments.map(d => d.departmentCodeSnapshot).join(", ") || "COVEX",
+        planned: auditDate(r.plannedDate), performed: auditDate(r.performedDate), status: <span className={`badge ${auditStatusBadgeClass(r.status)}`}>{auditStatusLabels[r.status]}</span>, situation: auditSituation({...r,reportIssued:r.qmsRecord.versions.length>0}), modality: r.modality ? auditModalityLabels[r.modality] : "—", team: r.participants.filter(p => p.role !== "AUDITEE").map(p => p.displayName).join(", "), scope: r.scope, opening: auditDate(r.openedAt), closing: auditDate(r.closedAt), reference: r.externalReference,
         findings: String(r.findings.filter(f => f.findingType !== "RECOMMENDATION").length), critical: String(r.findings.filter(f => f.criticality === "CRITICAL").length), major: String(r.findings.filter(f => f.criticality === "MAJOR").length), minor: String(r.findings.filter(f => f.criticality === "MINOR").length), recommendations: String(r.findings.filter(f => f.findingType === "RECOMMENDATION").length), pendingActions: String(r.findings.reduce((n,f) => n + f.actions.filter(a => !isTerminalAction(a.status)).length,0)), derivedRecords: String(r.qmsRecord._count.sourceRelations), nextReview: auditDate(pendingAuditReviewDate(r.followups,new Set(r.findings.map(f=>f.id)))),
       }; return <tr key={r.id}>{auditColumns.map(c => <td key={c.key} data-column-key={c.key}>{cells[c.key as keyof typeof cells] || "—"}</td>)}</tr>;
     })}</tbody></table>{!rows.length ? <p className="empty-state">No hay auditorías con estos filtros.</p> : null}</div>

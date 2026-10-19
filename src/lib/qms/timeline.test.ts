@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 const at = (iso: string) => new Date(iso);
 vi.mock("@/lib/db", () => ({
   prisma: {
-    changeHistory: { findMany: vi.fn(async () => [{ id: "h1", changedAt: at("2026-10-03T10:00:00Z"), changedByText: "Ana", fieldPath: "status", reason: "Cierre", source: "UI" }]) },
+    changeHistory: { findMany: vi.fn(async () => [{ id: "h1", changedAt: at("2026-10-03T10:00:00Z"), changedByText: "Ana", fieldPath: "status", reason: "Cierre", source: "UI", oldValue: "OPEN", newValue: "CLOSED" }]) },
     qmsRecordVersion: { findMany: vi.fn(async () => [{ id: "v1", createdAt: at("2026-10-01T09:00:00Z"), createdByText: "Ana", sequenceNumber: 0, kind: "INITIAL", reason: null, frozenAt: at("2026-10-02T00:00:00Z") }]) },
     generatedDocument: { findMany: vi.fn(async () => [{ id: "d1", generatedAt: at("2026-10-04T08:00:00Z"), generatedByText: "Luis", documentType: "DEVIATION_ANNEX_III", fileName: "anexo.docx", recordVersion: { sequenceNumber: 1 } }]) },
     recordVersionDocument: { findMany: vi.fn(async () => [{ id: "s1", uploadedAt: at("2026-10-05T08:00:00Z"), uploadedByText: null, kind: "SIGNED_PDF", fileName: "firmado.pdf", recordVersion: { sequenceNumber: 1 } }]) },
@@ -29,6 +29,14 @@ describe("Cronología del expediente", () => {
     expect(entries.find((entry) => entry.kind === "RELATION")?.detail).toMatch(/retirada/);
   });
 
+  it("solo incluye los valores registrados cuando se piden (Auditorías, R5A)", async () => {
+    const { getRecordTimeline } = await import("@/lib/qms/timeline");
+    const plain = (await getRecordTimeline("rec")).find((entry) => entry.kind === "CHANGE");
+    expect(plain?.values).toBeUndefined();
+    const detailed = (await getRecordTimeline("rec", { includeValues: true })).find((entry) => entry.kind === "CHANGE");
+    expect(detailed?.values).toEqual({ oldValue: "OPEN", newValue: "CLOSED" });
+  });
+
   it("nombra los tipos de documento sin depender de cada módulo", async () => {
     const { documentTypeLabel } = await import("@/lib/qms/timeline");
     expect(documentTypeLabel("CHANGE_ANNEX_VII")).toBe("Anexo VII");
@@ -42,5 +50,9 @@ describe("Cronología del expediente", () => {
     const { historyFieldLabel } = await import("@/lib/qms/timeline");
     expect(historyFieldLabel("__created__")).toBe("Alta del expediente");
     expect(historyFieldLabel("rootCause")).toBe("rootCause");
+    expect(historyFieldLabel("audit.findings.abc")).toBe("Hallazgo / tratamiento / retirada");
+    expect(historyFieldLabel("audit.actions.abc")).toBe("Acción del CAPA Plan");
+    expect(historyFieldLabel("audit.capaPlanEstablishedAt")).toBe("CAPA Plan establecido / cierre parcial");
+    expect(historyFieldLabel("otro.campo")).toBe("otro.campo");
   });
 });

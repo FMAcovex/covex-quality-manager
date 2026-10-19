@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { auditInputSchema } from "./validation";
-import { auditSituation, compatibleAuditScenario, auditScenarioLabels, auditRoleLabels, auditCodeYear } from "./domain";
+import { auditStatusBadgeClass, auditSituation, compatibleAuditScenario, auditScenarioLabels, auditRoleLabels, auditCodeYear } from "./domain";
 import { auditListWhere } from "./queries";
 import { buildOperationalBusinessCode, extractOperationalBusinessCodeSequence, operationalBusinessCodePrefix } from "@/lib/qms/business-code";
 
@@ -88,5 +88,13 @@ describe("Auditorías R3A", () => {
   it("presenta escenarios y roles en español", () => {
     expect(auditScenarioLabels.INTERNAL_CONTRACTED).toBe("Interna · auditor externo contratado");
     expect(auditRoleLabels.LEAD_AUDITOR).toBe("Auditor jefe");
+  });
+});
+
+describe("auditStatusBadgeClass", () => {
+  it("colorea el estado como en Desviaciones", () => {
+    expect(auditStatusBadgeClass("DRAFT")).toBe("neutral");
+    expect(auditStatusBadgeClass("OPEN")).toBe("open");
+    expect(auditStatusBadgeClass("CLOSED")).toBe("closed");
   });
 });

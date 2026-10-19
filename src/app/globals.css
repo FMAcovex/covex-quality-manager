@@ -2526,7 +2526,6 @@ button[disabled] {
 .audit-info-layout { display:grid; gap:16px; min-width:0; }
 .audit-info-layout .card + .card { margin-top:0; }
 .audit-info-section { padding:22px; }
-.audit-info-primary { border-top:3px solid var(--blue); }
 .audit-section-heading,.audit-panel-heading,.audit-subsection-heading { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; min-width:0; }
 .audit-section-heading h2,.audit-panel-heading h2 { margin-bottom:5px; }
 .audit-section-heading .muted-note,.audit-panel-heading .muted-note { margin:0 0 14px; }
@@ -2544,7 +2543,6 @@ button[disabled] {
 .audit-summary-stats > div { display:flex; flex-direction:column; gap:4px; border:1px solid var(--border); border-radius:9px; padding:12px; min-width:0; }
 .audit-summary-stats strong { font-size:1.35rem; line-height:1.25; }
 .audit-summary-stats span,.audit-subtle-count { color:var(--text-muted,#526479); font-size:.8rem; }
-.audit-finding-card { border-left:4px solid var(--blue); }
 .audit-finding-header h2 { font-size:1.25rem; margin:5px 0 10px; }
 .audit-finding-eyebrow { text-transform:uppercase; font-size:.74rem; letter-spacing:.05em; font-weight:700; color:var(--text-muted,#526479); }
 .audit-finding-chips { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
@@ -2565,8 +2563,8 @@ button[disabled] {
 .audit-action-heading h4 { flex:1 1 230px; margin:0; font-size:.94rem; }
 .audit-mini-facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:14px 0; }
 .audit-action-evidence,.audit-followup-evidence { padding-top:10px; border-top:1px solid var(--border); }
-.audit-link-editor > summary { color:var(--blue-dark); }
-.audit-followup-entry { position:relative; border-left:4px solid var(--blue); }
+.audit-link-editor > summary { color:inherit; }
+.audit-followup-entry { position:relative; }
 .audit-followup-header { display:flex; justify-content:space-between; flex-wrap:wrap; align-items:flex-start; gap:10px; }
 .audit-followup-header h3 { margin:4px 0 0; font-size:1rem; }
 .audit-followup-entry .audit-mini-facts { grid-template-columns:repeat(2,minmax(0,1fr)); }

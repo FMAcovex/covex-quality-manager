@@ -12,6 +12,7 @@ import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { auditReportInclude, lockReportAudit, auditReportEvent, readAuditSnapshot, snapshotAudit } from "../report-service";
 import { generateAuditReport, generateAuditCapaPlan, generateAuditExternalPlan } from "./generators";
 import { validateAuditAttachment } from "./attachment-validation";
+import { auditDocumentBlocker } from "./availability";
 const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -22,8 +23,8 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
   if (!scope.id) throw Error("Auditoría no disponible");
   const id = await documentCommand("AUDIT", { ...scope, id: scope.id }, { auditId, type, sequence }, () => prisma.$transaction(async tx => {
     const a = await lockReportAudit(tx, auditId);
-    if (a.status === "DRAFT") throw new Error("Abre la auditoría antes de generar documentos operativos.");
-    if (sequence === null && type !== "AUDIT_CAPA_PLAN" && type !== "AUDIT_EXTERNAL_PLAN") throw new Error("El informe se genera desde una versión formal concreta.");
+    const blocker = auditDocumentBlocker({ status: a.status, type, sequence });
+    if (blocker) throw new Error(blocker);
     const version = sequence === null ? null : await tx.qmsRecordVersion.findUnique({ where: { qmsRecordId_sequenceNumber: { qmsRecordId: a.qmsRecordId, sequenceNumber: sequence } } });
     if (sequence !== null && !version) throw new Error("La versión no existe en este expediente.");
     const snapshot = version ? readAuditSnapshot(version.snapshot) : snapshotAudit(a, []);
@@ -42,7 +43,7 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
     const bytes = template.fileData ? Buffer.from(template.fileData) : template.filePath ? await readFile(path.resolve(process.cwd(), template.filePath)) : null;
     if (!bytes || digest(bytes) !== template.checksum || (pinned && pinned.checksum !== template.checksum)) throw new TemplateAssetError("El binario no coincide con la plantilla congelada; no se regenera con una revisión diferente.");
     const output = type === "AUDIT_CAPA_PLAN" ? generateAuditCapaPlan(bytes, snapshot, sequence) : type === "AUDIT_EXTERNAL_PLAN" ? generateAuditExternalPlan(bytes, snapshot) : generateAuditReport(bytes, snapshot, sequence!);
-    const xlsx = type === "AUDIT_CAPA_PLAN", fileName = safeSignedPdfFileName(`${snapshot.audit.qmsRecord.businessCode ?? snapshot.audit.externalReference ?? auditId}_${type}_${sequence === null ? 'actual' : String(sequence).padStart(2,'0')}.${xlsx ? 'xlsx' : 'docx'}`);
+    const xlsx = type === "AUDIT_CAPA_PLAN", fileName = safeSignedPdfFileName(`${snapshot.audit.qmsRecord.businessCode ?? snapshot.audit.externalReference ?? "Auditoria_sin_codigo"}_${type}_${sequence === null ? 'actual' : String(sequence).padStart(2,'0')}.${xlsx ? 'xlsx' : 'docx'}`);
     const document = await tx.generatedDocument.create({ data: { qmsRecordId: a.qmsRecordId, recordVersionId: version?.id, documentType: type, templateVersionId: template.id, fileData: new Uint8Array(output), fileName, mimeType: xlsx ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document", checksum: digest(output), generatedByText: actor, metadata: json({ source: "GENERATED", version: sequence, templateChecksum: template.checksum, currentState: sequence === null }) } });
     await auditReportEvent(tx, a.qmsRecordId, actor, "audit.document.generated", null, { id: document.id, fileName, version: sequence, templateVersionId: template.id }, "Generación desde snapshot formal / estado actual indicado");
     return document;

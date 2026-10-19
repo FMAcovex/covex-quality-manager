@@ -12,6 +12,8 @@ export type TimelineEntry = Readonly<{
   title: string;
   detail: string | null;
   actor: string | null;
+  /** Valores anterior y nuevo de un cambio; solo si se piden (Auditorías conserva esta vista, R5A). */
+  values?: { oldValue: unknown; newValue: unknown };
 }>;
 
 export const TIMELINE_KIND_LABELS: Readonly<Record<TimelineEntryKind, string>> = {
@@ -71,7 +73,22 @@ const technicalFieldLabels: Readonly<Record<string, string>> = {
   relations: "Relaciones",
   followups: "Seguimientos",
 };
-export const historyFieldLabel = (fieldPath: string) => technicalFieldLabels[fieldPath] ?? fieldPath;
+// Auditorías: etiquetas que antes mostraba su pestaña «Historial» (R5A, D-089).
+const auditFieldLabels: Readonly<Record<string, string>> = {
+  businessCode: "Codificación", "audit.status": "Apertura / estado", "audit.auditType": "Tipo", "audit.scenario": "Escenario",
+  "audit.plannedDate": "Fecha prevista", "audit.performedDate": "Fecha realizada", "audit.scope": "Alcance",
+  "audit.departments": "Áreas/departamentos", "audit.participants": "Participantes",
+  "audit.report.version": "Emisión / revisión formal del informe", "audit.document.generated": "Documento generado",
+  "audit.document.received": "Documento recibido / adjunto", "audit.document.signed": "PDF firmado de versión",
+  "audit.closure": "Cierre definitivo / excepción proveedor", "audit.conclusion": "Conclusión del informe",
+  "audit.reportSentAt": "Envío del informe / cierre parcial", "audit.capaPlanEstablishedAt": "CAPA Plan establecido / cierre parcial",
+};
+const auditFieldPrefixes: ReadonlyArray<[string, string]> = [
+  ["audit.findings.", "Hallazgo / tratamiento / retirada"], ["audit.actions.", "Acción del CAPA Plan"],
+  ["audit.followups.", "Seguimiento"], ["audit.attributions.", "Atribución a hallazgo"],
+];
+export const historyFieldLabel = (fieldPath: string) =>
+  technicalFieldLabels[fieldPath] ?? auditFieldLabels[fieldPath] ?? auditFieldPrefixes.find(([prefix]) => fieldPath.startsWith(prefix))?.[1] ?? fieldPath;
 
 const versionLabel = (sequence: number) => `V${String(sequence).padStart(2, "0")}`;
 
@@ -83,12 +100,12 @@ export const TIMELINE_LIMIT_PER_SOURCE = 200;
  * seguimientos, documentos generados y recibidos, y relaciones. Solo lectura. No es el
  * audit trail GMP (que vive en su propia pestaña) y no sustituye a ninguna de esas fuentes.
  */
-export async function getRecordTimeline(qmsRecordId: string): Promise<TimelineEntry[]> {
+export async function getRecordTimeline(qmsRecordId: string, options: { includeValues?: boolean } = {}): Promise<TimelineEntry[]> {
   const take = TIMELINE_LIMIT_PER_SOURCE;
   const [history, versions, generated, signed, relations] = await Promise.all([
     prisma.changeHistory.findMany({
       where: { qmsRecordId },
-      select: { id: true, changedAt: true, changedByText: true, fieldPath: true, reason: true, source: true },
+      select: { id: true, changedAt: true, changedByText: true, fieldPath: true, reason: true, source: true, oldValue: Boolean(options.includeValues), newValue: Boolean(options.includeValues) },
       orderBy: { changedAt: "desc" },
       take,
     }),
@@ -127,6 +144,7 @@ export async function getRecordTimeline(qmsRecordId: string): Promise<TimelineEn
       id: `change:${row.id}`, at: row.changedAt, kind: "CHANGE" as const, actor: row.changedByText,
       title: historyFieldLabel(row.fieldPath),
       detail: [row.reason ? `Motivo: ${row.reason}` : null, row.source !== "UI" ? `Origen: ${row.source}` : null].filter(Boolean).join(" · ") || null,
+      ...(options.includeValues ? { values: { oldValue: row.oldValue, newValue: row.newValue } } : {}),
     })),
     ...versions.map((row) => ({
       id: `version:${row.id}`, at: row.createdAt, kind: "VERSION" as const, actor: row.createdByText,
