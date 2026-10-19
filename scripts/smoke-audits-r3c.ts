@@ -9,7 +9,7 @@ import { saveAuditFinding, saveAuditFindingAction, retireAuditElement, linkAudit
 import { saveAuditReport, issueAuditReport, closeAudit, readAuditSnapshot } from "../src/modules/audits/report-service";
 import { generateAuditDocument, storeAuditSignedPdf, getAuditDocument, registerAuditAttachment, getAuditReportView } from "../src/modules/audits/documents/service";
 import { auditClosureChecklist } from "../src/modules/audits/closure-policy";
-import { establishCapaPlan, getCapaPlanVersionFile } from "../src/modules/audits/capa-plan-service";
+import { establishCapaPlan, getCapaPlanVersionFile, recordCapaPlanFollowup } from "../src/modules/audits/capa-plan-service";
 import { getAuditList } from "../src/modules/audits/queries";
 import { createValidatedReviewThread, acceptValidatedReviewThread, resolveValidatedReviewThread, replyToValidatedReviewThread } from "../src/lib/qms/review/mutation-service";
 import { auditFindingReviewTarget, auditActionReviewTarget, auditReviewTargets } from "../src/lib/qms/review/targets/audits";
@@ -45,6 +45,27 @@ async function main(){
  await prisma.audit.update({where:{id:other.id},data:{status:'OPEN',capaPlanEstablishedAt:new Date('2096-10-01T00:00:00.000Z')}});
  await establishCapaPlan(other.id,{actor,requestId:randomUUID(),capaPlanDate:'2096-10-02'});
  assert.equal((await prisma.audit.findUniqueOrThrow({where:{id:other.id}})).capaPlanEstablishedAt?.toISOString().slice(0,10),'2096-10-01','Se conserva la fecha de establecimiento anterior.');
+ // R5C2: el seguimiento actualiza acciones/hallazgos y emite la versión 01 con su A4.03.
+ const fu=await create(),fuObs=await saveAuditFinding(fu.id,{actor,findingType:'FINDING',criticality:'MINOR',description:'OBS de seguimiento R5C2'}),fuAction=await saveAuditFindingAction(fu.id,fuObs.id,{actor,description:'Acción de seguimiento R5C2',status:'OPEN'});
+ const fuRk=await saveAuditFinding(fu.id,{actor,findingType:'RECOMMENDATION',description:'Rk sin acciones R5C2'});
+ await assert.rejects(recordCapaPlanFollowup(fu.id,{actor,requestId:randomUUID(),followupDate:'2096-10-09'}),/versión 00/);
+ await establishCapaPlan(fu.id,{actor,requestId:randomUUID(),capaPlanDate:'2096-10-08'});
+ const followupForm=async(extra:Record<string,string>)=>{const act=await prisma.auditFindingAction.findUniqueOrThrow({where:{id:fuAction.id}}),rk=await prisma.auditFinding.findUniqueOrThrow({where:{id:fuRk.id}});return {actor,requestId:randomUUID(),followupDate:'2096-10-09',nextReviewDate:'',observations:'',changeReason:'',
+  [`a.${act.id}.status`]:act.status,[`a.${act.id}.closedAt`]:act.closedAt?.toISOString().slice(0,10)??'',[`a.${act.id}.targetDate`]:act.targetDate?.toISOString().slice(0,10)??'',[`a.${act.id}.evidenceReference`]:act.evidenceReference??'',[`a.${act.id}.evidence`]:act.evidence??'',[`a.${act.id}.updatedAt`]:act.updatedAt.toISOString(),
+  [`f.${rk.id}.treatmentStatus`]:rk.treatmentStatus,[`f.${rk.id}.treatment`]:rk.treatment??'',[`f.${rk.id}.closedAt`]:'',[`f.${rk.id}.evidenceReference`]:rk.evidenceReference??'',[`f.${rk.id}.evidence`]:rk.evidence??'',[`f.${rk.id}.updatedAt`]:rk.updatedAt.toISOString(),...extra};};
+ await assert.rejects(recordCapaPlanFollowup(fu.id,await followupForm({})),/No hay cambios/);
+ await assert.rejects(recordCapaPlanFollowup(fu.id,await followupForm({[`a.${fuAction.id}.status`]:'CLOSED',[`a.${fuAction.id}.closedAt`]:'2096-10-09',[`a.${fuAction.id}.evidenceReference`]:'REG-R5C2'})),/motivo/);
+ await assert.rejects(recordCapaPlanFollowup(fu.id,await followupForm({[`a.${fuAction.id}.status`]:'CLOSED',changeReason:'Cierre'})),/fecha/);
+ await assert.rejects(recordCapaPlanFollowup(fu.id,await followupForm({[`f.${fuRk.id}.treatmentStatus`]:'NOT_APPLICABLE',[`f.${fuRk.id}.evidence`]:'Justificación',changeReason:'No procede'})),/tratamiento/);
+ const closeForm=await followupForm({[`a.${fuAction.id}.status`]:'CLOSED',[`a.${fuAction.id}.closedAt`]:'2096-10-09',[`a.${fuAction.id}.evidenceReference`]:'REG-R5C2',[`f.${fuRk.id}.treatmentStatus`]:'NOT_APPLICABLE',[`f.${fuRk.id}.treatment`]:'No procede en este ciclo',[`f.${fuRk.id}.evidence`]:'Justificación documentada',changeReason:'Acción ejecutada y Rk descartada',observations:'Revisión del CAPA plan'});
+ const fu01=await recordCapaPlanFollowup(fu.id,closeForm);assert.equal(fu01.sequenceNumber,1);assert.equal(fu01.kind,'FOLLOWUP');assert.equal(fu01.observations,'Revisión del CAPA plan');
+ assert.equal((await prisma.auditFindingAction.findUniqueOrThrow({where:{id:fuAction.id}})).status,'CLOSED');assert.equal((await prisma.auditFinding.findUniqueOrThrow({where:{id:fuRk.id}})).treatmentStatus,'NOT_APPLICABLE');
+ const sheet01=getZipEntryText(readZip(Buffer.from((await getCapaPlanVersionFile(fu.id,1)).fileData)),'xl/worksheets/sheet1.xml');assert(sheet01.includes('Cerrada'));assert(sheet01.includes('REG-R5C2'));
+ assert.equal((await recordCapaPlanFollowup(fu.id,closeForm)).id,fu01.id,'Reenviar el mismo seguimiento devuelve la misma versión.');
+ const stale=await followupForm({observations:'Observación tardía'});stale[`a.${fuAction.id}.updatedAt`]=new Date(0).toISOString();
+ await assert.rejects(recordCapaPlanFollowup(fu.id,stale),/cambió/);
+ const fu02=await recordCapaPlanFollowup(fu.id,await followupForm({observations:'Solo observación, sin cambios'}));assert.equal(fu02.sequenceNumber,2);
+ assert.equal(await prisma.auditCapaPlanVersion.count({where:{auditId:fu.id}}),3);
  const v00=await issueAuditReport(a.id,{actor});assert.equal(v00.sequenceNumber,0);assert(v00.frozenAt);
  const before=JSON.stringify(v00.snapshot), s00=readAuditSnapshot(v00.snapshot);assert.equal(s00.audit.findings.length,2);
  const comment=async(t:ReturnType<typeof auditFindingReviewTarget>)=>createValidatedReviewThread({qmsRecordId:a.qmsRecordId,recordVersionId:v00.id,...t,fieldLabelSnapshot:t.label,valueSnapshot:t.valueSnapshot,createdByText:actor,initialMessage:'Observación histórica de pruebas'});

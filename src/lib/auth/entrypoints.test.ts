@@ -81,6 +81,17 @@ describe("4B1 protección directa de entradas", () => {
     expect((await call("type=AUDIT_CAPA_PLAN")).status).toBe(403);
     expect(run).toHaveBeenCalledTimes(1);
   });
+  it("cerrar una acción o un hallazgo en el seguimiento del CAPA plan exige CLOSE (R5C2)", async () => {
+    configureTest();
+    const follower: Principal = { ...principal, id: "synthetic-audit-follower", grants: [{ module: "AUDIT", permission: "FOLLOWUP", scope: "ALL" }] };
+    const run = vi.fn(async () => ({ error: null }));
+    const form = (values: Record<string, string>) => { const data = new FormData(); for (const [key, value] of Object.entries(values)) data.set(key, value); return data; };
+    const call = (values: Record<string, string>) => identityContext.run({ principal: follower, unitTest: true }, () => authorizedAction("recordCapaPlanFollowupAction", ["audit", { error: null }, form(values)], run));
+    await expect(call({ "a.x1.status": "IN_PROGRESS", "f.f1.treatmentStatus": "OPEN" })).resolves.toEqual({ error: null });
+    await expect(call({ "a.x1.status": "CLOSED" })).rejects.toMatchObject({ status: 403 });
+    await expect(call({ "f.f1.treatmentStatus": "CLOSED" })).rejects.toMatchObject({ status: 403 });
+    expect(run).toHaveBeenCalledTimes(1);
+  });
   it("cerrar una reclamación exige CLOSE aunque el estado llegue en saveStatus", async () => {
     configureTest();
     const editor: Principal = { ...principal, id: "synthetic-complaint-editor", grants: [{ module: "COMPLAINT", permission: "CREATE", scope: "ALL" }] };
