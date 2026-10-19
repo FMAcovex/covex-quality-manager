@@ -61,7 +61,7 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
   assertPermission(user, accessModule, permission, scope);
   if (entry.module === "SYSTEM" && form?.get("module") && form.get("module") !== accessModule) assertPermission(user, String(form.get("module")) as AccessModule, "MANAGE_CONFIGURATION");
   // Reclamaciones envía el estado de destino en `saveStatus` (prevalece sobre `status`).
-  if (form?.get("status") === "CLOSED" || form?.get("saveStatus") === "CLOSED") assertPermission(user, accessModule, "CLOSE", scope);
+  if (form?.get("status") === "CLOSED" || form?.get("saveStatus") === "CLOSED" || form?.get("treatmentStatus") === "CLOSED") assertPermission(user, accessModule, "CLOSE", scope);
   if (form?.get("finalStatus") === "CLOSED" || form?.get("closeChange") === "true") assertPermission(user, accessModule, "CLOSE", scope);
   if ([form?.get("status"), form?.get("administrativeStatus")].some(value => value === "ANNULLED" || value === "CANCELLED")) assertPermission(user, accessModule, "ANNUL", scope);
   if (form?.get("departmentId") && scope.id) assertPermission(user, accessModule, permission, { id: scope.id, departmentIds: [String(form.get("departmentId"))] });

@@ -18,7 +18,7 @@ export const auditRelationHooks: ModuleRelationHooks = {
         client.audit!.findUnique({ where: { qmsRecordId: source.id }, select: { status: true, qmsRecord: { select: { isActive: true } } } }),
         client.qmsRecord.findUnique({ where: { id: target.id }, select: { isActive: true, capa: { select: { status: true } }, deviation: { select: { status: true } } } }),
       ]);
-      if (!audit || !audit.qmsRecord.isActive || audit.status === "DRAFT" || !operationalTarget?.isActive || (!operationalTarget.capa && !operationalTarget.deviation) || operationalTarget.capa?.status === "DRAFT" || operationalTarget.deviation?.status === "DRAFT") throw new QmsRelationValidationError("Auditoría y destino deben ser expedientes operativos y activos.");
+      if (!audit || !audit.qmsRecord.isActive || !operationalTarget?.isActive || (!operationalTarget.capa && !operationalTarget.deviation)) throw new QmsRelationValidationError("Auditoría y destino deben ser expedientes activos (Desviación o CAPA).");
     },
     async beforeDeactivate({ client, relationId, sourceRecordId }) {
       await lockAuditOrigin(client, sourceRecordId);

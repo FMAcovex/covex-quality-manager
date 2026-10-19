@@ -62,8 +62,10 @@ async function main() {
   assert.equal(attr1.qmsRelationId,attr2.qmsRelationId); assert.equal(await prisma.qmsRelation.count({where:{sourceRecordId:audit.qmsRecordId,targetRecordId:capa.id}}),1);
   await assert.rejects(linkAuditFinding(audit.id,obs.id,capa.id,actor),/ya está/);
   await assert.rejects(linkAuditFinding(audit.id,foreign.id,capa.id,actor),/pertenece/);
-  await assert.rejects(linkAuditFinding(audit.id,obs.id,draftCapa.id,actor),/operativa/);
-  await assert.rejects(linkAuditFinding(audit.id,obs.id,audit.qmsRecordId,actor),/operativa/);
+  // R5B1 (D-110): un borrador de CAPA se puede atribuir; se retira para no alterar el resto del recorrido.
+  const draftAttr=await linkAuditFinding(audit.id,rk.id,draftCapa.id,actor); assert.equal(draftAttr.isActive,true);
+  await retireAuditAttribution(audit.id,rk.id,draftAttr.id,{actor,reason:"Retirada del borrador vinculado"}); await unlinkAuditRecord(audit.id,draftCapa.id,{actor,reason:"Limpieza del borrador vinculado"});
+  await assert.rejects(linkAuditFinding(audit.id,obs.id,audit.qmsRecordId,actor),/existente y activa/);
   assert.equal((await getAuditOrigins(capa.id))[0].auditFindingRelations.length,2); assert.equal((await getAuditOrigins(deviation.id))[0].sourceRecordId,audit.qmsRecordId);
   const snapshot=await prisma.qmsRecordVersion.findFirstOrThrow({where:{qmsRecordId:capa.id}});
   const origin=((snapshot.snapshot as {capa:{origins:{recordType:string;findings:{reference:string}[]}[]}}).capa.origins).find(o=>o.recordType==="AUDIT")!; assert.deepEqual(origin.findings.map(f=>f.reference).sort(),["OBS 01","Rk 01"]);

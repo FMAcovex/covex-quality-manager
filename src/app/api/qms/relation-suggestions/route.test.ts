@@ -19,6 +19,11 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/auth/context", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/auth/context")>()), currentIdentity: () => ({ principal: { id: "synthetic-editor" } }) }));
+// La guarda de la ruta se prueba aparte; aquí solo interesa el filtrado por edición de los resultados.
+vi.mock("@/lib/auth/route-guard", () => ({ authorizedRoute: (_file: string, _method: string, args: unknown[], run: (a: unknown[]) => unknown) => run(args) }));
+vi.mock("@/lib/auth/presentation", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/auth/presentation")>()), canPresent: () => true }));
+
 import { GET } from "@/app/api/qms/relation-suggestions/route";
 
 describe("relation suggestions API", () => {
@@ -109,5 +114,30 @@ describe("relation suggestions API", () => {
         }),
       }),
     );
+  });
+
+  it("desde una auditoría ofrece también borradores sin código, por su descripción, solo con filtro de edición (R5B1)", async () => {
+    findUnique.mockResolvedValue({ id: "audit", recordType: QmsRecordType.AUDIT, isActive: true });
+    findManyRecords.mockResolvedValue([
+      { id: "draft", recordType: QmsRecordType.CAPA, businessCode: null, year: null, capa: { status: "DRAFT", defectDescription: "Revisar balanzas de proceso" } },
+      { id: "open", recordType: QmsRecordType.CAPA, businessCode: "AC/GC-00/001/2026", year: 2026, capa: { status: "OPEN", defectDescription: "Otra" } },
+    ]);
+    const response = await GET(new Request("http://localhost/api/qms/relation-suggestions?editable=1&currentRecordId=audit&currentType=AUDIT&relatedType=CAPA&q=balanzas"));
+    expect(response.status).toBe(200);
+    const where = findManyRecords.mock.calls[0][0].where;
+    expect(JSON.stringify(where)).not.toContain('"not":"DRAFT"');
+    expect(JSON.stringify(where)).toContain("defectDescription");
+    const body = await response.json();
+    expect(body.suggestions.map((s: { id: string; displayLabel: string }) => [s.id, s.displayLabel])).toEqual([
+      ["open", "AC/GC-00/001/2026"],
+      ["draft", "Borrador · Revisar balanzas de proceso"],
+    ]);
+  });
+
+  it("sin filtro de edición no busca ni expone el texto de los borradores", async () => {
+    findUnique.mockResolvedValue({ id: "audit", recordType: QmsRecordType.AUDIT, isActive: true });
+    await GET(new Request("http://localhost/api/qms/relation-suggestions?currentRecordId=audit&currentType=AUDIT&relatedType=CAPA&q=balanzas"));
+    const query = findManyRecords.mock.calls[0][0];
+    expect(JSON.stringify(query)).not.toContain("defectDescription");
   });
 });

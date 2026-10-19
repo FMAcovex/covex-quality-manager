@@ -1,6 +1,6 @@
 # Auditorías R5 — CAPA plan con versiones, hallazgos y aspecto (diseño)
 
-Estado: **diseño aprobado el 2026-10-19 (D-110). R5A implantada; R5B, R5C y R5D pendientes.**
+Estado: **diseño aprobado el 2026-10-19 (D-110). R5A y R5B1 implantadas; R5B2, R5C y R5D pendientes.**
 
 Origen: revisión del módulo por el responsable de Calidad (2026-10-19), once observaciones sobre auditorías internas y externas. Este documento recoge lo acordado y lo divide en cuatro PR (R5A–R5D). Se respeta D-070: no se rediseña la aplicación; el módulo se alinea con la maquetación de los demás.
 
@@ -71,7 +71,7 @@ Sin cambios de base de datos. Añadido a petición del responsable de Calidad: e
 - Usan `preserveFormState` y `submittedDefaults` (`src/lib/forms/preserved-state.ts`) con `key={formRevision}`, como el resto de formularios. Ante cualquier error se conserva lo escrito y el error se muestra en el formulario, sin la pantalla de error.
 - Los campos se agrupan en secciones con la maquetación de `record-form`: identificación, planificación y responsables.
 
-## 4. R5B — Hallazgos
+## 4. R5B — Hallazgos (R5B1: ficha, justificación y vínculos; R5B2: abrir CAPA o Desviación)
 
 **Ficha del hallazgo**, sin desplegables anidados:
 - **Cabecera:** referencia (OBS/Rk), tipo, criticidad, estado derivado y botón «Editar».
@@ -89,12 +89,14 @@ Sin cambios de base de datos. Añadido a petición del responsable de Calidad: e
 - Mínimo: tipo y descripción.
 - Se puede registrar y editar en cualquier estado de la auditoría salvo anulada, incluido el borrador.
 
-**Abrir Desviación o CAPA desde un hallazgo**
-- Requiere el permiso de crear en el módulo de destino.
-- En una transacción:
-  1. crea el expediente en **borrador**, con departamento = departamento de codificación de la auditoría (o el primero auditado si no lo hay), descripción = descripción del hallazgo y origen «Auditoría `<código>` · `<OBS nn>`»;
-  2. crea la relación global AUDIT GENERATES DEVIATION/CAPA y la atribución al hallazgo;
-  3. lleva al usuario al formulario de edición del nuevo borrador, con retorno a la auditoría.
+**Abrir Desviación o CAPA desde un hallazgo** (decisión del 2026-10-19; se implanta en R5B2)
+- «Abrir CAPA» / «Abrir desviación» llevan al **formulario de nueva CAPA o Desviación ya rellenado**, con el mismo patrón que «Crear CAPA» desde una desviación:
+  - departamento = departamento de codificación de la auditoría (o el primero auditado si no lo hay);
+  - descripción = descripción del hallazgo;
+  - origen = la auditoría y la referencia del hallazgo.
+- Al guardar, como borrador o abierta, el expediente queda vinculado al hallazgo: relación global AUDIT GENERATES y atribución.
+- Requiere el permiso de crear en el módulo de destino y el de editar la auditoría.
+- Se descartó crear el borrador con un clic desde la auditoría: el audit trail asigna cada operación a un único módulo, y ninguna acción crea expedientes de otro módulo.
 
 **Vincular existente**
 - Igual que hoy, pero admite destinos en borrador y la auditoría en borrador.

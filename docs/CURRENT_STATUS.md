@@ -136,6 +136,13 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Auditorías R5B1: ficha de hallazgos (2026-10-19, D-110):**
+- **Ficha por hallazgo:** botones «Editar», «Justificar y cerrar», «+ Añadir acción» y «Vincular Desviación / CAPA existente». Cada uno abre su formulario en el sitio, uno cada vez, sin desplegables anidados. Las acciones del CAPA Plan aparecen en filas.
+- **Vínculos:** se pueden vincular borradores de Desviación y CAPA, que se buscan por su descripción, también con la auditoría en borrador.
+- **Permisos:** cerrar un hallazgo exige el permiso CLOSE también en el servidor.
+- **Comprobado** con las 5 pruebas de navegador de Auditorías sobre una base nueva, las pruebas de base de datos r3b y r3c, y un recorrido visual en la demo.
+- **Pendiente:** R5B2 (abrir CAPA o Desviación con el formulario rellenado), R5C y R5D.
+
 **Auditorías R5A: aspecto, documentos y programas anuales (2026-10-19, D-110):**
 - **Expediente:** cabecera, pestañas y estado en color como en Desviaciones; el historial está en Cronología, con las etiquetas de hallazgos, acciones y seguimientos y los valores anterior y nuevo de cada cambio.
 - **Listado:** estado en color, aviso de control de dato y enlaces como en los demás listados.
