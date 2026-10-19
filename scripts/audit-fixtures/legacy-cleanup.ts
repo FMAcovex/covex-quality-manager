@@ -38,3 +38,23 @@ export async function purgeLegacyFixtureDocuments(db: PrismaClient, where: Prism
     await tx.$executeRaw`ALTER TABLE "RecordVersionDocument" ENABLE TRIGGER audit_b2_signed_slot`;
   }, { timeout: 30000 });
 }
+
+/** D-110 (R5C1): same guarded teardown for immutable CAPA plan versions of
+ * synthetic audits on the OWN disposable, non-journaled database. */
+export async function purgeFixtureCapaPlanVersions(db: PrismaClient, auditIds: string[], env: Record<string, string | undefined> = process.env) {
+  if (!isolatedTestEnvironment(env) || !auditIds.length) return;
+  const expectedDatabase = new URL(env.DATABASE_URL!).pathname.slice(1);
+  await db.$transaction(async tx => {
+    if (!await tx.auditCapaPlanVersion.count({ where: { auditId: { in: auditIds } } })) return;
+    const [database] = await tx.$queryRaw<{ name: string; owner: boolean }[]>`SELECT current_database() AS name,
+      EXISTS(SELECT 1 FROM pg_roles WHERE rolname=current_user AND rolsuper) OR pg_has_role(current_user,(SELECT relowner FROM pg_class WHERE oid='public."AuditCapaPlanVersion"'::regclass),'USAGE') AS owner`;
+    if (!database || database.name !== expectedDatabase || !database.owner) throw Error("Non-audited disposable fixture and its controlled owner required");
+    await tx.$executeRaw`LOCK TABLE "AuditPolicyRequirement","AuditOperationTarget" IN SHARE MODE`;
+    if (await tx.auditPolicyRequirement.count()) throw Error("Durable policy refuses privileged fixture teardown");
+    const roots = (await tx.audit.findMany({ where: { id: { in: auditIds } }, select: { qmsRecordId: true } })).map(audit => "QMS_RECORD:" + audit.qmsRecordId);
+    if (await tx.auditOperationTarget.count({ where: { rootKey: { in: roots } } })) throw Error("Journal-covered fixture cannot be physically purged");
+    await tx.$executeRaw`ALTER TABLE "AuditCapaPlanVersion" DISABLE TRIGGER immutable_audit_capa_plan_version`;
+    await tx.auditCapaPlanVersion.deleteMany({ where: { auditId: { in: auditIds } } });
+    await tx.$executeRaw`ALTER TABLE "AuditCapaPlanVersion" ENABLE TRIGGER immutable_audit_capa_plan_version`;
+  }, { timeout: 30000 });
+}

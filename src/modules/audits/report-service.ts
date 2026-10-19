@@ -45,8 +45,7 @@ export async function saveAuditReport(id: string, raw: unknown) {
     const a = await lockReportAudit(tx, id);
     if (v.expectedUpdatedAt && a.updatedAt.toISOString() !== v.expectedUpdatedAt) throw new Error("El expediente cambió. Recarga antes de guardar.");
     const versions = await tx.qmsRecordVersion.count({ where: { qmsRecordId: a.qmsRecordId } });
-    if ((v.reportSentAt || v.capaPlanEstablishedAt) && !versions) throw new Error("Emite el informe antes de registrar su envío o establecer el CAPA Plan.");
-    if (v.capaPlanEstablishedAt && !a.findings.filter(f => f.isActive).every(f => Boolean(f.treatment?.trim()) || f.actions.some(x => x.isActive) || f.relations.some(r => r.isActive && r.qmsRelation.isActive))) throw new Error("Establece tratamiento/acciones para todos los elementos del CAPA Plan.");
+    if (v.reportSentAt && !versions) throw new Error("Emite el informe antes de registrar su envío.");
     const data = { ...Object.fromEntries(reportTextFields.map(k => [k, v[k] || null])), ...Object.fromEntries(reportDateFields.map(k => [k, day(v[k])])), responseRequired: v.responseRequired, updatedByText: v.actor };
     const after = await tx.audit.update({ where: { id }, data });
     for (const k of [...reportTextFields, ...reportDateFields, "responseRequired"] as const) if (JSON.stringify(a[k]) !== JSON.stringify(after[k])) await auditReportEvent(tx, a.qmsRecordId, v.actor, `audit.${k}`, a[k], after[k], "Edición del informe / hechos de seguimiento y cierre; sin nueva versión automática");

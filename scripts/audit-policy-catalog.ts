@@ -13,7 +13,7 @@ const groups: Record<string, string[]> = {
   W03: ["src/modules/change-control/actions.ts"],
   W04: ["src/modules/complaints/actions.ts", "src/modules/complaints/version-service.ts"],
   W05: ["src/modules/returns/actions.ts", "src/modules/returns/product-service.ts", "src/modules/returns/snapshot-service.ts"],
-  W06: ["src/modules/audits/service.ts", "src/modules/audits/finding-service.ts", "src/modules/audits/report-service.ts"],
+  W06: ["src/modules/audits/service.ts", "src/modules/audits/finding-service.ts", "src/modules/audits/report-service.ts", "src/modules/audits/capa-plan-service.ts"],
   W07: ["src/modules/audits/plans.ts", "src/modules/audits/annual-programme/service.ts"],
   W08: ["src/modules/controlled-documents/service.ts"],
   W09: ["src/modules/controlled-documents/lifecycle/service.ts", "src/modules/controlled-documents/manual-state/service.ts"],

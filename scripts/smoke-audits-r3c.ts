@@ -9,6 +9,7 @@ import { saveAuditFinding, saveAuditFindingAction, retireAuditElement, linkAudit
 import { saveAuditReport, issueAuditReport, closeAudit, readAuditSnapshot } from "../src/modules/audits/report-service";
 import { generateAuditDocument, storeAuditSignedPdf, getAuditDocument, registerAuditAttachment, getAuditReportView } from "../src/modules/audits/documents/service";
 import { auditClosureChecklist } from "../src/modules/audits/closure-policy";
+import { establishCapaPlan, getCapaPlanVersionFile } from "../src/modules/audits/capa-plan-service";
 import { getAuditList } from "../src/modules/audits/queries";
 import { createValidatedReviewThread, acceptValidatedReviewThread, resolveValidatedReviewThread, replyToValidatedReviewThread } from "../src/lib/qms/review/mutation-service";
 import { auditFindingReviewTarget, auditActionReviewTarget, auditReviewTargets } from "../src/lib/qms/review/targets/audits";
@@ -30,6 +31,20 @@ async function main(){
  const action=await saveAuditFindingAction(a.id,obs.id,{actor,description:'Acción inicial histórica',status:'OPEN'});
  const capa=await prisma.qmsRecord.create({data:{recordType:'CAPA',businessCode:`${marker}-CAPA`}});records.push(capa.id);
  await prisma.capa.create({data:{qmsRecordId:capa.id,actionType:'CORRECTIVE',status:'OPEN',effectivenessStatus:'PENDING'}});await linkAuditFinding(a.id,obs.id,capa.id,actor);
+ // D-110 (R5C1): el CAPA plan se establece (versión 00) sin informe emitido y queda congelado.
+ const planRequest=randomUUID(), established=await establishCapaPlan(a.id,{actor,requestId:planRequest,capaPlanDate:'2096-10-08'});
+ assert.equal(established.sequenceNumber,0);assert.equal(established.kind,'ESTABLISHED');assert.equal(await prisma.qmsRecordVersion.count({where:{qmsRecordId:a.qmsRecordId}}),0);
+ const planSheet=getZipEntryText(readZip(Buffer.from((await getCapaPlanVersionFile(a.id,0)).fileData)),'xl/worksheets/sheet1.xml');assert(planSheet.includes('OBS histórica inicial'));assert(/r="K7"[^>]*>[\s\S]*?00/.test(planSheet)||planSheet.includes('>00<'));
+ const establishedAudit=await prisma.audit.findUniqueOrThrow({where:{id:a.id}});assert.equal(establishedAudit.capaPlanDate?.toISOString().slice(0,10),'2096-10-08');assert(establishedAudit.capaPlanEstablishedAt);
+ assert.equal((await establishCapaPlan(a.id,{actor,requestId:planRequest,capaPlanDate:'2096-10-08'})).id,established.id,'Reintentar la misma solicitud devuelve la misma versión 00.');
+ await assert.rejects(establishCapaPlan(a.id,{actor,requestId:planRequest,capaPlanDate:'2096-10-09'}),/otros datos/);
+ await assert.rejects(establishCapaPlan(a.id,{actor,requestId:randomUUID(),capaPlanDate:'2096-10-08'}),/ya está establecido/);
+ await assert.rejects(prisma.auditCapaPlanVersion.update({where:{id:established.id},data:{generatedBy:'Manipulado'}}),/immutable/);
+ await prisma.audit.update({where:{id:other.id},data:{status:'DRAFT'}});
+ await assert.rejects(establishCapaPlan(other.id,{actor,requestId:randomUUID(),capaPlanDate:'2096-10-08'}),/Abre la auditoría/);
+ await prisma.audit.update({where:{id:other.id},data:{status:'OPEN',capaPlanEstablishedAt:new Date('2096-10-01T00:00:00.000Z')}});
+ await establishCapaPlan(other.id,{actor,requestId:randomUUID(),capaPlanDate:'2096-10-02'});
+ assert.equal((await prisma.audit.findUniqueOrThrow({where:{id:other.id}})).capaPlanEstablishedAt?.toISOString().slice(0,10),'2096-10-01','Se conserva la fecha de establecimiento anterior.');
  const v00=await issueAuditReport(a.id,{actor});assert.equal(v00.sequenceNumber,0);assert(v00.frozenAt);
  const before=JSON.stringify(v00.snapshot), s00=readAuditSnapshot(v00.snapshot);assert.equal(s00.audit.findings.length,2);
  const comment=async(t:ReturnType<typeof auditFindingReviewTarget>)=>createValidatedReviewThread({qmsRecordId:a.qmsRecordId,recordVersionId:v00.id,...t,fieldLabelSnapshot:t.label,valueSnapshot:t.valueSnapshot,createdByText:actor,initialMessage:'Observación histórica de pruebas'});
@@ -49,7 +64,7 @@ async function main(){
  await saveAuditFinding(a.id,{actor,findingType:'RECOMMENDATION',description:'Rk posterior',treatment:'No procede',treatmentStatus:'NOT_APPLICABLE',evidence:'Justificación'});
  await saveAuditFollowup(a.id,{actor,followupDate:'2096-10-09',completedByText:actor,description:'Seguimiento ordinario'});
  assert.equal(await prisma.qmsRecordVersion.count({where:{qmsRecordId:a.qmsRecordId}}),1,'El seguimiento/edición no crea versiones del informe.');
- await saveAuditReport(a.id,{actor,reportDate:'2096-10-10',conclusion:'Conclusión revisada',programme:'10:00 | Revisión',capaPlanEstablishedAt:'2096-10-10'});
+ await saveAuditReport(a.id,{actor,reportDate:'2096-10-10',conclusion:'Conclusión revisada',programme:'10:00 | Revisión'});
  await assert.rejects(issueAuditReport(a.id,{actor}),/motivo/);
  const v01=await issueAuditReport(a.id,{actor,reason:'Revisión formal justificada'});assert.equal(v01.sequenceNumber,1);
  assert.equal(JSON.stringify((await prisma.qmsRecordVersion.findUniqueOrThrow({where:{id:v00.id}})).snapshot),before);
@@ -72,7 +87,7 @@ async function main(){
  const afterClosure=await prisma.audit.findUniqueOrThrow({where:{id:a.id},include:{qmsRecord:true,departments:true,participants:true}});
  const originalCloseDate=afterClosure.closedAt?.toISOString();
  await saveAudit({...auditDefaults(afterClosure),title:'Auditoría cerrada editable R5'},a.id);
- await saveAuditReport(a.id,{actor,reportDate:'2096-10-10',conclusion:'Conclusión editada tras cierre',capaPlanEstablishedAt:'2096-10-10'});
+ await saveAuditReport(a.id,{actor,reportDate:'2096-10-10',conclusion:'Conclusión editada tras cierre'});
  const afterClosedEdit=await prisma.audit.findUniqueOrThrow({where:{id:a.id}});
  assert.equal(afterClosedEdit.status,'CLOSED');assert.equal(afterClosedEdit.closedAt?.toISOString(),originalCloseDate);
  const v02=await issueAuditReport(a.id,{actor,reason:'Corrección documental posterior al cierre'});
