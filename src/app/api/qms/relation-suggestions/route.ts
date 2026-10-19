@@ -67,6 +67,9 @@ async function GETAuthenticatedContent(request: Request) {
     return NextResponse.json({ suggestions: [] });
   }
 
+  // R5B1: los borradores (y su texto) solo se ofrecen desde una auditoría y con el filtro de edición,
+  // que más abajo descarta lo que el usuario no puede editar.
+  const includeDrafts = currentType === "AUDIT" && url.searchParams.get("editable") === "1";
   let alreadyLinkedIds: string[] = [];
   if (currentRecordId) {
     const current = await prisma.qmsRecord.findUnique({
@@ -115,10 +118,10 @@ async function GETAuthenticatedContent(request: Request) {
       ...(relatedType === "AUDIT" ? {
         audit: { status: { not: "DRAFT" } },
         OR: [{ businessCode: { contains: query, mode: "insensitive" } }, { audit: { OR: [{ title: { contains: query, mode: "insensitive" } }, { externalReference: { contains: query, mode: "insensitive" } }] } }],
-      } : currentType === "AUDIT" && relatedType === "CAPA" ? {
+      } : includeDrafts && relatedType === "CAPA" ? {
         // R5B1: desde una auditoría también se vinculan borradores, que no tienen código hasta abrirse.
         OR: [{ businessCode: { not: null, contains: query, mode: "insensitive" } }, { businessCode: null, capa: { status: "DRAFT", defectDescription: { contains: query, mode: "insensitive" } } }],
-      } : currentType === "AUDIT" && relatedType === "DEVIATION" ? {
+      } : includeDrafts && relatedType === "DEVIATION" ? {
         OR: [{ businessCode: { not: null, contains: query, mode: "insensitive" } }, { businessCode: null, deviation: { status: "DRAFT", whatHappened: { contains: query, mode: "insensitive" } } }],
       } : { businessCode: { not: null, contains: query, mode: "insensitive" } }),
     },
@@ -128,8 +131,8 @@ async function GETAuthenticatedContent(request: Request) {
       businessCode: true,
       year: true,
       ...(relatedType === "AUDIT" ? { audit: { select: { title: true, externalReference: true } } } : {}),
-      ...(currentType === "AUDIT" && relatedType === "CAPA" ? { capa: { select: { status: true, defectDescription: true } } } : {}),
-      ...(currentType === "AUDIT" && relatedType === "DEVIATION" ? { deviation: { select: { status: true, whatHappened: true } } } : {}),
+      ...(includeDrafts && relatedType === "CAPA" ? { capa: { select: { status: true, defectDescription: true } } } : {}),
+      ...(includeDrafts && relatedType === "DEVIATION" ? { deviation: { select: { status: true, whatHappened: true } } } : {}),
     },
     take: 30,
   });

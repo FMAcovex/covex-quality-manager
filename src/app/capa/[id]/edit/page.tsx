@@ -1,4 +1,5 @@
 import { authorizedPage } from "@/lib/auth/page-guard";
+import { capaEditOrigins } from "@/modules/capa/edit-origins";
 import { appUserOptions } from "@/lib/auth/app-users";
 import { notFound } from "next/navigation";
 import { qmsDetailUrl, qmsListingReturnTo, qmsDetailTab } from "@/lib/qms/list-return-navigation";
@@ -24,7 +25,7 @@ async function EditCapaPageAuthenticatedContent({ params, searchParams }: { para
   const relationOrigins = capa.qmsRecord.targetRelations
     .filter((item) => item.relationType === "GENERATES" && (item.sourceRecord.recordType === "DEVIATION" || item.sourceRecord.recordType === "COMPLAINT" || item.sourceRecord.recordType === "AUDIT"))
     .map((item) => item.sourceRecord);
-  const originRecords = relationOrigins.length ? relationOrigins : pendingOrigins;
+  const originRecords = capaEditOrigins(relationOrigins, pendingOrigins);
 
   const defaults = {
     businessCode: capa.qmsRecord.businessCode ?? undefined,
