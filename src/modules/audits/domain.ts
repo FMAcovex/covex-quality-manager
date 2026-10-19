@@ -12,6 +12,8 @@ export const auditScenarioLabels = {
 } as const;
 export const auditModalityLabels = { ONSITE: "Presencial", REMOTE: "Remota", HYBRID: "Mixta" } as const;
 export const auditStatusLabels = { DRAFT: "Borrador", OPEN: "Abierta", CLOSED: "Cerrada" } as const;
+/** Color del estado en listados y cabecera, como en Desviaciones. */
+export const auditStatusBadgeClass = (status: keyof typeof auditStatusLabels) => status === "DRAFT" ? "neutral" : status === "OPEN" ? "open" : "closed";
 export const auditRoleLabels = { LEAD_AUDITOR: "Auditor jefe", AUDITOR: "Auditor", AUDITEE: "Personal auditado / interlocutor" } as const;
 export const auditQualityLabels = { COMPLETE: "Completo", INCOMPLETE: "Incompleto", REVIEW_REQUIRED: "Requiere revisión" } as const;
 

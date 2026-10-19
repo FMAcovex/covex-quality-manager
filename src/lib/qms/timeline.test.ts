@@ -42,5 +42,9 @@ describe("Cronología del expediente", () => {
     const { historyFieldLabel } = await import("@/lib/qms/timeline");
     expect(historyFieldLabel("__created__")).toBe("Alta del expediente");
     expect(historyFieldLabel("rootCause")).toBe("rootCause");
+    expect(historyFieldLabel("audit.findings.abc")).toBe("Hallazgo / tratamiento / retirada");
+    expect(historyFieldLabel("audit.actions.abc")).toBe("Acción del CAPA Plan");
+    expect(historyFieldLabel("audit.capaPlanEstablishedAt")).toBe("CAPA Plan establecido / cierre parcial");
+    expect(historyFieldLabel("otro.campo")).toBe("otro.campo");
   });
 });

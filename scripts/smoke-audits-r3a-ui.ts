@@ -97,7 +97,7 @@ async function main() {
     await navigate(page,`${base}/audits?q=${encodeURIComponent(marker)}&administrative=ANNULLED`); await page.locator("#audit-list-table").waitFor(); assert.equal(await page.locator("#audit-list-table tbody tr").count(),1);
     // Exercise the UTC/Madrid date boundary independently of the execution hour.
     await prisma.qmsRecord.update({where:{id:opened.qmsRecordId},data:{annulledAt:new Date("2026-10-07T22:11:00.000Z")}});
-    await navigate(page,`${base}/audits/${audit.id}?tab=history`); assert(await page.getByText("Anulación UI de fixture",{exact:true}).count());
+    await navigate(page,`${base}/audits/${audit.id}?tab=timeline`); assert(await page.getByText("Anulación UI de fixture").count());
     assert.match(await page.locator(".annulled-record-banner span").innerText(),/ · 7\/10\/2026 · /);
     assert.deepEqual(errors,[]);
     assert.equal(serverActions.length,3,"Alta, validación y apertura deben usar Server Actions reales.");
