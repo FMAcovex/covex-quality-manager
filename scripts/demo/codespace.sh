@@ -26,11 +26,13 @@ export DEFAULT_ACTOR_NAME="Demo Codespaces"
 # Las plantillas que haya en la carpeta «plantillas» se instalan al arrancar (D-107).
 export TEMPLATE_INSTALL_DIR=plantillas
 
-echo "2/4 · Preparando la base de la demo (migraciones, catálogos, datos y usuarios ficticios)..."
+echo "2/4 · Preparando la base de la demo (migraciones, catálogos, usuarios y ejemplos ficticios)..."
 pnpm exec prisma migrate deploy >/dev/null
 pnpm exec tsx prisma/seed.ts >/dev/null
 pnpm exec tsx scripts/seed-demo.ts >/dev/null
 pnpm exec tsx scripts/demo/install-users.ts >/dev/null
+# D-109: ejemplos ficticios de cada módulo (solo la primera vez; si ya están, no hace nada).
+pnpm exec tsx scripts/demo/seed-examples.ts
 
 echo "3/4 · Compilando la aplicación (un par de minutos)..."
 pnpm exec prisma generate >/dev/null

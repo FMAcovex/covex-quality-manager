@@ -59,6 +59,19 @@ La demo usa una base de datos aparte (`covex_demo`): lo que tengas en la base ha
 
 Para cambiar de perfil, pulsa **Cerrar sesión** arriba a la derecha y elige otro.
 
+## Ejemplos que trae la demo
+
+Cada módulo trae 6 o 7 expedientes ficticios en distintos estados (D-109), por ejemplo:
+
+- **Desviaciones:** una excursión de temperatura en cámara fría en investigación, una desviación documental con CAPA propuesta, otras cerradas y una anulada.
+- **CAPA:** abiertas con acciones vencidas y próximas, una cerrada con la eficacia pendiente, cerradas eficaces y una cancelada.
+- **Cambios, reclamaciones, devoluciones, auditorías y OOS:** del borrador al cierre, con su seguimiento, hallazgos o fases.
+- **Documentación controlada:** PNT con revisiones vigentes, obsoletas y en borrador, una revisión vencida y otra a punto de vencer.
+
+Los expedientes están relacionados entre sí (pestaña **Relaciones**). Las fechas se calculan respecto al día en que se carga la demo, así que siempre hay plazos vencidos y próximos en el panel. Algunas tareas están asignadas a los perfiles Garantía de Calidad y Responsable de departamento: entra con cada uno y mira **Asignadas a mí**.
+
+Todo es inventado y lleva la marca «EJEMPLO DEMO (D-109)». Los ejemplos se cargan una sola vez. Si ya tenías la demo preparada, basta con actualizar el código (`git pull`) y volver a arrancarla.
+
 ## Uso diario
 
 - **Parar la demo**: pulsa `Ctrl + C` en la terminal, o ejecuta `docker compose -f compose.demo.yaml down`.

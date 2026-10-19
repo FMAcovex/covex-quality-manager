@@ -1005,3 +1005,19 @@ Decisión del responsable de Calidad: poder probar la aplicación con usuarios f
   - El arranque de producción exige Entra y la rechaza.
 - **Formularios y entrada.** Según el reenvío de puertos, el origen de la petición llega como la dirección del Codespace o como `http://localhost:3000`. Dentro del Codespace se admiten ambos, y solo esos, en la entrada a la demo, en el control CSRF y en las acciones de servidor (`next.config.ts`). Si la entrada a la demo falla, el terminal muestra el motivo, sin datos de sesión.
 - **Acceso.** Los puertos de un Codespace son privados por defecto: solo la cuenta de GitHub del propietario puede abrir la demo. No hay que hacerlos públicos.
+
+## D-109 — Ejemplos de la demo en todos los módulos (2026-10-19)
+
+Decisión del responsable de Calidad: la demo debe enseñar cómo funciona cada módulo con varios expedientes, no solo con el ejemplo inicial de cada uno.
+
+- **Qué carga:** `scripts/demo/seed-examples.ts` (`pnpm demo:examples`) añade expedientes ficticios en distintos estados:
+  - 7 desviaciones, 7 CAPA y 7 PNT;
+  - 6 controles de cambios, 6 reclamaciones, 6 devoluciones, 6 auditorías y 6 OOS.
+- **Estados que cubre:** borradores, abiertos, cerrados, anulados o cancelados, con relaciones entre módulos (desviación → CAPA, reclamación → devolución, OOS → desviación, etc.) y tareas asignadas a los perfiles de Garantía de Calidad y de responsable de departamento.
+- **Fechas relativas al día de la carga.** Así siempre hay plazos vencidos, próximos y revisiones de PNT a punto de vencer.
+- **Códigos en el formato real** (`D/LG-30/001/2026`, `AC/PM-10/001/2026`…), continuando la numeración que ya exista en la base de la demo.
+- **Solo en la demo.** Solo se ejecuta con `APP_ENV=demo`, `AUTH_PROVIDER=demo`, la base `covex_demo` y `ALLOW_DEMO_DATA=true`. Todos los textos son inventados y llevan la marca «EJEMPLO DEMO (D-109)».
+- **Una sola vez.** Si los ejemplos ya están, no hace nada. Los PNT cuyo código ya exista no se tocan.
+- **Cuándo se carga:** `pnpm demo:codespace` y la demo Docker lo ejecutan al preparar la base.
+- **Límites:** el historial de modificaciones de cada ejemplo solo registra el alta («Ejemplo de la demo»). Los anexos se generan solo si las plantillas están instaladas.
+
