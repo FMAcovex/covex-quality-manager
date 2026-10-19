@@ -15,6 +15,7 @@ export function QmsAdministrativeStatus({
   annulledReason,
   defaultActor,
   reservesHistoricalCode = false,
+  part,
 }: {
   qmsRecordId: string;
   isActive: boolean;
@@ -24,6 +25,8 @@ export function QmsAdministrativeStatus({
   annulledReason?: string | null;
   defaultActor: string;
   reservesHistoricalCode?: boolean;
+  /** «action»: solo el botón de anular (cabecera); «banner»: solo el aviso de anulado. Sin indicar, ambos. */
+  part?: "action" | "banner";
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -72,7 +75,7 @@ export function QmsAdministrativeStatus({
 
   return (
     <>
-      {!isActive ? (
+      {part === "action" && !isActive ? null : part === "banner" && isActive ? null : !isActive ? (
         <div className="annulled-record-banner">
           <div>
             <strong>Expediente anulado</strong>

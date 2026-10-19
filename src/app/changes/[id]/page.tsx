@@ -50,6 +50,7 @@ import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
 
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { RecordHeader } from "@/components/record-header";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { uploadChangeControlSignedPdfAction } from "@/modules/change-control/signed-document-actions";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
@@ -174,46 +175,36 @@ async function ChangeControlDetailPageAuthenticatedContent({
       versionLabelMode="FOLLOWUP" defaultActor={currentActor()}
       reviewMode={reviewMode} targets={reviewTargets} threads={reviewThreads} initialThreadId={thread}>
     <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
-      <div className="record-header">
-        <div>
-          <p className="eyebrow"><Link href={qmsListingReturnTo("/changes", returnTo)}>← Controles de Cambios</Link></p>
-          <div className="record-title-line">
-            <h1>{qmsRecordDisplayCode(record.qmsRecord, "Control de Cambio sin código")}</h1>
-            <span className="badge neutral">{classificationLabel(record.classification)}</span>
-            <span className={`badge ${record.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>
-              {executionStatusLabel(record.executionStatus)}
-            </span>
-            <span className={`badge ${record.effectivenessStatus === "ACCEPTABLE" ? "closed" : record.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : record.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>
-              Eficacia {effectivenessStatusLabel(record.effectivenessStatus)}
-            </span>
-            <span className={`badge ${record.finalStatus === "CLOSED" ? "closed" : record.finalStatus === "DRAFT" ? "neutral" : "open"}`}>
-              {finalStatusLabel(record.finalStatus)}
-            </span>
-            <span className={`badge ${functionalStatusTone(record)}`}>
-              {functionalStatusLabel(record)}
-            </span>
-            {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
-          </div>
-          <p className="muted-note">
-            Solicitud {formatDate(record.requestDate)} · {record.departmentCodeSnapshot ?? "Sin departamento"} · Dictamen {dictamenResultLabel(record.dictamenResult)}
-          </p>
-        </div>
-        <div className="record-actions">
+      <RecordHeader
+        back={{ href: qmsListingReturnTo("/changes", returnTo), label: "Controles de Cambios" }}
+        title={qmsRecordDisplayCode(record.qmsRecord, "Control de Cambio sin código")}
+        chips={<>
+          <span className="badge neutral">{classificationLabel(record.classification)}</span>
+          <span className={`badge ${record.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>{executionStatusLabel(record.executionStatus)}</span>
+          <span className={`badge ${record.effectivenessStatus === "ACCEPTABLE" ? "closed" : record.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : record.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>Eficacia {effectivenessStatusLabel(record.effectivenessStatus)}</span>
+          <span className={`badge ${record.finalStatus === "CLOSED" ? "closed" : record.finalStatus === "DRAFT" ? "neutral" : "open"}`}>{finalStatusLabel(record.finalStatus)}</span>
+          <span className={`badge ${functionalStatusTone(record)}`}>{functionalStatusLabel(record)}</span>
+          {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
+        </>}
+        subtitle={<>Solicitud {formatDate(record.requestDate)} · {record.departmentCodeSnapshot ?? "Sin departamento"} · Dictamen {dictamenResultLabel(record.dictamenResult)}</>}
+        annul={<QmsAdministrativeStatus part="action"
+        qmsRecordId={record.qmsRecord.id}
+        isActive={record.qmsRecord.isActive}
+        code={qmsRecordDisplayCode(record.qmsRecord)}
+        annulledAt={record.qmsRecord.annulledAt?.toISOString() ?? null}
+        annulledByText={record.qmsRecord.annulledByText}
+        annulledReason={record.qmsRecord.annulledReason}
+        defaultActor={currentActor()}
+      />}
+        actions={<>
           <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/changes", returnTo)} /></PermissionGate>
-          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/changes/${id}/edit?tab=${activeTab}`, "/changes", returnTo)}>Editar Solicitud / Dictamen</Link></PermissionGate>
           {record.dictamenResult === "APPROVED" && record.finalStatus === "OPEN" ? (
             <PermissionGate permission="FOLLOWUP"><Link className="button" href={qmsWithReturnTo(`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`, "/changes", returnTo)}>+ Seguimiento</Link></PermissionGate>
           ) : null}
-        </div>
-      </div>
-
-      {record.finalStatus === "DRAFT" ? (
-        <div className="analytics-note">
-          <strong>Borrador:</strong> este expediente todavía no es un Control de Cambio operativo. Completa los campos obligatorios y cambia el estado a Abierto para iniciar su ciclo formal.
-        </div>
-      ) : null}
-
-      <QmsAdministrativeStatus
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/changes/${id}/edit?tab=${activeTab}`, "/changes", returnTo)}>Editar Solicitud / Dictamen</Link></PermissionGate>
+        </>}
+      />
+      <QmsAdministrativeStatus part="banner"
         qmsRecordId={record.qmsRecord.id}
         isActive={record.qmsRecord.isActive}
         code={qmsRecordDisplayCode(record.qmsRecord)}
@@ -222,6 +213,13 @@ async function ChangeControlDetailPageAuthenticatedContent({
         annulledReason={record.qmsRecord.annulledReason}
         defaultActor={currentActor()}
       />
+
+      {record.finalStatus === "DRAFT" ? (
+        <div className="analytics-note">
+          <strong>Borrador:</strong> este expediente todavía no es un Control de Cambio operativo. Completa los campos obligatorios y cambia el estado a Abierto para iniciar su ciclo formal.
+        </div>
+      ) : null}
+
 
       <nav className="record-tabs">
         {changeControlDetailTabs.map(([key, label]) => (

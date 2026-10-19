@@ -215,7 +215,11 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .record-header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 18px; }
 .record-title-line { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .record-title-line h1 { margin: 0; font-size: 28px; }
-.record-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.record-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+/* D-111 (V1): «Anular» separado del resto de acciones; sin permiso no deja hueco. */
+.record-actions-annul { display: inline-flex; }
+.record-actions-annul:not(:empty) { padding-right: 12px; margin-right: 4px; border-right: 1px solid var(--border); }
+.record-actions-annul .button.danger { background: transparent; }
 .record-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 .record-tabs a { padding: 10px 13px; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; font-size: 13px; }
 .record-tabs a.active { color: var(--blue-dark); border-bottom-color: var(--blue); font-weight: 750; }
@@ -1706,7 +1710,6 @@ button[disabled] {
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-.record-header + .button.danger,
 .record-header + .annulled-record-banner {
   margin-bottom: 16px;
 }

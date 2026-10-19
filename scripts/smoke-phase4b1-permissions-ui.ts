@@ -49,6 +49,8 @@ async function main() {
     // «Guardar vista» guarda una preferencia personal de consulta, no un expediente (D-084).
     assert.equal(await page.getByRole("button", { name: /Anular expediente|Reactivar expediente|Cerrar auditoría|Guardar(?! vista)|Registrar documento|Añadir comentario|Preparar correo/ }).count(), 0);
     assert.equal(await page.locator('a[href="/settings"], a[href="/settings/users"]').count(), 0);
+    // D-111 (V1): sin permiso de anular, la cabecera no deja separador vacío.
+    assert.equal(await page.locator(".record-actions-annul:not(:empty)").count(), 0);
   }
   try {
     for (let i = 0; i < modules.length; i++) {

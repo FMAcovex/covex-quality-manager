@@ -32,6 +32,8 @@ import { uploadDeviationSignedPdfAction } from "@/modules/deviations/signed-docu
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { RecordHeader } from "@/components/record-header";
+import { draftRecordTitle } from "@/lib/qms/record-title";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import {
   ReviewDrawer,
@@ -137,6 +139,7 @@ async function DeviationDetailPageAuthenticatedContent({
   const similarDeviations = await getSimilarDeviations(deviation);
 
   const code = qmsRecordDisplayCode(deviation.qmsRecord, "Sin codificación");
+  const hasCode = Boolean(deviation.qmsRecord.businessCode ?? deviation.qmsRecord.annulledBusinessCode);
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
   const currentSignedDocument = currentVersion?.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
   const reviewMode = review === "1";
@@ -281,28 +284,34 @@ async function DeviationDetailPageAuthenticatedContent({
       initialThreadId={thread}
     >
     <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
-      <div className="record-header">
-        <div>
-          <p className="eyebrow"><Link href={qmsListingReturnTo("/deviations", returnTo)}>← Desviaciones</Link></p>
-          <div className="record-title-line">
-            <h1>{code}</h1>
-            <span className={`badge ${deviation.status === "DRAFT" ? "neutral" : deviation.status === "OPEN" ? "open" : "closed"}`}>{deviation.status === "DRAFT" ? "Borrador" : deviation.status === "OPEN" ? "Abierta" : "Cerrada"}</span>
-            {deviation.classification ? <span className={`badge ${deviation.classification.toLowerCase()}`}>{classificationLabel(deviation.classification)}</span> : null}
-            <span className="badge neutral">{deviation.departmentCodeSnapshot ?? deviation.department?.code ?? "Sin departamento"}</span>
-            {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
-          </div>
-          <p className="muted-note">Apertura {formatDate(deviation.issueDate)} · Cumplimentado por {text(deviation.createdByText)}</p>
-        </div>
-        <div className="record-actions">
+      <RecordHeader
+        back={{ href: qmsListingReturnTo("/deviations", returnTo), label: "Desviaciones" }}
+        title={hasCode ? code : draftRecordTitle(deviation.materialProcessAffected || deviation.whatHappened, code)}
+        chips={<>
+          {hasCode ? <span className={`badge ${deviation.status === "DRAFT" ? "neutral" : deviation.status === "OPEN" ? "open" : "closed"}`}>{deviation.status === "DRAFT" ? "Borrador" : deviation.status === "OPEN" ? "Abierta" : "Cerrada"}</span> : <span className="badge neutral">Borrador · sin código</span>}
+          {deviation.classification ? <span className={`badge ${deviation.classification.toLowerCase()}`}>{classificationLabel(deviation.classification)}</span> : null}
+          <span className="badge neutral">{deviation.departmentCodeSnapshot ?? deviation.department?.code ?? "Sin departamento"}</span>
+          {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
+        </>}
+        subtitle={<>Apertura {formatDate(deviation.issueDate)} · Cumplimentado por {text(deviation.createdByText)}</>}
+        annul={<QmsAdministrativeStatus part="action"
+        qmsRecordId={deviation.qmsRecord.id}
+        isActive={deviation.qmsRecord.isActive}
+        code={qmsRecordDisplayCode(deviation.qmsRecord)}
+        annulledAt={deviation.qmsRecord.annulledAt?.toISOString() ?? null}
+        annulledByText={deviation.qmsRecord.annulledByText}
+        annulledReason={deviation.qmsRecord.annulledReason}
+        defaultActor={currentActor()}
+      />}
+        actions={<>
           <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/deviations", returnTo)} /></PermissionGate>
-          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${activeTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link></PermissionGate>
           {deviation.status === "DRAFT"
             ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
             : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate>}
-        </div>
-      </div>
-
-      <QmsAdministrativeStatus
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${activeTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link></PermissionGate>
+        </>}
+      />
+      <QmsAdministrativeStatus part="banner"
         qmsRecordId={deviation.qmsRecord.id}
         isActive={deviation.qmsRecord.isActive}
         code={qmsRecordDisplayCode(deviation.qmsRecord)}
@@ -311,6 +320,7 @@ async function DeviationDetailPageAuthenticatedContent({
         annulledReason={deviation.qmsRecord.annulledReason}
         defaultActor={currentActor()}
       />
+
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (

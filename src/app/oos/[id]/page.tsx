@@ -7,6 +7,7 @@ import { CsrfField } from "@/components/csrf";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { ActorField, PermissionGate } from "@/components/permissions";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { RecordHeader } from "@/components/record-header";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
 import { uploadOosEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
@@ -119,28 +120,32 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
 
   return <ReviewWorkspaceProvider qmsRecordId={record.qmsRecord.id} module="OOS" basePath={basePath} currentVersionLabel="" showVersionContext={false} recordVersionAssociation="NONE" defaultActor={currentActor()} reviewMode={reviewMode} targets={Object.values(target)} threads={reviewThreads} initialThreadId={thread}>
   <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
-    <div className="record-header">
-      <div>
-        <p className="eyebrow"><Link href={qmsListingReturnTo("/oos", returnTo)}>← OOS</Link></p>
-        <div className="record-title-line">
-          <h1>{qmsRecordDisplayCode(record.qmsRecord)}</h1>
-          <span className={`badge ${statusBadge}`}>{oosStatusLabels[record.status]}</span>
-          {record.status !== "DRAFT" ? <span className="badge neutral">Fase {phase}</span> : null}
-          {record.investigationResult ? <span className="badge neutral">{oosInvestigationResultLabels[record.investigationResult]}</span> : null}
-        </div>
-        <p className="muted-note">{record.area ? oosAreaLabels[record.area] : "Área pendiente"} · {txt(record.materialName)} · lote {txt(record.lotNumber)}</p>
-      </div>
-      <div className="record-actions">
+    <RecordHeader
+      back={{ href: qmsListingReturnTo("/oos", returnTo), label: "OOS" }}
+      title={qmsRecordDisplayCode(record.qmsRecord)}
+      chips={<>
+        <span className={`badge ${statusBadge}`}>{oosStatusLabels[record.status]}</span>
+        {record.status !== "DRAFT" ? <span className="badge neutral">Fase {phase}</span> : null}
+        {record.investigationResult ? <span className="badge neutral">{oosInvestigationResultLabels[record.investigationResult]}</span> : null}
+      </>}
+      subtitle={<>{record.area ? oosAreaLabels[record.area] : "Área pendiente"} · {txt(record.materialName)} · lote {txt(record.lotNumber)}</>}
+      annul={<QmsAdministrativeStatus part="action"
+      qmsRecordId={record.qmsRecord.id}
+      isActive={record.qmsRecord.isActive}
+      code={qmsRecordDisplayCode(record.qmsRecord)}
+      annulledAt={record.qmsRecord.annulledAt?.toISOString() ?? null}
+      annulledByText={record.qmsRecord.annulledByText}
+      annulledReason={record.qmsRecord.annulledReason}
+      defaultActor={currentActor()}
+    />}
+      actions={<>
         <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/oos", returnTo)} /></PermissionGate>
         {record.qmsRecord.isActive && record.status !== "DRAFT" ? <PermissionGate permission="DOWNLOAD">{annexButton(annexIIIReady, "iii", "Anexo III")}</PermissionGate> : null}
         {record.qmsRecord.isActive && record.status !== "DRAFT" && record.phaseIDisposition === "FULL_SCALE" ? <PermissionGate permission="DOWNLOAD">{annexButton(annexIVReady, "iv", "Anexo IV")}</PermissionGate> : null}
         {record.qmsRecord.isActive ? <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/oos/${id}/edit?tab=${tab}`, "/oos", returnTo)}>Editar</Link></PermissionGate> : null}
-      </div>
-    </div>
-
-    {record.status === "DRAFT" ? <div className="analytics-note"><strong>Borrador:</strong> este OOS todavía no tiene código. Completa los datos iniciales y cambia el estado a Abierto para asignarlo.</div> : null}
-
-    <QmsAdministrativeStatus
+      </>}
+    />
+    <QmsAdministrativeStatus part="banner"
       qmsRecordId={record.qmsRecord.id}
       isActive={record.qmsRecord.isActive}
       code={qmsRecordDisplayCode(record.qmsRecord)}
@@ -149,6 +154,9 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
       annulledReason={record.qmsRecord.annulledReason}
       defaultActor={currentActor()}
     />
+
+    {record.status === "DRAFT" ? <div className="analytics-note"><strong>Borrador:</strong> este OOS todavía no tiene código. Completa los datos iniciales y cambia el estado a Abierto para asignarlo.</div> : null}
+
 
     <nav className="record-tabs">
       {tabs.map(([key, label]) => <Link key={key} className={tab === key ? "active" : ""} href={qmsWithReturnTo(reviewTabHref(basePath, key, reviewMode), "/oos", returnTo)}>{key === "review" ? `${label} (${reviewActiveCount})` : label}</Link>)}
