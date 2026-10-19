@@ -491,6 +491,7 @@ model FormFieldConfig {
 
 model TemplateVersion {
   annualProgrammes   AuditAnnualProgrammeVersion[]
+  capaPlanVersions   AuditCapaPlanVersion[]
   id                 String                        @id @default(uuid())
   module             QmsRecordType
   documentType       DocumentType
@@ -1584,71 +1585,72 @@ enum AuditParticipantRole {
 }
 
 model Audit {
-  reportDate                   DateTime?           @db.Date
-  conclusion                   String?             @db.Text
-  programme                    String?             @db.Text
-  previousAuditBackground      String?             @db.Text
+  reportDate                   DateTime?              @db.Date
+  conclusion                   String?                @db.Text
+  programme                    String?                @db.Text
+  previousAuditBackground      String?                @db.Text
   supplierType                 String?
-  auditedContact               String?             @db.Text
-  planIntroduction             String?             @db.Text
-  activityDuration             String?             @db.Text
-  reportDistribution           String?             @db.Text
+  auditedContact               String?                @db.Text
+  planIntroduction             String?                @db.Text
+  activityDuration             String?                @db.Text
+  reportDistribution           String?                @db.Text
   preparedBy                   String?
   preparedPosition             String?
   reviewedBy                   String?
   reviewedPosition             String?
   receivedBy                   String?
   receivedPosition             String?
-  capaPlanDate                 DateTime?           @db.Date
-  capaPlanEstablishedAt        DateTime?           @db.Date
-  reportSentAt                 DateTime?           @db.Date
-  supplierResponseReceivedAt   DateTime?           @db.Date
-  responseRequired             Boolean             @default(false)
-  responseSentAt               DateTime?           @db.Date
-  closureEvidence              String?             @db.Text
-  supplierAssessment           String?             @db.Text
-  supplierException            Boolean             @default(false)
-  supplierExceptionReason      String?             @db.Text
+  capaPlanDate                 DateTime?              @db.Date
+  capaPlanEstablishedAt        DateTime?              @db.Date
+  reportSentAt                 DateTime?              @db.Date
+  supplierResponseReceivedAt   DateTime?              @db.Date
+  responseRequired             Boolean                @default(false)
+  responseSentAt               DateTime?              @db.Date
+  closureEvidence              String?                @db.Text
+  supplierAssessment           String?                @db.Text
+  supplierException            Boolean                @default(false)
+  supplierExceptionReason      String?                @db.Text
   supplierExceptionBy          String?
-  supplierExceptionAt          DateTime?           @db.Date
-  verifyAtNextAudit            Boolean             @default(false)
-  id                           String              @id @default(uuid())
-  qmsRecordId                  String              @unique
-  qmsRecord                    QmsRecord           @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
+  supplierExceptionAt          DateTime?              @db.Date
+  verifyAtNextAudit            Boolean                @default(false)
+  id                           String                 @id @default(uuid())
+  qmsRecordId                  String                 @unique
+  qmsRecord                    QmsRecord              @relation(fields: [qmsRecordId], references: [id], onDelete: Restrict)
   auditType                    AuditType?
   scenario                     AuditScenario?
-  status                       AuditStatus         @default(DRAFT)
-  planningStatus               AuditPlanningStatus @default(UNCLASSIFIED)
-  outsidePlanReason            String?             @db.Text
-  planEntryId                  String?             @unique
-  planEntry                    AuditPlanEntry?     @relation(fields: [planEntryId], references: [id], onDelete: Restrict)
-  title                        String?             @db.Text
-  scope                        String?             @db.Text
-  referenceText                String?             @db.Text
+  status                       AuditStatus            @default(DRAFT)
+  planningStatus               AuditPlanningStatus    @default(UNCLASSIFIED)
+  outsidePlanReason            String?                @db.Text
+  planEntryId                  String?                @unique
+  planEntry                    AuditPlanEntry?        @relation(fields: [planEntryId], references: [id], onDelete: Restrict)
+  title                        String?                @db.Text
+  scope                        String?                @db.Text
+  referenceText                String?                @db.Text
   externalReference            String?
   auditedEntityName            String?
-  auditedEntityAddress         String?             @db.Text
+  auditedEntityAddress         String?                @db.Text
   auditingEntityName           String?
   entityCode                   String?
   codingDepartmentId           String?
-  codingDepartment             Department?         @relation("AuditCodingDepartment", fields: [codingDepartmentId], references: [id], onDelete: Restrict)
+  codingDepartment             Department?            @relation("AuditCodingDepartment", fields: [codingDepartmentId], references: [id], onDelete: Restrict)
   codingDepartmentCodeSnapshot String?
   codingDepartmentNameSnapshot String?
-  plannedDate                  DateTime?           @db.Date
-  performedDate                DateTime?           @db.Date
-  openedAt                     DateTime?           @db.Date
-  closedAt                     DateTime?           @db.Date
+  plannedDate                  DateTime?              @db.Date
+  performedDate                DateTime?              @db.Date
+  openedAt                     DateTime?              @db.Date
+  closedAt                     DateTime?              @db.Date
   modality                     AuditModality?
-  internalObservations         String?             @db.Text
-  dataQualityStatus            DataQualityStatus   @default(INCOMPLETE)
+  internalObservations         String?                @db.Text
+  dataQualityStatus            DataQualityStatus      @default(INCOMPLETE)
   createdByText                String?
   updatedByText                String?
-  createdAt                    DateTime            @default(now())
-  updatedAt                    DateTime            @updatedAt
+  createdAt                    DateTime               @default(now())
+  updatedAt                    DateTime               @updatedAt
   departments                  AuditDepartment[]
   participants                 AuditParticipant[]
   findings                     AuditFinding[]
   followups                    AuditFollowup[]
+  capaPlanVersions             AuditCapaPlanVersion[]
 
   @@index([status, plannedDate])
   @@index([auditType, plannedDate])
@@ -2170,6 +2172,43 @@ model AuditAnnualProgrammeVersion {
   @@index([planId, generatedAt])
 }
 
+/// D-110 (R5C): versiones propias del CAPA plan (00, 01…), inmutables.
+model AuditCapaPlanVersion {
+  id                  String                   @id @default(uuid())
+  auditId             String
+  audit               Audit                    @relation(fields: [auditId], references: [id], onDelete: Restrict)
+  sequenceNumber      Int
+  kind                AuditCapaPlanVersionKind
+  followupDate        DateTime?                @db.Date
+  observations        String?                  @db.Text
+  nextReviewDate      DateTime?                @db.Date
+  requestId           String
+  requestHash         String
+  contentFingerprint  String
+  snapshot            Json
+  templateVersionId   String
+  templateVersion     TemplateVersion          @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  templateChecksum    String
+  fileName            String
+  mimeType            String
+  fileData            Bytes
+  fileSize            Int
+  checksum            String
+  generatedAt         DateTime                 @default(now())
+  generatedBy         String
+  authenticatedUserId String?                  @db.Uuid
+  authenticatedUser   AuthUser?                @relation(fields: [authenticatedUserId], references: [id], onDelete: Restrict)
+
+  @@unique([auditId, sequenceNumber])
+  @@unique([auditId, requestId])
+  @@index([auditId, generatedAt])
+}
+
+enum AuditCapaPlanVersionKind {
+  ESTABLISHED
+  FOLLOWUP
+}
+
 enum AccessModule {
   DEVIATION
   CAPA
@@ -2259,6 +2298,7 @@ model AuthUser {
   authoredControlledRevisionDecision      ControlledRevisionDecision[]
   authoredControlledDocumentImportEvent   ControlledDocumentImportEvent[]
   authoredAuditAnnualProgrammeVersion     AuditAnnualProgrammeVersion[]
+  authoredAuditCapaPlanVersion            AuditCapaPlanVersion[]
   triggeredAuditTechnicalEvents           AuditTechnicalEvent[]
 
   @@unique([tenantId, objectId])

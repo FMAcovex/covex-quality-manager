@@ -7,7 +7,7 @@ import { identityContext } from "../src/lib/auth/context";
 import { fixtureUsers } from "./auth-fixtures/constants";
 import { auditApplicationFixture, auditedSqlFixture } from "./audit-fixtures/database";
 import { assertAuditProtection } from "../src/lib/audit/protection";
-import contract from "../ops/backup/audit-contract-responsible-users.json";
+import contract from "../ops/backup/audit-contract-capa-plan.json";
 import type { BusinessAuditDescriptor, BusinessAuditCommand } from "../src/lib/audit/business-service";
 
 async function main() {
