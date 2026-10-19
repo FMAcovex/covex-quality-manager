@@ -136,6 +136,10 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Demo en GitHub Codespaces (2026-10-19, D-108):**
+- `pnpm demo:codespace` prepara en el Codespace una base de demo aparte (`covex_demo`) con datos y usuarios ficticios, compila y arranca la aplicación con la página de perfiles. Sin Docker Desktop ni permisos de IT; la base habitual del Codespace no se toca.
+- Comprobado imitando el reenvío de puertos de Codespaces (HTTPS con la dirección del Codespace hacia `localhost:3000`): perfiles, panel, buscador, alta y subida de plantillas desde el navegador.
+
 **Plantillas instaladas solas al arrancar (2026-10-18, D-107):**
 - La aplicación instala al arrancar las plantillas que haya en la carpeta del servidor (`TEMPLATE_INSTALL_DIR`; con Docker, `/app/templates`, que viene de `COVEX_ASSETS_DIR`). Mismas reglas que la terminal y el botón; repetir no cambia nada y no bloquea el arranque.
 - Comprobado con la compilación de producción y los archivos reales: en una base nueva, el primer arranque instala 23 plantillas (PMAI incluido) y el segundo no escribe nada.

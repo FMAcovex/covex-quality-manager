@@ -988,3 +988,20 @@ Decisión del responsable de Calidad: en la aplicación instalada, las plantilla
 - **No bloquea la aplicación.** La instalación corre en segundo plano después de arrancar. Si la carpeta no existe, está vacía o algo falla, la aplicación funciona igual y las plantillas se pueden subir desde Configuración.
 - **Con el audit trail obligatorio activado no se instala al arrancar**, porque cada cambio necesita un usuario autenticado: se usa el botón «Instalar plantillas».
 - **Las plantillas siguen fuera de Git**: el repositorio es público. En la carpeta `plantillas/` del repositorio se ignora todo salvo su `README.md`. En desarrollo o Codespaces, `.env.example` propone `TEMPLATE_INSTALL_DIR="plantillas"`.
+
+## D-108 — Demo con perfiles ficticios en GitHub Codespaces (2026-10-19)
+
+Decisión del responsable de Calidad: poder probar la aplicación con usuarios ficticios sin instalar nada (ni Docker), desde el Codespace del repositorio.
+
+- **Un comando:** `pnpm demo:codespace` (`scripts/demo/codespace.sh`):
+  - arranca el PostgreSQL de `compose.yaml` y crea, si no existe, una base aparte `covex_demo`;
+  - aplica las migraciones, los catálogos, los datos ficticios y los usuarios de la demo;
+  - compila y arranca la aplicación en el puerto 3000 con la página de perfiles (Garantía de Calidad, responsable de departamento, consulta y administrador técnico).
+- **La base habitual del Codespace no se toca.** La demo usa siempre `covex_demo` y datos ficticios.
+- **Plantillas:** se instalan solas al arrancar desde la carpeta `plantillas` (D-107) o con «Instalar plantillas».
+- **Solo dentro de un Codespace.** La demo local (D-087) admitía únicamente `http://localhost`. Ahora acepta además la dirección exacta del propio Codespace, `https://<nombre>-<puerto>.<dominio>`, que GitHub da en `CODESPACES`, `CODESPACE_NAME` y `GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN`.
+  - Sigue exigiendo `APP_ENV=demo`, `AUTH_PROVIDER=demo` y la base `covex_demo`.
+  - Fuera de un Codespace no existen esas variables.
+  - El arranque de producción exige Entra y la rechaza.
+- **Formularios.** Las acciones de servidor admiten como origen solo la dirección del propio Codespace (`next.config.ts`), porque el navegador la envía mientras la aplicación recibe la petición en `localhost`.
+- **Acceso.** Los puertos de un Codespace son privados por defecto: solo la cuenta de GitHub del propietario puede abrir la demo. No hay que hacerlos públicos.
