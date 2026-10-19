@@ -90,6 +90,9 @@ describe("4B1 protección directa de entradas", () => {
     await expect(call({ "a.x1.status": "IN_PROGRESS", "f.f1.treatmentStatus": "OPEN" })).resolves.toEqual({ error: null });
     await expect(call({ "a.x1.status": "CLOSED" })).rejects.toMatchObject({ status: 403 });
     await expect(call({ "f.f1.treatmentStatus": "CLOSED" })).rejects.toMatchObject({ status: 403 });
+    // Un estado con espacios no puede esquivar la comprobación (el servidor normaliza los valores).
+    await expect(call({ "a.x1.status": " CLOSED" })).rejects.toMatchObject({ status: 403 });
+    await expect(call({ "f.f1.treatmentStatus": "CLOSED\n" })).rejects.toMatchObject({ status: 403 });
     expect(run).toHaveBeenCalledTimes(1);
   });
   it("cerrar una reclamación exige CLOSE aunque el estado llegue en saveStatus", async () => {

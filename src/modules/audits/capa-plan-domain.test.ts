@@ -52,6 +52,16 @@ describe("CAPA plan con versiones (D-110, R5C1)", () => {
     expect(capaPlanRowProblem({ status: "OPEN", closedAt: "", evidence: "", evidenceReference: "", verificationComment: "" })).toBeNull();
     expect(capaPlanRowProblem({ status: "CLOSED", closedAt: "2026-10-20", evidence: "", evidenceReference: "REG", verificationComment: "" })).toBeNull();
   });
+  it("no normaliza el estado (un valor no canónico es inválido) y unifica los saltos de línea", () => {
+    const parsed = parseCapaPlanFollowupForm({ "a.x1.status": " CLOSED", "a.x1.evidence": "línea 1\r\nlínea 2" });
+    expect(parsed.actions[0].status).toBe(" CLOSED");
+    expect(capaPlanRowProblem({ status: parsed.actions[0].status, closedAt: "2026-10-20", evidence: "x", evidenceReference: "", verificationComment: "" })).toMatch(/Estado no válido/);
+    expect(parsed.actions[0].evidence).toBe("línea 1\nlínea 2");
+  });
+  it("cambiar una evidencia ya registrada es crítico, como en el audit trail B2", () => {
+    expect(isCriticalRowChange({ status: "OPEN", closedAt: null, evidence: "Registro A" }, { status: "OPEN", closedAt: null, evidence: "Registro B" })).toBe(true);
+    expect(isCriticalRowChange({ status: "OPEN", closedAt: null, evidence: null }, { status: "OPEN", closedAt: null, evidence: "Primera evidencia" })).toBe(false);
+  });
   it("considera crítico cerrar, dar por no aplicable, reabrir o cambiar una fecha de cierre ya registrada", () => {
     expect(isCriticalRowChange({ status: "OPEN", closedAt: null }, { status: "CLOSED", closedAt: "2026-10-20" })).toBe(true);
     expect(isCriticalRowChange({ status: "CLOSED", closedAt: "2026-10-01" }, { status: "OPEN", closedAt: null })).toBe(true);

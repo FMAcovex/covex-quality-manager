@@ -76,7 +76,7 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
   // R5C2: el seguimiento del CAPA plan (FOLLOWUP) cierra filas con nombres a.<id>.status / f.<id>.treatmentStatus.
   // Cerrar exige CLOSE; con base de datos solo cuentan las filas que aún no estaban cerradas.
   if (name === "recordCapaPlanFollowupAction" && form) {
-    const closing = [...form.entries()].filter(([key, value]) => value === "CLOSED" && /^[af]\.[^.]+\.(status|treatmentStatus)$/.test(key)).map(([key]) => ({ kind: key[0], id: key.split(".")[1] }));
+    const closing = [...form.entries()].filter(([key, value]) => String(value).trim() === "CLOSED" && /^[af]\.[^.]+\.(status|treatmentStatus)$/.test(key)).map(([key]) => ({ kind: key[0], id: key.split(".")[1] }));
     const ids = (kind: string) => closing.filter(row => row.kind === kind).map(row => row.id).filter(id => /^[0-9a-f-]{36}$/i.test(id));
     const newlyClosed = unit ? closing.length > 0 : closing.length > 0 && (
       (await prisma.auditFindingAction.count({ where: { id: { in: ids("a") }, status: { not: "CLOSED" } } })) +

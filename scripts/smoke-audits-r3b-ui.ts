@@ -72,7 +72,7 @@ async function main() {
     // R5C2: los seguimientos AuditFollowup quedan como «Seguimientos anteriores», solo lectura.
     await prisma.auditFollowup.createMany({data:[{auditId:audit.id,followupDate:new Date("2026-10-07T00:00:00.000Z"),completedByText:"Responsable UI",description:"Seguimiento general UI",nextReviewDate:new Date("2026-11-10T00:00:00.000Z"),createdByText:"Smoke UI"},{auditId:audit.id,findingId:obs.id,followupDate:new Date("2026-10-08T00:00:00.000Z"),completedByText:"Responsable OBS UI",description:"Seguimiento OBS UI",createdByText:"Smoke UI"}]});
     await view(page,`/audits/${audit.id}?tab=followup`);await page.locator("p.prose-value").filter({hasText:/^Seguimiento general UI$/}).waitFor();await page.locator("p.prose-value").filter({hasText:/^Seguimiento OBS UI$/}).waitFor();
-    assert.equal(await page.locator("summary").filter({hasText:"Añadir seguimiento"}).count(),0);assert.equal(await page.getByText("Editar seguimiento",{exact:true}).count(),0);
+    assert.equal(await page.locator("summary").filter({hasText:"Añadir seguimiento"}).count(),0);await view(page,`/audits/${audit.id}?tab=findings`);assert.equal(await page.locator("summary").filter({hasText:"Añadir seguimiento de"}).count(),0,"Hallazgos no crea seguimientos antiguos (D-110).");assert.equal(await page.getByText("Editar seguimiento",{exact:true}).count(),0);
     for(const width of [1440,768,390]) {
       await page.setViewportSize({width,height:1000});
       await view(page,`/audits/${audit.id}?tab=information`);

@@ -43,7 +43,9 @@ export type CapaPlanActionRow = { id: string } & Record<typeof actionFields[numb
 export type CapaPlanFindingRow = { id: string } & Record<typeof findingFields[number], string>;
 function rows<K extends string>(fd: Record<string, string>, prefix: string, fields: readonly K[]) {
   const ids = [...new Set(Object.keys(fd).filter(key => key.startsWith(prefix)).map(key => key.slice(prefix.length).split(".")[0]))];
-  return ids.map(id => ({ id, ...Object.fromEntries(fields.map(field => [field, (fd[`${prefix}${id}.${field}`] ?? "").trim()])) }) as { id: string } & Record<K, string>);
+  // El estado se conserva tal cual (un valor no canónico es inválido); los textos se recortan y usan saltos \n.
+  const clean = (field: string, value: string) => /status$/i.test(field) ? value : value.replace(/\r\n?/g, "\n").trim();
+  return ids.map(id => ({ id, ...Object.fromEntries(fields.map(field => [field, clean(field, fd[`${prefix}${id}.${field}`] ?? "")])) }) as { id: string } & Record<K, string>);
 }
 export function parseCapaPlanFollowupForm(fd: Record<string, string>) {
   const text = (key: string) => (fd[key] ?? "").trim();
@@ -70,7 +72,9 @@ export function capaPlanRowProblem(row: { status: string; closedAt: string; evid
   return null;
 }
 /** Cambios que el audit trail trata como decisión crítica y exigen motivo. */
-export function isCriticalRowChange(before: { status: string; closedAt: string | null }, after: { status: string; closedAt: string | null }) {
+export function isCriticalRowChange(before: { status: string; closedAt: string | null; evidence?: string | null }, after: { status: string; closedAt: string | null; evidence?: string | null }) {
   if (before.status !== after.status && (terminal(before.status) || terminal(after.status))) return true;
-  return Boolean(before.closedAt) && before.closedAt !== after.closedAt;
+  if (Boolean(before.closedAt) && before.closedAt !== after.closedAt) return true;
+  // La evidencia es campo crítico en la captura B2: corregir una ya registrada exige motivo.
+  return Boolean(before.evidence) && (before.evidence ?? null) !== (after.evidence ?? null);
 }

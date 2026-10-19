@@ -5,6 +5,8 @@ import path from "node:path";
 import { Prisma, type AuditActionStatus, type AuditCapaPlanVersionKind } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { canonicalAuditJson } from "@/lib/audit/canonical-json";
+import { currentIdentity } from "@/lib/auth/context";
+import { assertPermission } from "@/lib/auth/policy";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { AuditValidationError } from "./service";
 import { auditReportInclude, auditReportEvent, lockReportAudit, snapshotAudit } from "./report-service";
@@ -113,10 +115,13 @@ export async function recordCapaPlanFollowup(auditId: string, raw: Record<string
       if (changeKeys(current, data).length) updates.push({ kind: "finding", id: row.id, reference: before.reference, before: current, data });
     }
     if (!updates.length && !v.observations.trim()) throw new Error("No hay cambios ni observaciones que registrar.");
-    const typed = (u: Update) => ({ status: String(u.before.status), closedAt: (u.before.closedAt as string | null) ?? null });
-    const after = (u: Update) => ({ status: String(u.data.status), closedAt: (u.data.closedAt as string | null) ?? null });
-    if (updates.some(u => isCriticalRowChange(typed(u), after(u))) && !v.changeReason.trim()) throw new Error("Indica el motivo: el seguimiento cierra, da por no aplicable, reabre o cambia una fecha de cierre.");
-    // Cerrar exige CLOSE: lo comprueba la protección de entradas (action-guard) antes de llegar aquí.
+    const typed = (u: Update) => ({ status: String(u.before.status), closedAt: (u.before.closedAt as string | null) ?? null, evidence: (u.before.evidence as string | null) ?? null });
+    const after = (u: Update) => ({ status: String(u.data.status), closedAt: (u.data.closedAt as string | null) ?? null, evidence: (u.data.evidence as string | null) ?? null });
+    if (updates.some(u => isCriticalRowChange(typed(u), after(u))) && !v.changeReason.trim()) throw new Error("Indica el motivo: el seguimiento cierra, da por no aplicable, reabre, cambia una fecha de cierre o corrige una evidencia ya registrada.");
+    // Cerrar exige CLOSE. La protección de entradas lo adelanta; aquí se decide sobre las filas
+    // que de verdad pasan a cerrada, dentro de la transacción y con los valores normalizados.
+    const context = currentIdentity();
+    if (context && !context.unitTest && updates.some(u => u.data.status === "CLOSED" && u.before.status !== "CLOSED")) assertPermission(context.principal, "AUDIT", "CLOSE", context.resource);
     const reason = v.changeReason.trim() || v.observations.trim() || "Seguimiento del CAPA plan";
     const day = (s: unknown) => typeof s === "string" && s ? new Date(`${s}T00:00:00.000Z`) : null;
     for (const u of updates) {
