@@ -6,6 +6,8 @@ pnpm -s db:deploy
 pnpm -s db:seed
 pnpm -s demo:seed
 pnpm -s demo:users
+# D-109: ejemplos ficticios de cada módulo (solo la primera vez).
+npx tsx scripts/demo/seed-examples.ts
 # D-099: un único instalador reconoce por su SHA-256 los ZIP, el PNT de OOS y las plantillas
 # de Auditorías que haya en /plantillas; ignora el resto y nunca sustituye una versión instalada.
 if [ -d /plantillas ] && [ -n "$(ls -A /plantillas 2>/dev/null)" ]; then
