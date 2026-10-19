@@ -2,7 +2,7 @@
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { saveAuditReport, issueAuditReport, closeAudit } from "./report-service";
 import { registerAuditAttachment, storeAuditSignedPdf } from "./documents/service";
-export type AuditReportActionState = { error: string | null; savedHref?: string; values?: Record<string,string>; revision?: number };
+export type AuditReportActionState = { error: string | null; savedHref?: string; values?: Record<string,string>; revision?: number; reload?: boolean };
 const values = (fd: FormData) => Object.fromEntries([...fd.entries()].filter((entry): entry is [string,string] => typeof entry[1] === 'string'));
 async function run(id: string, tab: string, previous: AuditReportActionState, fd: FormData, operation: () => Promise<unknown>): Promise<AuditReportActionState> {
   try { await operation();return {error:null,savedHref:`/audits/${id}?tab=${tab}`}; }

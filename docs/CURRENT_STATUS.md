@@ -136,6 +136,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Auditorías: ajustes del CAPA plan tras R5 (2026-10-19, D-110):**
+- **Seguimiento:**
+  - solo se comprueban las filas que cambian;
+  - la fecha objetivo se valida en el servidor;
+  - si otra persona cambió una fila, el error ofrece «Recargar con los datos actuales».
+- **Fechas propuestas:** las de hoy en Madrid, no en UTC.
+- **Demo:** `pnpm demo:capa-plans` establece la 00 de las auditorías abiertas de ejemplo y un seguimiento 01 en la interna, cuando la plantilla A4.03 está instalada. La demo Docker y la de Codespaces lo ejecutan al arrancar, después de instalar las plantillas.
+- **Comprobado** con las pruebas r3c de base de datos y de navegador, y con una base de demo nueva (sin plantillas: aviso y nada más; con plantillas: 00 y 01; repetido: nada).
+
 **Auditorías R5D: cliente e inspección (2026-10-19, D-110):**
 - **Informe:** en cliente e inspección no se emite informe COVEX; «Informe y cierre» muestra el informe recibido, la respuesta y observaciones internas, y Versiones no ofrece «Emitir». Las versiones antiguas quedan en solo lectura. En el listado y la cabecera ya no aparecen como «informe pendiente».
 - **Hallazgos:** solo los tipos del escenario (observación de cliente o de autoridad y recomendación; en el resto, hallazgo y recomendación), validados también en el servidor. Los hallazgos existentes conservan su tipo.
@@ -155,7 +164,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - las 5 pruebas de navegador de Auditorías;
   - las pruebas de base de datos de Auditorías;
   - la prueba de captura del audit trail.
-- **Demo:** sin versiones sembradas, porque las plantillas se instalan después de los ejemplos; la auditoría interna de ejemplo queda lista para establecer la 00 y registrar seguimientos.
+- **Demo:** las versiones se siembran después de instalar las plantillas (ver «Auditorías: ajustes del CAPA plan»).
 
 **Auditorías R5C1: versiones del CAPA plan (2026-10-19, D-110):**
 - **Versión 00:** «Establecer CAPA plan (versión 00)» en Seguimiento congela hallazgos, acciones y vínculos con su A4.03, aunque estén incompletos y sin informe emitido.

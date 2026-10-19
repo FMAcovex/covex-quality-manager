@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capaPlanDefaultDate, capaPlanFileName, capaPlanFingerprint, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
+import { capaPlanDefaultDate, capaPlanToday, capaPlanFileName, capaPlanFingerprint, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
 import type { AuditReportSnapshot } from "./report-service";
 
 const snapshot = (actionStatus = "OPEN", updatedAt = "2026-10-19T10:00:00.000Z") => ({
@@ -68,5 +68,17 @@ describe("CAPA plan con versiones (D-110, R5C1)", () => {
     expect(isCriticalRowChange({ status: "CLOSED", closedAt: "2026-10-01" }, { status: "CLOSED", closedAt: "2026-10-02" })).toBe(true);
     expect(isCriticalRowChange({ status: "OPEN", closedAt: null }, { status: "IN_PROGRESS", closedAt: null })).toBe(false);
     expect(isCriticalRowChange({ status: "CLOSED", closedAt: "2026-10-01" }, { status: "CLOSED", closedAt: "2026-10-01" })).toBe(false);
+  });
+});
+
+describe("Puntos menores R5C (seguimiento y fechas)", () => {
+  it("valida la fecha objetivo", () => {
+    expect(capaPlanRowProblem({ status: "OPEN", closedAt: "", evidence: "", evidenceReference: "", verificationComment: "", targetDate: "2026-02-30" })).toMatch(/objetivo/);
+    expect(capaPlanRowProblem({ status: "OPEN", closedAt: "", evidence: "", evidenceReference: "", verificationComment: "", targetDate: "2026-11-30" })).toBeNull();
+  });
+  it("propone la fecha de hoy en Madrid, no en UTC", () => {
+    expect(capaPlanToday(new Date("2026-10-19T22:30:00.000Z"))).toBe("2026-10-20");
+    expect(capaPlanToday(new Date("2026-01-15T23:30:00.000Z"))).toBe("2026-01-16");
+    expect(capaPlanToday(new Date("2026-10-19T10:00:00.000Z"))).toBe("2026-10-19");
   });
 });

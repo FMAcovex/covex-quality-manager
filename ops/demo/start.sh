@@ -14,5 +14,7 @@ if [ -d /plantillas ] && [ -n "$(ls -A /plantillas 2>/dev/null)" ]; then
   echo "Instalando las plantillas de /plantillas..."
   npx tsx scripts/install-templates.ts /plantillas || echo "Alguna plantilla no se ha podido instalar; la demo sigue con las demás."
 fi
+# D-110: versiones 00/01 del CAPA plan de los ejemplos; necesitan la plantilla A4.03 instalada.
+node --conditions=react-server --import tsx scripts/demo/seed-capa-plans.ts || echo "No se han podido añadir las versiones del CAPA plan de ejemplo; la demo sigue."
 echo "Demo lista: abre http://localhost:3000 en el navegador."
 exec node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3000

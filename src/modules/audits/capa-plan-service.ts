@@ -11,7 +11,7 @@ import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { AuditValidationError } from "./service";
 import { auditReportInclude, auditReportEvent, lockReportAudit, snapshotAudit } from "./report-service";
 import { generateAuditCapaPlan } from "./documents/generators";
-import { capaPlanFileName, capaPlanFingerprint, capaPlanFollowupSchema, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
+import { CapaPlanStaleError, capaPlanToday, capaPlanFileName, capaPlanFingerprint, capaPlanFollowupSchema, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
 
 type Tx = Prisma.TransactionClient;
 const digest = (b: Uint8Array | string) => createHash("sha256").update(b).digest("hex");
@@ -62,7 +62,7 @@ export async function establishCapaPlan(auditId: string, raw: unknown) {
     if (audit.status === "DRAFT") throw new Error("Abre la auditoría antes de establecer el CAPA plan.");
     if (audit.status !== "OPEN") throw new Error("La auditoría está cerrada; no se establece el CAPA plan.");
     if (await tx.auditCapaPlanVersion.count({ where: { auditId } })) throw new Error("El CAPA plan ya está establecido (versión 00).");
-    const today = day(new Date().toISOString().slice(0, 10));
+    const today = day(capaPlanToday());
     const after = await tx.audit.update({ where: { id: auditId }, data: { capaPlanDate: day(v.capaPlanDate), capaPlanEstablishedAt: audit.capaPlanEstablishedAt ?? today, updatedByText: v.actor } });
     const reason = `Establecimiento del CAPA plan (versión ${capaPlanSequenceLabel(0)})`;
     for (const key of ["capaPlanDate", "capaPlanEstablishedAt"] as const) if (audit[key]?.getTime() !== after[key]?.getTime()) await auditReportEvent(tx, audit.qmsRecordId, v.actor, `audit.${key}`, audit[key], after[key], reason);
@@ -97,22 +97,25 @@ export async function recordCapaPlanFollowup(auditId: string, raw: Record<string
     for (const row of form.actions) {
       const before = actions.get(row.id);
       if (!before) throw new Error("Una acción del formulario ya no está activa. Recarga la auditoría.");
-      if (before.updatedAt.toISOString() !== row.updatedAt) throw new Error(`${before.finding.reference}: la acción cambió desde que abriste el formulario. Recarga antes de guardar.`);
-      const problem = capaPlanRowProblem({ ...row, verificationComment: before.verificationComment ?? "" });
-      if (problem) throw new Error(`${before.finding.reference}: ${problem}`);
       const data = { status: row.status, closedAt: row.closedAt || null, targetDate: row.targetDate || null, evidenceReference: row.evidenceReference || null, evidence: row.evidence || null };
       const current = { status: before.status, closedAt: iso(before.closedAt), targetDate: iso(before.targetDate), evidenceReference: before.evidenceReference, evidence: before.evidence };
-      if (changeKeys(current, data).length) updates.push({ kind: "action", id: row.id, reference: before.finding.reference, before: current, data });
+      // Solo se comprueban las filas que cambian: una fila intacta no bloquea el seguimiento.
+      if (!changeKeys(current, data).length) continue;
+      if (before.updatedAt.toISOString() !== row.updatedAt) throw new CapaPlanStaleError(`${before.finding.reference}: la acción cambió desde que abriste el formulario. Recarga antes de guardar.`);
+      const problem = capaPlanRowProblem({ ...row, verificationComment: before.verificationComment ?? "" });
+      if (problem) throw new Error(`${before.finding.reference}: ${problem}`);
+      updates.push({ kind: "action", id: row.id, reference: before.finding.reference, before: current, data });
     }
     for (const row of form.findings) {
       const before = bare.get(row.id);
       if (!before) throw new Error("Un hallazgo del formulario ya no está activo o tiene acciones. Recarga la auditoría.");
-      if (before.updatedAt.toISOString() !== row.updatedAt) throw new Error(`${before.reference}: el hallazgo cambió desde que abriste el formulario. Recarga antes de guardar.`);
-      const problem = capaPlanRowProblem({ status: row.treatmentStatus, closedAt: row.closedAt, evidence: row.evidence, evidenceReference: row.evidenceReference, verificationComment: before.verificationComment ?? "", treatment: row.treatment });
-      if (problem) throw new Error(`${before.reference}: ${problem}`);
       const data = { status: row.treatmentStatus, treatment: row.treatment || null, closedAt: row.closedAt || null, evidenceReference: row.evidenceReference || null, evidence: row.evidence || null };
       const current = { status: before.treatmentStatus, treatment: before.treatment, closedAt: iso(before.closedAt), evidenceReference: before.evidenceReference, evidence: before.evidence };
-      if (changeKeys(current, data).length) updates.push({ kind: "finding", id: row.id, reference: before.reference, before: current, data });
+      if (!changeKeys(current, data).length) continue;
+      if (before.updatedAt.toISOString() !== row.updatedAt) throw new CapaPlanStaleError(`${before.reference}: el hallazgo cambió desde que abriste el formulario. Recarga antes de guardar.`);
+      const problem = capaPlanRowProblem({ status: row.treatmentStatus, closedAt: row.closedAt, evidence: row.evidence, evidenceReference: row.evidenceReference, verificationComment: before.verificationComment ?? "", treatment: row.treatment });
+      if (problem) throw new Error(`${before.reference}: ${problem}`);
+      updates.push({ kind: "finding", id: row.id, reference: before.reference, before: current, data });
     }
     if (!updates.length && !v.observations.trim()) throw new Error("No hay cambios ni observaciones que registrar.");
     const typed = (u: Update) => ({ status: String(u.before.status), closedAt: (u.before.closedAt as string | null) ?? null, evidence: (u.before.evidence as string | null) ?? null });

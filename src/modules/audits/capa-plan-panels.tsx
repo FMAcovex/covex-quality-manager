@@ -6,11 +6,10 @@ import { establishCapaPlanAction, recordCapaPlanFollowupAction } from "./capa-pl
 import { CapaPlanFollowupForm } from "./capa-plan-followup-form";
 import type { ReportAudit } from "./report-service";
 import { auditDate } from "./domain";
-import { capaPlanDefaultDate, capaPlanKindLabels, capaPlanSequenceLabel } from "./capa-plan-domain";
+import { capaPlanDefaultDate, capaPlanKindLabels, capaPlanSequenceLabel, capaPlanToday } from "./capa-plan-domain";
 import type { CapaPlanVersionSummary } from "./capa-plan-service";
 
 const versionHref = (auditId: string, sequence: number) => `/api/audits/${auditId}/documents?capaPlanVersion=${sequence}`;
-const today = () => new Date().toISOString().slice(0, 10);
 function VersionLink({ auditId, version }: { auditId: string; version: CapaPlanVersionSummary }) {
   return <PermissionGate permission="DOWNLOAD"><a className="button small" href={versionHref(auditId, version.sequenceNumber)}>CAPA plan · {capaPlanSequenceLabel(version.sequenceNumber)}</a></PermissionGate>;
 }
@@ -29,9 +28,9 @@ export function AuditCapaPlanCard({ audit, versions }: { audit: ReportAudit; ver
   const current = versions[0];
   return <section className="card audit-panel-intro"><div className="audit-panel-heading"><div><h2>CAPA plan</h2><p className="muted-note">Versiones propias 00, 01…, independientes del informe. Cada versión congela hallazgos, acciones y vínculos con su A4.03.</p></div></div>
     {current ? <><p>Versión vigente {capaPlanSequenceLabel(current.sequenceNumber)} · {capaPlanKindLabels[current.kind]} · {auditDate(current.generatedAt)} · {current.generatedBy}{current.nextReviewDate ? ` · Próxima revisión ${auditDate(current.nextReviewDate)}` : ""}</p><div className="heading-actions"><VersionLink auditId={auditId} version={current}/></div>
-      {active && status !== "DRAFT" ? <PermissionGate permission="FOLLOWUP"><details className="audit-editor"><summary>Registrar seguimiento del CAPA plan</summary><CapaPlanFollowupForm action={recordCapaPlanFollowupAction.bind(null, auditId)} {...followupRows(audit)} followupDate={today()} requestId={randomUUID()}/></details></PermissionGate> : null}</>
+      {active && status !== "DRAFT" ? <PermissionGate permission="FOLLOWUP"><details className="audit-editor"><summary>Registrar seguimiento del CAPA plan</summary><CapaPlanFollowupForm action={recordCapaPlanFollowupAction.bind(null, auditId)} {...followupRows(audit)} followupDate={capaPlanToday()} requestId={randomUUID()}/></details></PermissionGate> : null}</>
       : <><p className="muted-note">CAPA plan sin establecer. Al establecerlo se congela como versión 00 lo registrado hasta ahora, aunque esté incompleto.</p>
-        {!active ? null : status === "DRAFT" ? <p className="muted-note">Abre la auditoría para establecer el CAPA plan.</p> : status === "OPEN" ? <PermissionGate permission="EDIT"><AuditReportForm action={establishCapaPlanAction.bind(null, auditId)} label="Establecer CAPA plan (versión 00)" fields={[{ name: "capaPlanDate", label: "Fecha del CAPA plan", type: "date", value: capaPlanDefaultDate(capaPlanDate, today()), required: true }, { name: "actor", label: "Responsable", value: currentActor(), required: true }, { name: "requestId", label: "", type: "hidden", value: randomUUID() }]}/></PermissionGate> : null}</>}
+        {!active ? null : status === "DRAFT" ? <p className="muted-note">Abre la auditoría para establecer el CAPA plan.</p> : status === "OPEN" ? <PermissionGate permission="EDIT"><AuditReportForm action={establishCapaPlanAction.bind(null, auditId)} label="Establecer CAPA plan (versión 00)" fields={[{ name: "capaPlanDate", label: "Fecha del CAPA plan", type: "date", value: capaPlanDefaultDate(capaPlanDate, capaPlanToday()), required: true }, { name: "actor", label: "Responsable", value: currentActor(), required: true }, { name: "requestId", label: "", type: "hidden", value: randomUUID() }]}/></PermissionGate> : null}</>}
   </section>;
 }
 /** Secuencia «CAPA plan» de la pestaña Versiones. */

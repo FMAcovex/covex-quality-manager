@@ -41,6 +41,14 @@ async function main(){
   await save(page,followupForm,'Registrar seguimiento');await planCard().getByText('Versión vigente 01').waitFor();
   assert.equal((await prisma.auditFindingAction.findUniqueOrThrow({where:{id:action.id}})).status,'IN_PROGRESS');
   assert.equal((await prisma.auditCapaPlanVersion.findFirstOrThrow({where:{auditId:audit.id,sequenceNumber:1}})).observations,'Revisión UI del CAPA plan');
+  // Una fila cambiada por otra persona: «cambió» con un botón que recarga los datos actuales.
+  await view(page,`/audits/${audit.id}?tab=followup`);await planCard().locator('summary').filter({hasText:'Registrar seguimiento del CAPA plan'}).click();followupForm=planCard().locator('form.capa-plan-followup');
+  await prisma.auditFindingAction.update({where:{id:action.id},data:{evidenceReference:'REF-OTRA-PERSONA'}});
+  await followupForm.locator(`[name="a.${action.id}.evidence"]`).fill('Evidencia UI tardía');await followupForm.getByRole('button',{name:'Registrar seguimiento',exact:true}).click();
+  const staleAlert=planCard().getByRole('alert').filter({hasText:/cambió/});await staleAlert.waitFor();
+  await Promise.all([page.waitForEvent('framenavigated',frame=>frame===page.mainFrame()),staleAlert.getByRole('button',{name:'Recargar con los datos actuales',exact:true}).click()]);await page.waitForLoadState('networkidle');
+  await planCard().locator('summary').filter({hasText:'Registrar seguimiento del CAPA plan'}).click();assert.equal(await planCard().locator(`form.capa-plan-followup [name="a.${action.id}.evidenceReference"]`).inputValue(),'REF-OTRA-PERSONA');
+  assert.equal(await prisma.auditCapaPlanVersion.count({where:{auditId:audit.id}}),2);
   await view(page,`/audits/${audit.id}?tab=versions`);const planVersions=page.locator('section.card').filter({has:page.getByRole('heading',{name:'CAPA plan',exact:true})});
   const [planDownload]=await Promise.all([page.waitForEvent('download'),planVersions.getByRole('link',{name:'CAPA plan · 00',exact:true}).click()]);assert.equal(await planDownload.failure(),null);assert.match(planDownload.suggestedFilename(),/_CAPA_PLAN_00\.xlsx$/);
   await view(page,`/audits/${audit.id}?tab=report`);let form=page.locator('form').filter({has:page.locator('[name="reportDate"]')});await form.locator('[name="reportDate"]').fill('2096-11-16');await form.locator('[name="conclusion"]').fill('Conclusión UI versión 00');await form.locator('[name="programme"]').fill('09:00 | Revisión documental');await save(page,form,'Guardar datos del informe');await page.waitForLoadState('networkidle');assert.equal((await prisma.audit.findUniqueOrThrow({where:{id:audit.id}})).conclusion,'Conclusión UI versión 00');
