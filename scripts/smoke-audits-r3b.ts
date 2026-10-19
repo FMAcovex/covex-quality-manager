@@ -38,12 +38,19 @@ async function main() {
   await prisma.$transaction(tx=>ensureInitialVersion(tx,capa.id,snapshotJson(serializeCapaVersion(capaSource)),actor));
   const obs=await saveAuditFinding(audit.id,{actor,findingType:"FINDING",criticality:"MAJOR",description:`Descripción ${marker}`});
   const rk=await saveAuditFinding(audit.id,{actor,findingType:"RECOMMENDATION",description:"Recomendación libre"});
+  // D-110 (R5D): tipos de hallazgo por escenario; un tipo ya guardado se conserva aunque cambie el escenario.
+  await assert.rejects(saveAuditFinding(audit.id,{actor,findingType:"CLIENT_OBSERVATION",description:"No permitido en interna"}),/no permitido/);
+  const clientAudit=await createAudit(),legacy=await saveAuditFinding(clientAudit.id,{actor,findingType:"FINDING",description:"Hallazgo previo al cambio de escenario"});
+  await prisma.audit.update({where:{id:clientAudit.id},data:{auditType:"EXTERNAL",scenario:"CLIENT"}});
+  await assert.rejects(saveAuditFinding(clientAudit.id,{actor,findingType:"FINDING",description:"Hallazgo nuevo no permitido"}),/no permitido/);
+  assert.equal((await saveAuditFinding(clientAudit.id,{actor,findingType:"CLIENT_OBSERVATION",description:"Observación del cliente"})).reference,"OBS 02");
+  assert.equal((await saveAuditFinding(clientAudit.id,{actor,findingType:"FINDING",description:"Hallazgo previo editado"},legacy.id)).findingType,"FINDING");
   assert.equal(obs.reference,"OBS 01"); assert.equal(rk.reference,"Rk 01"); assert.equal(rk.criticality,"NA");
   const edited=await saveAuditFinding(audit.id,{actor,findingType:obs.findingType,criticality:obs.criticality,sortOrder:90,description:`Editada ${marker}`,expectedUpdatedAt:obs.updatedAt.toISOString()},obs.id); assert.equal(edited.id,obs.id); assert.equal(edited.reference,obs.reference);
   await assert.rejects(saveAuditFinding(audit.id,{actor,findingType:obs.findingType,description:obs.description,expectedUpdatedAt:obs.updatedAt.toISOString()},obs.id),/cambió/);
-  const foreign=await saveAuditFinding(other.id,{actor,findingType:"CLIENT_OBSERVATION",description:"Otro expediente"});
+  const foreign=await saveAuditFinding(other.id,{actor,findingType:"FINDING",description:"Otro expediente"});
   await assert.rejects(saveAuditFinding(audit.id,{actor,findingType:"FINDING",description:"Ajeno"},foreign.id),/pertenece/);
-  const [parallel1,parallel2]=await Promise.all([saveAuditFinding(audit.id,{actor,findingType:"FINDING",description:"Concurrencia A"}),saveAuditFinding(audit.id,{actor,findingType:"AUTHORITY_OBSERVATION",description:"Concurrencia B"})]); assert.deepEqual([parallel1.reference,parallel2.reference].sort(),["OBS 02","OBS 03"]);
+  const [parallel1,parallel2]=await Promise.all([saveAuditFinding(audit.id,{actor,findingType:"FINDING",description:"Concurrencia A"}),saveAuditFinding(audit.id,{actor,findingType:"FINDING",description:"Concurrencia B"})]); assert.deepEqual([parallel1.reference,parallel2.reference].sort(),["OBS 02","OBS 03"]);
   const action1=await saveAuditFindingAction(audit.id,obs.id,{actor,description:`Acción ${marker}`,responsible:"Ficticio",targetDate:"2026-11-01",status:"OPEN"});
   const action2=await saveAuditFindingAction(audit.id,obs.id,{actor,description:"Acción segunda",status:"IN_PROGRESS",sortOrder:10});
   const changed=await saveAuditFindingAction(audit.id,obs.id,{actor,description:action1.description,status:"PENDING_VERIFICATION",sortOrder:20},action1.id); assert.equal(changed.id,action1.id);

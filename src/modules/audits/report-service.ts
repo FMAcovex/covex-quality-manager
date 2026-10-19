@@ -5,6 +5,7 @@ import { AuditValidationError } from "./service";
 import { reportInputSchema, reportDateFields, reportTextFields, issueReportSchema, closeAuditSchema } from "./report-validation";
 import { auditClosureChecklist, type ClosureContext } from "./closure-policy";
 import { capaPlanFingerprint } from "./capa-plan-domain";
+import { receivedAuditScenario } from "./domain";
 import { auditAlreadyClosed } from "./lifecycle";
 
 type Tx = Prisma.TransactionClient;
@@ -47,9 +48,13 @@ export async function saveAuditReport(id: string, raw: unknown) {
     if (v.expectedUpdatedAt && a.updatedAt.toISOString() !== v.expectedUpdatedAt) throw new Error("El expediente cambió. Recarga antes de guardar.");
     const versions = await tx.qmsRecordVersion.count({ where: { qmsRecordId: a.qmsRecordId } });
     if (v.reportSentAt && !versions) throw new Error("Emite el informe antes de registrar su envío.");
-    const data = { ...Object.fromEntries(reportTextFields.map(k => [k, v[k] || null])), ...Object.fromEntries(reportDateFields.map(k => [k, day(v[k])])), responseRequired: v.responseRequired, updatedByText: v.actor };
+    // D-110 (R5D): cliente e inspección no tienen informe COVEX; solo se guardan la respuesta y las observaciones internas.
+    const received = receivedAuditScenario(a.scenario);
+    const keys = received ? (["responseSentAt", "internalObservations", "responseRequired"] as const) : ([...reportTextFields, ...reportDateFields, "responseRequired"] as const);
+    const data = received ? { responseSentAt: day(v.responseSentAt), internalObservations: v.internalObservations || null, responseRequired: v.responseRequired, updatedByText: v.actor }
+      : { ...Object.fromEntries(reportTextFields.map(k => [k, v[k] || null])), ...Object.fromEntries(reportDateFields.map(k => [k, day(v[k])])), responseRequired: v.responseRequired, updatedByText: v.actor };
     const after = await tx.audit.update({ where: { id }, data });
-    for (const k of [...reportTextFields, ...reportDateFields, "responseRequired"] as const) if (JSON.stringify(a[k]) !== JSON.stringify(after[k])) await auditReportEvent(tx, a.qmsRecordId, v.actor, `audit.${k}`, a[k], after[k], "Edición del informe / hechos de seguimiento y cierre; sin nueva versión automática");
+    for (const k of keys) if (JSON.stringify(a[k]) !== JSON.stringify(after[k])) await auditReportEvent(tx, a.qmsRecordId, v.actor, `audit.${k}`, a[k], after[k], "Edición del informe / hechos de seguimiento y cierre; sin nueva versión automática");
     return after;
   });
 }
@@ -65,14 +70,13 @@ export async function issueAuditReport(id: string, raw: unknown) {
   const v = parse(issueReportSchema, raw);
   return prisma.$transaction(async tx => {
     const a = await lockReportAudit(tx, id);
+    if (receivedAuditScenario(a.scenario)) throw new Error("En auditorías de cliente o inspección no se emite informe COVEX: adjunta el informe recibido.");
     if (a.status === "DRAFT") throw new Error("La emisión requiere una auditoría abierta o cerrada.");
     if (!a.reportDate || !a.conclusion?.trim() || !a.performedDate) throw new Error("Completa fecha realizada, fecha de informe y conclusión antes de emitir.");
-    const received = a.scenario === "CLIENT" || a.scenario === "AUTHORITY";
-    if (received && !a.qmsRecord.generatedDocuments.some(d => d.documentType === "AUDIT_RECEIVED")) throw new Error("Registra el documento externo primario antes de emitir su snapshot.");
     const last = await tx.qmsRecordVersion.findFirst({ where: { qmsRecordId: a.qmsRecordId }, orderBy: { sequenceNumber: "desc" } });
     if (last && !v.reason.trim()) throw new Error("La revisión 01+ exige motivo obligatorio.");
     // D-110: el CAPA plan tiene versiones propias (AuditCapaPlanVersion); el informe ya no fija su A4.03.
-    const types: DocumentType[] = [...(received ? [] : [a.scenario === "SUPPLIER" ? DocumentType.AUDIT_EXTERNAL_REPORT : DocumentType.AUDIT_INTERNAL_REPORT]), ...(a.scenario === "SUPPLIER" ? [DocumentType.AUDIT_EXTERNAL_PLAN] : [])];
+    const types: DocumentType[] = [a.scenario === "SUPPLIER" ? DocumentType.AUDIT_EXTERNAL_REPORT : DocumentType.AUDIT_INTERNAL_REPORT, ...(a.scenario === "SUPPLIER" ? [DocumentType.AUDIT_EXTERNAL_PLAN] : [])];
     const templates = await tx.templateVersion.findMany({ where: { module: "AUDIT", documentType: { in: types }, isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }] });
     const selected = types.map(type => templates.find(t => t.documentType === type));
     if (selected.some(t => !t || (!t.fileData && !t.filePath) || !t.checksum)) throw new Error("Instala/revisa las plantillas controladas de este escenario antes de emitir.");

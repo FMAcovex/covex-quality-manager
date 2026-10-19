@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { auditInputSchema } from "./validation";
-import { auditStatusBadgeClass, auditSituation, compatibleAuditScenario, auditScenarioLabels, auditRoleLabels, auditCodeYear } from "./domain";
+import { allowedFindingTypes, auditStatusBadgeClass, auditSituation, compatibleAuditScenario, auditScenarioLabels, auditRoleLabels, auditCodeYear, receivedAuditScenario } from "./domain";
 import { auditListWhere } from "./queries";
 import { buildOperationalBusinessCode, extractOperationalBusinessCodeSequence, operationalBusinessCodePrefix } from "@/lib/qms/business-code";
 
@@ -99,5 +99,25 @@ describe("auditStatusBadgeClass", () => {
     expect(auditStatusBadgeClass("DRAFT")).toBe("neutral");
     expect(auditStatusBadgeClass("OPEN")).toBe("open");
     expect(auditStatusBadgeClass("CLOSED")).toBe("closed");
+  });
+});
+describe("Cliente e inspección (D-110, R5D)", () => {
+  it("la situación no queda en «informe pendiente»: depende del seguimiento", () => {
+    const audit = {status:"OPEN" as const,performedDate:"2026-10-07",reportIssued:false,scenario:"CLIENT" as const};
+    expect(auditSituation(audit)).toBe("Realizada");
+    expect(auditSituation({...audit,performedDate:null})).toBe("Planificada");
+    expect(auditSituation({...audit,status:"DRAFT"})).toBe("Borrador");
+    expect(auditSituation({...audit,scenario:"AUTHORITY",findings:[{isActive:true,treatment:"",treatmentStatus:"OPEN",actions:[{isActive:true,status:"OPEN"}]}]})).toBe("En seguimiento");
+    expect(auditSituation({...audit,status:"CLOSED"})).toBe("Cerrada");
+  });
+  it("identifica los escenarios con informe recibido", () => {
+    expect(["CLIENT", "AUTHORITY"].every(s => receivedAuditScenario(s as never))).toBe(true);
+    expect([null, "SUPPLIER", "INTERNAL_COVEX", "INTERNAL_CONTRACTED"].some(s => receivedAuditScenario(s as never))).toBe(false);
+  });
+  it("limita los tipos de hallazgo por escenario", () => {
+    expect(allowedFindingTypes("CLIENT")).toEqual(["CLIENT_OBSERVATION", "RECOMMENDATION"]);
+    expect(allowedFindingTypes("AUTHORITY")).toEqual(["AUTHORITY_OBSERVATION", "RECOMMENDATION"]);
+    expect(allowedFindingTypes("SUPPLIER")).toEqual(["FINDING", "RECOMMENDATION"]);
+    expect(allowedFindingTypes(null)).toEqual(["FINDING", "RECOMMENDATION"]);
   });
 });

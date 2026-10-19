@@ -5,6 +5,7 @@ import { type Page, type Locator } from "playwright";
 import { prisma } from "../src/lib/db";
 import { saveAuditFinding, saveAuditFindingAction, retireAuditElement } from "../src/modules/audits/finding-service";
 import { readAuditSnapshot } from "../src/modules/audits/report-service";
+import { saveAudit } from "../src/modules/audits/service";
 import { installSyntheticAuditTemplates, cleanupAuditR3cFixtures } from "./audits-r3c-fixtures";
 const base=process.env.R3C_UI_BASE_URL,marker=`R3C-UI-${randomUUID()}`, records:string[]=[],templates:string[]=[];
 async function view(page:Page,path:string){const url=`${base}${path}`;if(page.url()===url)await page.reload();else await page.goto(url);await page.waitForLoadState('networkidle');}
@@ -66,6 +67,12 @@ async function main(){
   // Keep an active, justified element while consulting the retired historical target.
   const remaining=await saveAuditFinding(audit.id,{actor:'Smoke UI',findingType:'FINDING',criticality:'MINOR',description:'OBS de cierre',treatment:'No procede documentado',treatmentStatus:'NOT_APPLICABLE',evidence:'Justificación final'});assert(remaining.id);
   await view(page,`/audits/${audit.id}?tab=report`);form=page.locator('form').filter({has:page.locator('[name="closedAt"]')});await form.locator('[name="closedAt"]').fill('2096-11-20');await save(page,form,'Confirmar cierre definitivo');await page.getByText('Cerrada · 20/11/2096',{exact:true}).waitFor();assert.equal((await prisma.audit.findUniqueOrThrow({where:{id:audit.id}})).status,'CLOSED');
+  // D-110 (R5D): auditoría de cliente → informe recibido, sin informe COVEX ni «Emitir»; tipos de hallazgo del escenario.
+  const client=await saveAudit({actor:'Smoke UI',status:'OPEN',auditType:'EXTERNAL',scenario:'CLIENT',title:`${marker}-cliente`,scope:'Alcance ficticio cliente',plannedDate:'2096-11-15',performedDate:'2096-11-15',codingDepartmentId:'',departmentIds:[],entityCode:'',auditedEntityName:'Cliente ficticio',externalReference:`${marker}-externa`,participants:[{role:'AUDITOR',displayName:'Auditor ficticio R3C',sortOrder:0}]});records.push(client.qmsRecordId);
+  await view(page,`/audits/${client.id}?tab=report`);await page.getByRole('heading',{name:'Informe recibido',exact:true}).waitFor();assert.equal(await page.locator('[name="conclusion"]').count(),0);
+  form=page.locator('form').filter({has:page.locator('[name="internalObservations"]')});await form.locator('[name="internalObservations"]').fill('Observación interna UI');await save(page,form,'Guardar datos del informe');assert.equal((await prisma.audit.findUniqueOrThrow({where:{id:client.id}})).internalObservations,'Observación interna UI');
+  await view(page,`/audits/${client.id}?tab=versions`);await page.getByText(/no se emite informe COVEX/).first().waitFor();assert.equal(await page.getByRole('button',{name:/^Emitir/}).count(),0);
+  await view(page,`/audits/${client.id}?tab=findings&edit=new-finding`);assert.deepEqual(await page.locator('#audit-new-finding select[name="findingType"] option').allTextContents(),['Observación de cliente','Recomendación']);assert.equal(await page.locator('#audit-new-finding select[name="findingType"]').inputValue(),'CLIENT_OBSERVATION');
   assert.equal((await prisma.reviewThread.findUniqueOrThrow({where:{id:thread.id}})).recordVersionId,v00.id);assert.deepEqual(errors,[]);
   console.log('R3C UI OK: alta/apertura real, informe 00/01, documentos/descargas, PDF por versión, Review OBS/acción UUID e histórico/deep link/retirado, cierre backend, 1440/768/390 Madrid sin errores JS/hidratación.');
  } catch(e){console.error('R3C UI failure URL:',page.url());console.error(errors);console.error(await page.locator('main').ariaSnapshot().catch(()=>''));throw e;}

@@ -28,10 +28,12 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
   const assigned = assignedListWhere(filters.assigned, filters.assignedUserId, assignedWhere.audit); if (assigned) and.push(assigned);
   const reportVersion = { versions: { some: { kind: { in: ["INITIAL", "AUDIT_REVISION"] as ("INITIAL"|"AUDIT_REVISION")[] } } } };
   if (filters.report === "issued") and.push({qmsRecord:reportVersion});
-  if (filters.report === "pending") and.push({qmsRecord:{versions:{none:{}}}});
+  // D-110 (R5D): cliente e inspección no tienen informe COVEX pendiente.
+  const received: ("CLIENT"|"AUTHORITY")[] = ["CLIENT", "AUTHORITY"];
+  if (filters.report === "pending") and.push({qmsRecord:{versions:{none:{}}},OR:[{scenario:null},{scenario:{notIn:received}}]});
   if (filters.situation === "closed") and.push({status:"CLOSED"});
   if (filters.situation === "partial") and.push({status:"OPEN",OR:[{scenario:{in:["INTERNAL_COVEX","INTERNAL_CONTRACTED"]},capaPlanEstablishedAt:{not:null}},{scenario:"SUPPLIER",reportSentAt:{not:null}}]});
-  if (filters.situation === "followup") and.push({status:"OPEN",qmsRecord:reportVersion,NOT:{OR:[{scenario:{in:["INTERNAL_COVEX","INTERNAL_CONTRACTED"]},capaPlanEstablishedAt:{not:null}},{scenario:"SUPPLIER",reportSentAt:{not:null}}]},OR:[{findings:{some:{isActive:true,actions:{some:{isActive:true,status:{in:pendingActionStatuses}}}}}},{followups:{some:{}}}]});
+  if (filters.situation === "followup") and.push({status:"OPEN",AND:[{OR:[{qmsRecord:reportVersion},{scenario:{in:received}}]}],NOT:{OR:[{scenario:{in:["INTERNAL_COVEX","INTERNAL_CONTRACTED"]},capaPlanEstablishedAt:{not:null}},{scenario:"SUPPLIER",reportSentAt:{not:null}}]},OR:[{findings:{some:{isActive:true,actions:{some:{isActive:true,status:{in:pendingActionStatuses}}}}}},{followups:{some:{}}}]});
   const years = validYears(filters.year); if (years.length) and.push({ qmsRecord: { year: { in: years } } });
   for (const [key, values, labels] of [["auditType", filters.type, auditTypeLabels], ["scenario", filters.scenario, auditScenarioLabels], ["status", filters.status, auditStatusLabels], ["modality", filters.modality, auditModalityLabels], ["dataQualityStatus", filters.quality, auditQualityLabels]] as const) {
     const selected = validValues(values, Object.keys(labels)); if (selected.length) and.push({ [key]: { in: selected } } as Prisma.AuditWhereInput);
