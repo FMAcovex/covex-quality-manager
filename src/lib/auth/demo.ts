@@ -24,11 +24,12 @@ export async function listDemoUsers() {
 export async function startDemoSession(request: Request) {
   const config = authConfiguration();
   if (!config.demo) throw new AccessError(403);
-  if (request.headers.get("origin") !== config.origin) throw new AccessError(403);
+  const origin = request.headers.get("origin") ?? "";
+  if (!config.requestOrigins.includes(origin)) throw new AccessError(403, `origen de la petición «${origin || "sin origen"}», se esperaba ${config.requestOrigins.join(" o ")}`);
   const userId = String((await request.formData()).get("userId") ?? "");
-  if (!demoProfiles.some(profile => profile.id === userId)) throw new AccessError(403);
+  if (!demoProfiles.some(profile => profile.id === userId)) throw new AccessError(403, "perfil desconocido");
   const user = await prisma.authUser.findFirst({ where: { id: userId, tenantId: demoTenant }, select: { id: true } });
-  if (!user) throw new AccessError(403);
+  if (!user) throw new AccessError(403, "el usuario del perfil no existe; ejecuta «pnpm demo:users»");
   const session = await issueSession(user.id), names = cookieNames(), response = NextResponse.redirect(new URL("/", config.origin), 303);
   response.cookies.set(names.session, session.token, { ...cookieOptions(), maxAge: config.ttlMs / 1000 });
   response.cookies.set(names.csrf, session.csrf, { ...cookieOptions(), httpOnly: false, maxAge: config.ttlMs / 1000 });

@@ -40,7 +40,10 @@ export function authConfiguration(env: Record<string, string | undefined> = proc
   if (env.AUTH_PROVIDER === "demo") {
     if (!localDemoEnvironment(env)) throw new AccessError(403, "La demo local no está habilitada en este entorno.");
     const origin = new URL(env.AUTH_ORIGIN!);
-    return { synthetic: false, demo: true, origin: origin.origin, issuer: origin, tenantId: demoTenant, clientId: "", secret: "", secure: false, ttlMs: 8 * 60 * 60 * 1000, idleMs: 30 * 60 * 1000 };
+    // D-108: el reenvío de puertos de Codespaces puede presentar el origen como localhost.
+    const port = codespacesOrigin(origin, env) ? origin.hostname.match(/-(\d{2,5})\./)?.[1] : undefined;
+    const requestOrigins = port ? [origin.origin, `http://localhost:${port}`, `http://127.0.0.1:${port}`] : [origin.origin];
+    return { synthetic: false, demo: true, origin: origin.origin, requestOrigins, issuer: origin, tenantId: demoTenant, clientId: "", secret: "", secure: false, ttlMs: 8 * 60 * 60 * 1000, idleMs: 30 * 60 * 1000 };
   }
   const synthetic = env.AUTH_PROVIDER === "synthetic";
   if (synthetic && !isolatedTestEnvironment(env)) throw new AccessError(403, "La identidad de pruebas no está habilitada en este entorno.");
@@ -53,7 +56,7 @@ export function authConfiguration(env: Record<string, string | undefined> = proc
   const issuer = synthetic ? new URL(env.AUTH_TEST_ISSUER ?? "https://invalid.invalid") : new URL(`https://login.microsoftonline.com/${tenantId}/v2.0`);
   if (synthetic && (issuer.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(issuer.hostname) || origin.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(origin.hostname)))
     throw new AccessError(403, "El proveedor de pruebas debe permanecer en loopback.");
-  return { synthetic, demo: false, origin: origin.origin, issuer, tenantId, clientId, secret, secure: !synthetic, ttlMs: 8 * 60 * 60 * 1000, idleMs: 30 * 60 * 1000 };
+  return { synthetic, demo: false, origin: origin.origin, requestOrigins: [origin.origin], issuer, tenantId, clientId, secret, secure: !synthetic, ttlMs: 8 * 60 * 60 * 1000, idleMs: 30 * 60 * 1000 };
 }
 export function safeReturnTo(value: string | null | undefined) {
   return value && value.startsWith("/") && !value.startsWith("//") && !/[\\\r\n]/.test(value) && !value.startsWith("/auth/") ? value : "/";

@@ -50,7 +50,7 @@ export async function requireCsrf(request?: Request, form?: FormData) {
   if (context?.testHarness && isolatedTestEnvironment()) return;
   const config = authConfiguration(), names = cookieNames();
   const hdr = request?.headers ?? await headers();
-  if (hdr.get("origin") !== config.origin) throw new AccessError(403, "Origen de solicitud no autorizado.");
+  if (!config.requestOrigins.includes(hdr.get("origin") ?? "")) throw new AccessError(403, "Origen de solicitud no autorizado.");
   const token = request ? requestCookie(request, names.session) : (await cookies()).get(names.session)?.value ?? "";
   const { session } = await sessionFromToken(token);
   const supplied = hdr.get("x-covex-csrf") ?? String(form?.get("_covexCsrf") ?? "");
