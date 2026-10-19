@@ -128,6 +128,7 @@ async function NewCapaPageAuthenticatedContent({
       {deviationPlan ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde una propuesta de la desviación {deviationPlan.deviation.qmsRecord.businessCode}.</div> : null}
       {complaintPlan ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde una propuesta de la reclamación {complaintPlan.complaint.qmsRecord.businessCode}.</div> : null}
       {complaint ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando directamente desde la reclamación {complaint.qmsRecord.businessCode}.</div> : null}
+      {fromAuditFindingId && !auditFinding ? <div className="analytics-note"><strong>Hallazgo no disponible:</strong> el hallazgo de auditoría ya no existe, está retirado o su auditoría está anulada. La CAPA se creará sin vincular.</div> : null}
       {auditFinding ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde el hallazgo {auditFinding.reference} de la auditoría {auditFinding.auditLabel}. Al guardarla, como borrador o abierta, queda vinculada al hallazgo.</div> : null}
       <PermissionGate permission="CREATE"><CapaForm
         mode="create"

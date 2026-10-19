@@ -1,5 +1,5 @@
 "use server";
-import { attributeAuditFinding } from "@/modules/audits/finding-service";
+import { AuditFindingAttributionError, attributeAuditFinding } from "@/modules/audits/finding-service";
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
@@ -337,7 +337,8 @@ async function createCapaActionAuthenticatedContent(
       const fromAuditFindingId = String(formData.get("fromAuditFindingId") ?? "").trim();
       if (fromAuditFindingId) {
         const finding = await tx.auditFinding.findUnique({ where: { id: fromAuditFindingId }, select: { audit: { select: { qmsRecordId: true } } } });
-        if (finding && v.origins.some((origin) => origin.id === finding.audit.qmsRecordId)) await attributeAuditFinding(tx, { findingId: fromAuditFindingId, targetRecordId: qmsRecord.id, actor: parsed.actor });
+        if (!finding) throw new AuditFindingAttributionError("El hallazgo de auditoría no existe.");
+        if (v.origins.some((origin) => origin.id === finding.audit.qmsRecordId)) await attributeAuditFinding(tx, { findingId: fromAuditFindingId, targetRecordId: qmsRecord.id, actor: parsed.actor });
       }
 
       const versionRecord = await tx.capa.findUniqueOrThrow({
@@ -384,7 +385,8 @@ async function createCapaActionAuthenticatedContent(
     }
     if (
       error instanceof DeviationCapaPlanLinkError ||
-      error instanceof ComplaintCapaLinkError
+      error instanceof ComplaintCapaLinkError ||
+      error instanceof AuditFindingAttributionError
     ) {
       return preserveFormState(previous, formData, {
         error: "No se puede guardar la CAPA.",

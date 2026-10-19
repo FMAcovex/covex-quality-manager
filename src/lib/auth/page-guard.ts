@@ -48,6 +48,11 @@ export async function authorizedPage(file: string, run: () => ReactNode | void |
         const plan = await (prisma as unknown as Record<string, Delegate>)[model].findUnique({ where: { id: query[key] }, select: { [parentKey]: true } });
         if (plan) sourceAllowed &&= canPresent(user, module, "EDIT", await resourceScope(module, plan[parentKey]));
       }
+      if (query?.fromAuditFindingId) {
+        // R5B2: alta de CAPA o Desviación desde un hallazgo: exige poder editar su auditoría.
+        const finding = await prisma.auditFinding.findUnique({ where: { id: query.fromAuditFindingId }, select: { auditId: true } });
+        sourceAllowed &&= canPresent(user, "AUDIT", "EDIT", finding ? await resourceScope("AUDIT", finding.auditId) : {});
+      }
       if (query?.planEntryId) {
         const entry = await prisma.auditPlanEntry.findUnique({ where: { id: query.planEntryId }, select: { planId: true } });
         if (entry) sourceAllowed &&= canPresent(user, "AUDIT", "EDIT", { id: entry.planId });

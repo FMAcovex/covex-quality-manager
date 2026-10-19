@@ -98,6 +98,8 @@ export async function saveAuditFollowup(auditId: string, raw: unknown, followupI
     await event(tx, audit.qmsRecordId, v.actor, `audit.followups.${after.id}`, before ? valuesOnly(before) : null, valuesOnly(after), v.changeReason || "Seguimiento de auditoría / hallazgo"); return after;
   });
 }
+/** Error de negocio al atribuir un expediente a un hallazgo; los formularios muestran su mensaje. */
+export class AuditFindingAttributionError extends Error {}
 export async function linkAuditFinding(auditId: string, findingId: string, targetRecordId: string, actor: string) {
   parse(retirementInputSchema, { actor, reason: "Vinculación" });
   return prisma.$transaction(async tx => {
@@ -111,17 +113,20 @@ export async function linkAuditFinding(auditId: string, findingId: string, targe
  * CAPA o Desviación desde el hallazgo (R5B2), que la llama la acción del módulo de destino.
  */
 export async function attributeAuditFinding(tx: Prisma.TransactionClient, { findingId, targetRecordId, actor }: { findingId: string; targetRecordId: string; actor: string }) {
-  const finding = await tx.auditFinding.findUnique({ where: { id: findingId }, select: { auditId: true, isActive: true } });
-  if (!finding?.isActive) throw new Error("El hallazgo no existe o está retirado.");
+  const finding = await tx.auditFinding.findUnique({ where: { id: findingId }, select: { auditId: true, audit: { select: { qmsRecord: { select: { isActive: true } } } } } });
+  if (!finding) throw new AuditFindingAttributionError("El hallazgo de auditoría no existe.");
+  if (!finding.audit.qmsRecord.isActive) throw new AuditFindingAttributionError("La auditoría del hallazgo está anulada: no se puede vincular.");
   const audit = await lockAudit(tx, finding.auditId);
+  // Se relee tras el bloqueo: una retirada concurrente no debe dejar una atribución a un hallazgo retirado.
+  if (!(await tx.auditFinding.findUnique({ where: { id: findingId }, select: { isActive: true } }))?.isActive) throw new AuditFindingAttributionError("El hallazgo está retirado: no se puede vincular.");
   const target = await tx.qmsRecord.findUnique({ where: { id: targetRecordId }, include: { capa: { select: { status: true } }, deviation: { select: { status: true } } } });
   // R5B1 (D-110): se admiten auditorías y destinos en borrador; el destino debe existir y estar activo.
-  if (!target || !target.isActive || !["DEVIATION", "CAPA"].includes(target.recordType)) throw new Error("Selecciona una Desviación o CAPA existente y activa.");
+  if (!target || !target.isActive || !["DEVIATION", "CAPA"].includes(target.recordType)) throw new AuditFindingAttributionError("Selecciona una Desviación o CAPA existente y activa.");
   const existing = await tx.qmsRelation.findUnique({ where: { sourceRecordId_targetRecordId_relationType: { sourceRecordId: audit.qmsRecordId, targetRecordId, relationType: "GENERATES" } } });
   const relation = await createQmsRelation(tx, { sourceRecordId: audit.qmsRecordId, targetRecordId, createdByText: actor });
   if (!existing?.isActive) await event(tx, audit.qmsRecordId, actor, "relations", existing, relation, "Auditoría genera expediente existente");
   const before = await tx.auditFindingRelation.findUnique({ where: { findingId_qmsRelationId: { findingId, qmsRelationId: relation.id } } });
-  if (before?.isActive) throw new Error("El expediente ya está atribuido a este hallazgo.");
+  if (before?.isActive) throw new AuditFindingAttributionError("El expediente ya está atribuido a este hallazgo.");
   const after = before
     ? await tx.auditFindingRelation.update({ where: { id: before.id }, data: { isActive: true, updatedByText: actor, retiredAt: null, retiredByText: null, retirementReason: null } })
     : await tx.auditFindingRelation.create({ data: { findingId, qmsRelationId: relation.id, createdByText: actor } });
