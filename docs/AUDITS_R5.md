@@ -1,6 +1,6 @@
 # Auditorías R5 — CAPA plan con versiones, hallazgos y aspecto (diseño)
 
-Estado: **diseño aprobado el 2026-10-19 (D-110). R5A, R5B1 y R5B2 implantadas; R5C y R5D pendientes.**
+Estado: **diseño aprobado el 2026-10-19 (D-110). R5A, R5B1, R5B2 y R5C1 implantadas; R5C2 y R5D pendientes.**
 
 Origen: revisión del módulo por el responsable de Calidad (2026-10-19), once observaciones sobre auditorías internas y externas. Este documento recoge lo acordado y lo divide en cuatro PR (R5A–R5D). Se respeta D-070: no se rediseña la aplicación; el módulo se alinea con la maquetación de los demás.
 
@@ -107,6 +107,10 @@ Sin cambios de base de datos. Añadido a petición del responsable de Calidad: e
 - Deja el hallazgo con `treatmentStatus=CLOSED` (o `NOT_APPLICABLE`) sin acciones, con las validaciones actuales de tratamiento y evidencia.
 
 ## 5. R5C — CAPA plan con versiones, seguimiento y cierre
+
+Se implanta en dos PR:
+- **R5C1:** modelo, captura y contrato, versión 00, descargas y pestaña Versiones.
+- **R5C2:** seguimiento con versiones 01+, cierre nuevo y seguimientos antiguos en solo lectura.
 
 **Modelo nuevo `AuditCapaPlanVersion`** (patrón de `AuditAnnualProgrammeVersion`):
 

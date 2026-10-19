@@ -13,6 +13,7 @@ import { auditReportInclude, lockReportAudit, auditReportEvent, readAuditSnapsho
 import { generateAuditReport, generateAuditCapaPlan, generateAuditExternalPlan } from "./generators";
 import { validateAuditAttachment } from "./attachment-validation";
 import { auditDocumentBlocker } from "./availability";
+import { listCapaPlanVersions } from "../capa-plan-service";
 const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -94,5 +95,6 @@ export async function getAuditReportView(id: string) {
   const versions=await prisma.qmsRecordVersion.findMany({where:{qmsRecordId:audit.qmsRecordId},include:{documents:{select:{id:true,kind:true,fileName:true,uploadedAt:true}},generatedDocuments:{select:{id:true,documentType:true,fileName:true,generatedAt:true}}},orderBy:{sequenceNumber:'desc'}});
   const {auditClosureContext}=await import('../report-service');
   const closure=await prisma.$transaction(tx=>auditClosureContext(tx,audit));
-  return {audit,versions,closure};
+  const capaPlanVersions=await listCapaPlanVersions(id);
+  return {audit,versions,closure,capaPlanVersions};
 }

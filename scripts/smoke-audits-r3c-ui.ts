@@ -24,6 +24,13 @@ async function main(){
   const obs=await saveAuditFinding(audit.id,{actor:'Smoke UI',findingType:'FINDING',criticality:'MINOR',description:'OBS histórica UI',treatment:'Acción local'});
   const rk=await saveAuditFinding(audit.id,{actor:'Smoke UI',findingType:'RECOMMENDATION',description:'Rk histórica UI',treatment:'No procede',treatmentStatus:'NOT_APPLICABLE',evidence:'Justificación UI'});
   const action=await saveAuditFindingAction(audit.id,obs.id,{actor:'Smoke UI',description:'Acción UI',status:'OPEN'});
+  // D-110 (R5C1): establecer el CAPA plan (versión 00) desde Seguimiento, sin informe emitido.
+  await view(page,`/audits/${audit.id}?tab=followup`);const planCard=()=>page.locator('section.card').filter({has:page.getByRole('heading',{name:'CAPA plan',exact:true})});
+  const planForm=planCard().locator('form');await planForm.locator('[name="capaPlanDate"]').fill('2096-11-15');await save(page,planForm,'Establecer CAPA plan (versión 00)');
+  await planCard().getByText('Versión vigente 00').waitFor();assert.equal(await planCard().getByRole('button',{name:'Establecer CAPA plan (versión 00)'}).count(),0);
+  assert.equal(await prisma.auditCapaPlanVersion.count({where:{auditId:audit.id}}),1);
+  await view(page,`/audits/${audit.id}?tab=versions`);const planVersions=page.locator('section.card').filter({has:page.getByRole('heading',{name:'CAPA plan',exact:true})});
+  const [planDownload]=await Promise.all([page.waitForEvent('download'),planVersions.getByRole('link',{name:'CAPA plan · 00',exact:true}).click()]);assert.equal(await planDownload.failure(),null);assert.match(planDownload.suggestedFilename(),/_CAPA_PLAN_00\.xlsx$/);
   await view(page,`/audits/${audit.id}?tab=report`);let form=page.locator('form').filter({has:page.locator('[name="reportDate"]')});await form.locator('[name="reportDate"]').fill('2096-11-16');await form.locator('[name="conclusion"]').fill('Conclusión UI versión 00');await form.locator('[name="programme"]').fill('09:00 | Revisión documental');await save(page,form,'Guardar datos del informe');await page.waitForLoadState('networkidle');assert.equal((await prisma.audit.findUniqueOrThrow({where:{id:audit.id}})).conclusion,'Conclusión UI versión 00');
   await view(page,`/audits/${audit.id}?tab=versions`);form=page.locator('form').filter({has:page.getByRole('button',{name:'Emitir informe inicial 00',exact:true})});await save(page,form,'Emitir informe inicial 00');await page.getByRole('heading',{name:'Versión 00',exact:true}).waitFor();
   const v00=await prisma.qmsRecordVersion.findFirstOrThrow({where:{qmsRecordId:audit.qmsRecordId,sequenceNumber:0}}),snapshot00=JSON.stringify(v00.snapshot);

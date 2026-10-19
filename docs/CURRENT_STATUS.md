@@ -136,6 +136,16 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Auditorías R5C1: versiones del CAPA plan (2026-10-19, D-110):**
+- **Versión 00:** «Establecer CAPA plan (versión 00)» en Seguimiento congela hallazgos, acciones y vínculos con su A4.03, aunque estén incompletos y sin informe emitido.
+- **Inmutabilidad:** cada versión es inmutable (tabla `AuditCapaPlanVersion`, migración `20261019000100_audit_capa_plan_versions`).
+- **Versiones:** la pestaña Versiones muestra las secuencias «Informe» y «CAPA plan»; Documentos incluye sus descargas.
+- **Captura B2:** operación AU06 y contrato `audit-contract-capa-plan.json`, reconocido por `protection.ts` y `backup.py`.
+- **Comprobado** con:
+  - las 5 pruebas de navegador de Auditorías sobre una base nueva;
+  - las pruebas de base de datos de Auditorías;
+  - la prueba de captura del audit trail.
+
 **Auditorías R5B2: abrir CAPA o Desviación desde un hallazgo (2026-10-19, D-110):**
 - «Abrir CAPA» y «Abrir desviación» en la ficha del hallazgo llevan al alta rellenada. Lo guardado, como borrador o abierto, queda vinculado al hallazgo y aparece en su ficha («Borrador sin código» mientras no tenga código).
 - Comprobado con:
