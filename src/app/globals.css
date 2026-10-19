@@ -2851,3 +2851,5 @@ button[disabled] {
 .capa-plan-followup-table input, .capa-plan-followup-table select, .capa-plan-followup-table textarea { width: 100%; min-width: 120px; }
 .capa-plan-followup-table textarea { min-height: 2.4em; }
 .capa-plan-followup-table small { color: var(--muted, #5b6573); }
+.capa-plan-followup-table td:nth-child(2), .capa-plan-followup-table th[scope="row"] small { max-width: 280px; }
+.capa-plan-followup-table td:nth-child(2) { width: 24%; }
