@@ -51,6 +51,9 @@ describe("Auditorías R3A", () => {
     expect(auditSituation({...audit,followups:[{}]})).toBe("En seguimiento");
     expect(auditSituation({...audit,scenario:"SUPPLIER",reportSentAt:"2026-10-08"})).toBe("Cierre parcial");
     expect(auditSituation({...audit,scenario:"INTERNAL_COVEX",capaPlanEstablishedAt:"2026-10-08"})).toBe("Cierre parcial");
+    // D-110: la versión 00 puede establecerse antes de emitir el informe.
+    expect(auditSituation({...audit,reportIssued:false,scenario:"INTERNAL_COVEX",capaPlanEstablishedAt:"2026-10-08"})).toBe("Cierre parcial");
+    expect(auditSituation({...audit,status:"DRAFT",reportIssued:false,scenario:"INTERNAL_COVEX",capaPlanEstablishedAt:"2026-10-08"})).toBe("Borrador");
   });
   it("usa dos dígitos por área/entidad y rechaza desbordamiento y series recibidas", () => {
     const internal = {recordType:"AUDIT" as const,auditType:"INTERNAL" as const,auditScenario:"INTERNAL_COVEX" as const,departmentCode:"LG-00",year:2026};

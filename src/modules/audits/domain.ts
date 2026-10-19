@@ -26,8 +26,9 @@ export function hasAuditBusinessSeries(scenario: AuditScenario | null) {
 }
 export function auditSituation(audit: { status: AuditStatus; performedDate: Date | string | null; findings?: (FindingState & {isActive:boolean})[]; followups?: unknown[]; reportIssued?: boolean; capaPlanEstablishedAt?: Date | string | null; reportSentAt?: Date | string | null; scenario?: AuditScenario | null }) {
   if (audit.status === "CLOSED") return "Cerrada";
+  // D-110: el cierre parcial es el CAPA plan establecido (internas) o el informe enviado (proveedor).
+  if (audit.status !== "DRAFT" && (audit.scenario === "SUPPLIER" ? audit.reportSentAt : audit.scenario?.startsWith("INTERNAL") && audit.capaPlanEstablishedAt)) return "Cierre parcial";
   if (audit.reportIssued) {
-    if (audit.scenario === "SUPPLIER" ? audit.reportSentAt : audit.scenario?.startsWith("INTERNAL") && audit.capaPlanEstablishedAt) return "Cierre parcial";
     if (audit.findings?.some(f=>f.isActive && f.actions.some(a=>a.isActive && !["CLOSED","NOT_APPLICABLE"].includes(a.status))) || audit.followups?.length) return "En seguimiento";
     return "Informe emitido";
   }
