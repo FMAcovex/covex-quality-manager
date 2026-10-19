@@ -50,6 +50,18 @@ describe("4B1 protección directa de entradas", () => {
     await identityContext.run({ principal: editor, unitTest: true }, () => expect(authorizedAction("saveAuditChildAction", [args[0],"followup",...args.slice(2)], run)).rejects.toMatchObject({ status: 403 }));
     await identityContext.run({ principal: editor, unitTest: true }, () => expect(authorizedAction("saveAuditChildAction", [args[0],"finding",...args.slice(2)], run)).resolves.toBe("must not write a followup"));
   });
+  it("cerrar un hallazgo de auditoría (treatmentStatus CLOSED) exige CLOSE (R5B1)", async () => {
+    configureTest();
+    const editor: Principal = { ...principal, id: "synthetic-audit-finding-editor", grants: [{ module: "AUDIT", permission: "EDIT", scope: "ALL" }] };
+    const run = vi.fn(async () => "saved");
+    const form = (treatmentStatus: string) => { const data = new FormData(); data.set("treatmentStatus", treatmentStatus); return data; };
+    const args = (status: string) => ["synthetic-audit", "finding", undefined, "synthetic-finding", { error: null }, form(status)];
+    await identityContext.run({ principal: editor, unitTest: true }, () => expect(authorizedAction("saveAuditChildAction", args("CLOSED"), run)).rejects.toMatchObject({ status: 403 }));
+    expect(run).not.toHaveBeenCalled();
+    await identityContext.run({ principal: editor, unitTest: true }, () => expect(authorizedAction("saveAuditChildAction", args("NOT_APPLICABLE"), run)).resolves.toBe("saved"));
+    const closer: Principal = { ...editor, grants: [...editor.grants, { module: "AUDIT", permission: "CLOSE", scope: "ALL" }] };
+    await identityContext.run({ principal: closer, unitTest: true }, () => expect(authorizedAction("saveAuditChildAction", args("CLOSED"), run)).resolves.toBe("saved"));
+  });
   it("cerrar una reclamación exige CLOSE aunque el estado llegue en saveStatus", async () => {
     configureTest();
     const editor: Principal = { ...principal, id: "synthetic-complaint-editor", grants: [{ module: "COMPLAINT", permission: "CREATE", scope: "ALL" }] };
