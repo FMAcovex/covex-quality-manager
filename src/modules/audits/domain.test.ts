@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { auditInputSchema } from "./validation";
-import { auditStatusBadgeClass, auditSituation, compatibleAuditScenario, auditScenarioLabels, auditRoleLabels, auditCodeYear } from "./domain";
+import { allowedFindingTypes, auditStatusBadgeClass, auditSituation, compatibleAuditScenario, auditScenarioLabels, auditRoleLabels, auditCodeYear, receivedAuditScenario } from "./domain";
 import { auditListWhere } from "./queries";
 import { buildOperationalBusinessCode, extractOperationalBusinessCodeSequence, operationalBusinessCodePrefix } from "@/lib/qms/business-code";
 
@@ -99,5 +99,17 @@ describe("auditStatusBadgeClass", () => {
     expect(auditStatusBadgeClass("DRAFT")).toBe("neutral");
     expect(auditStatusBadgeClass("OPEN")).toBe("open");
     expect(auditStatusBadgeClass("CLOSED")).toBe("closed");
+  });
+});
+describe("Cliente e inspección (D-110, R5D)", () => {
+  it("identifica los escenarios con informe recibido", () => {
+    expect(["CLIENT", "AUTHORITY"].every(s => receivedAuditScenario(s as never))).toBe(true);
+    expect([null, "SUPPLIER", "INTERNAL_COVEX", "INTERNAL_CONTRACTED"].some(s => receivedAuditScenario(s as never))).toBe(false);
+  });
+  it("limita los tipos de hallazgo por escenario", () => {
+    expect(allowedFindingTypes("CLIENT")).toEqual(["CLIENT_OBSERVATION", "RECOMMENDATION"]);
+    expect(allowedFindingTypes("AUTHORITY")).toEqual(["AUTHORITY_OBSERVATION", "RECOMMENDATION"]);
+    expect(allowedFindingTypes("SUPPLIER")).toEqual(["FINDING", "RECOMMENDATION"]);
+    expect(allowedFindingTypes(null)).toEqual(["FINDING", "RECOMMENDATION"]);
   });
 });

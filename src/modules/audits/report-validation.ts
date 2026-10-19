@@ -8,6 +8,8 @@ export const reportInputSchema = z.object({
   ...Object.fromEntries(reportTextFields.map(k => [k, text])) as Record<typeof reportTextFields[number], typeof text>,
   ...Object.fromEntries(reportDateFields.map(k => [k, dateInput])) as Record<typeof reportDateFields[number], typeof dateInput>,
   responseRequired: z.boolean().default(false),
+  // D-110 (R5D): en cliente e inspección el panel guarda también las observaciones internas.
+  internalObservations: text,
   actor: z.string().trim().min(1, "Indica el responsable.").max(200),
   expectedUpdatedAt: z.string().optional(),
 });

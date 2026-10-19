@@ -1,6 +1,6 @@
 import { auditFollowupSituation } from "./finding-domain";
 import type { FindingState } from "./finding-domain";
-import type { AuditScenario, AuditStatus, AuditType } from "@prisma/client";
+import type { AuditFindingType, AuditScenario, AuditStatus, AuditType } from "@prisma/client";
 
 export const auditTypeLabels = { INTERNAL: "Interna", EXTERNAL: "Externa" } as const;
 export const auditScenarioLabels = {
@@ -41,4 +41,12 @@ export function auditDate(value: Date | string | null | undefined) {
 export function auditCodeYear(values: { plannedDate: string; openedAt: string; performedDate: string }) {
   const date = values.plannedDate || values.openedAt || values.performedDate;
   return date ? Number(date.slice(0, 4)) : null;
+}
+/** D-110 (R5D): en cliente e inspección el informe es el recibido; no se emite informe COVEX. */
+export const receivedAuditScenario = (scenario: AuditScenario | null | undefined) => scenario === "CLIENT" || scenario === "AUTHORITY";
+/** Tipos de hallazgo que se registran a mano en cada escenario (D-110, R5D). */
+export function allowedFindingTypes(scenario: AuditScenario | null | undefined): AuditFindingType[] {
+  if (scenario === "CLIENT") return ["CLIENT_OBSERVATION", "RECOMMENDATION"];
+  if (scenario === "AUTHORITY") return ["AUTHORITY_OBSERVATION", "RECOMMENDATION"];
+  return ["FINDING", "RECOMMENDATION"];
 }
