@@ -235,6 +235,10 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .info-item.full { grid-column: 1 / -1; }
 .prose-value { white-space: pre-wrap; line-height: 1.55; }
 /* Datos clave del expediente (D-111, V1) */
+.record-key-facts { margin-bottom: 14px; }
+.record-key-facts + .card { margin-top: 0; }
+.record-header > div:first-child { min-width: 0; flex: 1 1 auto; }
+@media (min-width: 761px) { .record-actions { flex: 0 0 auto; flex-wrap: nowrap; } .record-actions > .muted-note { max-width: 220px; } }
 .record-key-facts dl { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; margin: 0; }
 .record-key-facts .key-fact { min-width: 0; }
 .record-key-facts dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
