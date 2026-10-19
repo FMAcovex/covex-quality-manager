@@ -230,6 +230,18 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .info-item.wide { grid-column: span 2; }
 .info-item.full { grid-column: 1 / -1; }
 .prose-value { white-space: pre-wrap; line-height: 1.55; }
+/* Datos clave del expediente (D-111, V1) */
+.record-key-facts dl { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.record-key-facts .key-fact { min-width: 0; }
+.record-key-facts dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.record-key-facts dd { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+.record-key-facts dd .badge { font-size: 13px; min-height: 28px; padding: 3px 11px; }
+.record-key-facts .key-fact.is-overdue dd { color: #a33131; }
+.record-key-facts .key-fact.is-upcoming dd { color: #855d10; }
+.key-fact-flag { display: block; margin-top: 3px; font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
+.empty-value { color: var(--muted); font-weight: 400; }
+@media (max-width: 1199px) { .record-key-facts dl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 759px) { .record-key-facts dl { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .timeline { display: grid; gap: 12px; }
 .timeline-item { border-left: 3px solid #bad3f0; padding: 4px 0 4px 14px; }
 .timeline-item header { display: flex; gap: 9px; align-items: baseline; flex-wrap: wrap; margin-bottom: 5px; }
