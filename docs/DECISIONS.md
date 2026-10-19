@@ -1045,6 +1045,11 @@ Decisión del responsable de Calidad tras revisar el módulo. El diseño complet
   - «Justificar y cerrar» un hallazgo sin acciones;
   - se pueden vincular Desviaciones y CAPA en borrador, también desde una auditoría en borrador (se busca el borrador por su descripción);
   - cerrar un hallazgo exige el permiso CLOSE también en el servidor.
-- **«Abrir CAPA» / «Abrir desviación» desde un hallazgo (R5B2):** abren el formulario de nueva CAPA o Desviación ya rellenado y lo guardado queda vinculado al hallazgo. Se descartó crearlo con un clic: el audit trail asigna cada operación a un único módulo.
-- **Pendiente de las siguientes PR:** R5B2, R5C (versiones del CAPA plan, seguimiento y cierre) y R5D (cliente e inspección).
+- **R5B2 (implantada):**
+  - «Abrir CAPA» y «Abrir desviación» desde un hallazgo abren el alta ya rellenada con departamento, descripción del hallazgo y origen;
+  - lo guardado, como borrador o abierto, queda vinculado al hallazgo;
+  - la acción de alta del módulo de destino crea la relación y la atribución, y exige EDIT en la auditoría;
+  - si en la CAPA se quita la auditoría de los orígenes antes de guardar, no se vincula;
+  - se descartó crearlo con un clic: el audit trail asigna cada operación a un único módulo.
+- **Pendiente de las siguientes PR:** R5C (versiones del CAPA plan, seguimiento y cierre) y R5D (cliente e inspección).
 

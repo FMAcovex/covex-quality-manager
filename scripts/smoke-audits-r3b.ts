@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../src/lib/db";
 import { saveAudit, auditDefaults } from "../src/modules/audits/service";
-import { saveAuditFinding, saveAuditFindingAction, saveAuditFollowup, retireAuditElement, linkAuditFinding, retireAuditAttribution, unlinkAuditRecord } from "../src/modules/audits/finding-service";
+import { saveAuditFinding, saveAuditFindingAction, saveAuditFollowup, retireAuditElement, linkAuditFinding, retireAuditAttribution, unlinkAuditRecord, attributeAuditFinding, AuditFindingAttributionError } from "../src/modules/audits/finding-service";
 import { getAuditWork, getAuditOrigins } from "../src/modules/audits/finding-queries";
 import { getAuditList } from "../src/modules/audits/queries";
 import { getCapaList } from "../src/modules/capa/queries";
@@ -82,6 +82,8 @@ async function main() {
   assert.deepEqual((await prisma.qmsRecordVersion.findUniqueOrThrow({where:{id:snapshot.id}})).snapshot,snapshot.snapshot);
   const restored=await linkAuditFinding(audit.id,obs.id,capa.id,actor); assert.equal(restored.id,attr1.id);
   await retireAuditElement(audit.id,obs.id,{actor,reason:"Retirada lógica ficticia"}); assert(!(await prisma.auditFinding.findUniqueOrThrow({where:{id:obs.id}})).isActive); assert.equal(await prisma.auditFindingAction.count({where:{findingId:obs.id}}),2);
+  // R5B2: atribuir a un hallazgo retirado da un error claro y tipado (lo usa el alta de CAPA/Desviación desde el hallazgo).
+  await assert.rejects(prisma.$transaction(tx=>attributeAuditFinding(tx,{findingId:obs.id,targetRecordId:capa.id,actor})),(e:unknown)=>e instanceof AuditFindingAttributionError&&/retirado/.test(e.message));
   const after=await saveAuditFinding(audit.id,{actor,findingType:"FINDING",description:"No reutilizar OBS"}); assert.equal(after.reference,"OBS 04");
   assert.equal((await getAuditOrigins(capa.id))[0].auditFindingRelations[0].finding.reference,"OBS 01");
   await assert.rejects(retireAuditElement(audit.id,rk.id,{actor,reason:""}),/motivo/);

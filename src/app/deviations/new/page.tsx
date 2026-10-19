@@ -5,11 +5,21 @@ import Link from "next/link";
 import { createDeviationAction } from "@/modules/deviations/actions";
 import { DeviationForm } from "@/modules/deviations/components/deviation-form";
 import { getDeviationFormLookups } from "@/modules/deviations/queries";
+import { getAuditFindingOrigin } from "@/modules/audits/finding-queries";
 
 export const dynamic = "force-dynamic";
 
-async function NewDeviationPageAuthenticatedContent() {
-  const [{ departments }, users] = await Promise.all([getDeviationFormLookups(), appUserOptions()]);
+async function NewDeviationPageAuthenticatedContent({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = await searchParams;
+  const fromAuditFindingId = typeof params.fromAuditFindingId === "string" ? params.fromAuditFindingId : undefined;
+  const [{ departments }, users, auditFinding] = await Promise.all([getDeviationFormLookups(), appUserOptions(), fromAuditFindingId ? getAuditFindingOrigin(fromAuditFindingId) : Promise.resolve(null)]);
+  // R5B2: desviación abierta desde un hallazgo de auditoría.
+  const defaults = auditFinding ? {
+    departmentId: auditFinding.departmentId ?? undefined,
+    provenance: "OTHER",
+    otherOrigin: `Auditoría ${auditFinding.auditLabel} · ${auditFinding.reference}`,
+    whatHappened: auditFinding.description,
+  } : undefined;
 
   return (
     <section className="form-page">
@@ -21,7 +31,9 @@ async function NewDeviationPageAuthenticatedContent() {
         </div>
         <Link className="button" href="/deviations">← Volver</Link>
       </div>
-      <PermissionGate permission="CREATE"><DeviationForm action={createDeviationAction} departments={departments} users={users} mode="create" /></PermissionGate>
+      {fromAuditFindingId && !auditFinding ? <div className="analytics-note"><strong>Hallazgo no disponible:</strong> el hallazgo de auditoría ya no existe, está retirado o su auditoría está anulada. La desviación se creará sin vincular.</div> : null}
+      {auditFinding ? <div className="analytics-note"><strong>Origen:</strong> esta desviación se está creando desde el hallazgo {auditFinding.reference} de la auditoría {auditFinding.auditLabel}. Al guardarla, como borrador o abierta, queda vinculada al hallazgo.</div> : null}
+      <PermissionGate permission="CREATE"><DeviationForm action={createDeviationAction} departments={departments} users={users} mode="create" defaults={defaults} fromAuditFindingId={auditFinding ? auditFinding.findingId : undefined} /></PermissionGate>
     </section>
   );
 }

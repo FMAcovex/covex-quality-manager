@@ -136,12 +136,20 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Auditorías R5B2: abrir CAPA o Desviación desde un hallazgo (2026-10-19, D-110):**
+- «Abrir CAPA» y «Abrir desviación» en la ficha del hallazgo llevan al alta rellenada. Lo guardado, como borrador o abierto, queda vinculado al hallazgo y aparece en su ficha («Borrador sin código» mientras no tenga código).
+- Comprobado con:
+  - la prueba de navegador r3b, que abre una CAPA y una desviación desde un hallazgo, las guarda como borrador y comprueba la atribución;
+  - el resto del grupo de Auditorías;
+  - las pruebas de CAPA y Desviaciones (capa, r3-capa, hito8, phase3b1 UI);
+  - la prueba de captura del audit trail.
+
 **Auditorías R5B1: ficha de hallazgos (2026-10-19, D-110):**
 - **Ficha por hallazgo:** botones «Editar», «Justificar y cerrar», «+ Añadir acción» y «Vincular Desviación / CAPA existente». Cada uno abre su formulario en el sitio, uno cada vez, sin desplegables anidados. Las acciones del CAPA Plan aparecen en filas.
 - **Vínculos:** se pueden vincular borradores de Desviación y CAPA, que se buscan por su descripción, también con la auditoría en borrador.
 - **Permisos:** cerrar un hallazgo exige el permiso CLOSE también en el servidor.
 - **Comprobado** con las 5 pruebas de navegador de Auditorías sobre una base nueva, las pruebas de base de datos r3b y r3c, y un recorrido visual en la demo.
-- **Pendiente:** R5B2 (abrir CAPA o Desviación con el formulario rellenado), R5C y R5D.
+- **Pendiente:** R5C y R5D.
 
 **Auditorías R5A: aspecto, documentos y programas anuales (2026-10-19, D-110):**
 - **Expediente:** cabecera, pestañas y estado en color como en Desviaciones; el historial está en Cronología, con las etiquetas de hallazgos, acciones y seguimientos y los valores anterior y nuevo de cada cambio.

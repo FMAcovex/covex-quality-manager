@@ -4,6 +4,7 @@ import { authorizedPage } from "@/lib/auth/page-guard";
 import { appUserOptions } from "@/lib/auth/app-users";
 import { createCapaAction } from "@/modules/capa/actions";
 import { CapaForm } from "@/modules/capa/components/capa-form";
+import { getAuditFindingOrigin } from "@/modules/audits/finding-queries";
 import { getCapaLookups, getComplaintPlanPrefill, getComplaintPrefill, getDeviationPlanPrefill } from "@/modules/capa/queries";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,9 @@ async function NewCapaPageAuthenticatedContent({
     typeof params.fromComplaintPlanId === "string" ? params.fromComplaintPlanId : undefined;
   const fromComplaintId =
     typeof params.fromComplaintId === "string" ? params.fromComplaintId : undefined;
+  const fromAuditFindingId =
+    typeof params.fromAuditFindingId === "string" ? params.fromAuditFindingId : undefined;
+  const auditFinding = fromAuditFindingId ? await getAuditFindingOrigin(fromAuditFindingId) : null;
   const [{ departments }, deviationPlan, complaintPlan, complaint] = await Promise.all([
     getCapaLookups(),
     fromDeviationPlanId ? getDeviationPlanPrefill(fromDeviationPlanId) : Promise.resolve(null),
@@ -98,7 +102,19 @@ async function NewCapaPageAuthenticatedContent({
             rootCauseCategories: complaint.rootCauseCategories,
             createdByText: currentActor(),
           }
-        : {
+        : auditFinding
+          ? {
+              // R5B2: CAPA abierta desde un hallazgo de auditoría.
+              actionType: "CORRECTIVE" as const,
+              departmentId: auditFinding.departmentId ?? undefined,
+              openedAt: new Date().toISOString().slice(0, 10),
+              originType: "Auditoría",
+              originCode: auditFinding.auditRecord.businessCode ?? undefined,
+              origins: [{ id: auditFinding.auditRecord.id, recordType: "AUDIT" as const, businessCode: auditFinding.auditRecord.businessCode ?? "", year: auditFinding.auditRecord.year }],
+              defectDescription: auditFinding.description,
+              createdByText: currentActor(),
+            }
+          : {
           openedAt: new Date().toISOString().slice(0, 10),
           createdByText: currentActor(),
         };
@@ -112,6 +128,8 @@ async function NewCapaPageAuthenticatedContent({
       {deviationPlan ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde una propuesta de la desviación {deviationPlan.deviation.qmsRecord.businessCode}.</div> : null}
       {complaintPlan ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde una propuesta de la reclamación {complaintPlan.complaint.qmsRecord.businessCode}.</div> : null}
       {complaint ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando directamente desde la reclamación {complaint.qmsRecord.businessCode}.</div> : null}
+      {fromAuditFindingId && !auditFinding ? <div className="analytics-note"><strong>Hallazgo no disponible:</strong> el hallazgo de auditoría ya no existe, está retirado o su auditoría está anulada. La CAPA se creará sin vincular.</div> : null}
+      {auditFinding ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde el hallazgo {auditFinding.reference} de la auditoría {auditFinding.auditLabel}. Al guardarla, como borrador o abierta, queda vinculada al hallazgo.</div> : null}
       <PermissionGate permission="CREATE"><CapaForm
         mode="create"
         action={createCapaAction}
@@ -121,6 +139,7 @@ async function NewCapaPageAuthenticatedContent({
         fromDeviationPlanId={fromDeviationPlanId}
         fromComplaintPlanId={fromComplaintPlanId}
         fromComplaintId={fromComplaintId}
+        fromAuditFindingId={auditFinding ? auditFinding.findingId : undefined}
       /></PermissionGate>
     </section>
   );

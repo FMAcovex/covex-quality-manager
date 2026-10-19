@@ -178,6 +178,7 @@ export function DeviationForm({
   currentVersionSequence = 0,
   similarDeviations,
   users = [],
+  fromAuditFindingId,
 }: {
   action: FormAction;
   departments: DepartmentOption[];
@@ -192,6 +193,8 @@ export function DeviationForm({
   similarDeviations?: SimilarDeviation[];
   /** Usuarios que se pueden elegir junto al responsable en texto (D-101). */
   users?: AppUserOption[];
+  /** R5B2: alta desde un hallazgo de auditoría; al guardar queda atribuida. */
+  fromAuditFindingId?: string;
 }) {
   const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, { error: null });
@@ -279,6 +282,7 @@ export function DeviationForm({
       <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""} />
       <input type="hidden" name="detailTab" value={detailTab ?? ""} />
+      {fromAuditFindingId ? <input type="hidden" name="fromAuditFindingId" value={fromAuditFindingId} /> : null}
       <input type="hidden" name="immediateActionsJson" value={JSON.stringify(actions)} />
       <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)} />
       <input type="hidden" name="processEquipmentSystem" value={formDefaults.processEquipmentSystem ?? ""} />
