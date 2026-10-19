@@ -50,9 +50,11 @@ it("includes the exact cutoff operation without admitting newer operations or a 
 });
 
 it("records exact append-only QA review scopes and corrections without changing source events",async()=>{
-  const {auditTrailCutoff,queryAuditTrail}=await import("../../src/lib/audit/trail");
+  const {queryAuditTrail}=await import("../../src/lib/audit/trail");
   const {recordAuditTrailReviewAction}=await import("../../src/lib/audit/trail-actions");
-  const cutoff=(await auditTrailCutoff())!,selection=await asUser(qa,()=>queryAuditTrail({}, {page:1,pageSize:1})),operation=selection.operations[0];
+  // Cut at the reviewed operation itself: the globally latest operation may be an
+  // administrative one outside this view (it depends on the test file order).
+  const selection=await asUser(qa,()=>queryAuditTrail({}, {page:1,pageSize:1})),operation=selection.operations[0],cutoff={occurredAt:operation.occurredAt,id:operation.id};
   const denied=form({filters:"{}",cutoffOccurredAt:cutoff.occurredAt.toISOString(),cutoffOperationId:cutoff.id,result:"NO_OBSERVATIONS",notes:"",_covexAuditRequestId:randomUUID()},[operation.id]);
   await expect(asUser(reader,()=>recordAuditTrailReviewAction(denied))).rejects.toMatchObject({status:403});
   await expect(asUser(admin,()=>recordAuditTrailReviewAction(denied))).rejects.toMatchObject({status:403});
