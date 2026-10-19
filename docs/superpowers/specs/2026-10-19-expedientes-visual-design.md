@@ -1,12 +1,12 @@
 # Mejoras visuales de los expedientes y del inicio — diseño
 
-Fecha: 2026-10-19. Estado: **pendiente de revisión por el responsable de Calidad.**
+Fecha: 2026-10-19. Estado: **aprobado por el responsable de Calidad el 2026-10-19** (V4 sin selector de departamento).
 
 Origen: comentario de IT (los expedientes recogen mucha información y está poco señalizada en los resúmenes), propuestas del responsable de Calidad y propuestas de revisión visual acordadas en la conversación del 2026-10-19.
 
 ## 1. Objetivo y límites
 
-**Objetivo.** Que un usuario de departamento que consulta un expediente vea de un vistazo **estado y fechas**, y reconozca cada apartado. También debe ver nada más entrar sus tareas vencidas y próximas, con la opción de mirar las de otro departamento.
+**Objetivo.** Que un usuario de departamento que consulta un expediente vea de un vistazo **estado y fechas**, y reconozca cada apartado. También debe ver nada más entrar sus tareas vencidas, próximas y pendientes.
 
 **Límites (obligatorios en todas las PR):**
 - **Solo presentación.** No se quita ningún dato, campo, pestaña de información, flujo ni permiso. No se añaden funcionalidades, campos, estados ni reglas. Sin migraciones.
@@ -30,7 +30,7 @@ Cuatro PR, en este orden; cada una se puede revisar y fusionar por separado.
 | **V1** | Cabecera unificada, franja de datos clave en el resumen, estilo de campos común, vacíos atenuados y arreglos baratos de móvil | Los 8 (Desviaciones, CAPA, Cambios, Reclamaciones, Devoluciones, Auditorías, OOS, Documentación controlada) |
 | **V2** | Índice lateral de apartados en los formularios de alta y edición | Los 8 formularios principales |
 | **V3** | Pestaña única «Desviación» con índice lateral | Desviaciones |
-| **V4** | Inicio: «Mis tareas» arriba y selector de departamento visible | Inicio |
+| **V4** | Inicio: «Mis tareas» como primer bloque | Inicio |
 
 ## 3. V1 — Cabecera y resumen
 
@@ -151,18 +151,14 @@ La franja de Auditorías no cambia sus fechas ni su situación: muestra lo que y
 
 ## 6. V4 — Inicio
 
-**Hoy:**
-- Las tareas asignadas solo aparecen como lista si se pulsa la tarjeta «asignadas a mí» (`?tasks=mine`).
-- El selector de departamento está dentro del desplegable «Filtros».
+**Hoy:** las tareas asignadas solo aparecen como lista si se pulsa la tarjeta «asignadas a mí» (`?tasks=mine`).
 
 **Después:**
 - **«Mis tareas»** es el primer bloque bajo el título del panel, siempre visible. Muestra la misma tabla de hoy (Fecha prevista · Expediente · Acción · Estado), las vencidas primero y después las próximas y las pendientes, 15 por página.
   - Sin tareas: «No tienes tareas asignadas».
   - La tarjeta «asignadas a mí» sigue en la fila de indicadores y enlaza a este bloque.
-- **Selector «Departamento»** visible junto al título del panel, con el mismo parámetro `department` y un botón «Ver».
-  - Filtra lo que ya filtra hoy: indicadores, expedientes por módulo y plazos vencidos y próximos.
-  - El resto de filtros (año, módulo, estado, tareas) sigue en «Filtros».
-- **Decisión a confirmar en la revisión de este documento:** «Mis tareas» **no** se filtra por el selector de departamento, de modo que siempre ves lo tuyo aunque mires otro departamento. Los plazos vencidos y próximos de abajo sí muestran los del departamento elegido. Hoy el departamento filtra también tus tareas; este es el único cambio de comportamiento del filtro y se propone porque es lo que se ha pedido.
+- **Filtros:** no cambian. Siguen en «Filtros» y se aplican como hoy, también a «Mis tareas».
+- **Sin selector de departamento** fuera de «Filtros»: descartado en la revisión de este documento.
 - El resto del panel no cambia y queda debajo.
 
 ## 7. Pruebas por PR
