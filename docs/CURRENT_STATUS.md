@@ -136,6 +136,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Auditorías R5D: cliente e inspección (2026-10-19, D-110):**
+- **Informe:** en cliente e inspección no se emite informe COVEX; «Informe y cierre» muestra el informe recibido, la respuesta y observaciones internas, y Versiones no ofrece «Emitir». Las versiones antiguas quedan en solo lectura.
+- **Hallazgos:** solo los tipos del escenario (observación de cliente o de autoridad y recomendación; en el resto, hallazgo y recomendación), validados también en el servidor. Los hallazgos existentes conservan su tipo.
+- **Comprobado** con:
+  - las 5 pruebas de navegador de Auditorías (r3c recorre una auditoría de cliente);
+  - las pruebas de base de datos de Auditorías (r3b, tipos por escenario; r3c, bucle cliente/autoridad);
+  - la prueba de captura del audit trail.
+- Con R5D queda completa la revisión R5 de Auditorías (`docs/AUDITS_R5.md`).
+
 **Auditorías R5C2: seguimiento del CAPA plan y cierre nuevo (2026-10-19, D-110):**
 - **Seguimiento:** «Registrar seguimiento del CAPA plan» actualiza las acciones y los hallazgos sin acciones y emite la versión 01, 02… con su A4.03.
 - **Seguimientos anteriores:** quedan en solo lectura.

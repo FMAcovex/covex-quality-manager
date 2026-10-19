@@ -1075,5 +1075,10 @@ Decisión del responsable de Calidad tras revisar el módulo. El diseño complet
   - **Aviso al cerrar:** si la última versión del CAPA plan no refleja el estado actual, se recomienda un seguimiento final.
   - **Cierre parcial:** CAPA plan establecido (internas) o informe enviado (proveedor), también sin informe emitido.
   - **A4.03:** las versiones del informe ya no generan ni ofrecen A4.03; el CAPA plan solo se numera en su propia secuencia.
-- **Pendiente de la siguiente PR:** R5D (cliente e inspección).
+- **R5D (implantada):**
+  - **Cliente e inspección sin informe COVEX.** Emitir el informe se rechaza con «En auditorías de cliente o inspección no se emite informe COVEX: adjunta el informe recibido.»; la pestaña Versiones no ofrece «Emitir» y las versiones anteriores se conservan en solo lectura (descargas, sin cargar PDF firmado nuevo).
+  - **«Informe recibido»** en «Informe y cierre»: los documentos AUDIT_RECEIVED adjuntos, «requiere respuesta», la fecha de respuesta enviada y observaciones internas opcionales. Guardar estos datos no toca la conclusión ni las fechas de informe que tuviera el expediente.
+  - **Integridad:** en estos escenarios no se avisa de informe sin versión, de datos sin versión ni de cierre sin conclusión.
+  - **Tipos de hallazgo por escenario:** cliente, `CLIENT_OBSERVATION` y `RECOMMENDATION`; inspección, `AUTHORITY_OBSERVATION` y `RECOMMENDATION`; el resto, `FINDING` y `RECOMMENDATION`. Se valida en el servidor («Tipo de hallazgo no permitido en este escenario.») y el desplegable solo ofrece esos tipos. Un hallazgo existente de otro tipo (por ejemplo, tras cambiar el escenario) conserva su tipo al guardarse.
+  - Sin migración. El CAPA plan, sus versiones y su A4.03 funcionan igual que en los demás escenarios.
 

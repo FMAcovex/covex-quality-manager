@@ -1,6 +1,6 @@
 # Auditorías R5 — CAPA plan con versiones, hallazgos y aspecto (diseño)
 
-Estado: **diseño aprobado el 2026-10-19 (D-110). R5A, R5B1, R5B2, R5C1 y R5C2 implantadas; R5D pendiente.**
+Estado: **diseño aprobado el 2026-10-19 (D-110). R5 completa: R5A, R5B1, R5B2, R5C1, R5C2 y R5D implantadas.**
 
 Origen: revisión del módulo por el responsable de Calidad (2026-10-19), once observaciones sobre auditorías internas y externas. Este documento recoge lo acordado y lo divide en cuatro PR (R5A–R5D). Se respeta D-070: no se rediseña la aplicación; el módulo se alinea con la maquetación de los demás.
 
@@ -178,6 +178,7 @@ Se implanta en dos PR:
 **Validación**
 - Se retiran para estos escenarios los requisitos de conclusión, fecha del informe y evidencia de cierre.
 - Las auditorías de cliente o inspección ya existentes con versiones de informe las conservan en solo lectura.
+- Un hallazgo ya existente de otro tipo (por ejemplo, tras cambiar el escenario) conserva su tipo; los nuevos y los cambios de tipo se limitan a los del escenario.
 
 ## 7. Pruebas y comprobación por PR
 
