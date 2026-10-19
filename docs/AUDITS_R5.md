@@ -1,6 +1,6 @@
 # Auditorías R5 — CAPA plan con versiones, hallazgos y aspecto (diseño)
 
-Estado: **diseño aprobado el 2026-10-19 (D-110). R5A implantada; R5B, R5C y R5D pendientes.**
+Estado: **diseño aprobado el 2026-10-19 (D-110). R5A y R5B1 implantadas; R5B2, R5C y R5D pendientes.**
 
 Origen: revisión del módulo por el responsable de Calidad (2026-10-19), once observaciones sobre auditorías internas y externas. Este documento recoge lo acordado y lo divide en cuatro PR (R5A–R5D). Se respeta D-070: no se rediseña la aplicación; el módulo se alinea con la maquetación de los demás.
 

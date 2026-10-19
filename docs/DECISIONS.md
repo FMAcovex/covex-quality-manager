@@ -1039,5 +1039,12 @@ Decisión del responsable de Calidad tras revisar el módulo. El diseño complet
   - el CAPA plan del estado actual se descarga siempre, también en borrador, y desde Hallazgos;
   - los errores de descarga se muestran como página legible;
   - los formularios de planes y programas anuales conservan lo escrito ante un error.
-- **Pendiente de las siguientes PR:** R5B (hallazgos), R5C (versiones del CAPA plan, seguimiento y cierre) y R5D (cliente e inspección).
+- **R5B1 (implantada):**
+  - cada hallazgo es una ficha con un único elemento en edición, indicado en la dirección, sin desplegables anidados;
+  - las acciones del CAPA Plan aparecen en filas;
+  - «Justificar y cerrar» un hallazgo sin acciones;
+  - se pueden vincular Desviaciones y CAPA en borrador, también desde una auditoría en borrador (se busca el borrador por su descripción);
+  - cerrar un hallazgo exige el permiso CLOSE también en el servidor.
+- **«Abrir CAPA» / «Abrir desviación» desde un hallazgo (R5B2):** abren el formulario de nueva CAPA o Desviación ya rellenado y lo guardado queda vinculado al hallazgo. Se descartó crearlo con un clic: el audit trail asigna cada operación a un único módulo.
+- **Pendiente de las siguientes PR:** R5B2, R5C (versiones del CAPA plan, seguimiento y cierre) y R5D (cliente e inspección).
 
