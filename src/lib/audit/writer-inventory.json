@@ -398,7 +398,7 @@
     "src/lib/audit/trail.ts": "6ea5a9707b5bd9823feccbc7bd832bfb145a7a579354b15b0d484517c78cce44",
     "src/lib/auth/administration.ts": "63ea52ba78acb0b4aca7a1e46b187a0205d16a7e4e1d52cb1bde0c706ca59e96",
     "src/lib/auth/oidc.ts": "cc8880d9d5cc69130acd54cf078a5df5e88b71c7f58598870036c1021bb4239d",
-    "src/lib/auth/session.ts": "a44aa0b2ff83df1b8ce5a2b4878ba562e728a52205e2ff11b78ff3446c184d66",
+    "src/lib/auth/session.ts": "cbb956076785c150339ff18e7a608653a005556f7b9cf2b9a4593d47c0a337d1",
     "src/lib/db.ts": "70c98b1220fbd6fdc241f08b109f978c7bb905f23fcf9fda0f29b8f400f44887",
     "src/lib/qms/additional-lots-search.ts": "c496e5397fda501f4731171b7534ccc909c698a9742e0316f10ef84063eb67ee",
     "src/lib/qms/administrative-status.ts": "ebbce4ef96c581ff2bb7ee6f244c36c27a0eea12dc51c487ce80d1c61a4f2edd",

@@ -1003,5 +1003,5 @@ Decisión del responsable de Calidad: poder probar la aplicación con usuarios f
   - Sigue exigiendo `APP_ENV=demo`, `AUTH_PROVIDER=demo` y la base `covex_demo`.
   - Fuera de un Codespace no existen esas variables.
   - El arranque de producción exige Entra y la rechaza.
-- **Formularios.** Las acciones de servidor admiten como origen solo la dirección del propio Codespace (`next.config.ts`), porque el navegador la envía mientras la aplicación recibe la petición en `localhost`.
+- **Formularios y entrada.** Según el reenvío de puertos, el origen de la petición llega como la dirección del Codespace o como `http://localhost:3000`. Dentro del Codespace se admiten ambos, y solo esos, en la entrada a la demo, en el control CSRF y en las acciones de servidor (`next.config.ts`). Si la entrada a la demo falla, el terminal muestra el motivo, sin datos de sesión.
 - **Acceso.** Los puertos de un Codespace son privados por defecto: solo la cuenta de GitHub del propietario puede abrir la demo. No hay que hacerlos públicos.

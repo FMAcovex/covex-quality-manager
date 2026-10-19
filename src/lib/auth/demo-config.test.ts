@@ -32,9 +32,13 @@ describe("Demo local (D-087)", () => {
   describe("en GitHub Codespaces (D-108)", () => {
     const codespace = { CODESPACES: "true", CODESPACE_NAME: "fmacovex-demo-x7q9", GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN: "app.github.dev" };
     const origin = "https://fmacovex-demo-x7q9-3000.app.github.dev";
-    it("admite la dirección del propio Codespace", () => {
+    it("admite la dirección del propio Codespace y, como origen de la petición, su loopback", () => {
       expect(localDemoEnvironment({ ...demo, ...codespace, AUTH_ORIGIN: origin })).toBe(true);
-      expect(authConfiguration({ ...demo, ...codespace, AUTH_ORIGIN: origin })).toMatchObject({ demo: true, origin, secure: false });
+      expect(authConfiguration({ ...demo, ...codespace, AUTH_ORIGIN: origin })).toMatchObject({ demo: true, origin, secure: false, requestOrigins: [origin, "http://localhost:3000", "http://127.0.0.1:3000"] });
+    });
+
+    it("fuera del Codespace solo se admite el origen configurado", () => {
+      expect(authConfiguration(demo).requestOrigins).toEqual(["http://localhost:3000"]);
     });
     it.each([
       ["fuera de un Codespace", { CODESPACES: undefined }],
