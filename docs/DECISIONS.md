@@ -1058,5 +1058,22 @@ Decisión del responsable de Calidad tras revisar el módulo. El diseño complet
   - las fechas del CAPA plan salen del formulario del informe;
   - la pestaña Versiones separa «Informe» y «CAPA plan», con la descarga de cada versión;
   - sin la plantilla A4.03 no se emite y se avisa de cómo instalarla.
-- **Pendiente de las siguientes PR:** R5C2 (seguimiento con versiones 01+, cierre nuevo y seguimientos antiguos en solo lectura) y R5D (cliente e inspección).
+- **R5C2 (implantada):**
+  - **Seguimiento del CAPA plan.** Desde la tarjeta «CAPA plan» de Seguimiento (permiso FOLLOWUP, operación AU04), una tabla con todas las acciones activas y los hallazgos sin acciones.
+    - Campos por fila: fecha objetivo, estado, fecha de cierre, referencia de evidencia y evidencia u observación; en los hallazgos, además, el tratamiento.
+    - Datos del seguimiento: fecha, próxima revisión opcional y observaciones.
+    - Al guardar, en una transacción, se actualizan las filas que cambian (con las validaciones de cierre de siempre) y se emite la versión siguiente con su A4.03.
+    - Sin cambios ni observaciones no se emite versión.
+    - Cerrar, dar por no aplicable, reabrir o cambiar una fecha de cierre exige motivo, y cerrar exige el permiso CLOSE.
+  - **Seguimientos anteriores:** los `AuditFollowup` se muestran en solo lectura y ya no bloquean el cierre.
+  - **Cierre**, según la tabla de `AUDITS_R5.md` §5:
+    - acciones activas cerradas o no aplicables con evidencia, referencia o justificación;
+    - hallazgos sin acciones con tratamiento terminal y evidencia;
+    - CAPA plan establecido si hay hallazgos;
+    - informe emitido (internas y proveedor) o recibido, con la respuesta si se requiere (cliente e inspección).
+  - **Deja de exigirse** la verificación de cada acción, que las CAPA vinculadas estén cerradas y eficaces, el envío del informe de proveedor, la evidencia de cierre y los seguimientos pendientes. Se mantiene la excepción de proveedor.
+  - **Aviso al cerrar:** si la última versión del CAPA plan no refleja el estado actual, se recomienda un seguimiento final.
+  - **Cierre parcial:** CAPA plan establecido (internas) o informe enviado (proveedor), también sin informe emitido.
+  - **A4.03:** las versiones del informe ya no generan ni ofrecen A4.03; el CAPA plan solo se numera en su propia secuencia.
+- **Pendiente de la siguiente PR:** R5D (cliente e inspección).
 
