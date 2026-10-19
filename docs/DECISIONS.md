@@ -1021,3 +1021,23 @@ Decisión del responsable de Calidad: la demo debe enseñar cómo funciona cada 
 - **Cuándo se carga:** `pnpm demo:codespace` y la demo Docker lo ejecutan al preparar la base.
 - **Límites:** el historial de modificaciones de cada ejemplo solo registra el alta («Ejemplo de la demo»). Los anexos se generan solo si las plantillas están instaladas.
 
+## D-110 — Auditorías: CAPA plan con versiones, hallazgos y aspecto (2026-10-19)
+
+Decisión del responsable de Calidad tras revisar el módulo. El diseño completo está en `docs/AUDITS_R5.md` y se implanta en cuatro PR (R5A–R5D).
+
+| Tema | Decisión |
+|---|---|
+| Versiones del CAPA plan | Numeración propia 00, 01, 02…, independiente del informe. 00 al establecer el CAPA plan; cada seguimiento genera la versión siguiente. |
+| Cierre de la auditoría | Todas las acciones cerradas o no aplicables, con evidencia o justificación, y cada hallazgo tratado. Las Desviaciones y CAPA vinculadas siguen su propio ciclo y no bloquean. |
+| Cliente e inspección | Solo CAPA plan: el informe recibido se adjunta, sin textos obligatorios ni informe COVEX. |
+
+- Sustituye de D-066 la regla «solo se versiona al emitir el informe» y los requisitos de cierre de las acciones (verificación de cada acción, CAPA atribuidas cerradas y eficaces). El resto de D-064/D-065/D-066 sigue vigente.
+- **R5A (implantada):**
+  - el expediente usa la cabecera, las pestañas y los estados en color de los demás módulos;
+  - el historial operativo pasa a Cronología, como en D-089: la pestaña «Historial» desaparece y sus enlaces abren Cronología;
+  - Documentos reúne todas las descargas;
+  - el CAPA plan del estado actual se descarga siempre, también en borrador, y desde Hallazgos;
+  - los errores de descarga se muestran como página legible;
+  - los formularios de planes y programas anuales conservan lo escrito ante un error.
+- **Pendiente de las siguientes PR:** R5B (hallazgos), R5C (versiones del CAPA plan, seguimiento y cierre) y R5D (cliente e inspección).
+

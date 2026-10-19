@@ -136,6 +136,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Auditorías R5A: aspecto, documentos y programas anuales (2026-10-19, D-110):**
+- **Expediente:** cabecera, pestañas y estado en color como en Desviaciones; el historial está en Cronología, con las etiquetas de hallazgos, acciones y seguimientos.
+- **Listado:** estado en color, aviso de control de dato y enlaces como en los demás listados.
+- **Documentos:** documentos de trabajo, documentos por versión, recibidos y conservados en una sola pestaña.
+- **CAPA plan:** el del estado actual se descarga también en borrador y desde Hallazgos. Sin plantilla, sale la página «Plantilla oficial no disponible»; cualquier otro error, una página legible en lugar de JSON.
+- **Planes y programas anuales:** el alta del plan, las auditorías previstas, la retirada, los aprobadores y la emisión conservan lo escrito ante un error.
+- **Comprobado** con las 5 pruebas de navegador de Auditorías sobre una base de pruebas nueva, entre ellas una que fuerza errores y comprueba que no se pierde lo escrito, y con un recorrido en la demo, con y sin plantillas instaladas.
+- **Pendiente:** R5B–R5D (`docs/AUDITS_R5.md`).
+
 **Ejemplos de la demo en todos los módulos (2026-10-19, D-109):**
 - La demo (Codespaces y Docker) carga 6–7 expedientes ficticios por módulo, en distintos estados y relacionados entre sí, con plazos vencidos y próximos calculados respecto al día de la carga.
 - Comprobado en una base `covex_demo` nueva: se abren sin errores las fichas de los listados (49 expedientes, incluidos los 6 ejemplos iniciales) y de los 7 PNT, y el panel muestra plazos vencidos, próximos, «Asignadas a mí» y la eficacia pendiente. Una segunda ejecución no cambia nada.

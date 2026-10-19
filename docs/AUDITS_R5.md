@@ -1,6 +1,6 @@
 # Auditorías R5 — CAPA plan con versiones, hallazgos y aspecto (diseño)
 
-Estado: **diseño aprobado en conversación el 2026-10-19; pendiente de revisión escrita.** No implementado.
+Estado: **diseño aprobado el 2026-10-19 (D-110). R5A implantada; R5B, R5C y R5D pendientes.**
 
 Origen: revisión del módulo por el responsable de Calidad (2026-10-19), once observaciones sobre auditorías internas y externas. Este documento recoge lo acordado y lo divide en cuatro PR (R5A–R5D). Se respeta D-070: no se rediseña la aplicación; el módulo se alinea con la maquetación de los demás.
 
@@ -39,9 +39,9 @@ Se registrarán como **D-110**. D-110 sustituye de D-066 la regla «solo se vers
   - «Historial» como pestaña aparte, cuando los demás módulos lo integraron en Cronología (D-089);
   - los formularios de programas anuales pierden lo escrito si hay un error (React 19 reinicia los campos no controlados y las acciones no devuelven los valores).
 
-## 3. R5A — Aspecto, documentos y programas anuales
+## 3. R5A — Aspecto, documentos y programas anuales (implantada)
 
-Sin cambios de base de datos.
+Sin cambios de base de datos. Añadido a petición del responsable de Calidad: el estado del listado con colores, como en Desviaciones.
 
 **Expediente de auditoría**
 - **Cabecera** igual que Desviaciones y CAPA: el enlace de retorno dentro de la línea superior (`eyebrow`), el título y las acciones.
