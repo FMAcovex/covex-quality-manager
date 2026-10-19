@@ -4,8 +4,8 @@ const formatDateTime = (value: Date) =>
   new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(value);
 
 /** Pestaña «Cronología»: vista combinada de solo lectura, con el mismo marcado que «Historial». */
-export async function RecordTimeline({ qmsRecordId }: { qmsRecordId: string }) {
-  const entries = await getRecordTimeline(qmsRecordId);
+export async function RecordTimeline({ qmsRecordId, showValues = false }: { qmsRecordId: string; showValues?: boolean }) {
+  const entries = await getRecordTimeline(qmsRecordId, { includeValues: showValues });
   return (
     <div className="card">
       <h2>Cronología del expediente</h2>
@@ -27,6 +27,7 @@ export async function RecordTimeline({ qmsRecordId }: { qmsRecordId: string }) {
                 <strong>{entry.title}</strong>
                 {entry.detail ? <span> · {entry.detail}</span> : null}
               </p>
+              {entry.values ? <details><summary>Valores registrados</summary><pre>{JSON.stringify({ anterior: entry.values.oldValue, nuevo: entry.values.newValue }, null, 2)}</pre></details> : null}
             </div>
           ))}
         </div>

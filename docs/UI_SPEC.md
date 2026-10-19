@@ -188,7 +188,7 @@ Menú único Auditorías; /audits con filtros SQL, búsqueda completa, paginaci�
 
 ## Auditorías R3B — workspace
 
-Pestañas Información, Hallazgos, Seguimiento, Relaciones e Historial. Tarjetas compactas con detalle editable, acciones persistentes, criticidad española, vinculador transversal y acceso a seguimiento. Retirados ocultos por defecto y consultables. Relaciones muestran estados vivos y hallazgos atribuidos; CAPA/Desviación enlazan Auditoría/OBS/Rk por UUID. Timeline general/hallazgo más reciente arriba. Nuevas columnas opcionales mediante ColumnSelector y filtros SQL, manteniendo las columnas esenciales R3A. Anchors preparados por UUID; sin Review ni pestañas documentales ficticias. Formularios conservan datos tras errores y se adaptan a 1440/768/390.
+Pestañas Información, Hallazgos, Seguimiento, Relaciones, Informe y cierre, Documentos, Versiones, Revisión, Cronología (con los valores registrados de cada cambio; sustituye a Historial desde R5A, D-110) y Audit Trail. Tarjetas compactas con detalle editable, acciones persistentes, criticidad española, vinculador transversal y acceso a seguimiento. Retirados ocultos por defecto y consultables. Relaciones muestran estados vivos y hallazgos atribuidos; CAPA/Desviación enlazan Auditoría/OBS/Rk por UUID. Timeline general/hallazgo más reciente arriba. Nuevas columnas opcionales mediante ColumnSelector y filtros SQL, manteniendo las columnas esenciales R3A. Anchors preparados por UUID; sin Review ni pestañas documentales ficticias. Formularios conservan datos tras errores y se adaptan a 1440/768/390.
 
 ## Auditorías R3C — workspace documental
 

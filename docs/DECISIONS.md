@@ -764,7 +764,7 @@ Decisión del responsable del proyecto. Las fichas de Desviaciones, CAPA, Contro
 
 - El historial operativo de D-015 se sigue registrando igual; solo cambia dónde se consulta.
 - Documentación controlada conserva su Historial: no tiene Cronología y muestra el valor anterior y el nuevo de cada campo.
-- Auditorías conserva su Historial: muestra los valores registrados de cada cambio, que la Cronología no enseña.
+- Auditorías conserva su Historial: muestra los valores registrados de cada cambio, que la Cronología no enseña. *(Sustituido por D-110 · R5A: Auditorías también usa Cronología, que en este módulo muestra los «Valores registrados» de cada cambio.)*
 - Los seguimientos legacy de Reclamaciones, que solo se veían en Historial, pasan a la pestaña «Versiones».
 - El Audit Trail no cambia.
 
@@ -1034,7 +1034,7 @@ Decisión del responsable de Calidad tras revisar el módulo. El diseño complet
 - Sustituye de D-066 la regla «solo se versiona al emitir el informe» y los requisitos de cierre de las acciones (verificación de cada acción, CAPA atribuidas cerradas y eficaces). El resto de D-064/D-065/D-066 sigue vigente.
 - **R5A (implantada):**
   - el expediente usa la cabecera, las pestañas y los estados en color de los demás módulos;
-  - el historial operativo pasa a Cronología, como en D-089: la pestaña «Historial» desaparece y sus enlaces abren Cronología;
+  - el historial operativo pasa a Cronología, como en D-089: la pestaña «Historial» desaparece y sus enlaces abren Cronología. En Auditorías, cada cambio de la Cronología conserva sus «Valores registrados» (anterior y nuevo), que antes solo enseñaba Historial;
   - Documentos reúne todas las descargas;
   - el CAPA plan del estado actual se descarga siempre, también en borrador, y desde Hallazgos;
   - los errores de descarga se muestran como página legible;

@@ -81,7 +81,7 @@ Adjuntar el anexo firmado a mano queda pendiente.
 
 **Módulo OOS — acceso a la Fase II (2026-10-17, D-088):** la pestaña «Fase I» de un OOS abierto sin disposición final muestra un aviso con el botón «Pasar a Fase II», que abre la edición en «Disposición final». Elegir «Investigación a gran escala» y guardar sigue siendo explícito. `oos:ui:smoke` entra en la Fase II por el botón.
 
-**Pestaña Historial retirada (2026-10-17, D-089):** Desviaciones, CAPA, Controles de cambios, Reclamaciones, Devoluciones y OOS consultan las modificaciones en «Cronología». Documentación controlada y Auditorías conservan su Historial porque muestran valores anterior y nuevo. Los seguimientos legacy de Reclamaciones pasan a «Versiones». Sin cambios de datos, consultas, registro ni Audit Trail.
+**Pestaña Historial retirada (2026-10-17, D-089):** Desviaciones, CAPA, Controles de cambios, Reclamaciones, Devoluciones y OOS consultan las modificaciones en «Cronología». Documentación controlada conserva su Historial porque muestra valores anterior y nuevo. Auditorías lo integra en Cronología desde R5A (D-110), donde cada cambio conserva sus «Valores registrados». Los seguimientos legacy de Reclamaciones pasan a «Versiones». Sin cambios de datos, consultas, registro ni Audit Trail.
 
 **Listados con menos ruido visual (2026-10-17):** piloto en Desviaciones aceptado y extendido a CAPA, Controles de cambios, Reclamaciones, Devoluciones, Auditorías y OOS: buscador y botón «Filtros» en una fila, panel de filtros plegado, filtros aplicados como etiquetas, contadores en línea y «Recordatorios por correo» solo al seleccionar. Documentación controlada conserva sus filtros avanzados plegados y pasa a contadores en línea. Sin quitar filtros ni opciones; a 1440 px la tabla empieza a unos 350–415 px en lugar de 750–790 px ([UI_SPEC.md](UI_SPEC.md)).
 
@@ -137,7 +137,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
 **Auditorías R5A: aspecto, documentos y programas anuales (2026-10-19, D-110):**
-- **Expediente:** cabecera, pestañas y estado en color como en Desviaciones; el historial está en Cronología, con las etiquetas de hallazgos, acciones y seguimientos.
+- **Expediente:** cabecera, pestañas y estado en color como en Desviaciones; el historial está en Cronología, con las etiquetas de hallazgos, acciones y seguimientos y los valores anterior y nuevo de cada cambio.
 - **Listado:** estado en color, aviso de control de dato y enlaces como en los demás listados.
 - **Documentos:** documentos de trabajo, documentos por versión, recibidos y conservados en una sola pestaña.
 - **CAPA plan:** el del estado actual se descarga también en borrador y desde Hallazgos. Sin plantilla, sale la página «Plantilla oficial no disponible»; cualquier otro error, una página legible en lugar de JSON.
