@@ -20,7 +20,9 @@ export async function register() {
 
 /** BE1-B (D-113): todo error no controlado deja una línea en el registro con la referencia visible. */
 export async function onRequestError(error: unknown, request: { path: string; method: string }, context: { routePath: string; routeType: string }) {
-  if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  const { handleRequestError } = await import("./lib/log/request-error");
-  handleRequestError(error, request, context);
+  // Bloque condicional (no retorno anticipado): así Next no empaqueta el registrador en el runtime edge.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { handleRequestError } = await import("./lib/log/request-error");
+    handleRequestError(error, request, context);
+  }
 }
