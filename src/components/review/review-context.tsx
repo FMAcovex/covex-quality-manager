@@ -16,8 +16,7 @@ import type { ReviewTargetInstance } from "@/lib/qms/review/targets/types";
 import {
   reviewThreadMatchesTarget,
   type ReviewThreadView,
-  type ReviewVersionLabelMode,
-} from "@/lib/qms/review/ui-model";
+  type ReviewVersionLabelMode, reviewTabRendered } from "@/lib/qms/review/ui-model";
 
 export type ReviewRecordVersionAssociation = "CURRENT" | "NONE";
 
@@ -115,7 +114,7 @@ export function ReviewWorkspaceProvider({
     const target = initialThread ? targetForThread(initialThread) : null;
     const url = new URL(window.location.href);
     const renderedTab = url.searchParams.get("tab") ?? (module === "CHANGE_CONTROL" ? "information" : "summary");
-    if (target && renderedTab !== target.tabKey) {
+    if (target && !reviewTabRendered(module, renderedTab, target.tabKey)) {
       // Preserve whether the caller requested the drawer or a field anchor.
       url.searchParams.set("tab", target.tabKey);
       window.location.replace(`${basePath}?${url.searchParams.toString()}${url.hash}`);

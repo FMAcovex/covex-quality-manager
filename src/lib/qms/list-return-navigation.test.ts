@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { qmsListingReturnTo, qmsListingUrl, qmsWithReturnTo, qmsListRoots } from "./list-return-navigation";
+import { qmsDetailTab, qmsListingReturnTo, qmsListingUrl, qmsWithReturnTo, qmsListRoots } from "./list-return-navigation";
 
 describe("UX C1: retorno seguro a los listados", () => {
   it.each(qmsListRoots)("preserva filtros repetidos, texto y página en %s", (root) => {
@@ -21,6 +21,12 @@ describe("UX C1: retorno seguro a los listados", () => {
     }
     expect(qmsWithReturnTo("/audits/id", root, root + "?page=2")).toBe("/audits/id");
     expect(qmsWithReturnTo(root + "/id", root, "//evil.example")).toBe(root + "/id");
+  });
+
+  it("Desviaciones: las pestañas antiguas vuelven a la pestaña «Desviación» (D-111, V3)", () => {
+    expect(qmsDetailTab("/deviations", "deviation")).toBe("deviation");
+    expect(qmsDetailTab("/deviations", "actions")).toBe("deviation");
+    expect(qmsDetailTab("/deviations", "relations")).toBe("relations");
   });
 
   it("excluye returnTo anidados y no genera contexto para el listado sin filtros", () => {

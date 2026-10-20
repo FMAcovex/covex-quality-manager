@@ -1,3 +1,4 @@
+import { legacyDeviationTab } from "@/modules/deviations/detail-tabs";
 /**
  * UX C1: return to the exact QMS listing filter context without accepting
  * arbitrary destinations. Audit and PNT retain their existing navigation rules.
@@ -45,7 +46,7 @@ export function qmsWithReturnTo(path: string, root: QmsListRoot, value: unknown)
 
 /** Known detail tabs only; never pass unchecked query strings to a redirect. */
 const detailTabs: Record<QmsListRoot, readonly string[]> = {
-  "/deviations": ["summary", "description", "investigation", "actions", "conclusion", "relations", "versions", "documents", "review", "timeline"],
+  "/deviations": ["summary", "deviation", "relations", "versions", "documents", "review", "timeline"],
   "/capa": ["summary", "action-followups", "state", "relations", "versions", "documents", "review", "timeline"],
   "/changes": ["information", "request", "dictamen", "followups", "documents", "relations", "review", "timeline"],
   "/complaints": ["summary", "part-i", "part-ii", "relations", "documents", "versions", "review", "timeline"],
@@ -55,6 +56,8 @@ const detailTabs: Record<QmsListRoot, readonly string[]> = {
 export type QmsReturnContext = { returnTo: string; tab: string };
 
 export function qmsDetailTab(root: QmsListRoot, value: unknown): string {
+  // D-111 (V3): Descripción, Investigación, Acciones y Conclusión son ahora apartados de «Desviación».
+  if (root === "/deviations" && typeof value === "string" && legacyDeviationTab(value)) return "deviation";
   return typeof value === "string" && detailTabs[root].includes(value) ? value : "";
 }
 
