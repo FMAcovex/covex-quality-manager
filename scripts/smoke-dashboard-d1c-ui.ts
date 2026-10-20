@@ -57,10 +57,10 @@ async function main() {
     await visit(page, "/");
     const summary = await page.locator(".dashboard-attention-item > strong").allTextContents();
     const modules = await page.locator(".dashboard-module-row, .dashboard-pnt-line").allTextContents();
-    const taskRows = await page.locator(".dashboard-task-row").allTextContents();
+    const taskRows = await page.locator("#dashboard-tasks .dashboard-task-row").allTextContents();
     assert.equal(summary.length, 5);
     assert.equal(modules.length, 8);
-    assert(await page.locator(".is-overdue").count() > 0);
+    assert(await page.locator("#dashboard-tasks .is-overdue").count() > 0);
 
     if (captureDir) await mkdir(captureDir, { recursive: true });
     for (const width of [1440, 768, 390]) {
@@ -68,11 +68,11 @@ async function main() {
       await visit(page, "/");
       assert.deepEqual(await page.locator(".dashboard-attention-item > strong").allTextContents(), summary, "KPI unchanged at " + width);
       assert.deepEqual(await page.locator(".dashboard-module-row, .dashboard-pnt-line").allTextContents(), modules, "Module counts unchanged at " + width);
-      assert.deepEqual(await page.locator(".dashboard-task-row").allTextContents(), taskRows, "Tasks unchanged at " + width);
+      assert.deepEqual(await page.locator("#dashboard-tasks .dashboard-task-row").allTextContents(), taskRows, "Tasks unchanged at " + width);
       const dimensions = await page.evaluate(() => ({
         scroll: document.documentElement.scrollWidth, viewport: innerWidth,
-        taskScroll: document.querySelector(".dashboard-task-table")!.scrollWidth,
-        taskWidth: document.querySelector(".dashboard-task-table")!.clientWidth,
+        taskScroll: document.querySelector("#dashboard-tasks .dashboard-task-table")!.scrollWidth,
+        taskWidth: document.querySelector("#dashboard-tasks .dashboard-task-table")!.clientWidth,
       }));
       assert(dimensions.scroll <= dimensions.viewport + 2, "Page overflow: " + JSON.stringify(dimensions));
       assert(dimensions.taskScroll <= dimensions.taskWidth + 2, "Task tray requires horizontal scrolling at " + width);
@@ -82,7 +82,7 @@ async function main() {
         const isControl = await element.evaluate(node => node.matches("input, select"));
         assert(box && box.width >= (isControl ? 90 : 60) && box.height >= (width === 390 ? 44 : 38), "Unusable filter at " + width);
       }
-      const row = page.locator(".dashboard-task-row").first();
+      const row = page.locator("#dashboard-tasks .dashboard-task-row").first();
       const record = await row.locator(".dashboard-task-record").boundingBox();
       const state = await row.locator(".dashboard-task-state").boundingBox();
       assert(record && state && record.x + record.width <= state.x + 1, "Record overlaps deadline status at " + width);
@@ -95,16 +95,16 @@ async function main() {
 
     // The mobile presentation must preserve usable task links and pagination filters.
     await visit(page, "/?module=AUDIT&tasks=upcoming");
-    assert.equal(await page.locator(".is-overdue").count(), 0);
-    assert(await page.locator(".is-upcoming").count() >= 9);
+    assert.equal(await page.locator("#dashboard-tasks .is-overdue").count(), 0);
+    assert(await page.locator("#dashboard-tasks .is-upcoming").count() >= 9);
     await page.getByRole("button", { name: "Aplicar" }).waitFor();
     assert.equal(await page.locator(".dashboard-module-row").getByRole("link", { name: "Indicadores", exact: true }).count(), 0, "Auditorías no tiene pestaña de indicadores");
     await page.locator('select[name="tasks"]').selectOption("overdue");
     await page.getByRole("button", { name: "Aplicar" }).click();
     await page.waitForURL(url => url.searchParams.get("tasks") === "overdue");
     await page.waitForLoadState("networkidle");
-    assert.equal(await page.locator(".is-upcoming").count(), 0);
-    assert(await page.locator(".is-overdue").count() >= 8);
+    assert.equal(await page.locator("#dashboard-tasks .is-upcoming").count(), 0);
+    assert(await page.locator("#dashboard-tasks .is-overdue").count() >= 8);
     const taskLink = page.locator(".dashboard-task-record a").first();
     const taskHref = await taskLink.getAttribute("href");
     await taskLink.click();
@@ -114,7 +114,7 @@ async function main() {
     await page.getByRole("link", { name: "Siguiente", exact: true }).click();
     await page.waitForURL(url => url.searchParams.get("page") === "2" && url.searchParams.get("module") === "AUDIT");
     await page.waitForLoadState("networkidle");
-    assert(await page.locator(".dashboard-task-row").count() > 0);
+    assert(await page.locator("#dashboard-tasks .dashboard-task-row").count() > 0);
     await page.getByRole("link", { name: "Anterior", exact: true }).click();
     await page.waitForURL(url => !url.searchParams.has("page") && url.searchParams.get("module") === "AUDIT");
     await page.getByRole("link", { name: "Limpiar", exact: true }).click();

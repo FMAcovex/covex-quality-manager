@@ -55,7 +55,7 @@ async function main() {
     assert.equal(await page.locator(".dashboard-module-row").count(), 7);
     console.log("D1B: siete cohortes activas vs Prisma y maestros PNT distintos; render " + (Date.now() - start) + "ms.");
 
-    const links = page.locator(".dashboard-task-table tbody a");
+    const links = page.locator("#dashboard-tasks .dashboard-task-table tbody a");
     for (const href of await links.evaluateAll(nodes => nodes.map(node => node.getAttribute("href")))) {
       assert(href?.startsWith("/") && !href.startsWith("//"), "No se permite enlace de tarea externo: " + href);
     }
