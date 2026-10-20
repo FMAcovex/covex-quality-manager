@@ -30,7 +30,7 @@ async function main() {
 
     for (const path of ["/deviations/new", "/capa/new", "/changes/new", "/complaints/new", "/returns/new", "/oos/new", "/audits/new", "/controlled-documents/new"]) {
       await visit(page, path);
-      await links().first().waitFor();
+      await links().first().waitFor({ timeout: 10000 }).catch(() => { throw new Error(`${path}: sin índice lateral`); });
       assert(await links().count() >= 2, `${path}: al menos 2 apartados en el índice`);
     }
 

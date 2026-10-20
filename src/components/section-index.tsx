@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { sectionAnchorId } from "@/lib/ui/section-anchor";
 
 type Entry = { id: string; title: string };
-const SECTIONS = "section.form-section, section.card";
+const SECTIONS = "section.form-section, section.card, fieldset.form-section";
 
 /** Apartados de primer nivel del contenedor: secciones que no están dentro de otra sección del mismo contenedor. */
 function collect(root: HTMLElement): Entry[] {
@@ -11,7 +11,7 @@ function collect(root: HTMLElement): Entry[] {
   return Array.from(root.querySelectorAll<HTMLElement>(SECTIONS)).flatMap(section => {
     const outer = section.parentElement?.closest(SECTIONS);
     if (outer && root.contains(outer)) return [];
-    const title = section.querySelector("h2")?.textContent?.trim();
+    const title = (section.querySelector("h2") ?? section.querySelector("legend"))?.textContent?.trim();
     if (!title) return [];
     if (!section.id) section.id = sectionAnchorId(title, used);
     return [{ id: section.id, title }];
