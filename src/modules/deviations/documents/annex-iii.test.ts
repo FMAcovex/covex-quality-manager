@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { documentCellTexts, missingTemplateWords } from "@/lib/ooxml/template-text";
 
 vi.mock("@/modules/deviations/documents/templates", () => ({ loadAnnexIIITemplate: async () => Buffer.alloc(0) }));
-const { fillDispositionCell, setImpactCell } = await import("@/modules/deviations/documents/annex-iii");
+const { fillDispositionCell, fillEventRow, setImpactCell } = await import("@/modules/deviations/documents/annex-iii");
 
 // Casillas y textos literales del Anexo III v06 (bloques de impacto y disposición final).
 const box = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>☐</w:t></w:r></w:sdtContent></w:sdt>`;
@@ -62,3 +62,24 @@ describe("Desviaciones Anexo III: impacto y disposición final", () => {
     ]);
   });
 });
+
+describe("Desviaciones Anexo III: fecha, hora y turno del evento (D-116)", () => {
+  // Fila 5 de la tabla 0 del Anexo III v06: «fecha», «hora», dos celdas vacías y «turno».
+  const hint = (text: string) => cell(p(run(text)));
+  const eventXml = table([...Array.from({ length: 5 }, () => [cell()]), [cell(), hint("fecha"), hint("hora"), cell(), cell(), hint("turno")]]);
+
+  it("escribe el turno en la casilla «turno» y quita la indicación", () => {
+    const xml = fillEventRow(eventXml, { eventDateTime: new Date(2026, 9, 20, 7, 30), shift: "Mañana" });
+    const texts = documentCellTexts(xml)[0][5];
+    expect(texts[5]).toBe("Mañana");
+    expect(texts[1]).toBe("20/10/2026");
+    expect(texts[2]).toBe("07:30");
+  });
+
+  it("sin turno, la casilla queda vacía como la fecha y la hora", () => {
+    const texts = documentCellTexts(fillEventRow(eventXml, { eventDateTime: null, shift: null }))[0][5];
+    expect(texts.slice(1, 3)).toEqual(["", ""]);
+    expect(texts[5]).toBe("");
+  });
+});
+

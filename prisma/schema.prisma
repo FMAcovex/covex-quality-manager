@@ -535,6 +535,7 @@ model Deviation {
   issueDate                   DateTime?                  @db.Date
   eventDateTime               DateTime?
   detectedBy                  String?
+  shift                       String?
   createdByText               String?
   materialProcessAffected     String?
   provenance                  String?

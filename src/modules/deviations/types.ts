@@ -35,6 +35,7 @@ export type DeviationFormDefaults = {
   issueDate?: string;
   eventDateTime?: string;
   detectedBy?: string;
+  shift?: string;
   createdByText?: string;
   modifiedByText?: string;
   changeReason?: string;

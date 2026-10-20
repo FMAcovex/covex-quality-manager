@@ -351,6 +351,7 @@ export function DeviationForm({
           </label>
           <Field label="Fecha/hora del evento" name="eventDateTime" type="datetime-local" defaultValue={formDefaults.eventDateTime} required issues={issues.eventDateTime} />
           <Field label="Detectado por" name="detectedBy" defaultValue={formDefaults.detectedBy} required issues={issues.detectedBy} />
+          <Field label="Turno" name="shift" defaultValue={formDefaults.shift} issues={issues.shift} />
           <Field label="Cumplimentado por" name="createdByText" defaultValue={mode === "create" ? access?.actor ?? "" : formDefaults.createdByText} required issues={issues.createdByText} />
           <Field label="Breve descripción del proceso/equipo/sistema afectado" name="materialProcessAffected" defaultValue={formDefaults.materialProcessAffected} span="span-2" required issues={issues.materialProcessAffected} />
         </div>

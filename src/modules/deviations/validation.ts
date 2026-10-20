@@ -91,6 +91,7 @@ export function parseDeviationForm(formData: FormData) {
   const whereHappened = text(formData, "whereHappened");
   const howHappened = text(formData, "howHappened");
   const detectedBy = text(formData, "detectedBy");
+  const shift = text(formData, "shift");
   const materialProcessAffected = text(formData, "materialProcessAffected");
   const selectedOrigin = enumValue(originType, text(formData, "provenance"));
   const createdByText = text(formData, "createdByText");
@@ -274,6 +275,7 @@ export function parseDeviationForm(formData: FormData) {
       issueDate,
       eventDateTime,
       detectedBy,
+      shift,
       createdByText,
       materialProcessAffected,
       provenance: selectedOrigin,

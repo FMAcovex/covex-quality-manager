@@ -15,6 +15,7 @@ async function main() {
   deviationForm.set("issueDate", "2099-03-01");
   deviationForm.set("eventDateTime", "2099-03-01T09:15");
   deviationForm.set("detectedBy", "CI C3-A");
+  deviationForm.set("shift", "Turno de mañana");
   deviationForm.set("materialProcessAffected", "Proceso ficticio de validación");
   deviationForm.set("createdByText", "CI C3-A");
   deviationForm.set("whatHappened", "Desviación ficticia validada mediante el mismo parser del formulario.");
@@ -49,6 +50,7 @@ async function main() {
 
   const parsedDeviation = parseDeviationForm(deviationForm);
   assert.deepEqual(parsedDeviation.errors, []);
+  assert.equal(parsedDeviation.values.shift, "Turno de mañana", "D-116: el formulario lee el turno");
 
   const deviationRecord = await prisma.qmsRecord.create({
     data: {
