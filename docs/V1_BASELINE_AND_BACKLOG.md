@@ -55,7 +55,7 @@
 | CI1 | P1 · **aplazado** (D-115) | Selección de tests por impacto, paralelismo y diagnóstico, batería completa programada. Aplazado: la CI actual (todas las pruebas en ~9,5 min por PR) es suficiente; diseño de referencia en `docs/superpowers/specs/2026-10-20-ci1-ci-mas-rapida-design.md` | Ninguna regresión crítica retirada; CI verde y duraciones medibles |
 | SEC1 | P0 antes de GMP · **implementación técnica hecha** (4B1, 4B3; D-078, D-080–D-082, D-086) | Identidad, RBAC, autorización servidor, segregación de funciones, audit trail según riesgos. Pendiente: configuración real de Entra por IT (con IT1) y aceptación QA/DT de perfiles, segregación de funciones, clasificación crítica, revisión y retención del audit trail | Pruebas positivas/negativas, revisión con QA/IT y controles documentados |
 | IT1 | P0 antes de GMP | Servidor COVEX, configuración, HTTPS, backups, restauración, operaciones | Recuperación ejecutada, accesos, monitoreo y procedimiento aprobados |
-| DATA1 | P0 antes de GMP | Conciliación y carga controlada de PNT/históricos; aceptación documental | Actas de reconciliación y aceptación Word, procedencia y cambios |
+| DATA1 | P0 antes de GMP | Conciliación y carga controlada de PNT/históricos; aceptación documental. Hay importadores históricos de Desviaciones y CAPA; falta el de Controles de cambios 2025–2026 (el de la PR #11 usaba el modelo antiguo y no se trasladó) | Actas de reconciliación y aceptación Word, procedencia y cambios |
 | INT1 | P2 | Alertas controladas, Teams/correo y SharePoint según IT | Consentimiento/roles, idempotencia de envíos, trazabilidad y gestión de fallos |
 | VAL1 | P0 antes de GMP | URS, evaluación de riesgos, trazabilidad requisitos-pruebas y validación de uso | Evidencias aprobadas por responsables competentes antes de liberación |
 
@@ -74,6 +74,23 @@ A la fecha de corte hay ocho PR abiertas antiguas: **#11, #16, #17, #19, #20, #2
 - #112: PNT P3C-2 alternativo; comparar explícitamente con #113, #115 y #120 antes de descartar alguna capacidad.
 
 **Regla:** inspeccionar diff y cambios efectivos en main; registrar qué PR posterior sustituye cada una; cerrar solo si está cubierta o se rechaza expresamente, con comentario y enlace, **sin merge**. La PR A se limita a inventario y decisión; no cierra las ocho.
+
+**Revisión del 2026-10-20.** Se contrastó el diff de cada PR con `main`.
+
+| PR | Resultado | Sustituida por |
+| --- | --- | --- |
+| #11 (Controles de cambios) | Cerrada. Lo único no trasladado es la importación histórica 2025–2026, anotada en DATA1 | #12, #94–#97, #146, #173 |
+| #16 y #17 (Hito 10.1) | Cerradas. La vinculación libre `RELATED_TO` y las relaciones de Control de Cambios se rechazaron (D-018, D-047, D-083) | #18, #22, #23, #28–#31, #33–#36, #66 |
+| #76 (plan de revisión) | Cerrada | Roadmap vigente; R1–R4, #126, #128–#130 |
+| #112 (PNT P3C-2) | Cerrada; nada exclusivo | #113, #115, #120 |
+| #19, #20 y #21 (Hito 10.2) | **Abiertas**, pendientes de decisión: la versión fusionada es #22, pero quedan campos de anexos sin trasladar ni decisión documentada | — |
+
+Campos de #19–#21 pendientes de decisión:
+
+- **Desviaciones, «Turno»:** no existe el campo y el Anexo III lo deja en blanco.
+- **Desviaciones, validación QA y aprobación final:** sin nombres en las tablas 1 y 4 del Anexo III.
+- **CAPA, «Emitido / revisado / aprobado por»:** sin nombres en el Anexo III.
+- **Devoluciones, Anexo V:** sin las casillas estructuradas de evidencias del cliente (documento de suministro o albarán, registros de temperatura, «Otra documentación») ni el responsable técnico de la entidad.
 
 ## Registro y verificación
 
