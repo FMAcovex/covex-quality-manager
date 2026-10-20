@@ -11,6 +11,7 @@ import { prisma } from "@/lib/db";
 import { canonicalAuditJson } from "./canonical-json";
 import { assertAuditProtection, assertAuditApplicationRole } from "./protection";
 import { auditTrailCutoff, exactAuditTrailOperationSelection, exactAuditTrailSelection, parseAuditTrailFilters, type AuditTrailFilters } from "./trail";
+import { withBytes } from "@/lib/db-binary-omit";
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const requestId=(form:FormData)=>{const value=String(form.get("_covexAuditRequestId")??"");return uuid.test(value)?value:randomUUID();};
@@ -69,7 +70,7 @@ async function createExport(form:FormData){
   const filters=parseFilters(form),nonce=requestId(form);
   if(filters.sensitive)assertPermission(actor,"SYSTEM","AUDIT_TRAIL_SENSITIVE_READ");
   const digest=createHash("sha256").update(canonicalAuditJson({version:"COVEX_AUDIT_EXPORT_COMMAND_V1",format:"CSV_UTF8",filters})).digest("hex");
-  const existing=await prisma.auditTrailExport.findUnique({where:{actorUserId_requestId:{actorUserId:actor.id,requestId:nonce}}});
+  const existing=await prisma.auditTrailExport.findUnique({where:{actorUserId_requestId:{actorUserId:actor.id,requestId:nonce}},omit:withBytes});
   if(existing){
     if(existing.requestDigest!==digest)throw new Error("Export request conflict");
     if(createHash("sha256").update(existing.fileData).digest("hex")!==existing.contentSha256)throw new Error("La exportación no supera la comprobación de integridad.");

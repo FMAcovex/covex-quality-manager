@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { generateAnnualProgramme } from "./generator";
 import { issueProgrammeSchema, modalityText, programmeApproversSchema, programmeDocumentTypes, programmeDownloadName, programmeFingerprint, programmeReferences, type ProgrammeContent } from "./domain";
+import { withBytes } from "@/lib/db-binary-omit";
 
 const digest = (b: Buffer | string) => createHash("sha256").update(b).digest("hex");
 const dateText = (d: Date | null) => d ? d.toISOString().slice(0, 10).split("-").reverse().join("/") : "";
@@ -115,7 +116,7 @@ export async function issueAnnualProgramme(planId: string, input: unknown) {
   throw Error("No se pudo completar la emisión concurrente. Recarga y vuelve a intentarlo.");
 }
 export async function getAnnualProgrammeFile(planId: string, versionId: string) {
-  const file = await prisma.auditAnnualProgrammeVersion.findFirst({ where: { planId, id: versionId } });
+  const file = await prisma.auditAnnualProgrammeVersion.findFirst({ where: { planId, id: versionId }, omit: withBytes });
   if (!file) throw Error("Emisión no encontrada en este plan.");
   if (digest(Buffer.from(file.fileData)) !== file.checksum) throw Error("El archivo histórico no supera la comprobación de integridad.");
   return file;

@@ -7,6 +7,7 @@ import { auditClosureChecklist, type ClosureContext } from "./closure-policy";
 import { capaPlanFingerprint } from "./capa-plan-domain";
 import { receivedAuditScenario } from "./domain";
 import { auditAlreadyClosed } from "./lifecycle";
+import { withBytes } from "@/lib/db-binary-omit";
 
 type Tx = Prisma.TransactionClient;
 export const auditReportInclude = {
@@ -77,7 +78,7 @@ export async function issueAuditReport(id: string, raw: unknown) {
     if (last && !v.reason.trim()) throw new Error("La revisión 01+ exige motivo obligatorio.");
     // D-110: el CAPA plan tiene versiones propias (AuditCapaPlanVersion); el informe ya no fija su A4.03.
     const types: DocumentType[] = [a.scenario === "SUPPLIER" ? DocumentType.AUDIT_EXTERNAL_REPORT : DocumentType.AUDIT_INTERNAL_REPORT, ...(a.scenario === "SUPPLIER" ? [DocumentType.AUDIT_EXTERNAL_PLAN] : [])];
-    const templates = await tx.templateVersion.findMany({ where: { module: "AUDIT", documentType: { in: types }, isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }] });
+    const templates = await tx.templateVersion.findMany({ where: { module: "AUDIT", documentType: { in: types }, isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }], omit: withBytes });
     const selected = types.map(type => templates.find(t => t.documentType === type));
     if (selected.some(t => !t || (!t.fileData && !t.filePath) || !t.checksum)) throw new Error("Instala/revisa las plantillas controladas de este escenario antes de emitir.");
     const snapshot = snapshotAudit(a, selected.map(t => ({ id: t!.id, documentType: t!.documentType, versionCode: t!.versionCode, checksum: t!.checksum })));
