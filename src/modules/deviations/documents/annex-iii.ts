@@ -24,6 +24,7 @@ type AnnexIIIRecord = {
   issueDate: Date | null;
   eventDateTime: Date | null;
   detectedBy: string | null;
+  shift: string | null;
   materialProcessAffected: string | null;
   processEquipmentSystem: string | null;
   finishedProductSystem: string | null;
@@ -88,6 +89,13 @@ function value(text: string | null | undefined) {
   return text ?? "";
 }
 
+// Fila «fecha | hora | … | turno» de la tabla 0: el valor sustituye la indicación de la plantilla (D-116).
+export function fillEventRow(xml: string, record: Pick<AnnexIIIRecord, "eventDateTime" | "shift">) {
+  xml = setWordCellText(xml, 0, 5, 1, date(record.eventDateTime));
+  xml = setWordCellText(xml, 0, 5, 2, time(record.eventDateTime));
+  return setWordCellText(xml, 0, 5, 5, value(record.shift));
+}
+
 function markOrigin(xml: string, row: number, hasValue: boolean) {
   return setWordSdtCheckbox(xml, 0, row, 0, hasValue);
 }
@@ -149,8 +157,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   );
   xml = setWordCellText(xml, 0, 2, 3, record.recordVersionLabel ?? "V00");
   xml = setWordCellText(xml, 0, 3, 1, value(record.materialProcessAffected || record.processEquipmentSystem));
-  xml = setWordCellText(xml, 0, 5, 1, date(record.eventDateTime));
-  xml = setWordCellText(xml, 0, 5, 2, time(record.eventDateTime));
+  xml = fillEventRow(xml, record);
   xml = setWordCellText(xml, 0, 4, 4, value(record.detectedBy));
 
   // D-094: los otros lotes van en la misma casilla que el principal, uno por línea.

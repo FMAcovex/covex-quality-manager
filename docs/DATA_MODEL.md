@@ -86,6 +86,7 @@ Relación 1:1 con QmsRecord.
 - issueDate;
 - eventDateTime;
 - detectedBy;
+- shift: turno del evento, texto libre opcional (D-116);
 - formVersionId;
 - anexoIIITemplateVersionId.
 

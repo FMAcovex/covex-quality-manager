@@ -92,6 +92,7 @@ export function serializeDeviationVersion(record: DeviationVersionSource) {
       issueDate: iso(record.issueDate),
       eventDateTime: iso(record.eventDateTime),
       detectedBy: record.detectedBy ?? null,
+      shift: record.shift ?? null,
       createdByText: record.createdByText ?? null,
       materialProcessAffected: record.materialProcessAffected ?? null,
       provenance: record.provenance ?? null,

@@ -83,9 +83,9 @@ A la fecha de corte hay ocho PR abiertas antiguas: **#11, #16, #17, #19, #20, #2
 | #16 y #17 (Hito 10.1) | Cerradas. La vinculación libre `RELATED_TO` y las relaciones de Control de Cambios se rechazaron (D-018, D-047, D-083) | #18, #22, #23, #28–#31, #33–#36, #66 |
 | #76 (plan de revisión) | Cerrada | Roadmap vigente; R1–R4, #126, #128–#130 |
 | #112 (PNT P3C-2) | Cerrada; nada exclusivo | #113, #115, #120 |
-| #19, #20 y #21 (Hito 10.2) | **Abiertas**, pendientes de decisión: la versión fusionada es #22, pero quedan campos de anexos sin trasladar ni decisión documentada | — |
+| #19, #20 y #21 (Hito 10.2) | Cerradas tras D-116: se añade el turno en Desviaciones; los nombres de aprobación se rellenan a mano y el Anexo V de Devoluciones lo cumplimenta el cliente | #22, #23, #30, #31, #182–#184, #189 |
 
-Campos de #19–#21 pendientes de decisión:
+Campos de #19–#21 que estaban pendientes, resueltos en D-116:
 
 - **Desviaciones, «Turno»:** no existe el campo y el Anexo III lo deja en blanco.
 - **Desviaciones, validación QA y aprobación final:** sin nombres en las tablas 1 y 4 del Anexo III.

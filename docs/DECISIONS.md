@@ -1191,3 +1191,18 @@ Decisión del responsable de Calidad. Diseño de referencia en `docs/superpowers
 - **Decisión:** no se cambia la CI por ahora. Acortar la espera en ~3 min, el resumen de fallos y la batería nocturna son mejoras de comodidad del desarrollo que no aportan a los usuarios ni a los requisitos GMP.
 - **Si se retoma:** sin selección de pruebas por impacto. El repositorio es público, así que los minutos de GitHub Actions no tienen coste, y omitir grupos permitiría fusionar una PR sin pasar regresiones que sí rompe. Se repartirían los grupos en más trabajos paralelos.
 
+## D-116 — Campos de anexos pendientes de las PR #19, #20 y #21 (2026-10-20)
+
+Decisión del responsable de Calidad tras revisar las PR antiguas del Hito 10.2. La versión fusionada fue #22; estos cuatro puntos quedaban sin trasladar y sin decisión.
+
+1. **Desviaciones, «Turno»: se añade.**
+   - Campo `shift` de texto libre y opcional, junto a «Detectado por», como el turno de OOS. No hay lista cerrada de turnos en el PNT, así que no se inventa una.
+   - Se escribe en la casilla «turno» del Anexo III, tabla 0, fila 5, celda 5, en lugar de la indicación de la plantilla, igual que la fecha y la hora.
+   - Queda en las versiones del expediente y en el Anexo III de cada versión. Las versiones anteriores quedan sin turno.
+   - Captura B2 como texto no crítico (contrato `B2_DEVIATION_SHIFT`). Migración aditiva, sin cambios de funciones, triggers ni tablas de auditoría.
+2. **Desviaciones, nombres de validación QA y de aprobación final (tablas 1 y 4 del Anexo III): se rellenan a mano** al firmar. Se podrán incorporar si en el futuro se implantan flujos de aprobación.
+3. **CAPA, «Emitido / revisado / aprobado por» (Anexo III): igual que el punto 2.** Se rellenan a mano al firmar.
+4. **Devoluciones, Anexo V (declaración del cliente): no lo rellena COVEX.** Lo cumplimenta el cliente, así que la aplicación no recoge sus casillas de evidencias ni su responsable técnico.
+
+Con esta decisión, el resto del contenido de #19, #20 y #21 está cubierto por #22 y las PR posteriores, y las tres se cierran sin fusionar.
+

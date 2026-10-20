@@ -139,3 +139,15 @@ describe("parseDeviationForm", () => {
   });
 
 });
+
+describe("Desviaciones · turno (D-116)", () => {
+  it("el turno es opcional y se guarda como texto libre", () => {
+    const empty = parseDeviationForm(baseForm());
+    expect(empty.errors).toEqual([]);
+    expect(empty.values.shift).toBeNull();
+    const form = baseForm();
+    form.set("shift", "  Turno de tarde  ");
+    expect(parseDeviationForm(form).values.shift).toBe("Turno de tarde");
+  });
+});
+

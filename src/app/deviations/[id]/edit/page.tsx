@@ -65,6 +65,7 @@ async function EditDeviationPageAuthenticatedContent({
           issueDate: date(deviation.issueDate),
           eventDateTime: dateTime(deviation.eventDateTime),
           detectedBy: deviation.detectedBy ?? "",
+          shift: deviation.shift ?? "",
           createdByText: deviation.createdByText ?? "",
           materialProcessAffected: deviation.materialProcessAffected ?? "",
           provenance: deviation.provenance ?? "",
