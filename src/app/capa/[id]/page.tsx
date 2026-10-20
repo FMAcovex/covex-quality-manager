@@ -27,6 +27,10 @@ import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/q
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { OosOriginPanel } from "@/modules/oos/origin-panel";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { RecordHeader } from "@/components/record-header";
+import { RecordKeyFacts } from "@/components/record-key-facts";
+import { dueTone } from "@/lib/qms/key-facts";
+import { draftRecordTitle } from "@/lib/qms/record-title";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { uploadCapaSignedPdfAction } from "@/modules/capa/signed-document-actions";
 import {
@@ -92,6 +96,8 @@ async function CapaDetailPageAuthenticatedContent({
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
+
+  const hasCode = Boolean(capa.qmsRecord.businessCode ?? capa.qmsRecord.annulledBusinessCode);
   const reviewMode = review === "1";
   const basePath = `/capa/${id}`;
   const reviewThreads = await getReviewThreadsForDisplay(capa.qmsRecord.id);
@@ -215,41 +221,33 @@ async function CapaDetailPageAuthenticatedContent({
       initialThreadId={thread}
     >
     <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
-      <div className="record-header">
-        <div>
-          <p className="eyebrow"><Link href={qmsListingReturnTo("/capa", returnTo)}>← CAPA</Link></p>
-          <div className="record-title-line">
-            <h1>{qmsRecordDisplayCode(capa.qmsRecord, "CAPA sin código")}</h1>
-            <span className="badge neutral">{capaTypeLabel(capa.actionType)}</span>
-            <span className={`badge ${capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral"}`}>
-              {capaStatusLabel(capa.status)}
-            </span>
-            <span className="badge neutral">{capa.departmentCodeSnapshot ?? "Sin departamento"}</span>
-            {currentVersion ? <span className="badge neutral">{followupLabel(currentVersion.sequenceNumber)}</span> : null}
-            {capa.dataQualityStatus !== "COMPLETE" ? (
-              <span className="badge warning">
-                {capa.dataQualityStatus === "INCOMPLETE" ? "Dato incompleto" : "Revisar dato"}
-              </span>
-            ) : null}
-          </div>
-          <p className="muted-note">
-            Apertura {formatDate(capa.openedAt)} · Eficacia {effectivenessLabel(capa.effectivenessStatus)}
-          </p>
-        </div>
-        <div className="record-actions">
+      <RecordHeader
+        back={{ href: qmsListingReturnTo("/capa", returnTo), label: "CAPA" }}
+        title={hasCode ? qmsRecordDisplayCode(capa.qmsRecord) : draftRecordTitle(capa.defectDescription, "CAPA sin código")}
+        chips={<>
+          <span className="badge neutral">{capaTypeLabel(capa.actionType)}</span>
+          {hasCode ? <span className={`badge ${capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral"}`}>{capaStatusLabel(capa.status)}</span> : <span className="badge neutral">Borrador · sin código</span>}
+          <span className="badge neutral">{capa.departmentCodeSnapshot ?? "Sin departamento"}</span>
+          {currentVersion ? <span className="badge neutral">{followupLabel(currentVersion.sequenceNumber)}</span> : null}
+          {capa.dataQualityStatus !== "COMPLETE" ? <span className="badge warning">{capa.dataQualityStatus === "INCOMPLETE" ? "Dato incompleto" : "Revisar dato"}</span> : null}
+        </>}
+        subtitle={<>Apertura {formatDate(capa.openedAt)} · Eficacia {effectivenessLabel(capa.effectivenessStatus)}</>}
+        annul={<QmsAdministrativeStatus part="action"
+        qmsRecordId={capa.qmsRecord.id}
+        isActive={capa.qmsRecord.isActive}
+        code={qmsRecordDisplayCode(capa.qmsRecord)}
+        annulledAt={capa.qmsRecord.annulledAt?.toISOString() ?? null}
+        annulledByText={capa.qmsRecord.annulledByText}
+        annulledReason={capa.qmsRecord.annulledReason}
+        defaultActor={currentActor()}
+      />}
+        actions={<>
           <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/capa", returnTo)} /></PermissionGate>
-          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit?tab=${activeTab}`, "/capa", returnTo)}>Editar / nuevo seguimiento</Link></PermissionGate>
           {capa.status !== "DRAFT" ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate> : null}
-        </div>
-      </div>
-
-      {capa.status === "DRAFT" ? (
-        <div className="analytics-note">
-          <strong>Borrador:</strong> este expediente todavía no es una CAPA operativa. Completa los campos obligatorios y pulsa Guardar CAPA para iniciar su ciclo operativo.
-        </div>
-      ) : null}
-
-      <QmsAdministrativeStatus
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit?tab=${activeTab}`, "/capa", returnTo)}>Editar / nuevo seguimiento</Link></PermissionGate>
+        </>}
+      />
+      <QmsAdministrativeStatus part="banner"
         qmsRecordId={capa.qmsRecord.id}
         isActive={capa.qmsRecord.isActive}
         code={qmsRecordDisplayCode(capa.qmsRecord)}
@@ -258,6 +256,13 @@ async function CapaDetailPageAuthenticatedContent({
         annulledReason={capa.qmsRecord.annulledReason}
         defaultActor={currentActor()}
       />
+
+      {capa.status === "DRAFT" ? (
+        <div className="analytics-note">
+          <strong>Borrador:</strong> este expediente todavía no es una CAPA operativa. Completa los campos obligatorios y pulsa Guardar CAPA para iniciar su ciclo operativo.
+        </div>
+      ) : null}
+
 
       <nav className="record-tabs">
         {tabs.map(([key, label]) => (
@@ -269,6 +274,14 @@ async function CapaDetailPageAuthenticatedContent({
 
       {activeTab === "summary" ? (
         <>
+          <RecordKeyFacts facts={[
+            { label: "Estado", value: capaStatusLabel(capa.status), badgeClass: capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral" },
+            { label: "Eficacia", value: effectivenessLabel(capa.effectivenessStatus) },
+            { label: "Apertura", value: formatDate(capa.openedAt) },
+            { label: "Próximo seguimiento", value: formatDate(capa.nextFollowupDate), tone: dueTone(capa.nextFollowupDate, new Date(), capa.status === "CLOSED" || capa.status === "CANCELLED") },
+            { label: "Cierre operativo", value: formatDate(capa.operationalClosedAt) },
+            { label: "Cierre efectivo", value: formatDate(capa.effectiveClosedAt) },
+          ]} />
           <div className="card">
             <h2>Resumen del expediente</h2>
             <dl className="info-grid">

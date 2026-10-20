@@ -93,6 +93,10 @@ async function main() {
     await page.getByLabel("Motivo",{exact:true}).fill("Anulación UI de fixture");
     await page.locator('[role="dialog"]').getByRole("button",{name:"Anular expediente",exact:true}).click();
     await page.getByText("Expediente anulado",{exact:true}).waitFor();
+    // D-111 (V1): anulado, el aviso queda bajo la cabecera y el botón «Anular» desaparece de las acciones.
+    assert.equal(await page.locator(".record-header + .annulled-record-banner").count(),1);
+    assert.equal(await page.getByRole("button",{name:"Anular expediente",exact:true}).count(),0);
+    assert.equal(await page.locator(".record-actions-annul:not(:empty)").count(),0);
     await navigate(page,`${base}/audits?q=${encodeURIComponent(marker)}`); await page.locator("#audit-list-table").waitFor(); assert.equal(await page.locator("#audit-list-table tbody tr").count(),0);
     await navigate(page,`${base}/audits?q=${encodeURIComponent(marker)}&administrative=ANNULLED`); await page.locator("#audit-list-table").waitFor(); assert.equal(await page.locator("#audit-list-table tbody tr").count(),1);
     // Exercise the UTC/Madrid date boundary independently of the execution hour.

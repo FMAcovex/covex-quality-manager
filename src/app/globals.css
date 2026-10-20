@@ -215,7 +215,11 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .record-header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 18px; }
 .record-title-line { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .record-title-line h1 { margin: 0; font-size: 28px; }
-.record-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.record-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+/* D-111 (V1): «Anular» separado del resto de acciones; sin permiso no deja hueco. */
+.record-actions-annul { display: inline-flex; }
+.record-actions-annul:not(:empty):not(:last-child) { padding-right: 12px; margin-right: 4px; border-right: 1px solid var(--border); }
+.record-actions-annul .button.danger { background: transparent; }
 .record-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 .record-tabs a { padding: 10px 13px; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; font-size: 13px; }
 .record-tabs a.active { color: var(--blue-dark); border-bottom-color: var(--blue); font-weight: 750; }
@@ -230,6 +234,23 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .info-item.wide { grid-column: span 2; }
 .info-item.full { grid-column: 1 / -1; }
 .prose-value { white-space: pre-wrap; line-height: 1.55; }
+/* Datos clave del expediente (D-111, V1) */
+.record-key-facts { margin-bottom: 14px; }
+.record-key-facts + .card { margin-top: 0; }
+.record-header > div:first-child { min-width: 0; flex: 1 1 auto; }
+.record-title-line h1 { overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .record-actions { flex: 0 0 auto; flex-wrap: nowrap; } .record-actions > .muted-note { max-width: 220px; } }
+.record-key-facts dl { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.record-key-facts .key-fact { min-width: 0; }
+.record-key-facts dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.record-key-facts dd { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+.record-key-facts dd .badge { font-size: 13px; min-height: 28px; padding: 3px 11px; }
+.record-key-facts .key-fact.is-overdue dd { color: #a33131; }
+.record-key-facts .key-fact.is-upcoming dd { color: #855d10; }
+.key-fact-flag { display: block; margin-top: 3px; font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
+.empty-value { color: var(--muted); font-weight: 400; }
+@media (max-width: 1199px) { .record-key-facts dl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 759px) { .record-key-facts dl { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .timeline { display: grid; gap: 12px; }
 .timeline-item { border-left: 3px solid #bad3f0; padding: 4px 0 4px 14px; }
 .timeline-item header { display: flex; gap: 9px; align-items: baseline; flex-wrap: wrap; margin-bottom: 5px; }
@@ -1694,7 +1715,6 @@ button[disabled] {
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-.record-header + .button.danger,
 .record-header + .annulled-record-banner {
   margin-bottom: 16px;
 }
@@ -2529,10 +2549,13 @@ button[disabled] {
 .audit-section-heading,.audit-panel-heading,.audit-subsection-heading { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; min-width:0; }
 .audit-section-heading h2,.audit-panel-heading h2 { margin-bottom:5px; }
 .audit-section-heading .muted-note,.audit-panel-heading .muted-note { margin:0 0 14px; }
-.audit-info-grid { gap:10px; }
-.audit-info-field { border:1px solid var(--border); border-radius:9px; padding:13px 15px; background:var(--surface); min-width:0; }
-.audit-info-field dt { font-size:.77rem; font-weight:650; }
-.audit-info-field dd { font-weight:500; overflow-wrap:anywhere; }
+/* D-111 (V1): mismos campos etiqueta/valor que el resto de módulos (antes, una caja con borde por campo). */
+.audit-info-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.audit-info-field { min-width:0; }
+.audit-info-field dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.audit-info-field dd { margin: 0; line-height: 1.45; overflow-wrap:anywhere; }
+@media (max-width: 1199px) { .audit-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .audit-info-grid { grid-template-columns: minmax(0, 1fr); } }
 .audit-info-wide { grid-column:1 / -1; }
 .audit-qms-id { display:block; margin-top:13px; overflow-wrap:anywhere; }
 .audit-info-layout .audit-team { grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); }
@@ -2853,3 +2876,10 @@ button[disabled] {
 .capa-plan-followup-table small { color: var(--muted, #5b6573); }
 .capa-plan-followup-table td:nth-child(2), .capa-plan-followup-table th[scope="row"] small { max-width: 280px; }
 .capa-plan-followup-table td:nth-child(2) { width: 24%; }
+
+/* D-111 (V1): en móvil, pestañas en una fila desplazable y menú con indicio de que hay más. */
+@media (max-width: 759px) {
+  .record-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  .record-tabs a { flex: 0 0 auto; white-space: nowrap; }
+  .module-nav { mask-image: linear-gradient(to right, #000 85%, transparent); -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); }
+}

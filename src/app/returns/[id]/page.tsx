@@ -29,6 +29,8 @@ import { BasicFollowupForm } from "@/components/basic-followup-form";
 import { qmsRecordHref, qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { RecordHeader } from "@/components/record-header";
+import { RecordKeyFacts } from "@/components/record-key-facts";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { uploadReturnSignedPdfAction } from "@/modules/returns/signed-document-actions";
 import {
@@ -245,49 +247,41 @@ async function ReturnDetailPageAuthenticatedContent({
       initialThreadId={thread}
     >
       <section className={`workspace${reviewMode ? " review-mode-active" : ""}`}>
-        <div className="record-header">
-          <div>
-            <p className="eyebrow">
-              <Link href={qmsListingReturnTo("/returns", returnTo)}>← Devoluciones</Link>
-            </p>
-            <div className="record-title-line">
-              <h1>{qmsRecordDisplayCode(r.qmsRecord)}</h1>
-              <span
-                className={`badge ${
-                  r.status === "DRAFT"
-                    ? "neutral"
-                    : r.status === "OPEN"
-                      ? "open"
-                      : "closed"
-                }`}
-              >
-                {returnStatusLabel(r.status)}
-              </span>
-              <span className="badge neutral">{returnTypeLabel(r.returnType)}</span>
-              <span className="badge neutral">{returnDecisionLabel(r.decision)}</span>
-            </div>
-            <p className="muted-note">
-              Comunicación {formatDate(r.communicationDate)} · {txt(r.customerEntity)}
-            </p>
-          </div>
-          <div className="record-actions">
-            <PermissionGate permission="REVIEW"><ReviewModeToggle
-              active={reviewMode}
-              href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/returns", returnTo)}
-            /></PermissionGate>
-            {r.qmsRecord.isActive?<PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit?tab=${tab}`, "/returns", returnTo)}>
-              Editar
-            </Link></PermissionGate>:null}
-            {r.qmsRecord.isActive&&r.status === "OPEN" ? (
-              <PermissionGate permission="FOLLOWUP"><Link
-                className="button"
-                href={`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`}
-              >
-                + Seguimiento
-              </Link></PermissionGate>
+        <RecordHeader
+          back={{ href: qmsListingReturnTo("/returns", returnTo), label: "Devoluciones" }}
+          title={qmsRecordDisplayCode(r.qmsRecord)}
+          chips={<>
+            <span className={`badge ${r.status === "DRAFT" ? "neutral" : r.status === "OPEN" ? "open" : "closed"}`}>{returnStatusLabel(r.status)}</span>
+            <span className="badge neutral">{returnTypeLabel(r.returnType)}</span>
+            <span className="badge neutral">{returnDecisionLabel(r.decision)}</span>
+          </>}
+          subtitle={<>Comunicación {formatDate(r.communicationDate)} · {txt(r.customerEntity)}</>}
+          annul={<QmsAdministrativeStatus part="action"
+          qmsRecordId={r.qmsRecord.id}
+          isActive={r.qmsRecord.isActive}
+          code={qmsRecordDisplayCode(r.qmsRecord)}
+          annulledAt={r.qmsRecord.annulledAt?.toISOString() ?? null}
+          annulledByText={r.qmsRecord.annulledByText}
+          annulledReason={r.qmsRecord.annulledReason}
+          defaultActor={currentActor()}
+        />}
+          actions={<>
+            <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/returns", returnTo)} /></PermissionGate>
+            {r.qmsRecord.isActive && r.status === "OPEN" ? (
+              <PermissionGate permission="FOLLOWUP"><Link className="button" href={`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`}>+ Seguimiento</Link></PermissionGate>
             ) : null}
-          </div>
-        </div>
+            {r.qmsRecord.isActive ? <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit?tab=${tab}`, "/returns", returnTo)}>Editar</Link></PermissionGate> : null}
+          </>}
+        />
+        <QmsAdministrativeStatus part="banner"
+          qmsRecordId={r.qmsRecord.id}
+          isActive={r.qmsRecord.isActive}
+          code={qmsRecordDisplayCode(r.qmsRecord)}
+          annulledAt={r.qmsRecord.annulledAt?.toISOString() ?? null}
+          annulledByText={r.qmsRecord.annulledByText}
+          annulledReason={r.qmsRecord.annulledReason}
+          defaultActor={currentActor()}
+        />
 
         {r.status === "DRAFT" ? (
           <div className="analytics-note">
@@ -297,15 +291,6 @@ async function ReturnDetailPageAuthenticatedContent({
           </div>
         ) : null}
 
-        <QmsAdministrativeStatus
-          qmsRecordId={r.qmsRecord.id}
-          isActive={r.qmsRecord.isActive}
-          code={qmsRecordDisplayCode(r.qmsRecord)}
-          annulledAt={r.qmsRecord.annulledAt?.toISOString() ?? null}
-          annulledByText={r.qmsRecord.annulledByText}
-          annulledReason={r.qmsRecord.annulledReason}
-          defaultActor={currentActor()}
-        />
 
         <nav className="record-tabs">
           {tabs.map(([key, label]) => (
@@ -321,6 +306,13 @@ async function ReturnDetailPageAuthenticatedContent({
 
         {tab === "summary" ? (
           <>
+            <RecordKeyFacts facts={[
+              { label: "Estado", value: returnStatusLabel(r.status), badgeClass: r.status === "DRAFT" ? "neutral" : r.status === "OPEN" ? "open" : "closed" },
+              { label: "Comunicación", value: formatDate(r.communicationDate) },
+              { label: "Recepción", value: formatDate(r.receivedAt) },
+              { label: "Fecha decisión", value: formatDate(r.decisionDate) },
+              { label: "Cierre", value: formatDate(r.closedAt) },
+            ]} />
             <div className="return-summary-hero">
               <div
                 id={reviewTarget.generalData.anchorId}

@@ -32,6 +32,9 @@ import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/q
 import { capaPlanNavigation, capaProposalStatusLabel } from "@/modules/capa/proposal-ui";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
+import { RecordHeader } from "@/components/record-header";
+import { RecordKeyFacts } from "@/components/record-key-facts";
+import { dueTone } from "@/lib/qms/key-facts";
 import { complaintSnapshotVersionFollowupDate,recordVersionSummary,versionLabel } from "@/lib/qms/versioning";
 import { uploadComplaintSignedPdfAction } from "@/modules/complaints/signed-document-actions";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
@@ -106,29 +109,45 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
 
  return <ReviewWorkspaceProvider qmsRecordId={r.qmsRecord.id} module="COMPLAINT" versionLabelMode="FOLLOWUP" basePath={basePath} currentVersionLabel={reviewVersionLabel(currentVersion?.sequenceNumber??null,"FOLLOWUP")} defaultActor={currentActor()} reviewMode={reviewMode} targets={reviewTargets} threads={reviewThreads} initialThreadId={thread}>
  <section className={`workspace${reviewMode?" review-mode-active":""}`}>
-  <div className="record-header"><div><p className="eyebrow"><Link href={qmsListingReturnTo("/complaints", returnTo)}>← Reclamaciones</Link></p><div className="record-title-line">
-   <h1>{qmsRecordDisplayCode(r.qmsRecord)}</h1>
-   <span className={`badge ${r.status==="DRAFT"?"neutral":r.status==="OPEN"?"open":"closed"}`}>{complaintStatusLabel(r.status)}</span>
-   <span className={`badge ${complaintOperationalSituationTone(situation)}`}>{complaintOperationalSituationLabel(situation)}</span>
-   <span className={`badge ${r.classification?.toLowerCase()??"neutral"}`}>{complaintClassificationLabel(r.classification)}</span>
-   <span className="badge neutral">{complaintTypeLabel(r.complaintType)}</span>
-   {currentVersion?<span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span>:null}
-  </div><p className="muted-note">Apertura {formatDate(r.openedAt)} · {txt(r.partyName)}</p></div>
-  <div className="record-actions"><PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath,tab,reviewMode), "/complaints", returnTo)}/></PermissionGate><PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/complaints/${id}/edit?tab=${tab}`, "/complaints", returnTo)}>Editar / nueva versión / seguimiento</Link></PermissionGate></div></div>
-
-  {r.status==="DRAFT"?<div className="analytics-note"><strong>Borrador:</strong> todavía no es una reclamación operativa. Al abrirla se validarán todos los campos aplicables del Anexo III.</div>:null}
-  {r.status==="OPEN"&&followupState==="OVERDUE"?<div className="form-errors"><strong>Seguimiento vencido:</strong> la fecha prevista era {formatDate(r.nextFollowupDate)}.</div>:null}
-  {r.status==="OPEN"&&followupState==="MISSING"?<div className="form-errors"><strong>Control:</strong> reclamación abierta sin fecha de próximo seguimiento.</div>:null}
-
-  <QmsAdministrativeStatus
+  <RecordHeader
+   back={{ href: qmsListingReturnTo("/complaints", returnTo), label: "Reclamaciones" }}
+   title={qmsRecordDisplayCode(r.qmsRecord)}
+   chips={<>
+    <span className={`badge ${r.status==="DRAFT"?"neutral":r.status==="OPEN"?"open":"closed"}`}>{complaintStatusLabel(r.status)}</span>
+    <span className={`badge ${complaintOperationalSituationTone(situation)}`}>{complaintOperationalSituationLabel(situation)}</span>
+    <span className={`badge ${r.classification?.toLowerCase()??"neutral"}`}>{complaintClassificationLabel(r.classification)}</span>
+    <span className="badge neutral">{complaintTypeLabel(r.complaintType)}</span>
+    {currentVersion?<span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span>:null}
+   </>}
+   subtitle={<>Apertura {formatDate(r.openedAt)} · {txt(r.partyName)}</>}
+   annul={<QmsAdministrativeStatus part="action"
+   qmsRecordId={r.qmsRecord.id} isActive={r.qmsRecord.isActive} code={qmsRecordDisplayCode(r.qmsRecord)}
+   annulledAt={r.qmsRecord.annulledAt?.toISOString()??null} annulledByText={r.qmsRecord.annulledByText}
+   annulledReason={r.qmsRecord.annulledReason} defaultActor={currentActor()}
+  />}
+   actions={<><PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath,tab,reviewMode), "/complaints", returnTo)}/></PermissionGate><PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/complaints/${id}/edit?tab=${tab}`, "/complaints", returnTo)}>Editar / nueva versión / seguimiento</Link></PermissionGate></>}
+  />
+  <QmsAdministrativeStatus part="banner"
    qmsRecordId={r.qmsRecord.id} isActive={r.qmsRecord.isActive} code={qmsRecordDisplayCode(r.qmsRecord)}
    annulledAt={r.qmsRecord.annulledAt?.toISOString()??null} annulledByText={r.qmsRecord.annulledByText}
    annulledReason={r.qmsRecord.annulledReason} defaultActor={currentActor()}
   />
 
+  {r.status==="DRAFT"?<div className="analytics-note"><strong>Borrador:</strong> todavía no es una reclamación operativa. Al abrirla se validarán todos los campos aplicables del Anexo III.</div>:null}
+  {r.status==="OPEN"&&followupState==="OVERDUE"?<div className="form-errors"><strong>Seguimiento vencido:</strong> la fecha prevista era {formatDate(r.nextFollowupDate)}.</div>:null}
+  {r.status==="OPEN"&&followupState==="MISSING"?<div className="form-errors"><strong>Control:</strong> reclamación abierta sin fecha de próximo seguimiento.</div>:null}
+
+
   <nav className="record-tabs">{tabs.map(([k,l])=><Link key={k} className={tab===k?"active":""} href={qmsWithReturnTo(reviewTabHref(basePath,k,reviewMode), "/complaints", returnTo)}>{k==="review"?`${l} (${reviewActiveCount})`:l}</Link>)}</nav>
 
   {tab==="summary"?<>
+   <RecordKeyFacts facts={[
+    { label: "Situación", value: complaintOperationalSituationLabel(situation), badgeClass: complaintOperationalSituationTone(situation) },
+    { label: "Apertura", value: formatDate(r.openedAt) },
+    { label: "Próximo seguimiento", value: formatDate(r.nextFollowupDate), tone: dueTone(r.nextFollowupDate, new Date(), r.status !== "OPEN") },
+    { label: "Respuesta", value: formatDate(r.responseDate) },
+    { label: "Cierre", value: formatDate(r.closedAt) },
+   ]} />
    <div className="card"><div className="section-title-row"><div><h2>Resumen del expediente</h2><p className="muted-note">Situación actual y próximos pasos de la reclamación.</p></div>{currentVersion?<span className="badge neutral">Actual {complaintFollowupLabel(currentVersion.sequenceNumber)}</span>:null}</div>
     <dl className="info-grid">
      <div className="info-item"><dt>Objeto afectado</dt><dd>{joinLabels(r.affectedObjectTypes,objectLabels)}</dd></div>
