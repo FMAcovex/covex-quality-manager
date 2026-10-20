@@ -136,6 +136,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**BE1-A: ficheros fuera de las lecturas por defecto (2026-10-20, D-112):**
+- **Qué cambia:** la aplicación ya no lee de PostgreSQL los bytes de plantillas, Word generados, PDF firmados, originales, documentos PNT, programas anuales, planes CAPA de auditorías ni exportaciones del historial salvo para descargarlos, generar documentos o verificarlos. Las fichas de Desviaciones, CAPA y Cambios y sus formularios eran los que los cargaban sin necesidad.
+- **Sin cambios visibles:** mismas pantallas, permisos, checksums y custodia. Sin migraciones.
+- **Medición** antes/después de los 8 listados, 7 fichas, 3 formularios y el panel con 1.000, 5.000 y 20.000 expedientes en [PHASE_BE1A.md](PHASE_BE1A.md).
+- **Comprobado** con:
+  - el nuevo smoke `be1a:smoke` (0 bytes en listados, fichas y formularios; 25 descargas íntegras; plantilla para generar Word; documento guardado);
+  - el inventario de lectores de bytes (`src/lib/db-binary-omit.test.ts`);
+  - la regresión PostgreSQL, PNT, Reclamaciones/Devoluciones/OOS y navegador.
+
 **Inicio V4: «Mis tareas» primero (2026-10-20, D-111):**
 - **Bloque «Mis tareas»:** es lo primero del panel, siempre visible. Muestra las tareas del usuario, con las vencidas primero, y avisa si no tiene ninguna.
 - **Lista inferior:** sigue igual, con su modo «Asignadas a mí» para ver todas.

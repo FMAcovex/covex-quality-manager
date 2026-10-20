@@ -4,8 +4,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { PrismaClient, Prisma } from "@prisma/client";
 import type { DashboardFilters } from "../src/modules/dashboard/domain";
 
-// BE1-A: misma forma que benchmark-phase3b2.ts. «before» usa un cliente Prisma sin exclusión de ficheros;
-// «after», el cliente de la aplicación (createAppPrismaClient), para medir exactamente lo que se despliega.
+// BE1-A: misma forma que benchmark-phase3b2.ts. Ambos modos usan el cliente de la aplicación (createAppPrismaClient,
+// con su extensión de autoría); «before» desactiva solo la exclusión de ficheros, así la única diferencia es D-112.
 const mode = process.env.BE1_MODE === "after" ? "after" : "before";
 const log: Prisma.LogDefinition[] = [{ emit: "event", level: "query" }];
 let raw: PrismaClient;
@@ -14,13 +14,8 @@ const fetched: unknown[] = [];
 // Se inyecta antes de importar cualquier módulo que use src/lib/db.
 async function installClient() {
   const onQuery = () => { if (recording) sqlCount++; };
-  if (mode === "after") {
-    const { createAppPrismaClient } = await import("../src/lib/db-client");
-    raw = createAppPrismaClient({ log, onQuery });
-  } else {
-    raw = new PrismaClient({ log });
-    (raw as unknown as { $on(event: "query", cb: () => void): void }).$on("query", onQuery);
-  }
+  const { createAppPrismaClient } = await import("../src/lib/db-client");
+  raw = createAppPrismaClient({ log, onQuery, omitBinaries: mode === "after" });
   const instrumented = raw.$extends({ query: {
     async $allOperations({ args, query }) {
       const result = await query(args);

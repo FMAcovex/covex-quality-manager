@@ -6,14 +6,16 @@ type AppClientOptions = {
   log?: (Prisma.LogLevel | Prisma.LogDefinition)[];
   /** Para pruebas y mediciones: recibe cada SQL emitido (requiere `log` con `emit: "event"` y nivel `query`). */
   onQuery?: (event: Prisma.QueryEvent) => void;
+  /** Solo para la medición antes/después de BE1-A: `false` vuelve a leer los bytes como antes. */
+  omitBinaries?: boolean;
 };
 
 /**
  * Cliente Prisma de la aplicación, sin efectos al importarse: sella autoría en las tablas registradas y, por
  * BE1-A (D-112), no lee los bytes de fichero salvo que la consulta los pida.
  */
-export function createAppPrismaClient({ log = process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"], onQuery }: AppClientOptions = {}): PrismaClient {
-  const base = new PrismaClient({ log, omit: binaryOmit });
+export function createAppPrismaClient({ log = process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"], onQuery, omitBinaries = true }: AppClientOptions = {}): PrismaClient {
+  const base = new PrismaClient({ log, ...(omitBinaries ? { omit: binaryOmit } : {}) });
   if (onQuery) (base as unknown as { $on(event: "query", callback: (event: Prisma.QueryEvent) => void): void }).$on("query", onQuery);
   return base.$extends({
     query: {

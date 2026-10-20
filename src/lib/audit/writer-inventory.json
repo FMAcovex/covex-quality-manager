@@ -387,7 +387,7 @@
     {"file":"scripts/auth-provision.ts","line":14,"function":"main","method":"$executeRaw","reviewRequired":true}
   ],
   "independentClients": [
-    {"file":"src/lib/db-client.ts","line":16,"function":"createAppPrismaClient"},
+    {"file":"src/lib/db-client.ts","line":18,"function":"createAppPrismaClient"},
     {"file":"src/modules/controlled-documents/import/database.ts","line":6,"function":"<module>"},
     {"file":"scripts/backfill-record-versions.ts","line":9,"function":"<module>"},
     {"file":"scripts/export-backup.ts","line":6,"function":"<module>"}
@@ -405,7 +405,7 @@
     "src/lib/auth/administration.ts": "63ea52ba78acb0b4aca7a1e46b187a0205d16a7e4e1d52cb1bde0c706ca59e96",
     "src/lib/auth/oidc.ts": "cc8880d9d5cc69130acd54cf078a5df5e88b71c7f58598870036c1021bb4239d",
     "src/lib/auth/session.ts": "cbb956076785c150339ff18e7a608653a005556f7b9cf2b9a4593d47c0a337d1",
-    "src/lib/db-client.ts": "e5cebfc308fa15e8fd39425614c00b96ce67d1f0a0e795ef500dc30412e5fc57",
+    "src/lib/db-client.ts": "c21fe6a47366042cf87773c3cadbdffb0fc44800930525bba053bf7fa9dae390",
     "src/lib/qms/additional-lots-search.ts": "c496e5397fda501f4731171b7534ccc909c698a9742e0316f10ef84063eb67ee",
     "src/lib/qms/administrative-status.ts": "ebbce4ef96c581ff2bb7ee6f244c36c27a0eea12dc51c487ce80d1c61a4f2edd",
     "src/lib/qms/business-code.ts": "ce9590840570b268a951e097f0e73c7c0d202a89835f2a7abb74c8f85cf9ee0b",
