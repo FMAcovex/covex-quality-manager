@@ -15,7 +15,7 @@ async function SettingsPageAuthenticatedContent(){
   const overdue=preview.items.filter(x=>x.state==="OVERDUE").length;
   return <section className="workspace">
     <div className="page-heading">
-      <div><p className="eyebrow">Hito 9 · Administración funcional</p><h1>Administración y evolución</h1><p>Catálogos, versiones, plantillas, parámetros y preparación de vencimientos.</p></div>
+      <div><p className="eyebrow">Configuración</p><h1>Administración y evolución</h1><p>Catálogos, versiones, plantillas, parámetros y preparación de vencimientos.</p></div>
       <span className="badge warning">Políticas operativas sujetas a aceptación QA/DT</span>
     </div>
     <SettingsNav active="/settings"/>

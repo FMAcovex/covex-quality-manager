@@ -136,6 +136,11 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Mejoras de interfaz, entrega 1 de 3 (2026-10-20, D-117):**
+- **Origen:** auditoría UI/UX de la Fase 1 sobre la interfaz real; se mantiene el diseño actual.
+- **Entrega 1, acabado:** sin estilos por defecto del navegador, sin jerga interna, contraste de al menos 5:1, anillo de foco común, alineaciones corregidas y acceso sin menú.
+- **Pendiente:** entrega 2 (acciones y errores) y entrega 3 (coherencia), y después se repite la auditoría.
+
 **Turno en Desviaciones y PR antiguas (2026-10-20, D-115, D-116):**
 - **Turno:** las desviaciones tienen el campo «Turno» (texto libre, opcional) junto a «Detectado por». Sale en la casilla «turno» del Anexo III y queda en las versiones y en la captura del audit trail.
 - **Anexos que se firman a mano:** los nombres de aprobación de los Anexos III de Desviaciones y CAPA siguen rellenándose a mano. El Anexo V de Devoluciones lo cumplimenta el cliente.

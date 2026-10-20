@@ -20,7 +20,7 @@ async function AlertsPageAuthenticatedContent(){
  return <section className="workspace">
   <div className="page-heading"><div><p className="eyebrow">Administración</p><h1>Vencimientos y preparación de alertas</h1><p>Bandeja transversal basada en fechas estructuradas de los expedientes.</p></div><span className="badge warning">Envío automático desactivado</span></div>
   <SettingsNav active="/settings/alerts"/>
-  <div className="analytics-note"><strong>Hito 9:</strong> esta pantalla identifica qué debería alertarse y cuándo. No envía correos, Teams ni notificaciones. El parámetro <code>ENABLE_ALERT_DELIVERY</code> permanece desactivado hasta que se defina el canal, los roles y la validación correspondiente.</div>
+  <div className="analytics-note"><strong>Alcance:</strong> esta pantalla identifica qué debería alertarse y cuándo. No envía correos, Teams ni notificaciones. El parámetro <code>ENABLE_ALERT_DELIVERY</code> permanece desactivado hasta que se defina el canal, los roles y la validación correspondiente.</div>
   <div className="summary-strip admin-summary"><div><strong>{overdue.length}</strong><span>Vencidos</span></div><div><strong>{upcoming.length}</strong><span>Próximos</span></div><div><strong>{data.rules.filter(x=>x.isActive).length}</strong><span>Reglas activas</span></div><div><strong>{data.items.length}</strong><span>Total en bandeja</span></div></div>
 
   <section className="card"><div className="section-title-row"><div><p className="eyebrow">Reglas</p><h2>Configuración de preaviso</h2></div></div>

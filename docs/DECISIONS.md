@@ -1206,3 +1206,38 @@ Decisión del responsable de Calidad tras revisar las PR antiguas del Hito 10.2.
 
 Con esta decisión, el resto del contenido de #19, #20 y #21 está cubierto por #22 y las PR posteriores, y las tres se cierran sin fusionar.
 
+## D-117 — Mejoras de interfaz sin rediseño tras la auditoría UI/UX (2026-10-20)
+
+Decisión del responsable de Calidad tras la auditoría UI/UX de la Fase 1, hecha sobre la interfaz real con datos ficticios: 31 hallazgos, 27 comprobados en pantalla o medidos.
+
+- **Se mantiene el diseño actual.** No se adopta ninguna de las tres direcciones de rediseño estudiadas. Las mejoras corrigen acabado, coherencia y accesibilidad sin cambiar la navegación, los colores, la estructura de las pantallas ni el comportamiento GMP.
+- **El orden de los campos de los formularios no se modifica.** Sigue el orden de los apartados de los anexos oficiales.
+- **Tres entregas, cada una en su PR y con las pruebas en verde:**
+  1. **Acabado:** controles con el estilo del navegador, jerga interna, contraste, foco, alineaciones y nombres accesibles.
+  2. **Acciones y errores:** ventana de anular, posición de «Anular», validación en línea y en español y hora local en el audit trail.
+  3. **Coherencia:** fuente incluida en la aplicación y componentes comunes de tabla, botón, campo y pastilla.
+
+  Al terminar se repite la auditoría.
+- **Decisiones sobre los puntos abiertos:**
+  - **Acción principal de las fichas:** un texto común en todos los módulos, «Editar / seguimiento».
+  - **Datos repetidos en las fichas:** cada dato se muestra una sola vez, sin quitar ninguno.
+  - **Listado de Desviaciones:** se mantienen todas las columnas; cada usuario ajusta las suyas con el selector y las vistas guardadas.
+  - **Audit trail:** hora local en lugar de UTC.
+  - **Contadores de los listados:** muestran totales sin contar anulados ni borradores.
+  - **Columna «Control»:** se le da un nombre más preciso.
+  - **Pestañas de CAPA:** «Seguimiento de la acción» pasa a un nombre como «Proceso de las acciones»; «Seguimientos» se mantiene.
+- **Entrega 1, hecha:**
+  - enlace «← módulo» con el estilo de la aplicación;
+  - «Cerrar sesión» como botón de la aplicación;
+  - textos internos sustituidos («Hito 6.1», «Hito 9», «4B3», «snapshot»);
+  - procedencias antiguas traducidas, sin ofrecerlas al registrar;
+  - gris secundario y pastilla «Cancelada» con contraste de al menos 5:1;
+  - anillo de foco común;
+  - cabecera separada del borde;
+  - botones desplegables alineados;
+  - rejilla de Configuración alineada;
+  - acceso sin menú de módulos;
+  - nombre accesible en el buscador de los listados;
+  - campos de texto largo con la fuente de la aplicación;
+  - sin borde decorativo en la ficha de Devoluciones.
+

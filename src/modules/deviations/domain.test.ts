@@ -14,6 +14,16 @@ describe("deviationProvenanceLabel", () => {
     expect(deviationProvenanceOptions.find((option) => option.value === value)).toEqual({ value, label });
   });
 
+  it.each([
+    ["DOCUMENTATION", "Documentación"],
+    ["PROCESS", "Proceso"],
+    ["EQUIPMENT", "Equipo"],
+    ["MATERIAL", "Material"],
+  ])("traduce el valor antiguo %s sin ofrecerlo como opción (D-117)", (value, label) => {
+    expect(deviationProvenanceLabel(value)).toBe(label);
+    expect(deviationProvenanceOptions.some((option) => option.value === value)).toBe(false);
+  });
+
   it("preserves free-text historical provenance and handles absent values", () => {
     expect(deviationProvenanceLabel("Origen histórico")).toBe("Origen histórico");
     for (const value of [null, undefined, "", "  "]) expect(deviationProvenanceLabel(value)).toBe("—");

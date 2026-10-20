@@ -7,8 +7,18 @@ export const deviationProvenanceOptions = [
   { value: "OTHER", label: "Otros" },
 ] as const;
 
+// Valores de procedencia de expedientes antiguos: se traducen al mostrarlos, pero no se ofrecen al registrar.
+const legacyProvenanceLabels: Record<string, string> = {
+  DOCUMENTATION: "Documentación",
+  PROCESS: "Proceso",
+  EQUIPMENT: "Equipo",
+  MATERIAL: "Material",
+};
+
 export function deviationProvenanceLabel(value: string | null | undefined): string {
-  return deviationProvenanceOptions.find((option) => option.value === value)?.label ?? (value?.trim() || "—");
+  return deviationProvenanceOptions.find((option) => option.value === value)?.label
+    ?? (value ? legacyProvenanceLabels[value] : undefined)
+    ?? (value?.trim() || "—");
 }
 
 export type MeasureShape = {
