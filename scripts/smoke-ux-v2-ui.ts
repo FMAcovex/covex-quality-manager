@@ -47,6 +47,22 @@ async function main() {
     assert.equal(await links().count(), before, "Mismo número de apartados tras el error");
     const hrefs = await links().evaluateAll(as => as.map(a => a.getAttribute("href")));
     assert.equal(new Set(hrefs).size, hrefs.length, "Anclas únicas");
+    // Tras el error el formulario se monta de nuevo: el apartado activo sigue cambiando al desplazarse.
+    await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(400);
+    const top = await page.locator('nav.section-index a[aria-current]').textContent();
+    await page.evaluate(() => scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(600);
+    assert.notEqual(await page.locator('nav.section-index a[aria-current]').textContent(), top, "El apartado activo cambia tras el error");
+
+    // Los apartados ocultos (Devolución sin frío, OOS sin Fase II) no aparecen en el índice.
+    await visit(page, "/returns/new"); await links().first().waitFor();
+    assert.equal(await links().filter({ hasText: "Productos termolábiles" }).count(), 0, "Devolución: sin el apartado oculto de frío");
+    await visit(page, "/oos/new"); await links().first().waitFor();
+    assert.equal(await links().filter({ hasText: "Fase II" }).count(), 0, "OOS: sin el apartado oculto de Fase II");
+
+    // Antes de hidratar el índice está oculto (sin apartados): el formulario debe ocupar ya su columna, no la estrecha.
+    await visit(page, `/deviations/${deviation.id}/edit`); await links().first().waitFor();
+    const width = await page.evaluate(() => { const nav = document.querySelector<HTMLElement>("nav.section-index")!; nav.hidden = true; return document.querySelector(".form-with-index-body")!.getBoundingClientRect().width; });
+    assert(width > 700, `Formulario a su ancho con el índice aún oculto (${width}px)`);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await visit(page, `/deviations/${deviation.id}/edit`);
