@@ -37,8 +37,8 @@
 | Plantillas internas PMAI V04 / externas PMAE V05 | Instaladas/utilizadas en entornos de ensayo de PR #123 | No suponer instaladas en servidor futuro o en otro PostgreSQL |
 | Índice documental PNT | Análisis privado de 39 hojas, 821 apariciones, 817 códigos únicos; importador y conciliación probados | No se acredita carga masiva definitiva ni verificación documental individual; acordar alcance y conciliar carga real |
 | Registros históricos QMS | Importadores y pruebas documentadas de los primeros hitos | Inventario, procedencia, ensayo/reconciliación y aceptación de cada migración productiva |
-| Seguridad | Protecciones técnicas y pasarela/documentos donde aplican | Identidad corporativa global, RBAC por operación/objeto, sesiones, autorización backend y segregación de funciones |
-| Integridad GMP | Versiones/historial técnico en múltiples módulos | Evaluación de audit trail conforme a riesgo, trazabilidad de cambios, controles y validación |
+| Seguridad | 4B1 (D-078, D-086): login con Entra ID de tenant único, admisión local, sesiones revocables, seis perfiles configurables y autorización por operación en servidor, probados con identidad sintética | Configuración real de Entra por IT (registro de la aplicación, credenciales, HTTPS); aceptación QA/DT de los perfiles y de la segregación de funciones |
+| Integridad GMP | Versiones e historial; audit trail 4B3 (D-080 a D-082): captura en PostgreSQL de las 63 operaciones de los siete módulos, journal protegido, consulta, revisión y exportación | Aceptación QA/DT de la clasificación crítica, la periodicidad de revisión y la retención; custodia externa; validación |
 | IT | Demostración y documentación técnica | Instalación, HTTPS, monitorización, retención, backup/restauración, respuesta ante incidencias y soporte |
 | Firmas/aprobaciones | Algunas evidencias externas registradas; PDFs firmados archivados | No existe aprobación electrónica o firma GMP corporativa integrada y validada; diseñar futuro motor |
 | Parche React/Next | #123 incorpora parche pnpm para renderer integrado en Next 15.5.26 y pruebas de regresión | Registrar dependencia y retirar únicamente tras actualización comprobada; ver CI_583_R4B_DIAGNOSIS.md |
@@ -53,13 +53,13 @@
 | KPI1 | P1 · **hecho** (D1A #131, D1B #133, D1C; indicadores por módulo) | Dashboard QMS común con tareas, próximos/vencidos, tendencias y filtros | Definiciones de KPI auditables, cero doble conteo, drill-down con filtros conservados |
 | BE1 | P1 · **Hecho: A, B y C** (D-112, D-113, D-114) | Medición de SQL/paginación, carga y custodia de documentos, errores/logs. A: ficheros fuera de las lecturas por defecto y medición de los ocho módulos; B: registro de errores; C: JIT desactivado y dos consultas reescritas, sin índices nuevos porque la medición no los justificó | Línea base antes/después, índices motivados y pruebas sin regresiones |
 | CI1 | P1 | Selección de tests por impacto, paralelismo y diagnóstico, batería completa programada | Ninguna regresión crítica retirada; CI verde y duraciones medibles |
-| SEC1 | P0 antes de GMP | Identidad, RBAC, autorización servidor, segregación de funciones, audit trail según riesgos | Pruebas positivas/negativas, revisión con QA/IT y controles documentados |
+| SEC1 | P0 antes de GMP · **implementación técnica hecha** (4B1, 4B3; D-078, D-080–D-082, D-086) | Identidad, RBAC, autorización servidor, segregación de funciones, audit trail según riesgos. Pendiente: configuración real de Entra por IT (con IT1) y aceptación QA/DT de perfiles, segregación de funciones, clasificación crítica, revisión y retención del audit trail | Pruebas positivas/negativas, revisión con QA/IT y controles documentados |
 | IT1 | P0 antes de GMP | Servidor COVEX, configuración, HTTPS, backups, restauración, operaciones | Recuperación ejecutada, accesos, monitoreo y procedimiento aprobados |
 | DATA1 | P0 antes de GMP | Conciliación y carga controlada de PNT/históricos; aceptación documental | Actas de reconciliación y aceptación Word, procedencia y cambios |
 | INT1 | P2 | Alertas controladas, Teams/correo y SharePoint según IT | Consentimiento/roles, idempotencia de envíos, trazabilidad y gestión de fallos |
 | VAL1 | P0 antes de GMP | URS, evaluación de riesgos, trazabilidad requisitos-pruebas y validación de uso | Evidencias aprobadas por responsables competentes antes de liberación |
 
-Estado actualizado el 2026-10-18: UX1, UX2 y KPI1 están integrados en `main`; el resto sigue pendiente.
+Estado actualizado el 2026-10-20: UX1, UX2, KPI1 y BE1 están integrados en `main`. SEC1 tiene la implementación técnica hecha y queda pendiente de configuración por IT y aceptación QA/DT. El resto sigue pendiente; CI1 es el siguiente.
 
 **P0 antes de GMP** indica requisito para uso regulado, no que bloquee el desarrollo paralelo del dashboard y la UX.
 
