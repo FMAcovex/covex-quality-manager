@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { Prisma } from "@prisma/client";
 import { persistenceFormError, requiresAuditReason } from "@/lib/forms/persistence-error";
 
@@ -35,5 +35,23 @@ describe("persistenceFormError", () => {
     const result = persistenceFormError(new Error("password=secret"), "la CAPA");
     expect(result.error).toBe("No se ha podido guardar la CAPA.");
     expect(result.fieldErrors?.join(" ")).not.toContain("secret");
+  });
+
+  it("la rama genérica registra y muestra la referencia (BE1-B)", () => {
+    const write = vi.fn();
+    const result = persistenceFormError(new Error("fallo interno dato-secreto"), "la desviación", { write });
+    const ref = result.fieldErrors?.[0].match(/Referencia para IT: (E-[0-9a-f]{8})\.$/)?.[1];
+    expect(ref).toBeDefined();
+    expect(write).toHaveBeenCalledTimes(1);
+    const line = write.mock.calls[0][0] as string;
+    expect(JSON.parse(line)).toMatchObject({ ref, event: "action.persistence", operation: "la desviación" });
+    expect(line).not.toContain("dato-secreto");
+  });
+  it("las ramas esperadas no registran (BE1-B)", () => {
+    const write = vi.fn();
+    for (const code of ["P2002", "P2003", "P2025"]) persistenceFormError(new Prisma.PrismaClientKnownRequestError("x", { code, clientVersion: "test", meta: {} }), "la desviación", { write });
+    persistenceFormError(new Prisma.PrismaClientValidationError("x", { clientVersion: "test" }), "la desviación", { write });
+    persistenceFormError(new Error("Reason required for critical operational decision"), "la desviación", { write });
+    expect(write).not.toHaveBeenCalled();
   });
 });
