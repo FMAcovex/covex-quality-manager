@@ -69,6 +69,8 @@ Secretos: `DATABASE_URL` y `AUTH_ENTRA_CLIENT_SECRET` desde EnvironmentFile priv
 
 Prisma 6 emplea `sslmode=require&sslaccept=strict&sslcert=/ruta/ca.pem`; los clientes libpq del backup emplean `sslmode=verify-full` y `sslrootcert`. El certificado debe contener el DNS de conexión en SAN. No usar `accept_invalid_certs`, `sslmode=disable` ni desactivar TLS en producción. El wrapper exige la configuración TLS estricta de Prisma; la CA se monta en `/run/secrets/pg_ca_cert` en Docker. Estas comprobaciones de configuración no sustituyen probar la cadena/SAN con los certificados de IT.
 
+JIT (BE1-C, D-114): la aplicación añade `options=-c jit=off` a la `DATABASE_URL` al crear su cliente, sin cambiar el entorno ni el servidor PostgreSQL. Si IT fija su propio parámetro `options` en la URL, se respeta tal cual.
+
 `SERVER_ACTION_ALLOWED_ORIGINS` se resuelve en el **build**, no al cambiar el EnvironmentFile del runtime. Con el proxy canónico del mismo origen puede quedar vacío. Cualquier origen adicional requiere revisión y rebuild; no introducir comodines. Entra necesita salida HTTPS y confianza CA; un proxy de inspección corporativo requiere CA administrada, sin desactivar validación.
 
 ## 7. PostgreSQL, privilegios y migraciones

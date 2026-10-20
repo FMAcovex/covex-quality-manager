@@ -136,6 +136,13 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**BE1-C: JIT desactivado y dos consultas reescritas (2026-10-20, D-114):**
+- **Qué cambia:** la aplicación conecta con JIT de PostgreSQL desactivado, salvo que la URL ya traiga `options`. El filtro «con PDF firmado» de Auditorías y la lectura de fechas PNT del panel de inicio se reescriben con los mismos resultados.
+- **Sin índices nuevos**, migraciones ni cambios de pantallas: la medición no los justificó.
+- **Medición** con 20.000 expedientes ficticios: «con PDF firmado» de 110 a 31 ms y panel de 211 a 170 ms, en [PHASE_BE1C.md](PHASE_BE1C.md). Con datos reales se repetirá tras DATA1.
+- **Comprobado** con el smoke `be1c:smoke` (equivalencia con las consultas anteriores y con la referencia del panel, y JIT desactivado) y la regresión.
+- **BE1 completa** (A, B y C).
+
 **BE1-B: registro de errores con referencia visible (2026-10-20, D-113):**
 - **Para IT:** cada fallo del servidor deja una línea JSON en la salida estándar con la referencia que ve el usuario, sin mensajes ni datos de expedientes. Cómo buscarla, en [PHASE_4B2.md](PHASE_4B2.md) §14.
 - **Referencias visibles:**
