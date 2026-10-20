@@ -1118,3 +1118,8 @@ Decisión del responsable de Calidad, a partir de un comentario de IT: los exped
   - Se construye con los títulos que ya tienen los formularios (A. Origen, B…, E. Investigación…) y no cambia campos, orden, validaciones ni guardado.
   - A partir de 1200 px aparece como una columna fija a la izquierda que marca el apartado visible. Al pulsar un apartado, la página baja hasta él.
   - Por debajo de 1200 px no aparece y el formulario se ve como antes.
+- **V3 (implantada):** en Desviaciones, las pestañas Descripción, Investigación, Acciones y Conclusión se sustituyen por una única pestaña «Desviación».
+  - Contiene las mismas tarjetas, en el mismo orden, bajo cuatro apartados bien marcados, con su ancla (`#desviacion-descripcion`…) e índice lateral.
+  - Siguen siendo bloques separados: descripción del evento, investigación, causa raíz, evaluación de impacto, acciones inmediatas, CAPA propuestas y conclusión.
+  - **Compatibilidad:** las claves antiguas (`?tab=investigation`…) son alias que muestran «Desviación» y bajan al apartado.
+  - **Comentarios de revisión:** el catálogo conserva sus claves de pestaña, de modo que los comentarios ya guardados siguen asociados a su campo y se abren sin recargas.
