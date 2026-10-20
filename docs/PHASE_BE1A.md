@@ -73,7 +73,7 @@ Medición técnica de desarrollo con datos ficticios. No es una prueba de carga 
 
 - **Fichas de Desviación, CAPA y Cambio:** dejan de leer 3–4 MiB de ficheros por visita. Pasan de 45–60 ms a 10–12 ms y no reservan memoria por esos ficheros (antes, 8–12 MiB por visita). El ahorro crece con el número de Word generados y PDF firmados de cada expediente, no con el total de expedientes.
 - **Formularios de alta y edición de esos módulos:** dejan de leer las plantillas activas (1 MiB cada una en la prueba). Pasan de 10–15 ms a 2–4 ms.
-- **Listados, panel y fichas de Reclamación, Devolución, Auditoría y OOS:** ya no leían ficheros (3B2 corrigió Reclamaciones y Devoluciones); mismo número de SQL. Las diferencias de tiempo, de hasta un ±20 % y en algún caso más en las búsquedas por lote, son variación entre ejecuciones de 3 muestras, sin cambio estructural.
+- **Listados, panel y fichas de Reclamación, Devolución, Auditoría y OOS:** ya no leían ficheros (3B2 corrigió Reclamaciones y Devoluciones); mismo número de SQL. Las diferencias de tiempo, de hasta un ±20 %, son variación entre ejecuciones de 3 muestras, sin cambio estructural. La mayor, la búsqueda por lote de OOS con 20.000 (74 → 110 ms), es del mismo orden que la variación del propio «antes»: en una primera ejecución de la línea base, sin la exclusión, ese caso dio 110 ms.
 - **Para BE1-C (índices)**, los casos más lentos con 20.000 expedientes son:
   - el panel de inicio (~230 ms), con orden y paginación en memoria (diferido en 3B2);
   - las búsquedas por lote de Reclamaciones y OOS (75–115 ms);

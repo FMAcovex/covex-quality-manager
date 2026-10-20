@@ -59,11 +59,11 @@ En `TemplateVersion` y `GeneratedDocument` el fichero es opcional. Un código qu
 
 1. Antes del cambio se revisan todas las escrituras de esos dos modelos que parten de una fila leída. Cada caso queda anotado en el registro del plan.
 2. Pruebas con PostgreSQL de versión nueva, regeneración y sustitución de plantilla: los bytes y el SHA-256 de la copia coinciden con los del origen.
-3. En el resto de casos el fallo es ruidoso. Los modelos con fichero obligatorio fallan en el `create`. Las descargas verifican el checksum antes de entregar y fallan sin entregar nada incorrecto.
+3. En el resto de casos el fallo es ruidoso. Los modelos con fichero obligatorio fallan en el `create`. Las descargas que verifican el checksum antes de entregar fallan sin entregar nada incorrecto. Las de PDF firmado de Desviaciones, CAPA, Cambios y Reclamaciones no lo verifican (situación anterior a BE1-A): su protección es que su consulta pide `fileData` y el smoke `be1a:smoke` las descarga.
 
 ### 3.4 Límite del compilador e inventario
 
-El tipo de `omit` llega al compilador en las consultas directas y anidadas, pero **no** dentro de `$transaction(async tx => …)`. Además, el cliente se exporta como `PrismaClient` y las funciones reciben `Prisma.TransactionClient`, tipos que no conocen la exclusión. No se promete detección completa en compilación. Se añade en su lugar un **inventario de consumidores de bytes**, en la línea de los inventarios del historial:
+Con un cliente tipado con su `omit`, el compilador lo vería en las consultas directas y anidadas, pero **no** dentro de `$transaction(async tx => …)`. Además, el cliente de la aplicación se exporta como `PrismaClient` y las funciones reciben `Prisma.TransactionClient`, tipos que no conocen la exclusión, así que en la práctica el compilador no avisa en ningún caso. Se añade en su lugar un **inventario de consumidores de bytes**, en la línea de los inventarios del historial:
 
 - una prueba unitaria recorre `src` (sin `*.test.*`), lista los archivos que mencionan `fileData` y compara con una lista revisada en el propio test;
 - un archivo nuevo que lea bytes hace fallar la prueba hasta que alguien lo revise y lo añada.
