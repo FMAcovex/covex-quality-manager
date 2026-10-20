@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { logServerError } from "@/lib/log/server-log";
 
 export type PersistenceFormError = {
   error: string;
@@ -19,7 +20,7 @@ export function requiresAuditReason(error: unknown): boolean {
 export function persistenceFormError(
   error: unknown,
   entityLabel: string,
-  options: { duplicateField?: string } = {},
+  options: { duplicateField?: string; write?: (line: string) => void } = {},
 ): PersistenceFormError {
   if (requiresAuditReason(error)) {
     const message = "Indica el motivo de esta modificación crítica antes de guardar.";
@@ -57,8 +58,11 @@ export function persistenceFormError(
     };
   }
 
+  // BE1-B (D-113): el fallo no previsto queda en el registro del servidor con la referencia que ve el usuario.
+  const ref = logServerError("action.persistence", error, { operation: entityLabel }, options.write);
+  // La referencia va en `error`, que muestran todos los formularios (algunos, como los seguimientos, solo ese).
   return {
-    error: `No se ha podido guardar ${entityLabel}.`,
+    error: `No se ha podido guardar ${entityLabel}. Referencia para IT: ${ref}.`,
     fieldErrors: [
       "Se ha producido un error inesperado de persistencia. Los datos no se han guardado. Revisa los campos e inténtalo de nuevo.",
     ],

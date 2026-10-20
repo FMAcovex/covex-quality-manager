@@ -3,6 +3,7 @@ import type { DocumentType, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { loadStoredTemplateAsset } from "@/modules/configuration/template-assets";
 import { checkTemplateActivation, type TemplateActivationCheck } from "@/modules/configuration/template-compatibility";
+import { logServerError } from "@/lib/log/server-log";
 
 type TemplateRow = {
   id: string;
@@ -18,7 +19,8 @@ type TemplateRow = {
 async function storedFile(row: Pick<TemplateRow, "module" | "documentType" | "versionCode">) {
   try {
     return await loadStoredTemplateAsset(row.module, row.documentType, row.versionCode);
-  } catch {
+  } catch (error) {
+    logServerError("configuration.template-read", error, { module: "SYSTEM" });
     return undefined;
   }
 }

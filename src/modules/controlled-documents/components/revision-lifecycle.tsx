@@ -8,7 +8,7 @@ import { LifecycleForm } from "./lifecycle-form";
 import type { LifecycleCommand } from "../lifecycle/domain";
 export async function RevisionLifecycle({ returnTo, documentId }: { returnTo?: string; documentId: string }) {
   let principal;
-  try { principal = await sessionLifecyclePrincipal(documentId, await headers()); } catch { return <p role="alert">Acceso documental no autorizado o sin configurar.</p>; }
+  try { principal = await sessionLifecyclePrincipal(documentId, await headers()); } catch { /* Sin permiso o acceso no configurado: se responde como acceso denegado. */ return <p role="alert">Acceso documental no autorizado o sin configurar.</p>; }
   const master = await prisma.controlledDocument.findUniqueOrThrow({ where: { id: documentId }, include: { revisions: { orderBy: { revisionCode: "desc" }, include: { lifecycle: true, decisions: { orderBy: { sequence: "asc" }, include: { evidence: true } }, documents: { select: metadataSelection } } } } });
   return <div><h2>Verificación y aprobaciones</h2><p>Las firmas se realizan fuera de la aplicación. El contraste humano no autentica automáticamente una firma. Registro y aceptación son decisiones distintas.</p>{master.revisions.map(r => {
     const index = indexMetadata(r.sourceMetadata), reset = [...r.decisions].reverse().find(d => d.operation === "RECTIFY")?.sequence || 0;

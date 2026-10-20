@@ -158,6 +158,27 @@ Comprobar además estado supervisor/daemon/PostgreSQL, CPU/IO/conexiones/locks, 
 
 Compose rota logs locales (10 MiB × 3, propuesta técnica ajustable). Nginx desactiva access log para no conservar rutas/consultas de expedientes y reduce error verbosity. Configurar journald o colector aprobado, acceso restringido, cuotas y retención revisada por IT. No registrar SQL/params de negocio, passwords, tokens, cookies, Authorization, formularios ni cadenas de conexión. El wrapper de producción descarta los argumentos de console del framework/Prisma y emite solo nivel/evento/fecha; rechaza DEBUG y termina con un evento genérico ante errores fatales para que el supervisor reinicie. Backup/probes también emiten resultados genéricos. Esto limita deliberadamente el detalle diagnóstico: la investigación privada requiere herramientas y procedimientos autorizados. Revisar stderr nativo, logs del host/BD y colectores en el entorno definitivo; no activar debug de Prisma/OIDC. Monitorización técnica no es audit trail GMP.
 
+### Errores con referencia (BE1-B, D-113)
+
+Cuando un usuario comunique una referencia de la pantalla, sea la «Referencia técnica» de la página de error (un número) o la «Referencia para IT: E-…» de un fallo al guardar, se busca en el registro del servicio:
+
+```bash
+docker compose logs app | grep '"ref":"E-7f3a9c2b"'
+journalctl -u covex-quality | grep '"ref":"2931774425"'
+```
+
+| Campo | Contenido |
+| --- | --- |
+| `service`, `level`, `at` | Servicio, `error` y fecha ISO (UTC) |
+| `event` | Origen: `request.unhandled` (error no controlado), `action.persistence` (guardado), `auth.*`, `configuration.*`, `controlled-documents.*` |
+| `ref` | La referencia que ve el usuario |
+| `operation`, `module` | Método y plantilla de ruta (`GET /audits/[id]`) o entidad; tipo de render o módulo |
+| `userId` | UUID interno del usuario cuando se conoce; el nombre se consulta en Administración |
+| `errorName`, `prismaCode`, `prismaModel` | Tipo de error y, si es de base de datos, su código y tabla |
+| `frames` | Hasta 10 posiciones de código donde ocurrió, sin el mensaje. En producción apuntan al código compilado (`.next/server/...`) |
+
+El registro no contiene mensajes, datos de expedientes, formularios, SQL ni credenciales. Retención y acceso según lo que IT apruebe para el resto del registro del servicio.
+
 ## 15. Actualización, reversión y evidencia
 
 Para cada release: registrar SHA/digest, version de app, checksums/migraciones, aprobación de configuración no secreta, fecha/responsable, CI y controles, backup previo verificado/restaurable y plan de recuperación. `release-manifest.json` identifica commit, versión, Node, lock y todas las migraciones SHA-256. El empaquetador exige SHA de checkout exacto; el builder Docker debe verificar el checkout antes de pasar el build arg.

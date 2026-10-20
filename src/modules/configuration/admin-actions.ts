@@ -166,7 +166,7 @@ async function installTemplatesActionAuthenticatedContent(_state:InstallTemplate
   const files:InputFile[]=[];
   for(const upload of uploads){
     try{files.push(...expandTemplateInput(upload.name,Buffer.from(await upload.arrayBuffer()),200*1024*1024));}
-    catch{return {error:`«${upload.name}» no se puede abrir como ZIP.`,report:null};}
+    catch{ /* Entrada mal formada: se trata como vacía o no válida. */ return {error:`«${upload.name}» no se puede abrir como ZIP.`,report:null};}
   }
   if(!files.length)return {error:"No hay ningún archivo .docx, .xlsx o .doc en lo seleccionado.",report:null};
   if(!reason(fd))fd.set("reason","Instalación de plantillas controladas desde Configuración");

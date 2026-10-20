@@ -3,12 +3,13 @@ import { expectedDocumentOrigin } from "@/modules/controlled-documents/documents
 import { documentPrincipal, requireDocumentWrite } from "@/modules/controlled-documents/documents/access";
 import { MAX_DOCUMENT_SIZE, uuid } from "@/modules/controlled-documents/documents/domain";
 import { incorporateDocument } from "@/modules/controlled-documents/documents/service";
+import { logServerError } from "@/lib/log/server-log";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
 async function POSTAuthenticatedContent(request: Request, { params }: { params: Promise<{ id: string; revisionId: string }> }) {
   let principal;
-  try { principal = documentPrincipal(request.headers); requireDocumentWrite(principal); } catch { return Response.json({ error: "Acceso documental de escritura no autorizado." }, { status: 403, headers }); }
+  try { principal = documentPrincipal(request.headers); requireDocumentWrite(principal); } catch { /* Sin permiso o acceso no configurado: se responde como acceso denegado. */ return Response.json({ error: "Acceso documental de escritura no autorizado." }, { status: 403, headers }); }
   const expectedOrigin = expectedDocumentOrigin(request);
   if (request.headers.get("origin") !== expectedOrigin) return Response.json({ error: "Origen de solicitud no autorizado." }, { status: 403, headers });
   try {
@@ -31,6 +32,7 @@ async function POSTAuthenticatedContent(request: Request, { params }: { params: 
     }, principal);
     return Response.json({ id: object.id }, { status: 201, headers });
   } catch (error) {
+    if (!(error instanceof Error) || error.name.startsWith("Prisma")) logServerError("controlled-documents.document-add", error, { module: "PNT" });
     const message = error instanceof Error && !error.name.startsWith("Prisma") ? error.message : "No se pudo incorporar el documento; compruebe si ya fue sustituido.";
     return Response.json({ error: message }, { status: 400, headers });
   }

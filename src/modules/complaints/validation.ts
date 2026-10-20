@@ -39,7 +39,7 @@ function parseCapaPlans(raw:string|null){
     responsibleUserId:optionalUserId(x.responsibleUserId)??null,
     businessCapaCode:typeof x.businessCapaCode==="string"?x.businessCapaCode:""
   })).filter((x)=>x.description||x.responsible||x.plannedExecutionDate||x.businessCapaCode);
- }catch{return [];}
+ }catch{ /* Entrada mal formada: se trata como vacía o no válida. */ return [];}
 }
 
 function parseDerivedActions(raw:string|null):ComplaintDerivedActionInput[]{
@@ -57,7 +57,7 @@ function parseDerivedActions(raw:string|null):ComplaintDerivedActionInput[]{
    plannedExecutionDate:typeof x.plannedExecutionDate==="string"?x.plannedExecutionDate:"",
    sortOrder:typeof x.sortOrder==="number"?x.sortOrder:i*10,
   })).filter(x=>x.actionType||x.businessCode||x.description||x.responsible||x.plannedExecutionDate);
- }catch{return [];}
+ }catch{ /* Entrada mal formada: se trata como vacía o no válida. */ return [];}
 }
 
 export function parseComplaintForm(fd:FormData,linked:{capa?:boolean;returns?:boolean}={}){

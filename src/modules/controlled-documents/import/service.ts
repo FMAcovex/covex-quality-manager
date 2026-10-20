@@ -9,6 +9,7 @@ import { auditPolicyState } from "@/lib/audit/activation";
 import { assertAuditProtection, assertAuditApplicationRole } from "@/lib/audit/protection";
 import { requireUser } from "@/lib/auth/session";
 import { importAuditCommand, importActor, type ImportAuditRequest } from "./audit";
+import { logServerError } from "@/lib/log/server-log";
 type Tx = Prisma.TransactionClient;
 const json = (v: unknown): Prisma.InputJsonValue => JSON.parse(JSON.stringify(v));
 const rowValue = (r: ControlledDocumentImportRow) => r.data as unknown as PreviewRow;
@@ -157,7 +158,7 @@ async function planRows(tx: Tx, rows: ControlledDocumentImportRow[]) {
         else if (!d) reason = "Departamento desconocido.";
         else {
             try { validateDepartmentForBaseCode(r.baseCode!, d.code); }
-            catch { reason = "El código base no corresponde al departamento responsable."; }
+            catch { /* Entrada mal formada: se trata como vacía o no válida. */ reason = "El código base no corresponde al departamento responsable."; }
         }
         if (!reason && m && m.documentType !== "PNT") reason = "Tipo documental incompatible.";
         else if (!reason && m?.administrativeStatus === "ANNULLED") reason = "Maestro anulado: omitir sin modificar.";
@@ -236,7 +237,7 @@ export async function confirm(id: string, input: { actor: string; version: numbe
         }));
     } catch (e) {
         // Operational error marker excludes diagnostics and private row contents. No partial business writes survive.
-        await db.controlledDocumentImportEvent.create({ data: { batchId: id, action: "ERROR", actor, detail: { category: "CONFIRMATION_REJECTED_OR_ROLLED_BACK" } } }).catch(() => undefined);
+        await db.controlledDocumentImportEvent.create({ data: { batchId: id, action: "ERROR", actor, detail: { category: "CONFIRMATION_REJECTED_OR_ROLLED_BACK" } } }).catch(markerError => { logServerError("controlled-documents.import-marker", markerError, { module: "PNT" }); });
         throw e;
     }
     const receipt = await db.controlledDocumentImportEvent.findUniqueOrThrow({ where: { id: reference.eventId } });

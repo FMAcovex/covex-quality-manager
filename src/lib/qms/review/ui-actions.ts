@@ -9,6 +9,7 @@ import { getReviewThreadsForDisplay } from "@/lib/qms/review/ui-queries";
 import { invalidateReviewRecord } from "@/lib/qms/review/invalidation";
 import { ReviewThreadError } from "@/lib/qms/review/service";
 import type { ReviewActionState } from "@/lib/qms/review/types";
+import { logServerError } from "@/lib/log/server-log";
 
 async function createCurrentVersionReviewThreadActionAuthenticatedContent(
   input: CreateCurrentVersionReviewThreadInput,
@@ -32,7 +33,7 @@ async function createCurrentVersionReviewThreadActionAuthenticatedContent(
         status: null,
       };
     }
-    console.error("Unexpected review UI action error", error);
+    logServerError("review.ui-action", error);
     return {
       error: "No se ha podido crear la observación.",
       success: null,

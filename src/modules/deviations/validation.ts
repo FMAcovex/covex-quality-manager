@@ -54,7 +54,7 @@ function parseArray<T>(raw: string | null, schema: z.ZodType<T, z.ZodTypeDef, un
       .map((item) => schema.safeParse(item))
       .filter((result): result is z.SafeParseSuccess<T> => result.success)
       .map((result) => result.data);
-  } catch {
+  } catch { /* Entrada mal formada: se trata como vacía o no válida. */
     return [];
   }
 }

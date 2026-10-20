@@ -9,7 +9,7 @@ import { RevisionDocumentForm } from "./revision-document-form";
 import type { ControlledDocumentRevision } from "@prisma/client";
 export async function RevisionDocuments({ returnTo, documentId, revisions, annulled }: { returnTo?: string; documentId: string; revisions: ControlledDocumentRevision[]; annulled: boolean }) {
   let principal;
-  try { principal = await sessionDocumentPrincipal(documentId, await headers()); } catch { return <div><h2>Documentos por revisión</h2><p role="alert">Acceso documental no autorizado o sin configurar. El nombre de responsable no autentica al usuario.</p></div>; }
+  try { principal = await sessionDocumentPrincipal(documentId, await headers()); } catch { /* Sin permiso o acceso no configurado: se responde como acceso denegado. */ return <div><h2>Documentos por revisión</h2><p role="alert">Acceso documental no autorizado o sin configurar. El nombre de responsable no autentica al usuario.</p></div>; }
   const objects = await prisma.controlledRevisionDocument.findMany({ where: { documentId }, orderBy: [{ incorporatedAt: "desc" }, { id: "desc" }], select: metadataSelection });
   return <div><h2>Documentos por revisión</h2><p>Historial íntegro: cada sustitución conserva el elemento anterior. Adjuntar no aprueba, publica ni verifica el PNT.</p>
     {!revisions.length && <p>No hay revisiones documentadas.</p>}

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { authConfiguration } from "@/lib/auth/config";
 import { providerConfiguration } from "@/lib/auth/oidc";
 import { cookieNames, hash, requestCookie, requireCsrf, requireUser } from "@/lib/auth/session";
+import { logServerError } from "@/lib/log/server-log";
 export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
@@ -22,5 +23,5 @@ export async function POST(request: Request) {
     const response = NextResponse.redirect(location, 303);
     for (const name of Object.values(names)) response.cookies.set(name, "", { secure: config.secure, httpOnly: name !== names.csrf, sameSite: "lax", path: "/", maxAge: 0 });
     return response;
-  } catch { return Response.json({ error: "Solicitud no autorizada." }, { status: 403 }); }
+  } catch (error) { logServerError("auth.logout", error); return Response.json({ error: "Solicitud no autorizada." }, { status: 403 }); }
 }

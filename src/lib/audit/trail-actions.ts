@@ -15,7 +15,7 @@ import { withBytes } from "@/lib/db-binary-omit";
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const requestId=(form:FormData)=>{const value=String(form.get("_covexAuditRequestId")??"");return uuid.test(value)?value:randomUUID();};
-const parseFilters=(form:FormData):AuditTrailFilters=>{try{const value=JSON.parse(String(form.get("filters")??"{}"));return parseAuditTrailFilters(value&&typeof value==="object"?value:{});}catch{return {};}};
+const parseFilters=(form:FormData):AuditTrailFilters=>{try{const value=JSON.parse(String(form.get("filters")??"{}"));return parseAuditTrailFilters(value&&typeof value==="object"?value:{});}catch{ /* Entrada mal formada: se trata como vacía o no válida. */ return {};}};
 const idArray=(ids:string[])=>Prisma.sql`ARRAY[${Prisma.join(ids)}]::uuid[]`;
 async function protectedReceipt(query:Prisma.Sql){
   return prisma.$transaction(async tx=>{

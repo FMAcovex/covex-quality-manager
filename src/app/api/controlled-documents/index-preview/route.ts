@@ -3,6 +3,7 @@ import { createBatch } from "@/modules/controlled-documents/import/service";
 import { previewIndex } from "@/modules/controlled-documents/preview/service";
 import { MAX_FILE_BYTES } from "@/modules/controlled-documents/preview/workbook";
 import { currentIdentity } from "@/lib/auth/context";
+import { logServerError } from "@/lib/log/server-log";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
@@ -49,7 +50,8 @@ async function POSTAuthenticatedContent(request: Request) {
         return Response.json({ report }, { headers });
     }
     catch (error) {
-        // Neither workbook contents nor database diagnostics are written to logs.
+        // Neither workbook contents nor database diagnostics are written to logs: only the technical line of D-113.
+        if (!(error instanceof Error) || error.name.startsWith("Prisma")) logServerError("controlled-documents.index-preview", error, { module: "PNT" });
         const message = error instanceof Error && !error.name.startsWith("Prisma") ? error.message : "No se ha podido consultar el registro maestro. No se ha importado ningún dato.";
         return Response.json({ error: message }, { status: 400, headers });
     }

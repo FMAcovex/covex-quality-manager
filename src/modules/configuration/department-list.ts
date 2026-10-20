@@ -10,7 +10,7 @@ export type DepartmentInput = z.infer<typeof departmentSchema>;
 /** Lista de departamentos enviada como JSON; rechaza códigos repetidos y listas vacías. */
 export function parseDepartmentList(raw: unknown): { departments: DepartmentInput[]; error?: string } {
   let value: unknown;
-  try { value = JSON.parse(typeof raw === "string" ? raw : ""); } catch { return { departments: [], error: "Lista de departamentos no válida." }; }
+  try { value = JSON.parse(typeof raw === "string" ? raw : ""); } catch { /* Entrada mal formada: se trata como vacía o no válida. */ return { departments: [], error: "Lista de departamentos no válida." }; }
   const parsed = z.array(departmentSchema).min(1, "Selecciona al menos un departamento.").max(100, "Como máximo 100 departamentos de una vez.").safeParse(value);
   if (!parsed.success) return { departments: [], error: parsed.error.issues[0]?.message ?? "Lista de departamentos no válida." };
   const codes = parsed.data.map((d) => d.code);

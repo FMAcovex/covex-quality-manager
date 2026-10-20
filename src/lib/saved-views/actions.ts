@@ -5,6 +5,7 @@ import { authorizedAction } from "@/lib/auth/action-guard";
 import { currentIdentity } from "@/lib/auth/context";
 import { prisma } from "@/lib/db";
 import { normalizeViewQuery, parseListPath, parseViewName, SAVED_VIEWS_PER_LIST_MAX, SavedViewError } from "./domain";
+import { logServerError } from "@/lib/log/server-log";
 
 // Preferencias personales (D-084): sin operación de audit trail asociada en
 // src/lib/audit/action-boundary.ts y sin captura obligatoria en la tabla.
@@ -22,7 +23,7 @@ function ownerId() {
 
 function failure(error: unknown): SavedViewActionResult {
   if (error instanceof SavedViewError) return { ok: false, error: error.message };
-  console.error("Unexpected saved view error", error);
+  logServerError("saved-views.save", error);
   return { ok: false, error: "No se ha podido guardar la vista." };
 }
 

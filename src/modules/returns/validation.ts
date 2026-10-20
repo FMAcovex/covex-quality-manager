@@ -37,7 +37,7 @@ function products(raw:string|null):ReturnProductInput[]{
       verifiedBy:typeof x.verifiedBy==="string"?x.verifiedBy:"",
       verifiedByDate:typeof x.verifiedByDate==="string"?x.verifiedByDate:""
     }));
-  }catch{return[];}
+  }catch{ /* Entrada mal formada: se trata como vacía o no válida. */ return[];}
 }
 
 export function parseReturnForm(fd:FormData,existingNextFollowup?:string){

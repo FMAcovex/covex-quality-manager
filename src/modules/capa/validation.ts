@@ -52,7 +52,7 @@ function parseArray<T>(raw: string | null, schema: z.ZodType<T, z.ZodTypeDef, un
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed.map((item) => schema.safeParse(item)).filter((r): r is z.SafeParseSuccess<T> => r.success).map((r) => r.data);
-  } catch { return []; }
+  } catch { /* Entrada mal formada: se trata como vacía o no válida. */ return []; }
 }
 function validDate(value: string | null) {
   if (!value) return true;

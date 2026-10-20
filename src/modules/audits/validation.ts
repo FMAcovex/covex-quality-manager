@@ -59,7 +59,7 @@ export type AuditInput = z.infer<typeof auditInputSchema>;
 export function auditFormInput(fd: FormData) {
   const value = (key: string) => String(fd.get(key) ?? "");
   let participants: unknown = [];
-  try { participants = JSON.parse(value("participants") || "[]"); } catch { participants = null; }
+  try { participants = JSON.parse(value("participants") || "[]"); } catch { /* Entrada mal formada: se trata como vacía o no válida. */ participants = null; }
   return Object.fromEntries([
     ...Object.keys(auditBaseSchema.shape).filter(k => !["departmentIds", "participants"].includes(k)).map(k => [k, value(k)]),
     ["departmentIds", fd.getAll("departmentIds").map(String)], ["participants", participants],

@@ -7,7 +7,7 @@ export function isolatedTestEnvironment(env: Record<string, string | undefined> 
     const url = new URL(env.DATABASE_URL ?? "");
     if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return false;
     return url.pathname.startsWith("/covex_phase4b1_test_") || (url.pathname === "/covex_quality" && env.CI === "true" && env.GITHUB_ACTIONS === "true");
-  } catch { return false; }
+  } catch { /* Configuración ausente o no válida: se trata como no disponible. */ return false; }
 }
 /** Tenant ficticio de los usuarios de la demo local; nunca coincide con un tenant de Entra real. */
 export const demoTenant = "00000000-0000-4000-8000-00000000de00";
@@ -34,7 +34,7 @@ export function localDemoEnvironment(env: Record<string, string | undefined> = p
     const local = origin.protocol === "http:" && ["localhost", "127.0.0.1"].includes(origin.hostname);
     return database.pathname === "/covex_demo" && (local || codespacesOrigin(origin, env))
       && !origin.username && !origin.password && origin.pathname === "/" && !origin.search && !origin.hash;
-  } catch { return false; }
+  } catch { /* Configuración ausente o no válida: se trata como no disponible. */ return false; }
 }
 export function authConfiguration(env: Record<string, string | undefined> = process.env) {
   if (env.AUTH_PROVIDER === "demo") {

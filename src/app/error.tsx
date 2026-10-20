@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 
 export default function ErrorPage({
   error,
@@ -10,10 +9,6 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    console.error("Application error", error);
-  }, [error]);
-
   return (
     <section className="workspace system-state">
       <div className="system-state-card">
