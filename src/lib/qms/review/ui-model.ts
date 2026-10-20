@@ -1,3 +1,4 @@
+import { legacyDeviationTab } from "@/modules/deviations/detail-tabs";
 import type { ReviewTargetKind, ReviewThreadStatus } from "@prisma/client";
 import type {
   ReviewSnapshotValue,
@@ -147,4 +148,13 @@ export function formatReviewDateTime(value: string | null): string {
   return `${new Intl.DateTimeFormat("es-ES", {
     dateStyle: "medium", timeStyle: "short", timeZone: "UTC",
   }).format(date)} UTC`;
+}
+
+/**
+ * ¿La pestaña mostrada ya contiene el objetivo? En Desviaciones, Descripción, Investigación, Acciones y
+ * Conclusión son apartados de la pestaña «Desviación» (D-111, V3); los hilos guardados conservan su clave.
+ */
+export function reviewTabRendered(module: string, renderedTab: string, targetTab: string | null) {
+  if (renderedTab === targetTab) return true;
+  return module === "DEVIATION" && renderedTab === "deviation" && legacyDeviationTab(targetTab ?? undefined) !== null;
 }

@@ -3,6 +3,7 @@ import {
   activeReviewCount,
   formatReviewDateTime,
   reviewTabHref,
+  reviewTabRendered,
   reviewTargetHref,
   reviewThreadCapabilities,
   reviewThreadContextLabel,
@@ -99,5 +100,17 @@ describe("modelo visual de revisión", () => {
       canResolve: true,
       readOnly: false,
     });
+  });
+});
+
+describe("Pestaña ya mostrada para un objetivo de revisión (D-111, V3)", () => {
+  it("en Desviaciones, las claves antiguas se muestran en «Desviación»", () => {
+    expect(reviewTabRendered("DEVIATION", "deviation", "investigation")).toBe(true);
+    expect(reviewTabRendered("DEVIATION", "investigation", "investigation")).toBe(true);
+    expect(reviewTabRendered("DEVIATION", "summary", "investigation")).toBe(false);
+  });
+  it("en otros módulos la pestaña debe coincidir", () => {
+    expect(reviewTabRendered("CAPA", "deviation", "investigation")).toBe(false);
+    expect(reviewTabRendered("CAPA", "summary", "summary")).toBe(true);
   });
 });

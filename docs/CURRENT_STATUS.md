@@ -136,6 +136,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Expedientes V3: pestaña única «Desviación» (2026-10-20, D-111):**
+- Descripción, Investigación, Acciones y Conclusión pasan a una sola pestaña «Desviación», con la misma información en cuatro apartados bien marcados y un índice lateral.
+- Los enlaces antiguos, los del panel y los comentarios de revisión ya guardados siguen funcionando.
+- **Comprobado** con:
+  - la nueva prueba de navegador `ux-v3:ui:smoke`;
+  - el resto del grupo `browser-qms`;
+  - las pruebas de revisión r2b1, r2b2, r2b3 y r2c;
+  - la prueba de asignadas (D-102).
+
 **Expedientes V2: índice lateral en formularios (2026-10-20, D-111):**
 - En el alta y la edición de los 8 módulos, una columna a la izquierda lista los apartados del formulario. Al pulsar uno, la página baja hasta él, y el índice marca el apartado visible. Aparece a partir de 1200 px.
 - No cambia el formulario: mismos campos, orden, validaciones y guardado explícito.

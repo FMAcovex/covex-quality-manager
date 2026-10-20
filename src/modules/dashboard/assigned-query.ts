@@ -86,7 +86,7 @@ export async function getAssignedItems(userId: string | null | undefined, filter
   ]);
 
   return sortAssigned([
-    ...deviationPlans.map((row) => item({ key: "DEV-CAPA-" + row.id, module: "DEVIATION", code: code(row.deviation.qmsRecord.businessCode), label: "CAPA propuesta sin crear", detail: short(row.description), dueDate: row.plannedExecutionDate, href: "/deviations/" + row.deviation.id + "?tab=actions" })),
+    ...deviationPlans.map((row) => item({ key: "DEV-CAPA-" + row.id, module: "DEVIATION", code: code(row.deviation.qmsRecord.businessCode), label: "CAPA propuesta sin crear", detail: short(row.description), dueDate: row.plannedExecutionDate, href: "/deviations/" + row.deviation.id + "?tab=deviation#desviacion-acciones" })),
     ...capaActions.map((row) => item({ key: "CAPA-A-" + row.id, module: "CAPA", code: code(row.capa.qmsRecord.businessCode), label: "Acción propuesta", detail: short(row.description), dueDate: row.plannedExecutionDate, href: "/capa/" + row.capa.id })),
     ...decisions.map((row) => item({ key: "CC-DEC-" + row.id, module: "CHANGE_CONTROL", code: code(row.qmsRecord.businessCode), label: "Decisión de la solicitud pendiente", detail: short(row.description), dueDate: null, href: "/changes/" + row.id })),
     ...followups.map((row) => item({ key: "CC-SEG-" + row.id, module: "CHANGE_CONTROL", code: code(row.qmsRecord.businessCode), label: "Seguimiento del cambio", detail: short(row.description), dueDate: row.followups[0]?.nextFollowupDate ?? null, href: "/changes/" + row.id + "?tab=followups" })),

@@ -2899,3 +2899,8 @@ button[disabled] {
   .section-index { grid-column: 1; grid-row: 1; }
   .section-index:not([hidden]) { display: block; position: sticky; top: 120px; max-height: calc(100vh - 140px); overflow: auto; }
 }
+
+/* D-111 (V3): pestaña única «Desviación» con apartados bien marcados. */
+.deviation-part { scroll-margin-top: 120px; }
+.deviation-part + .deviation-part { margin-top: 36px; }
+.deviation-part-title { margin: 0 0 14px; padding-left: 12px; border-left: 4px solid var(--blue); font-size: 22px; font-weight: 700; }
