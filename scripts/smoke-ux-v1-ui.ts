@@ -43,6 +43,19 @@ async function main() {
       assert(await facts.count() >= 4, `${path}: al menos 4 datos clave`);
       assert.equal(await facts.first().locator("dd .badge").count(), 1, `${path}: el estado en su chip de color`);
     }
+    // Etiquetas claras de la franja (revisión final V1).
+    await visit(page, `/deviations/${deviation.id}`);
+    assert((await page.locator(".record-key-facts dt").allTextContents()).includes("En plazo"), "Desviación: «En plazo»");
+    // Un «Anular» sin más acciones no deja separador colgando.
+    assert.equal(await page.evaluate(() => { const annul = document.querySelector(".record-actions-annul"); if (!annul) return "none"; while (annul.nextSibling) annul.nextSibling.remove(); return getComputedStyle(annul).borderRightStyle; }), "none", "Sin separador si «Anular» va solo");
+    await visit(page, `/returns/${ret.id}`);
+    assert((await page.locator(".record-key-facts dt").allTextContents()).includes("Fecha decisión"), "Devolución: «Fecha decisión»");
+    // Ventana intermedia (900 px): el título no se monta sobre las acciones.
+    await page.setViewportSize({ width: 900, height: 1000 });
+    await visit(page, `/deviations/${deviation.id}`);
+    const h1 = (await page.locator(".record-title-line h1").boundingBox())!, actions = (await page.locator(".record-actions").boundingBox())!;
+    const overlap = h1.x < actions.x + actions.width && actions.x < h1.x + h1.width && h1.y < actions.y + actions.height && actions.y < h1.y + h1.height;
+    assert(!overlap, `Título y acciones sin solaparse a 900 px (${JSON.stringify({ h1, actions })})`);
     // Móvil (390 px): sin desbordamiento horizontal y pestañas en una sola fila desplazable.
     await page.setViewportSize({ width: 390, height: 844 });
     for (const path of pages) {
@@ -51,6 +64,8 @@ async function main() {
     }
     await visit(page, `/deviations/${deviation.id}`);
     assert(await page.locator(".record-tabs").evaluate(el => el.scrollWidth > el.clientWidth), "Pestañas en una fila desplazable");
+    await visit(page, `/audits/${audit.id}`);
+    assert.equal(await page.locator(".audit-info-grid").first().evaluate(el => getComputedStyle(el).gridTemplateColumns.split(" ").length), 1, "Auditoría: una columna en móvil");
     await page.setViewportSize({ width: 1440, height: 1000 });
     await visit(page, `/capa/${overdueCapa.id}`);
     const overdue = page.locator(".record-key-facts .key-fact.is-overdue");

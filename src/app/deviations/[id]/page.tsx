@@ -336,7 +336,7 @@ async function DeviationDetailPageAuthenticatedContent({
           <RecordKeyFacts facts={[
             { label: "Estado", value: deviation.status === "DRAFT" ? "Borrador" : deviation.status === "OPEN" ? "Abierta" : "Cerrada", badgeClass: deviation.status === "DRAFT" ? "neutral" : deviation.status === "OPEN" ? "open" : "closed" },
             { label: "Apertura", value: deviation.issueDate ? formatDate(deviation.issueDate) : null },
-            { label: "Plazo", value: deadlineLabel(deviation.deadlineStatus) },
+            { label: "En plazo", value: deadlineLabel(deviation.deadlineStatus) },
             { label: "Clasificación", value: deviation.classification ? classificationLabel(deviation.classification) : null },
             { label: "Departamento", value: deviation.departmentCodeSnapshot ?? deviation.department?.code ?? null },
             { label: "Cierre", value: deviation.closedAt ? formatDate(deviation.closedAt) : null },

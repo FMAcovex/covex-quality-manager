@@ -310,7 +310,7 @@ async function ReturnDetailPageAuthenticatedContent({
               { label: "Estado", value: returnStatusLabel(r.status), badgeClass: r.status === "DRAFT" ? "neutral" : r.status === "OPEN" ? "open" : "closed" },
               { label: "Comunicación", value: formatDate(r.communicationDate) },
               { label: "Recepción", value: formatDate(r.receivedAt) },
-              { label: "Decisión", value: formatDate(r.decisionDate) },
+              { label: "Fecha decisión", value: formatDate(r.decisionDate) },
               { label: "Cierre", value: formatDate(r.closedAt) },
             ]} />
             <div className="return-summary-hero">

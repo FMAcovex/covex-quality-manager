@@ -16,6 +16,7 @@ import { headers } from "next/headers";
 import { documentHistoryActions } from "@/modules/controlled-documents/documents/history";
 import { prisma } from "@/lib/db";
 import { RecordKeyFacts } from "@/components/record-key-facts";
+import { revisionDates } from "@/modules/controlled-documents/revision-dates";
 import { dueTone } from "@/lib/qms/key-facts";
 import { administrativeLabels, revisionLabels, verificationLabels, displayDate } from "@/modules/controlled-documents/domain";
 export const dynamic = "force-dynamic";
@@ -54,7 +55,7 @@ async function DetailPageAuthenticatedContent({ params, searchParams }: {
     return <section className="workspace pnt-workspace"><header className="record-header pnt-record-header"><div className="pnt-record-identity"><p className="eyebrow">Gestión documental · PNT</p><h1>{m.baseCode || "Borrador PNT"}</h1><p className="pnt-record-title">{m.title || "Sin título"}</p><div className="pnt-record-status"><span className="badge neutral">{administrativeLabels[m.administrativeStatus]}</span><span className="muted-note">{m.departmentCodeSnapshot || "—"} — {m.departmentNameSnapshot || "—"}</span></div></div><Link className="button" href={backUrl}>Volver al listado</Link></header>
  {indexMetadata(m.sourceMetadata) && <p className="section-help">Importado del índice: {m.revisions.every(r => r.verificationStatus !== "VERIFIED") ? "pendiente de verificación documental." : "contraste documental registrado por revisión."} Estado declarado (no acredita vigencia): {importStates[indexMetadata(m.sourceMetadata)!.declaredState]} · <Link href={`/controlled-documents/import-index/${indexMetadata(m.sourceMetadata)!.batchId}`}>Consultar lote de origen</Link></p>}
  <nav className="record-tabs pnt-record-tabs" aria-label="Pestañas del PNT">{[["information", "Información"], ["revisions", "Revisiones"], ["documents", "Documentos"], ["audit-trail", "Audit Trail"], ["history", "Historial"]].map(([key, label]) => <Link key={key} className={tab === key ? "active" : ""} href={`/controlled-documents/${id}?tab=${key}${returnQuery}`} aria-current={tab === key ? "page" : undefined}>{label} </Link>)}</nav>
- {tab === "information" && (() => { const vigente = m.revisions.find(r => r.status === "IN_FORCE"); const from = vigente ? (vigente.lifecycle?.effectiveFrom ?? vigente.effectiveFrom) : null; const due = vigente ? (vigente.lifecycle?.reviewDueAt ?? vigente.reviewDueAt) : null; return <RecordKeyFacts facts={[
+ {tab === "information" && (() => { const vigente = m.revisions.find(r => r.status === "IN_FORCE"); const { effectiveFrom: from, reviewDueAt: due } = vigente ? revisionDates(vigente) : { effectiveFrom: null, reviewDueAt: null }; return <RecordKeyFacts facts={[
   { label: "Estado", value: administrativeLabels[m.administrativeStatus], badgeClass: "neutral" },
   { label: "Revisión vigente", value: vigente ? `${vigente.baseCodeSnapshot || m.baseCode}/${vigente.revisionCode}` : null },
   { label: "Vigente desde", value: from ? displayDate(from) : null },

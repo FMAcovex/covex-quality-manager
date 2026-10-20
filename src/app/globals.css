@@ -218,7 +218,7 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .record-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
 /* D-111 (V1): «Anular» separado del resto de acciones; sin permiso no deja hueco. */
 .record-actions-annul { display: inline-flex; }
-.record-actions-annul:not(:empty) { padding-right: 12px; margin-right: 4px; border-right: 1px solid var(--border); }
+.record-actions-annul:not(:empty):not(:last-child) { padding-right: 12px; margin-right: 4px; border-right: 1px solid var(--border); }
 .record-actions-annul .button.danger { background: transparent; }
 .record-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 .record-tabs a { padding: 10px 13px; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; font-size: 13px; }
@@ -238,7 +238,8 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .record-key-facts { margin-bottom: 14px; }
 .record-key-facts + .card { margin-top: 0; }
 .record-header > div:first-child { min-width: 0; flex: 1 1 auto; }
-@media (min-width: 761px) { .record-actions { flex: 0 0 auto; flex-wrap: nowrap; } .record-actions > .muted-note { max-width: 220px; } }
+.record-title-line h1 { overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .record-actions { flex: 0 0 auto; flex-wrap: nowrap; } .record-actions > .muted-note { max-width: 220px; } }
 .record-key-facts dl { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; margin: 0; }
 .record-key-facts .key-fact { min-width: 0; }
 .record-key-facts dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
@@ -2554,6 +2555,7 @@ button[disabled] {
 .audit-info-field dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
 .audit-info-field dd { margin: 0; line-height: 1.45; overflow-wrap:anywhere; }
 @media (max-width: 1199px) { .audit-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .audit-info-grid { grid-template-columns: minmax(0, 1fr); } }
 .audit-info-wide { grid-column:1 / -1; }
 .audit-qms-id { display:block; margin-top:13px; overflow-wrap:anywhere; }
 .audit-info-layout .audit-team { grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); }
