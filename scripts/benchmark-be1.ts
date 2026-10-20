@@ -13,10 +13,14 @@ let recording = false, sqlCount = 0;
 const fetched: unknown[] = [];
 // Se inyecta antes de importar cualquier módulo que use src/lib/db.
 async function installClient() {
-  raw = mode === "after"
-    ? ((await import("../src/lib/db-client" as string)) as { createAppPrismaClient(log: Prisma.LogDefinition[]): PrismaClient }).createAppPrismaClient(log)
-    : new PrismaClient({ log });
-  (raw as unknown as { $on(event: "query", cb: () => void): void }).$on("query", () => { if (recording) sqlCount++; });
+  const onQuery = () => { if (recording) sqlCount++; };
+  if (mode === "after") {
+    const { createAppPrismaClient } = await import("../src/lib/db-client");
+    raw = createAppPrismaClient({ log, onQuery });
+  } else {
+    raw = new PrismaClient({ log });
+    (raw as unknown as { $on(event: "query", cb: () => void): void }).$on("query", onQuery);
+  }
   const instrumented = raw.$extends({ query: {
     async $allOperations({ args, query }) {
       const result = await query(args);

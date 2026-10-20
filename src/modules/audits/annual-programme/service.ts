@@ -75,7 +75,7 @@ export async function issueAnnualProgramme(planId: string, input: unknown) {
     try {
       return await prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT "id" FROM "AuditAnnualPlan" WHERE "id" = ${planId} FOR UPDATE`;
-        const previousRequest = await tx.auditAnnualProgrammeVersion.findUnique({ where: { planId_requestId: { planId, requestId: v.requestId } } });
+        const previousRequest = await tx.auditAnnualProgrammeVersion.findUnique({ where: { planId_requestId: { planId, requestId: v.requestId } }, omit: withBytes });
         if (previousRequest) {
           if (previousRequest.requestHash !== requestHash) throw Error("Solicitud de emisión ya utilizada con otros datos. Recarga el plan.");
           return previousRequest;
@@ -103,7 +103,7 @@ export async function issueAnnualProgramme(planId: string, input: unknown) {
           templateVersionId: template.id, templateChecksum: template.checksum!, reference: preview.content.reference,
           generatedAt, generatedBy: v.actor, reason: v.reason || "Emisión inicial", fileName: programmeDownloadName(preview.content.auditType, preview.content.year, sequence),
           mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileData: new Uint8Array(bytes), fileSize: bytes.length, checksum: digest(bytes),
-        } });
+        }, omit: withBytes });
         await tx.auditAnnualPlan.update({ where: { id: planId }, data: { updatedByText: v.actor } });
         await tx.auditPlanChange.create({ data: { planId, event: "PROGRAMME_ISSUED", actor: v.actor, reason: version.reason, newValue: json({ versionId: version.id, sequenceNumber: sequence, checksum: version.checksum }) } });
         return version;

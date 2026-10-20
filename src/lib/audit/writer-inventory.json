@@ -59,7 +59,7 @@
     {"file":"src/lib/saved-views/actions.ts","line":56,"function":"deleteListViewActionAuthenticatedContent","model":"SavedListView","method":"delete","inputFields":["id","where"],"nested":[],"dynamicInput":false},
     {"file":"src/modules/audits/annual-programme/service.ts","line":68,"function":"saveProgrammeApprovers","model":"AuditAnnualPlan","method":"update","inputFields":["data","id","updatedByText","where"],"nested":[],"dynamicInput":true},
     {"file":"src/modules/audits/annual-programme/service.ts","line":69,"function":"saveProgrammeApprovers","model":"AuditPlanChange","method":"create","inputFields":["actor","data","event","newValue","oldValue","planId","qualityApproverName","reason","technicalApproverName"],"nested":[],"dynamicInput":false},
-    {"file":"src/modules/audits/annual-programme/service.ts","line":100,"function":"issueAnnualProgramme","model":"AuditAnnualProgrammeVersion","method":"create","inputFields":["checksum","content","contentFingerprint","data","fileData","fileName","fileSize","generatedAt","generatedBy","id","mimeType","planId","reason","reference","requestHash","requestId","sequenceNumber","snapshot","template","templateChecksum","templateVersionId","version"],"nested":[],"dynamicInput":false},
+    {"file":"src/modules/audits/annual-programme/service.ts","line":100,"function":"issueAnnualProgramme","model":"AuditAnnualProgrammeVersion","method":"create","inputFields":["checksum","content","contentFingerprint","data","fileData","fileName","fileSize","generatedAt","generatedBy","id","mimeType","omit","planId","reason","reference","requestHash","requestId","sequenceNumber","snapshot","template","templateChecksum","templateVersionId","version"],"nested":[],"dynamicInput":false},
     {"file":"src/modules/audits/annual-programme/service.ts","line":107,"function":"issueAnnualProgramme","model":"AuditAnnualPlan","method":"update","inputFields":["data","id","updatedByText","where"],"nested":[],"dynamicInput":false},
     {"file":"src/modules/audits/annual-programme/service.ts","line":108,"function":"issueAnnualProgramme","model":"AuditPlanChange","method":"create","inputFields":["actor","checksum","data","event","newValue","planId","reason","sequenceNumber","versionId"],"nested":[],"dynamicInput":false},
     {"file":"src/modules/audits/capa-plan-service.ts","line":45,"function":"issueCapaPlanVersion","model":"AuditCapaPlanVersion","method":"create","inputFields":["auditId","checksum","contentFingerprint","data","fileData","fileName","fileSize","followupDate","generatedBy","kind","mimeType","nextReviewDate","observations","requestHash","requestId","sequenceNumber","snapshot","templateChecksum","templateVersionId"],"nested":[],"dynamicInput":false},
@@ -387,7 +387,7 @@
     {"file":"scripts/auth-provision.ts","line":14,"function":"main","method":"$executeRaw","reviewRequired":true}
   ],
   "independentClients": [
-    {"file":"src/lib/db.ts","line":9,"function":"<module>"},
+    {"file":"src/lib/db-client.ts","line":16,"function":"createAppPrismaClient"},
     {"file":"src/modules/controlled-documents/import/database.ts","line":6,"function":"<module>"},
     {"file":"scripts/backfill-record-versions.ts","line":9,"function":"<module>"},
     {"file":"scripts/export-backup.ts","line":6,"function":"<module>"}
@@ -405,7 +405,7 @@
     "src/lib/auth/administration.ts": "63ea52ba78acb0b4aca7a1e46b187a0205d16a7e4e1d52cb1bde0c706ca59e96",
     "src/lib/auth/oidc.ts": "cc8880d9d5cc69130acd54cf078a5df5e88b71c7f58598870036c1021bb4239d",
     "src/lib/auth/session.ts": "cbb956076785c150339ff18e7a608653a005556f7b9cf2b9a4593d47c0a337d1",
-    "src/lib/db.ts": "3458765c25640c4f2aabe1b2013e91e7414c8c1f42db0d8f2d4cba0aa0a937d1",
+    "src/lib/db-client.ts": "e5cebfc308fa15e8fd39425614c00b96ce67d1f0a0e795ef500dc30412e5fc57",
     "src/lib/qms/additional-lots-search.ts": "c496e5397fda501f4731171b7534ccc909c698a9742e0316f10ef84063eb67ee",
     "src/lib/qms/administrative-status.ts": "ebbce4ef96c581ff2bb7ee6f244c36c27a0eea12dc51c487ce80d1c61a4f2edd",
     "src/lib/qms/business-code.ts": "ce9590840570b268a951e097f0e73c7c0d202a89835f2a7abb74c8f85cf9ee0b",
@@ -417,7 +417,7 @@
     "src/lib/qms/versioning.ts": "67e6bb2d09a52304d40809c5ad08ffa27f5a684533565327766edea67afd9bf5",
     "src/lib/qms/working-document.ts": "c7f7d39310b011a0f1a6a854cd807cbf4897f68ba583168c1c8fe38c0285894c",
     "src/lib/saved-views/actions.ts": "20d85bb8d4070d2fcb1e0743f25b41e68e803c78f58d676ea4f31bf9aa0cc3f6",
-    "src/modules/audits/annual-programme/service.ts": "4b5ef653ef4f364c1a9097149879c127421af896f8a6520f3cdc896ebaa90dd9",
+    "src/modules/audits/annual-programme/service.ts": "fc2bc56f706b64e90fe489d606493873a1bb4174b645f1da563898ee46ab3c70",
     "src/modules/audits/capa-plan-service.ts": "dae85bf243e42064a43d40fc28864358f1284b3d3cf2b40e6df891d619171b1b",
     "src/modules/audits/documents/service.ts": "6072d27c1924ce2d0602a959e689354d2915bed2d9980214d9d2643d2565f7d9",
     "src/modules/audits/finding-service.ts": "81d7bb781cc84d40e733aa6837a1ba703749f61b21f2f67eb639141f104c5ec6",

@@ -75,7 +75,7 @@ export async function createBe1Fixtures(size: number): Promise<Be1Fixture> {
         fileName: `fictitious-${n}.docx`, mimeType: docx, fileData: bytes, checksum, generatedByText: actor, metadata: { fictitious: true } } });
     }
 
-    return { ...base, oosIds, binaryDetail, cleanup: removeAll };
+    return { ...base, templateIds: [...base.templateIds, ...templateIds], oosIds, binaryDetail, cleanup: removeAll };
   } catch (error) {
     await removeAll();
     throw error;

@@ -55,7 +55,7 @@ async function main() {
       await assertCorporateActor(issue.locator('[name="actor"]'));
       await submit(page, "Emitir Programa Anual en Word");
       await page.getByRole("link", { name: /Descargar .*R00.docx/ }).waitFor();
-      const version = await prisma.auditAnnualProgrammeVersion.findFirstOrThrow({ where: { planId: plan.id, sequenceNumber: 0 } });
+      const version = await prisma.auditAnnualProgrammeVersion.findFirstOrThrow({ where: { planId: plan.id, sequenceNumber: 0 }, omit: { fileData: false } });
       const url: string = `${base}/api/audits/plans/${plan.id}/programmes/${version.id}`;
       const download = await page.request.get(url); assert.equal(download.status(), 200); assert.deepEqual(await download.body(), Buffer.from(version.fileData));
       assert.equal((await page.request.get(`${base}/api/audits/plans/${randomUUID()}/programmes/${version.id}`)).status(), 404);
