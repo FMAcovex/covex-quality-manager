@@ -31,16 +31,25 @@ async function main() {
     for (const title of ["Descripción del evento", "Causa raíz", "Evaluación de impacto", "Acciones inmediatas", "CAPA propuestas", "Conclusión y disposición"]) assert(cards.some(c => c.includes(title)), `Tarjeta «${title}»`);
     await page.locator("nav.section-index a").first().waitFor();
     assert.equal(await page.locator("nav.section-index a").count(), 4, "Índice con los 4 apartados");
+    // Los títulos de las tarjetas conservan su estilo de tarjeta (no el de los formularios).
+    assert.equal(await page.locator("#deviation-parts .card h2").first().evaluate(el => getComputedStyle(el).marginBottom), "14px", "Títulos de tarjeta sin cambios");
 
     // Enlace antiguo: muestra «Desviación» y baja al apartado.
     await visit(page, `${path}?tab=investigation`);
     assert.equal(await page.locator("nav.record-tabs a.active").textContent(), "Desviación");
     await page.waitForFunction(() => { const y = document.getElementById("desviacion-investigacion")?.getBoundingClientRect().y ?? -1; return y >= 0 && y < 400; });
+    // Desde un enlace antiguo, «Modo revisión» y «Editar» conservan el apartado.
+    assert.match(await page.locator(".record-actions a.review-mode-toggle").getAttribute("href") ?? "", /tab=investigation/, "Modo revisión conserva el apartado");
+    assert.match(await page.locator(".record-actions a.button.primary").getAttribute("href") ?? "", /tab=investigation/, "Editar conserva el apartado");
 
     // Comentario de revisión guardado con la clave antigua: se abre sin bucles y señala la causa raíz.
-    await visit(page, `${path}?tab=investigation&review=1&thread=${thread.id}#review-deviation-root-cause`);
+    let navigations = 0;
+    page.on("framenavigated", frame => { if (frame === page.mainFrame()) navigations++; });
+    await visit(page, `${path}?tab=deviation&review=1&thread=${thread.id}#review-deviation-root-cause`);
+    navigations = 0;
     await page.waitForTimeout(1500);
-    assert.match(page.url(), /tab=investigation/, "Sin recargas en bucle");
+    assert.equal(navigations, 0, "En «Desviación», el comentario de la pestaña antigua se abre sin recargar");
+    assert.match(page.url(), /tab=deviation/);
     assert.equal(await page.locator("nav.record-tabs a.active").textContent(), "Desviación");
     assert(await page.locator("#review-deviation-root-cause").isVisible(), "La causa raíz comentada está a la vista");
     assert.deepEqual(errors, []);

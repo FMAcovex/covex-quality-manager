@@ -137,6 +137,8 @@ async function DeviationDetailPageAuthenticatedContent({
   // D-111 (V3): Descripción, Investigación, Acciones y Conclusión son apartados de la pestaña «Desviación».
   const legacyPart = legacyDeviationTab(rawTab);
   const activeTab = legacyPart ? "deviation" : tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
+  // Desde un enlace antiguo, «Modo revisión» y «Editar» conservan el apartado (la clave antigua es un alias).
+  const linkTab = legacyPart ? rawTab! : activeTab;
   const deviation = await getDeviationDetail(id);
   if (!deviation) notFound();
   const similarDeviations = await getSimilarDeviations(deviation);
@@ -307,11 +309,11 @@ async function DeviationDetailPageAuthenticatedContent({
         defaultActor={currentActor()}
       />}
         actions={<>
-          <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/deviations", returnTo)} /></PermissionGate>
+          <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, linkTab, reviewMode), "/deviations", returnTo)} /></PermissionGate>
           {deviation.status === "DRAFT"
             ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
             : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate>}
-          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${activeTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link></PermissionGate>
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${linkTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link></PermissionGate>
         </>}
       />
       <QmsAdministrativeStatus part="banner"
@@ -435,7 +437,7 @@ async function DeviationDetailPageAuthenticatedContent({
       {activeTab === "deviation" ? (
         <FormWithIndex id="deviation-parts" label="Apartados de la desviación">
           {legacyPart ? <ScrollToAnchor id={legacyPart.anchor} /> : null}
-          <section className="form-section deviation-part" id={deviationPartAnchors.description}>
+          <section className="deviation-part" id={deviationPartAnchors.description}>
             <h2 className="deviation-part-title">Descripción</h2>
         <div className="card">
           <div className="section-title-row">
@@ -453,7 +455,7 @@ async function DeviationDetailPageAuthenticatedContent({
           </dl>
         </div>
           </section>
-          <section className="form-section deviation-part" id={deviationPartAnchors.investigation}>
+          <section className="deviation-part" id={deviationPartAnchors.investigation}>
             <h2 className="deviation-part-title">Investigación</h2>
         <>
           <div className="card">
@@ -487,7 +489,7 @@ async function DeviationDetailPageAuthenticatedContent({
           </div>
         </>
           </section>
-          <section className="form-section deviation-part" id={deviationPartAnchors.actions}>
+          <section className="deviation-part" id={deviationPartAnchors.actions}>
             <h2 className="deviation-part-title">Acciones</h2>
         <>
           <div id={reviewTarget.immediateActions.anchorId} className="card review-target">
@@ -573,7 +575,7 @@ async function DeviationDetailPageAuthenticatedContent({
           </div>
         </>
           </section>
-          <section className="form-section deviation-part" id={deviationPartAnchors.conclusion}>
+          <section className="deviation-part" id={deviationPartAnchors.conclusion}>
             <h2 className="deviation-part-title">Conclusión</h2>
         <div className="card">
           <h2>Conclusión y disposición</h2>
