@@ -1,10 +1,11 @@
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { documentPrincipal } from "@/modules/controlled-documents/documents/access";
 import { downloadDocument } from "@/modules/controlled-documents/documents/service";
+import { logServerError } from "@/lib/log/server-log";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 async function GETAuthenticatedContent(request: Request, { params }: { params: Promise<{ id: string; revisionId: string; objectId: string }> }) {
-  try { documentPrincipal(request.headers); } catch { return new Response("No autorizado", { status: 403 }); }
+  try { documentPrincipal(request.headers); } catch { /* Sin permiso o acceso no configurado: se responde como acceso denegado. */ return new Response("No autorizado", { status: 403 }); }
   const { id, revisionId, objectId } = await params;
   try {
     const object = await downloadDocument(id, revisionId, objectId);
@@ -14,7 +15,7 @@ async function GETAuthenticatedContent(request: Request, { params }: { params: P
       "Content-Disposition": `attachment; filename="document-${object.id}.${object.originalName.split(".").pop()?.toLowerCase()}"; filename*=UTF-8''${encodeURIComponent(object.originalName).replace(/'/g, "%27")}`,
       "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
     } });
-  } catch { return new Response("Documento no disponible", { status: 404 }); }
+  } catch (error) { logServerError("controlled-documents.download", error, { module: "PNT" }); return new Response("Documento no disponible", { status: 404 }); }
 }
 
 export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {

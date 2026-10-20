@@ -5,7 +5,7 @@ export function listingReturnTo(value: unknown): string {
     const url = new URL(value, "https://pnt.invalid");
     return value.startsWith("/controlled-documents?") && url.origin === "https://pnt.invalid" && url.pathname === "/controlled-documents" && !url.hash
       ? url.pathname + url.search : "/controlled-documents";
-  } catch { return "/controlled-documents"; }
+  } catch { /* Ruta de retorno no válida: se usa la predeterminada. */ return "/controlled-documents"; }
 }
 export function withReturnTo(path: string, value: unknown): string {
   const back = listingReturnTo(value);

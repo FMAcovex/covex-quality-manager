@@ -11,7 +11,7 @@ async function boundedJson(request: Request) {
   const reader = request.body.getReader(), chunks: Uint8Array[] = []; let size = 0;
   try { while (true) { const part = await reader.read(); if (part.done) break; size += part.value.byteLength; if (size > 8 * 1024 * 1024) { await reader.cancel(); throw new AccessError(403); } chunks.push(part.value); } }
   finally { reader.releaseLock(); }
-  try { return JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch { return null; }
+  try { return JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch { /* Entrada mal formada: se trata como vacía o no válida. */ return null; }
 }
 async function authorizeAndRunRoute<T extends Response>(file: string, method: string, args: unknown[], run: (authenticated: unknown[]) => Promise<T>): Promise<T | Response> {
   const entry = inventory.routes.find(r => r.file === file && r.method === method);

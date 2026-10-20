@@ -115,7 +115,7 @@ export function templateDifferences(documentType: DocumentType, reference: Templ
   let candidateEntries: ZipEntry[];
   try {
     candidateEntries = readZip(Buffer.from(candidate.data));
-  } catch {
+  } catch { /* Entrada mal formada: se trata como vacía o no válida. */
     return ["El archivo no es un documento Word o Excel válido."];
   }
   const referenceEntries = readZip(Buffer.from(reference.data));

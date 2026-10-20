@@ -65,7 +65,7 @@ function parseTasks(raw: string | null) {
         .map((item) => item.data),
       hasIncompleteTask: parsed.some((item) => !item.success),
     };
-  } catch {
+  } catch { /* Entrada mal formada: se trata como vacía o no válida. */
     return { tasks: [] as ChangeTaskInput[], hasIncompleteTask: true };
   }
 }

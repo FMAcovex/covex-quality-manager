@@ -9,7 +9,7 @@ import { demoProfiles } from "./demo-profiles";
 
 
 function demoEnabled() {
-  try { return authConfiguration().demo; } catch { return false; }
+  try { return authConfiguration().demo; } catch { /* Configuración ausente o no válida: se trata como no disponible. */ return false; }
 }
 
 /** Perfiles de la demo para la página de acceso; vacío fuera de la demo local. */

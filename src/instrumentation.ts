@@ -8,7 +8,11 @@ export async function register() {
     const directory = process.env.TEMPLATE_INSTALL_DIR;
     void import("./modules/configuration/template-autoinstall")
       .then(async ({ autoInstallSummary, installTemplatesFromDirectory }) => console.info(autoInstallSummary(await installTemplatesFromDirectory(directory))))
-      .catch(() => console.error("Plantillas: no se han podido instalar al arrancar; súbelas en Configuración → Versiones."));
+      .catch(async error => {
+        console.error("Plantillas: no se han podido instalar al arrancar; súbelas en Configuración → Versiones.");
+        const { logServerError } = await import("./lib/log/server-log");
+        logServerError("configuration.template-autoinstall", error, { module: "SYSTEM" });
+      });
   }
 }
 

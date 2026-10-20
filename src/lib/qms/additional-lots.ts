@@ -20,7 +20,7 @@ export type AdditionalLot = z.infer<typeof additionalLotSchema>;
 export function parseAdditionalLots(raw: FormDataEntryValue | null): { lots: AdditionalLot[]; error?: string } {
   if (typeof raw !== "string" || !raw.trim()) return { lots: [] };
   let value: unknown;
-  try { value = JSON.parse(raw); } catch { return { lots: [], error: "La lista de otros lotes no es válida." }; }
+  try { value = JSON.parse(raw); } catch { /* Entrada mal formada: se trata como vacía o no válida. */ return { lots: [], error: "La lista de otros lotes no es válida." }; }
   const rows = Array.isArray(value)
     ? value.filter((row) => row && typeof row === "object" && Object.values(row as Record<string, unknown>).some((cell) => typeof cell === "string" && cell.trim() && cell !== "PRODUCT" && cell !== "MATERIAL"))
     : value;

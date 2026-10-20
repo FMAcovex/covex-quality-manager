@@ -14,7 +14,7 @@ const payloadSchema = z.object({
 });
 
 async function POSTAuthenticatedContent(request: Request) {
-  const parsed = payloadSchema.safeParse(await request.json().catch(() => null));
+  const parsed = payloadSchema.safeParse(await request.json().catch(() => /* Cuerpo mal formado: lo rechaza la validación siguiente. */ null));
 
   if (!parsed.success) {
     return NextResponse.json(

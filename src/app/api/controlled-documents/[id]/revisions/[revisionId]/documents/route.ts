@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
 async function POSTAuthenticatedContent(request: Request, { params }: { params: Promise<{ id: string; revisionId: string }> }) {
   let principal;
-  try { principal = documentPrincipal(request.headers); requireDocumentWrite(principal); } catch { return Response.json({ error: "Acceso documental de escritura no autorizado." }, { status: 403, headers }); }
+  try { principal = documentPrincipal(request.headers); requireDocumentWrite(principal); } catch { /* Sin permiso o acceso no configurado: se responde como acceso denegado. */ return Response.json({ error: "Acceso documental de escritura no autorizado." }, { status: 403, headers }); }
   const expectedOrigin = expectedDocumentOrigin(request);
   if (request.headers.get("origin") !== expectedOrigin) return Response.json({ error: "Origen de solicitud no autorizado." }, { status: 403, headers });
   try {

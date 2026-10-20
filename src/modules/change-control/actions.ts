@@ -742,7 +742,7 @@ function parseFollowupTasks(raw: string): ChangeFollowupTaskInput[] {
         isNew: item.isNew === true,
       }))
       .filter((item) => item.description && (item.departmentId || item.taskId));
-  } catch {
+  } catch { /* Entrada mal formada: se trata como vacía o no válida. */
     return [];
   }
 }

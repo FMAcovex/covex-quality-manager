@@ -17,7 +17,7 @@ export async function GET() {
         headers: { "Cache-Control": "no-store" },
       },
     );
-  } catch {
+  } catch { /* El fallo se informa en la propia respuesta de salud. */
     return NextResponse.json(
       {
         status: "degraded",

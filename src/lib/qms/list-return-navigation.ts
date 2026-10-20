@@ -14,7 +14,7 @@ export function qmsListingReturnTo(root: QmsListRoot, value: unknown): string {
     const parsed = new URL(value, "https://qms.invalid");
     return parsed.origin === "https://qms.invalid" && parsed.pathname === root && !parsed.hash
       ? parsed.pathname + parsed.search : root;
-  } catch {
+  } catch { /* Ruta de retorno no válida: se usa la predeterminada. */
     return root;
   }
 }
@@ -39,7 +39,7 @@ export function qmsWithReturnTo(path: string, root: QmsListRoot, value: unknown)
     if (url.origin !== "https://qms.invalid" || !url.pathname.startsWith(root + "/")) return path;
     url.searchParams.set("returnTo", returnTo);
     return url.pathname + url.search + url.hash;
-  } catch {
+  } catch { /* Ruta de retorno no válida: se usa la predeterminada. */
     return path;
   }
 }

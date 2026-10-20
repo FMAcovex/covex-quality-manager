@@ -8,7 +8,7 @@ const safeHeaders = { "Cache-Control": "private, no-store", "X-Content-Type-Opti
 async function POSTAuthenticatedContent(request: Request, { params }: { params: Promise<{ id: string; revisionId: string }> }) {
   let principal;
   try { principal = lifecyclePrincipal(request.headers); }
-  catch { return Response.json({ error: "Acceso documental no autorizado." }, { status: 403, headers: safeHeaders }); }
+  catch { /* Sin permiso o acceso no configurado: se responde como acceso denegado. */ return Response.json({ error: "Acceso documental no autorizado." }, { status: 403, headers: safeHeaders }); }
   const expectedOrigin = expectedDocumentOrigin(request);
   if (request.headers.get("origin") !== expectedOrigin)
     return Response.json({ error: "Origen no autorizado." }, { status: 403, headers: safeHeaders });

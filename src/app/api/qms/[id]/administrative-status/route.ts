@@ -5,7 +5,7 @@ import { AdministrativeStatusError, changeAdministrativeStatus } from "@/lib/qms
 const payloadSchema = z.object({ action: z.enum(["ANNUL", "REACTIVATE"]), reason: z.string().trim().min(3).max(2000), actor: z.string().trim().min(1).max(200) });
 async function POSTAuthenticatedContent(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const parsed = payloadSchema.safeParse(await request.json().catch(() => null));
+  const parsed = payloadSchema.safeParse(await request.json().catch(() => /* Cuerpo mal formado: lo rechaza la validación siguiente. */ null));
   if (!parsed.success) return NextResponse.json({ error: "Acción, motivo y usuario son obligatorios." }, { status: 400 });
   try {
     const { action, reason, actor } = parsed.data;

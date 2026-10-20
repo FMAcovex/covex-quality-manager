@@ -9,7 +9,7 @@ export function lifecyclePrincipal(headers: Pick<Headers, "get">, env: Record<st
   if (base.source === "CORPORATE_SESSION") {
     const context = currentIdentity()!;
     const capabilities = lifecyclePermissions.filter(capability => {
-      try { assertPermission(context.principal, "PNT", ("PNT_" + capability.replaceAll("-", "_").toUpperCase()) as AccessPermission, context.resource, false); return true; } catch { return false; }
+      try { assertPermission(context.principal, "PNT", ("PNT_" + capability.replaceAll("-", "_").toUpperCase()) as AccessPermission, context.resource, false); return true; } catch { /* Sin permiso o acceso no configurado: se responde como acceso denegado. */ return false; }
     });
     return { ...base, capabilities };
   }

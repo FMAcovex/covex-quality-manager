@@ -7,7 +7,7 @@ export function auditListingReturnTo(value: unknown): string {
     const url = new URL(value, "https://audits.invalid");
     if (url.origin !== "https://audits.invalid" || url.pathname !== "/audits" || url.hash) return "/audits";
     return url.pathname + url.search;
-  } catch { return "/audits"; }
+  } catch { /* Ruta de retorno no válida: se usa la predeterminada. */ return "/audits"; }
 }
 // Keeps a valid list return URL through tabs, edits, saves and in-record links.
 export function auditWithReturnTo(path: string, value: unknown): string {
