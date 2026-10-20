@@ -218,7 +218,7 @@ async function ChangeControlPageAuthenticatedContent({
                     <td data-column-key="description" className="long-cell">{row.description ?? "—"}</td>
                     <td data-column-key="requestDate">{formatDate(row.requestDate)}</td>
                     <td data-column-key="approvalDate">{formatDate(row.dictamenDate)}</td>
-                    <td data-column-key="classification"><span className="badge neutral">{classificationLabel(row.classification)}</span></td>
+                    <td data-column-key="classification"><span className={`badge ${row.classification?.toLowerCase() ?? "neutral"}`}>{classificationLabel(row.classification)}</span></td>
                     <td data-column-key="plannedDate">{formatDate(planned)}</td>
                     <td data-column-key="execution"><span className={`badge ${row.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>{executionStatusLabel(row.executionStatus)}</span></td>
                     <td data-column-key="executionDate">{formatDate(row.executionDate)}</td>

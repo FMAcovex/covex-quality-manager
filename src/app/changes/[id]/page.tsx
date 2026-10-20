@@ -73,6 +73,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
   const { id } = await params;
   const { tab: rawTab, review, thread, returnTo, auditPage } = await searchParams;
   const activeTab = changeControlDetailTabs.some(([key]) => key === rawTab) ? rawTab! : "information";
+  const onInformation = activeTab === "information";
   const [record, lookups] = await Promise.all([
     getChangeControlDetail(id),
     getChangeControlLookups(),
@@ -181,14 +182,15 @@ async function ChangeControlDetailPageAuthenticatedContent({
         back={{ href: qmsListingReturnTo("/changes", returnTo), label: "Controles de Cambios" }}
         title={qmsRecordDisplayCode(record.qmsRecord, "Control de Cambio sin código")}
         chips={<>
-          <span className="badge neutral">{classificationLabel(record.classification)}</span>
+          {/* D-117 (H-05): en Información, estado, clasificación, solicitud y departamento no se repiten en la cabecera. */}
+          {onInformation ? null : <span className={`badge ${record.classification?.toLowerCase() ?? "neutral"}`}>{classificationLabel(record.classification)}</span>}
           <span className={`badge ${record.executionStatus === "EXECUTED" ? "closed" : "warning"}`}>{executionStatusLabel(record.executionStatus)}</span>
           <span className={`badge ${record.effectivenessStatus === "ACCEPTABLE" ? "closed" : record.effectivenessStatus === "NOT_ACCEPTABLE" ? "major" : record.effectivenessStatus === "NOT_APPLICABLE" ? "neutral" : "warning"}`}>Eficacia {effectivenessStatusLabel(record.effectivenessStatus)}</span>
-          <span className={`badge ${record.finalStatus === "CLOSED" ? "closed" : record.finalStatus === "DRAFT" ? "neutral" : "open"}`}>{finalStatusLabel(record.finalStatus)}</span>
-          <span className={`badge ${functionalStatusTone(record)}`}>{functionalStatusLabel(record)}</span>
+          {onInformation && finalStatusLabel(record.finalStatus) === functionalStatusLabel(record) ? null : <span className={`badge ${record.finalStatus === "CLOSED" ? "closed" : record.finalStatus === "DRAFT" ? "neutral" : "open"}`}>{finalStatusLabel(record.finalStatus)}</span>}
+          {onInformation ? null : <span className={`badge ${functionalStatusTone(record)}`}>{functionalStatusLabel(record)}</span>}
           {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
         </>}
-        subtitle={<>Solicitud {formatDate(record.requestDate)} · {record.departmentCodeSnapshot ?? "Sin departamento"} · Dictamen {dictamenResultLabel(record.dictamenResult)}</>}
+        subtitle={<>{onInformation ? null : <>Solicitud {formatDate(record.requestDate)} · {record.departmentCodeSnapshot ?? "Sin departamento"} · </>}Dictamen {dictamenResultLabel(record.dictamenResult)}</>}
         annul={<QmsAdministrativeStatus part="action"
         qmsRecordId={record.qmsRecord.id}
         isActive={record.qmsRecord.isActive}
@@ -234,39 +236,22 @@ async function ChangeControlDetailPageAuthenticatedContent({
       {activeTab === "information" ? (
         <>
         <RecordKeyFacts facts={[
-          { label: "Estado", value: functionalStatusLabel(record), badgeClass: functionalStatusTone(record) },
-          { label: "Solicitud", value: formatDate(record.requestDate) },
-          { label: "Implantación prevista", value: formatDate(record.plannedImplementationDate), tone: dueTone(record.plannedImplementationDate, new Date(), record.finalStatus === "CLOSED" || record.executionStatus === "EXECUTED") },
+          { label: "Estado", value: functionalStatusLabel(record), badgeClass: functionalStatusTone(record), anchorId: reviewTarget.infoStatus.anchorId, marker: <ReviewMarker target={reviewTarget.infoStatus} /> },
+          { label: "Solicitud", value: formatDate(record.requestDate), anchorId: reviewTarget.infoRequestDate.anchorId, marker: <ReviewMarker target={reviewTarget.infoRequestDate} /> },
+          { label: "Implantación prevista", value: formatDate(record.plannedImplementationDate), tone: dueTone(record.plannedImplementationDate, new Date(), record.finalStatus === "CLOSED" || record.executionStatus === "EXECUTED"), anchorId: reviewTarget.infoPlannedDate.anchorId, marker: <ReviewMarker target={reviewTarget.infoPlannedDate} /> },
           { label: "Dictamen", value: formatDate(record.dictamenDate) },
           { label: "Responsable del seguimiento", value: record.followupResponsible },
           { label: "Cierre", value: formatDate(record.operationalClosedAt) },
         ]} />
         <div className="card change-overview-card">
-          <div className="section-title-row">
-            <div>
-              <p className="eyebrow">Resumen del expediente</p>
-              <h2>Información</h2>
-            </div>
-            <div id={reviewTarget.infoStatus.anchorId} className="review-target"><span className={`badge ${functionalStatusTone(record)}`}>{functionalStatusLabel(record)}</span><ReviewMarker target={reviewTarget.infoStatus} /></div>
-          </div>
+          <h2>Información</h2>
           <section id={reviewTarget.infoDescription.anchorId} className="review-target change-overview-description">
             <h3 className="review-target-heading"><span>Descripción del cambio</span><ReviewMarker target={reviewTarget.infoDescription} /></h3>
             <p>{displayValue(record.description)}</p>
           </section>
           <dl className="change-overview-meta">
-            <div className="info-item"><dt>Código</dt><dd>{record.qmsRecord.businessCode ?? "—"}</dd></div>
             <div id={reviewTarget.infoDepartment.anchorId} className="review-target info-item"><dt><span>Departamento</span><ReviewMarker target={reviewTarget.infoDepartment} /></dt><dd>{department}</dd></div>
-            <div id={reviewTarget.infoClassification.anchorId} className="review-target info-item"><dt><span>Clasificación</span><ReviewMarker target={reviewTarget.infoClassification} /></dt><dd><span className="badge neutral">{classificationLabel(record.classification)}</span></dd></div>
-          </dl>
-          <dl className="change-date-pair">
-            <div id={reviewTarget.infoRequestDate.anchorId} className="review-target">
-              <dt><span>Fecha de solicitud</span><ReviewMarker target={reviewTarget.infoRequestDate} /></dt>
-              <dd>{formatDate(record.requestDate)}</dd>
-            </div>
-            <div id={reviewTarget.infoPlannedDate.anchorId} className="review-target">
-              <dt><span>Fecha prevista de implementación</span><ReviewMarker target={reviewTarget.infoPlannedDate} /></dt>
-              <dd>{formatDate(record.plannedImplementationDate)}</dd>
-            </div>
+            <div id={reviewTarget.infoClassification.anchorId} className="review-target info-item"><dt><span>Clasificación</span><ReviewMarker target={reviewTarget.infoClassification} /></dt><dd><span className={`badge ${record.classification?.toLowerCase() ?? "neutral"}`}>{classificationLabel(record.classification)}</span></dd></div>
           </dl>
         </div>
         </>

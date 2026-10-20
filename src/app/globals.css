@@ -9,6 +9,19 @@
   --blue-dark: #0b4fa4;
   --blue-soft: #eaf3ff;
   --shadow: 0 8px 24px rgba(22, 52, 88, 0.07);
+  /* D-117 (H-16): variables de tamaños, radios, alturas y colores de estado; se aplican a lo que toca cada entrega. */
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-md: 13px;
+  --font-base: 14px;
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-pill: 999px;
+  --control-height: 40px;
+  --danger: #9d2d2d;
+  --danger-strong: #b42318;
+  --success: #23663f;
+  --warning: #855d10;
 }
 
 /* 4B3-C — audit trail uses the existing cards, tabs and QMS palette. */
@@ -39,7 +52,7 @@
 @media(max-width:480px){.audit-trail-filters{grid-template-columns:1fr}}
 
 * { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 button, input, select, textarea { font: inherit; }
 /* Entrega 1 (D-117): anillo de foco común con teclado; los controles con foco propio lo conservan. */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
@@ -2923,3 +2936,29 @@ button[disabled] {
 /* D-117 (H-09): resumen de campos pendientes con enlace a cada campo. */
 .invalid-fields-summary:focus { outline: 2px solid var(--blue); outline-offset: 2px; }
 .invalid-fields-summary a { color: inherit; font-weight: 650; }
+
+/* D-117, entrega 3 — coherencia. Tamaños comunes de tabla, campos y pastillas sin cambiar el diseño. */
+/* H-07: celdas de 13 px, pastillas de 12 px y casillas de selección más grandes. */
+th, td { font-size: var(--font-md); }
+.badge { font-size: var(--font-sm); }
+.reminder-select-column input[type="checkbox"] { width: 20px; height: 20px; margin: 2px; cursor: pointer; vertical-align: middle; }
+/* H-08: altura común de 40 px en los campos de una línea de filtros y formularios. */
+.filter-panel input, .filter-panel select, .filter-placeholder select, .multi-filter > summary, .field input, .field select { min-height: var(--control-height); }
+/* H-10: el código del expediente se ve igual en todos los listados. */
+td[data-column-key="code"] > a, .sticky-code > a { color: var(--blue-dark); font-weight: 700; text-decoration: none; }
+td[data-column-key="code"] > a:hover, .sticky-code > a:hover { text-decoration: underline; }
+td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: inherit; }
+/* H-22: los botones de acción de la cabecera no se parten en dos líneas (su fila ya pasa a la siguiente línea). */
+.record-actions .button { white-space: nowrap; }
+/* «Guardar vista» con el mismo tamaño que los botones vecinos («Buscar», «Limpiar filtros»). */
+.saved-views .button.small { min-height: var(--control-height); padding: 0 16px; font-size: var(--font-base); }
+.saved-views select, .filter-panel .saved-views select { height: var(--control-height); min-height: var(--control-height); font-size: var(--font-md); }
+/* H-19: el listado de PNT conserva su estructura con el código y las pastillas de los demás listados. */
+.pnt-list-table td:first-child > a { color: var(--blue-dark); font-weight: 700; text-decoration: none; }
+.pnt-list-table td:first-child > a:hover { text-decoration: underline; }
+.pnt-list-table .badge { white-space: nowrap; }
+/* H-22: en móvil, los botones de la cabecera de los listados pasan a otra fila en vez de partirse. */
+@media (max-width: 759px) {
+  .page-heading .heading-actions { flex-wrap: wrap; }
+  .page-heading .heading-actions :is(.button, summary.button) { white-space: nowrap; }
+}

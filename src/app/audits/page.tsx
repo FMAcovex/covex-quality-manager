@@ -1,4 +1,5 @@
 import { SavedViews } from "@/components/saved-views";
+import { ListPagination } from "@/components/qms-list-pagination";
 import { listSavedViews } from "@/lib/saved-views/queries";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -115,7 +116,7 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
         findings: String(r.findings.filter(f => f.findingType !== "RECOMMENDATION").length), critical: String(r.findings.filter(f => f.criticality === "CRITICAL").length), major: String(r.findings.filter(f => f.criticality === "MAJOR").length), minor: String(r.findings.filter(f => f.criticality === "MINOR").length), recommendations: String(r.findings.filter(f => f.findingType === "RECOMMENDATION").length), pendingActions: String(r.findings.reduce((n,f) => n + f.actions.filter(a => !isTerminalAction(a.status)).length,0)), derivedRecords: String(r.qmsRecord._count.sourceRelations), nextReview: auditDate(pendingAuditReviewDate(r.followups,new Set(r.findings.map(f=>f.id)))),
       }; return <tr key={r.id}>{auditColumns.map(c => <td key={c.key} data-column-key={c.key}>{cells[c.key as keyof typeof cells] || "—"}</td>)}</tr>;
     })}</tbody></table>{!rows.length ? <p className="empty-state">No hay auditorías con estos filtros.</p> : null}</div>
-    <nav className="heading-actions" aria-label="Paginación">{page > 1 ? <Link className="button small" href={pageHref(page-1)}>Anterior</Link> : null}{page < pages ? <Link className="button small" href={pageHref(page+1)}>Siguiente</Link> : null}</nav>
+    <ListPagination total={total} page={page} pageCount={pages} pageSize={25} href={pageHref}/>
   </section>;
 }
 

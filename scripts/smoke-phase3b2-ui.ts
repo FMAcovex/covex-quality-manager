@@ -49,6 +49,8 @@ async function main() {
       assert.equal(await page.locator(".pnt-list-table tbody tr").count(), 25);
       const counts = await page.locator(".pnt-summary").innerText();
       await page.getByRole("link", { name: "Siguiente", exact: true }).click();
+      // La paginación navega en el cliente: esperar a la URL nueva antes de comprobarla.
+      await page.waitForURL((url) => url.searchParams.get("page") === "2");
       await page.waitForLoadState("networkidle");
       assert.equal(new URL(page.url()).searchParams.get("page"), "2");
       assert.equal(await page.locator(".pnt-summary").innerText(), counts);

@@ -8,6 +8,8 @@ import { PermissionProvider } from "@/components/permissions";
 import { requireUser } from "@/lib/auth/session";
 import { presentationAccess } from "@/lib/auth/presentation";
 import { AccessError } from "@/lib/auth/context";
+// D-117 (H-02): Inter incluida en la aplicación (licencia OFL), sin depender de Internet ni de las fuentes del equipo.
+import "@fontsource-variable/inter";
 import "./globals.css";
 
 export const metadata: Metadata = {

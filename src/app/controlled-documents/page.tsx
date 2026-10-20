@@ -1,4 +1,5 @@
 import { SavedViews } from "@/components/saved-views";
+import { ListPagination } from "@/components/qms-list-pagination";
 import { listSavedViews } from "@/lib/saved-views/queries";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -64,7 +65,7 @@ async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Pr
    })}</tbody></table></div></div>
    {!result.rows.length && <div className="pnt-empty">No hay documentos que cumplan los filtros indicados.</div>}
    <p className="muted-note pnt-table-hint">Desplaza la tabla horizontalmente para consultar todas las columnas.</p>
-   <nav className="pnt-pagination" aria-label="Paginación"><span>Página {result.page} de {result.pages} · 25 filas por página</span><div>{result.page>1 && <Link className="button" href={link({page:String(result.page-1)})}>Anterior</Link>}{result.page<result.pages && <Link className="button" href={link({page:String(result.page+1)})}>Siguiente</Link>}</div></nav>
+   <ListPagination total={result.rowCount} page={result.page} pageCount={result.pages} pageSize={25} href={(page) => link({ page: String(page) })} />
   </section>
  </section>;
 }

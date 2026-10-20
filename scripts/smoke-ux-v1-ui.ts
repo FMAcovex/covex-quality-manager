@@ -42,7 +42,17 @@ async function main() {
       const facts = page.locator(".record-key-facts .key-fact");
       assert(await facts.count() >= 4, `${path}: al menos 4 datos clave`);
       assert.equal(await facts.first().locator("dd .badge").count(), 1, `${path}: el estado en su chip de color`);
+      // D-117 (H-05): en la pestaña de la franja, la cabecera no repite sus datos.
+      if (!path.startsWith("/controlled-documents")) {
+        const factValues = (await page.locator(".record-key-facts dd").allInnerTexts()).map(t => t.trim()).filter(t => t && t !== "—");
+        const chips = (await page.locator(".record-title-line .badge").allInnerTexts()).map(t => t.trim());
+        assert(!chips.some(chip => factValues.includes(chip)), `${path}: la cabecera no repite la franja (${chips.join(", ")} / ${factValues.join(", ")})`);
+      }
     }
+    // D-117 (H-05): el resumen de Desviaciones no repite la franja y la clasificación conserva su ancla de revisión en ella.
+    await visit(page, `/deviations/${deviation.id}`);
+    assert.equal(await page.locator(".deviation-summary-card dt").filter({ hasText: /^(En plazo|Fecha de cierre|Clasificación)$/ }).count(), 0, "Resumen sin datos de la franja");
+    assert.equal(await page.locator(".record-key-facts .key-fact.review-target").count(), 1, "Ancla de la clasificación en la franja");
     // Etiquetas claras de la franja (revisión final V1).
     await visit(page, `/deviations/${deviation.id}`);
     assert((await page.locator(".record-key-facts dt").allTextContents()).includes("En plazo"), "Desviación: «En plazo»");

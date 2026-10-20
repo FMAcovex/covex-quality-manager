@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ListPagination } from "@/components/qms-list-pagination";
 import { MultiSelectFilter } from "@/components/multi-select-filter";
 import { PermissionGate } from "@/components/permissions";
 import { SavedViews } from "@/components/saved-views";
@@ -113,7 +114,7 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
         <td>{formatOosDate(row.closedAt)}</td>
       </tr>) : <tr><td colSpan={10} className="empty-state"><strong>No hay OOS con estos filtros.</strong></td></tr>}</tbody>
     </table></div></div>
-    <nav className="form-footer" aria-label="Paginación de OOS"><span>{count} resultados · página {page} de {Math.max(1, Math.ceil(count / pageSize))}</span>{page > 1 ? <Link className="button small" href={pageHref(page - 1)}>Anterior</Link> : null}{page * pageSize < count ? <Link className="button small" href={pageHref(page + 1)}>Siguiente</Link> : null}</nav>
+    <ListPagination total={count} page={page} pageCount={Math.ceil(count / pageSize)} pageSize={pageSize} href={pageHref} />
   </section>;
 }
 

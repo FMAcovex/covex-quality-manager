@@ -82,6 +82,7 @@ async function ReturnDetailPageAuthenticatedContent({
   const { id } = await params;
   const { tab: raw, review, thread, returnTo, auditPage } = await searchParams;
   const tab = tabs.some(([key]) => key === raw) ? raw! : "summary";
+  const onSummary = tab === "summary";
   const r = await getReturnDetail(id);
   if (!r) notFound();
 
@@ -250,12 +251,13 @@ async function ReturnDetailPageAuthenticatedContent({
         <RecordHeader
           back={{ href: qmsListingReturnTo("/returns", returnTo), label: "Devoluciones" }}
           title={qmsRecordDisplayCode(r.qmsRecord)}
-          chips={<>
+          /* D-117 (H-05): en el resumen, estado, tipo, decisión, comunicación y cliente están en la franja o en la tarjeta. */
+          chips={onSummary ? undefined : <>
             <span className={`badge ${r.status === "DRAFT" ? "neutral" : r.status === "OPEN" ? "open" : "closed"}`}>{returnStatusLabel(r.status)}</span>
             <span className="badge neutral">{returnTypeLabel(r.returnType)}</span>
             <span className="badge neutral">{returnDecisionLabel(r.decision)}</span>
           </>}
-          subtitle={<>Comunicación {formatDate(r.communicationDate)} · {txt(r.customerEntity)}</>}
+          subtitle={onSummary ? undefined : <>Comunicación {formatDate(r.communicationDate)} · {txt(r.customerEntity)}</>}
           annul={<QmsAdministrativeStatus part="action"
           qmsRecordId={r.qmsRecord.id}
           isActive={r.qmsRecord.isActive}
@@ -332,14 +334,6 @@ async function ReturnDetailPageAuthenticatedContent({
                     <dd>{txt(r.country)}</dd>
                   </div>
                   <div className="info-item">
-                    <dt>Fecha comunicación</dt>
-                    <dd>{formatDate(r.communicationDate)}</dd>
-                  </div>
-                  <div className="info-item">
-                    <dt>Fecha recepción</dt>
-                    <dd>{formatDate(r.receivedAt)}</dd>
-                  </div>
-                  <div className="info-item">
                     <dt>Área</dt>
                     <dd>{r.departmentCodeSnapshot ?? r.department?.code ?? "—"}</dd>
                   </div>
@@ -357,10 +351,6 @@ async function ReturnDetailPageAuthenticatedContent({
                     </dt>
                     <dd>{returnDecisionLabel(r.decision)}</dd>
                   </div>
-                  <div className="info-item">
-                    <dt>Fecha decisión</dt>
-                    <dd>{formatDate(r.decisionDate)}</dd>
-                  </div>
                   <div className="info-item full">
                     <dt>Dirección</dt>
                     <dd>{txt(r.address)}</dd>
@@ -372,10 +362,6 @@ async function ReturnDetailPageAuthenticatedContent({
                   <div className="info-item">
                     <dt>N.º albarán</dt>
                     <dd>{txt(r.deliveryNote)}</dd>
-                  </div>
-                  <div className="info-item">
-                    <dt>Fecha cierre</dt>
-                    <dd>{formatDate(r.closedAt)}</dd>
                   </div>
                   <div
                     id={reviewTarget.reasonObservations.anchorId}
