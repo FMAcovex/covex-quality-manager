@@ -136,6 +136,17 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**BE1-B: registro de errores con referencia visible (2026-10-20, D-113):**
+- **Para IT:** cada fallo del servidor deja una línea JSON en la salida estándar con la referencia que ve el usuario, sin mensajes ni datos de expedientes. Cómo buscarla, en [PHASE_4B2.md](PHASE_4B2.md) §14.
+- **Referencias visibles:**
+  - errores no controlados: la «Referencia técnica» de la página de error;
+  - fallos inesperados al guardar: «Referencia para IT: E-…».
+- **Fallos que antes se perdían:** se registran 7 que antes se ocultaban (sesión, descarga PNT, plantillas, importación). Una prueba impide nuevos `catch` de servidor sin registro ni justificación.
+- **Comprobado** con:
+  - pruebas unitarias del formato y de la ausencia de datos;
+  - el smoke `be1b:smoke`: un error no controlado real, cuya referencia de la pantalla está en el registro del servidor (y falla sin `onRequestError`);
+  - la regresión.
+
 **BE1-A: ficheros fuera de las lecturas por defecto (2026-10-20, D-112):**
 - **Qué cambia:** la aplicación ya no lee de PostgreSQL los bytes de plantillas, Word generados, PDF firmados, originales, documentos PNT, programas anuales, planes CAPA de auditorías ni exportaciones del historial salvo para descargarlos, generar documentos o verificarlos. Las fichas de Desviaciones, CAPA y Cambios y sus formularios eran los que los cargaban sin necesidad.
 - **Sin cambios visibles:** mismas pantallas, permisos, checksums y custodia. Sin migraciones.

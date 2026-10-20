@@ -39,7 +39,7 @@
 
 - **Módulo OOS (aprobado 2026-10-16, D-088):** PR documental OOS-0 con el diseño según el PNT GC-10/014/04 e implementación en OOS-1 a OOS-3. Véase [OOS_DESIGN.md](OOS_DESIGN.md). Cada PR de implementación mantiene su aprobación de alcance.
 
-- **BE1 — backend (aprobado 2026-10-20, D-112):** tres PR independientes con medición antes/después. **BE1-A** (hecha): ficheros fuera de las lecturas por defecto y medición de los ocho módulos ([PHASE_BE1A.md](PHASE_BE1A.md)). **BE1-B** (pendiente de aprobación de alcance): registro estructurado de errores con código de referencia visible, sin librerías nuevas, y registro de los fallos que hoy se pierden. **BE1-C** (pendiente): índices solo donde la medición los justifique (orden de los listados, búsquedas «contiene»). La custodia de ficheros fuera de PostgreSQL se decidirá con IT.
+- **BE1 — backend (aprobado 2026-10-20, D-112):** tres PR independientes con medición antes/después. **BE1-A** (hecha): ficheros fuera de las lecturas por defecto y medición de los ocho módulos ([PHASE_BE1A.md](PHASE_BE1A.md)). **BE1-B** (hecha, D-113): registro estructurado de errores con código de referencia visible, sin librerías nuevas, y registro de los fallos que antes se perdían. **BE1-C** (pendiente): índices solo donde la medición los justifique (orden de los listados, búsquedas «contiene»). La custodia de ficheros fuera de PostgreSQL se decidirá con IT.
 
 La evaluación de UX en Work/Codex precederá a B/C y se dividirá en cambios pequeños revisables. Dashboard y backend tendrán PR independientes según impacto.
 

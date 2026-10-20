@@ -18,6 +18,7 @@
     "phase3b2:ui:smoke": "tsx scripts/smoke-phase3b2-ui.ts",
     "be1:benchmark": "node --expose-gc --conditions=react-server --import tsx scripts/benchmark-be1.ts",
     "be1a:smoke": "node --conditions=react-server --import tsx scripts/smoke-be1a-binaries.ts",
+    "be1b:smoke": "tsx scripts/smoke-be1b-error-log.ts",
     "phase3b1:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase3b1.ts",
     "phase3b1:ui:smoke": "tsx scripts/smoke-phase3b1-ui.ts",
     "ux-v1:ui:smoke": "tsx scripts/smoke-ux-v1-ui.ts",
