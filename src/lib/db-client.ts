@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { currentIdentity } from "./auth/context";
 import { binaryOmit } from "./db-binary-omit";
+import { withJitDisabled } from "./db-url";
 
 type AppClientOptions = {
   log?: (Prisma.LogLevel | Prisma.LogDefinition)[];
@@ -15,7 +16,7 @@ type AppClientOptions = {
  * BE1-A (D-112), no lee los bytes de fichero salvo que la consulta los pida.
  */
 export function createAppPrismaClient({ log = process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"], onQuery, omitBinaries = true }: AppClientOptions = {}): PrismaClient {
-  const base = new PrismaClient({ log, ...(omitBinaries ? { omit: binaryOmit } : {}) });
+  const base = new PrismaClient({ log, ...(omitBinaries ? { omit: binaryOmit } : {}), ...(process.env.DATABASE_URL ? { datasourceUrl: withJitDisabled(process.env.DATABASE_URL) } : {}) });
   if (onQuery) (base as unknown as { $on(event: "query", callback: (event: Prisma.QueryEvent) => void): void }).$on("query", onQuery);
   return base.$extends({
     query: {

@@ -75,7 +75,7 @@ export async function getAuditList(filters: AuditListFilters) {
   if (errors.length) (where.AND as Prisma.AuditWhereInput[]).push({ id: { in: [] } });
   return prisma.$transaction(async tx => {
     if (filters.signedPdf === "yes" || filters.signedPdf === "no") {
-      const signed = await tx.$queryRaw<{qmsRecordId:string}[]>(Prisma.sql`SELECT v."qmsRecordId" FROM (SELECT DISTINCT ON ("qmsRecordId") id, "qmsRecordId" FROM "QmsRecordVersion" ORDER BY "qmsRecordId", "sequenceNumber" DESC) v JOIN "RecordVersionDocument" d ON d."recordVersionId"=v.id AND d.kind='SIGNED_PDF'`);
+      const signed = await tx.$queryRaw<{qmsRecordId:string}[]>(Prisma.sql`SELECT v."qmsRecordId" FROM "RecordVersionDocument" d JOIN "QmsRecordVersion" v ON v.id=d."recordVersionId" WHERE d.kind='SIGNED_PDF' AND NOT EXISTS (SELECT 1 FROM "QmsRecordVersion" w WHERE w."qmsRecordId"=v."qmsRecordId" AND w."sequenceNumber">v."sequenceNumber")`);
       (where.AND as Prisma.AuditWhereInput[]).push({qmsRecordId: filters.signedPdf === "yes" ? {in:signed.map(v=>v.qmsRecordId)} : {notIn:signed.map(v=>v.qmsRecordId)}});
     }
     // Latest followup per active scope (general or active finding), including an explicit blank.
