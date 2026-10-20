@@ -25,7 +25,7 @@ async function main() {
     await submit(page); await page.waitForURL(/\/audits\/[a-f0-9-]+$/);
     await page.waitForLoadState("networkidle");
     const audit = await prisma.audit.findFirstOrThrow({where:{title:marker}});
-    await page.getByRole("link",{name:"Editar",exact:true}).click();
+    await page.getByRole("link",{name:"Editar / seguimiento",exact:true}).click();
     await page.waitForURL(new RegExp(`/audits/${audit.id}/edit$`)); await page.waitForLoadState("networkidle");
     await page.locator('select[name="auditType"]').selectOption("INTERNAL");
     await page.locator('select[name="scenario"]').selectOption("INTERNAL_COVEX");
@@ -89,6 +89,16 @@ async function main() {
     assert.equal(await page.getByLabel("Entidad auditada / proveedor").inputValue(),"Proveedor conservado");
     assert.equal(await page.getByLabel("Dirección / lugar").inputValue(),"Dirección conservada");
     await navigate(page,`${base}/audits/${audit.id}`);
+    await page.getByRole("button",{name:"Anular expediente",exact:true}).click();
+    // D-117 (H-01): la ventana tiene título accesible, recibe el foco, lo retiene con Tab y se cierra con Esc.
+    const annulDialog = page.getByRole("dialog",{name:"Anular expediente"});
+    await annulDialog.waitFor();
+    assert.equal(await annulDialog.evaluate(node => node.contains(document.activeElement)),true,"El foco debe entrar en la ventana de anulación.");
+    for (let i = 0; i < 8; i++) await page.keyboard.press("Tab");
+    assert.equal(await annulDialog.evaluate(node => node.contains(document.activeElement)),true,"Tab no debe sacar el foco de la ventana.");
+    await page.keyboard.press("Escape");
+    await annulDialog.waitFor({state:"detached"});
+    assert.equal(await page.evaluate(() => document.activeElement?.textContent?.trim()),"Anular expediente","Al cerrar, el foco vuelve al botón que abrió la ventana.");
     await page.getByRole("button",{name:"Anular expediente",exact:true}).click();
     await page.getByLabel("Motivo",{exact:true}).fill("Anulación UI de fixture");
     await page.locator('[role="dialog"]').getByRole("button",{name:"Anular expediente",exact:true}).click();

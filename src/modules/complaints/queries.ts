@@ -16,7 +16,8 @@ export async function getComplaintList(filters:ComplaintListFilters){
  const pageCount=Math.max(1,Math.ceil(filteredTotal/pageSize));
  const requestedPage=Number(filters.page);
  const page=Number.isSafeInteger(requestedPage)&&requestedPage>0?Math.min(requestedPage,pageCount):1;
- const administrativeWhere:Prisma.ComplaintWhereInput=filters.administrative==="ANNULLED"?{qmsRecord:{isActive:false}}:filters.administrative==="ALL"?{}:{qmsRecord:{isActive:true}};
+ // D-117 (H-15): los contadores son totales del módulo; nunca cuentan anulados, sea cual sea el filtro.
+ const counterWhere: Prisma.ComplaintWhereInput = { qmsRecord: { isActive: true } };
  const today=new Date();today.setHours(0,0,0,0);
 
  const [baseRows,departments,years,total,drafts,open,pendingPartII,pendingEfficacy,followupDue]=await Promise.all([
@@ -35,12 +36,12 @@ export async function getComplaintList(filters:ComplaintListFilters){
   }),
   prisma.department.findMany({where:{isActive:true},orderBy:{code:"asc"}}),
   prisma.qmsRecord.findMany({where:{recordType:QmsRecordType.COMPLAINT,year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}}),
-  prisma.complaint.count({where:{AND:[administrativeWhere,{status:{not:"DRAFT"}}]}}),
-  prisma.complaint.count({where:{AND:[administrativeWhere,{status:"DRAFT"}]}}),
-  prisma.complaint.count({where:{AND:[administrativeWhere,{status:"OPEN"}]}}),
-  prisma.complaint.count({where:{AND:[administrativeWhere,{status:"OPEN",partIIRequired:null,conclusion:{not:null}}]}}),
-  prisma.complaint.count({where:{AND:[administrativeWhere,{status:"OPEN",partIIRequired:true,effectivenessStatus:"PENDING"}]}}),
-  prisma.complaint.count({where:{AND:[administrativeWhere,{status:"OPEN",nextFollowupDate:{lt:today}}]}})
+  prisma.complaint.count({where:{AND:[counterWhere,{status:{not:"DRAFT"}}]}}),
+  prisma.complaint.count({where:{AND:[counterWhere,{status:"DRAFT"}]}}),
+  prisma.complaint.count({where:{AND:[counterWhere,{status:"OPEN"}]}}),
+  prisma.complaint.count({where:{AND:[counterWhere,{status:"OPEN",partIIRequired:null,conclusion:{not:null}}]}}),
+  prisma.complaint.count({where:{AND:[counterWhere,{status:"OPEN",partIIRequired:true,effectivenessStatus:"PENDING"}]}}),
+  prisma.complaint.count({where:{AND:[counterWhere,{status:"OPEN",nextFollowupDate:{lt:today}}]}})
  ]);
 
  return {rows: await withActiveReviewCounts(baseRows),pagination:{page,pageSize,pageCount,total:filteredTotal},departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{

@@ -70,7 +70,7 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
     { name: "department", label: "Departamento/Área", options: departmentOptions },
     { name: "status", label: "Estado", options: options(auditStatusLabels) },
     { name: "modality", label: "Modalidad", options: options(auditModalityLabels) },
-    { name: "quality", label: "Control", options: options(auditQualityLabels) },
+    { name: "quality", label: "Calidad del dato", options: options(auditQualityLabels) },
     { name: "criticality", label: "Criticidad de hallazgos", options: options(criticalityLabels) },
     ...yesNoFilters.map(([name, label]) => ({ name, label, options: yesNoOptions })),
     ...dateFilters.map(([name, label]) => ({ name, label, options: [], format: isoDate })),
@@ -98,7 +98,7 @@ async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: 
       <MultiSelectFilter name="department" label="Departamento/Área" selected={filters.department ?? []} options={departmentOptions}/>
       <MultiSelectFilter name="status" label="Estado" selected={filters.status ?? []} options={options(auditStatusLabels)}/>
       <MultiSelectFilter name="modality" label="Modalidad" selected={filters.modality ?? []} options={options(auditModalityLabels)}/>
-      <MultiSelectFilter name="quality" label="Control" selected={filters.quality ?? []} options={options(auditQualityLabels)}/>
+      <MultiSelectFilter name="quality" label="Calidad del dato" selected={filters.quality ?? []} options={options(auditQualityLabels)}/>
       <MultiSelectFilter name="criticality" label="Criticidad de hallazgos" selected={filters.criticality ?? []} options={options(criticalityLabels)}/>
       {yesNoFilters.map(([name,label]) => <label key={name} className="filter-placeholder"><span>{label}</span><select name={name} defaultValue={String(filters[name] ?? "")}><option value="">Todos</option>{yesNoOptions.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}</select></label>)}
       {dateFilters.map(([name,label]) => <label className="filter-placeholder" key={name}><span>{label}</span><input type="date" name={name} defaultValue={String(filters[name] ?? "")}/></label>)}

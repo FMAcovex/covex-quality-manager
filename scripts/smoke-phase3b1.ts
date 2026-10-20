@@ -62,8 +62,12 @@ async function main() {
       assert.equal(counters.drafts - baselineCounters[m].drafts, 1);
       assert.equal(counters.open - baselineCounters[m].open, fixture.size - 3);
       assert.deepEqual((await list({ ...base, q: "no-match", page: "99" })).counters, first.counters);
-      assert.equal((await list({ ...base, administrative: "ALL" })).pagination.total, fixture.size);
-      assert.equal((await list({ ...base, administrative: "ANNULLED" })).pagination.total, 1);
+      const all = await list({ ...base, administrative: "ALL" }), annulled = await list({ ...base, administrative: "ANNULLED" });
+      assert.equal(all.pagination.total, fixture.size);
+      assert.equal(annulled.pagination.total, 1);
+      // D-117 (H-15): los contadores son totales del módulo y nunca cuentan anulados, sea cual sea el filtro administrativo.
+      assert.deepEqual(all.counters, first.counters);
+      assert.deepEqual(annulled.counters, first.counters);
       const combined = await allPages(list, { ...base, year: ["2025"], department: [fixture.departments[1]], status: ["OPEN", "CLOSED"] });
       assert.equal(combined.length, 179);
       assert.equal((await list({ ...base, status: ["DRAFT"] })).pagination.total, 1);

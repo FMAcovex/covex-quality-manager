@@ -1,5 +1,5 @@
 export const changeControlColumns = [
-  { key: "control", label: "Control", index: 0 },
+  { key: "control", label: "Calidad del dato", index: 0 },
   { key: "review", label: "Revisión", index: 1 },
   { key: "department", label: "Departamento", index: 2 },
   { key: "code", label: "Codificación", index: 3, locked: true },

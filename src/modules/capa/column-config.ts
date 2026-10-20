@@ -1,5 +1,5 @@
 export const capaColumns = [
-  { key: "control", label: "Control", index: 0 },
+  { key: "control", label: "Calidad del dato", index: 0 },
   { key: "review", label: "Revisión", index: 1 },
   { key: "type", label: "Tipo", index: 2 },
   { key: "code", label: "Código", index: 3, locked: true },

@@ -174,7 +174,7 @@ async function DeviationsPageAuthenticatedContent({
         <span><strong>{counters.open}</strong> abiertas</span>
         <span><strong>{counters.overdue}</strong> fuera de plazo</span>
         <span><strong>{counters.followupDue}</strong> seguimientos vencidos</span>
-      </p>
+      <span className="list-counters-note">Totales del módulo sin filtros. No incluyen anulados; los borradores se cuentan aparte.</span></p>
 
       <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="deviation-list-table" moduleLabel="Desviaciones" hideWhenEmpty /></PermissionGate>
 
@@ -182,7 +182,7 @@ async function DeviationsPageAuthenticatedContent({
         <div className="table-scroll">
           <table id="deviation-list-table">
             <thead><tr>
-<th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las desviaciones visibles" /></PermissionGate></th><th data-column-key="control">Control</th><th data-column-key="review">Revisión</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
+<th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las desviaciones visibles" /></PermissionGate></th><th data-column-key="control">Calidad del dato</th><th data-column-key="review">Revisión</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="material">Material / Proceso</th><th data-column-key="provenance">Procedencia</th><th data-column-key="description">Descripción</th><th data-column-key="classification">Clasificación</th><th data-column-key="rootCause">Causa raíz</th><th data-column-key="opening">Apertura</th><th data-column-key="closing">Cierre</th><th data-column-key="status">Estado</th><th data-column-key="deadline">En plazo</th><th data-column-key="measures">Medidas adoptadas</th><th data-column-key="capa">Descripción CAPA</th><th data-column-key="document">Documento</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
             </tr></thead>
             <tbody>
               {rows.length ? rows.map((row) => (

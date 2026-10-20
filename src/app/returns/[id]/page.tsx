@@ -270,7 +270,7 @@ async function ReturnDetailPageAuthenticatedContent({
             {r.qmsRecord.isActive && r.status === "OPEN" ? (
               <PermissionGate permission="FOLLOWUP"><Link className="button" href={`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`}>+ Seguimiento</Link></PermissionGate>
             ) : null}
-            {r.qmsRecord.isActive ? <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit?tab=${tab}`, "/returns", returnTo)}>Editar</Link></PermissionGate> : null}
+            {r.qmsRecord.isActive ? <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/returns/${id}/edit?tab=${tab}`, "/returns", returnTo)}>Editar / seguimiento</Link></PermissionGate> : null}
           </>}
         />
         <QmsAdministrativeStatus part="banner"

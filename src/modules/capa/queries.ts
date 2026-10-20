@@ -87,12 +87,8 @@ export async function getCapaList(filters: CapaListFilters) {
   if (filters.followup === "scheduled") and.push({ nextFollowupDate: { gt: now } });
   if (filters.followup === "none") and.push({ nextFollowupDate: null });
   const where: Prisma.CapaWhereInput = and.length ? { AND: and } : {};
-  const administrativeWhere: Prisma.CapaWhereInput =
-    filters.administrative === "ANNULLED"
-      ? { qmsRecord: { isActive: false } }
-      : filters.administrative === "ALL"
-        ? {}
-        : { qmsRecord: { isActive: true } };
+  // D-117 (H-15): los contadores son totales del módulo; nunca cuentan anulados, sea cual sea el filtro.
+  const counterWhere: Prisma.CapaWhereInput = { qmsRecord: { isActive: true } };
 
   const pagination = qmsListPagination(await prisma.capa.count({ where }), filters.page);
   const [rows, departments, years, origins, total, drafts, open, pendingEfficacy, overdueFollowups] =
@@ -125,19 +121,19 @@ export async function getCapaList(filters: CapaListFilters) {
         orderBy: { year: "desc" },
       }),
       Promise.resolve([{ originType: "Desviación" }, { originType: "Reclamación" }, { originType: "Auditoría" }]),
-      prisma.capa.count({ where: { AND: [administrativeWhere, { status: { not: "DRAFT" } }] } }),
-      prisma.capa.count({ where: { AND: [administrativeWhere, { status: "DRAFT" }] } }),
-      prisma.capa.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
+      prisma.capa.count({ where: { AND: [counterWhere, { status: { not: "DRAFT" } }] } }),
+      prisma.capa.count({ where: { AND: [counterWhere, { status: "DRAFT" }] } }),
+      prisma.capa.count({ where: { AND: [counterWhere, { status: "OPEN" }] } }),
       prisma.capa.count({
         where: {
           AND: [
-            administrativeWhere,
+            counterWhere,
             { status: "CLOSED", effectivenessStatus: "PENDING", effectiveClosedAt: null },
           ],
         },
       }),
       prisma.capa.count({
-        where: { AND: [administrativeWhere, { status: "OPEN", nextFollowupDate: { lte: now } }] },
+        where: { AND: [counterWhere, { status: "OPEN", nextFollowupDate: { lte: now } }] },
       }),
     ]);
 

@@ -2,9 +2,10 @@
 
 import { authenticatedFetch } from "@/lib/auth/client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ActorField, useCanAct, usePresentationAccess } from "./permissions";
 import { formatAdministrativeDate } from "@/lib/qms/administrative-date";
+import { useModalDialog } from "./use-modal-dialog";
 
 export function QmsAdministrativeStatus({
   qmsRecordId,
@@ -34,6 +35,8 @@ export function QmsAdministrativeStatus({
   const canAnnul = useCanAct("ANNUL");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const titleId = useId();
+  const dialog = useModalDialog<HTMLDivElement>(open, () => setOpen(false));
 
   const action = isActive ? "ANNUL" : "REACTIVATE";
   const label = isActive ? "Anular expediente" : "Reactivar expediente";
@@ -98,11 +101,11 @@ export function QmsAdministrativeStatus({
 
       {open ? (
         <div className="manual-reminder-backdrop" role="presentation">
-          <div className="manual-reminder-dialog" role="dialog" aria-modal="true">
+          <div className="manual-reminder-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={dialog}>
             <div className="manual-reminder-dialog-heading">
               <div>
                 <p className="eyebrow">Estado administrativo</p>
-                <h2>{label}</h2>
+                <h2 id={titleId}>{label}</h2>
                 <p>
                   {isActive
                     ? reservesHistoricalCode ? "El expediente se conserva para trazabilidad y deja de aparecer en el listado habitual. Su código histórico queda reservado." : "El expediente se conservará para trazabilidad, dejará de aparecer en los listados habituales y su codificación quedará disponible para reutilización."
@@ -137,7 +140,7 @@ export function QmsAdministrativeStatus({
               </span>
               <button
                 type="button"
-                className={isActive ? "button danger" : "button primary"}
+                className={isActive ? "button danger solid" : "button primary"}
                 onClick={submit}
                 disabled={pending}
               >

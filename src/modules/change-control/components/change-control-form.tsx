@@ -3,6 +3,7 @@ import { usePresentationAccess, PermissionGate } from "@/components/permissions"
 import { CsrfField } from "@/components/csrf";
 
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
+import { InvalidFieldsSummary } from "@/components/invalid-fields-summary";
 
 import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
@@ -199,6 +200,7 @@ export function ChangeControlForm({
   return (
     <form key={state.formRevision ?? 0} action={formAction} className="record-form"><CsrfField />
     <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
+    <InvalidFieldsSummary />
       <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
       <input type="hidden" name="tasksJson" value={JSON.stringify(tasks)} />

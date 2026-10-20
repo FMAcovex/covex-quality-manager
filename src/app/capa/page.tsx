@@ -165,7 +165,7 @@ async function CapaPageAuthenticatedContent({
         <span><strong>{counters.open}</strong> abiertas</span>
         <span><strong>{counters.pendingEfficacy}</strong> cerradas con eficacia pendiente</span>
         <span><strong>{counters.overdueFollowups}</strong> con seguimiento vencido</span>
-      </p>
+      <span className="list-counters-note">Totales del módulo sin filtros. No incluyen anulados; los borradores se cuentan aparte.</span></p>
 
       <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="capa-list-table" moduleLabel="CAPA" hideWhenEmpty /></PermissionGate>
 
@@ -174,7 +174,7 @@ async function CapaPageAuthenticatedContent({
           <table id="capa-list-table" className="records-table capa-table">
             <thead>
               <tr>
-<th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las CAPA visibles" /></PermissionGate></th><th data-column-key="control">Control</th><th data-column-key="review">Revisión</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre y ejecución</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Verificación final</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
+<th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todas las CAPA visibles" /></PermissionGate></th><th data-column-key="control">Calidad del dato</th><th data-column-key="review">Revisión</th><th data-column-key="type">Tipo</th><th data-column-key="code">Código</th><th data-column-key="department">Departamento</th><th data-column-key="origin">Origen</th><th data-column-key="originCode">Código origen</th><th data-column-key="description">Descripción CAPA</th><th data-column-key="opening">Apertura</th><th data-column-key="planned">Fecha prevista</th><th data-column-key="status">Estado</th><th data-column-key="operationalClose">Cierre y ejecución</th><th data-column-key="effectiveness">Eficacia</th><th data-column-key="latestFollowup">Último seguimiento</th><th data-column-key="nextFollowup">Próximo seguimiento</th><th data-column-key="effectiveClose">Verificación final</th><th data-column-key="related">Relacionados</th><th data-column-key="observations">Observaciones</th>
               </tr>
             </thead>
             <tbody>

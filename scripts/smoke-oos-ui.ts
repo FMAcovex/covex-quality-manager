@@ -52,6 +52,19 @@ async function main() {
     for (const name of ["area", "departmentId", "materialKind", "materialName", "lotNumber", "detectionDescription"]) {
       assert.equal(await page.locator(`[name="${name}"]`).evaluate((element) => (element as HTMLInputElement).required), true, name);
     }
+    // D-117 (H-09): al guardar con campos pendientes, un resumen en español los lista todos con enlace a cada uno.
+    await page.locator('[name="area"]').selectOption("");
+    await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
+    const summary = page.locator(".invalid-fields-summary");
+    await summary.waitFor();
+    const missing = await summary.locator("li").allInnerTexts();
+    assert(missing.length >= 2, `El resumen debe listar todos los campos pendientes: ${missing.join(" | ")}`);
+    assert(missing.some((text) => /es obligatorio\.$/.test(text)), missing.join(" | "));
+    assert.equal(await summary.evaluate((node) => node === document.activeElement), true, "El resumen recibe el foco.");
+    const firstLink = summary.locator("a").first(), targetId = (await firstLink.getAttribute("href"))!.slice(1);
+    await firstLink.click();
+    assert.equal(await page.evaluate(() => document.activeElement?.id), targetId, "El enlace lleva al campo.");
+    assert.equal(page.url().includes(`/oos/${draft.id}/edit`), true, "No se envía el formulario.");
     await page.locator('[name="area"]').selectOption("MD");
     await page.locator('[name="departmentId"]').selectOption({ index: 1 });
     await page.locator('[name="materialKind"]').selectOption("RAW_OR_PACKAGING_MATERIAL");

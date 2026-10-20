@@ -31,7 +31,10 @@ async function main() {
     const rk=await prisma.auditFinding.findFirstOrThrow({where:{auditId:audit.id,reference:"Rk 01"}});
     let card=page.locator(`#audit-finding-${obs.id}`);
     await card.locator("header").getByRole("link",{name:"Editar",exact:true}).click();
-    form=card.locator(".audit-inline-editor .audit-child-form").first(); await form.waitFor(); await form.locator('[name="description"]').fill(`OBS editada ${marker}`); await form.locator('[name="sortOrder"]').fill("30"); await saveChild(page,form,"Guardar"); await page.locator("p.prose-value").filter({hasText:`OBS editada ${marker}`}).waitFor();
+    form=card.locator(".audit-inline-editor .audit-child-form").first(); await form.waitFor();
+    // Esperar al valor inicial antes de reescribir: si no, lo tecleado y el texto anterior pueden acabar concatenados.
+    const description=form.locator('[name="description"]'); await page.waitForFunction(([element,initial])=>(element as HTMLTextAreaElement).value===initial,[await description.elementHandle(),`OBS UI ${marker}`] as const);
+    await description.fill(`OBS editada ${marker}`); assert.equal(await description.inputValue(),`OBS editada ${marker}`,"Edición del hallazgo: solo el texto nuevo"); await form.locator('[name="sortOrder"]').fill("30"); await saveChild(page,form,"Guardar"); await page.locator("p.prose-value").filter({hasText:`OBS editada ${marker}`}).waitFor();
     assert.equal((await prisma.auditFinding.findUniqueOrThrow({where:{id:obs.id}})).reference,"OBS 01");
     card=page.locator(`#audit-finding-${obs.id}`); await card.getByRole("link",{name:"+ Añadir acción",exact:true}).click();
     form=page.locator(`#audit-new-action-${obs.id} .audit-child-form`); await form.waitFor();
