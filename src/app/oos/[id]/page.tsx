@@ -93,6 +93,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
     ["audit-trail", "Audit Trail"],
   ] as const;
   const tab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
+  const onSummary = tab === "summary";
   const basePath = `/oos/${id}`;
   const evaluation = readOosEvaluation(record.phaseIEvaluation);
   const statusBadge = record.status === "DRAFT" ? "neutral" : record.status === "OPEN" ? "open" : "closed";
@@ -124,12 +125,13 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
     <RecordHeader
       back={{ href: qmsListingReturnTo("/oos", returnTo), label: "OOS" }}
       title={qmsRecordDisplayCode(record.qmsRecord)}
-      chips={<>
+      /* D-117 (H-05): en el resumen, estado, fase, resultado, área, material y lote están en la franja o en las tarjetas. */
+      chips={onSummary ? undefined : <>
         <span className={`badge ${statusBadge}`}>{oosStatusLabels[record.status]}</span>
         {record.status !== "DRAFT" ? <span className="badge neutral">Fase {phase}</span> : null}
         {record.investigationResult ? <span className="badge neutral">{oosInvestigationResultLabels[record.investigationResult]}</span> : null}
       </>}
-      subtitle={<>{record.area ? oosAreaLabels[record.area] : "Área pendiente"} · {txt(record.materialName)} · lote {txt(record.lotNumber)}</>}
+      subtitle={onSummary ? undefined : <>{record.area ? oosAreaLabels[record.area] : "Área pendiente"} · {txt(record.materialName)} · lote {txt(record.lotNumber)}</>}
       annul={<QmsAdministrativeStatus part="action"
       qmsRecordId={record.qmsRecord.id}
       isActive={record.qmsRecord.isActive}
@@ -166,7 +168,6 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
     {tab === "summary" ? <>
       <RecordKeyFacts facts={[
         { label: "Estado", value: oosStatusLabels[record.status], badgeClass: statusBadge },
-        { label: "Fecha del OOS", value: formatOosDate(record.oosDate) },
         { label: "Emisión", value: formatOosDate(record.issueDate) },
         { label: "Detectado por", value: record.detectedBy },
         { label: "Cierre", value: formatOosDate(record.closedAt) },
@@ -175,7 +176,6 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
         <dl className="info-grid">
           <Item label="Área">{record.area ? oosAreaLabels[record.area] : "—"}</Item>
           <Item label="Departamento">{record.departmentCodeSnapshot ?? record.department?.code ?? "—"}</Item>
-          <Item label="Fecha de emisión">{formatOosDate(record.issueDate)}</Item>
           <Item label="Cumplimentado por">{txt(record.createdByText)}</Item>
           <Item label="Material afectado">{record.materialKind ? oosMaterialKindLabels[record.materialKind] : "—"}</Item>
           <Item label="Producto / material">{txt(record.materialName)}</Item>
@@ -189,7 +189,6 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
           </> : null}
           <Item label="Proceso">{txt(record.process)}</Item>
           <Item label="Fecha / hora del OOS">{formatOosDate(record.oosDate)}{record.oosTime ? ` · ${record.oosTime}` : ""}</Item>
-          <Item label="Detectado por">{txt(record.detectedBy)}</Item>
           <Item label="Turno">{txt(record.shift)}</Item>
         </dl>
       </ReviewCard>
@@ -202,7 +201,6 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
           <Item label="Disposición de la Fase I">{record.phaseIDisposition ? oosPhaseIDispositionLabels[record.phaseIDisposition] : "Pendiente"}</Item>
           <Item label="Resultado de la investigación">{record.investigationResult ? oosInvestigationResultLabels[record.investigationResult] : "Pendiente"}</Item>
           <Item label="Categoría de la causa (6M)">{record.rootCauseCategories.length ? record.rootCauseCategories.map((value) => rootCauseCategoryLabel(value, true)).join(", ") : "No informada"}</Item>
-          <Item label="Fecha de cierre">{formatOosDate(record.closedAt)}</Item>
         </dl>
       </ReviewCard>
       {record.internalObservations ? <div className="card"><h2>Observaciones internas</h2><p className="prose-value">{record.internalObservations}</p></div> : null}

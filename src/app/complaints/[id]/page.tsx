@@ -73,6 +73,7 @@ function complaintFollowupLabel(sequenceNumber: number) {
 
 async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{tab?:string;review?:string;thread?:string;returnTo?:string;auditPage?:string}>}){
  const {id}=await params;const {tab:raw,review,thread, returnTo,auditPage}=await searchParams;const tab=tabs.some(([k])=>k===raw)?raw!:"summary";
+ const onSummary=tab==="summary";
  const r=await getComplaintDetail(id);if(!r)notFound();
  const situation=complaintOperationalSituation(r);
  const followupState=complaintFollowupState(r);
@@ -114,12 +115,15 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
    title={qmsRecordDisplayCode(r.qmsRecord)}
    chips={<>
     <span className={`badge ${r.status==="DRAFT"?"neutral":r.status==="OPEN"?"open":"closed"}`}>{complaintStatusLabel(r.status)}</span>
-    <span className={`badge ${complaintOperationalSituationTone(situation)}`}>{complaintOperationalSituationLabel(situation)}</span>
-    <span className={`badge ${r.classification?.toLowerCase()??"neutral"}`}>{complaintClassificationLabel(r.classification)}</span>
-    <span className="badge neutral">{complaintTypeLabel(r.complaintType)}</span>
-    {currentVersion?<span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span>:null}
+    {/* D-117 (H-05): en el resumen, situación, clasificación, tipo, versión, apertura y cliente están en la franja o en la tarjeta. */}
+    {onSummary?null:<>
+     <span className={`badge ${complaintOperationalSituationTone(situation)}`}>{complaintOperationalSituationLabel(situation)}</span>
+     <span className={`badge ${r.classification?.toLowerCase()??"neutral"}`}>{complaintClassificationLabel(r.classification)}</span>
+     <span className="badge neutral">{complaintTypeLabel(r.complaintType)}</span>
+     {currentVersion?<span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span>:null}
+    </>}
    </>}
-   subtitle={<>Apertura {formatDate(r.openedAt)} · {txt(r.partyName)}</>}
+   subtitle={onSummary?undefined:<>Apertura {formatDate(r.openedAt)} · {txt(r.partyName)}</>}
    annul={<QmsAdministrativeStatus part="action"
    qmsRecordId={r.qmsRecord.id} isActive={r.qmsRecord.isActive} code={qmsRecordDisplayCode(r.qmsRecord)}
    annulledAt={r.qmsRecord.annulledAt?.toISOString()??null} annulledByText={r.qmsRecord.annulledByText}
@@ -154,10 +158,7 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
      <div className="info-item"><dt>Tipo</dt><dd>{complaintTypeLabel(r.complaintType)}</dd></div>
      <div className="info-item"><dt>Cliente / proveedor</dt><dd>{txt(r.partyName)}</dd></div>
      <div className="info-item"><dt>Clasificación</dt><dd>{complaintClassificationLabel(r.classification)}</dd></div>
-     <div className="info-item"><dt>Situación</dt><dd><span className={`badge ${complaintOperationalSituationTone(situation)}`}>{complaintOperationalSituationLabel(situation)}</span></dd></div>
      <div className="info-item"><dt>Eficacia</dt><dd>{complaintEffectivenessLabel(r.effectivenessStatus)}</dd></div>
-     <div className="info-item"><dt>Próximo seguimiento</dt><dd>{r.status==="OPEN"?formatDate(r.nextFollowupDate):"—"}</dd></div>
-     <div className="info-item"><dt>Fecha cierre</dt><dd>{formatDate(r.closedAt)}</dd></div>
      <div className="info-item"><dt>Acciones derivadas</dt><dd>{effectiveHasActions?"Sí":r.hasDerivedActions===false?"No":"Pendiente"}</dd></div>
      <div className="complaint-reference-panel">
       <div className="complaint-reference-heading"><span>Material / servicio / equipo afectado</span></div>

@@ -125,6 +125,7 @@ async function DeviationDetailPageAuthenticatedContent({
   // D-111 (V3): Descripción, Investigación, Acciones y Conclusión son apartados de la pestaña «Desviación».
   const legacyPart = legacyDeviationTab(rawTab);
   const activeTab = legacyPart ? "deviation" : tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
+  const onSummary = activeTab === "summary";
   // Desde un enlace antiguo, «Modo revisión» y «Editar» conservan el apartado (la clave antigua es un alias).
   const linkTab = legacyPart ? rawTab! : activeTab;
   const deviation = await getDeviationDetail(id);
@@ -281,12 +282,13 @@ async function DeviationDetailPageAuthenticatedContent({
         back={{ href: qmsListingReturnTo("/deviations", returnTo), label: "Desviaciones" }}
         title={hasCode ? code : draftRecordTitle(deviation.materialProcessAffected || deviation.whatHappened, code)}
         chips={<>
-          {hasCode ? <span className={`badge ${deviation.status === "DRAFT" ? "neutral" : deviation.status === "OPEN" ? "open" : "closed"}`}>{deviation.status === "DRAFT" ? "Borrador" : deviation.status === "OPEN" ? "Abierta" : "Cerrada"}</span> : <span className="badge neutral">Borrador · sin código</span>}
-          {deviation.classification ? <span className={`badge ${deviation.classification.toLowerCase()}`}>{classificationLabel(deviation.classification)}</span> : null}
-          <span className="badge neutral">{deviation.departmentCodeSnapshot ?? deviation.department?.code ?? "Sin departamento"}</span>
+          {/* D-117 (H-05): en el resumen, estado, clasificación, departamento y apertura están en la franja. */}
+          {!hasCode ? <span className="badge neutral">Borrador · sin código</span> : onSummary ? null : <span className={`badge ${deviation.status === "DRAFT" ? "neutral" : deviation.status === "OPEN" ? "open" : "closed"}`}>{deviation.status === "DRAFT" ? "Borrador" : deviation.status === "OPEN" ? "Abierta" : "Cerrada"}</span>}
+          {deviation.classification && !onSummary ? <span className={`badge ${deviation.classification.toLowerCase()}`}>{classificationLabel(deviation.classification)}</span> : null}
+          {onSummary ? null : <span className="badge neutral">{deviation.departmentCodeSnapshot ?? deviation.department?.code ?? "Sin departamento"}</span>}
           {currentVersion ? <span className="badge neutral">{versionLabel(currentVersion.sequenceNumber)}</span> : null}
         </>}
-        subtitle={<>Apertura {formatDate(deviation.issueDate)} · Cumplimentado por {text(deviation.createdByText)}</>}
+        subtitle={<>{onSummary ? null : <>Apertura {formatDate(deviation.issueDate)} · </>}Cumplimentado por {text(deviation.createdByText)}</>}
         annul={<QmsAdministrativeStatus part="action"
         qmsRecordId={deviation.qmsRecord.id}
         isActive={deviation.qmsRecord.isActive}
@@ -329,7 +331,7 @@ async function DeviationDetailPageAuthenticatedContent({
             { label: "Estado", value: deviation.status === "DRAFT" ? "Borrador" : deviation.status === "OPEN" ? "Abierta" : "Cerrada", badgeClass: deviation.status === "DRAFT" ? "neutral" : deviation.status === "OPEN" ? "open" : "closed" },
             { label: "Apertura", value: deviation.issueDate ? formatDate(deviation.issueDate) : null },
             { label: "En plazo", value: deadlineLabel(deviation.deadlineStatus) },
-            { label: "Clasificación", value: deviation.classification ? classificationLabel(deviation.classification) : null },
+            { label: "Clasificación", value: deviation.classification ? classificationLabel(deviation.classification) : null, anchorId: reviewTarget.classification.anchorId, marker: <ReviewMarker target={reviewTarget.classification} /> },
             { label: "Departamento", value: deviation.departmentCodeSnapshot ?? deviation.department?.code ?? null },
             { label: "Cierre", value: deviation.closedAt ? formatDate(deviation.closedAt) : null },
           ]} />
@@ -337,9 +339,6 @@ async function DeviationDetailPageAuthenticatedContent({
             <h2>Resumen del expediente</h2>
             <dl className="info-grid compact-info-grid">
               <div id={reviewTarget.materialProcessAffected.anchorId} className="info-item review-target"><dt><span>Material / proceso</span><ReviewMarker target={reviewTarget.materialProcessAffected} /></dt><dd>{text(deviation.materialProcessAffected)}</dd></div>
-              <div id={reviewTarget.classification.anchorId} className="info-item review-target"><dt><span>Clasificación</span><ReviewMarker target={reviewTarget.classification} /></dt><dd>{classificationLabel(deviation.classification)}</dd></div>
-              <div className="info-item"><dt>En plazo</dt><dd>{deadlineLabel(deviation.deadlineStatus)}</dd></div>
-              <div className="info-item"><dt>Fecha de cierre</dt><dd>{formatDate(deviation.closedAt)}</dd></div>
               <div className="info-item"><dt>Medidas adoptadas</dt><dd>{measuresLabel(deviation)}</dd></div>
               <div className="info-item"><dt>Documento firmado</dt><dd>{currentVersion ? `${versionLabel(currentVersion.sequenceNumber)} · ${currentSignedDocument ? "Disponible" : "No cargado"}` : "Sin versión"}</dd></div>
               <div className="info-item"><dt>Calidad del dato</dt><dd>{dataQualityLabel(deviation.dataQualityStatus)}</dd></div>

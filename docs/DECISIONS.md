@@ -1253,4 +1253,20 @@ Decisión del responsable de Calidad tras la auditoría UI/UX de la Fase 1, hech
   - **Contadores de los listados:** son totales del módulo, nunca cuentan anulados (tampoco con los filtros «Anulados» o «Todos») y llevan una nota que lo explica. Los borradores se cuentan aparte.
   - **Columna «Control»:** pasa a «Calidad del dato», que es lo que indica (datos importados incompletos o por revisar).
   - **Pestaña de CAPA «Seguimiento de la acción»:** pasa a «Proceso de las acciones». El apartado del formulario, la revisión y el Anexo III conservan el nombre del anexo.
+- **Entrega 3, hecha:**
+  - **Tipografía Inter incluida en la aplicación** (paquete `@fontsource-variable/inter`, licencia OFL), sin depender de Internet ni de las fuentes del equipo.
+  - **Cada dato una sola vez en la pestaña de resumen o información** de Desviaciones, CAPA, Cambios, Reclamaciones, Devoluciones, OOS y Auditorías:
+    - La franja de datos clave es el sitio de los datos que muestra. En esa pestaña la cabecera no repite sus datos ni los de las tarjetas, y las tarjetas no repiten los de la franja.
+    - En las demás pestañas la cabecera conserva sus etiquetas, porque allí no hay franja.
+    - Cuando un dato con comentarios de revisión solo queda en la franja, su ancla y su marca de revisión pasan a la franja: los comentarios guardados siguen enlazados.
+    - No se elimina ningún dato de la ficha.
+  - **Tablas:** celdas de 13 px, pastillas de 12 px y casillas de selección de 20 px.
+  - **Campos de una línea:** altura común de 40 px en filtros y formularios. «Guardar vista» tiene el tamaño de los botones vecinos.
+  - **Listados:**
+    - el código del expediente tiene el mismo estilo en todos los listados, incluido PNT;
+    - la clasificación de Cambios usa los colores de las demás clasificaciones;
+    - la paginación es común («N resultados · Página X de Y · 25 por página», con Primera, Anterior, Siguiente y Última) en los ocho listados.
+  - **Variables de diseño** de tamaños de letra, radios, altura de campo y colores de estado, aplicadas a lo que toca esta entrega.
+  - **Móvil:** los botones no se parten en dos líneas.
+  - **Rótulos en mayúsculas:** se quita el rótulo que repetía el título en la tarjeta de información de Cambios. El resto de rótulos de contexto de módulo se mantiene.
 

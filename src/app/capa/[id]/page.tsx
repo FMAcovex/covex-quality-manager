@@ -92,6 +92,7 @@ async function CapaDetailPageAuthenticatedContent({
   const { id } = await params;
   const { tab: rawTab, review, thread, returnTo, auditPage } = await searchParams;
   const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
+  const onSummary = activeTab === "summary";
   const capa = await getCapaDetail(id);
   if (!capa) notFound();
 
@@ -225,13 +226,14 @@ async function CapaDetailPageAuthenticatedContent({
         back={{ href: qmsListingReturnTo("/capa", returnTo), label: "CAPA" }}
         title={hasCode ? qmsRecordDisplayCode(capa.qmsRecord) : draftRecordTitle(capa.defectDescription, "CAPA sin código")}
         chips={<>
-          <span className="badge neutral">{capaTypeLabel(capa.actionType)}</span>
-          {hasCode ? <span className={`badge ${capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral"}`}>{capaStatusLabel(capa.status)}</span> : <span className="badge neutral">Borrador · sin código</span>}
-          <span className="badge neutral">{capa.departmentCodeSnapshot ?? "Sin departamento"}</span>
+          {/* D-117 (H-05): en el resumen, tipo, estado, departamento, apertura y eficacia están en la franja o en la tarjeta. */}
+          {onSummary ? null : <span className="badge neutral">{capaTypeLabel(capa.actionType)}</span>}
+          {!hasCode ? <span className="badge neutral">Borrador · sin código</span> : onSummary ? null : <span className={`badge ${capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral"}`}>{capaStatusLabel(capa.status)}</span>}
+          {onSummary ? null : <span className="badge neutral">{capa.departmentCodeSnapshot ?? "Sin departamento"}</span>}
           {currentVersion ? <span className="badge neutral">{followupLabel(currentVersion.sequenceNumber)}</span> : null}
           {capa.dataQualityStatus !== "COMPLETE" ? <span className="badge warning">{capa.dataQualityStatus === "INCOMPLETE" ? "Dato incompleto" : "Revisar dato"}</span> : null}
         </>}
-        subtitle={<>Apertura {formatDate(capa.openedAt)} · Eficacia {effectivenessLabel(capa.effectivenessStatus)}</>}
+        subtitle={onSummary ? undefined : <>Apertura {formatDate(capa.openedAt)} · Eficacia {effectivenessLabel(capa.effectivenessStatus)}</>}
         annul={<QmsAdministrativeStatus part="action"
         qmsRecordId={capa.qmsRecord.id}
         isActive={capa.qmsRecord.isActive}

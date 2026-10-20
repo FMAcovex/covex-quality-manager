@@ -1,4 +1,5 @@
 import { SavedViews } from "@/components/saved-views";
+import { ListPagination } from "@/components/qms-list-pagination";
 import { listSavedViews } from "@/lib/saved-views/queries";
 import { canPresentRecord } from "@/lib/auth/presentation";
 import { PermissionGate } from "@/components/permissions";
@@ -176,7 +177,7 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
     </tr>;
    }):<tr><td colSpan={complaintColumns.length+1} className="empty-state"><strong>No hay reclamaciones con estos filtros.</strong></td></tr>}
   </tbody></table></div></div>
- <nav className="heading-actions" aria-label="Paginación de reclamaciones"><span>{pagination.total} resultados · Página {pagination.page} de {pagination.pageCount}</span>{pagination.page>1?<Link className="button small" href={pageHref(pagination.page-1)}>Anterior</Link>:null}{pagination.page<pagination.pageCount?<Link className="button small" href={pageHref(pagination.page+1)}>Siguiente</Link>:null}</nav>
+ <ListPagination total={pagination.total} page={pagination.page} pageCount={pagination.pageCount} pageSize={pagination.pageSize} href={pageHref}/>
  </section>;
 }
 
