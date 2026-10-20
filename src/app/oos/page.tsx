@@ -97,7 +97,7 @@ async function OosListPageAuthenticatedContent({ searchParams }: { searchParams:
       <span><strong>{counters.phaseI}</strong> abiertos en Fase I</span>
       <span><strong>{counters.phaseII}</strong> abiertos en Fase II</span>
       <span><strong>{counters.closed}</strong> cerrados</span>
-    </p>
+    <span className="list-counters-note">Totales del módulo sin filtros. No incluyen anulados; los borradores se cuentan aparte.</span></p>
     <div className="table-card"><div className="table-scroll"><table className="change-table">
       <thead><tr><th>N.º OOS</th><th>Estado</th><th>Fase</th><th>Fecha de apertura</th><th>Material afectado</th><th>Lote</th><th>Descripción</th><th>Resultado</th><th>CAPA / Desviación</th><th>Fecha de cierre</th></tr></thead>
       <tbody>{rows.length ? rows.map((row) => <tr key={row.id}>

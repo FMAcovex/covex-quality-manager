@@ -1240,4 +1240,17 @@ Decisión del responsable de Calidad tras la auditoría UI/UX de la Fase 1, hech
   - nombre accesible en el buscador de los listados;
   - campos de texto largo con la fuente de la aplicación;
   - sin borde decorativo en la ficha de Devoluciones.
+- **Entrega 2, hecha:**
+  - **Ventanas modales** («Anular/Reactivar expediente» y «Preparar recordatorio»): el foco entra en la ventana y queda retenido con Tab, Esc la cierra, el foco vuelve al botón que la abrió y el título es su nombre accesible. La confirmación de anular va en rojo sólido.
+  - **«Anular expediente»** sigue separado a la izquierda de las acciones (D-111), pero en estilo de texto y más pequeño que la acción principal.
+  - **Campos pendientes al guardar:** en lugar del aviso del navegador campo a campo, un resumen en español lista todos los campos pendientes, con un enlace a cada uno, y los marca en el formulario. Se aplica a Desviaciones, CAPA, Cambios, Reclamaciones, Devoluciones y OOS.
+    - Las reglas de obligatoriedad y la validación del servidor no cambian.
+    - No se desactiva la validación del navegador: Reclamaciones, Devoluciones y OOS aún no devuelven los errores del servidor por campo.
+  - **Acción principal de las fichas:** «Editar / seguimiento» en los siete módulos. El borrador de Desviaciones sigue diciendo «Editar borrador».
+  - **Audit trail:** hora local de Madrid con la zona (CET/CEST).
+    - Los datos se conservan en UTC.
+    - La exportación CSV y los filtros de fecha del audit trail global siguen en UTC.
+  - **Contadores de los listados:** son totales del módulo, nunca cuentan anulados (tampoco con los filtros «Anulados» o «Todos») y llevan una nota que lo explica. Los borradores se cuentan aparte.
+  - **Columna «Control»:** pasa a «Calidad del dato», que es lo que indica (datos importados incompletos o por revisar).
+  - **Pestaña de CAPA «Seguimiento de la acción»:** pasa a «Proceso de las acciones». El apartado del formulario, la revisión y el Anexo III conservan el nombre del anexo.
 

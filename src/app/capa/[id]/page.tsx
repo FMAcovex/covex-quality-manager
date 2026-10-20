@@ -58,7 +58,7 @@ export const dynamic = "force-dynamic";
 
 const tabs = [
   ["summary", "Resumen"],
-  ["action-followups", "Seguimiento de la acción"],
+  ["action-followups", "Proceso de las acciones"],
   ["state", "Estado y eficacia"],
   ["relations", "Relaciones"],
   ["versions", "Seguimientos"],
@@ -244,7 +244,7 @@ async function CapaDetailPageAuthenticatedContent({
         actions={<>
           <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/capa", returnTo)} /></PermissionGate>
           {capa.status !== "DRAFT" ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate> : null}
-          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit?tab=${activeTab}`, "/capa", returnTo)}>Editar / nuevo seguimiento</Link></PermissionGate>
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit?tab=${activeTab}`, "/capa", returnTo)}>Editar / seguimiento</Link></PermissionGate>
         </>}
       />
       <QmsAdministrativeStatus part="banner"

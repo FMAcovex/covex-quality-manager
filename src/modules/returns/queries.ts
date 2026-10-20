@@ -14,13 +14,14 @@ export async function getReturnList(filters:ReturnListFilters){
  const requestedPage=Number(filters.page)||1;const pageSize=25;
  const count=await prisma.returnRecord.count({where});
  const page=Math.min(Math.max(1,Math.trunc(requestedPage)),Math.max(1,Math.ceil(count/pageSize)));
- const administrativeWhere:Prisma.ReturnRecordWhereInput=filters.administrative==="ANNULLED"?{qmsRecord:{isActive:false}}:filters.administrative==="ALL"?{}:{qmsRecord:{isActive:true}};
+ // D-117 (H-15): los contadores son totales del módulo; nunca cuentan anulados, sea cual sea el filtro.
+ const counterWhere: Prisma.ReturnRecordWhereInput = { qmsRecord: { isActive: true } };
  const [rows,departments,years,total,drafts,open,pending,followupDue]=await Promise.all([
   prisma.returnRecord.findMany({where,include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}},targetRelations:{where:{isActive:true},include:{sourceRecord:true}}}},department:true,products:{orderBy:{sortOrder:"asc"}},followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"},{id:"desc"}],take:1}},orderBy:[{status:"asc"},{communicationDate:"desc"},{createdAt:"desc"},{id:"asc"}],skip:(page-1)*pageSize,take:pageSize}),
   prisma.department.findMany({where:{isActive:true,code:{in:[...RETURN_DEPARTMENT_CODES]}},orderBy:{code:"asc"}}),
   prisma.qmsRecord.findMany({where:{recordType:QmsRecordType.RETURN,year:{not:null}},select:{year:true},distinct:["year"],orderBy:{year:"desc"}}),
-  prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:{not:"DRAFT"}}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:"DRAFT"}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:"OPEN"}]}}),prisma.returnRecord.count({where:{AND:[administrativeWhere,{status:{not:"DRAFT"},decision:"PENDING"}]}}),
-  prisma.returnRecord.count({where:{AND:[administrativeWhere,await returnListWhere({followup:"DUE",administrative:"ALL"})]}})
+  prisma.returnRecord.count({where:{AND:[counterWhere,{status:{not:"DRAFT"}}]}}),prisma.returnRecord.count({where:{AND:[counterWhere,{status:"DRAFT"}]}}),prisma.returnRecord.count({where:{AND:[counterWhere,{status:"OPEN"}]}}),prisma.returnRecord.count({where:{AND:[counterWhere,{status:{not:"DRAFT"},decision:"PENDING"}]}}),
+  prisma.returnRecord.count({where:{AND:[counterWhere,await returnListWhere({followup:"DUE",administrative:"ALL"})]}})
  ]);
  return {page,pageSize,count,rows: await withActiveReviewCounts(rows),departments,years:years.map(x=>x.year).filter((x):x is number=>x!==null),counters:{total,drafts,open,pending,followupDue}};
 }

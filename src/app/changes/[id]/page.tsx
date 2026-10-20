@@ -203,7 +203,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
           {record.dictamenResult === "APPROVED" && record.finalStatus === "OPEN" ? (
             <PermissionGate permission="FOLLOWUP"><Link className="button" href={qmsWithReturnTo(`${reviewTabHref(basePath, "followups", reviewMode)}#new-followup`, "/changes", returnTo)}>+ Seguimiento</Link></PermissionGate>
           ) : null}
-          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/changes/${id}/edit?tab=${activeTab}`, "/changes", returnTo)}>Editar Solicitud / Dictamen</Link></PermissionGate>
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/changes/${id}/edit?tab=${activeTab}`, "/changes", returnTo)}>Editar / seguimiento</Link></PermissionGate>
         </>}
       />
       <QmsAdministrativeStatus part="banner"

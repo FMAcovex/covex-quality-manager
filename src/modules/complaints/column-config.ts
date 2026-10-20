@@ -1,5 +1,5 @@
 export const complaintColumns=[
- {key:"control",label:"Control",index: 0},
+ {key:"control",label:"Calidad del dato",index: 0},
  {key:"review",label:"Revisión",index: 1},
  {key:"code",label:"N.º reclamación",index: 2,locked:true},
  {key:"version",label:"Versión",index: 3},

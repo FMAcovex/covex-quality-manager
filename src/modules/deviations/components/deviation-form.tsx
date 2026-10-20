@@ -12,6 +12,7 @@ import type { AppUserOption } from "@/lib/qms/responsible-user";
 
 import { authenticatedFetch } from "@/lib/auth/client";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
+import { InvalidFieldsSummary } from "@/components/invalid-fields-summary";
 import { deviationVersionLabel } from "@/modules/deviations/version-mode";
 import { deviationProvenanceOptions } from "@/modules/deviations/domain";
 
@@ -280,6 +281,7 @@ export function DeviationForm({
       onInvalid={() => setOpeningAttempted(true)}
     ><CsrfField />
       <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
+      <InvalidFieldsSummary />
       <input type="hidden" name="returnTo" value={returnTo ?? ""} />
       <input type="hidden" name="detailTab" value={detailTab ?? ""} />
       {fromAuditFindingId ? <input type="hidden" name="fromAuditFindingId" value={fromAuditFindingId} /> : null}

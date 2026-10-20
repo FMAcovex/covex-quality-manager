@@ -25,7 +25,8 @@ export async function getOosList(filters: OosListFilters) {
   const count = await prisma.oosRecord.count({ where });
   const requestedPage = Number(filters.page) || 1;
   const page = Math.min(Math.max(1, Math.trunc(requestedPage)), Math.max(1, Math.ceil(count / pageSize)));
-  const active: Prisma.OosRecordWhereInput = administrativeWhere(filters.administrative);
+  // D-117 (H-15): los contadores son totales del módulo; nunca cuentan anulados, sea cual sea el filtro.
+  const active: Prisma.OosRecordWhereInput = { qmsRecord: { isActive: true } };
   const [rows, years, operational, drafts, phaseI, phaseII, closed] = await Promise.all([
     prisma.oosRecord.findMany({
       where,

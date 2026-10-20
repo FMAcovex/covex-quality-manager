@@ -301,7 +301,7 @@ async function DeviationDetailPageAuthenticatedContent({
           {deviation.status === "DRAFT"
             ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
             : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate>}
-          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${linkTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar/nueva versión"}</Link></PermissionGate>
+          <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${linkTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar / seguimiento"}</Link></PermissionGate>
         </>}
       />
       <QmsAdministrativeStatus part="banner"

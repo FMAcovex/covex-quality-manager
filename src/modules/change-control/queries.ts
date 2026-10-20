@@ -60,12 +60,8 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
   if (statuses.length) and.push({ finalStatus: { in: statuses as ("DRAFT" | "OPEN" | "CLOSED")[] } });
 
   const where: Prisma.ChangeControlWhereInput = and.length ? { AND: and } : {};
-  const administrativeWhere: Prisma.ChangeControlWhereInput =
-    filters.administrative === "ANNULLED"
-      ? { qmsRecord: { isActive: false } }
-      : filters.administrative === "ALL"
-        ? {}
-        : { qmsRecord: { isActive: true } };
+  // D-117 (H-15): los contadores son totales del módulo; nunca cuentan anulados, sea cual sea el filtro.
+  const counterWhere: Prisma.ChangeControlWhereInput = { qmsRecord: { isActive: true } };
   const pagination = qmsListPagination(await prisma.changeControl.count({ where }), filters.page);
   const now = new Date();
   const [rows, departments, years, total, drafts, open, executedPendingEfficacy, overdue] =
@@ -95,15 +91,15 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
         distinct: ["year"],
         orderBy: { year: "desc" },
       }),
-      prisma.changeControl.count({ where: { AND: [administrativeWhere, { finalStatus: { not: "DRAFT" } }] } }),
-      prisma.changeControl.count({ where: { AND: [administrativeWhere, { finalStatus: "DRAFT" }] } }),
-      prisma.changeControl.count({ where: { AND: [administrativeWhere, { finalStatus: "OPEN" }] } }),
+      prisma.changeControl.count({ where: { AND: [counterWhere, { finalStatus: { not: "DRAFT" } }] } }),
+      prisma.changeControl.count({ where: { AND: [counterWhere, { finalStatus: "DRAFT" }] } }),
+      prisma.changeControl.count({ where: { AND: [counterWhere, { finalStatus: "OPEN" }] } }),
       prisma.changeControl.count({
-        where: { AND: [administrativeWhere, { executionStatus: "EXECUTED", effectivenessStatus: "PENDING", finalStatus: "OPEN" }] },
+        where: { AND: [counterWhere, { executionStatus: "EXECUTED", effectivenessStatus: "PENDING", finalStatus: "OPEN" }] },
       }),
       prisma.$queryRaw<Array<{ count: number }>>(Prisma.sql`
         SELECT COUNT(*)::int AS count FROM "ChangeControl" c JOIN "QmsRecord" q ON q.id=c."qmsRecordId"
-        WHERE c."finalStatus"='OPEN' ${listAdministrativeSql(filters.administrative)}
+        WHERE c."finalStatus"='OPEN' ${listAdministrativeSql("ACTIVE")}
         AND (SELECT f."nextFollowupDate" FROM "ChangeControlFollowup" f WHERE f."changeControlId"=c.id
              ORDER BY f."sequenceNumber" DESC, f."followupDate" DESC LIMIT 1) <= ${now}`),
     ]);

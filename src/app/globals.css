@@ -225,7 +225,12 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 /* D-111 (V1): «Anular» separado del resto de acciones; sin permiso no deja hueco. */
 .record-actions-annul { display: inline-flex; }
 .record-actions-annul:not(:empty):not(:last-child) { padding-right: 12px; margin-right: 4px; border-right: 1px solid var(--border); }
-.record-actions-annul .button.danger { background: transparent; }
+/* D-117 (H-04): «Anular» discreto, en estilo de texto; la confirmación de la ventana va en rojo sólido. */
+.record-actions-annul .button.danger { min-height: 32px; padding: 0 8px; border-color: transparent; background: transparent; font-size: 12px; }
+.record-actions-annul .button.danger:hover { border-color: #edc7c7; background: #fff8f8; }
+.button.danger.solid { color: #fff; border-color: #b42318; background: #b42318; }
+.button.danger.solid:hover { border-color: #912018; background: #912018; }
+.button.danger.solid:disabled { opacity: .65; }
 .record-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 .record-tabs a { padding: 10px 13px; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; font-size: 13px; }
 .record-tabs a.active { color: var(--blue-dark); border-bottom-color: var(--blue); font-weight: 750; }
@@ -2738,6 +2743,7 @@ button[disabled] {
 .list-ux-c .list-toolbar-row .saved-views .button, .list-ux-c .list-toolbar-row .saved-views select { min-height: 42px; height: 42px; font-size: 14px; }
 .list-counters { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 2px 0 12px; color: var(--muted); font-size: 13px; }
 .list-counters strong { margin-right: 3px; color: var(--blue); font-size: 15px; font-variant-numeric: tabular-nums; }
+.list-counters-note { flex-basis: 100%; font-size: 12px; }
 @media (max-width: 760px) {
   .list-ux-c .list-toolbar-search { flex-basis: 100%; }
   .list-ux-c .list-toolbar-row > .button { flex: 1 1 auto; }
@@ -2913,3 +2919,7 @@ button[disabled] {
 
 /* D-111 (V4): «Mis tareas», primer bloque del panel. */
 .dashboard-my-tasks { margin-bottom: 18px; }
+
+/* D-117 (H-09): resumen de campos pendientes con enlace a cada campo. */
+.invalid-fields-summary:focus { outline: 2px solid var(--blue); outline-offset: 2px; }
+.invalid-fields-summary a { color: inherit; font-weight: 650; }

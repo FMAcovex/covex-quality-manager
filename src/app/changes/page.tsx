@@ -162,7 +162,7 @@ async function ChangeControlPageAuthenticatedContent({
         <span><strong>{counters.open}</strong> abiertos</span>
         <span><strong>{counters.executedPendingEfficacy}</strong> ejecutados con eficacia pendiente</span>
         <span><strong>{counters.overdue}</strong> con seguimiento vencido</span>
-      </p>
+      <span className="list-counters-note">Totales del módulo sin filtros. No incluyen anulados; los borradores se cuentan aparte.</span></p>
 
       <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="change-control-list-table" moduleLabel="Controles de Cambios" hideWhenEmpty /></PermissionGate>
 
@@ -172,7 +172,7 @@ async function ChangeControlPageAuthenticatedContent({
             <thead>
               <tr>
                 <th className="reminder-select-column" aria-label="Seleccionar"><PermissionGate permission="FOLLOWUP"><input type="checkbox" data-reminder-select-all="true" aria-label="Seleccionar todos los Controles de Cambios visibles" /></PermissionGate></th>
-                <th data-column-key="control">Control</th><th data-column-key="review">Revisión</th>
+                <th data-column-key="control">Calidad del dato</th><th data-column-key="review">Revisión</th>
                 <th data-column-key="department">Departamento</th>
                 <th data-column-key="code">Codificación</th>
                 <th data-column-key="description">Descripción</th>

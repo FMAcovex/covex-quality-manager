@@ -143,7 +143,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
         <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, tab, reviewMode), "/oos", returnTo)} /></PermissionGate>
         {record.qmsRecord.isActive && record.status !== "DRAFT" ? <PermissionGate permission="DOWNLOAD">{annexButton(annexIIIReady, "iii", "Anexo III")}</PermissionGate> : null}
         {record.qmsRecord.isActive && record.status !== "DRAFT" && record.phaseIDisposition === "FULL_SCALE" ? <PermissionGate permission="DOWNLOAD">{annexButton(annexIVReady, "iv", "Anexo IV")}</PermissionGate> : null}
-        {record.qmsRecord.isActive ? <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/oos/${id}/edit?tab=${tab}`, "/oos", returnTo)}>Editar</Link></PermissionGate> : null}
+        {record.qmsRecord.isActive ? <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/oos/${id}/edit?tab=${tab}`, "/oos", returnTo)}>Editar / seguimiento</Link></PermissionGate> : null}
       </>}
     />
     <QmsAdministrativeStatus part="banner"

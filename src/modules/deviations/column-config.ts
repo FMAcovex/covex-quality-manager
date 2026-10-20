@@ -1,5 +1,5 @@
 export const deviationColumns = [
-  { key: "control", label: "Control", index: 0 },
+  { key: "control", label: "Calidad del dato", index: 0 },
   { key: "review", label: "Revisión", index: 1 },
   { key: "code", label: "Código", index: 2, locked: true },
   { key: "department", label: "Departamento", index: 3 },

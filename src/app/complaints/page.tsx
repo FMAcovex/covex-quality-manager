@@ -146,7 +146,7 @@ async function ComplaintsPageAuthenticatedContent({searchParams}:{searchParams:P
    <span><strong>{counters.pendingPartII}</strong> pendientes Parte II</span>
    <span><strong>{counters.pendingEfficacy}</strong> con eficacia pendiente</span>
    <span><strong>{counters.followupDue}</strong> seguimientos vencidos</span>
-  </p>
+  <span className="list-counters-note">Totales del módulo sin filtros. No incluyen anulados; los borradores se cuentan aparte.</span></p>
 
   <PermissionGate permission="FOLLOWUP"><ManualReminderToolbar tableId="complaint-list-table" moduleLabel="Reclamaciones" hideWhenEmpty /></PermissionGate>
 

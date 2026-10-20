@@ -125,7 +125,7 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
    annulledAt={r.qmsRecord.annulledAt?.toISOString()??null} annulledByText={r.qmsRecord.annulledByText}
    annulledReason={r.qmsRecord.annulledReason} defaultActor={currentActor()}
   />}
-   actions={<><PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath,tab,reviewMode), "/complaints", returnTo)}/></PermissionGate><PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/complaints/${id}/edit?tab=${tab}`, "/complaints", returnTo)}>Editar / nueva versión / seguimiento</Link></PermissionGate></>}
+   actions={<><PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath,tab,reviewMode), "/complaints", returnTo)}/></PermissionGate><PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/complaints/${id}/edit?tab=${tab}`, "/complaints", returnTo)}>Editar / seguimiento</Link></PermissionGate></>}
   />
   <QmsAdministrativeStatus part="banner"
    qmsRecordId={r.qmsRecord.id} isActive={r.qmsRecord.isActive} code={qmsRecordDisplayCode(r.qmsRecord)}

@@ -112,12 +112,8 @@ export async function getDeviationList(filters: DeviationListFilters) {
   }
 
   const where: Prisma.DeviationWhereInput = and.length ? { AND: and } : {};
-  const administrativeWhere: Prisma.DeviationWhereInput =
-    filters.administrative === "ANNULLED"
-      ? { qmsRecord: { isActive: false } }
-      : filters.administrative === "ALL"
-        ? {}
-        : { qmsRecord: { isActive: true } };
+  // D-117 (H-15): los contadores son totales del módulo; nunca cuentan anulados, sea cual sea el filtro.
+  const counterWhere: Prisma.DeviationWhereInput = { qmsRecord: { isActive: true } };
 
   const pagination = qmsListPagination(await prisma.deviation.count({ where }), filters.page);
   const now = new Date();
@@ -154,13 +150,13 @@ export async function getDeviationList(filters: DeviationListFilters) {
         distinct: ["provenance"],
         orderBy: { provenance: "asc" },
       }),
-      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: { not: "DRAFT" } }] } }),
-      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "DRAFT" }] } }),
-      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN" }] } }),
-      prisma.deviation.count({ where: { AND: [administrativeWhere, { status: "OPEN", deadlineStatus: "OUT_OF_TIME" }] } }),
+      prisma.deviation.count({ where: { AND: [counterWhere, { status: { not: "DRAFT" } }] } }),
+      prisma.deviation.count({ where: { AND: [counterWhere, { status: "DRAFT" }] } }),
+      prisma.deviation.count({ where: { AND: [counterWhere, { status: "OPEN" }] } }),
+      prisma.deviation.count({ where: { AND: [counterWhere, { status: "OPEN", deadlineStatus: "OUT_OF_TIME" }] } }),
       prisma.$queryRaw<Array<{ count: number }>>(Prisma.sql`
         SELECT COUNT(*)::int AS count FROM "Deviation" d JOIN "QmsRecord" q ON q.id=d."qmsRecordId"
-        WHERE d.status='OPEN' ${listAdministrativeSql(filters.administrative)}
+        WHERE d.status='OPEN' ${listAdministrativeSql("ACTIVE")}
         AND (SELECT f."nextFollowupDate" FROM "DeviationFollowup" f WHERE f."deviationId"=d.id
              ORDER BY f."followupDate" DESC, f."createdAt" DESC LIMIT 1) <= ${now}`),
     ]);

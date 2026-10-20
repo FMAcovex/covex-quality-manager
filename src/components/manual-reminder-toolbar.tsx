@@ -3,6 +3,7 @@
 import { authenticatedFetch } from "@/lib/auth/client";
 
 import { useEffect, useState } from "react";
+import { useModalDialog } from "./use-modal-dialog";
 
 type ReminderRecord = {
   id: string;
@@ -48,6 +49,7 @@ export function ManualReminderToolbar({
 }) {
   const [selected, setSelected] = useState<ReminderRecord[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const dialog = useModalDialog<HTMLDivElement>(isOpen, () => setIsOpen(false));
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState("");
@@ -257,6 +259,7 @@ export function ManualReminderToolbar({
             role="dialog"
             aria-modal="true"
             aria-labelledby="manual-reminder-title"
+            ref={dialog}
           >
             <div className="manual-reminder-dialog-heading">
               <div>
