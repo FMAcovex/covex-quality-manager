@@ -1182,3 +1182,12 @@ Decisión del responsable de Calidad dentro de BE1, tercera y última entrega. D
 - **Comprobado:**
   - con el smoke `be1c:smoke` (grupo `postgresql`): mismos expedientes que la consulta anterior, también con un PDF firmado solo en una versión antigua; la lectura de fechas PNT del panel sin lista de pares; y `SHOW jit` = `off`;
   - con `phase3b2:smoke`, cuya cohorte incluye revisiones PNT sin ciclo de vida y con fechas nulas: el panel es igual que la referencia de 3B2.
+
+## D-115 — CI1 aplazado (2026-10-20)
+
+Decisión del responsable de Calidad. Diseño de referencia en `docs/superpowers/specs/2026-10-20-ci1-ci-mas-rapida-design.md`.
+
+- **Medición:** la CI ejecuta todas las pruebas en cada PR que no sea solo de documentación y tarda unos 9,5 min (8 min 19 s a 10 min 2 s en las tres últimas ejecuciones). El camino crítico es el build (~3 min) más el grupo de regresión más lento (~6 min).
+- **Decisión:** no se cambia la CI por ahora. Acortar la espera en ~3 min, el resumen de fallos y la batería nocturna son mejoras de comodidad del desarrollo que no aportan a los usuarios ni a los requisitos GMP.
+- **Si se retoma:** sin selección de pruebas por impacto. El repositorio es público, así que los minutos de GitHub Actions no tienen coste, y omitir grupos permitiría fusionar una PR sin pasar regresiones que sí rompe. Se repartirían los grupos en más trabajos paralelos.
+
