@@ -25,12 +25,14 @@ export function SearchAutocomplete({
   placeholder,
   suggestions,
   limit = 6,
+  label = "Buscar expedientes",
 }: {
   name?: string;
   defaultValue?: string;
   placeholder: string;
   suggestions: SearchSuggestion[];
   limit?: number;
+  label?: string;
 }) {
   const router = useRouter();
   const listId = useId();
@@ -69,6 +71,7 @@ export function SearchAutocomplete({
         name={name}
         value={value}
         placeholder={placeholder}
+        aria-label={label}
         autoComplete="off"
         role="combobox"
         aria-autocomplete="list"

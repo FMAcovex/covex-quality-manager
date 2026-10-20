@@ -18,7 +18,7 @@ import Link from "next/link";
 import { qmsListingReturnTo, qmsWithReturnTo } from "@/lib/qms/list-return-navigation";
 import { notFound } from "next/navigation";
 import { addDeviationRelationAction, unlinkDeviationCapaAction } from "@/modules/deviations/actions";
-import { deadlineLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
+import { deadlineLabel, deviationProvenanceLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref } from "@/lib/qms/record-links";
@@ -87,19 +87,7 @@ function classificationLabel(value: string | null) {
 }
 
 function provenanceLabel(value: string | null) {
-  const labels: Record<string, string> = {
-    FINISHED_PRODUCT_SYSTEM: "Producto terminado / Sistema",
-    CLIENT: "Cliente",
-    RAW_PACKAGING_MATERIAL: "Materia prima / Material de acondicionamiento",
-    SUPPLIER: "Proveedor",
-    EQUIPMENT_LINE: "Equipo / Línea afectada",
-    OTHER: "Otros",
-    DOCUMENTATION: "Documentación",
-    PROCESS: "Proceso",
-    EQUIPMENT: "Equipo",
-    MATERIAL: "Material",
-  };
-  return value ? labels[value] ?? value : "—";
+  return deviationProvenanceLabel(value);
 }
 
 function dataQualityLabel(value: string) {
@@ -718,7 +706,7 @@ async function DeviationDetailPageAuthenticatedContent({
             </div>
           ) : (
             <div className="empty-panel">
-              Este expediente todavía no tiene snapshot de versión. Se creará al editarlo o versionarlo con Hito 6.1.
+              Este expediente todavía no tiene versiones guardadas. La primera se creará al editarlo o al generar una nueva versión.
             </div>
           )}
         </div>

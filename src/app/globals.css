@@ -4,7 +4,7 @@
   --surface-soft: #f8fafc;
   --border: #dce4ee;
   --text: #17243b;
-  --muted: #66758c;
+  --muted: #5a6880;
   --blue: #0d63ce;
   --blue-dark: #0b4fa4;
   --blue-soft: #eaf3ff;
@@ -40,7 +40,9 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
+/* Entrega 1 (D-117): anillo de foco común con teclado; los controles con foco propio lo conservan. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
 .topbar {
   min-height: 72px;
@@ -98,11 +100,15 @@ button, input, select { font: inherit; }
 .page-heading h1 { font-size: 30px; margin: 3px 0 6px; }
 .page-heading p { margin: 0; color: var(--muted); }
 .eyebrow { text-transform: uppercase; letter-spacing: .1em; font-size: 11px; font-weight: 800; color: var(--blue) !important; }
+.eyebrow a { color: inherit; text-decoration: none; }
+.eyebrow a:hover { text-decoration: underline; }
 .heading-actions { display: flex; gap: 10px; }
 .qms-list-pagination { flex-wrap: wrap; align-items: center; margin-top: 14px; }
 .qms-list-pagination > span { flex-basis: 100%; overflow-wrap: anywhere; }
 .button { min-height: 40px; padding: 0 16px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
 .button.primary { background: var(--blue); border-color: var(--blue); color: white; }
+summary.button { display: inline-flex; align-items: center; list-style: none; cursor: pointer; }
+summary.button::-webkit-details-marker { display: none; }
 .button:disabled { opacity: .55; cursor: not-allowed; }
 .tabs { display: flex; gap: 4px; margin-bottom: 14px; }
 .tab { padding: 10px 15px; border-radius: 8px 8px 0 0; font-size: 14px; }
@@ -131,7 +137,7 @@ th { background: #f7f9fc; color: #53647b; font-weight: 750; }
    debajo de unos 2.200 px de ancho: pasa a una segunda fila a todo el ancho, igual que ya hacía
    por debajo de 1200 px. */
 @media (max-width: 2199px) {
-  .topbar { grid-template-columns: 1fr auto; }
+  .topbar { grid-template-columns: 1fr auto; padding-top: 12px; }
   .module-nav { grid-column: 1 / -1; order: 3; height: auto; overflow-x: auto; }
   .module-link { padding: 10px 12px; }
 }
@@ -469,7 +475,7 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .capa-table .long-cell { min-width: 280px; max-width: 420px; white-space: normal; }
 .capa-full { grid-template-columns: 2fr 1fr 1fr 2fr auto !important; align-items: flex-end; }
 .capa-full textarea { min-height: 84px; }
-.status-badge.cancelled { background: #f1f2f4; color: #657082; border-color: #d7dce3; }
+.status-badge.cancelled { background: #f1f2f4; color: #596273; border-color: #d7dce3; }
 .compact-table { min-width: 900px; }
 .section-title-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .timeline { display:grid; gap:12px; margin:12px 0 18px; }
@@ -688,6 +694,7 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 }
 
 .settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.settings-grid > .card + .card { margin-top:0; }
 .settings-card { min-height:190px; }
 .settings-actions { display:flex; gap:8px; margin-top:16px; }
 .settings-table { min-width:760px; }
@@ -1994,7 +2001,6 @@ button[disabled] {
 .return-product-card h3 { margin: 0; font-size: 15px; }
 .return-product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .return-summary-hero { display: grid; gap: 14px; }
-.return-summary-card { border-top: 3px solid #bad3f0; }
 .return-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .return-product-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .return-product-summary-card {

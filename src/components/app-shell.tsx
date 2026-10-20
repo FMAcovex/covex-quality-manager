@@ -21,6 +21,8 @@ const modules = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const canReadSettings = useCanAct("READ", "SYSTEM");
+  // Entrega 1 (D-117): antes de entrar no se ofrecen módulos ni búsqueda.
+  const signIn = pathname === "/login";
 
   return (
     <div className="app-frame">
@@ -34,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
         </Link>
 
-        <nav className="module-nav" aria-label="Módulos QMS">
+        {signIn ? null : <nav className="module-nav" aria-label="Módulos QMS">
           {modules.map((module) => {
             if (module.href === "/settings" && !canReadSettings) return null;
             const active =
@@ -66,12 +68,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             );
           })}
-        </nav>
+        </nav>}
 
-        <div className="topbar-tools">
+        {signIn ? null : <div className="topbar-tools">
           <GlobalSearchBox />
           <SessionControls />
-        </div>
+        </div>}
       </header>
       <main className="page-shell">{children}</main>
     </div>
