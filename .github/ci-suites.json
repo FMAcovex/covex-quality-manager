@@ -62,6 +62,7 @@
       "phase4b1:ui:smoke",
       "ux-v1:ui:smoke",
       "ux-v2:ui:smoke",
+      "ux-v3:ui:smoke",
       "phase4b3-c:smoke"
     ]
   },

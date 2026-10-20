@@ -33,6 +33,9 @@ import { SignedVersionDocumentForm } from "@/components/signed-version-document-
 
 import { QmsAdministrativeStatus } from "@/components/qms-administrative-status";
 import { RecordHeader } from "@/components/record-header";
+import { FormWithIndex } from "@/components/form-with-index";
+import { ScrollToAnchor } from "@/components/scroll-to-anchor";
+import { deviationPartAnchors, legacyDeviationTab } from "@/modules/deviations/detail-tabs";
 import { RecordKeyFacts } from "@/components/record-key-facts";
 import { draftRecordTitle } from "@/lib/qms/record-title";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
@@ -62,10 +65,7 @@ export const dynamic = "force-dynamic";
 
 const tabs = [
   ["summary", "Resumen"],
-  ["description", "Descripción"],
-  ["investigation", "Investigación"],
-  ["actions", "Acciones"],
-  ["conclusion", "Conclusión"],
+  ["deviation", "Desviación"],
   ["relations", "Relaciones"],
   ["versions", "Versiones"],
   ["documents", "Documentos"],
@@ -134,7 +134,9 @@ async function DeviationDetailPageAuthenticatedContent({
 }) {
   const { id } = await params;
   const { tab: rawTab, review, thread, returnTo, auditPage } = await searchParams;
-  const activeTab = tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
+  // D-111 (V3): Descripción, Investigación, Acciones y Conclusión son apartados de la pestaña «Desviación».
+  const legacyPart = legacyDeviationTab(rawTab);
+  const activeTab = legacyPart ? "deviation" : tabs.some(([key]) => key === rawTab) ? rawTab! : "summary";
   const deviation = await getDeviationDetail(id);
   if (!deviation) notFound();
   const similarDeviations = await getSimilarDeviations(deviation);
@@ -430,7 +432,11 @@ async function DeviationDetailPageAuthenticatedContent({
         </>
       ) : null}
 
-      {activeTab === "description" ? (
+      {activeTab === "deviation" ? (
+        <FormWithIndex id="deviation-parts" label="Apartados de la desviación">
+          {legacyPart ? <ScrollToAnchor id={legacyPart.anchor} /> : null}
+          <section className="form-section deviation-part" id={deviationPartAnchors.description}>
+            <h2 className="deviation-part-title">Descripción</h2>
         <div className="card">
           <div className="section-title-row">
             <div>
@@ -446,9 +452,9 @@ async function DeviationDetailPageAuthenticatedContent({
             {deviation.howHappened || reviewMode ? <div id={reviewTarget.howHappened.anchorId} className="info-item review-target"><dt><span>Cómo ocurrió / cómo se detectó</span><ReviewMarker target={reviewTarget.howHappened} /></dt><dd className="prose-value">{text(deviation.howHappened)}</dd></div> : null}
           </dl>
         </div>
-      ) : null}
-
-      {activeTab === "investigation" ? (
+          </section>
+          <section className="form-section deviation-part" id={deviationPartAnchors.investigation}>
+            <h2 className="deviation-part-title">Investigación</h2>
         <>
           <div className="card">
             <h2>Investigación</h2>
@@ -480,9 +486,9 @@ async function DeviationDetailPageAuthenticatedContent({
             </dl>
           </div>
         </>
-      ) : null}
-
-      {activeTab === "actions" ? (
+          </section>
+          <section className="form-section deviation-part" id={deviationPartAnchors.actions}>
+            <h2 className="deviation-part-title">Acciones</h2>
         <>
           <div id={reviewTarget.immediateActions.anchorId} className="card review-target">
             <div className="review-target-heading"><h2>Acciones inmediatas</h2><ReviewMarker target={reviewTarget.immediateActions} /></div>
@@ -566,9 +572,9 @@ async function DeviationDetailPageAuthenticatedContent({
             ) : <div className="empty-panel">No se han definido CAPA.</div>}
           </div>
         </>
-      ) : null}
-
-      {activeTab === "conclusion" ? (
+          </section>
+          <section className="form-section deviation-part" id={deviationPartAnchors.conclusion}>
+            <h2 className="deviation-part-title">Conclusión</h2>
         <div className="card">
           <h2>Conclusión y disposición</h2>
           <dl className="info-grid conclusion-grid">
@@ -580,6 +586,8 @@ async function DeviationDetailPageAuthenticatedContent({
             <div id={reviewTarget.dispositionComments.anchorId} className="info-item full review-target"><dt><span>Comentarios de disposición</span><ReviewMarker target={reviewTarget.dispositionComments} /></dt><dd className="prose-value">{text(deviation.dispositionComments)}</dd></div>
           </dl>
         </div>
+          </section>
+        </FormWithIndex>
       ) : null}
 
       {activeTab === "relations" ? (
