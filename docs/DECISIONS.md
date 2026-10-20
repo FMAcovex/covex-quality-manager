@@ -1152,15 +1152,16 @@ Decisión del responsable de Calidad dentro de BE1, segunda entrega. Diseño en 
   - `userId`: solo el UUID interno, sin nombre ni correo;
   - `errorName`;
   - `prismaCode` y `prismaModel`, si es un error de Prisma;
-  - `frames`: hasta 10 líneas de la traza.
+  - `frames`: hasta 10 líneas de la traza con forma de línea de pila, sin la cabecera del mensaje aunque ocupe varias líneas. En producción son posiciones del código compilado, sin mapas de fuente.
 - **Nunca se escribe:** el mensaje del error, su `cause`, el `meta` de Prisma, argumentos, cuerpos, cabeceras, cookies, SQL ni valores de formulario.
 - **Escritura directa.** Se escribe con `process.stdout.write`, porque el arranque de producción silencia `console` (`ops/runtime/logging.mjs`, 4B2); ese envoltorio no cambia. Antes de D-113, en producción, la «Referencia técnica» de la página de error no aparecía en ningún registro.
 - **Referencias:**
   - **Errores no controlados:** `onRequestError` (`src/instrumentation.ts`) los registra con `ref` igual al `digest` que la página de error muestra como «Referencia técnica». No se registra la URL real, solo la plantilla de ruta. En estos casos `userId` va vacío, porque Next.js llama al gancho fuera del contexto de la petición.
-  - **Fallos inesperados al guardar:** la rama genérica de `persistenceFormError` registra el fallo y añade al mensaje «Referencia para IT: E-xxxxxxxx». Los errores esperados no se registran: duplicado, registro inexistente, validación y motivo crítico.
+  - **Fallos inesperados al guardar:** la rama genérica de `persistenceFormError` registra el fallo y añade «Referencia para IT: E-xxxxxxxx» al mensaje principal (`error`), que muestran todos los formularios, también los de seguimiento. Los errores esperados no se registran: duplicado, relación o registro inexistente, validación y motivo crítico.
 - **`catch` de servidor.**
   - Los que ocultaban fallos reales ahora registran: descarga de documentos PNT, inicio, retorno y cierre de sesión, instalación de plantillas al arrancar, lectura de plantillas al activar y marcador de error de la importación PNT.
   - Los que tratan una entrada mal formada, una URL de retorno, la configuración o un acceso denegado llevan un comentario.
-  - La prueba `src/lib/log/silent-catch.test.ts` impide añadir un `catch` de servidor que descarte el error sin registrarlo ni justificarlo.
+  - La prueba `src/lib/log/silent-catch.test.ts` detecta los casos habituales de `catch` de servidor que descartan el error sin registrarlo ni justificarlo. También detecta `console.error` y `console.warn` en código de servidor, que están silenciados en producción (salvo el diagnóstico del modo demostración), y las traducciones de errores de Prisma a un texto genérico sin registro.
+  - Tras la revisión final pasan a registrar también los errores inesperados de las vistas guardadas, de las acciones de revisión, del guardado de PNT y de las rutas de documentos, ciclo, estado manual, índice e importación de PNT.
 - **No es** el audit trail, ni el historial, ni una evidencia GMP: es un registro operativo para diagnosticar fallos técnicos.
 

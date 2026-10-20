@@ -2,6 +2,7 @@ import { authorizedRoute } from "@/lib/auth/route-guard";
 import { expectedDocumentOrigin } from "@/modules/controlled-documents/documents/session-access";
 import { lifecyclePrincipal } from "@/modules/controlled-documents/lifecycle/access";
 import { changeManualRevisionStatus } from "@/modules/controlled-documents/manual-state/service";
+import { logServerError } from "@/lib/log/server-log";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const safeHeaders = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
@@ -26,6 +27,7 @@ async function POSTAuthenticatedContent(request: Request, { params }: { params: 
     const decision = await changeManualRevisionStatus(id, revisionId, JSON.parse(Buffer.concat(chunks).toString("utf8")), principal);
     return Response.json({ id: decision.id, version: decision.sequence }, { status: 201, headers: safeHeaders });
   } catch (error) {
+    if (!(error instanceof Error) || error.name.startsWith("Prisma")) logServerError("controlled-documents.manual-status", error, { module: "PNT" });
     const message = error instanceof Error && !error.name.startsWith("Prisma") && error.name !== "ZodError"
       ? error.message : "No se ha podido registrar el cambio de estado. Recargue y compruebe los datos.";
     return Response.json({ error: message }, { status: 400, headers: safeHeaders });

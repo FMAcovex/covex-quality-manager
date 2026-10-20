@@ -2,11 +2,13 @@ import { authorizedRoute } from "@/lib/auth/route-guard";
 import { z } from "zod";
 import { getBatch, decide, decideBulk, prepare, confirm } from "@/modules/controlled-documents/import/service";
 import { decisionSchema, actorSchema } from "@/modules/controlled-documents/import/domain";
+import { logServerError } from "@/lib/log/server-log";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store" };
 const confirmation = z.object({ actor: actorSchema, version: z.number().int().nonnegative(), token: z.string().regex(/^[a-f0-9]{64}$/), eligibleKeys: z.array(z.string().regex(/^[a-f0-9]{64}$/)).min(1).max(100000), explicitlyConfirmed: z.literal(true) });
 async function idValue(params: Promise<{id: string}>) { return z.string().uuid().parse((await params).id); }
 function failure(error: unknown) {
+    if (!(error instanceof z.ZodError) && (!(error instanceof Error) || error.name.startsWith("Prisma"))) logServerError("controlled-documents.import-batch", error, { module: "PNT" });
     const message = error instanceof z.ZodError ? "Datos de conciliación incompletas o inválidas." : error instanceof Error && !error.name.startsWith("Prisma") ? error.message : "No se ha podido completar la operación. Recupera el lote y revisa la propuesta.";
     return Response.json({ error: message }, { status: 400, headers });
 }

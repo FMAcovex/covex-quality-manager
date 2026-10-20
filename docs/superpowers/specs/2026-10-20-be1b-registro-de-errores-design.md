@@ -58,6 +58,7 @@ Decisiones del responsable de Calidad:
 
 - La rama genérica de `persistenceFormError` llama a `logServerError("action.persistence", error, { module })`.
 - Añade la referencia al mensaje visible: «Se ha producido un error inesperado de persistencia. Los datos no se han guardado. Revisa los campos e inténtalo de nuevo. Referencia para IT: E-xxxxxxxx.»
+- *Ajuste tras la revisión final:* la referencia va en el mensaje principal (`error`: «No se ha podido guardar … Referencia para IT: E-xxxxxxxx.»), porque los formularios de seguimiento y las acciones de Auditorías solo muestran ese campo.
 - Las ramas esperadas no se registran: motivo de cambio crítico, duplicado (P2002), relación inexistente (P2003), registro inexistente (P2025) y validación de Prisma.
 
 ### 3.4 `catch` que ocultan fallos

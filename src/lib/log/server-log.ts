@@ -16,12 +16,20 @@ export function newErrorReference(): string {
 function errorName(error: unknown): string {
   if (error === null) return "null";
   if (typeof error !== "object") return typeof error;
+  // En producción las clases propias se minimizan: `name` conserva «SavedViewError»; solo si parece un identificador.
+  const name = (error as { name?: unknown }).name;
+  if (typeof name === "string" && /^[A-Za-z][\w.]{0,63}$/.test(name)) return name;
   return (error as { constructor?: { name?: string } }).constructor?.name || "Object";
 }
 
+// Una línea de pila de V8: «at fn (ruta:l:c)», «at fn (<anonymous>)» o «at ruta:l:c». Nada de texto libre.
+const frameShape = /^at (?:.+ \((?:.+:\d+:\d+|<anonymous>|native|index \d+)\)|(?:\/|node:|file:|webpack).*:\d+:\d+)$/;
+
 function stackFrames(error: unknown): string[] {
-  const stack = error instanceof Error && typeof error.stack === "string" ? error.stack : "";
-  return stack.split("\n").slice(1).map(line => line.trim()).filter(line => line.startsWith("at ")).slice(0, 10);
+  if (!(error instanceof Error) || typeof error.stack !== "string") return [];
+  // La cabecera de la pila repite el mensaje, que puede ocupar varias líneas: se descartan todas.
+  const header = String(error.message ?? "").split("\n").length;
+  return error.stack.split("\n").slice(header).map(line => line.trim()).filter(line => frameShape.test(line)).slice(0, 10);
 }
 
 export function serverErrorLine(event: string, error: unknown, context: ServerErrorContext & { ref: string; at: Date }): string {

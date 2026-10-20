@@ -141,7 +141,8 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Referencias visibles:**
   - errores no controlados: la «Referencia técnica» de la página de error;
   - fallos inesperados al guardar: «Referencia para IT: E-…».
-- **Fallos que antes se perdían:** se registran 7 que antes se ocultaban (sesión, descarga PNT, plantillas, importación). Una prueba impide nuevos `catch` de servidor sin registro ni justificación.
+- **Auditorías, programa anual:** la emisión devuelve el Word emitido con los bytes que acaba de guardar, sin releerlos, tras un fallo intermitente de su smoke en la secuencia local.
+- **Fallos que antes se perdían:** se registran 7 que antes se ocultaban (sesión, descarga PNT, plantillas, importación). Una prueba detecta los casos habituales de `catch` de servidor sin registro ni justificación.
 - **Comprobado** con:
   - pruebas unitarias del formato y de la ausencia de datos;
   - el smoke `be1b:smoke`: un error no controlado real, cuya referencia de la pantalla está en el registro del servidor (y falla sin `onRequestError`);

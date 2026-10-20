@@ -3,6 +3,7 @@ import { expectedDocumentOrigin } from "@/modules/controlled-documents/documents
 import { documentPrincipal, requireDocumentWrite } from "@/modules/controlled-documents/documents/access";
 import { MAX_DOCUMENT_SIZE, uuid } from "@/modules/controlled-documents/documents/domain";
 import { incorporateDocument } from "@/modules/controlled-documents/documents/service";
+import { logServerError } from "@/lib/log/server-log";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
@@ -31,6 +32,7 @@ async function POSTAuthenticatedContent(request: Request, { params }: { params: 
     }, principal);
     return Response.json({ id: object.id }, { status: 201, headers });
   } catch (error) {
+    if (!(error instanceof Error) || error.name.startsWith("Prisma")) logServerError("controlled-documents.document-add", error, { module: "PNT" });
     const message = error instanceof Error && !error.name.startsWith("Prisma") ? error.message : "No se pudo incorporar el documento; compruebe si ya fue sustituido.";
     return Response.json({ error: message }, { status: 400, headers });
   }

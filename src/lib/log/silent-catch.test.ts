@@ -68,4 +68,18 @@ describe("catch de servidor sin registro ni justificación (BE1-B)", () => {
       silentCatches(readFileSync(file, "utf8")).map(line => `${path.relative(root, file).split(path.sep).join("/")}:${line}`));
     expect(found).toEqual([]);
   });
+
+  it("el código de servidor no usa console.error ni console.warn (silenciados en producción)", () => {
+    const allowed = new Set(["src/app/auth/demo/route.ts"]); // Diagnóstico local solo en modo demostración.
+    const found = serverFiles(path.join(root, "src")).map(file => path.relative(root, file).split(path.sep).join("/"))
+      .filter(file => !allowed.has(file) && /console\.(error|warn)\(/.test(readFileSync(path.join(root, file), "utf8")));
+    expect(found).toEqual([]);
+  });
+
+  it("las traducciones de errores de Prisma a un texto genérico registran el fallo", () => {
+    const found = serverFiles(path.join(root, "src")).map(file => path.relative(root, file).split(path.sep).join("/"))
+      .filter(file => { const source = readFileSync(path.join(root, file), "utf8"); return /startsWith\("Prisma"\)|PrismaClientInitializationError/.test(source) && !source.includes("logServerError"); });
+    expect(found).toEqual([]);
+  });
 });
+

@@ -12,6 +12,7 @@ import type {
   ReplyToReviewThreadInput,
   ResolveReviewThreadInput,
 } from "@/lib/qms/review/types";
+import { logServerError } from "@/lib/log/server-log";
 
 function controlledError(error: unknown): ReviewActionState {
   if (error instanceof ReviewThreadError) {
@@ -22,7 +23,7 @@ function controlledError(error: unknown): ReviewActionState {
       status: null,
     };
   }
-  console.error("Unexpected review action error", error);
+  logServerError("review.action", error);
   return {
     error: "No se ha podido completar la operación de revisión.",
     success: null,

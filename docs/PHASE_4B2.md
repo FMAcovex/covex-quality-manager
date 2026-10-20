@@ -175,7 +175,7 @@ journalctl -u covex-quality | grep '"ref":"2931774425"'
 | `operation`, `module` | Método y plantilla de ruta (`GET /audits/[id]`) o entidad; tipo de render o módulo |
 | `userId` | UUID interno del usuario cuando se conoce; el nombre se consulta en Administración |
 | `errorName`, `prismaCode`, `prismaModel` | Tipo de error y, si es de base de datos, su código y tabla |
-| `frames` | Hasta 10 líneas de código donde ocurrió (sin el mensaje) |
+| `frames` | Hasta 10 posiciones de código donde ocurrió, sin el mensaje. En producción apuntan al código compilado (`.next/server/...`) |
 
 El registro no contiene mensajes, datos de expedientes, formularios, SQL ni credenciales. Retención y acceso según lo que IT apruebe para el resto del registro del servicio.
 

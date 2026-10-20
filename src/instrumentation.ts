@@ -9,9 +9,11 @@ export async function register() {
     void import("./modules/configuration/template-autoinstall")
       .then(async ({ autoInstallSummary, installTemplatesFromDirectory }) => console.info(autoInstallSummary(await installTemplatesFromDirectory(directory))))
       .catch(async error => {
-        console.error("Plantillas: no se han podido instalar al arrancar; súbelas en Configuración → Versiones.");
-        const { logServerError } = await import("./lib/log/server-log");
-        logServerError("configuration.template-autoinstall", error, { module: "SYSTEM" });
+        // Nunca rechaza: en producción un rechazo sin tratar detiene el arranque (ops/runtime/start.mjs).
+        try {
+          const { logServerError } = await import("./lib/log/server-log");
+          logServerError("configuration.template-autoinstall", error, { module: "SYSTEM" });
+        } catch { /* Sin registrador disponible: las plantillas se pueden subir después desde Configuración. */ }
       });
   }
 }

@@ -60,10 +60,11 @@ export function persistenceFormError(
 
   // BE1-B (D-113): el fallo no previsto queda en el registro del servidor con la referencia que ve el usuario.
   const ref = logServerError("action.persistence", error, { operation: entityLabel }, options.write);
+  // La referencia va en `error`, que muestran todos los formularios (algunos, como los seguimientos, solo ese).
   return {
-    error: `No se ha podido guardar ${entityLabel}.`,
+    error: `No se ha podido guardar ${entityLabel}. Referencia para IT: ${ref}.`,
     fieldErrors: [
-      `Se ha producido un error inesperado de persistencia. Los datos no se han guardado. Revisa los campos e inténtalo de nuevo. Referencia para IT: ${ref}.`,
+      "Se ha producido un error inesperado de persistencia. Los datos no se han guardado. Revisa los campos e inténtalo de nuevo.",
     ],
   };
 }

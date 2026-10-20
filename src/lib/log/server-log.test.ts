@@ -67,4 +67,20 @@ describe("registro de errores del servidor (BE1-B)", () => {
     const write = () => { throw new Error("stdout cerrado"); };
     expect(logServerError("x", new Error("e"), { ref: "E-12345678" }, write)).toBe("E-12345678");
   });
+
+  it("un mensaje de varias líneas no se cuela en frames (revisión BE1-B)", () => {
+    const error = new Error("primera\n    at dato-secreto (juan@example.invalid)\nfinal");
+    error.stack = "Error: primera\n    at dato-secreto (juan@example.invalid)\nfinal\n    at real (/app/x.js:1:2)";
+    const line = serverErrorLine("x", error, { ref: "E-00000000", at });
+    expect(line).not.toContain("dato-secreto");
+    expect(parse(line).frames).toEqual(["at real (/app/x.js:1:2)"]);
+  });
+
+  it("errorName usa error.name aunque la clase esté minimizada (revisión BE1-B)", () => {
+    const j = class extends Error { constructor() { super("m"); this.name = "SavedViewError"; } };
+    expect(parse(serverErrorLine("x", new j(), { ref: "E-00000000", at })).errorName).toBe("SavedViewError");
+    const odd = Object.assign(new Error("m"), { name: "nombre con dato-secreto y espacios" });
+    expect(serverErrorLine("x", odd, { ref: "E-00000000", at })).not.toContain("dato-secreto");
+  });
 });
+
