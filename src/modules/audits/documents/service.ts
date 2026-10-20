@@ -15,6 +15,7 @@ import { validateAuditAttachment } from "./attachment-validation";
 import { auditDocumentBlocker } from "./availability";
 import { listCapaPlanVersions } from "../capa-plan-service";
 import { receivedAuditScenario } from "../domain";
+import { withBytes } from "@/lib/db-binary-omit";
 const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -36,13 +37,13 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
     // must never satisfy a request for the generated Word/XLSX original.
     const generatedMime=type==="AUDIT_CAPA_PLAN"?"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     if (version) {
-      const existing = await tx.generatedDocument.findFirst({ where: { recordVersionId: version.id, documentType: type, mimeType:generatedMime, fileData: { not: null } }, orderBy: { generatedAt: "asc" } });
+      const existing = await tx.generatedDocument.findFirst({ where: { recordVersionId: version.id, documentType: type, mimeType:generatedMime, fileData: { not: null } }, orderBy: { generatedAt: "asc" }, omit: withBytes });
       if (existing) { if (!existing.checksum || digest(existing.fileData!) !== existing.checksum) throw new Error("El documento histórico no coincide con su checksum."); return existing; }
     }
     const pinned = snapshot.templates.find(t => t.documentType === type);
     // D-110 (R5C2): las versiones del informe nuevas no fijan A4.03; el CAPA plan tiene versiones propias.
     if (version && type === "AUDIT_CAPA_PLAN" && !pinned) throw new Error("El CAPA plan tiene versiones propias: descárgalo en Versiones → CAPA plan.");
-    const template = version ? pinned ? await tx.templateVersion.findUnique({ where: { id: pinned.id } }) : null : await tx.templateVersion.findFirst({ where: { module: "AUDIT", documentType: type, isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }] });
+    const template = version ? pinned ? await tx.templateVersion.findUnique({ where: { id: pinned.id }, omit: withBytes }) : null : await tx.templateVersion.findFirst({ where: { module: "AUDIT", documentType: type, isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }], omit: withBytes });
     if (!template || template.module !== "AUDIT" || template.documentType !== type || !template.checksum) throw new TemplateAssetError("Plantilla controlada no disponible para este documento/versión.");
     const bytes = template.fileData ? Buffer.from(template.fileData) : template.filePath ? await readFile(path.resolve(process.cwd(), template.filePath)) : null;
     if (!bytes || digest(bytes) !== template.checksum || (pinned && pinned.checksum !== template.checksum)) throw new TemplateAssetError("El binario no coincide con la plantilla congelada; no se regenera con una revisión diferente.");
@@ -52,7 +53,7 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
     await auditReportEvent(tx, a.qmsRecordId, actor, "audit.document.generated", null, { id: document.id, fileName, version: sequence, templateVersionId: template.id }, "Generación desde snapshot formal / estado actual indicado");
     return document;
   }, { timeout: 20000 }));
-  return prisma.generatedDocument.findUniqueOrThrow({ where: { id } });
+  return prisma.generatedDocument.findUniqueOrThrow({ where: { id }, omit: withBytes });
 }
 export async function registerAuditAttachment(auditId: string, file: File, metadata: { type: "AUDIT_RECEIVED" | "AUDIT_RESPONSE" | "AUDIT_EVIDENCE"; reference: string; date: string; externalVersion: string; observations: string; actor: string; documentName: string }) {
   if (!metadata.actor.trim() || !metadata.documentName.trim()) throw new Error("Indica tipo/nombre documental y responsable.");
@@ -89,7 +90,7 @@ export async function storeAuditSignedPdf(auditId: string, versionId: string, fi
 }
 export async function getAuditDocument(auditId: string, documentId: string, signed = false) {
   const a=await prisma.audit.findUniqueOrThrow({where:{id:auditId},select:{qmsRecordId:true}});
-  const d=signed ? await prisma.recordVersionDocument.findFirst({where:{id:documentId,recordVersion:{qmsRecordId:a.qmsRecordId}}}) : await prisma.generatedDocument.findFirst({where:{id:documentId,qmsRecordId:a.qmsRecordId}});
+  const d=signed ? await prisma.recordVersionDocument.findFirst({where:{id:documentId,recordVersion:{qmsRecordId:a.qmsRecordId}},omit:withBytes}) : await prisma.generatedDocument.findFirst({where:{id:documentId,qmsRecordId:a.qmsRecordId},omit:withBytes});
   if(!d?.fileData)throw new Error("Documento no disponible en este expediente.");
   if(d.checksum && digest(d.fileData)!==d.checksum)throw new Error("El archivo no coincide con su checksum.");return d;
 }

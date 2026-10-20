@@ -24,7 +24,7 @@ async function main(){
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error"&&/hydrat|server rendered/i.test(m.text()))errors.push(m.text());});
  try{
   if(process.env.R4A_OFFICIAL_TEMPLATES!=="1")for(const annex of ["III","IV"] as const){
-   const t=await prisma.templateVersion.findUniqueOrThrow({where:{module_documentType_versionCode:{module:"COMPLAINT",documentType:annex==="III"?"COMPLAINT_ANNEX_III":"COMPLAINT_ANNEX_IV",versionCode:"03"}}});
+   const t=await prisma.templateVersion.findUniqueOrThrow({where:{module_documentType_versionCode:{module:"COMPLAINT",documentType:annex==="III"?"COMPLAINT_ANNEX_III":"COMPLAINT_ANNEX_IV",versionCode:"03"}},omit:{fileData:false}});
    if(t.fileData||t.filePath)throw new Error("Usa R4A_OFFICIAL_TEMPLATES=1 para las plantillas oficiales ya instaladas.");
    backups.push({id:t.id,data:{fileData:t.fileData,fileName:t.fileName,fileSize:t.fileSize,checksum:t.checksum,filePath:t.filePath}});const bytes=syntheticComplaintDoc(annex);
    await prisma.templateVersion.update({where:{id:t.id},data:{fileData:new Uint8Array(bytes),fileName:`TEST-R4A-${annex}.docx`,fileSize:bytes.length,checksum:createHash("sha256").update(bytes).digest("hex")}});

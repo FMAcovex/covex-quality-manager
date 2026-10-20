@@ -4,6 +4,7 @@
       "dashboard-d1b:smoke",
       "phase3b1:smoke",
       "phase3b2:smoke",
+      "be1a:smoke",
       "db:smoke",
       "import:smoke",
       "indicators:smoke",

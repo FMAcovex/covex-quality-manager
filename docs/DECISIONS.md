@@ -1129,3 +1129,14 @@ Decisión del responsable de Calidad, a partir de un comentario de IT: los exped
   - La tarjeta «asignadas a mí» enlaza a este bloque.
   - Sin selector de departamento fuera de «Filtros» (descartado por el responsable de Calidad).
 - **Estado:** D-111 completa, con V1–V4 implantadas.
+
+## D-112 — Ficheros fuera de las lecturas por defecto (BE1-A, 2026-10-20)
+
+Decisión del responsable de Calidad dentro de BE1 (backlog `docs/V1_BASELINE_AND_BACKLOG.md`), que se reparte en tres entregas: A (esta), B (errores y registros) y C (índices con evidencia). Diseño en `docs/superpowers/specs/2026-10-20-be1a-ficheros-fuera-de-lecturas-design.md`, plan en `docs/superpowers/plans/2026-10-20-be1a-ficheros-fuera-de-lecturas.md` y medición en [PHASE_BE1A.md](PHASE_BE1A.md).
+
+- **Exclusión por defecto.** El cliente Prisma de la aplicación (`src/lib/db-client.ts`) no lee la columna `fileData` de los siete modelos con ficheros: `TemplateVersion`, `RecordVersionDocument`, `GeneratedDocument`, `ControlledRevisionDocument`, `AuditAnnualProgrammeVersion`, `AuditCapaPlanVersion` y `AuditTrailExport` (`binaryOmit` en `src/lib/db-binary-omit.ts`). Vale también dentro de las transacciones y en las relaciones anidadas.
+- **Quien necesita los bytes los pide:** `omit: withBytes` en la consulta, o `fileData: true` en un `select`. Así lo hacen las descargas, la carga de plantillas para generar Word, la instalación de plantillas, los documentos de Auditorías, la exportación del historial y las emisiones que devuelven el fichero.
+- **Inventario.** `src/lib/db-binary-omit.test.ts` lista los archivos de `src` que leen o escriben `fileData` y comprueba que `binaryOmit` cubre todos los modelos con `Bytes` del esquema. Un archivo nuevo que lea bytes hace fallar la prueba hasta revisarlo.
+- **Límite conocido:** el compilador no conoce la exclusión en ningún caso, porque el cliente se tipa como `PrismaClient` y las funciones reciben `Prisma.TransactionClient`; una fila leída sin pedir los bytes sigue tipada con `fileData`. Las salvaguardas son el inventario y el smoke `be1a:smoke`. El inventario funciona por archivo: una lectura nueva sin `withBytes` dentro de un archivo que ya está en la lista no lo hace fallar, así que esas lecturas se revisan a mano.
+- **Sin cambios** de pantallas, permisos, checksums, custodia inmutable, esquema ni migraciones. Los scripts que crean su propio `PrismaClient` (copias de seguridad, recuperación, mediciones) siguen leyendo todo.
+- **Siguiente:** BE1-B (registro de errores) y BE1-C (índices) necesitan su propia aprobación de alcance. El cambio de almacenamiento de ficheros queda para decidir con IT a partir de los volúmenes medidos.

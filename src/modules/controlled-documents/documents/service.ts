@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { DocumentPrincipal, requireDocumentWrite } from "./access";
 import { externalReference, kind, originalName, uuid, validateDocumentFile } from "./domain";
 import { documentHistoryActions } from "./history";
+import { withBytes } from "@/lib/db-binary-omit";
 
 export const metadataSelection = {
   id: true, documentId: true, revisionId: true, originalName: true, kind: true, state: true,
@@ -60,7 +61,7 @@ export async function incorporateDocument(input: Incorporation, principal: Docum
 }
 export async function downloadDocument(documentId: string, revisionId: string, objectId: string, db: PrismaClient = prisma) {
   uuid(documentId); uuid(revisionId); uuid(objectId);
-  const object = await db.controlledRevisionDocument.findFirst({ where: { id: objectId, documentId, revisionId } });
+  const object = await db.controlledRevisionDocument.findFirst({ where: { id: objectId, documentId, revisionId }, omit: withBytes });
   if (!object?.fileData) return null;
   if (object.sizeBytes !== object.fileData.length || object.sha256 !== createHash("sha256").update(object.fileData).digest("hex")) throw new Error("La comprobación de integridad ha fallado.");
   return object;

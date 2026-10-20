@@ -21,7 +21,7 @@ async function main(){
  page.on("pageerror",e=>errors.push(e.message));page.on("console",m=>{if(m.type()==="error"&&/hydrat|server rendered/i.test(m.text()))errors.push(m.text());});
  try{
   if(process.env.R4B_OFFICIAL_TEMPLATES!=="1")for(const annex of ["III","IV","V","VI"] as const){
-   const t=await prisma.templateVersion.findUniqueOrThrow({where:{module_documentType_versionCode:{module:"RETURN",documentType:`RETURN_ANNEX_${annex}`,versionCode:"03"}}});
+   const t=await prisma.templateVersion.findUniqueOrThrow({where:{module_documentType_versionCode:{module:"RETURN",documentType:`RETURN_ANNEX_${annex}`,versionCode:"03"}},omit:{fileData:false}});
    if(t.fileData||t.filePath)throw new Error("Usa R4B_OFFICIAL_TEMPLATES=1 para fuentes oficiales instaladas.");
    backups.push({id:t.id,data:{fileData:t.fileData,fileName:t.fileName,fileSize:t.fileSize,checksum:t.checksum,filePath:t.filePath}});
    const bytes=annex==="VI"?syntheticReturnXlsx():syntheticReturnDoc(annex);

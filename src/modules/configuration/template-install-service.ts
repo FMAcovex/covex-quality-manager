@@ -9,6 +9,7 @@ import {
   templateMimeType,
   type InputFile,
 } from "@/modules/configuration/template-install";
+import { withBytes } from "@/lib/db-binary-omit";
 
 // D-099/D-105: escritura de la instalación de plantillas. La comparten `pnpm templates:install`
 // y el botón «Instalar plantillas» de Configuración → Versiones: mismas huellas, mismas reglas.
@@ -46,7 +47,7 @@ export async function installTemplateFiles(
     for (const { entry, data, checksum, sourceName, derived } of resolved) {
       const key = { module: entry.module, documentType: entry.documentType, versionCode: entry.versionCode };
       const line = (status: InstallLineStatus, message: string) => lines.push({ status, label: entry.label, versionCode: entry.versionCode, message });
-      const existing = await tx.templateVersion.findUnique({ where: { module_documentType_versionCode: key } });
+      const existing = await tx.templateVersion.findUnique({ where: { module_documentType_versionCode: key }, omit: withBytes });
       const otherActive = await tx.templateVersion.count({ where: { module: entry.module, documentType: entry.documentType, isActive: true, NOT: { versionCode: entry.versionCode } } });
       const decision = decideInstall(entry, checksum, existing ? { checksum: existing.checksum, hasBinary: Boolean(existing.fileData || existing.filePath) } : null, otherActive > 0);
       if (decision.action === "unchanged") {

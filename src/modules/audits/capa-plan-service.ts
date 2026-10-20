@@ -12,6 +12,7 @@ import { AuditValidationError } from "./service";
 import { auditReportInclude, auditReportEvent, lockReportAudit, snapshotAudit } from "./report-service";
 import { generateAuditCapaPlan } from "./documents/generators";
 import { CapaPlanStaleError, capaPlanToday, capaPlanFileName, capaPlanFingerprint, capaPlanFollowupSchema, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
+import { withBytes } from "@/lib/db-binary-omit";
 
 type Tx = Prisma.TransactionClient;
 const digest = (b: Uint8Array | string) => createHash("sha256").update(b).digest("hex");
@@ -33,7 +34,7 @@ export async function replayedCapaPlanVersion(tx: Tx, auditId: string, requestId
  */
 export async function issueCapaPlanVersion(tx: Tx, auditId: string, input: CapaPlanVersionInput) {
   const audit = await tx.audit.findUniqueOrThrow({ where: { id: auditId }, include: auditReportInclude });
-  const template = await tx.templateVersion.findFirst({ where: { module: "AUDIT", documentType: "AUDIT_CAPA_PLAN", isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }] });
+  const template = await tx.templateVersion.findFirst({ where: { module: "AUDIT", documentType: "AUDIT_CAPA_PLAN", isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }], omit: withBytes });
   if (!template?.checksum || (!template.fileData && !template.filePath)) throw new TemplateAssetError("Plantilla A4.03 del CAPA plan no instalada. Instálala en Configuración → Instalar plantillas.");
   const source = template.fileData ? Buffer.from(template.fileData) : await readFile(path.resolve(process.cwd(), template.filePath!));
   if (digest(source) !== template.checksum) throw new TemplateAssetError("La plantilla A4.03 no coincide con su checksum registrado.");
@@ -145,7 +146,7 @@ export async function listCapaPlanVersions(auditId: string) {
 }
 export type CapaPlanVersionSummary = Awaited<ReturnType<typeof listCapaPlanVersions>>[number];
 export async function getCapaPlanVersionFile(auditId: string, sequence: number) {
-  const file = await prisma.auditCapaPlanVersion.findUnique({ where: { auditId_sequenceNumber: { auditId, sequenceNumber: sequence } } });
+  const file = await prisma.auditCapaPlanVersion.findUnique({ where: { auditId_sequenceNumber: { auditId, sequenceNumber: sequence } }, omit: withBytes });
   if (!file) throw new Error("La versión del CAPA plan no existe en esta auditoría.");
   if (digest(file.fileData) !== file.checksum) throw new Error("El archivo de la versión no supera la comprobación de integridad.");
   return file;
