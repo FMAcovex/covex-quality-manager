@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { auditListingReturnTo } from "@/modules/audits/navigation";
 import { getPlanOptions } from "@/modules/audits/plans";
@@ -12,7 +13,7 @@ async function EditAuditPageAuthenticatedContent({ params, searchParams }: { par
   const [audit,departments] = await Promise.all([getAuditDetail(id),getAuditDepartments()]);
   if (!audit) notFound();
   if (!audit.qmsRecord.isActive) return <section className="workspace"><h1>Expediente anulado</h1><p>Reactiva la auditoría desde su ficha antes de editarla.</p></section>;
-  return <section className="workspace"><div className="page-heading"><h1>Editar auditoría</h1></div><AuditForm returnTo={auditListingReturnTo(returnTo)} id={id} defaults={auditDefaults(audit)} departments={departments} plans={await getPlanOptions()}/></section>;
+  return <section className="workspace"><div className="page-heading"><h1>Editar auditoría</h1></div><FormWithIndex id="record-form-body"><AuditForm returnTo={auditListingReturnTo(returnTo)} id={id} defaults={auditDefaults(audit)} departments={departments} plans={await getPlanOptions()}/></FormWithIndex></section>;
 }
 
 export default async function EditAuditPage(...args: Parameters<typeof EditAuditPageAuthenticatedContent>) {

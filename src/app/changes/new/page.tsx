@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -19,7 +20,7 @@ async function NewChangeControlPageAuthenticatedContent() {
           <p>Solicitud y Dictamen conforme a GC-00/003/03.</p>
         </div>
       </div>
-      <PermissionGate permission="CREATE"><ChangeControlForm
+      <PermissionGate permission="CREATE"><FormWithIndex id="record-form-body"><ChangeControlForm
         mode="create"
         action={createChangeControlAction}
         departments={departments}
@@ -29,7 +30,7 @@ async function NewChangeControlPageAuthenticatedContent() {
           requesterName: currentActor(),
           finalStatus: "DRAFT",
         }}
-      /></PermissionGate>
+      /></FormWithIndex></PermissionGate>
     </section>
   );
 }

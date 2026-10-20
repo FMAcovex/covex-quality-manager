@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { withReturnTo } from "@/modules/controlled-documents/navigation";
 import { DocumentLink as Link } from "@/modules/controlled-documents/components/document-link";
@@ -16,7 +17,7 @@ async function EditPageAuthenticatedContent({ params, searchParams }: {
     const [master, departments] = await Promise.all([prisma.controlledDocument.findUnique({ where: { id } }), prisma.department.findMany({ orderBy: { code: "asc" } })]);
     if (!master || master.administrativeStatus === "ANNULLED")
         notFound();
-    return <section className="workspace form-page pnt-workspace"><header className="page-heading"><div><p className="eyebrow">Gestión documental · PNT</p><h1>Editar maestro PNT</h1></div><Link className="button" href={withReturnTo(`/controlled-documents/${id}`, returnTo)}>Volver a la ficha</Link></header><DocumentForm returnTo={returnTo} master={master} departments={departments}/></section>;
+    return <section className="workspace form-page pnt-workspace"><header className="page-heading"><div><p className="eyebrow">Gestión documental · PNT</p><h1>Editar maestro PNT</h1></div><Link className="button" href={withReturnTo(`/controlled-documents/${id}`, returnTo)}>Volver a la ficha</Link></header><FormWithIndex id="record-form-body"><DocumentForm returnTo={returnTo} master={master} departments={departments}/></FormWithIndex></section>;
 }
 
 export default async function EditPage(...args: Parameters<typeof EditPageAuthenticatedContent>) {

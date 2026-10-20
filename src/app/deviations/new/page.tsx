@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { appUserOptions } from "@/lib/auth/app-users";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -33,7 +34,7 @@ async function NewDeviationPageAuthenticatedContent({ searchParams }: { searchPa
       </div>
       {fromAuditFindingId && !auditFinding ? <div className="analytics-note"><strong>Hallazgo no disponible:</strong> el hallazgo de auditoría ya no existe, está retirado o su auditoría está anulada. La desviación se creará sin vincular.</div> : null}
       {auditFinding ? <div className="analytics-note"><strong>Origen:</strong> esta desviación se está creando desde el hallazgo {auditFinding.reference} de la auditoría {auditFinding.auditLabel}. Al guardarla, como borrador o abierta, queda vinculada al hallazgo.</div> : null}
-      <PermissionGate permission="CREATE"><DeviationForm action={createDeviationAction} departments={departments} users={users} mode="create" defaults={defaults} fromAuditFindingId={auditFinding ? auditFinding.findingId : undefined} /></PermissionGate>
+      <PermissionGate permission="CREATE"><FormWithIndex id="record-form-body"><DeviationForm action={createDeviationAction} departments={departments} users={users} mode="create" defaults={defaults} fromAuditFindingId={auditFinding ? auditFinding.findingId : undefined} /></FormWithIndex></PermissionGate>
     </section>
   );
 }

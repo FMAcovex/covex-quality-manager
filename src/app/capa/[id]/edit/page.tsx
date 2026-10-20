@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { capaEditOrigins } from "@/modules/capa/edit-origins";
 import { appUserOptions } from "@/lib/auth/app-users";
@@ -86,7 +87,7 @@ async function EditCapaPageAuthenticatedContent({ params, searchParams }: { para
   return (
     <section className="workspace">
       <div className="page-heading"><div><p className="eyebrow">CAPA</p><h1>Editar {capa.qmsRecord.businessCode}</h1><p>Los expedientes cerrados permanecen editables en V1 con historial de cambios.</p></div></div>
-      <CapaForm mode="edit" action={action} departments={lookups.departments} users={users} defaults={defaults} capaId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/capa",returnTo)} detailTab={qmsDetailTab("/capa",tab)} qmsRecordId={capa.qmsRecord.id} />
+      <FormWithIndex id="record-form-body"><CapaForm mode="edit" action={action} departments={lookups.departments} users={users} defaults={defaults} capaId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/capa",returnTo)} detailTab={qmsDetailTab("/capa",tab)} qmsRecordId={capa.qmsRecord.id} /></FormWithIndex>
     </section>
   );
 }

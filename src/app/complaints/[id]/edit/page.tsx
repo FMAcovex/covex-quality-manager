@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -49,7 +50,7 @@ async function EditComplaintPageAuthenticatedContent({params,searchParams}:{para
   capaPlans:r.capaPlans.map(x=>({id:x.id,actionType:x.actionType,description:x.description,plannedExecutionDate:x.plannedExecutionDate?.toISOString().slice(0,10)??"",responsible:x.responsible??"",responsibleUserId:x.responsibleUserId,businessCapaCode:x.businessCapaCode??""})),
   derivedActions:r.derivedActions.map(x=>({id:x.id,actionType:x.actionType,businessCode:x.businessCode??"",description:x.description??"",responsible:x.responsible??"",responsibleUserId:x.responsibleUserId,plannedExecutionDate:x.plannedExecutionDate?.toISOString().slice(0,10)??"",sortOrder:x.sortOrder}))
  };
- return <section className="workspace"><div className="page-heading"><div><p className="eyebrow">Reclamaciones</p><h1>Editar {r.qmsRecord.businessCode}</h1></div></div><PermissionGate permission="EDIT"><ComplaintForm mode="edit" action={updateComplaintAction.bind(null,id)} departments={l.departments} users={users} defaults={defaults} complaintId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/complaints",returnTo)} detailTab={qmsDetailTab("/complaints",tab)}/></PermissionGate></section>;
+ return <section className="workspace"><div className="page-heading"><div><p className="eyebrow">Reclamaciones</p><h1>Editar {r.qmsRecord.businessCode}</h1></div></div><PermissionGate permission="EDIT"><FormWithIndex id="record-form-body"><ComplaintForm mode="edit" action={updateComplaintAction.bind(null,id)} departments={l.departments} users={users} defaults={defaults} complaintId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/complaints",returnTo)} detailTab={qmsDetailTab("/complaints",tab)}/></FormWithIndex></PermissionGate></section>;
 }
 
 export default async function EditComplaintPage(...args: Parameters<typeof EditComplaintPageAuthenticatedContent>) {

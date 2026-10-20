@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { appUserOptions } from "@/lib/auth/app-users";
 import { getSimilarDeviations } from "@/modules/deviations/recurrence-queries";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
@@ -49,7 +50,7 @@ async function EditDeviationPageAuthenticatedContent({
         </div>
         <Link className="button" href={qmsDetailUrl("/deviations", id, returnTo, tab)}>← Volver al expediente</Link>
       </div>
-      <DeviationForm
+      <FormWithIndex id="record-form-body"><DeviationForm
         action={action}
         cancelHref={qmsDetailUrl("/deviations", id, returnTo, tab)} returnTo={qmsListingReturnTo("/deviations", returnTo)} detailTab={qmsDetailTab("/deviations", tab)}
         departments={lookups.departments}
@@ -129,7 +130,7 @@ async function EditDeviationPageAuthenticatedContent({
               responsibleUserId: item.responsibleUserId,
             })),
         }}
-      />
+      /></FormWithIndex>
     </section>
   );
 }

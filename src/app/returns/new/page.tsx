@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -17,7 +18,7 @@ async function NewReturnPageAuthenticatedContent({searchParams}:{searchParams:Pr
  }:{communicationDate:new Date().toISOString().slice(0,10),createdByText:currentActor(),status:"DRAFT" as const,decision:"PENDING" as const};
  return <section className="workspace"><div className="page-heading"><div><p className="eyebrow">Devoluciones</p><h1>Nueva devolución</h1><p>GC-00/028/03 · recepción, evaluación y destino final.</p></div></div>
  {complaint?<div className="analytics-note"><strong>Origen:</strong> devolución iniciada desde la reclamación {complaint.qmsRecord.businessCode}.</div>:null}
- <PermissionGate permission="CREATE"><ReturnForm mode="create" action={createReturnAction} departments={lookups.departments} defaults={defaults} fromComplaintId={fromComplaintId}/></PermissionGate></section>;
+ <PermissionGate permission="CREATE"><FormWithIndex id="record-form-body"><ReturnForm mode="create" action={createReturnAction} departments={lookups.departments} defaults={defaults} fromComplaintId={fromComplaintId}/></FormWithIndex></PermissionGate></section>;
 }
 
 export default async function NewReturnPage(...args: Parameters<typeof NewReturnPageAuthenticatedContent>) {
