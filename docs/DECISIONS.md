@@ -1114,3 +1114,7 @@ Decisión del responsable de Calidad, a partir de un comentario de IT: los exped
   - **Vacíos atenuados** en la franja y en la información de Auditorías.
   - **Móvil:** pestañas en una sola fila desplazable.
   - **Documentación controlada** conserva su cabecera propia y recibe la franja (estado, revisión vigente, vigente desde, próxima revisión con su tono y departamento).
+- **V2 (implantada):** índice lateral de apartados en los formularios de alta y edición de los 8 módulos (`FormWithIndex` y `SectionIndex`).
+  - Se construye con los títulos que ya tienen los formularios (A. Origen, B…, E. Investigación…) y no cambia campos, orden, validaciones ni guardado.
+  - A partir de 1200 px aparece como una columna fija a la izquierda que marca el apartado visible. Al pulsar un apartado, la página baja hasta él.
+  - Por debajo de 1200 px no aparece y el formulario se ve como antes.

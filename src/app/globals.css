@@ -2892,6 +2892,7 @@ button[disabled] {
 .section-index a:hover { color: var(--blue-dark); }
 .section-index a[aria-current="true"] { color: var(--blue-dark); border-left-color: var(--blue); font-weight: 750; }
 .form-with-index-body section { scroll-margin-top: 120px; }
+.form-page:has(.form-with-index) { max-width: 1500px; }
 @media (min-width: 1200px) {
   .form-with-index { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; align-items: start; }
   .section-index:not([hidden]) { display: block; position: sticky; top: 120px; max-height: calc(100vh - 140px); overflow: auto; }

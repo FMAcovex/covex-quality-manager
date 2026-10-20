@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
 import { authorizedPage } from "@/lib/auth/page-guard";
@@ -130,7 +131,7 @@ async function NewCapaPageAuthenticatedContent({
       {complaint ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando directamente desde la reclamación {complaint.qmsRecord.businessCode}.</div> : null}
       {fromAuditFindingId && !auditFinding ? <div className="analytics-note"><strong>Hallazgo no disponible:</strong> el hallazgo de auditoría ya no existe, está retirado o su auditoría está anulada. La CAPA se creará sin vincular.</div> : null}
       {auditFinding ? <div className="analytics-note"><strong>Origen:</strong> esta CAPA se está creando desde el hallazgo {auditFinding.reference} de la auditoría {auditFinding.auditLabel}. Al guardarla, como borrador o abierta, queda vinculada al hallazgo.</div> : null}
-      <PermissionGate permission="CREATE"><CapaForm
+      <PermissionGate permission="CREATE"><FormWithIndex id="record-form-body"><CapaForm
         mode="create"
         action={createCapaAction}
         departments={departments}
@@ -140,7 +141,7 @@ async function NewCapaPageAuthenticatedContent({
         fromComplaintPlanId={fromComplaintPlanId}
         fromComplaintId={fromComplaintId}
         fromAuditFindingId={auditFinding ? auditFinding.findingId : undefined}
-      /></PermissionGate>
+      /></FormWithIndex></PermissionGate>
     </section>
   );
 }

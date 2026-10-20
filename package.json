@@ -19,6 +19,7 @@
     "phase3b1:smoke": "node --conditions=react-server --import tsx scripts/smoke-phase3b1.ts",
     "phase3b1:ui:smoke": "tsx scripts/smoke-phase3b1-ui.ts",
     "ux-v1:ui:smoke": "tsx scripts/smoke-ux-v1-ui.ts",
+    "ux-v2:ui:smoke": "tsx scripts/smoke-ux-v2-ui.ts",
     "pnt-p3c2:smoke": "tsx scripts/smoke-pnt-p3c2-manual.ts",
     "pnt-p3c1:ui:smoke": "tsx scripts/smoke-pnt-p3c1-ui.ts",
     "pnt-p2c:smoke": "tsx scripts/smoke-pnt-p2c-defects.ts && tsx scripts/smoke-pnt-p2c.ts",

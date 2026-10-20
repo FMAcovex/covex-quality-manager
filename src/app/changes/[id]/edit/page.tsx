@@ -1,3 +1,4 @@
+import { FormWithIndex } from "@/components/form-with-index";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { appUserOptions } from "@/lib/auth/app-users";
@@ -88,7 +89,7 @@ async function EditChangeControlPageAuthenticatedContent({ params, searchParams 
       <div className="page-heading">
         <div><p className="eyebrow">Controles de Cambios</p><h1>Editar {record.qmsRecord.businessCode}</h1><p>La línea base del Dictamen se bloquea tras su aprobación.</p></div>
       </div>
-      <PermissionGate permission="EDIT"><ChangeControlForm
+      <PermissionGate permission="EDIT"><FormWithIndex id="record-form-body"><ChangeControlForm
         mode="edit"
         action={updateChangeControlAction.bind(null,id)}
         departments={lookups.departments}
@@ -96,7 +97,7 @@ async function EditChangeControlPageAuthenticatedContent({ params, searchParams 
         defaults={defaults}
         changeId={id} cancelHref={cancelHref} returnTo={qmsListingReturnTo("/changes",returnTo)} detailTab={qmsDetailTab("/changes",tab)}
         baselineLocked={record.dictamenResult === "APPROVED"}
-      /></PermissionGate>
+      /></FormWithIndex></PermissionGate>
     </section>
   );
 }
