@@ -1171,7 +1171,7 @@ Decisión del responsable de Calidad dentro de BE1, tercera y última entrega. D
 
 - **JIT desactivado en las conexiones de la aplicación.** `createAppPrismaClient` añade `options=-c jit=off` a `DATABASE_URL` (`src/lib/db-url.ts`).
   - Si la URL ya trae `options`, no se toca: IT puede fijar otra configuración.
-  - No cambia la configuración del servidor PostgreSQL ni los scripts con su propio cliente (copias, recuperación, mediciones).
+  - No cambia la configuración del servidor PostgreSQL ni los scripts con su propio cliente (copias, recuperación, mediciones). Tampoco el cliente propio del importador del índice PNT (`src/modules/controlled-documents/import/database.ts`), que hace cargas por lotes y no consultas cortas; queda con JIT activo.
   - Motivo: la aplicación hace consultas cortas, y la compilación JIT costaba más que la propia consulta (~420 ms frente a 28 ms en la de seguimientos de Auditorías del panel).
 - **Dos consultas reescritas, con los mismos resultados:**
   - Auditorías «con PDF firmado»: parte de los PDF firmados y comprueba con `NOT EXISTS` que su versión es la última, en vez de recorrer todas las versiones;
@@ -1179,4 +1179,6 @@ Decisión del responsable de Calidad dentro de BE1, tercera y última entrega. D
 - **Sin índices nuevos, migraciones ni cambios de esquema.** La medición no señaló ningún caso que mejorase con un índice. Los índices de texto para las búsquedas por lote exigirían `pg_trgm` y solo ayudarían campo a campo.
 - **Resultado con 20.000 expedientes ficticios:** «con PDF firmado» de 110 a 31 ms; panel de 211 a 170 ms.
 - **Nueva medición** con datos reales tras la carga del histórico (fase 5, DATA1).
-- **Comprobado** con el smoke `be1c:smoke` (grupo `postgresql`): mismos expedientes que la consulta anterior, también con un PDF firmado solo en una versión antigua; panel igual que la referencia de 3B2 con y sin filtros; y `SHOW jit` = `off`.
+- **Comprobado:**
+  - con el smoke `be1c:smoke` (grupo `postgresql`): mismos expedientes que la consulta anterior, también con un PDF firmado solo en una versión antigua; la lectura de fechas PNT del panel sin lista de pares; y `SHOW jit` = `off`;
+  - con `phase3b2:smoke`, cuya cohorte incluye revisiones PNT sin ciclo de vida y con fechas nulas: el panel es igual que la referencia de 3B2.

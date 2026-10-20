@@ -39,6 +39,8 @@ async function main() {
     assert.deepEqual([...usedSigned].sort(), [...referenceSigned].sort(), "Mismos expedientes que la consulta anterior");
     // Filas leídas de QmsRecordVersion: la consulta anterior recorría todas las versiones.
     const totalVersions = await prisma.qmsRecordVersion.count();
+    // Estadísticas al día tras la carga, para que el plan no dependa de cuándo pase el autovacuum.
+    await prisma.$executeRawUnsafe('ANALYZE "QmsRecordVersion", "RecordVersionDocument"');
     const plan = (await prisma.$queryRawUnsafe<Record<string, string>[]>(`EXPLAIN (ANALYZE, TIMING OFF) ${used}`)).map(row => Object.values(row)[0]);
     const read = plan.filter(line => line.includes("QmsRecordVersion")).reduce((sum, line) => {
       const m = line.match(/actual rows=(\d+) loops=(\d+)/);
