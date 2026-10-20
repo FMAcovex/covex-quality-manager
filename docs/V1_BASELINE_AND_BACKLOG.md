@@ -52,14 +52,14 @@
 | UX2 | P1 · **hecho** (#128, #129, #130) | Mejorar retorno con filtros/página/pestaña, formularios y errores contextualizados | Pruebas de ida y vuelta, guardado explícito, sin autosave, bloqueo de concurrencia preservado |
 | KPI1 | P1 · **hecho** (D1A #131, D1B #133, D1C; indicadores por módulo) | Dashboard QMS común con tareas, próximos/vencidos, tendencias y filtros | Definiciones de KPI auditables, cero doble conteo, drill-down con filtros conservados |
 | BE1 | P1 · **Hecho: A, B y C** (D-112, D-113, D-114) | Medición de SQL/paginación, carga y custodia de documentos, errores/logs. A: ficheros fuera de las lecturas por defecto y medición de los ocho módulos; B: registro de errores; C: JIT desactivado y dos consultas reescritas, sin índices nuevos porque la medición no los justificó | Línea base antes/después, índices motivados y pruebas sin regresiones |
-| CI1 | P1 | Selección de tests por impacto, paralelismo y diagnóstico, batería completa programada | Ninguna regresión crítica retirada; CI verde y duraciones medibles |
+| CI1 | P1 · **aplazado** (D-115) | Selección de tests por impacto, paralelismo y diagnóstico, batería completa programada. Aplazado: la CI actual (todas las pruebas en ~9,5 min por PR) es suficiente; diseño de referencia en `docs/superpowers/specs/2026-10-20-ci1-ci-mas-rapida-design.md` | Ninguna regresión crítica retirada; CI verde y duraciones medibles |
 | SEC1 | P0 antes de GMP · **implementación técnica hecha** (4B1, 4B3; D-078, D-080–D-082, D-086) | Identidad, RBAC, autorización servidor, segregación de funciones, audit trail según riesgos. Pendiente: configuración real de Entra por IT (con IT1) y aceptación QA/DT de perfiles, segregación de funciones, clasificación crítica, revisión y retención del audit trail | Pruebas positivas/negativas, revisión con QA/IT y controles documentados |
 | IT1 | P0 antes de GMP | Servidor COVEX, configuración, HTTPS, backups, restauración, operaciones | Recuperación ejecutada, accesos, monitoreo y procedimiento aprobados |
 | DATA1 | P0 antes de GMP | Conciliación y carga controlada de PNT/históricos; aceptación documental | Actas de reconciliación y aceptación Word, procedencia y cambios |
 | INT1 | P2 | Alertas controladas, Teams/correo y SharePoint según IT | Consentimiento/roles, idempotencia de envíos, trazabilidad y gestión de fallos |
 | VAL1 | P0 antes de GMP | URS, evaluación de riesgos, trazabilidad requisitos-pruebas y validación de uso | Evidencias aprobadas por responsables competentes antes de liberación |
 
-Estado actualizado el 2026-10-20: UX1, UX2, KPI1 y BE1 están integrados en `main`. SEC1 tiene la implementación técnica hecha y queda pendiente de configuración por IT y aceptación QA/DT. El resto sigue pendiente; CI1 es el siguiente.
+Estado actualizado el 2026-10-20: UX1, UX2, KPI1 y BE1 están integrados en `main`. SEC1 tiene la implementación técnica hecha y queda pendiente de configuración por IT y aceptación QA/DT. CI1 queda aplazado (D-115). El resto sigue pendiente.
 
 **P0 antes de GMP** indica requisito para uso regulado, no que bloquee el desarrollo paralelo del dashboard y la UX.
 

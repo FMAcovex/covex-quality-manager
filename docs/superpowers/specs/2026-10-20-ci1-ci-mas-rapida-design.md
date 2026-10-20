@@ -1,6 +1,6 @@
 # CI1 — CI más rápida sin quitar pruebas, con diagnóstico y batería nocturna
 
-**Fecha:** 2026-10-20. **Backlog:** CI1 (P1), fase 3 «Backend y CI». **Estado:** enfoque elegido por el responsable («más rápido sin quitar pruebas»); pendiente de revisión de esta especificación.
+**Fecha:** 2026-10-20. **Backlog:** CI1 (P1), fase 3 «Backend y CI». **Estado:** **aplazado** por decisión del responsable (D-115, 2026-10-20). La CI actual es suficiente; esta especificación se conserva como referencia por si se retoma.
 
 ## 1. Propósito y decisión
 
