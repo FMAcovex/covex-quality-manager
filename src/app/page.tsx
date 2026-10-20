@@ -102,6 +102,26 @@ async function HomePageAuthenticatedContent({
     { name: "tasks", label: "Plazos", options: taskLabels },
   ];
 
+  const assignedTable = (rows: AssignedItem[], empty: string, label = "Asignadas a mí") => (
+              <div className="dashboard-task-table">
+                <table aria-label={label}>
+                  <thead><tr><th>Fecha prevista</th><th>Expediente</th><th>Acción</th><th>Estado</th></tr></thead>
+                  <tbody>
+                    {rows.map(item => (
+                      <tr key={item.key} className={"dashboard-task-row " + (item.state === "OVERDUE" ? "is-overdue" : "is-upcoming")}>
+                        <td className="dashboard-task-date" data-label="Fecha prevista">{item.dueDate ? <time dateTime={item.dueDate.toISOString().slice(0, 10)}>{date(item.dueDate)}</time> : "Sin fecha"}</td>
+                        <td className="dashboard-task-record"><Link href={item.href} className="summary-link">{item.code}</Link><small>{moduleName(item.module)}</small></td>
+                        <td className="dashboard-task-reason" title={item.detail}>{item.label}{item.detail ? <small>{item.detail}</small> : null}</td>
+                        <td className="dashboard-task-state"><span className={"badge " + assignedStateBadge[item.state]}>{assignedStateLabel[item.state]}</span></td>
+                      </tr>
+                    ))}
+                    {!rows.length && <tr><td colSpan={4} className="dashboard-empty">{empty}</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+  );
+  const myTasks = assignedItems.slice(0, assignedPageSize);
+
   return (
     <section className="workspace home-workspace dashboard-home qms-list-ux-b list-ux-c" data-testid="qms-dashboard">
       <div className="home-hero">
@@ -148,6 +168,19 @@ async function HomePageAuthenticatedContent({
         </ListFilterToolbar>
       </form>
 
+      {/* D-111 (V4): las tareas del usuario, lo primero del panel. */}
+      <section id="dashboard-my-tasks" className="dashboard-section dashboard-my-tasks" aria-labelledby="dashboard-my-tasks-title">
+        <div className="dashboard-heading">
+          <div><p className="eyebrow">Tu trabajo</p><h2 id="dashboard-my-tasks-title">Mis tareas</h2></div>
+          {assignedItems.length > myTasks.length ? <Link href={queryLink({ ...query, tasks: "mine" }, 1) + "#dashboard-tasks"} className="summary-link">Ver todas ({number(assignedItems.length)}) →</Link> : null}
+        </div>
+        <div className="dashboard-task-summary" aria-label="Resumen de mis tareas">
+          <span className="dashboard-deadline-count overdue"><strong>{number(assignedCounts.overdue)}</strong> vencidas</span>
+          <span className="dashboard-deadline-count upcoming"><strong>{number(assignedCounts.upcoming)}</strong> próximas · 30 días</span>
+        </div>
+        {assignedTable(myTasks, "No tienes tareas asignadas.", "Mis tareas")}
+      </section>
+
       <section className="dashboard-attention" aria-label="Requiere atención">
         <a href="#dashboard-tasks" className={"dashboard-attention-item" + (data.taskCounts.overdue ? " is-critical" : "")}>
           <strong>{number(data.taskCounts.overdue)}</strong><span>plazos vencidos</span>
@@ -166,7 +199,7 @@ async function HomePageAuthenticatedContent({
         <div className="dashboard-attention-item">
           <strong>{number(draft)}</strong><span>borradores sin abrir</span>
         </div>
-        <Link href={queryLink({ ...query, tasks: "mine" }, 1) + "#dashboard-tasks"} className={"dashboard-attention-item" + (assignedCounts.overdue ? " is-critical" : assignedCounts.total ? " is-warning" : "")}>
+        <Link href="#dashboard-my-tasks" className={"dashboard-attention-item" + (assignedCounts.overdue ? " is-critical" : assignedCounts.total ? " is-warning" : "")}>
           <strong>{number(assignedCounts.total)}</strong><span>asignadas a mí</span>
           {assignedCounts.overdue ? <small>{assignedCounts.overdue} vencidas</small> : null}
         </Link>
@@ -219,22 +252,7 @@ async function HomePageAuthenticatedContent({
                 <span className="dashboard-deadline-count upcoming"><strong>{number(assignedCounts.upcoming)}</strong> próximas · 30 días</span>
               </div>
               <p className="dashboard-hint">Acciones pendientes en las que figuras como usuario responsable. Solo aparecen las que tienen el usuario vinculado, no las que solo tienen tu nombre escrito.</p>
-              <div className="dashboard-task-table">
-                <table aria-label="Asignadas a mí">
-                  <thead><tr><th>Fecha prevista</th><th>Expediente</th><th>Acción</th><th>Estado</th></tr></thead>
-                  <tbody>
-                    {assignedRows.map(item => (
-                      <tr key={item.key} className={"dashboard-task-row " + (item.state === "OVERDUE" ? "is-overdue" : "is-upcoming")}>
-                        <td className="dashboard-task-date" data-label="Fecha prevista">{item.dueDate ? <time dateTime={item.dueDate.toISOString().slice(0, 10)}>{date(item.dueDate)}</time> : "Sin fecha"}</td>
-                        <td className="dashboard-task-record"><Link href={item.href} className="summary-link">{item.code}</Link><small>{moduleName(item.module)}</small></td>
-                        <td className="dashboard-task-reason" title={item.detail}>{item.label}{item.detail ? <small>{item.detail}</small> : null}</td>
-                        <td className="dashboard-task-state"><span className={"badge " + assignedStateBadge[item.state]}>{assignedStateLabel[item.state]}</span></td>
-                      </tr>
-                    ))}
-                    {!assignedRows.length && <tr><td colSpan={4} className="dashboard-empty">No tienes acciones pendientes asignadas con estos filtros.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
+              {assignedTable(assignedRows, "No tienes acciones pendientes asignadas con estos filtros.")}
             </>
           ) : (
             <>

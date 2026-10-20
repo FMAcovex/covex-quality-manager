@@ -2904,3 +2904,6 @@ button[disabled] {
 .deviation-part { scroll-margin-top: 120px; }
 .deviation-part + .deviation-part { margin-top: 36px; }
 .deviation-part-title { margin: 0 0 14px; padding-left: 12px; border-left: 4px solid var(--blue); font-size: 22px; font-weight: 700; }
+
+/* D-111 (V4): «Mis tareas», primer bloque del panel. */
+.dashboard-my-tasks { margin-bottom: 18px; }

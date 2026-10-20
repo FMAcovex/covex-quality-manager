@@ -1123,3 +1123,9 @@ Decisión del responsable de Calidad, a partir de un comentario de IT: los exped
   - Siguen siendo bloques separados: descripción del evento, investigación, causa raíz, evaluación de impacto, acciones inmediatas, CAPA propuestas y conclusión.
   - **Compatibilidad:** las claves antiguas (`?tab=investigation`…) son alias que muestran «Desviación» y bajan al apartado.
   - **Comentarios de revisión:** el catálogo conserva sus claves de pestaña, de modo que los comentarios ya guardados siguen asociados a su campo y se abren sin recargas.
+- **V4 (implantada):** en el inicio, **«Mis tareas»** es el primer bloque, bajo el título del panel, y está siempre visible.
+  - Muestra las tareas del usuario (vencidas, próximas y pendientes) con la misma tabla y la misma definición de «asignada» de D-102. Sin tareas, indica «No tienes tareas asignadas.».
+  - Enseña las 15 primeras. Si hay más, «Ver todas» lleva al modo «Asignadas a mí» de la lista de plazos, que no cambia.
+  - La tarjeta «asignadas a mí» enlaza a este bloque.
+  - Sin selector de departamento fuera de «Filtros» (descartado por el responsable de Calidad).
+- **Estado:** D-111 completa, con V1–V4 implantadas.

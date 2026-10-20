@@ -136,6 +136,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Inicio V4: «Mis tareas» primero (2026-10-20, D-111):**
+- **Bloque «Mis tareas»:** es lo primero del panel, siempre visible. Muestra las tareas del usuario, con las vencidas primero, y avisa si no tiene ninguna.
+- **Lista inferior:** sigue igual, con su modo «Asignadas a mí» para ver todas.
+- **Comprobado** con:
+  - la nueva prueba de navegador `ux-v4:ui:smoke`;
+  - las pruebas del panel (D1B, D1C);
+  - la prueba de asignadas (D-102).
+- Con V4 quedan implantadas las cuatro entregas de D-111.
+
 **Expedientes V3: pestaña única «Desviación» (2026-10-20, D-111):**
 - Descripción, Investigación, Acciones y Conclusión pasan a una sola pestaña «Desviación», con la misma información en cuatro apartados bien marcados y un índice lateral.
 - Los enlaces antiguos, los del panel y los comentarios de revisión ya guardados siguen funcionando.
