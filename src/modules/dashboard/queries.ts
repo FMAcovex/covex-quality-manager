@@ -29,8 +29,8 @@ export async function getDashboardData(filters: DashboardFilters) {
 
   const [
     deviations, capas, changes, complaints, returns, audits, oos,
-    departments, docs, inForceRevisions, revisionCount, alerts,
-    deviationDue, auditDue, trend, capaPending, changesPending,
+    departments, docRows, inForceRows, revisionCount, alerts,
+    deviationDue, auditDue, trend, capaPending, changesPending, lifecycles,
   ] = await Promise.all([
     prisma.deviation.groupBy({ by: ["status"], where: { qmsRecord: qms, ...dep }, _count: { _all: true } }),
     prisma.capa.groupBy({ by: ["status"], where: { qmsRecord: qms, ...dep }, _count: { _all: true } }),
@@ -45,20 +45,14 @@ export async function getDashboardData(filters: DashboardFilters) {
       select: {
         id: true, baseCode: true, revisions: {
           orderBy: [{ revisionCode: "desc" }, { id: "desc" }], take: 1,
-          select: {
-            status: true, verificationStatus: true, effectiveFrom: true, reviewDueAt: true,
-            lifecycle: { select: { effectiveFrom: true, reviewDueAt: true } },
-          },
+          select: { id: true, status: true, verificationStatus: true, effectiveFrom: true, reviewDueAt: true },
         },
       },
     }),
     prisma.controlledDocumentRevision.findMany({
       where: { status: "IN_FORCE", document: docWhere },
       orderBy: [{ revisionCode: "desc" }, { id: "desc" }],
-      select: {
-        documentId: true, status: true, verificationStatus: true, effectiveFrom: true, reviewDueAt: true,
-        lifecycle: { select: { effectiveFrom: true, reviewDueAt: true } },
-      },
+      select: { id: true, documentId: true, status: true, verificationStatus: true, effectiveFrom: true, reviewDueAt: true },
     }),
     prisma.controlledDocumentRevision.count({ where: { document: docWhere } }),
     getAlertPreview(filters.asOf, { year, department, module: filters.module }),
@@ -89,7 +83,13 @@ export async function getDashboardData(filters: DashboardFilters) {
     dashboardTrend(filters.module === "ALL" ? "DEVIATION" : filters.module, year ?? filters.asOf.getUTCFullYear(), department),
     prisma.capa.count({ where: { qmsRecord: qms, ...dep, status: "CLOSED", effectivenessStatus: "PENDING", effectiveClosedAt: null } }),
     prisma.changeControl.count({ where: { qmsRecord: qms, ...dep, finalStatus: "OPEN", executionStatus: "EXECUTED", effectivenessStatus: "PENDING" } }),
+    // BE1-C (D-114): el `lifecycle` anidado hacía que Prisma enviara miles de pares (documentId, revisionId).
+    prisma.controlledRevisionLifecycle.findMany({ where: { revision: { document: docWhere } }, select: { revisionId: true, effectiveFrom: true, reviewDueAt: true } }),
   ]);
+  const lifecycleByRevision = new Map(lifecycles.map(({ revisionId, ...dates }) => [revisionId, dates]));
+  const withLifecycle = <T extends { id: string }>(revision: T) => ({ ...revision, lifecycle: lifecycleByRevision.get(revision.id) ?? null });
+  const docs = docRows.map(doc => ({ ...doc, revisions: doc.revisions.map(withLifecycle) }));
+  const inForceRevisions = inForceRows.map(withLifecycle);
 
   const raw = [
     moduleCounts("DEVIATION", deviations.map(r => ({ status: r.status, count: r._count._all })), filters.state),

@@ -5,6 +5,7 @@
       "phase3b1:smoke",
       "phase3b2:smoke",
       "be1a:smoke",
+      "be1c:smoke",
       "db:smoke",
       "import:smoke",
       "indicators:smoke",
