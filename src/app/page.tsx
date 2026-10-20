@@ -178,7 +178,8 @@ async function HomePageAuthenticatedContent({
           <span className="dashboard-deadline-count overdue"><strong>{number(assignedCounts.overdue)}</strong> vencidas</span>
           <span className="dashboard-deadline-count upcoming"><strong>{number(assignedCounts.upcoming)}</strong> próximas · 30 días</span>
         </div>
-        {assignedTable(myTasks, "No tienes tareas asignadas.", "Mis tareas")}
+        <p className="dashboard-hint">Acciones pendientes en las que figuras como usuario responsable. Solo aparecen las que tienen el usuario vinculado, no las que solo tienen tu nombre escrito.</p>
+        {assignedTable(myTasks, appliedQuery.module || appliedQuery.department || appliedQuery.year ? "No tienes tareas asignadas con estos filtros." : "No tienes tareas asignadas.", "Mis tareas")}
       </section>
 
       <section className="dashboard-attention" aria-label="Requiere atención">

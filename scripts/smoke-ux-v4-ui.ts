@@ -26,6 +26,10 @@ async function main() {
     assert.equal(await row.count(), 1, "La tarea asignada aparece");
     assert.match(await row.locator(".badge").textContent() ?? "", /Vencida/);
     assert.equal(await qa.locator('a[href*="#dashboard-my-tasks"]').count() >= 1, true, "La tarjeta «asignadas a mí» lleva al bloque");
+    assert.match(await block.innerText(), /figuras como usuario responsable/, "Nota sobre qué tareas aparecen");
+    // Con filtros que ocultan sus tareas, el aviso lo dice (no afirma que no tenga ninguna).
+    await qa.goto(base + "/?module=PNT"); await qa.locator("main h1").first().waitFor();
+    assert.match(await qa.locator("#dashboard-my-tasks").innerText(), /No tienes tareas asignadas con estos filtros\./);
 
     const manager = await authenticatedPage(browser, "manager");
     manager.on("pageerror", e => errors.push(e.message));
