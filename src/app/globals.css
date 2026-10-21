@@ -2906,7 +2906,6 @@ button[disabled] {
 @media (max-width: 759px) {
   .record-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
   .record-tabs a { flex: 0 0 auto; white-space: nowrap; }
-  .module-nav { mask-image: linear-gradient(to right, #000 85%, transparent); -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); }
 }
 
 /* D-111 (V2): índice lateral de apartados en formularios, a partir de 1200 px. */
@@ -2962,3 +2961,33 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
   .page-heading .heading-actions { flex-wrap: wrap; }
   .page-heading .heading-actions :is(.button, summary.button) { white-space: nowrap; }
 }
+
+/* D-117, entrega 4 — acabado tras la repetición de la auditoría. */
+/* H-08: cada campo conserva su altura aunque otro de la misma fila tenga ayuda o una etiqueta de dos líneas. */
+.field { align-content: start; }
+.field :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select:not([multiple])) { height: var(--control-height); }
+/* N-02: entre 760 y 1199 px, los botones de cabecera de los listados pasan de fila sin partirse. */
+@media (max-width: 1199px) {
+  .page-heading .heading-actions { flex-wrap: wrap; }
+  .page-heading .heading-actions :is(.button, summary.button) { white-space: nowrap; }
+}
+/* N-02: la barra de módulos indica que se desplaza solo cuando de verdad no cabe. */
+.module-nav[data-overflow="true"]:not([data-at-end="true"]) { mask-image: linear-gradient(to right, #000 85%, transparent); -webkit-mask-image: linear-gradient(to right, #000 85%, transparent); }
+/* N-03: en móvil, la barra fija de acciones ocupa dos líneas: «Cancelar» como enlace y los guardados en una fila. */
+@media (max-width: 759px) {
+  .form-footer { gap: 6px; padding: 8px 0; }
+  .form-footer > a.button { align-self: flex-start; min-height: 28px; padding: 0 2px; border-color: transparent; background: transparent; color: var(--blue-dark); text-decoration: underline; }
+  .form-footer :is(.version-submit-group, .form-footer-actions) { flex-direction: row; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+  .form-footer :is(.version-submit-group, .form-footer-actions) > :is(.button, button) { flex: 1 1 0; min-width: 0; padding: 0 10px; }
+  .form-footer .version-submit-note { flex-basis: 100%; }
+}
+/* N-06: avisos junto a las acciones de la cabecera, debajo de los botones. */
+.record-actions > .muted-note { order: 1; flex-basis: 100%; text-align: right; }
+/* N-01: resumen de pendientes agrupado por apartado. */
+.invalid-fields-summary li { line-height: 1.55; }
+.invalid-fields-summary .invalid-section-link { font-weight: 800; }
+.invalid-fields-summary .invalid-field-link { font-weight: 600; }
+/* N-05: estado vacío compacto en el audit trail de la ficha. */
+.audit-trail-empty { height: auto; padding-block: 22px; }
+.audit-trail-empty p { margin: 0; }
+@media (max-width: 759px) { .record-actions > .muted-note { text-align: left; } }

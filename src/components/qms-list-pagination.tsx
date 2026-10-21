@@ -3,17 +3,18 @@ import { qmsListingUrl, type QmsListRoot } from "@/lib/qms/list-return-navigatio
 import type { qmsListPagination } from "@/lib/qms/list-pagination";
 
 /** Paginación común de los listados (D-117, H-10): mismo texto y mismos botones en todos los módulos. */
-export function ListPagination({ total, page, pageCount, pageSize, href, label = "Paginación de expedientes" }: {
+export function ListPagination({ total, page, pageCount, pageSize, href, label = "Paginación de expedientes", noun = "resultados" }: {
   total: number;
   page: number;
   pageCount: number;
   pageSize: number;
   href: (page: number) => string;
   label?: string;
+  noun?: string;
 }) {
   const last = Math.max(1, pageCount);
   return <nav className="heading-actions qms-list-pagination" aria-label={label}>
-    <span>{total} resultados · Página {page} de {last} · {pageSize} por página</span>
+    <span>{total} {noun} · Página {page} de {last} · {pageSize} por página</span>
     {page > 1 && <Link className="button small" href={href(1)}>Primera</Link>}
     {page > 1 && <Link className="button small" href={href(page - 1)}>Anterior</Link>}
     {page < last && <Link className="button small" href={href(page + 1)}>Siguiente</Link>}

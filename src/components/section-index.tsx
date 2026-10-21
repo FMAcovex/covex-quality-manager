@@ -4,7 +4,7 @@ import { sectionAnchorId } from "@/lib/ui/section-anchor";
 
 type Entry = { id: string; title: string };
 type Found = { entries: Entry[]; elements: HTMLElement[] };
-const SECTIONS = "section.form-section, section.card, fieldset.form-section, section.deviation-part";
+export const SECTIONS = "section.form-section, section.card, fieldset.form-section, section.deviation-part";
 
 /** Apartados visibles de primer nivel del contenedor: no ocultos y no dentro de otra sección del mismo contenedor. */
 function collect(root: HTMLElement): Found {

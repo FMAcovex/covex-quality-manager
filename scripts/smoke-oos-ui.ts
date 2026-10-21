@@ -57,11 +57,13 @@ async function main() {
     await page.getByRole("button", { name: "Guardar cambios", exact: true }).click();
     const summary = page.locator(".invalid-fields-summary");
     await summary.waitFor();
-    const missing = await summary.locator("li").allInnerTexts();
+    const missing = await summary.locator(".invalid-field-link").allInnerTexts();
     assert(missing.length >= 2, `El resumen debe listar todos los campos pendientes: ${missing.join(" | ")}`);
-    assert(missing.some((text) => /es obligatorio\.$/.test(text)), missing.join(" | "));
+    assert.match(await summary.locator("strong").first().innerText(), /^Faltan \d+ campos obligatorios antes de guardar\.$/);
+    // D-117 (N-01): agrupados por apartado, con enlace al apartado.
+    assert((await summary.locator("a.invalid-section-link").count()) >= 1, "Pendientes agrupados por apartado");
     assert.equal(await summary.evaluate((node) => node === document.activeElement), true, "El resumen recibe el foco.");
-    const firstLink = summary.locator("a").first(), targetId = (await firstLink.getAttribute("href"))!.slice(1);
+    const firstLink = summary.locator(".invalid-field-link").first(), targetId = (await firstLink.getAttribute("href"))!.slice(1);
     await firstLink.click();
     assert.equal(await page.evaluate(() => document.activeElement?.id), targetId, "El enlace lleva al campo.");
     assert.equal(page.url().includes(`/oos/${draft.id}/edit`), true, "No se envía el formulario.");

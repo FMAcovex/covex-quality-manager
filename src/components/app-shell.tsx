@@ -8,6 +8,7 @@ import { GlobalSearchBox } from "./global-search-box";
 import { NavigationProgress } from "./navigation-progress";
 import { useCanAct } from "./permissions";
 import { qmsModules } from "@/modules/registry";
+import { useScrollHint } from "./use-scroll-hint";
 
 // Los módulos QMS salen del registro (docs/MODULE_CONTRACT.md); Inicio, Audit
 // Trail y Configuración son entradas transversales.
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const canReadSettings = useCanAct("READ", "SYSTEM");
   // Entrega 1 (D-117): antes de entrar no se ofrecen módulos ni búsqueda.
   const signIn = pathname === "/login";
+  const nav = useScrollHint<HTMLElement>(!signIn);
 
   return (
     <div className="app-frame">
@@ -36,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
         </Link>
 
-        {signIn ? null : <nav className="module-nav" aria-label="Módulos QMS">
+        {signIn ? null : <nav className="module-nav" aria-label="Módulos QMS" ref={nav}>
           {modules.map((module) => {
             if (module.href === "/settings" && !canReadSettings) return null;
             const active =
