@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import covexLogo from "./brand/covex-logo.png";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { SessionControls } from "./session-controls";
@@ -31,7 +33,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <NavigationProgress />
       <header className="topbar">
         <Link className="brand" href="/">
-          <span className="brand-mark">C</span>
+          {/* Logotipo de COVEX en lugar de la marca provisional «C». */}
+          <Image className="brand-logo" src={covexLogo} alt="" width={76} height={40} priority unoptimized />
           <span>
             <strong>COVEX</strong>
             <small>Gestión del Sistema de Calidad</small>

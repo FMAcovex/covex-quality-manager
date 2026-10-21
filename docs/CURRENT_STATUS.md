@@ -168,6 +168,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - Devoluciones no conserva en silencio una fecha de seguimiento borrada;
   - Reclamaciones, Devoluciones y OOS marcan desde el servidor el campo de cada error;
   - el audit trail general filtra por días de Madrid y exporta también la hora de Madrid.
+- **Logotipo de COVEX** en la cabecera, en lugar de la «C» provisional.
 
 **Turno en Desviaciones y PR antiguas (2026-10-20, D-115, D-116):**
 - **Turno:** las desviaciones tienen el campo «Turno» (texto libre, opcional) junto a «Detectado por». Sale en la casilla «turno» del Anexo III y queda en las versiones y en la captura del audit trail.
