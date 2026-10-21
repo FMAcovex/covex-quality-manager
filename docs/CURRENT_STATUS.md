@@ -175,6 +175,9 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - la pestaña Documentos de Desviaciones y CAPA ya no dice «Plantilla oficial pendiente de cargar» cuando el expediente no tiene versión asignada pero la plantilla por defecto está instalada; muestra esa versión («por defecto») y permite descargarla, que es la misma con la que se genera el Anexo III;
   - las fechas de los formularios usan el campo de fecha del navegador, que sigue el idioma del equipo: en un equipo en español se ven como dd/mm/aaaa. No cambia.
   - demo: los controles de cambios de ejemplo tienen ya la versión de cada seguimiento, así que «Descargar Anexo V · 00/01» funciona (antes daba «La versión solicitada no existe»). `seed-examples` también lo repara en una demo ya cargada al volver a arrancarla.
+  - demo: las dos auditorías a proveedor de ejemplo tienen los datos que exige el Plan externo (introducción, alcance, duración y programa), así que «Plan externo · estado actual» se descarga; `seed-examples` los completa también en una demo ya cargada;
+  - una desviación en borrador ya no ofrece «Generar Anexo III cumplimentado» en la pestaña Documentos (el servidor lo rechazaba); muestra «Disponible al abrir la desviación.», como CAPA;
+  - comprobación completa de descargas en la demo (perfil Garantía de Calidad): 580 páginas y 158 descargas distintas (anexos, listados, plantillas y documentos generados de los ocho módulos), todas con respuesta 200 y archivo Word o Excel válido.
 
 **Turno en Desviaciones y PR antiguas (2026-10-20, D-115, D-116):**
 - **Turno:** las desviaciones tienen el campo «Turno» (texto libre, opcional) junto a «Detectado por». Sale en la casilla «turno» del Anexo III y queda en las versiones y en la captura del audit trail.
