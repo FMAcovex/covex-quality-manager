@@ -147,7 +147,7 @@ describe("R4B · aplicabilidad y coherencia del PNT real",()=>{
  });
  it("no permite liberar stock API con evaluación QC negativa",()=>{
   const f=operationalForm();f.set("decision","ACCEPTED");f.set("destinationKind","CONFORMING_STOCK");f.set("decisionDate","2026-10-02");f.set("qcAssessmentCompleted","NO");
-  expect(parseReturnForm(f).errors).toContain("Reincorporación incompatible con qcAssessmentCompleted: debe ser Sí.");
+  expect(parseReturnForm(f).errors).toContain("Reincorporación incompatible con «Evaluación Control de Calidad»: debe ser Sí.");
  });
  it("no permite que Aceptada omita las comprobaciones de stock",()=>{
   const f=operationalForm();triFields.forEach(name=>f.delete(name));f.set("decision","ACCEPTED");f.set("finalDestination","Reincorporación a stock vendible");
@@ -155,13 +155,13 @@ describe("R4B · aplicabilidad y coherencia del PNT real",()=>{
  });
  it("no permite eludir frío indicado en las condiciones",()=>{
   const f=operationalForm();f.set("conservationConditions","Cadena de frío +2/+8 ºC");f.set("finalDestination","Reintegración autorizada");f.set("decision","ACCEPTED");f.set("decisionDate","2026-10-02");f.set("temperatureControlled","false");f.set("storageTemperatureRecord","NA");
-  expect(parseReturnForm(f).errors).toContain("Reincorporación incompatible con storageTemperatureRecord: debe ser Sí.");
+  expect(parseReturnForm(f).errors).toContain("Reincorporación incompatible con «Registro temperatura almacenamiento»: debe ser Sí.");
  });
  it("serialización solo se aplica a medicamentos",()=>{
   const f=operationalForm();f.set("serializedMedicine","on");f.set("finalDestination","Reintegración autorizada");f.set("decision","ACCEPTED");f.set("decisionDate","2026-10-02");f.set("uniqueIdentifierActive","NA");
   expect(parseReturnForm(f).errors).toEqual([]);
   f.set("productsJson",JSON.stringify([{productType:"MEDICINE",productNameCode:"Medicamento",format:"Caja",lot:"L",expiryReanalysis:"2027",quantity:"1"}]));
-  expect(parseReturnForm(f).errors.some(x=>x.includes("uniqueIdentifierActive"))).toBe(true);
+  expect(parseReturnForm(f).errors.some(x=>x.includes("Identificador único / Data Matrix activo"))).toBe(true);
  });
  it("el cierre requiere trazabilidad positiva y evidencia de destrucción",()=>{
   const f=operationalForm("CLOSED");f.set("decision","REJECTED");f.set("decisionDate","2026-10-02");f.set("closedAt","2026-10-02");f.set("finalDestination","Destrucción");f.set("traceabilityUpdated","NA");
@@ -190,8 +190,8 @@ describe("R4B · frío de API sin plazo de medicamento",()=>{
 describe("R4B · plazo de medicamento según procedencia y PNT §5.6",()=>{
  const medicine=()=>{const f=operationalForm();f.set("productsJson",JSON.stringify([{productType:"MEDICINE",productNameCode:"M",format:"Caja",lot:"L",expiryReanalysis:"2027",quantity:"1"}]));f.set("decision","ACCEPTED");f.set("decisionDate","2026-10-02");f.set("finalDestination","Stock vendible");f.set("roomTemperatureWithinTenDays","NO");return f;};
  it("permite excepción de diez días solo con evaluación de riesgos documentada",()=>{
-  const f=medicine();expect(parseReturnForm(f).errors.some(x=>x.includes("roomTemperatureWithinTenDays"))).toBe(true);f.set("ambientPeriodRiskJustification","Evaluación de riesgos aprobada: integridad demostrada documentalmente");expect(parseReturnForm(f).errors).toEqual([]);
-  f.set("packagingIntegrityOk","NO");expect(parseReturnForm(f).errors.some(x=>x.includes("packagingIntegrityOk"))).toBe(true);
+  const f=medicine();expect(parseReturnForm(f).errors.some(x=>x.includes("+15/+25 ºC dentro de 10 días"))).toBe(true);f.set("ambientPeriodRiskJustification","Evaluación de riesgos aprobada: integridad demostrada documentalmente");expect(parseReturnForm(f).errors).toEqual([]);
+  f.set("packagingIntegrityOk","NO");expect(parseReturnForm(f).errors.some(x=>x.includes("Envases íntegros"))).toBe(true);
  });
  it("no aplica diez días a devolución desde mayorista autorizado",()=>{const f=medicine();f.set("medicineFromWholesale","on");f.set("roomTemperatureWithinTenDays","NA");expect(parseReturnForm(f).errors).toEqual([]);});
 });
@@ -200,7 +200,33 @@ describe("R4B · plazo de medicamento según procedencia y PNT §5.6",()=>{
 describe("R4B · N/A expresamente soportado en evaluación de frío",()=>{
  it("admite ausencia de excursiones/sistema no aplicable, conservando bloqueo de NO y registros ausentes",()=>{
   const f=operationalForm();f.set("conservationConditions","Cadena de frío +2/+8 ºC");f.set("decision","ACCEPTED");f.set("decisionDate","2026-10-02");f.set("finalDestination","Stock conforme");f.set("temperatureExcursionEvaluated","NA");f.set("coldChainReturnSystemValidated","NA");expect(parseReturnForm(f).errors).toEqual([]);
-  f.set("coldChainReturnSystemValidated","NO");expect(parseReturnForm(f).errors.some(x=>x.includes("coldChainReturnSystemValidated"))).toBe(true);
-  f.set("coldChainReturnSystemValidated","NA");f.set("storageTemperatureRecord","NA");expect(parseReturnForm(f).errors.some(x=>x.includes("storageTemperatureRecord"))).toBe(true);
+  f.set("coldChainReturnSystemValidated","NO");expect(parseReturnForm(f).errors.some(x=>x.includes("Sistema devolución termolábiles validado"))).toBe(true);
+  f.set("coldChainReturnSystemValidated","NA");f.set("storageTemperatureRecord","NA");expect(parseReturnForm(f).errors.some(x=>x.includes("Registro temperatura almacenamiento"))).toBe(true);
  });
+});
+
+describe("próximo seguimiento borrado (D-117)", () => {
+  it("rechaza vaciar la fecha aunque el expediente ya tenga una guardada", () => {
+    const form=operationalForm();
+    form.set("requiresFollowup","on");
+    form.set("nextFollowupDate","");
+    expect(parseReturnForm(form,"2026-11-01").errors).toContain("Una devolución abierta que requiere seguimiento necesita próxima fecha.");
+  });
+  it("mantiene la fecha guardada cuando el formulario no envía el campo", () => {
+    const form=operationalForm();
+    form.set("requiresFollowup","on");
+    form.delete("nextFollowupDate");
+    expect(parseReturnForm(form,"2026-11-01").errors).not.toContain("Una devolución abierta que requiere seguimiento necesita próxima fecha.");
+  });
+});
+
+describe("errores por campo y etiquetas legibles (D-117)", () => {
+  it("asocia cada error con su campo y usa la etiqueta del formulario", () => {
+    const form=operationalForm("CLOSED");
+    form.delete("packagingIntegrityOk");form.set("country","");
+    const parsed=parseReturnForm(form);
+    expect(parsed.fieldIssues.packagingIntegrityOk).toEqual(["Envases íntegros es obligatorio."]);
+    expect(parsed.fieldIssues.country).toEqual(["El país es obligatorio."]);
+    expect(parsed.errors.some((message)=>/[a-z][A-Z]/.test(message.split(" ")[0]))).toBe(false);
+  });
 });

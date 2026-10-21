@@ -12,6 +12,7 @@ import { canonicalAuditJson } from "./canonical-json";
 import { assertAuditProtection, assertAuditApplicationRole } from "./protection";
 import { auditTrailCutoff, exactAuditTrailOperationSelection, exactAuditTrailSelection, parseAuditTrailFilters, type AuditTrailFilters } from "./trail";
 import { withBytes } from "@/lib/db-binary-omit";
+import { formatAuditTrailCsvLocal } from "./display-time";
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const requestId=(form:FormData)=>{const value=String(form.get("_covexAuditRequestId")??"");return uuid.test(value)?value:randomUUID();};
@@ -84,12 +85,12 @@ async function createExport(form:FormData){
   const operationById=new Map(exact.operations.map(operation=>[operation.id,operation]));
   const exportId=randomUUID();
   const operationIds=exact.operations.map(operation=>operation.id),eventIds=exact.events.map(event=>event.id);
-  const manifest={version:"COVEX_AUDIT_EXPORT_MANIFEST_V1",format:"CSV_UTF8",filters,cutoff:{occurredAt:cutoff.occurredAt,operationId:cutoff.id},operationIds,eventIds,eventCount:eventIds.length,operationCount:operationIds.length,timezone:"UTC",policyVersions:[...new Set(exact.operations.map(operation=>operation.policyVersion))].sort(),schemaVersions:[...new Set(exact.operations.map(operation=>operation.schemaVersion))].sort(),release:process.env.APP_RELEASE_SHA??"development"};
+  const manifest={version:"COVEX_AUDIT_EXPORT_MANIFEST_V1",format:"CSV_UTF8",filters,cutoff:{occurredAt:cutoff.occurredAt,operationId:cutoff.id},operationIds,eventIds,eventCount:eventIds.length,operationCount:operationIds.length,timezone:"UTC",localTimezone:"Europe/Madrid",policyVersions:[...new Set(exact.operations.map(operation=>operation.policyVersion))].sort(),schemaVersions:[...new Set(exact.operations.map(operation=>operation.schemaVersion))].sort(),release:process.env.APP_RELEASE_SHA??"development"};
   let csv="\uFEFF";
   csv+=csvRow(["COVEX Quality Manager","Exportación controlada de Audit Trail"]);
-  csv+=csvRow(["Identificador",exportId]);csv+=csvRow(["Corte UTC",cutoff.occurredAt]);csv+=csvRow(["Operación de corte",cutoff.id]);csv+=csvRow(["Ejecutor",actor.name]);csv+=csvRow(["Filtros",canonicalAuditJson(filters)]);csv+="\r\n";
-  csv+=csvRow(["Fecha UTC","Operación ID","Operación","Usuario","Crítica técnica","Entidad","Entidad ID","Campo","Valor anterior tipado","Valor nuevo tipado","Motivo","Versión","Documento","SHA-256 documental"]);
-  for(const event of exact.events){const operation=operationById.get(event.operationId)!;csv+=csvRow([operation.occurredAt.toISOString(),operation.id,operation.operation,operation.actorName,operation.assessment?.proposedCritical===true?"Sí":"No",event.entityType,event.entityId,event.fieldPath,event.oldValue,event.newValue,operation.reason,event.recordVersionId,event.generatedDocumentId,event.documentChecksum]);}
+  csv+=csvRow(["Identificador",exportId]);csv+=csvRow(["Corte UTC",cutoff.occurredAt]);csv+=csvRow(["Corte (Madrid)",formatAuditTrailCsvLocal(new Date(cutoff.occurredAt))]);csv+=csvRow(["Operación de corte",cutoff.id]);csv+=csvRow(["Ejecutor",actor.name]);csv+=csvRow(["Filtros",canonicalAuditJson(filters)]);csv+="\r\n";
+  csv+=csvRow(["Fecha UTC","Fecha (Madrid)","Operación ID","Operación","Usuario","Crítica técnica","Entidad","Entidad ID","Campo","Valor anterior tipado","Valor nuevo tipado","Motivo","Versión","Documento","SHA-256 documental"]);
+  for(const event of exact.events){const operation=operationById.get(event.operationId)!;csv+=csvRow([operation.occurredAt.toISOString(),formatAuditTrailCsvLocal(operation.occurredAt),operation.id,operation.operation,operation.actorName,operation.assessment?.proposedCritical===true?"Sí":"No",event.entityType,event.entityId,event.fieldPath,event.oldValue,event.newValue,operation.reason,event.recordVersionId,event.generatedDocumentId,event.documentChecksum]);}
   const bytes=Buffer.from(csv,"utf8"),fileName=`COVEX_Audit_Trail_${cutoff.occurredAt.slice(0,10)}_${exportId.slice(0,8)}.csv`;
   const rows=await protectedReceipt(Prisma.sql`SELECT covex_c_record_export(${exportId}::uuid,${nonce}::uuid,${digest},${actor.id}::uuid,'CSV_UTF8',${fileName},${new Uint8Array(bytes)}::bytea,${JSON.stringify(manifest)}::jsonb,${cutoff.occurredAt}::timestamptz,${cutoff.id}::uuid,${idArray(operationIds)},${idArray(eventIds)},${eventIds.length}::integer) AS id`);
   return rows[0]?.id??exportId;

@@ -126,3 +126,13 @@ describe("OOS — validación de servidor", () => {
     expect(parsed.values.closedAt).toBeNull();
   });
 });
+
+describe("errores por campo (D-117)", () => {
+  it("asocia cada error de servidor con su campo", () => {
+    const parsed = parseOosForm(form({ status: "OPEN" }));
+    expect(parsed.fieldIssues.area).toEqual(["El área (API o MD) es obligatoria para abrir el OOS."]);
+    expect(parsed.fieldIssues.lotNumber).toEqual(["El n.º de lote es obligatorio."]);
+    expect(parsed.fieldIssues.materialKind).toBeDefined();
+    expect(Object.values(parsed.fieldIssues).flat().sort()).toEqual([...parsed.errors].sort());
+  });
+});

@@ -4,13 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { sectionAnchorId } from "@/lib/ui/section-anchor";
 import { SECTIONS } from "./section-index";
 
-type Problem = { id: string; label: string; message: string; sectionId: string | null; section: string };
+type Problem = { id: string; target?: string; label: string; message: string; sectionId: string | null; section: string };
 type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 let generated = 0;
 
 function fieldLabel(element: Control) {
-  const text = element.closest("label")?.querySelector(":scope > span")?.textContent
+  const group = element.type === "checkbox" || element.type === "radio" ? element.closest(".field")?.querySelector(":scope > span")?.textContent : null;
+  const text = group
+    ?? element.closest("label")?.querySelector(":scope > span")?.textContent
     ?? (element.id ? element.ownerDocument.querySelector(`label[for="${CSS.escape(element.id)}"]`)?.textContent : null)
     ?? element.getAttribute("aria-label")
     ?? element.closest("fieldset")?.querySelector("legend")?.textContent
@@ -41,9 +43,31 @@ function fieldMessage(element: Control) {
  * campo a campo, lista en español todos los campos que faltan con un enlace a cada uno. La
  * validación del navegador y la del servidor no cambian; este componente solo las explica.
  */
-export function InvalidFieldsSummary() {
+export function InvalidFieldsSummary({ serverIssues }: { serverIssues?: Record<string, string[]> } = {}) {
   const box = useRef<HTMLDivElement>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
+
+  // D-117: errores devueltos por el servidor para un campo concreto; se marcan y se listan igual que los del navegador.
+  useEffect(() => {
+    const form = box.current?.closest("form");
+    if (!form || !serverIssues || !Object.keys(serverIssues).length) return;
+    const list: Problem[] = [];
+    for (const [name, messages] of Object.entries(serverIssues)) {
+      const element = form.querySelector<Control>(`[name="${CSS.escape(name)}"]`);
+      if (!element) continue;
+      const hidden = element.type === "hidden";
+      const target: HTMLElement = hidden ? element.closest<HTMLElement>(SECTIONS) ?? element : element;
+      if (!target.id) target.id = `campo-${++generated}`;
+      if (!hidden) element.setAttribute("aria-invalid", "true");
+      const section = fieldSection(element, form);
+      const label = hidden ? section.section : fieldLabel(element);
+      messages.forEach((message, index) => list.push({ id: index ? `${target.id}#${index}` : target.id, target: target.id, label, message, ...section }));
+    }
+    if (!list.length) return;
+    form.classList.add("show-required-errors");
+    setProblems(list);
+    requestAnimationFrame(() => box.current?.focus());
+  }, [serverIssues]);
 
   useEffect(() => {
     const form = box.current?.closest("form");
@@ -78,7 +102,7 @@ export function InvalidFieldsSummary() {
       const element = event.target as Control;
       if (!element.willValidate || element.getAttribute("aria-invalid") !== "true" || !element.checkValidity()) return;
       element.removeAttribute("aria-invalid");
-      setProblems((current) => current.filter((problem) => problem.id !== element.id && !(element.type === "radio" && problem.label === fieldLabel(element))));
+      setProblems((current) => current.filter((problem) => (problem.target ?? problem.id) !== element.id && !((element.type === "radio" || element.type === "checkbox") && problem.label === fieldLabel(element))));
     }
 
     const onSubmit = () => setProblems([]);
@@ -122,8 +146,8 @@ export function InvalidFieldsSummary() {
         {" "}({group.items.length}):{" "}
         {group.items.map((problem, index) => <span key={problem.id}>
           {index ? ", " : null}
-          <a className="invalid-field-link" href={`#${problem.id}`} onClick={go(problem.id)}>{problem.label}</a>
-          {problem.message === "es obligatorio." ? null : ` (${problem.message.replace(/\.$/, "")})`}
+          <a className="invalid-field-link" href={`#${problem.target ?? problem.id}`} onClick={go(problem.target ?? problem.id)}>{problem.label}</a>
+          {problem.message === "es obligatorio." ? null : problem.target ? <> — <span className="invalid-field-message">{problem.message}</span></> : ` (${problem.message.replace(/\.$/, "")})`}
         </span>)}
       </li>)}</ul>
     </> : null}

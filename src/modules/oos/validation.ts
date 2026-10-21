@@ -2,6 +2,7 @@ import { parseAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import { oosClosingResults, oosEvaluationKeys, type OosPhaseIEvaluation } from "./domain";
+import { fieldIssuesFromErrors, type FieldIssueRule } from "@/lib/forms/field-issues";
 
 const areaSchema = z.enum(["API", "MD"]);
 const statusSchema = z.enum(["DRAFT", "OPEN", "CLOSED"]);
@@ -61,6 +62,23 @@ function evaluation(fd: FormData): OosPhaseIEvaluation {
   return result;
 }
 
+/** Campo de cada mensaje de validación (D-117): el resumen del formulario marca el campo y enlaza a él. */
+const oosFieldRules: readonly FieldIssueRule[] = [
+  ...dateFields.map((name) => [`La ${dateLabels[name]} no es válida.`, name] as const),
+  ["La hora del OOS debe tener el formato HH:MM.", "oosTime"],
+  ["El dictamen de la Fase I no es válido.", "phaseIVerdict"],
+  ["El dictamen de la Fase II no es válido.", "phaseIIVerdict"],
+  ["La Fase II solo se cumplimenta cuando la disposición de la Fase I es «Investigación a gran escala».", "phaseIDisposition"],
+  ["El resultado de la investigación no corresponde a la disposición de la Fase I.", "investigationResult"],
+  ["Indica la disposición de la Fase I antes del resultado de la investigación.", "phaseIDisposition"],
+  ["El área (API o MD) es obligatoria para abrir el OOS.", "area"],
+  ["Indica si el material afectado es producto final o materia prima / material de acondicionamiento.", "materialKind"],
+  ["Un OOS cerrado requiere la disposición final de la Fase I.", "phaseIDisposition"],
+  ["Un OOS cerrado requiere el resultado de la investigación.", "investigationResult"],
+  ["El cierre en Fase I requiere el dictamen.", "phaseIVerdict"],
+  ["El cierre en Fase II requiere el dictamen.", "phaseIIVerdict"],
+];
+
 export function parseOosForm(fd: FormData) {
   const errors: string[] = [];
   const additional = parseAdditionalLots(fd.get("additionalLotsJson"));
@@ -72,8 +90,9 @@ export function parseOosForm(fd: FormData) {
   const phaseIIVerdict = option(verdictSchema, text(fd, "phaseIIVerdict"));
   const investigationResult = option(resultSchema, text(fd, "investigationResult"));
   const oosTime = text(fd, "oosTime");
+  const requiredIssues: [string, string][] = [];
   const required = (name: string, message: string) => {
-    if (!text(fd, name)) errors.push(message);
+    if (!text(fd, name)) { errors.push(message); requiredIssues.push([message, name]); }
   };
 
   for (const name of dateFields) {
@@ -122,7 +141,9 @@ export function parseOosForm(fd: FormData) {
     }
   }
 
+  const fieldIssues = fieldIssuesFromErrors(errors, [...requiredIssues, ...oosFieldRules]);
   return {
+    fieldIssues,
     errors,
     actor: text(fd, "modifiedByText") ?? text(fd, "createdByText") ?? "Usuario no informado",
     values: {

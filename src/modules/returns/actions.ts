@@ -83,7 +83,7 @@ function extraData(existing:Prisma.JsonValue|null|undefined,v:ReturnType<typeof 
  return {...data,pendingReturnType:v.returnType===null,r4b:v.context,...(pendingComplaintId?{pendingComplaintId}:{})} as Prisma.InputJsonObject;
 }
 async function createReturnActionAuthenticatedContent(previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
- const parsed=parseReturnForm(fd);if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors});
+ const parsed=parseReturnForm(fd);if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors,fieldIssues:parsed.fieldIssues});
  const v=parsed.values;let createdId:string;
  try{
   const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
@@ -145,7 +145,7 @@ async function createReturnActionAuthenticatedContent(previous:ReturnFormState,f
 }
 async function updateReturnActionAuthenticatedContent(id:string,previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
  const existing=await prisma.returnRecord.findUnique({where:{id},include:{qmsRecord:true,followups:{orderBy:[{followupDate:"desc"},{createdAt:"desc"},{id:"desc"}],take:1}}});if(!existing)return preserveFormState(previous,fd,{error:"La devolución ya no existe."});
- const parsed=parseReturnForm(fd,existing.followups[0]?.nextFollowupDate?.toISOString().slice(0,10));if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors});
+ const parsed=parseReturnForm(fd,existing.followups[0]?.nextFollowupDate?.toISOString().slice(0,10));if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors,fieldIssues:parsed.fieldIssues});
  const v=parsed.values;
  const requestedBusinessCode=v.businessCode;
  const pendingComplaintId=existing.status==="DRAFT"&&existing.extraData&&typeof existing.extraData==="object"&&!Array.isArray(existing.extraData)

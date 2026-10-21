@@ -163,6 +163,11 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - vencido en rojo también en el inicio;
   - audit trail de la ficha con paginación común;
   - campos de 40 px.
+- **Correcciones de validación y fechas:**
+  - CAPA rechaza acciones propuestas sin descripción en vez de descartarlas;
+  - Devoluciones no conserva en silencio una fecha de seguimiento borrada;
+  - Reclamaciones, Devoluciones y OOS marcan desde el servidor el campo de cada error;
+  - el audit trail general filtra por días de Madrid y exporta también la hora de Madrid.
 
 **Turno en Desviaciones y PR antiguas (2026-10-20, D-115, D-116):**
 - **Turno:** las desviaciones tienen el campo «Turno» (texto libre, opcional) junto a «Detectado por». Sale en la casilla «turno» del Anexo III y queda en las versiones y en la captura del audit trail.

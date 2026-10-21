@@ -101,7 +101,7 @@ async function replaceDerivedActions(tx:Prisma.TransactionClient,complaintId:str
 }
 
 async function createComplaintActionAuthenticatedContent(previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
- const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
+ const parsed=parseComplaintForm(fd); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors,fieldIssues:parsed.fieldIssues});
  const v=parsed.values; let createdId:string;
  const userProblem=await responsibleUsersProblem(complaintUserIds(v)); if(userProblem)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:[userProblem]});
  try{
@@ -153,7 +153,7 @@ async function createComplaintActionAuthenticatedContent(previous:ComplaintFormS
 async function updateComplaintActionAuthenticatedContent(id:string,previous:ComplaintFormState,fd:FormData):Promise<ComplaintFormState>{
  const existing=await prisma.complaint.findUnique({where:{id},include:{qmsRecord:{include:{sourceRelations:{where:{isActive:true},include:{targetRecord:true}}}}}});if(!existing)return preserveFormState(previous,fd,{error:"La reclamación ya no existe."});
  const linked={capa:existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="CAPA"),returns:existing.qmsRecord.sourceRelations.some(x=>x.targetRecord.recordType==="RETURN")};
- const parsed=parseComplaintForm(fd,linked); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors});
+ const parsed=parseComplaintForm(fd,linked); if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:parsed.errors,fieldIssues:parsed.fieldIssues});
  const v=parsed.values;
  const assigned=await Promise.all([prisma.complaintCapaPlan.findMany({where:{complaintId:id},select:{responsibleUserId:true}}),prisma.complaintDerivedAction.findMany({where:{complaintId:id},select:{responsibleUserId:true}})]);
  const userProblem=await responsibleUsersProblem(complaintUserIds(v),assigned.flat().map(x=>x.responsibleUserId)); if(userProblem)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:[userProblem]});

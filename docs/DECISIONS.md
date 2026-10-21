@@ -1279,4 +1279,10 @@ Decisión del responsable de Calidad tras la auditoría UI/UX de la Fase 1, hech
   - **N-06:** los avisos junto a las acciones de la cabecera de la ficha van detrás de los botones.
   - **H-08:** los campos de una línea miden 40 px aunque otro campo de la misma fila tenga ayuda o una etiqueta de dos líneas.
   - **H-16 y H-28** quedan como estaban: las variables se aplican en cada PR que toque estilos, y los rótulos de módulo se mantienen.
+- **Correcciones de validación y fechas (2026-10-21), detectadas al revisar los formularios:**
+  - **CAPA:** una acción propuesta con datos pero sin descripción ya no se descarta en silencio. El servidor la rechaza con un aviso, también en borrador, para no perder lo escrito. Las filas vacías se siguen ignorando.
+  - **Devoluciones:** si se vacía la fecha de próximo seguimiento de una devolución abierta que lo requiere, el servidor lo rechaza aunque haya una fecha guardada.
+  - **Errores por campo en Reclamaciones, Devoluciones y OOS:** el servidor asocia cada error a su campo. El resumen del formulario marca el campo y lo enlaza, agrupado por apartado. Solo quedan en el aviso general los errores que no son de un campo. La validación del navegador se mantiene.
+  - **Mensajes de Devoluciones:** las comprobaciones se nombran con la etiqueta del formulario, no con su nombre interno.
+  - **Audit trail general:** los filtros «Desde» y «Hasta» son días naturales de Madrid. La exportación CSV añade «Fecha (Madrid)» y «Corte (Madrid)» junto a las columnas en UTC, que se conservan; el manifiesto indica las dos zonas.
 

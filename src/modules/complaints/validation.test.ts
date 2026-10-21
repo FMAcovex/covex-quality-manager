@@ -153,3 +153,14 @@ describe("R4A · registro simplificado GC-00/027/03 §5.2",()=>{
  it("no exige apertura completa del Anexo III para una incidencia sin impacto evaluada",()=>{expect(parseComplaintForm(form()).errors).toEqual([]);});
  it("obliga al informe completo si se identifica impacto",()=>{const f=form();f.set("impactQualityGmp","YES");expect(parseComplaintForm(f).errors).toContain("El registro simplificado requiere evaluación de ausencia de impacto GMP y ambiental; si hay impacto debe abrirse el informe completo.");});
 });
+
+describe("errores por campo (D-117)", () => {
+  it("asocia cada error de servidor con su campo", () => {
+    const form=validOperationalForm();
+    form.delete("nextFollowupDate");form.set("partyName","");
+    const parsed=parseComplaintForm(form);
+    expect(parsed.fieldIssues.nextFollowupDate).toEqual(["Una reclamación abierta requiere fecha de próximo seguimiento."]);
+    expect(parsed.fieldIssues.partyName).toEqual(["Debe indicarse el cliente/proveedor."]);
+    expect(Object.values(parsed.fieldIssues).flat()).toEqual(expect.arrayContaining(parsed.errors));
+  });
+});

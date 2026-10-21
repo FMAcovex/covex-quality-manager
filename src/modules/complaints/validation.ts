@@ -3,6 +3,7 @@ import { optionalUserId } from "@/lib/qms/responsible-user";
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import type { ComplaintDerivedActionInput } from "@/modules/complaints/types";
+import { fieldIssuesFromErrors, type FieldIssueRule } from "@/lib/forms/field-issues";
 
 const typeSchema=z.enum(["PROVIDER","CUSTOMER"]);
 const classificationSchema=z.enum(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"]);
@@ -59,6 +60,73 @@ function parseDerivedActions(raw:string|null):ComplaintDerivedActionInput[]{
   })).filter(x=>x.actionType||x.businessCode||x.description||x.responsible||x.plannedExecutionDate);
  }catch{ /* Entrada mal formada: se trata como vacía o no válida. */ return [];}
 }
+
+/** Campo de cada mensaje de validación (D-117): el resumen del formulario marca el campo y enlaza a él. */
+const complaintFieldRules: readonly FieldIssueRule[] = [
+  ["Debe seleccionarse el tipo de reclamación.", "complaintType"],
+  ["El departamento es obligatorio.", "departmentId"],
+  ["La fecha de apertura es obligatoria.", "openedAt"],
+  ["Debe indicarse quién cumplimenta el expediente.", "createdByText"],
+  ["La fecha de detección es obligatoria.", "detectionDate"],
+  ["La fecha de recepción es obligatoria.", "receptionDate"],
+  ["Debe indicarse el cliente/proveedor.", "partyName"],
+  ["El contacto es obligatorio.", "contact"],
+  ["La referencia del material/servicio/equipo es obligatoria.", "reference"],
+  ["La descripción de la reclamación es obligatoria.", "description"],
+  ["Debe indicarse quién emite la reclamación.", "emittedBy"],
+  ["La justificación del riesgo, alcance y medidas es obligatoria.", "riskJustification"],
+  ["La investigación y evidencias son obligatorias.", "investigation"],
+  ["La conclusión del impacto es obligatoria.", "impactAssessment"],
+  ["El análisis de causa raíz es obligatorio; si no procede, debe justificarse.", "rootCause"],
+  ["La justificación de la evaluación regulatoria es obligatoria.", "regulatoryJustification"],
+  ["Las líneas de actuación y resolución son obligatorias.", "resolutionLines"],
+  ["La fecha de comunicación es obligatoria.", "communicationDate"],
+  ["El medio de comunicación es obligatorio.", "communicationMedium"],
+  ["El emisor/destinatario es obligatorio.", "communicationParties"],
+  ["El resumen de lo comunicado o solicitado es obligatorio.", "communicationSummary"],
+  ["La conclusión de la Parte I es obligatoria.", "conclusion"],
+  ["Debe seleccionarse al menos un origen o fuente de detección.", "sourceTypes"],
+  ["Debe seleccionarse al menos un ámbito.", "scopeTypes"],
+  ["Debe seleccionarse el objeto afectado.", "affectedObjectTypes"],
+  ["Debe seleccionarse al menos una categoría o motivo.", "categoryTypes"],
+  ["Debe indicarse si la reclamación es recurrente.", "recurrent"],
+  ["Una reclamación recurrente requiere referencia.", "recurrenceReference"],
+  ["Las cinco preguntas de evaluación inicial del impacto deben responderse Sí o No.", "impactQualityGmp"],
+  ["Debe informarse al menos una medida inmediata/contención, incluida «Ninguna» cuando corresponda.", "containmentActions"],
+  ["Debe informarse el resultado de la investigación.", "investigationResult"],
+  ["La clasificación de la reclamación es obligatoria.", "classification"],
+  ["La evaluación regulatoria debe responderse completamente.", "potentialRecall"],
+  ["Debe indicarse si existen acciones derivadas.", "hasDerivedActions"],
+  ["Si existen acciones derivadas debe seleccionarse al menos una.", "resolutionActions"],
+  ["No pueden seleccionarse acciones derivadas si se ha indicado que no existen.", "resolutionActions"],
+  ["La acción correctora requiere al menos una CAPA propuesta o vinculada.", "resolutionActions"],
+  ["La acción preventiva requiere al menos una CAPA propuesta o vinculada.", "resolutionActions"],
+  ["La devolución requiere al menos una devolución propuesta o vinculada.", "resolutionActions"],
+  ["La acción inmediata debe especificarse.", "immediateActionDetails"],
+  ["La retirada del mercado debe especificarse.", "recallActionDetails"],
+  ["El abono debe especificarse.", "creditActionDetails"],
+  ["La reposición debe especificarse.", "replacementActionDetails"],
+  ["La acción «Otros» debe especificarse.", "otherResolutionDetails"],
+  ["Una reclamación abierta requiere fecha de próximo seguimiento.", "nextFollowupDate"],
+  ["Para producto/material debe indicarse el lote.", "lotReference"],
+  ["Para producto/material debe indicarse la cantidad.", "quantity"],
+  ["Para producto/material debe indicarse caducidad/reanálisis.", "expiryReanalysis"],
+  ["La Parte II requiere fecha de respuesta.", "responseDate"],
+  ["La Parte II requiere medio de respuesta.", "responseMedium"],
+  ["La Parte II requiere resumen de la respuesta/compromisos.", "responseSummary"],
+  ["Debe indicarse si la respuesta es suficiente.", "responseSufficient"],
+  ["Debe documentarse la valoración de eficacia.", "effectivenessAssessment"],
+  ["Debe informarse el estado de las acciones en Parte II.", "closeActionStatus"],
+  ["Debe informarse la referencia/responsable del seguimiento de acciones.", "closeActionReferences"],
+  ["No puede cerrarse una reclamación con la decisión de Parte II pendiente.", "partIIRequired"],
+  ["Una reclamación cerrada requiere fecha de cierre.", "closedAt"],
+  ["Una reclamación cerrada requiere conclusión.", "closeConclusion"],
+  ["El cierre en Parte II requiere su conclusión de cierre.", "closeConclusion"],
+  ["Antes del cierre, completa las acciones necesarias o justifica su seguimiento independiente con referencias.", "closeActionStatus"],
+  ["No puede cerrarse con eficacia pendiente. Indica Conforme, No conforme o N/A.", "effectivenessStatus"],
+  ["Cada CAPA propuesta/vinculada debe incluir descripción, responsable y fecha prevista.", "capaPlansJson"],
+  ["Cada acción/registro derivado debe incluir tipo, descripción, responsable y fecha prevista.", "derivedActionsJson"],
+];
 
 export function parseComplaintForm(fd:FormData,linked:{capa?:boolean;returns?:boolean}={}){
   const businessCode=text(fd,"businessCode"),departmentId=text(fd,"departmentId"),openedAt=text(fd,"openedAt"),
@@ -185,7 +253,7 @@ export function parseComplaintForm(fd:FormData,linked:{capa?:boolean;returns?:bo
     const value=text(fd,name);
     if(value&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value).toISOString().slice(0,10)!==value))errors.push(`La fecha ${name} no es válida.`);
   }
-  return {errors,actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
+  return {errors,fieldIssues:fieldIssuesFromErrors(errors,complaintFieldRules),actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
     businessCode,departmentId,openedAt,detectionDate:text(fd,"detectionDate"),receptionDate:text(fd,"receptionDate"),detectedBy:text(fd,"detectedBy"),createdByText,
     complaintType,sourceTypes,sourceOther:text(fd,"sourceOther"),scopeTypes,scopeOther:text(fd,"scopeOther"),
     affectedObjectTypes,affectedObjectOther:text(fd,"affectedObjectOther"),categoryTypes,categoryOther:text(fd,"categoryOther"),

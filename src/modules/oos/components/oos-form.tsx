@@ -9,6 +9,7 @@ import { ControlledBusinessCodeField } from "@/components/controlled-business-co
 import { PermissionGate, usePresentationAccess } from "@/components/permissions";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { InvalidFieldsSummary } from "@/components/invalid-fields-summary";
+import { generalErrors } from "@/lib/forms/field-issues";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
 import {
   oosAreaLabels,
@@ -75,10 +76,10 @@ export function OosForm({ mode, action, departments, defaults = {}, recordId, ca
 
   return <form key={state.formRevision ?? 0} action={formAction} className="form-stack"><CsrfField />
     <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
-    <InvalidFieldsSummary />
+    <InvalidFieldsSummary serverIssues={state.fieldIssues} />
     <input type="hidden" name="returnTo" value={returnTo ?? ""} />
     <input type="hidden" name="detailTab" value={detailTab ?? ""} />
-    {state.error ? <div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length ? <ul>{state.fieldErrors.map((error) => <li key={error}>{error}</li>)}</ul> : null}</div> : null}
+    {state.error ? <div className="form-errors"><strong>{state.error}</strong>{generalErrors(state.fieldErrors, state.fieldIssues).length ? <ul>{generalErrors(state.fieldErrors, state.fieldIssues).map((error) => <li key={error}>{error}</li>)}</ul> : null}</div> : null}
 
     <section className="form-section">
       <h2>1. Identificación</h2>
