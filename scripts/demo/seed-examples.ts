@@ -10,6 +10,7 @@ import { PrismaClient, type Prisma, type QmsRecordType } from "@prisma/client";
 import { localDemoEnvironment } from "../../src/lib/auth/config";
 import { demoProfiles } from "../../src/lib/auth/demo-profiles";
 import { createQmsRelation } from "../../src/lib/qms/relation-service";
+import { serializeChangeControlVersion, snapshotJson } from "../../src/lib/qms/versioning";
 
 const prisma = new PrismaClient();
 const MARK = "EJEMPLO DEMO (D-109). Datos ficticios: no corresponden a ningún expediente real.";
@@ -304,10 +305,49 @@ async function pnts() {
   await pnt("GC-00/015", "GC-00", "Gestión de muestras de retención (ejemplo, anulado)", [{ code: "02", status: "OBSOLETE", from: -800, review: -30, obsolete: -30 }], { annulled: "Contenido integrado en otro procedimiento." });
 }
 
+// La aplicación guarda una versión del control de cambios por seguimiento (00, 01…) y el Anexo V
+// de cada seguimiento se genera desde ella. Los ejemplos se crean directamente en la base, así que
+// las versiones se añaden aquí. También repara las demos cargadas antes de existir este paso.
+async function changeFollowupVersions() {
+  const changes = await prisma.changeControl.findMany({
+    where: { followups: { some: {} }, qmsRecord: { versions: { none: {} } } },
+    include: {
+      qmsRecord: true,
+      tasks: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+      followups: { orderBy: [{ sequenceNumber: "asc" }, { followupDate: "asc" }], include: { taskStates: { orderBy: { createdAt: "asc" } } } },
+      formVersion: true,
+      annexIIITemplateVersion: true,
+      annexIVTemplateVersion: true,
+      annexVTemplateVersion: true,
+    },
+  });
+  for (const change of changes) {
+    const last = change.followups.at(-1)!.sequenceNumber;
+    for (const followup of change.followups) {
+      const snapshot = serializeChangeControlVersion({ ...change, followups: change.followups.filter((item) => item.sequenceNumber <= followup.sequenceNumber) });
+      await prisma.qmsRecordVersion.create({
+        data: {
+          qmsRecordId: change.qmsRecordId,
+          sequenceNumber: followup.sequenceNumber,
+          kind: "FOLLOWUP",
+          snapshot: snapshotJson(snapshot),
+          reason: `Seguimiento ${String(followup.sequenceNumber).padStart(2, "0")} · ejemplo de la demo`,
+          sourceEntityId: followup.id,
+          createdByText: ACTOR,
+          source: "SYSTEM",
+          frozenAt: followup.sequenceNumber < last ? followup.followupDate : null,
+        },
+      });
+    }
+  }
+  if (changes.length) console.log(`Versiones de seguimiento añadidas en ${changes.length} controles de cambios de la demo.`);
+}
+
 async function main() {
   if (!localDemoEnvironment() || process.env.ALLOW_DEMO_DATA !== "true") throw new Error("Solo para la demo (APP_ENV=demo, base covex_demo, ALLOW_DEMO_DATA=true).");
   if (await prisma.deviation.findFirst({ where: { internalObservations: MARK }, select: { id: true } })) {
     console.log("Los ejemplos de la demo ya están cargados.");
+    await changeFollowupVersions();
     return;
   }
   departments = Object.fromEntries((await prisma.department.findMany({ select: { id: true, code: true, name: true } })).map((d) => [d.code, d]));
@@ -340,6 +380,7 @@ async function main() {
   relate(o.faseII, dev.oos);
   relate(o.confirmado, capa.tendencia);
   for (const [sourceRecordId, targetRecordId] of relations) await createQmsRelation(prisma, { sourceRecordId, targetRecordId, createdByText: ACTOR, notes: "Relación de los ejemplos de la demo." });
+  await changeFollowupVersions();
 
   const counts = await prisma.qmsRecord.groupBy({ by: ["recordType"], _count: true, where: { history: { some: { reason: "Ejemplo de la demo" } } } });
   console.log(`Ejemplos de la demo cargados: ${counts.map((c) => `${c.recordType} ${c._count}`).join(" · ")} · PNT ${await prisma.controlledDocument.count({ where: { observations: MARK } })} · relaciones ${relations.length}.`);
