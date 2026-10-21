@@ -731,7 +731,7 @@ async function DeviationDetailPageAuthenticatedContent({
               <p>Plantilla oficial asociada al expediente y documento Word cumplimentado con los datos vigentes.</p>
               <div className="document-actions">
                 {annexTemplate ? <PermissionGate permission="DOWNLOAD" module="DEVIATION"><a className="button" href={`/api/settings/templates/${annexTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
-                <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>
+                {deviation.status === "DRAFT" ? <span className="muted-note">Disponible al abrir la desviación.</span> : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>}
               </div>
             </div>
             <div className="document-block">

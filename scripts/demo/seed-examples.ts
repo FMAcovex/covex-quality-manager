@@ -250,10 +250,10 @@ async function audits() {
   await audit({ key: "cerrada", opened: day(-200), type: "INTERNAL", scenario: "INTERNAL_COVEX", audited: ["GC-00"], data: { status: "CLOSED", title: "Auditoría interna del sistema documental", scope: "Control de documentos y registros.", modality: "ONSITE", plannedDate: day(-200), performedDate: day(-199), reportDate: day(-190), closedAt: day(-120), conclusion: "Sistema documental conforme; una observación menor cerrada y verificada.", closureEvidence: "Registros revisados en la verificación (ficticios).", dataQualityStatus: "COMPLETE" }, findings: [
     { reference: "OBS 01", findingType: "FINDING", criticality: "MINOR", description: "Copias controladas sin sello en un área.", treatmentStatus: "CLOSED", closedAt: day(-120), actions: [{ description: "Sellar las copias y revisar el resto de áreas.", responsible: "Garantía de Calidad", targetDate: day(-160), status: "CLOSED", closedAt: day(-150), verificationResult: "CONFORMING", verifiedAt: day(-120), verifiedBy: "Auditora jefe (ficticia)", evidence: "Lista de comprobación de copias controladas." }] },
   ] });
-  await audit({ key: "proveedor", opened: day(-35), type: "EXTERNAL", scenario: "SUPPLIER", entityCode: "PROV-ESTUCHES", audited: ["GC-00"], data: { status: "OPEN", title: "Auditoría al proveedor de estuches", auditedEntityName: "Cartonajes Ficticios S.L.", auditedEntityAddress: "Polígono Ejemplo, nave 4 (ficticia)", supplierType: "Material de acondicionamiento", modality: "ONSITE", plannedDate: day(-35), performedDate: day(-34), reportDate: day(-25), reportSentAt: day(-24), responseRequired: true, dataQualityStatus: "COMPLETE" }, findings: [
+  await audit({ key: "proveedor", opened: day(-35), type: "EXTERNAL", scenario: "SUPPLIER", entityCode: "PROV-ESTUCHES", audited: ["GC-00"], data: { status: "OPEN", title: "Auditoría al proveedor de estuches", auditedEntityName: "Cartonajes Ficticios S.L.", auditedEntityAddress: "Polígono Ejemplo, nave 4 (ficticia)", supplierType: "Material de acondicionamiento", modality: "ONSITE", ...SUPPLIER_PLAN.estuches, plannedDate: day(-35), performedDate: day(-34), reportDate: day(-25), reportSentAt: day(-24), responseRequired: true, dataQualityStatus: "COMPLETE" }, findings: [
     { reference: "OBS 01", findingType: "FINDING", criticality: "MAJOR", description: "No hay control de cambios de los artes finales de impresión.", treatmentStatus: "PENDING_VERIFICATION", actions: [{ description: "El proveedor implanta un procedimiento de control de cambios de artes finales.", responsible: "Proveedor (seguimiento: Garantía de Calidad)", responsibleUserId: QA, targetDate: day(10), status: "PENDING_VERIFICATION", evidence: "Procedimiento recibido del proveedor (ficticio)." }] },
   ] });
-  await audit({ key: "proveedor2025", opened: day(-330), type: "EXTERNAL", scenario: "SUPPLIER", entityCode: "PROV-API", audited: ["GC-00"], data: { status: "CLOSED", title: "Auditoría al proveedor de principios activos", auditedEntityName: "Proveedor Ficticio de Principios Activos S.A.", supplierType: "Principio activo", modality: "REMOTE", plannedDate: day(-330), performedDate: day(-329), reportDate: day(-320), reportSentAt: day(-319), responseRequired: false, closedAt: day(-300), conclusion: "Proveedor aprobado sin observaciones.", dataQualityStatus: "COMPLETE" } });
+  await audit({ key: "proveedor2025", opened: day(-330), type: "EXTERNAL", scenario: "SUPPLIER", entityCode: "PROV-API", audited: ["GC-00"], data: { status: "CLOSED", title: "Auditoría al proveedor de principios activos", auditedEntityName: "Proveedor Ficticio de Principios Activos S.A.", supplierType: "Principio activo", modality: "REMOTE", ...SUPPLIER_PLAN.api, plannedDate: day(-330), performedDate: day(-329), reportDate: day(-320), reportSentAt: day(-319), responseRequired: false, closedAt: day(-300), conclusion: "Proveedor aprobado sin observaciones.", dataQualityStatus: "COMPLETE" } });
   await audit({ key: "cliente", opened: day(-90), type: "EXTERNAL", scenario: "CLIENT", audited: ["PM-10", "GC-00"], data: { status: "CLOSED", title: "Auditoría recibida de cliente", externalReference: "Auditoría de Laboratorios Cliente Ficticio 2026", auditingEntityName: "Laboratorios Cliente Ficticio", modality: "ONSITE", plannedDate: day(-90), performedDate: day(-89), reportDate: day(-80), closedAt: day(-50), conclusion: "Sin observaciones críticas; una recomendación aceptada.", dataQualityStatus: "COMPLETE" }, findings: [
     { reference: "Rk 01", findingType: "RECOMMENDATION", criticality: "NA", description: "Mejorar la señalización de las zonas de cuarentena.", treatmentStatus: "CLOSED", closedAt: day(-50) },
   ] });
@@ -305,6 +305,29 @@ async function pnts() {
   await pnt("GC-00/015", "GC-00", "Gestión de muestras de retención (ejemplo, anulado)", [{ code: "02", status: "OBSOLETE", from: -800, review: -30, obsolete: -30 }], { annulled: "Contenido integrado en otro procedimiento." });
 }
 
+// Datos que exige el Plan de auditoría externa (entidad, fecha, introducción, alcance, duración y programa).
+const SUPPLIER_PLAN = {
+  estuches: {
+    planIntroduction: "Auditoría de cualificación del proveedor de estuches impresos según el programa anual de auditorías externas (ejemplo ficticio).",
+    scope: "Control de artes finales, impresión, inspección de calidad y liberación de estuches.",
+    activityDuration: "1 día (09:00–17:00)",
+    programme: "09:00 Reunión de apertura · 09:30 Visita a impresión y control de calidad · 12:00 Revisión documental · 15:30 Preparación de conclusiones · 16:30 Reunión de cierre.",
+  },
+  api: {
+    planIntroduction: "Auditoría remota de seguimiento del proveedor de principios activos (ejemplo ficticio).",
+    scope: "Sistema de calidad, control de cambios, gestión de desviaciones y certificados de análisis.",
+    activityDuration: "4 horas en remoto",
+    programme: "Revisión documental previa · Sesión remota de entrevistas · Cierre y conclusiones.",
+  },
+};
+
+// Las demos cargadas antes de añadir esos datos no podían generar el Plan externo: se completan sin pisar nada.
+async function supplierAuditPlans() {
+  for (const [entityCode, plan] of [["PROV-ESTUCHES", SUPPLIER_PLAN.estuches], ["PROV-API", SUPPLIER_PLAN.api]] as const) {
+    await prisma.audit.updateMany({ where: { entityCode, internalObservations: MARK, planIntroduction: null, programme: null }, data: plan });
+  }
+}
+
 // La aplicación guarda una versión del control de cambios por seguimiento (00, 01…) y el Anexo V
 // de cada seguimiento se genera desde ella. Los ejemplos se crean directamente en la base, así que
 // las versiones se añaden aquí. También repara las demos cargadas antes de existir este paso.
@@ -348,6 +371,7 @@ async function main() {
   if (await prisma.deviation.findFirst({ where: { internalObservations: MARK }, select: { id: true } })) {
     console.log("Los ejemplos de la demo ya están cargados.");
     await changeFollowupVersions();
+    await supplierAuditPlans();
     return;
   }
   departments = Object.fromEntries((await prisma.department.findMany({ select: { id: true, code: true, name: true } })).map((d) => [d.code, d]));
