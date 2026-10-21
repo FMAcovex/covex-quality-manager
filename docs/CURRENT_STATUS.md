@@ -169,6 +169,11 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - Reclamaciones, Devoluciones y OOS marcan desde el servidor el campo de cada error;
   - el audit trail general filtra por días de Madrid y exporta también la hora de Madrid.
 - **Logotipo de COVEX** en la cabecera, en lugar de la «C» provisional.
+- **Detalles vistos al preparar la demostración:**
+  - el expediente de origen elegido en «Nueva CAPA» se ve en una línea, con «Quitar» al lado, sin cortar las palabras;
+  - las tablas de acciones (por ejemplo, «CAPA propuestas») parten el texto en varias líneas en vez de montarlo sobre la columna siguiente;
+  - la pestaña Documentos de Desviaciones y CAPA ya no dice «Plantilla oficial pendiente de cargar» cuando el expediente no tiene versión asignada pero la plantilla por defecto está instalada; muestra esa versión («por defecto») y permite descargarla, que es la misma con la que se genera el Anexo III;
+  - las fechas de los formularios usan el campo de fecha del navegador, que sigue el idioma del equipo: en un equipo en español se ven como dd/mm/aaaa. No cambia.
 
 **Turno en Desviaciones y PR antiguas (2026-10-20, D-115, D-116):**
 - **Turno:** las desviaciones tienen el campo «Turno» (texto libre, opcional) junto a «Detectado por». Sale en la casilla «turno» del Anexo III y queda en las versiones y en la captura del audit trail.
