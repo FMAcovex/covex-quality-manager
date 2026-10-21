@@ -1269,4 +1269,14 @@ Decisión del responsable de Calidad tras la auditoría UI/UX de la Fase 1, hech
   - **Variables de diseño** de tamaños de letra, radios, altura de campo y colores de estado, aplicadas a lo que toca esta entrega.
   - **Móvil:** los botones no se parten en dos líneas.
   - **Rótulos en mayúsculas:** se quita el rótulo que repetía el título en la tarjeta de información de Cambios. El resto de rótulos de contexto de módulo se mantiene.
+- **Repetición de la auditoría (2026-10-20):** 24 hallazgos resueltos, 4 en parte (H-08, H-16, H-22 y H-28), 3 fuera por decisión y 6 nuevos (N-01 a N-06), ninguno crítico ni importante.
+- **Entrega 4, hecha (acabado tras la repetición):**
+  - **N-01:** el resumen de campos pendientes se agrupa por apartado, con el número de pendientes y un enlace al apartado y a cada campo.
+  - **N-02 y H-22:** hasta 1199 px, los botones de cabecera de los listados pasan de fila sin partirse. La barra de módulos se difumina solo cuando no cabe y hasta llegar al final.
+  - **N-03:** en móvil, la barra fija de acciones de los formularios muestra «Cancelar» como enlace y los botones de guardar en una fila.
+  - **N-04:** «Vencida» del inicio usa el mismo rojo que el vencido de las fichas.
+  - **N-05:** el audit trail de la ficha usa la paginación común, tiene un estado vacío compacto y concuerda en singular y plural.
+  - **N-06:** los avisos junto a las acciones de la cabecera de la ficha van detrás de los botones.
+  - **H-08:** los campos de una línea miden 40 px aunque otro campo de la misma fila tenga ayuda o una etiqueta de dos líneas.
+  - **H-16 y H-28** quedan como estaban: las variables se aplican en cada PR que toque estilos, y los rótulos de módulo se mantienen.
 

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { sectionAnchorId } from "@/lib/ui/section-anchor";
+import { SECTIONS } from "./section-index";
 
-type Problem = { id: string; label: string; message: string };
+type Problem = { id: string; label: string; message: string; sectionId: string | null; section: string };
 type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 let generated = 0;
@@ -14,6 +16,16 @@ function fieldLabel(element: Control) {
     ?? element.closest("fieldset")?.querySelector("legend")?.textContent
     ?? element.name;
   return text.replace(/\s*\*\s*$/, "").trim() || "Campo";
+}
+
+/** Apartado del formulario que contiene el campo: el mismo que muestra el índice lateral (D-111, V2). */
+function fieldSection(element: Control, form: HTMLFormElement) {
+  let section: HTMLElement | null = null;
+  for (let node = element.closest<HTMLElement>(SECTIONS); node && form.contains(node); node = node.parentElement?.closest<HTMLElement>(SECTIONS) ?? null) section = node;
+  const title = (section?.querySelector("h2") ?? section?.querySelector(":scope > legend"))?.textContent?.trim();
+  if (!section || !title) return { sectionId: null, section: "Otros campos" };
+  if (!section.id) section.id = sectionAnchorId(title, new Set(Array.from(document.querySelectorAll("[id]"), node => node.id)));
+  return { sectionId: section.id, section: title };
 }
 
 function fieldMessage(element: Control) {
@@ -59,7 +71,7 @@ export function InvalidFieldsSummary() {
       const key = element.type === "radio" ? `radio:${element.name}` : element.id;
       if (seen.has(key)) return;
       seen.add(key);
-      collected.push({ id: element.id, label: fieldLabel(element), message: fieldMessage(element) });
+      collected.push({ id: element.id, label: fieldLabel(element), message: fieldMessage(element), ...fieldSection(element, form!) });
     }
 
     function onChange(event: Event) {
@@ -82,18 +94,37 @@ export function InvalidFieldsSummary() {
     };
   }, []);
 
+  // D-117 (N-01): los pendientes se agrupan por apartado, en el orden del formulario, con enlace al apartado y a cada campo.
+  const groups = problems.reduce<{ key: string; sectionId: string | null; section: string; items: Problem[] }[]>((list, problem) => {
+    const key = problem.sectionId ?? problem.section;
+    const group = list.find((item) => item.key === key);
+    if (group) group.items.push(problem); else list.push({ key, sectionId: problem.sectionId, section: problem.section, items: [problem] });
+    return list;
+  }, []);
+  const go = (id: string) => (event: React.MouseEvent) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    event.preventDefault();
+    target.closest("details")?.setAttribute("open", "");
+    target.scrollIntoView({ block: target.matches("input, select, textarea") ? "center" : "start" });
+    if (target.matches("input, select, textarea")) target.focus();
+  };
+  const allMissing = problems.every((problem) => problem.message === "es obligatorio.");
+  const heading = problems.length === 1
+    ? (allMissing ? "Falta completar 1 campo obligatorio antes de guardar." : "Revisa 1 campo antes de guardar.")
+    : allMissing ? `Faltan ${problems.length} campos obligatorios antes de guardar.` : `Revisa ${problems.length} campos antes de guardar.`;
+
   return <div ref={box} tabIndex={-1} className={problems.length ? "form-errors invalid-fields-summary" : undefined} role={problems.length ? "alert" : undefined} hidden={!problems.length}>
     {problems.length ? <>
-      <strong>{problems.length === 1 ? "Falta completar 1 campo antes de guardar." : `Faltan ${problems.length} campos por completar antes de guardar.`}</strong>
-      <ul>{problems.map((problem) => <li key={problem.id}>
-        <a href={`#${problem.id}`} onClick={(event) => {
-          const target = document.getElementById(problem.id);
-          if (!target) return;
-          event.preventDefault();
-          target.closest("details")?.setAttribute("open", "");
-          target.scrollIntoView({ block: "center" });
-          target.focus();
-        }}>{problem.label}</a> {problem.message}
+      <strong>{heading}</strong>
+      <ul>{groups.map((group) => <li key={group.key}>
+        {group.sectionId ? <a className="invalid-section-link" href={`#${group.sectionId}`} onClick={go(group.sectionId)}>{group.section}</a> : <span className="invalid-section-link">{group.section}</span>}
+        {" "}({group.items.length}):{" "}
+        {group.items.map((problem, index) => <span key={problem.id}>
+          {index ? ", " : null}
+          <a className="invalid-field-link" href={`#${problem.id}`} onClick={go(problem.id)}>{problem.label}</a>
+          {problem.message === "es obligatorio." ? null : ` (${problem.message.replace(/\.$/, "")})`}
+        </span>)}
       </li>)}</ul>
     </> : null}
   </div>;

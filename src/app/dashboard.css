@@ -78,7 +78,7 @@
 .dashboard-home .dashboard-task-summary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .dashboard-home .dashboard-deadline-count { display: inline-flex; align-items: baseline; gap: 5px; padding: 7px 10px; border-radius: 6px; font-size: 11px; }
 .dashboard-home .dashboard-deadline-count strong { font-size: 16px; font-variant-numeric: tabular-nums; }
-.dashboard-home .dashboard-deadline-count.overdue { background: #fff4e1; color: #805014; }
+.dashboard-home .dashboard-deadline-count.overdue { background: #fff0f0; color: #a33131; }
 .dashboard-home .dashboard-deadline-count.upcoming { background: var(--blue-soft); color: var(--blue-dark); }
 .dashboard-home .dashboard-task-summary a { margin-left: auto; font-size: 11px; color: var(--dashboard-subtle); text-underline-offset: 3px; }
 .dashboard-home .dashboard-task-table { width: 100%; }
@@ -89,13 +89,14 @@
 .dashboard-home .dashboard-task-table th:nth-child(3) { width: 29%; }
 .dashboard-home .dashboard-task-table th:nth-child(4) { width: 18%; }
 .dashboard-home .dashboard-task-table td { padding: 12px 8px; vertical-align: middle; border-right: 0; white-space: normal; overflow-wrap: anywhere; font-size: 11px; }
-.dashboard-home .dashboard-task-table .is-overdue .dashboard-task-date { color: #875113; font-weight: 700; }
+.dashboard-home .dashboard-task-table .is-overdue .dashboard-task-date { color: #a33131; font-weight: 700; }
 .dashboard-home .dashboard-task-table time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .dashboard-home .dashboard-task-record > a { font-size: 12px; font-weight: 750; text-underline-offset: 3px; }
 .dashboard-home .dashboard-task-record small { display: block; color: var(--dashboard-subtle); margin-top: 5px; font-size: 10px; }
 .dashboard-home .dashboard-task-reason { line-height: 1.5; color: var(--dashboard-subtle); }
 .dashboard-home .dashboard-task-state .badge { font-size: 10px; padding: 4px 8px; white-space: nowrap; border-color: transparent; }
-.dashboard-home .dashboard-task-state .critical { background: #fff0dc; color: #875113; }
+/* D-117 (N-04): «Vencida» con el mismo rojo que el vencido de la franja de las fichas. */
+.dashboard-home .dashboard-task-state .critical { background: #fff0f0; color: #a33131; }
 .dashboard-home .dashboard-task-state .warning { background: var(--blue-soft); color: var(--blue-dark); }
 .dashboard-home .dashboard-task-row:hover { background: #f9fbfe; }
 .dashboard-home .dashboard-empty { text-align: center; white-space: normal; color: var(--dashboard-subtle); padding: 24px 14px; line-height: 1.6; }
