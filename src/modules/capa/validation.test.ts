@@ -216,3 +216,26 @@ it("conserva la exigencia de código en orígenes Desviación/Reclamación", () 
     expect(parseCapaForm(f).fieldIssues.originsJson).toBeDefined();
   }
 });
+
+describe("acciones propuestas sin descripción (D-117)", () => {
+  const row = (patch: Record<string, string>) => ({ description: "", responsible: "", plannedExecutionDate: "", impact: "", ...patch });
+  it("rechaza una acción con datos pero sin descripción en vez de descartarla", () => {
+    const f = base();
+    f.set("plannedActionsJson", JSON.stringify([row({ description: "Acción concreta" }), row({ responsible: "QA", plannedExecutionDate: "2026-10-20" })]));
+    const parsed = parseCapaForm(f);
+    expect(parsed.fieldIssues.plannedActionsJson).toEqual(["La acción propuesta 2 tiene datos pero no tiene descripción: complétala o quítala."]);
+  });
+  it("también en un borrador, para no perder lo escrito", () => {
+    const f = base();
+    f.set("saveIntent", "SAVE_DRAFT");
+    f.set("plannedActionsJson", JSON.stringify([row({ impact: "Revisar etiquetado" })]));
+    expect(parseCapaForm(f).fieldIssues.plannedActionsJson).toEqual(["La acción propuesta 1 tiene datos pero no tiene descripción: complétala o quítala."]);
+  });
+  it("ignora una fila completamente vacía", () => {
+    const f = base();
+    f.set("plannedActionsJson", JSON.stringify([row({ description: "Acción concreta" }), row({})]));
+    const parsed = parseCapaForm(f);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.values.plannedActions).toHaveLength(1);
+  });
+});

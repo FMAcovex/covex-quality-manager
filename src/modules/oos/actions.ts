@@ -99,7 +99,7 @@ async function businessCodeFor(tx: Prisma.TransactionClient, values: OosFormValu
 
 async function createOosActionAuthenticatedContent(previous: OosFormState, fd: FormData): Promise<OosFormState> {
   const parsed = parseOosForm(fd);
-  if (parsed.errors.length) return preserveFormState(previous, fd, { error: "No se puede guardar el OOS.", fieldErrors: parsed.errors });
+  if (parsed.errors.length) return preserveFormState(previous, fd, { error: "No se puede guardar el OOS.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
   const values = parsed.values;
   let createdId: string;
   try {
@@ -124,7 +124,7 @@ async function updateOosActionAuthenticatedContent(id: string, previous: OosForm
   const existing = await prisma.oosRecord.findUnique({ where: { id }, include: { qmsRecord: true } });
   if (!existing) return preserveFormState(previous, fd, { error: "El OOS ya no existe." });
   const parsed = parseOosForm(fd);
-  if (parsed.errors.length) return preserveFormState(previous, fd, { error: "No se puede guardar el OOS.", fieldErrors: parsed.errors });
+  if (parsed.errors.length) return preserveFormState(previous, fd, { error: "No se puede guardar el OOS.", fieldErrors: parsed.errors, fieldIssues: parsed.fieldIssues });
   const values = parsed.values;
   if (!keepsOperationalStatus(existing.status, values.status)) return preserveFormState(previous, fd, { error: "No se puede guardar el OOS.", fieldErrors: ["Un OOS abierto o cerrado no puede volver a Borrador."] });
   try {

@@ -4,6 +4,7 @@ import { CsrfField } from "@/components/csrf";
 
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { InvalidFieldsSummary } from "@/components/invalid-fields-summary";
+import { generalErrors } from "@/lib/forms/field-issues";
 
 import Link from "next/link";
 import { useActionState,useState,useEffect } from "react";
@@ -51,12 +52,12 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
 
   return <form key={state.formRevision??0} action={formAction} className="form-stack return-form-stack"><CsrfField />
     <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
-    <InvalidFieldsSummary />
+    <InvalidFieldsSummary serverIssues={state.fieldIssues} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
     <input type="hidden" name="productsJson" value={JSON.stringify(products)}/>
     {fromComplaintId?<input type="hidden" name="fromComplaintId" value={fromComplaintId}/>:null}
-    {state.error?<div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length?<ul>{state.fieldErrors.map(x=><li key={x}>{x}</li>)}</ul>:null}</div>:null}
+    {state.error?<div className="form-errors"><strong>{state.error}</strong>{generalErrors(state.fieldErrors,state.fieldIssues).length?<ul>{generalErrors(state.fieldErrors,state.fieldIssues).map(x=><li key={x}>{x}</li>)}</ul>:null}</div>:null}
 
     <section className="form-section">
       <h2>1. Datos generales de la devolución</h2>

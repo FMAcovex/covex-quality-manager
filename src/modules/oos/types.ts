@@ -5,6 +5,8 @@ export type OosFormState = {
   error: string | null;
   savedRecordId?: string;
   fieldErrors?: string[];
+  /** Errores de servidor por campo (D-117). */
+  fieldIssues?: Record<string, string[]>;
   submittedValues?: Record<string, string | string[]>;
   formRevision?: number;
 };

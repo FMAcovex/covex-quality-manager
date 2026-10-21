@@ -1,7 +1,7 @@
 export type ReturnFormState={
   error:string|null;
   savedRecordId?:string;
-  fieldErrors?:string[];
+  fieldErrors?:string[];fieldIssues?:Record<string,string[]>;
   submittedValues?:Record<string,string|string[]>;
   formRevision?:number;
 };

@@ -21,6 +21,8 @@ const plannedActionSchema = z.object({
   plannedExecutionDate: z.string().trim(),
   impact: z.string().trim(),
 });
+// D-117: la fila se lee sin exigir descripción para poder avisar en vez de descartarla en silencio.
+const plannedActionRowSchema = plannedActionSchema.extend({ description: z.string().trim() });
 const actionFollowupSchema = z.object({
   followupDate: z.string().trim(),
   description: z.string().trim(),
@@ -82,7 +84,8 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
   const defectDescription = text(formData, "defectDescription");
   const rootCause = text(formData, "rootCause");
   const effectivenessStatus = enumValue(effectiveness, text(formData, "effectivenessStatus")) ?? "PENDING";
-  const plannedActions = parseArray<CapaPlannedActionInput>(text(formData, "plannedActionsJson"), plannedActionSchema);
+  const plannedActionRows = parseArray(text(formData, "plannedActionsJson"), plannedActionRowSchema);
+  const plannedActions: CapaPlannedActionInput[] = plannedActionRows.filter((row) => row.description);
   const actionFollowups = parseArray<CapaActionFollowupInput>(text(formData, "actionFollowupsJson"), actionFollowupSchema);
   const nextFollowupDate = text(formData, "nextFollowupDate");
   const operationalClosedAt = text(formData, "operationalClosedAt");
@@ -127,6 +130,11 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
     addIssue("openedAt", "La fecha de apertura no tiene un formato válido.");
   }
 
+  plannedActionRows.forEach((row, index) => {
+    if (!row.description && (row.responsible || row.responsibleUserId || row.plannedExecutionDate || row.impact)) {
+      addIssue("plannedActionsJson", `La acción propuesta ${index + 1} tiene datos pero no tiene descripción: complétala o quítala.`);
+    }
+  });
   plannedActions.forEach((item, index) => {
     if (item.plannedExecutionDate && !validDate(item.plannedExecutionDate)) addIssue("plannedActionsJson", `La fecha prevista de la acción ${index + 1} no tiene un formato válido.`);
   });

@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/session";
 
 import type { QmsModuleKey } from "@/modules/contract";
 import { qmsModuleKeys } from "@/modules/registry";
+import { madridDayBoundary } from "./display-time";
 
 export const auditTrailModules = qmsModuleKeys;
 export type AuditTrailModule = QmsModuleKey;
@@ -36,9 +37,10 @@ export type TrailOperation = {
 };
 
 const clean = (value: string | undefined, max = 160) => value?.trim().slice(0,max) || undefined;
+// D-117: «Desde» y «Hasta» son días naturales de Madrid; la consulta sigue en UTC.
 const date = (value: string | undefined, end = false) => {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
-  const result = new Date(`${value}T${end?"23:59:59.999":"00:00:00.000"}Z`);
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(new Date(`${value}T00:00:00Z`).valueOf())) return undefined;
+  const result = madridDayBoundary(value, end);
   return Number.isNaN(result.valueOf()) ? undefined : result;
 };
 export function parseAuditTrailFilters(input: Record<string,string|undefined>): AuditTrailFilters {

@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { returnContext, returnApplicability, reintegrationRequested, generalReturnChecks, coldReturnChecks, validReturnDate } from "./rules";
+import { returnContext, returnApplicability, reintegrationRequested, generalReturnChecks, coldReturnChecks, validReturnDate, returnCheckLabels } from "./rules";
+import { fieldIssuesFromErrors, type FieldIssueRule } from "@/lib/forms/field-issues";
 import type { ReturnProductInput } from "@/modules/returns/types";
 
 const typeSchema=z.enum(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"]);
@@ -40,6 +41,36 @@ function products(raw:string|null):ReturnProductInput[]{
   }catch{ /* Entrada mal formada: se trata como vacía o no válida. */ return[];}
 }
 
+const checkByLabel=Object.fromEntries(Object.entries(returnCheckLabels).map(([name,label])=>[label,name]));
+/** Campo de cada mensaje de validación (D-117): el resumen del formulario marca el campo y enlaza a él. */
+const returnFieldRules:readonly FieldIssueRule[]=[
+  ["El área/almacén es obligatorio.","departmentId"],
+  ["La fecha de comunicación es obligatoria.","communicationDate"],
+  ["La fecha de recepción es obligatoria.","receivedAt"],
+  ["Debe indicarse quién cumplimenta el expediente.","createdByText"],
+  ["Debe seleccionarse el tipo de devolución.","returnType"],
+  ["Debe indicarse el cliente/entidad.","customerEntity"],
+  ["El país es obligatorio.","country"],
+  ["La dirección es obligatoria.","address"],
+  ["Las condiciones de conservación son obligatorias.","conservationConditions"],
+  ["Las observaciones o incidencias son obligatorias.","reasonObservations"],
+  ["La documentación anexada es obligatoria.","attachedDocumentation"],
+  ["La reincorporación requiere fecha de decisión técnica.","decisionDate"],
+  [/^La reincorporación requiere decisión Aceptada/,"decision"],
+  [/^Reincorporación incompatible con «(.+)»: debe ser Sí\.$/,(match)=>checkByLabel[match[1]]??"finalDestination"],
+  ["Debe registrarse al menos un producto devuelto.","productsJson"],
+  [/^Producto \d+:/,"productsJson"],
+  ["Una devolución cerrada requiere decisión Aceptada o Rechazada.","decision"],
+  ["Una devolución cerrada requiere fecha de decisión.","decisionDate"],
+  ["Una devolución cerrada requiere fecha de cierre.","closedAt"],
+  ["Una devolución cerrada requiere destino final.","finalDestination"],
+  [/^Una devolución cerrada requiere trazabilidad/,"traceabilityUpdated"],
+  [/^El cierre con destrucción requiere certificado/,"destructionCertificate"],
+  [/^La fecha (\w+) no es válida\.$/,(match)=>match[1]],
+  ["Indica el comentario/responsable de la planificación del seguimiento.","followupComment"],
+  ["Una devolución abierta que requiere seguimiento necesita próxima fecha.","nextFollowupDate"],
+];
+
 export function parseReturnForm(fd:FormData,existingNextFollowup?:string){
   const businessCode=text(fd,"businessCode");
   const departmentId=text(fd,"departmentId");
@@ -60,8 +91,9 @@ export function parseReturnForm(fd:FormData,existingNextFollowup?:string){
     if(!text(fd,name))errors.push(message);
   };
   const requiredTri=(name:string,label:string)=>{
-    if(!tri(name))errors.push(`${label} es obligatorio.`);
+    if(!tri(name)){errors.push(`${label} es obligatorio.`);triIssues.push([`${label} es obligatorio.`,name]);}
   };
+  const triIssues:[string,string][]=[];
 
   if(status!=="DRAFT"){
     if(!departmentId)errors.push("El área/almacén es obligatorio.");
@@ -79,9 +111,9 @@ export function parseReturnForm(fd:FormData,existingNextFollowup?:string){
     // An open investigation may have evaluation pending. The official checklist
     // is completed when reintegration is considered or the dossier is closed.
     if(reintegration||status==="CLOSED"){
-      generalReturnChecks.forEach(name=>requiredTri(name,name));
+      generalReturnChecks.forEach(name=>requiredTri(name,returnCheckLabels[name]));
       if(applicability.serialized){requiredTri("uniqueIdentifierActive","Identificador único / Data Matrix activo");requiredTri("tamperEvidenceIntact","Tamper Evidence intacto");}
-      if(applicability.cold){if(applicability.medicine)requiredTri("coldChainWithinFortyEightHours","+2/+8 ºC dentro de 48 h");coldReturnChecks.forEach(name=>requiredTri(name,name));}
+      if(applicability.cold){if(applicability.medicine)requiredTri("coldChainWithinFortyEightHours","+2/+8 ºC dentro de 48 h");coldReturnChecks.forEach(name=>requiredTri(name,returnCheckLabels[name]));}
       else if(applicability.medicine&&!context.medicineFromWholesale)requiredTri("roomTemperatureWithinTenDays","+15/+25 ºC dentro de 10 días");
       if(context.declarationRequired||applicability.medicine&&reintegration||applicability.cold)requiredTri("customerDeclarationAvailable","Declaración cliente disponible");
       if(context.qcRequired||applicability.api&&reintegration)requiredTri("qcAssessmentCompleted","Evaluación Control de Calidad");
@@ -95,7 +127,7 @@ export function parseReturnForm(fd:FormData,existingNextFollowup?:string){
       else if(applicability.medicine&&!context.medicineFromWholesale)checks.push("roomTemperatureWithinTenDays");
       if(context.declarationRequired||applicability.medicine||applicability.cold)checks.push("customerDeclarationAvailable");
       if(context.qcRequired||applicability.api)checks.push("qcAssessmentCompleted");
-      checks.forEach(name=>{if(tri(name)!=="YES"&&!((name==="temperatureExcursionEvaluated"||name==="coldChainReturnSystemValidated")&&tri(name)==="NA")&&!(name==="roomTemperatureWithinTenDays"&&tri(name)==="NO"&&context.ambientPeriodRiskJustification))errors.push(`Reincorporación incompatible con ${name}: debe ser Sí.`);});
+      checks.forEach(name=>{if(tri(name)!=="YES"&&!((name==="temperatureExcursionEvaluated"||name==="coldChainReturnSystemValidated")&&tri(name)==="NA")&&!(name==="roomTemperatureWithinTenDays"&&tri(name)==="NO"&&context.ambientPeriodRiskJustification))errors.push(`Reincorporación incompatible con «${returnCheckLabels[name]??name}»: debe ser Sí.`);});
     }
 
     if(!ps.length){
@@ -124,8 +156,9 @@ export function parseReturnForm(fd:FormData,existingNextFollowup?:string){
   for(const name of ["communicationDate","receivedAt","decisionDate","closedAt","customerDeclarationSignedAt","nextFollowupDate"]){if(!validReturnDate(text(fd,name)))errors.push(`La fecha ${name} no es válida.`);}
   ps.forEach((p,i)=>{for(const name of ["receivedByDate","verifiedByDate"] as const)if(!validReturnDate(p[name]))errors.push(`Producto ${i+1}: la fecha ${name} no es válida.`);});
   if(status==="OPEN"&&text(fd,"nextFollowupDate")!==existingNextFollowup&&text(fd,"nextFollowupDate")&&!text(fd,"followupComment"))errors.push("Indica el comentario/responsable de la planificación del seguimiento.");
-  if(status==="OPEN"&&context.requiresFollowup&&!text(fd,"nextFollowupDate")&&!existingNextFollowup)errors.push("Una devolución abierta que requiere seguimiento necesita próxima fecha.");
-  return {errors,actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
+  // D-117: si el formulario envía la fecha vacía, se rechaza aunque haya una guardada; solo se conserva la guardada cuando el campo no llega.
+  if(status==="OPEN"&&context.requiresFollowup&&!text(fd,"nextFollowupDate")&&(fd.has("nextFollowupDate")||!existingNextFollowup))errors.push("Una devolución abierta que requiere seguimiento necesita próxima fecha.");
+  return {errors,fieldIssues:fieldIssuesFromErrors(errors,[...triIssues,...returnFieldRules]),actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
     businessCode,departmentId,communicationDate,receivedAt:text(fd,"receivedAt"),createdByText,returnType,otherReturnType:text(fd,"otherReturnType"),
     customerEntity,country:text(fd,"country"),address:text(fd,"address"),relatedDocument:text(fd,"relatedDocument"),conservationConditions:text(fd,"conservationConditions"),
     deliveryNote:text(fd,"deliveryNote"),reasonObservations:text(fd,"reasonObservations"),attachedDocumentation:text(fd,"attachedDocumentation"),

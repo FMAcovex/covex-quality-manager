@@ -9,6 +9,7 @@ import { CsrfField } from "@/components/csrf";
 
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { InvalidFieldsSummary } from "@/components/invalid-fields-summary";
+import { generalErrors } from "@/lib/forms/field-issues";
 
 import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
@@ -97,12 +98,12 @@ export function ComplaintForm({mode,action,departments,users=[],defaults={},comp
 
  return <form key={state.formRevision??0} action={formAction} className="form-stack"><CsrfField />
     <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
-    <InvalidFieldsSummary />
+    <InvalidFieldsSummary serverIssues={state.fieldIssues} />
       <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
   <input type="hidden" name="capaPlansJson" value={JSON.stringify(capas)}/>
   <input type="hidden" name="derivedActionsJson" value={JSON.stringify(derived)}/>
-  {state.error?<div className="form-errors"><strong>{state.error}</strong>{state.fieldErrors?.length?<ul>{state.fieldErrors.map((x,i)=><li key={`${x}-${i}`}>{x}</li>)}</ul>:null}</div>:null}
+  {state.error?<div className="form-errors"><strong>{state.error}</strong>{generalErrors(state.fieldErrors,state.fieldIssues).length?<ul>{generalErrors(state.fieldErrors,state.fieldIssues).map((x,i)=><li key={`${x}-${i}`}>{x}</li>)}</ul>:null}</div>:null}
 
   <section className="form-section complaint-identification-section">
    <div className="section-title-row"><div><p className="eyebrow">Parte I · Registro, investigación y análisis</p><h2>Identificación de la reclamación</h2></div><span className="badge neutral">GC-00/027/03</span></div>
