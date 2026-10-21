@@ -1285,4 +1285,5 @@ Decisión del responsable de Calidad tras la auditoría UI/UX de la Fase 1, hech
   - **Errores por campo en Reclamaciones, Devoluciones y OOS:** el servidor asocia cada error a su campo. El resumen del formulario marca el campo y lo enlaza, agrupado por apartado. Solo quedan en el aviso general los errores que no son de un campo. La validación del navegador se mantiene.
   - **Mensajes de Devoluciones:** las comprobaciones se nombran con la etiqueta del formulario, no con su nombre interno.
   - **Audit trail general:** los filtros «Desde» y «Hasta» son días naturales de Madrid. La exportación CSV añade «Fecha (Madrid)» y «Corte (Madrid)» junto a las columnas en UTC, que se conservan; el manifiesto indica las dos zonas.
+- **Logotipo de COVEX (2026-10-21):** el logotipo facilitado por el responsable sustituye a la marca provisional «C» en la cabecera (40 px de alto). Va incluido en el build de la aplicación (`src/components/brand/covex-logo.png`) para que también funcione en la imagen Docker. Esto resuelve en parte H-30 (identidad propia), sin rediseñar la cabecera.
 
