@@ -80,7 +80,7 @@ export function CapaOriginSelector({
       {value.length ? (
         <div className="relation-chips">
           {value.map((item) => (
-            <span className="relation-chip" key={item.id}>
+            <span className="relation-chip removable" key={item.id}>
               <strong>{item.businessCode || item.displayLabel || `Auditoría · ${item.id.slice(0, 8)}`}</strong> · {typeLabel(item.recordType)}
               {!disabled ? (
                 <button type="button" className="button small" onClick={() => onChange(value.filter((selected) => selected.id !== item.id))}>

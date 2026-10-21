@@ -22,6 +22,9 @@ import {
   formatDate,
 } from "@/modules/capa/domain";
 import { getCapaDetail } from "@/modules/capa/queries";
+import { DocumentType, QmsRecordType } from "@prisma/client";
+import { recordAnnexTemplate } from "@/modules/configuration/template-readiness";
+import { DEFAULT_CAPA_ANNEX_III_VERSION } from "@/modules/capa/documents/templates";
 import { capaSnapshotVersionFollowupDate, recordVersionSummary } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { OperationalRelationForm } from "@/components/operational-relation-form";
@@ -97,6 +100,9 @@ async function CapaDetailPageAuthenticatedContent({
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
+  const annexTemplate = activeTab === "documents"
+    ? await recordAnnexTemplate(QmsRecordType.CAPA, DocumentType.CAPA_ANNEX_III, capa.annexIIITemplateVersion, DEFAULT_CAPA_ANNEX_III_VERSION)
+    : null;
 
   const hasCode = Boolean(capa.qmsRecord.businessCode ?? capa.qmsRecord.annulledBusinessCode);
   const reviewMode = review === "1";
@@ -561,7 +567,7 @@ async function CapaDetailPageAuthenticatedContent({
           <h2>Documentos</h2>
           <dl className="info-grid">
             <div className="info-item"><dt>Versión formulario</dt><dd>{capa.formVersion?.versionCode ?? "No asignada"}</dd></div>
-            <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{capa.annexIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
+            <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{annexTemplate ? annexTemplate.assigned ? annexTemplate.versionCode : `${annexTemplate.versionCode} · por defecto (la CAPA no tiene versión asignada)` : "No asignada"}</dd></div>
             <div className="info-item">
               <dt>PDF firmados por seguimiento</dt>
               <dd>{capa.qmsRecord.versions.length ? `${signedFollowupNumbers.length} de ${capa.qmsRecord.versions.length} disponibles` : "Sin seguimientos"}</dd>
@@ -582,7 +588,7 @@ async function CapaDetailPageAuthenticatedContent({
               <h3>Anexo III · Informe CAPA</h3>
               <p>Plantilla oficial y versión Word cumplimentada del informe/seguimiento CAPA.</p>
               <div className="document-actions">
-                {capa.annexIIITemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="CAPA"><a className="button" href={`/api/settings/templates/${capa.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
+                {annexTemplate ? <PermissionGate permission="DOWNLOAD" module="CAPA"><a className="button" href={`/api/settings/templates/${annexTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
                 {capa.status === "DRAFT" ? <span className="muted-note">Disponible al abrir la CAPA.</span> : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>}
               </div>
             </div>

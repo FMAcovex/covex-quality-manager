@@ -3,7 +3,10 @@ import { requireStoredTemplate, TemplateAssetError } from "@/modules/configurati
 
 export class CapaTemplateUnavailableError extends TemplateAssetError {}
 
-export async function loadCapaAnnexIIITemplate(versionCode = "05") {
+/** Versión del Anexo III que usa el generador cuando la CAPA no tiene una plantilla asignada. */
+export const DEFAULT_CAPA_ANNEX_III_VERSION = "05";
+
+export async function loadCapaAnnexIIITemplate(versionCode = DEFAULT_CAPA_ANNEX_III_VERSION) {
   return requireStoredTemplate(QmsRecordType.CAPA, DocumentType.CAPA_ANNEX_III, versionCode, "CAPA · Anexo III", CapaTemplateUnavailableError);
 }
 

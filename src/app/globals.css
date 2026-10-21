@@ -994,6 +994,9 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
   overflow-wrap: anywhere;
 }
 .relation-chip:hover { background: var(--blue-soft); border-color: #a9c8ed; }
+/* Expediente de origen seleccionado en el formulario de CAPA: código y tipo en una línea, con «Quitar» al lado. */
+.relation-chip.removable { gap: 6px; max-width: none; padding-right: 3px; white-space: nowrap; overflow-wrap: normal; }
+.relation-chip.removable .button { flex: none; }
 .relation-card a { color: var(--blue-dark); text-decoration: none; }
 .relation-card a:hover { text-decoration: underline; }
 .followup-form { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
@@ -1276,6 +1279,7 @@ button[disabled] {
 }
 .action-overview-table td {
   padding: 12px 10px;
+  white-space: normal;
   border-bottom: 1px solid #e3e9f0;
   background: transparent;
   line-height: 1.45;
@@ -1300,6 +1304,7 @@ button[disabled] {
 }
 .action-overview-table .action-link-cell {
   width: 120px;
+  white-space: nowrap;
   text-align: right;
 }
 .immediate-action-table th:first-child,

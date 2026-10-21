@@ -20,6 +20,9 @@ import { notFound } from "next/navigation";
 import { addDeviationRelationAction, unlinkDeviationCapaAction } from "@/modules/deviations/actions";
 import { deadlineLabel, deviationProvenanceLabel, formatDate, measuresLabel, triStateLabel } from "@/modules/deviations/domain";
 import { getDeviationDetail } from "@/modules/deviations/queries";
+import { DocumentType, QmsRecordType } from "@prisma/client";
+import { recordAnnexTemplate } from "@/modules/configuration/template-readiness";
+import { DEFAULT_DEVIATION_ANNEX_III_VERSION } from "@/modules/deviations/documents/templates";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref } from "@/lib/qms/record-links";
 import {
@@ -135,6 +138,9 @@ async function DeviationDetailPageAuthenticatedContent({
   const code = qmsRecordDisplayCode(deviation.qmsRecord, "Sin codificación");
   const hasCode = Boolean(deviation.qmsRecord.businessCode ?? deviation.qmsRecord.annulledBusinessCode);
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
+  const annexTemplate = activeTab === "documents"
+    ? await recordAnnexTemplate(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_III, deviation.anexoIIITemplateVersion, DEFAULT_DEVIATION_ANNEX_III_VERSION)
+    : null;
   const currentSignedDocument = currentVersion?.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
   const reviewMode = review === "1";
   const basePath = `/deviations/${id}`;
@@ -716,7 +722,7 @@ async function DeviationDetailPageAuthenticatedContent({
           <h2>Documentos</h2>
           <dl className="info-grid documents-info-grid">
             <div className="info-item"><dt>Versión formulario</dt><dd>{deviation.formVersion?.versionCode ?? "No asignada"}</dd></div>
-            <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{deviation.anexoIIITemplateVersion?.versionCode ?? "No asignada"}</dd></div>
+            <div className="info-item"><dt>Plantilla Anexo III</dt><dd>{annexTemplate ? annexTemplate.assigned ? annexTemplate.versionCode : `${annexTemplate.versionCode} · por defecto (el expediente no tiene versión asignada)` : "No asignada"}</dd></div>
             <div className="info-item"><dt>Documento firmado de la versión vigente</dt><dd>{currentVersion ? `${versionLabel(currentVersion.sequenceNumber)} · ${currentSignedDocument ? "Disponible" : "No cargado"}` : "Sin versión"}</dd></div>
           </dl>
           <div className="document-grid">
@@ -724,7 +730,7 @@ async function DeviationDetailPageAuthenticatedContent({
               <h3>Anexo III · Informe de desviación</h3>
               <p>Plantilla oficial asociada al expediente y documento Word cumplimentado con los datos vigentes.</p>
               <div className="document-actions">
-                {deviation.anexoIIITemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="DEVIATION"><a className="button" href={`/api/settings/templates/${deviation.anexoIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
+                {annexTemplate ? <PermissionGate permission="DOWNLOAD" module="DEVIATION"><a className="button" href={`/api/settings/templates/${annexTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
                 <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>
               </div>
             </div>

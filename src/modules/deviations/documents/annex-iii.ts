@@ -12,7 +12,7 @@ import {
   setWordSdtCheckbox,
   transformWordCell,
 } from "@/lib/ooxml/xml";
-import { loadAnnexIIITemplate } from "@/modules/deviations/documents/templates";
+import { DEFAULT_DEVIATION_ANNEX_III_VERSION, loadAnnexIIITemplate } from "@/modules/deviations/documents/templates";
 import { dispositionAnnexMarks, dispositionChoice } from "@/modules/deviations/disposition";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 
@@ -142,7 +142,7 @@ export function setImpactCell(xml: string, row: number, cell: number, state: str
 }
 
 export async function generateAnnexIII(record: AnnexIIIRecord) {
-  const templateVersion = record.anexoIIITemplateVersion?.versionCode ?? "06";
+  const templateVersion = record.anexoIIITemplateVersion?.versionCode ?? DEFAULT_DEVIATION_ANNEX_III_VERSION;
   const entries = readZip(await loadAnnexIIITemplate(templateVersion));
   let xml = getZipEntryText(entries, "word/document.xml");
 

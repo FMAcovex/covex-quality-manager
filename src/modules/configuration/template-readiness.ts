@@ -67,6 +67,25 @@ export function evaluateRequiredTemplateReadiness(templates: TemplateAssetSummar
   };
 }
 
+/**
+ * Plantilla con la que se generará el anexo de un expediente: la asignada al crearlo o, si no
+ * tiene ninguna (expedientes anteriores a la instalación de plantillas), la versión que usa el
+ * generador por defecto, siempre que esté instalada.
+ */
+export async function recordAnnexTemplate(
+  module: QmsRecordType,
+  documentType: DocumentType,
+  assigned: { id: string; versionCode: string } | null | undefined,
+  defaultVersionCode: string,
+) {
+  if (assigned) return { id: assigned.id, versionCode: assigned.versionCode, assigned: true };
+  const template = await prisma.templateVersion.findUnique({
+    where: { module_documentType_versionCode: { module, documentType, versionCode: defaultVersionCode } },
+    select: { id: true, versionCode: true, fileName: true, filePath: true, checksum: true },
+  });
+  return template && templateAssetReady(template) ? { id: template.id, versionCode: template.versionCode, assigned: false } : null;
+}
+
 export async function isActiveTemplateAssetReady(
   module: QmsRecordType,
   documentType: DocumentType,

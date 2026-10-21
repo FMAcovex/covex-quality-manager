@@ -11,7 +11,7 @@ import {
   setWordVariableCellText,
 } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
-import { loadCapaAnnexIIITemplate } from "@/modules/capa/documents/templates";
+import { DEFAULT_CAPA_ANNEX_III_VERSION, loadCapaAnnexIIITemplate } from "@/modules/capa/documents/templates";
 
 type CapaAnnexRecord = {
   qmsRecord: { businessCode: string | null };
@@ -85,7 +85,7 @@ function matchesOriginType(value: string | null, type: "DEVIATION" | "COMPLAINT"
 }
 
 export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
-  const version = record.annexIIITemplateVersion?.versionCode ?? "05";
+  const version = record.annexIIITemplateVersion?.versionCode ?? DEFAULT_CAPA_ANNEX_III_VERSION;
   const entries = readZip(await loadCapaAnnexIIITemplate(version));
   let xml = getZipEntryText(entries, "word/document.xml");
 

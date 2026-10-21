@@ -3,7 +3,10 @@ import { requireStoredTemplate, TemplateAssetError } from "@/modules/configurati
 
 export class TemplateUnavailableError extends TemplateAssetError {}
 
-export async function loadAnnexIIITemplate(versionCode = "06") {
+/** Versión del Anexo III que usa el generador cuando el expediente no tiene una plantilla asignada. */
+export const DEFAULT_DEVIATION_ANNEX_III_VERSION = "06";
+
+export async function loadAnnexIIITemplate(versionCode = DEFAULT_DEVIATION_ANNEX_III_VERSION) {
   return requireStoredTemplate(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_III, versionCode, "Desviaciones · Anexo III", TemplateUnavailableError);
 }
 
