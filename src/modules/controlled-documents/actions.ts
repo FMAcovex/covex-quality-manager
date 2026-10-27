@@ -3,6 +3,7 @@ import { authorizedAction } from "@/lib/auth/action-guard";
 import { withReturnTo } from "./navigation";
 import { parseMasterForm, parseRevisionForm } from "./domain";
 import { saveMaster, saveRevision } from "./service";
+import { parseAssignmentsForm, saveAssignments } from "./assignments";
 import { Prisma } from "@prisma/client";
 import { headers } from "next/headers";
 import { lifecyclePrincipal, requireLifecyclePermission } from "./lifecycle/access";
@@ -44,10 +45,25 @@ async function revisionActionAuthenticatedContent(documentId: string, id: string
     }
 }
 
+/** D-118: responsables de las funciones de las revisiones en curso y de la revisión periódica. */
+async function assignmentsActionAuthenticatedContent(documentId: string, _state: SaveState, fd: FormData): Promise<SaveState> {
+    try {
+        await saveAssignments(documentId, parseAssignmentsForm(fd));
+        return { url: withReturnTo(`/controlled-documents/${documentId}?tab=revisions`, fd.get("returnTo")) };
+    }
+    catch (error) {
+        return preserveFormState(_state, fd, { error: errorMessage(error) });
+    }
+}
+
 export async function masterAction(...args: Parameters<typeof masterActionAuthenticatedContent>) {
   return authorizedAction("masterAction", args, authenticated => masterActionAuthenticatedContent(...authenticated as Parameters<typeof masterActionAuthenticatedContent>));
 }
 
 export async function revisionAction(...args: Parameters<typeof revisionActionAuthenticatedContent>) {
   return authorizedAction("revisionAction", args, authenticated => revisionActionAuthenticatedContent(...authenticated as Parameters<typeof revisionActionAuthenticatedContent>));
+}
+
+export async function assignmentsAction(...args: Parameters<typeof assignmentsActionAuthenticatedContent>) {
+  return authorizedAction("assignmentsAction", args, authenticated => assignmentsActionAuthenticatedContent(...authenticated as Parameters<typeof assignmentsActionAuthenticatedContent>));
 }

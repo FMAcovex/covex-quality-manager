@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ master: vi.fn(), revision: vi.fn(), headers: vi.fn() }));
 vi.mock("./service", () => ({ saveMaster: mocks.master, saveRevision: mocks.revision }));
+vi.mock("./assignments", () => ({ parseAssignmentsForm: vi.fn(), saveAssignments: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: mocks.headers }));
 import { masterAction, revisionAction } from "./actions";
 const secret = "synthetic-test-key-not-a-real-secret";

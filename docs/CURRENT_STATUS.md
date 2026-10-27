@@ -136,6 +136,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**PNT: responsables por función y de la revisión periódica (2026-10-27, D-118):**
+- **Qué cambia:** cada revisión de PNT en borrador, en revisión o pendiente de aprobación tiene responsables de Elaborar, Revisar y Aprobar, con usuario opcional y fecha prevista. El maestro tiene responsable de la revisión periódica. Se asignan con «Asignar responsables» en la pestaña Revisiones y se muestran en la ficha.
+- **Mis tareas:** «Elaborar/Revisar/Aprobar la revisión XX» solo mientras la revisión está en la fase de esa función. «Revisión periódica» cuando la vigente vence en 30 días o ya venció y no hay una nueva revisión en curso.
+- **Listado de PNT:** filtro «Asignación → Asignadas a mí» en los filtros avanzados, con la misma regla.
+- **Base de datos:** migración `20261027000100_pnt_assignments` (11 columnas nuevas, opcionales) con captura B2 y contrato `audit-contract-pnt-assignments.json`.
+- **Demo:** GC-00/003 rev. 04 con las tres funciones; GC-00/030 (vencido) y LG-30/005 (vence en 25 días) con responsable de revisión periódica. `pnpm demo:examples` lo completa también en demos ya cargadas.
+- **Comprobado** con pruebas unitarias (regla, formulario y contrato), el smoke `assigned-d102:smoke` ampliado a PNT (funciones por fase, revisión periódica, anulados, historial, concurrencia y listado) y la regresión.
+- **No cambia:** el registro de funciones del documento aprobado, los estados de la revisión ni la firma.
+
 **Mejoras de interfaz, entregas 1 a 4 (2026-10-21, D-117):**
 - **Origen:** auditoría UI/UX de la Fase 1 sobre la interfaz real; se mantiene el diseño actual.
 - **Entrega 1, acabado:** sin estilos por defecto del navegador, sin jerga interna, contraste de al menos 5:1, anillo de foco común, alineaciones corregidas y acceso sin menú.

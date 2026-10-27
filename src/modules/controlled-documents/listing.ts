@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import type { Filters } from "./queries";
 import { dateFilterErrors } from "./queries";
 import { iso } from "./domain";
+import { assignedListWhere, assignedWhere } from "@/lib/qms/assigned";
+import { currentIdentity } from "@/lib/auth/context";
 
 // Listing-only projection. No documentary binaries, approval evidence or history are loaded.
 export const PNT_PAGE_SIZE = 25;
@@ -64,8 +66,12 @@ const masterSelect = {
 export async function queryPntListing(f: PntListingFilters, paginate = true) {
   const options = normalizedListOptions(f);
   const errors = dateFilterErrors(f);
+  const today = iso(new Date());
+  const assigned = assignedListWhere(f.assigned, currentIdentity()?.principal.id, userId => assignedWhere.pnt(userId, new Date(today + "T00:00:00Z")));
   return prisma.$transaction(async tx => {
-    const selection = pntCandidatesSql(f, iso(new Date()));
+    // D-118: «Asignadas a mí» se resuelve con la regla compartida del panel y restringe los maestros.
+    const assignedIds = assigned ? (await tx.controlledDocument.findMany({ where: assigned, select: { id: true } })).map(row => row.id) : null;
+    const selection = pntCandidatesSql(f, today, assignedIds);
     const totals = errors.length ? { rowCount: 0, masterCount: 0, revisionCount: 0 } :
       (await tx.$queryRaw<Array<{ rowCount: number; masterCount: number; revisionCount: number }>>(Prisma.sql`
         SELECT COUNT(*)::int AS "rowCount", COUNT(DISTINCT "masterId")::int AS "masterCount", COUNT("revisionId")::int AS "revisionCount"

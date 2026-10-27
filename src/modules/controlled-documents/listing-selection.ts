@@ -11,7 +11,7 @@ export type PntCandidate = {
 };
 
 // A lifecycle row is authoritative even when its dates are null. COALESCE would restore stale dates.
-export function pntCandidatesSql(f: PntListingFilters, today: string) {
+export function pntCandidatesSql(f: PntListingFilters, today: string, assignedIds: string[] | null = null) {
   const options = normalizedListOptions(f);
   const master: Prisma.Sql[] = [], revision: Prisma.Sql[] = [];
   if (typeof f.q === "string" && f.q.trim()) {
@@ -19,6 +19,7 @@ export function pntCandidatesSql(f: PntListingFilters, today: string) {
     master.push(Prisma.sql`(m."baseCode" ILIKE ${search} OR m.title ILIKE ${search} OR m."departmentNameSnapshot" ILIKE ${search}
       OR EXISTS (SELECT 1 FROM "ControlledDocumentRevision" s WHERE s."documentId" = m.id AND s."sourceReference" ILIKE ${search}))`);
   }
+  if (assignedIds) master.push(assignedIds.length ? Prisma.sql`m.id IN (${Prisma.join(assignedIds.map(id => Prisma.sql`${id}`))})` : Prisma.sql`false`);
   if (typeof f.department === "string" && f.department) master.push(Prisma.sql`m."departmentId" = ${f.department}`);
   if (typeof f.state === "string" && f.state && Object.hasOwn(administrativeLabels, f.state)) master.push(Prisma.sql`m."administrativeStatus"::text = ${f.state}`);
   const effective = Prisma.sql`CASE WHEN l."revisionId" IS NOT NULL THEN l."effectiveFrom" ELSE r."effectiveFrom" END`;

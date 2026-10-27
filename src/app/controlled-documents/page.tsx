@@ -11,6 +11,7 @@ import { DocumentStateBadge } from "@/modules/controlled-documents/components/do
 import { listingQuery, withReturnTo } from "@/modules/controlled-documents/navigation";
 import { importStates, indexMetadata } from "@/modules/controlled-documents/import/domain";
 import { dateFilterErrors } from "@/modules/controlled-documents/queries";
+import { AssignedListFilter } from "@/components/assigned-list-filter";
 import { queryPntListing, operationalDates, type PntListingFilters } from "@/modules/controlled-documents/listing";
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Pr
  const link = (changes: Record<string,string>) => "/controlled-documents?" + params(changes);
  const exportLink = "/api/controlled-documents/export?" + params({});
  const errors = dateFilterErrors(f);
- const advancedActive = Boolean(f.department || f.state || f.revision || f.revisionState || f.validity || f.effectiveFromStart || f.effectiveFromEnd || f.reviewDueStart || f.reviewDueEnd || result.options.view !== "all" || result.options.sort !== "code" || result.options.direction !== "asc");
+ const advancedActive = Boolean(f.department || f.state || f.revision || f.revisionState || f.validity || f.effectiveFromStart || f.effectiveFromEnd || f.reviewDueStart || f.reviewDueEnd || f.assigned || result.options.view !== "all" || result.options.sort !== "code" || result.options.direction !== "asc");
  const headings: [string, string][] = [
    ["code","Código"], ["title","Título"], ["department","Departamento"], ["masterState","Estado maestro"],
    ["revision","Revisión"], ["status","Estado documental"], ["effectiveFrom","Fecha de vigencia"], ["reviewDueAt","Próxima revisión"],
@@ -41,13 +42,14 @@ async function ListPageAuthenticatedContent({ searchParams }: { searchParams: Pr
    <form className="filter-panel pnt-filters" method="get">
     {f.quick && <input type="hidden" name="quick" value={f.quick}/>}
     <div className="pnt-search-row"><label className="field"><span>Buscar</span><input name="q" defaultValue={f.q} placeholder="Código, título o referencia"/></label><button className="button primary" type="submit">Buscar</button></div>
-    <details className="pnt-advanced-filters" open={advancedActive}><summary>Filtros avanzados{advancedActive ? " · activos" : ""}<span className="pnt-advanced-hint">Departamento, estado, revisión, fechas y ordenación</span></summary>
+    <details className="pnt-advanced-filters" open={advancedActive}><summary>Filtros avanzados{advancedActive ? " · activos" : ""}<span className="pnt-advanced-hint">Departamento, estado, revisión, asignación, fechas y ordenación</span></summary>
     <div className="pnt-advanced-grid">
     <label className="field"><span>Departamento</span><select name="department" defaultValue={f.department}><option value="">Todos</option>{departments.map(d => <option key={d.id} value={d.id}>{d.code} — {d.name}</option>)}</select></label>
     <label className="field"><span>Estado maestro</span><select name="state" defaultValue={f.state}><option value="">Todos</option>{Object.entries(administrativeLabels).map(([key,label])=><option value={key} key={key}>{label}</option>)}</select></label>
     <label className="field"><span>Revisión</span><input name="revision" defaultValue={f.revision} maxLength={2} placeholder="00"/></label>
     <label className="field"><span>Estado documental</span><select name="revisionState" defaultValue={f.revisionState}><option value="">Todos</option>{Object.keys(revisionLabels).map(key=><option value={key} key={key}>{documentStateLabel(key as keyof typeof revisionLabels)}</option>)}</select></label>
     <label className="field"><span>Plazos documentales</span><select name="validity" defaultValue={f.validity}><option value="">Todos</option><option value="current">Vigencia iniciada</option><option value="due">Revisión prevista alcanzada</option><option value="missing">Fechas sin completar</option></select></label>
+    <AssignedListFilter value={f.assigned} />
     <fieldset className="pnt-date-range"><legend>Fecha de vigencia</legend><label className="field"><span>Desde</span><input type="date" name="effectiveFromStart" defaultValue={f.effectiveFromStart || ""}/></label><label className="field"><span>Hasta</span><input type="date" name="effectiveFromEnd" defaultValue={f.effectiveFromEnd || ""}/></label></fieldset>
     <fieldset className="pnt-date-range"><legend>Próxima revisión</legend><label className="field"><span>Desde</span><input type="date" name="reviewDueStart" defaultValue={f.reviewDueStart || ""}/></label><label className="field"><span>Hasta</span><input type="date" name="reviewDueEnd" defaultValue={f.reviewDueEnd || ""}/></label></fieldset>
     <label className="field"><span>Mostrar</span><select name="view" aria-describedby="pnt-latest-help" defaultValue={result.options.view}><option value="all">Todas las revisiones</option><option value="latest">Solo última revisión</option></select><small id="pnt-latest-help" className="section-help">Última = revisión con el número más alto de cada PNT, aunque esté en borrador; no necesariamente la vigente. Los filtros se aplican a esa revisión.</small></label>
