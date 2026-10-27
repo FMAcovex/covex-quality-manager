@@ -1915,67 +1915,89 @@ enum ControlledDocumentVerificationStatus {
 }
 
 model ControlledDocument {
-  auditCursors           AuditAggregateCursor[]
-  id                     String                                 @id @default(uuid())
-  baseCode               String?                                @unique
-  title                  String?                                @db.Text
-  documentType           ControlledDocumentType                 @default(PNT)
-  departmentId           String?
-  department             Department?                            @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  departmentCodeSnapshot String?
-  departmentNameSnapshot String?
-  administrativeStatus   ControlledDocumentAdministrativeStatus @default(DRAFT)
-  observations           String?                                @db.Text
-  sourceMetadata         Json?
-  verificationStatus     ControlledDocumentVerificationStatus   @default(UNVERIFIED)
-  createdByText          String
-  createdAt              DateTime                               @default(now())
-  updatedAt              DateTime                               @updatedAt
-  annulledAt             DateTime?
-  annulledByText         String?
-  annulmentReason        String?                                @db.Text
-  revisions              ControlledDocumentRevision[]
-  changes                ControlledDocumentChange[]
+  auditCursors                    AuditAggregateCursor[]
+  id                              String                                 @id @default(uuid())
+  baseCode                        String?                                @unique
+  title                           String?                                @db.Text
+  documentType                    ControlledDocumentType                 @default(PNT)
+  departmentId                    String?
+  department                      Department?                            @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  departmentCodeSnapshot          String?
+  departmentNameSnapshot          String?
+  administrativeStatus            ControlledDocumentAdministrativeStatus @default(DRAFT)
+  observations                    String?                                @db.Text
+  sourceMetadata                  Json?
+  verificationStatus              ControlledDocumentVerificationStatus   @default(UNVERIFIED)
+  createdByText                   String
+  createdAt                       DateTime                               @default(now())
+  updatedAt                       DateTime                               @updatedAt
+  annulledAt                      DateTime?
+  annulledByText                  String?
+  annulmentReason                 String?                                @db.Text
+  // D-118: responsable de la revisión periódica (texto libre + usuario opcional, como D-101).
+  periodicReviewResponsible       String?
+  periodicReviewResponsibleUserId String?                                @db.Uuid
+  periodicReviewResponsibleUser   AuthUser?                              @relation("ControlledDocumentPeriodicReview", fields: [periodicReviewResponsibleUserId], references: [id], onDelete: Restrict)
+  revisions                       ControlledDocumentRevision[]
+  changes                         ControlledDocumentChange[]
 
   @@index([departmentId, administrativeStatus])
   @@index([administrativeStatus, createdAt])
+  @@index([periodicReviewResponsibleUserId])
 }
 
 model ControlledDocumentRevision {
-  id                     String                               @id @default(uuid())
-  documentId             String
-  document               ControlledDocument                   @relation(fields: [documentId], references: [id], onDelete: Restrict)
-  revisionCode           String
-  baseCodeSnapshot       String?
-  titleSnapshot          String?                              @db.Text
-  departmentCodeSnapshot String?
-  departmentNameSnapshot String?
-  revisionReason         String?                              @db.Text
-  status                 ControlledDocumentRevisionStatus     @default(DRAFT)
-  effectiveFrom          DateTime?                            @db.Date
-  reviewDueAt            DateTime?                            @db.Date
-  obsoletedAt            DateTime?                            @db.Date
-  previousRevisionId     String?
-  previousRevision       ControlledDocumentRevision?          @relation("ControlledPreviousRevision", fields: [documentId, previousRevisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
-  followingRevisions     ControlledDocumentRevision[]         @relation("ControlledPreviousRevision")
-  sourceReference        String?                              @db.Text
-  sourceMetadata         Json?
-  verificationStatus     ControlledDocumentVerificationStatus @default(UNVERIFIED)
-  verifiedByText         String?
-  verifiedAt             DateTime?
-  consolidatedAt         DateTime?
-  registeredByText       String
-  registeredAt           DateTime                             @default(now())
-  updatedAt              DateTime                             @updatedAt
-  changes                ControlledDocumentChange[]
-  documents              ControlledRevisionDocument[]
-  lifecycle              ControlledRevisionLifecycle?
-  decisions              ControlledRevisionDecision[]
+  id                           String                               @id @default(uuid())
+  documentId                   String
+  document                     ControlledDocument                   @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  revisionCode                 String
+  baseCodeSnapshot             String?
+  titleSnapshot                String?                              @db.Text
+  departmentCodeSnapshot       String?
+  departmentNameSnapshot       String?
+  revisionReason               String?                              @db.Text
+  status                       ControlledDocumentRevisionStatus     @default(DRAFT)
+  effectiveFrom                DateTime?                            @db.Date
+  reviewDueAt                  DateTime?                            @db.Date
+  obsoletedAt                  DateTime?                            @db.Date
+  previousRevisionId           String?
+  previousRevision             ControlledDocumentRevision?          @relation("ControlledPreviousRevision", fields: [documentId, previousRevisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  followingRevisions           ControlledDocumentRevision[]         @relation("ControlledPreviousRevision")
+  sourceReference              String?                              @db.Text
+  sourceMetadata               Json?
+  verificationStatus           ControlledDocumentVerificationStatus @default(UNVERIFIED)
+  verifiedByText               String?
+  verifiedAt                   DateTime?
+  consolidatedAt               DateTime?
+  registeredByText             String
+  registeredAt                 DateTime                             @default(now())
+  updatedAt                    DateTime                             @updatedAt
+  changes                      ControlledDocumentChange[]
+  documents                    ControlledRevisionDocument[]
+  lifecycle                    ControlledRevisionLifecycle?
+  decisions                    ControlledRevisionDecision[]
+  // D-118: responsables de las funciones de la revisión (GC-00/001/03), con fecha prevista.
+  // No sustituyen al registro de funciones externas ni a la firma.
+  preparationResponsible       String?
+  preparationResponsibleUserId String?                              @db.Uuid
+  preparationResponsibleUser   AuthUser?                            @relation("ControlledRevisionPreparation", fields: [preparationResponsibleUserId], references: [id], onDelete: Restrict)
+  preparationTargetDate        DateTime?                            @db.Date
+  reviewResponsible            String?
+  reviewResponsibleUserId      String?                              @db.Uuid
+  reviewResponsibleUser        AuthUser?                            @relation("ControlledRevisionReview", fields: [reviewResponsibleUserId], references: [id], onDelete: Restrict)
+  reviewTargetDate             DateTime?                            @db.Date
+  approvalResponsible          String?
+  approvalResponsibleUserId    String?                              @db.Uuid
+  approvalResponsibleUser      AuthUser?                            @relation("ControlledRevisionApproval", fields: [approvalResponsibleUserId], references: [id], onDelete: Restrict)
+  approvalTargetDate           DateTime?                            @db.Date
 
   @@unique([documentId, revisionCode])
   @@unique([documentId, id])
   @@index([status, effectiveFrom, reviewDueAt])
   @@index([documentId, revisionCode])
+  @@index([preparationResponsibleUserId])
+  @@index([reviewResponsibleUserId])
+  @@index([approvalResponsibleUserId])
 }
 
 model ControlledDocumentChange {
@@ -2273,6 +2295,10 @@ model AuthUser {
   complaintCapaPlanResponsible            ComplaintCapaPlan[]             @relation("ComplaintCapaPlanResponsible")
   complaintDerivedActionResponsible       ComplaintDerivedAction[]        @relation("ComplaintDerivedActionResponsible")
   auditFindingActionResponsible           AuditFindingAction[]            @relation("AuditFindingActionResponsible")
+  controlledDocumentPeriodicReview        ControlledDocument[]            @relation("ControlledDocumentPeriodicReview")
+  controlledRevisionPreparation           ControlledDocumentRevision[]    @relation("ControlledRevisionPreparation")
+  controlledRevisionReview                ControlledDocumentRevision[]    @relation("ControlledRevisionReview")
+  controlledRevisionApproval              ControlledDocumentRevision[]    @relation("ControlledRevisionApproval")
   id                                      String                          @id @default(uuid()) @db.Uuid
   tenantId                                String                          @db.Uuid
   objectId                                String                          @db.Uuid

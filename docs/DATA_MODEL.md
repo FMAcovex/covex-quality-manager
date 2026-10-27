@@ -517,3 +517,12 @@ La migración aditiva `20261013000300_b2_sql_capture` añade la fundación de ca
 ## Responsable como usuario de la aplicación (D-101)
 
 La migración aditiva `20261018000300_responsible_users` añade una columna UUID opcional con FK a `AuthUser` (ON DELETE RESTRICT) e índice junto a cada responsable en texto libre: `DeviationImmediateAction.executedByUserId`, `DeviationCapaPlan.responsibleUserId`, `CapaPlannedAction.responsibleUserId`, `ChangeControl.requestDecisionResponsibleUserId`, `ChangeControl.followupResponsibleUserId`, `ChangeControlTask.responsibleUserId`, `ChangeControlFollowup.responsibleUserId`, `ComplaintCapaPlan.responsibleUserId`, `ComplaintDerivedAction.responsibleUserId` y `AuditFindingAction.responsibleUserId`. El texto libre no cambia y sigue siendo lo que se imprime. Las columnas se añaden a la política de captura B2 (contrato `B2_RESPONSIBLE_USERS`).
+
+## Responsables de PNT por función y de la revisión periódica (D-118)
+
+La migración aditiva `20261027000100_pnt_assignments` añade columnas opcionales, sin valores por defecto:
+
+- `ControlledDocument`: `periodicReviewResponsible` (texto) y `periodicReviewResponsibleUserId` (UUID, FK a `AuthUser`).
+- `ControlledDocumentRevision`: para cada función (`preparation` = Elabora, `review` = Revisa, `approval` = Aprueba), `…Responsible` (texto), `…ResponsibleUserId` (UUID, FK a `AuthUser`) y `…TargetDate` (DATE).
+
+Las FK son ON DELETE RESTRICT, con índice por cada usuario. Las 11 columnas se añaden a la política de captura B2 (contrato `B2_PNT_ASSIGNMENTS`). No registran quién elaboró, revisó o aprobó el documento aprobado ni cambian el estado de la revisión.

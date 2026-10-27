@@ -305,6 +305,28 @@ async function pnts() {
   await pnt("GC-00/015", "GC-00", "Gestión de muestras de retención (ejemplo, anulado)", [{ code: "02", status: "OBSOLETE", from: -800, review: -30, obsolete: -30 }], { annulled: "Contenido integrado en otro procedimiento." });
 }
 
+// D-118: responsables de las funciones de la revisión en elaboración y de la revisión periódica.
+// Solo rellena lo que está vacío, así que también completa las demos cargadas antes de este paso.
+async function pntAssignments() {
+  const qa = "Responsable de Garantía de Calidad", manager = "Responsable de departamento";
+  for (const [baseCode, responsible, userId] of [["GC-00/030", qa, QA], ["LG-30/005", manager, MANAGER]] as const) {
+    const doc = await prisma.controlledDocument.findFirst({ where: { baseCode, observations: MARK, periodicReviewResponsible: null, periodicReviewResponsibleUserId: null } });
+    if (!doc) continue;
+    await prisma.controlledDocument.update({ where: { id: doc.id }, data: { periodicReviewResponsible: responsible, periodicReviewResponsibleUserId: userId } });
+    await prisma.controlledDocumentChange.create({ data: { documentId: doc.id, action: "Responsable de la revisión periódica", changedByText: ACTOR, reason: "Ejemplo de la demo", source: "SYSTEM", newValue: { periodicReviewResponsible: responsible, periodicReviewResponsibleUserId: userId } } });
+  }
+  const draft = await prisma.controlledDocumentRevision.findFirst({ where: { revisionCode: "04", status: "DRAFT", document: { baseCode: "GC-00/003", observations: MARK }, preparationResponsible: null, reviewResponsible: null, approvalResponsible: null } });
+  if (draft) {
+    const data = {
+      preparationResponsible: manager, preparationResponsibleUserId: MANAGER, preparationTargetDate: day(10),
+      reviewResponsible: qa, reviewResponsibleUserId: QA, reviewTargetDate: day(20),
+      approvalResponsible: "Dirección Técnica", approvalTargetDate: day(30),
+    };
+    await prisma.controlledDocumentRevision.update({ where: { id: draft.id }, data });
+    await prisma.controlledDocumentChange.create({ data: { documentId: draft.documentId, revisionId: draft.id, action: "Responsables de la revisión 04", changedByText: ACTOR, reason: "Ejemplo de la demo", source: "SYSTEM", newValue: JSON.parse(JSON.stringify(data)) } });
+  }
+}
+
 // Datos que exige el Plan de auditoría externa (entidad, fecha, introducción, alcance, duración y programa).
 const SUPPLIER_PLAN = {
   estuches: {
@@ -372,6 +394,7 @@ async function main() {
     console.log("Los ejemplos de la demo ya están cargados.");
     await changeFollowupVersions();
     await supplierAuditPlans();
+    await pntAssignments();
     return;
   }
   departments = Object.fromEntries((await prisma.department.findMany({ select: { id: true, code: true, name: true } })).map((d) => [d.code, d]));
@@ -384,6 +407,7 @@ async function main() {
   const aud = await audits();
   const o = await oos();
   await pnts();
+  await pntAssignments();
 
   // CAPA creadas desde su origen (registradas en el plan de la desviación o la reclamación).
   const devLimpieza = await prisma.deviation.findUniqueOrThrow({ where: { qmsRecordId: dev.limpieza.id } });

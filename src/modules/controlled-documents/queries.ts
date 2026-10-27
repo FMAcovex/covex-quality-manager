@@ -12,6 +12,7 @@ export type Filters = {
     effectiveFromEnd?: string;
     reviewDueStart?: string;
     reviewDueEnd?: string;
+    assigned?: string;
     page?: string;
 };
 const dateRanges = [

@@ -1,6 +1,8 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { pendingAuditAction, pendingChangeTask, pendingComplaintCapaPlan, pendingDeviationCapaPlan } from "@/lib/qms/assigned";
+import { pendingAuditAction, pendingChangeTask, pendingComplaintCapaPlan, pendingDeviationCapaPlan, pendingPntPeriodicReview, pendingPntRevision } from "@/lib/qms/assigned";
+import { currentRevisionFunction } from "@/modules/controlled-documents/assignment-functions";
+import { operationalDates } from "@/modules/controlled-documents/listing";
 import { classifyDue, utcDay, type DashboardFilters, type DashboardModule } from "./domain";
 
 export type AssignedItem = {
@@ -30,7 +32,8 @@ export function sortAssigned(items: AssignedItem[]) {
 
 /**
  * Acciones pendientes asignadas al usuario (D-102), con los filtros de año, departamento y
- * módulo del panel. Misma definición de pendiente que el filtro de los listados.
+ * módulo del panel. Misma definición de pendiente que el filtro de los listados. Los PNT no
+ * tienen año: solo se filtran por departamento.
  */
 export async function getAssignedItems(userId: string | null | undefined, filters: Pick<DashboardFilters, "year" | "department" | "module" | "asOf">) {
   if (!userId) return [];
@@ -44,7 +47,9 @@ export async function getAssignedItems(userId: string | null | undefined, filter
   };
   const recordRef = { select: { id: true, qmsRecord: { select: { businessCode: true } } } } as const;
 
-  const [deviationPlans, capaActions, decisions, followups, tasks, complaintPlans, derived, auditActions] = await Promise.all([
+  const pntDoc = { administrativeStatus: { not: "ANNULLED" as const }, ...dep };
+
+  const [deviationPlans, capaActions, decisions, followups, tasks, complaintPlans, derived, auditActions, pntRevisions, pntPeriodic] = await Promise.all([
     wants("DEVIATION") ? prisma.deviationCapaPlan.findMany({
       where: { ...pendingDeviationCapaPlan(userId), deviation: { status: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
       select: { id: true, description: true, plannedExecutionDate: true, deviation: recordRef },
@@ -83,7 +88,39 @@ export async function getAssignedItems(userId: string | null | undefined, filter
       },
       select: { id: true, description: true, targetDate: true, finding: { select: { reference: true, audit: recordRef } } },
     }) : [],
+    wants("PNT") ? prisma.controlledDocumentRevision.findMany({
+      where: { ...pendingPntRevision(userId), document: pntDoc },
+      select: {
+        id: true, revisionCode: true, status: true, titleSnapshot: true, baseCodeSnapshot: true,
+        preparationTargetDate: true, reviewTargetDate: true, approvalTargetDate: true,
+        document: { select: { id: true, baseCode: true, title: true } },
+      },
+    }) : [],
+    wants("PNT") ? prisma.controlledDocument.findMany({
+      where: { ...pntDoc, ...pendingPntPeriodicReview(userId, today) },
+      select: {
+        id: true, baseCode: true, title: true,
+        revisions: {
+          where: { status: "IN_FORCE" }, orderBy: [{ revisionCode: "desc" }, { id: "desc" }], take: 1,
+          select: { revisionCode: true, effectiveFrom: true, reviewDueAt: true, lifecycle: { select: { effectiveFrom: true, reviewDueAt: true } } },
+        },
+      },
+    }) : [],
   ]);
+  const pntItems: AssignedItem[] = [];
+  for (const row of pntRevisions) {
+    const fn = currentRevisionFunction(row.status);
+    if (!fn) continue;
+    pntItems.push(item({ key: "PNT-" + fn.key + "-" + row.id, module: "PNT", code: code(row.baseCodeSnapshot ?? row.document.baseCode) + "/" + row.revisionCode, label: fn.task + " la revisión " + row.revisionCode, detail: short(row.titleSnapshot ?? row.document.title), dueDate: row[`${fn.key}TargetDate`], href: "/controlled-documents/" + row.document.id + "?tab=revisions" }));
+  }
+  for (const doc of pntPeriodic) {
+    const revision = doc.revisions[0];
+    const due = revision && operationalDates(revision).reviewDueAt;
+    if (!due) continue;
+    const dueDate = new Date(due + "T00:00:00.000Z");
+    if (!classifyDue(dueDate, today)) continue;
+    pntItems.push(item({ key: "PNT-P-" + doc.id, module: "PNT", code: code(doc.baseCode), label: "Revisión periódica (vigente " + revision.revisionCode + ")", detail: short(doc.title), dueDate, href: "/controlled-documents/" + doc.id }));
+  }
 
   return sortAssigned([
     ...deviationPlans.map((row) => item({ key: "DEV-CAPA-" + row.id, module: "DEVIATION", code: code(row.deviation.qmsRecord.businessCode), label: "CAPA propuesta sin crear", detail: short(row.description), dueDate: row.plannedExecutionDate, href: "/deviations/" + row.deviation.id + "?tab=deviation#desviacion-acciones" })),
@@ -93,6 +130,7 @@ export async function getAssignedItems(userId: string | null | undefined, filter
     ...tasks.map((row) => item({ key: "CC-T-" + row.id, module: "CHANGE_CONTROL", code: code(row.changeControl.qmsRecord.businessCode), label: "Acción del plan", detail: short(row.description), dueDate: row.plannedDate, href: "/changes/" + row.changeControl.id })),
     ...complaintPlans.map((row) => item({ key: "REC-CAPA-" + row.id, module: "COMPLAINT", code: code(row.complaint.qmsRecord.businessCode), label: "CAPA propuesta sin crear", detail: short(row.description), dueDate: row.plannedExecutionDate, href: "/complaints/" + row.complaint.id })),
     ...derived.map((row) => item({ key: "REC-D-" + row.id, module: "COMPLAINT", code: code(row.complaint.qmsRecord.businessCode), label: row.actionType === "RETURN" ? "Devolución propuesta" : "Acción derivada", detail: short(row.description), dueDate: row.plannedExecutionDate, href: "/complaints/" + row.complaint.id })),
+    ...pntItems,
     ...auditActions.map((row) => item({ key: "AUD-A-" + row.id, module: "AUDIT", code: code(row.finding.audit.qmsRecord.businessCode), label: "Acción del hallazgo " + row.finding.reference, detail: short(row.description), dueDate: row.targetDate, href: "/audits/" + row.finding.audit.id + "?tab=findings#audit-action-" + row.id })),
   ]);
 }

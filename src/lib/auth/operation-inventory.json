@@ -867,6 +867,20 @@
     },
     {
       "file": "src/modules/controlled-documents/actions.ts",
+      "name": "assignmentsAction",
+      "params": [
+        "documentId",
+        "_state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/actions.ts",
       "name": "masterAction",
       "params": [
         "id",
@@ -1666,6 +1680,7 @@
     "src/app/complaints/indicators/page.tsx",
     "src/app/complaints/new/page.tsx",
     "src/app/complaints/page.tsx",
+    "src/app/controlled-documents/[id]/assignments/edit/page.tsx",
     "src/app/controlled-documents/[id]/edit/page.tsx",
     "src/app/controlled-documents/[id]/page.tsx",
     "src/app/controlled-documents/[id]/revisions/[revisionId]/edit/page.tsx",

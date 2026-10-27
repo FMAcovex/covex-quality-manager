@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { assignedListWhere, assignedWhere, isAssignedToMe } from "@/lib/qms/assigned";
+import { assignedListWhere, assignedWhere, isAssignedToMe, pendingPntPeriodicReview, pendingPntRevision } from "@/lib/qms/assigned";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
@@ -27,6 +27,23 @@ describe("Filtro «Asignadas a mí»", () => {
     for (const part of ["requestDecisionResponsibleUserId", "followupResponsibleUserId", "COMPLETED", "NOT_APPLICABLE"]) expect(change).toContain(part);
     expect(JSON.stringify(assignedWhere.audit(me))).toContain("PENDING_VERIFICATION");
     expect(JSON.stringify(assignedWhere.complaint(me))).toContain("derivedActions");
+  });
+
+  it("PNT (D-118): cada función solo en su fase y la revisión periódica sin otra revisión en curso", () => {
+    const today = new Date("2026-10-27T00:00:00Z");
+    const where = assignedWhere.pnt(me, today);
+    expect(where.administrativeStatus).toEqual({ not: "ANNULLED" });
+    expect(pendingPntRevision(me).OR).toEqual([
+      { status: "DRAFT", preparationResponsibleUserId: me },
+      { status: "IN_REVIEW", reviewResponsibleUserId: me },
+      { status: "PENDING_APPROVAL", approvalResponsibleUserId: me },
+    ]);
+    const periodic = pendingPntPeriodicReview(me, today);
+    expect(periodic.periodicReviewResponsibleUserId).toBe(me);
+    expect(periodic.revisions.none).toEqual({ status: { in: ["DRAFT", "IN_REVIEW", "PENDING_APPROVAL", "APPROVED_PENDING_EFFECTIVE"] } });
+    // Límite exclusivo del día 31: incluye las que vencen dentro de 30 días, como el panel.
+    expect(JSON.stringify(periodic.revisions.some)).toContain("2026-11-27T00:00:00.000Z");
+    expect(JSON.stringify(periodic.revisions.some)).toContain('"lifecycle":{"is":null}');
   });
 });
 

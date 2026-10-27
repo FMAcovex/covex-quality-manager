@@ -9,12 +9,16 @@ import { getCapaList } from "../src/modules/capa/queries";
 import { getChangeControlList } from "../src/modules/change-control/queries";
 import { getComplaintList } from "../src/modules/complaints/queries";
 import { getAuditList } from "../src/modules/audits/queries";
+import { queryPntListing } from "../src/modules/controlled-documents/listing";
+import { saveAssignments, type AssignmentsInput } from "../src/modules/controlled-documents/assignments";
 
 // D-102: «Asignadas a mí» en el panel y en los listados, con la misma definición de pendiente.
 const year = 2096;
 const marker = "D102-" + randomUUID().slice(0, 8);
 const ids: string[] = [];
 const past = new Date(Date.UTC(2020, 0, 1));
+const documentIds: string[] = [];
+const DAY = 86_400_000;
 
 async function record(recordType: "DEVIATION" | "CAPA" | "CHANGE_CONTROL" | "COMPLAINT" | "AUDIT", suffix: string) {
   const row = await prisma.qmsRecord.create({ data: { recordType, businessCode: `${marker}-${suffix}`, year } });
@@ -69,6 +73,49 @@ async function main() {
     const finding2 = await prisma.auditFinding.create({ data: { auditId: auditClosedOnly.id, reference: "OBS 01", findingType: "FINDING", description: "Hallazgo", createdByText: "QA" } });
     await prisma.auditFindingAction.create({ data: { findingId: finding2.id, description: "Cerrada", createdByText: "QA", responsibleUserId: me.id, status: "CLOSED" } });
 
+    // PNT (D-118): la función asignada solo cuenta en su fase; la revisión periódica, si vence en
+    // 30 días y no hay otra revisión en curso. Los PNT no tienen año.
+    const department = await prisma.department.findFirstOrThrow({ where: { isActive: true, code: { contains: "-" } }, orderBy: { code: "asc" } });
+    const occupied = new Set((await prisma.controlledDocument.findMany({ where: { baseCode: { startsWith: department.code + "/" } }, select: { baseCode: true } })).map((row) => row.baseCode));
+    const free = Array.from({ length: 1000 }, (_, i) => `${department.code}/${String(999 - i).padStart(3, "0")}`).filter((code) => !occupied.has(code));
+    const today = new Date(Math.floor(Date.now() / DAY) * DAY);
+    const pnt = async (code: string, administrativeStatus: "ACTIVE" | "ANNULLED", data: { periodicReviewResponsibleUserId?: string }, revisions: Array<Record<string, unknown>>) => {
+      const document = await prisma.controlledDocument.create({ data: { baseCode: code, title: `${marker} ${code}`, documentType: "PNT", administrativeStatus, departmentId: department.id, createdByText: "Prueba D-118", ...data } });
+      documentIds.push(document.id);
+      for (const revision of revisions) await prisma.controlledDocumentRevision.create({ data: { documentId: document.id, registeredByText: "Prueba D-118", ...revision } as never });
+      return document;
+    };
+    const [codeA, codeB, codeC, codeE] = free;
+    await pnt(codeA, "ACTIVE", { periodicReviewResponsibleUserId: me.id }, [
+      { revisionCode: "00", status: "IN_FORCE", effectiveFrom: past, reviewDueAt: past },
+      { revisionCode: "01", status: "DRAFT", preparationResponsibleUserId: me.id, preparationResponsible: me.displayName, preparationTargetDate: past },
+    ]);
+    await pnt(codeB, "ACTIVE", { periodicReviewResponsibleUserId: me.id }, [{ revisionCode: "00", status: "IN_FORCE", effectiveFrom: past, reviewDueAt: new Date(today.getTime() + 10 * DAY) }]);
+    const docC = await pnt(codeC, "ACTIVE", { periodicReviewResponsibleUserId: me.id }, [
+      { revisionCode: "00", status: "IN_FORCE", effectiveFrom: past, reviewDueAt: new Date(today.getTime() + 200 * DAY) },
+      { revisionCode: "01", status: "IN_REVIEW" },
+    ]);
+    await pnt(codeE, "ANNULLED", {}, [{ revisionCode: "00", status: "PENDING_APPROVAL", approvalResponsibleUserId: me.id }]);
+
+    // Asignación con el servicio: el texto toma el nombre del usuario y queda en el historial.
+    const loadC = () => prisma.controlledDocument.findUniqueOrThrow({ where: { id: docC.id }, include: { revisions: { orderBy: { revisionCode: "asc" } } } });
+    const beforeC = await loadC();
+    const draftC = beforeC.revisions[1];
+    const blank = { text: "", userId: null, date: "" };
+    const input: AssignmentsInput = {
+      updatedAt: beforeC.updatedAt.toISOString(), actor: "Prueba D-118", periodic: { text: "", userId: me.id },
+      revisions: [{ id: draftC.id, updatedAt: draftC.updatedAt.toISOString(), preparation: { ...blank, userId: me.id }, review: { ...blank, userId: me.id }, approval: { text: "Dirección técnica", userId: null, date: "2099-01-31" } }],
+    };
+    await saveAssignments(docC.id, input);
+    const afterC = await loadC();
+    assert.equal(afterC.periodicReviewResponsible, me.displayName);
+    assert.equal(afterC.revisions[1].reviewResponsible, me.displayName);
+    assert.equal(afterC.revisions[1].approvalTargetDate?.toISOString().slice(0, 10), "2099-01-31");
+    const history = await prisma.controlledDocumentChange.findMany({ where: { documentId: docC.id }, select: { action: true, revisionId: true } });
+    assert.deepEqual(history.map((row) => row.action).sort(), ["Responsable de la revisión periódica", "Responsables de la revisión 01"]);
+    await assert.rejects(saveAssignments(docC.id, input), /ha cambiado/, "se rechaza un formulario desactualizado");
+    await assert.rejects(saveAssignments(docC.id, { ...input, updatedAt: afterC.updatedAt.toISOString(), revisions: [{ ...input.revisions[0], id: beforeC.revisions[0].id, updatedAt: beforeC.revisions[0].updatedAt.toISOString() }] }), /ya no está en elaboración/, "la vigente no admite responsables");
+
     // Panel: una fila por acción pendiente, con su estado.
     const items = await getAssignedItems(me.id, { year, department: "", module: "ALL", asOf: new Date() });
     assert.deepEqual(items.map((item) => [item.code, item.label, item.state]).sort(), [
@@ -79,7 +126,11 @@ async function main() {
       [`${marker}-CC2`, "Seguimiento del cambio", "OVERDUE"],
       [`${marker}-DEV1`, "CAPA propuesta sin crear", "OVERDUE"],
       [`${marker}-REC1`, "Devolución propuesta", "PENDING"],
+      [`${codeA}/01`, "Elaborar la revisión 01", "OVERDUE"],
+      [codeB, "Revisión periódica (vigente 00)", "UPCOMING"],
+      [`${codeC}/01`, "Revisar la revisión 01", "PENDING"],
     ].sort());
+    assert.deepEqual((await getAssignedItems(me.id, { year, department: department.id, module: "PNT", asOf: new Date() })).map((item) => item.code).sort(), [`${codeA}/01`, codeB, `${codeC}/01`].sort());
     assert.equal(items.at(-1)!.dueDate, null, "las que no tienen fecha van al final");
     assert.deepEqual((await getAssignedItems(me.id, { year, department: "", module: "CAPA", asOf: new Date() })).map((item) => item.code), [`${marker}-CAPA1`]);
     assert.deepEqual(await getAssignedItems(null, { year, department: "", module: "ALL", asOf: new Date() }), []);
@@ -96,10 +147,15 @@ async function main() {
       assert.deepEqual(codes((await getComplaintList(filter)).rows), [`${marker}-REC1`]);
       assert.deepEqual(codes((await getAuditList(filter)).rows), [`${marker}-AUD1`]);
       assert.equal((await getDeviationList({ year: [String(year)] })).rows.length, 4, "sin el filtro se ven todos");
+      const pntRows = (await queryPntListing({ assigned: "me", q: marker }, false)).rows;
+      assert.deepEqual([...new Set(pntRows.map((row) => row.master.baseCode))].sort(), [codeA, codeB, codeC].sort());
     });
     assert.equal(await prisma.changeControl.count({ where: { AND: [assignedWhere.changeControl(me.id), { qmsRecord: { year } }] } }), 2);
-    console.log("D-102 OK: panel y listados «Asignadas a mí» con la misma definición de pendiente.");
+    console.log("D-102 OK: panel y listados «Asignadas a mí» con la misma definición de pendiente (PNT incluidos, D-118).");
   } finally {
+    await prisma.controlledDocumentChange.deleteMany({ where: { documentId: { in: documentIds } } });
+    await prisma.controlledDocumentRevision.deleteMany({ where: { documentId: { in: documentIds } } });
+    await prisma.controlledDocument.deleteMany({ where: { id: { in: documentIds } } });
     await prisma.auditFindingAction.deleteMany({ where: { finding: { audit: { qmsRecordId: { in: ids } } } } });
     await prisma.auditFinding.deleteMany({ where: { audit: { qmsRecordId: { in: ids } } } });
     await prisma.audit.deleteMany({ where: { qmsRecordId: { in: ids } } });

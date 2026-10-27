@@ -920,6 +920,7 @@ Decisión del responsable de Calidad: cada usuario debe poder ver lo pendiente a
   - Control de cambios no cerrado: decisión de la solicitud pendiente a su cargo; seguimiento a su cargo con el Dictamen aprobado; acción del plan a su cargo que no está completada ni marcada No aplica en ningún seguimiento.
   - Reclamación no cerrada con una CAPA propuesta sin crear o una acción derivada a su cargo.
   - Auditoría con una acción de hallazgo activa a su cargo abierta, en curso o pendiente de verificar.
+  - PNT no anulado, desde D-118: la función de una revisión en su fase, o la revisión periódica a su cargo (ver D-118).
   - Las acciones inmediatas de una desviación ya están ejecutadas y no cuentan.
 - Solo cuentan los responsables con usuario vinculado; un nombre escrito en el texto libre no se interpreta. Es una ayuda de trabajo: no envía avisos ni sustituye a los plazos y reglas de alertas.
 
@@ -1287,3 +1288,15 @@ Decisión del responsable de Calidad tras la auditoría UI/UX de la Fase 1, hech
   - **Audit trail general:** los filtros «Desde» y «Hasta» son días naturales de Madrid. La exportación CSV añade «Fecha (Madrid)» y «Corte (Madrid)» junto a las columnas en UTC, que se conservan; el manifiesto indica las dos zonas.
 - **Logotipo de COVEX (2026-10-21):** el logotipo facilitado por el responsable sustituye a la marca provisional «C» en la cabecera (40 px de alto). Va incluido en el build de la aplicación (`src/components/brand/covex-logo.png`) para que también funcione en la imagen Docker. Esto resuelve en parte H-30 (identidad propia), sin rediseñar la cabecera.
 
+## D-118 — PNT: responsables de elaborar, revisar y aprobar, y de la revisión periódica (2026-10-27)
+
+Decisión del responsable de Calidad: poder asignar quién trabaja en cada revisión de un procedimiento y que aparezca en «Mis tareas» (D-102).
+
+- **Por función.** Cada revisión en elaboración, en revisión o pendiente de aprobación tiene tres responsables: Elabora, Revisa y Aprueba (las funciones de GC-00/001/03). Cada uno con texto libre, usuario de la aplicación opcional y fecha prevista, como D-101.
+- **Revisión periódica en el maestro.** Cada PNT tiene un responsable de la revisión periódica (texto libre y usuario).
+- **Dónde se asigna.** Botón «Asignar responsables» en la pestaña Revisiones de la ficha, con permiso de edición y si el maestro no está anulado. Una sola pantalla para el maestro y para las revisiones que admiten asignación. Al elegir un usuario sin escribir el nombre, se guarda su nombre. Cada cambio queda en el historial operativo del PNT y en la captura del audit trail (B2).
+- **Qué cuenta como pendiente en «Mis tareas» y en el filtro «Asignadas a mí» del listado de PNT** (regla compartida en `src/lib/qms/assigned.ts`):
+  - la función solo cuenta en su fase: Elabora con la revisión en borrador, Revisa en revisión y Aprueba pendiente de aprobación. La fecha prevista de la función decide si está vencida o próxima;
+  - la revisión periódica cuenta cuando la revisión vigente está vencida o vence en 30 días (fecha efectiva, la del ciclo de vida si existe) y no hay otra revisión en elaboración, revisión, aprobación o aprobada pendiente de vigencia;
+  - nunca en un PNT anulado. Los PNT no tienen año: en el panel solo se filtran por departamento.
+- **Límites.** Es una ayuda para repartir el trabajo. No registra quién elaboró, revisó o aprobó (eso sigue en el documento aprobado fuera de la aplicación), no cambia el estado de la revisión, no es firma electrónica ni aprobación GMP y no envía avisos. Las revisiones vigentes, obsoletas o anuladas no admiten cambios de responsables.
