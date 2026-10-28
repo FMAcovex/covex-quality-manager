@@ -38,6 +38,13 @@ describe("Asignación de responsables de PNT", () => {
     expect(() => parseAssignmentsForm(form({ periodicReviewResponsible: "x".repeat(201) }))).toThrow("como máximo 200");
   });
 
+  it("rechaza fechas imposibles y revisiones repetidas en un formulario manipulado", () => {
+    expect(() => parseAssignmentsForm(form({ [`${revision}.reviewTargetDate`]: "2026-02-31" }))).toThrow("La fecha prevista no es válida.");
+    const fd = form();
+    fd.append("revisionId", revision);
+    expect(() => parseAssignmentsForm(fd)).toThrow("La revisión está repetida en el formulario.");
+  });
+
   it("solo se asigna en elaboración, revisión o aprobación; cada fase tiene su función", () => {
     expect(["DRAFT", "IN_REVIEW", "PENDING_APPROVAL"].every(s => canAssignRevision(s as never))).toBe(true);
     expect(["IN_FORCE", "APPROVED_PENDING_EFFECTIVE", "OBSOLETE", "ANNULLED", "IMPORTED_PENDING"].some(s => canAssignRevision(s as never))).toBe(false);

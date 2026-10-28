@@ -4,11 +4,12 @@ import { prisma } from "../../lib/db";
 import { responsibleUsersProblem } from "../../lib/auth/app-users";
 import { responsibleUserIdSchema } from "../../lib/qms/responsible-user";
 import { canAssignRevision, revisionFunctions } from "./assignment-functions";
+import { validDate } from "./domain";
 
 /** D-118: validación y guardado de los responsables (las funciones están en assignment-functions). */
 
 const text = z.string().trim().max(200, "El responsable admite como máximo 200 caracteres.");
-const day = z.string().trim().refine(v => !v || /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`)), "La fecha prevista no es válida.");
+const day = z.string().trim().refine(validDate, "La fecha prevista no es válida.");
 const assignee = z.object({ text, userId: responsibleUserIdSchema });
 const revisionAssignment = z.object({
   id: z.string().uuid(),
@@ -21,7 +22,7 @@ const assignmentsSchema = z.object({
   updatedAt: z.string(),
   actor: z.string().trim().min(1, "Indica el responsable del registro.").max(200),
   periodic: assignee,
-  revisions: z.array(revisionAssignment),
+  revisions: z.array(revisionAssignment).refine(rows => new Set(rows.map(r => r.id)).size === rows.length, "La revisión está repetida en el formulario."),
 });
 export type AssignmentsInput = z.infer<typeof assignmentsSchema>;
 

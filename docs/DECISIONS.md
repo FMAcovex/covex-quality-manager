@@ -1306,5 +1306,5 @@ Decisión del responsable de Calidad: poder asignar quién trabaja en cada revis
 Decisión del responsable de Calidad: cada PR pasa, antes de fusionarse, por un agente revisor independiente (contexto nuevo, sin el razonamiento de quien lo implementó), además de la CI.
 
 - Revisa el diff completo contra el código y `/docs`: errores de funcionamiento, permisos y seguridad, migraciones y captura del audit trail, pruebas que falten y desviaciones de las decisiones y de `AGENTS.md`.
-- Los hallazgos críticos o importantes se corrigen antes de fusionar, con una prueba que falle antes del arreglo. Los menores o descartados se explican en la PR, cuya descripción resume el resultado.
+- Los hallazgos críticos o importantes se corrigen antes de fusionar, con una prueba que falle antes del arreglo cuando sea comprobable con una prueba (si no, se justifica en la PR). Los menores o descartados se explican en la PR, cuya descripción resume el resultado.
 - Es un control de desarrollo: no sustituye a la revisión humana ni a la validación GMP.
