@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../src/lib/db";
 import { identityContext, type Principal } from "../src/lib/auth/context";
+import { fixtureUsers } from "./auth-fixtures/constants";
 import { assignedWhere } from "../src/lib/qms/assigned";
 import { getAssignedItems } from "../src/modules/dashboard/assigned-query";
 import { getDeviationList } from "../src/modules/deviations/queries";
@@ -122,7 +123,7 @@ async function main() {
     assert.deepEqual(history.map((row) => row.action).sort(), ["Responsable de la revisión periódica", "Responsables de la revisión 01"]);
     await assert.rejects(saveAssignments(docC.id, input), /ha cambiado/, "se rechaza un formulario desactualizado");
     // D-101: un usuario inactivo no se puede asignar de nuevo; el guardado no cambia nada.
-    const inactive = await prisma.authUser.findFirstOrThrow({ where: { active: false } });
+    const inactive = await prisma.authUser.findUniqueOrThrow({ where: { id: fixtureUsers.inactive.id } });
     await assert.rejects(saveAssignments(docC.id, { ...input, updatedAt: afterC.updatedAt.toISOString(), periodic: { text: "", userId: inactive.id }, revisions: [] }), /no está activo/, "no se asigna un usuario inactivo");
     assert.equal((await loadC()).periodicReviewResponsibleUserId, me.id);
     await assert.rejects(saveAssignments(docC.id, { ...input, updatedAt: afterC.updatedAt.toISOString(), revisions: [{ ...input.revisions[0], id: beforeC.revisions[0].id, updatedAt: beforeC.revisions[0].updatedAt.toISOString() }] }), /ya no está en elaboración/, "la vigente no admite responsables");

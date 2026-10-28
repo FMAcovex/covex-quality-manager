@@ -64,9 +64,9 @@ async function main() {
         await assert.rejects(asUser(principal, () => authorizedAction("assignmentsAction", [id, {}, form], async () => { executed = true; })), e => Boolean(e && typeof e === "object" && "status" in e && e.status === 403), "assignmentsAction fuera de alcance");
         assert.equal(executed, false);
       }
-      let assigned = false;
-      await asUser(manager, () => authorizedAction("assignmentsAction", [entities[0].id, {}, form], async () => { assigned = true; }));
-      assert(assigned, "El responsable asigna en los PNT de su departamento");
+      let ownDepartment = false;
+      await asUser(manager, () => authorizedAction("assignmentsAction", [entities[0].id, {}, form], async () => { ownDepartment = true; }));
+      assert(ownDepartment, "El responsable asigna en los PNT de su departamento");
     }
     let actor = "";
     await asUser(manager, () => authorizedAction(actions[i], args(entities[0].id), async values => { actor = String((values[2] as FormData).get("actor")); })); assert.equal(actor, manager.name);
