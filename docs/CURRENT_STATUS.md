@@ -144,6 +144,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Demo:** GC-00/003 rev. 04 con las tres funciones; GC-00/030 (vencido) y LG-30/005 (vence en 25 días) con responsable de revisión periódica. `pnpm demo:examples` lo completa también en demos ya cargadas.
 - **Comprobado** con pruebas unitarias (regla, formulario y contrato), el smoke `assigned-d102:smoke` ampliado a PNT (funciones por fase, revisión periódica, anulados, historial, concurrencia y listado) y la regresión.
 - **No cambia:** el registro de funciones del documento aprobado, los estados de la revisión ni la firma.
+- **Pruebas añadidas tras la revisión independiente (2026-10-28, D-119):** la revisión periódica usa la fecha del ciclo de vida cuando existe (también si está vacía), un usuario inactivo no se puede asignar y la asignación respeta el departamento del PNT (`assigned-d102:smoke` y `phase4b1:smoke`). Cada prueba se comprobó rompiendo a propósito la regla que vigila.
 
 **Mejoras de interfaz, entregas 1 a 4 (2026-10-21, D-117):**
 - **Origen:** auditoría UI/UX de la Fase 1 sobre la interfaz real; se mantiene el diseño actual.
