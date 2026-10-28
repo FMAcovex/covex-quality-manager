@@ -22,7 +22,8 @@ describe("4B1 inventario exhaustivo de entradas protegidas", () => {
       if (!/^\s*["']use server["'];/.test(source)) continue;
       for (const name of exports(file).names) {
         const entry = inventory.actions.find(a => a.file === file && a.name === name); expect(entry, file + ":" + name).toBeDefined();
-        expect(exports(file).bodies.get(name)).toMatch(entry && "guard" in entry ? /administerUser|configureRole/ : /authorizedAction\(/);
+        // La guarda debe usar el nombre de su propia entrada: otro nombre aplicaría otro permiso.
+        expect(exports(file).bodies.get(name)).toMatch(entry && "guard" in entry ? /administerUser|configureRole/ : new RegExp(`authorizedAction\\(["']${name}["']`));
         found.push(file + ":" + name);
       }
     }

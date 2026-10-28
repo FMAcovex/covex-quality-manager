@@ -57,6 +57,17 @@ async function main() {
       await assert.rejects(asUser(principal, () => authorizedAction(actions[i], args(id), async () => { executed = true; })), e => Boolean(e && typeof e === "object" && "status" in e && e.status === 403)); assert.equal(executed, false);
     };
     await blocked(reader, entities[0].id); await blocked(admin, entities[0].id); await blocked(manager, entities[1].id);
+    if (accessModule === "PNT") {
+      // D-118: asignar responsables exige editar el PNT en su departamento, como el maestro.
+      for (const [principal, id] of [[reader, entities[0].id], [admin, entities[0].id], [manager, entities[1].id]] as const) {
+        let executed = false;
+        await assert.rejects(asUser(principal, () => authorizedAction("assignmentsAction", [id, {}, form], async () => { executed = true; })), e => Boolean(e && typeof e === "object" && "status" in e && e.status === 403), "assignmentsAction fuera de alcance");
+        assert.equal(executed, false);
+      }
+      let ownDepartment = false;
+      await asUser(manager, () => authorizedAction("assignmentsAction", [entities[0].id, {}, form], async () => { ownDepartment = true; }));
+      assert(ownDepartment, "El responsable asigna en los PNT de su departamento");
+    }
     let actor = "";
     await asUser(manager, () => authorizedAction(actions[i], args(entities[0].id), async values => { actor = String((values[2] as FormData).get("actor")); })); assert.equal(actor, manager.name);
     form.set("status", "CLOSED"); await blocked(manager, entities[0].id); form.delete("status");

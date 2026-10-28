@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../src/lib/db";
 import { identityContext, type Principal } from "../src/lib/auth/context";
+import { fixtureUsers } from "./auth-fixtures/constants";
 import { assignedWhere } from "../src/lib/qms/assigned";
 import { getAssignedItems } from "../src/modules/dashboard/assigned-query";
 import { getDeviationList } from "../src/modules/deviations/queries";
@@ -82,10 +83,13 @@ async function main() {
     const pnt = async (code: string, administrativeStatus: "ACTIVE" | "ANNULLED", data: { periodicReviewResponsibleUserId?: string }, revisions: Array<Record<string, unknown>>) => {
       const document = await prisma.controlledDocument.create({ data: { baseCode: code, title: `${marker} ${code}`, documentType: "PNT", administrativeStatus, departmentId: department.id, createdByText: "Prueba D-118", ...data } });
       documentIds.push(document.id);
-      for (const revision of revisions) await prisma.controlledDocumentRevision.create({ data: { documentId: document.id, registeredByText: "Prueba D-118", ...revision } as never });
+      for (const { lifecycle, ...revision } of revisions) {
+        const created = await prisma.controlledDocumentRevision.create({ data: { documentId: document.id, registeredByText: "Prueba D-118", ...revision } as never });
+        if (lifecycle) await prisma.controlledRevisionLifecycle.create({ data: { revisionId: created.id, documentId: document.id, ...(lifecycle as object) } });
+      }
       return document;
     };
-    const [codeA, codeB, codeC, codeE] = free;
+    const [codeA, codeB, codeC, codeE, codeF, codeG, codeH] = free;
     await pnt(codeA, "ACTIVE", { periodicReviewResponsibleUserId: me.id }, [
       { revisionCode: "00", status: "IN_FORCE", effectiveFrom: past, reviewDueAt: past },
       { revisionCode: "01", status: "DRAFT", preparationResponsibleUserId: me.id, preparationResponsible: me.displayName, preparationTargetDate: past },
@@ -96,6 +100,10 @@ async function main() {
       { revisionCode: "01", status: "IN_REVIEW" },
     ]);
     await pnt(codeE, "ANNULLED", {}, [{ revisionCode: "00", status: "PENDING_APPROVAL", approvalResponsibleUserId: me.id }]);
+    // Con ciclo de vida registrado, manda su fecha de revisión, aunque esté vacía (no la de la revisión).
+    await pnt(codeF, "ACTIVE", { periodicReviewResponsibleUserId: me.id }, [{ revisionCode: "00", status: "IN_FORCE", effectiveFrom: past, reviewDueAt: past, lifecycle: { reviewDueAt: new Date(today.getTime() + 400 * DAY) } }]);
+    await pnt(codeG, "ACTIVE", { periodicReviewResponsibleUserId: me.id }, [{ revisionCode: "00", status: "IN_FORCE", effectiveFrom: past, reviewDueAt: new Date(today.getTime() + 400 * DAY), lifecycle: { reviewDueAt: new Date(today.getTime() + 5 * DAY) } }]);
+    await pnt(codeH, "ACTIVE", { periodicReviewResponsibleUserId: me.id }, [{ revisionCode: "00", status: "IN_FORCE", effectiveFrom: past, reviewDueAt: past, lifecycle: { reviewDueAt: null } }]);
 
     // Asignación con el servicio: el texto toma el nombre del usuario y queda en el historial.
     const loadC = () => prisma.controlledDocument.findUniqueOrThrow({ where: { id: docC.id }, include: { revisions: { orderBy: { revisionCode: "asc" } } } });
@@ -114,6 +122,10 @@ async function main() {
     const history = await prisma.controlledDocumentChange.findMany({ where: { documentId: docC.id }, select: { action: true, revisionId: true } });
     assert.deepEqual(history.map((row) => row.action).sort(), ["Responsable de la revisión periódica", "Responsables de la revisión 01"]);
     await assert.rejects(saveAssignments(docC.id, input), /ha cambiado/, "se rechaza un formulario desactualizado");
+    // D-101: un usuario inactivo no se puede asignar de nuevo; el guardado no cambia nada.
+    const inactive = await prisma.authUser.findUniqueOrThrow({ where: { id: fixtureUsers.inactive.id } });
+    await assert.rejects(saveAssignments(docC.id, { ...input, updatedAt: afterC.updatedAt.toISOString(), periodic: { text: "", userId: inactive.id }, revisions: [] }), /no está activo/, "no se asigna un usuario inactivo");
+    assert.equal((await loadC()).periodicReviewResponsibleUserId, me.id);
     await assert.rejects(saveAssignments(docC.id, { ...input, updatedAt: afterC.updatedAt.toISOString(), revisions: [{ ...input.revisions[0], id: beforeC.revisions[0].id, updatedAt: beforeC.revisions[0].updatedAt.toISOString() }] }), /ya no está en elaboración/, "la vigente no admite responsables");
 
     // Panel: una fila por acción pendiente, con su estado.
@@ -128,9 +140,10 @@ async function main() {
       [`${marker}-REC1`, "Devolución propuesta", "PENDING"],
       [`${codeA}/01`, "Elaborar la revisión 01", "OVERDUE"],
       [codeB, "Revisión periódica (vigente 00)", "UPCOMING"],
+      [codeG, "Revisión periódica (vigente 00)", "UPCOMING"],
       [`${codeC}/01`, "Revisar la revisión 01", "PENDING"],
     ].sort());
-    assert.deepEqual((await getAssignedItems(me.id, { year, department: department.id, module: "PNT", asOf: new Date() })).map((item) => item.code).sort(), [`${codeA}/01`, codeB, `${codeC}/01`].sort());
+    assert.deepEqual((await getAssignedItems(me.id, { year, department: department.id, module: "PNT", asOf: new Date() })).map((item) => item.code).sort(), [`${codeA}/01`, codeB, `${codeC}/01`, codeG].sort());
     assert.equal(items.at(-1)!.dueDate, null, "las que no tienen fecha van al final");
     assert.deepEqual((await getAssignedItems(me.id, { year, department: "", module: "CAPA", asOf: new Date() })).map((item) => item.code), [`${marker}-CAPA1`]);
     assert.deepEqual(await getAssignedItems(null, { year, department: "", module: "ALL", asOf: new Date() }), []);
@@ -148,12 +161,13 @@ async function main() {
       assert.deepEqual(codes((await getAuditList(filter)).rows), [`${marker}-AUD1`]);
       assert.equal((await getDeviationList({ year: [String(year)] })).rows.length, 4, "sin el filtro se ven todos");
       const pntRows = (await queryPntListing({ assigned: "me", q: marker }, false)).rows;
-      assert.deepEqual([...new Set(pntRows.map((row) => row.master.baseCode))].sort(), [codeA, codeB, codeC].sort());
+      assert.deepEqual([...new Set(pntRows.map((row) => row.master.baseCode))].sort(), [codeA, codeB, codeC, codeG].sort());
     });
     assert.equal(await prisma.changeControl.count({ where: { AND: [assignedWhere.changeControl(me.id), { qmsRecord: { year } }] } }), 2);
     console.log("D-102 OK: panel y listados «Asignadas a mí» con la misma definición de pendiente (PNT incluidos, D-118).");
   } finally {
     await prisma.controlledDocumentChange.deleteMany({ where: { documentId: { in: documentIds } } });
+    await prisma.controlledRevisionLifecycle.deleteMany({ where: { documentId: { in: documentIds } } });
     await prisma.controlledDocumentRevision.deleteMany({ where: { documentId: { in: documentIds } } });
     await prisma.controlledDocument.deleteMany({ where: { id: { in: documentIds } } });
     await prisma.auditFindingAction.deleteMany({ where: { finding: { audit: { qmsRecordId: { in: ids } } } } });
