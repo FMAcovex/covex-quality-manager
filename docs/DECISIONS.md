@@ -1300,3 +1300,11 @@ Decisión del responsable de Calidad: poder asignar quién trabaja en cada revis
   - la revisión periódica cuenta cuando la revisión vigente está vencida o vence en 30 días (fecha efectiva, la del ciclo de vida si existe) y no hay otra revisión en elaboración, revisión, aprobación o aprobada pendiente de vigencia;
   - nunca en un PNT anulado. Los PNT no tienen año: en el panel solo se filtran por departamento.
 - **Límites.** Es una ayuda para repartir el trabajo. No registra quién elaboró, revisó o aprobó (eso sigue en el documento aprobado fuera de la aplicación), no cambia el estado de la revisión, no es firma electrónica ni aprobación GMP y no envía avisos. Las revisiones vigentes, obsoletas o anuladas no admiten cambios de responsables.
+
+## D-119 — Revisión por un agente independiente antes de fusionar cada PR (2026-10-28)
+
+Decisión del responsable de Calidad: cada PR pasa, antes de fusionarse, por un agente revisor independiente (contexto nuevo, sin el razonamiento de quien lo implementó), además de la CI.
+
+- Revisa el diff completo contra el código y `/docs`: errores de funcionamiento, permisos y seguridad, migraciones y captura del audit trail, pruebas que falten y desviaciones de las decisiones y de `AGENTS.md`.
+- Los hallazgos críticos o importantes se corrigen antes de fusionar, con una prueba que falle antes del arreglo. Los menores o descartados se explican en la PR, cuya descripción resume el resultado.
+- Es un control de desarrollo: no sustituye a la revisión humana ni a la validación GMP.

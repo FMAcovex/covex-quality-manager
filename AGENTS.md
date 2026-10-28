@@ -105,7 +105,10 @@ Para cada hito:
 - usar variables de entorno;
 - actualizar `docs/CURRENT_STATUS.md`;
 - actualizar `docs/DECISIONS.md` si se cierra una decisión estructural;
-- no avanzar al siguiente hito con errores conocidos críticos.
+- no avanzar al siguiente hito con errores conocidos críticos;
+- antes de fusionar cada PR, pasar el diff completo a un agente revisor independiente: contexto nuevo, sin el razonamiento de quien lo implementó, con acceso al código y a `/docs`. Busca errores de funcionamiento, permisos y seguridad, migraciones y captura del audit trail, pruebas que falten y desviaciones de `docs/DECISIONS.md` y de este fichero;
+- los hallazgos críticos o importantes se corrigen antes de fusionar, cada uno con una prueba que falle antes del arreglo. Los menores o descartados se explican en la PR. La descripción de la PR resume el resultado de la revisión;
+- la revisión por agente no sustituye a la revisión humana ni a la validación GMP.
 
 Preferir implementaciones sencillas y mantenibles a abstracciones prematuras.
 
