@@ -1364,6 +1364,7 @@ Decisión del responsable de Calidad: empezar los Controles de cambios habituale
 Decisión del responsable de Calidad: ayudar a ordenar la investigación de una desviación con 5 porqués, Ishikawa (6M) y brainstorming. No hay anexo del PNT para estas herramientas, así que se trabajan dentro del formulario.
 
 - **Dónde:** en «E. Investigación» del formulario de Desviaciones, en un desplegable opcional «Herramientas de análisis». La ficha las muestra en solo lectura dentro de «Investigación».
+- **Se elige la herramienta.** Al abrir el desplegable se pulsa «5 porqués», «Ishikawa (6M)» o «Brainstorming» y solo se muestra la elegida; se puede añadir otra cuando se quiera. Una herramienta con contenido se muestra siempre y no se puede ocultar, para no esconder trabajo hecho. La elección no marca «Metodología empleada»: se marca al usar una causa como causa raíz o a mano.
 - **Qué contienen:**
   - 5 porqués: problema y hasta cinco «¿por qué?», con el estado de la cadena; cada porqué conserva su número y solo se quitan los huecos del final;
   - Ishikawa: causas posibles agrupadas por las 6M (sin «No determinada»);

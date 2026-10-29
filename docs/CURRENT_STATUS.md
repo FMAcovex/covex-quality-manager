@@ -138,7 +138,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 
 **Herramientas de investigación en Desviaciones (2026-10-29, D-123):**
 - **Qué cambia:**
-  - en «E. Investigación», el desplegable «Herramientas de análisis» con 5 porqués, Ishikawa (6M) y brainstorming;
+  - en «E. Investigación», el desplegable «Herramientas de análisis» con 5 porqués, Ishikawa (6M) y brainstorming; se elige la herramienta y solo se muestra esa (y las que ya tienen contenido);
   - cada causa es hipótesis, descartada o confirmada;
   - «Usar como causa raíz» copia una causa confirmada a «Causa raíz» y marca su categoría y metodología;
   - la ficha las muestra en «Investigación»;

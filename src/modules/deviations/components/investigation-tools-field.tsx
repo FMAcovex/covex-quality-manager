@@ -33,6 +33,9 @@ function serialize(state: State): InvestigationTools {
 }
 
 const NOTE_ID = "investigation-tools-note";
+const PICKER_NOTE_ID = "investigation-tools-picker-note";
+type Tool = "FIVE_WHYS" | "ISHIKAWA" | "BRAINSTORMING";
+const TOOLS: [Tool, string][] = [["FIVE_WHYS", "5 porqués"], ["ISHIKAWA", "Ishikawa (6M)"], ["BRAINSTORMING", "Brainstorming"]];
 /** Nombre accesible de una fila: su texto (recortado) o su posición si aún no tiene. */
 const rowName = (cause: ToolCause, position: number) => cause.text.trim() ? `«${cause.text.trim().slice(0, 60)}»` : `causa ${position} sin descripción`;
 
@@ -52,6 +55,13 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
   const [message, setMessage] = useState("");
   // Abierto si al cargar ya hay contenido o un error; después lo decide quien edita.
   const [open, setOpen] = useState(() => !!error || !!serialize(initial).fiveWhys || initial.causes.length > 0);
+  // Solo se muestran las herramientas elegidas y las que ya tienen contenido (nunca se oculta trabajo hecho).
+  const [chosen, setChosen] = useState<Tool[]>([]);
+  const inUse = (tool: Tool) => tool === "FIVE_WHYS"
+    ? !!state.problem.trim() || state.whys.some((why) => why.trim())
+    : state.causes.some((cause) => cause.method === tool);
+  const visible = (tool: Tool) => chosen.includes(tool) || inUse(tool);
+  const toggleTool = (tool: Tool) => setChosen((current) => current.includes(tool) ? current.filter((item) => item !== tool) : [...current, tool]);
   const full = state.causes.length >= MAX_TOOL_CAUSES;
 
   const updateCause = (uid: number, patch: Partial<ToolCause>) => setState((current) => ({ ...current, causes: current.causes.map((cause) => cause.uid === uid ? { ...cause, ...patch } : cause) }));
@@ -134,7 +144,15 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
       <p className="visually-hidden" role="status" aria-live="polite">{message}</p>
       {message ? <p className="investigation-tools-message" aria-hidden="true">{message}</p> : null}
 
-      <fieldset className="investigation-tool">
+      <div className="investigation-tool-picker" role="group" aria-label="Herramientas que se muestran">
+        <span>Herramienta:</span>
+        {TOOLS.map(([tool, label]) => (
+          <button key={tool} type="button" className="button small" aria-pressed={visible(tool)} disabled={inUse(tool)} aria-describedby={inUse(tool) ? PICKER_NOTE_ID : undefined} onClick={() => toggleTool(tool)}>{label}</button>
+        ))}
+      </div>
+      <small className="muted-note investigation-tool-picker-note" id={PICKER_NOTE_ID}>Elige la herramienta que vas a usar; puedes añadir otra cuando quieras. Las que ya tienen contenido se muestran siempre.</small>
+
+      {visible("FIVE_WHYS") ? <fieldset className="investigation-tool">
         <legend>5 porqués</legend>
         <label className="field">
           <span>Problema</span>
@@ -154,9 +172,9 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
           {statusSelect(state.whysStatus, (whysStatus) => setState((current) => ({ ...current, whysStatus })), "Estado del último porqué")}
           {rootCauseButton(whySuggestion, "Usar el último porqué como causa raíz")}
         </div>
-      </fieldset>
+      </fieldset> : null}
 
-      <fieldset className="investigation-tool">
+      {visible("ISHIKAWA") ? <fieldset className="investigation-tool">
         <legend>Ishikawa (6M)</legend>
         {ISHIKAWA_CATEGORIES.map((category) => (
           <div className="ishikawa-category" key={category}>
@@ -169,15 +187,15 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
             </div>
           </div>
         ))}
-      </fieldset>
+      </fieldset> : null}
 
-      <fieldset className="investigation-tool">
+      {visible("BRAINSTORMING") ? <fieldset className="investigation-tool">
         <legend>Brainstorming</legend>
         <div className="dynamic-list">
           {state.causes.filter((cause) => cause.method === "BRAINSTORMING").map((cause) => causeRow(cause, true))}
           <div><button type="button" className="button small" disabled={full} onClick={() => addCause("BRAINSTORMING", null)}>+ Añadir idea</button></div>
         </div>
-      </fieldset>
+      </fieldset> : null}
     </details>
   );
 }
