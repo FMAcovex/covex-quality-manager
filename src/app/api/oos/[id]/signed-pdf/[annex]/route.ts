@@ -1,3 +1,4 @@
+import { contentDisposition } from "@/lib/qms/file-preview";
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { authorizedRoute } from "@/lib/auth/route-guard";
@@ -8,7 +9,7 @@ import { oosSignedAnnexes } from "@/modules/oos/signed-documents";
 export const runtime = "nodejs";
 
 /** Descarga el PDF firmado vigente del Anexo III o IV, verificando su SHA-256 (D-088, OOS-4). */
-async function GETAuthenticatedContent(_request: Request, context: { params: Promise<{ id: string; annex: string }> }) {
+async function GETAuthenticatedContent(request: Request, context: { params: Promise<{ id: string; annex: string }> }) {
   const { id, annex } = await context.params;
   if (!(annex in oosSignedAnnexes)) return NextResponse.json({ error: "Anexo no válido." }, { status: 400 });
   const config = oosSignedAnnexes[annex as keyof typeof oosSignedAnnexes];
@@ -17,7 +18,7 @@ async function GETAuthenticatedContent(_request: Request, context: { params: Pro
   const document = record.qmsRecord.versions[0]?.documents[0];
   if (!document) return NextResponse.json({ error: "No hay un PDF firmado cargado para este anexo." }, { status: 404 });
   if (createHash("sha256").update(document.fileData).digest("hex") !== document.checksum) return NextResponse.json({ error: "El checksum del PDF firmado no coincide." }, { status: 409 });
-  return new Response(new Uint8Array(document.fileData), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${safeSignedPdfFileName(document.fileName || config.fallback)}"`, "Cache-Control": "no-store" } });
+  return new Response(new Uint8Array(document.fileData), { headers: { "Content-Type": "application/pdf", "Content-Disposition": contentDisposition(request, safeSignedPdfFileName(document.fileName || config.fallback), "application/pdf"), "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
 }
 
 export async function GET(...args: Parameters<typeof GETAuthenticatedContent>) {

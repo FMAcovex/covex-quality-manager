@@ -2873,6 +2873,7 @@ button[disabled] {
 .evidence-card h3 { margin-top: 22px; }
 .evidence-table td { vertical-align: top; }
 .evidence-checksum { display: block; font-family: ui-monospace, monospace; font-size: 11px; }
+.evidence-preview { font-size: var(--font-sm); white-space: nowrap; }
 .evidence-form { margin-top: 8px; }
 
 /* Departamentos del índice de PNT (D-097) */

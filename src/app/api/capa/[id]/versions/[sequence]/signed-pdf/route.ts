@@ -1,3 +1,4 @@
+import { contentDisposition } from "@/lib/qms/file-preview";
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
@@ -8,7 +9,7 @@ import {
 } from "@/lib/qms/signed-version-document";
 
 async function GETAuthenticatedContent(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string; sequence: string }> },
 ) {
   const { id, sequence } = await context.params;
@@ -44,7 +45,8 @@ async function GETAuthenticatedContent(
   return new Response(new Uint8Array(document.fileData), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": contentDisposition(request, filename, "application/pdf"),
+      "X-Content-Type-Options": "nosniff",
       "Cache-Control": "no-store",
     },
   });

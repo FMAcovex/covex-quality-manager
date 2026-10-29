@@ -1,4 +1,5 @@
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
+import { PreviewLink } from "@/components/preview-link";
 import { ResponsibleUserNote } from "@/components/responsible-user-note";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
@@ -252,7 +253,7 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
      <div className="document-actions">
       <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button small" href={`/api/complaints/${id}/annex-iii?version=${item.sequenceNumber}`}>Descargar Anexo III {versionLabel(item.sequenceNumber)}</a></PermissionGate>
       <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button small" href={`/api/complaints/${id}/annex-iv?version=${item.sequenceNumber}`}>Descargar Anexo IV {versionLabel(item.sequenceNumber)}</a></PermissionGate>
-      {signedDocument?<PermissionGate permission="DOWNLOAD"><a className="button small" href={`/api/complaints/${id}/versions/${item.sequenceNumber}/signed-pdf`}>Descargar PDF firmado {versionLabel(item.sequenceNumber)}</a></PermissionGate>:null}
+      {signedDocument?<PermissionGate permission="DOWNLOAD"><a className="button small" href={`/api/complaints/${id}/versions/${item.sequenceNumber}/signed-pdf`}>Descargar PDF firmado {versionLabel(item.sequenceNumber)}</a><PreviewLink href={`/api/complaints/${id}/versions/${item.sequenceNumber}/signed-pdf`} mimeType="application/pdf" /></PermissionGate>:null}
      </div>
      <div className="version-signed-document"><strong>PDF firmado: {signedDocument?"Disponible":"No cargado"}</strong>
       {signedDocument?<small className="muted-note">{signedDocument.fileName} · {Math.max(1,Math.round(signedDocument.fileSize/1024))} KB · cargado {formatDate(signedDocument.uploadedAt)} · {signedDocument.uploadedByText??"Usuario no informado"}</small>:<small className="muted-note">Carga aquí el documento firmado correspondiente exclusivamente a {versionLabel(item.sequenceNumber)}.</small>}

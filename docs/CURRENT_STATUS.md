@@ -136,6 +136,11 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Vista previa de PDF e imágenes (2026-10-29, D-121):**
+- **Qué cambia:** botón «Ver» junto a la descarga de evidencias, PDF firmados, archivos históricos de Devoluciones y documentos recibidos de Auditorías. Abre PDF, PNG o JPG en una pestaña nueva; Word y Excel se siguen descargando.
+- **Seguridad:** misma ruta, permisos y comprobación de huella que la descarga; solo se sirve «en línea» si el tipo guardado es PDF o imagen.
+- **Comprobado** con pruebas unitarias (tipos admitidos y cabecera) y `evidence:ui:smoke` ampliado (enlace «Ver» y respuesta en línea con la misma huella).
+
 **Calendario de vencimientos (2026-10-29, D-120):**
 - **Qué cambia:** nueva página «Calendario» (mes o semana) con los plazos de todos los módulos, enlazada desde el inicio. Usa las mismas reglas que los plazos del panel y «Mis tareas», con filtros de área, departamento y «Solo mis tareas». En móvil se ve como lista por días.
 - **Sin cambios de datos:** no hay migración; las reglas de «Mis tareas» se reutilizan sin filtro de usuario para «Todos los plazos».

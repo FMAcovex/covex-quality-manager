@@ -1,4 +1,5 @@
 import { PermissionGate } from "@/components/permissions";
+import { PreviewLink } from "@/components/preview-link";
 import { RecordEvidenceForm } from "@/components/record-evidence-form";
 import { listRecordEvidence } from "@/lib/qms/record-evidence";
 import type { RecordEvidenceState } from "@/lib/qms/record-evidence-actions";
@@ -38,6 +39,7 @@ export async function RecordEvidencePanel({
                   <td>
                     <PermissionGate permission="DOWNLOAD" fallback={<span>{item.fileName ?? "evidencia"}</span>}>
                       <a href={`/api/qms/${qmsRecordId}/evidence/${item.id}`}>{item.fileName ?? "evidencia"}</a>
+                      {" "}<PreviewLink className="evidence-preview" href={`/api/qms/${qmsRecordId}/evidence/${item.id}`} mimeType={item.mimeType} />
                     </PermissionGate>
                     <small className="muted-note evidence-checksum" title={item.checksum ?? undefined}>SHA-256 {item.checksum?.slice(0, 12) ?? "—"}…</small>
                   </td>

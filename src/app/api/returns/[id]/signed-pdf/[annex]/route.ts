@@ -1,3 +1,4 @@
+import { contentDisposition } from "@/lib/qms/file-preview";
 import { authorizedRoute } from "@/lib/auth/route-guard";
 import {createHash} from "node:crypto";
 import { NextResponse } from "next/server";
@@ -17,7 +18,7 @@ const annexConfig = {
 } as const;
 
 async function GETAuthenticatedContent(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string; annex: string }> },
 ) {
   const { id, annex } = await context.params;
@@ -64,7 +65,8 @@ async function GETAuthenticatedContent(
   return new Response(new Uint8Array(document.fileData), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": contentDisposition(request, filename, "application/pdf"),
+      "X-Content-Type-Options": "nosniff",
       "Cache-Control": "no-store",
     },
   });

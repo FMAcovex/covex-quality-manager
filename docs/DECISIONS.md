@@ -1327,3 +1327,16 @@ Decisión del responsable de Calidad: ver en un calendario los plazos de todos l
 - **«Solo mis tareas»:** exactamente «Mis tareas» con fecha. Indica cuántas no tienen fecha y cuántas vencieron antes del periodo.
 - **Filtros:** área (módulo), departamento y vista. Lo vencido se marca en rojo y con la palabra «Vencida».
 - **No guarda nada:** solo lee. Mismos permisos de consulta que el panel. En móvil se muestra como lista por días. El recuento incluye los días de los meses vecinos que se ven en la cuadrícula.
+
+## D-121 — Vista previa de PDF e imágenes sin descargar (2026-10-29)
+
+Decisión del responsable de Calidad: ver los archivos sin descargarlos, con la solución más sencilla.
+
+- **Botón «Ver»** junto a la descarga. Abre el archivo en una pestaña nueva del navegador. Aparece en:
+  - las evidencias adjuntas de los seis expedientes;
+  - los PDF firmados de Desviaciones, CAPA, Cambios, Reclamaciones, Devoluciones (Anexos III y V), OOS y Auditorías;
+  - los archivos históricos de Devoluciones;
+  - los documentos recibidos de Auditorías.
+- **Solo PDF, PNG y JPG.** Word y Excel se siguen descargando: el navegador no los muestra y convertirlos exigiría instalar un conversor en el servidor.
+- **Misma ruta y mismos permisos que la descarga.** La vista previa añade `?preview=1` y la ruta responde «en línea» solo si el tipo guardado del archivo es PDF o imagen. Se mantienen las mismas comprobaciones que la descarga de cada ruta (permiso de descargar y, donde la ruta la hace, la huella SHA-256), y todas las rutas cambiadas envían `nosniff`.
+- No cambia ningún dato ni plantilla.

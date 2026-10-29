@@ -1,4 +1,5 @@
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
+import { PreviewLink } from "@/components/preview-link";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -277,7 +278,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
             <p>Genera el Word cumplimentado. Cuando esté firmado a mano, adjunta aquí el PDF escaneado.</p>
             <div className="document-actions">
               {record.qmsRecord.isActive ? <PermissionGate permission={["GENERATE_DOCUMENT", "DOWNLOAD"]}><a className="button primary" href={`/api/oos/${id}/${annex}`}>Generar {config.label} cumplimentado</a></PermissionGate> : null}
-              {signed ? <PermissionGate permission="DOWNLOAD"><a className="button" href={`/api/oos/${id}/signed-pdf/${annex}`}>Descargar PDF firmado</a></PermissionGate> : null}
+              {signed ? <PermissionGate permission="DOWNLOAD"><a className="button" href={`/api/oos/${id}/signed-pdf/${annex}`}>Descargar PDF firmado</a><PreviewLink className="button" href={`/api/oos/${id}/signed-pdf/${annex}`} mimeType="application/pdf" /></PermissionGate> : null}
             </div>
             <div className="return-signed-document">
               <strong>{signed ? "PDF firmado disponible" : "PDF firmado pendiente"}</strong>
