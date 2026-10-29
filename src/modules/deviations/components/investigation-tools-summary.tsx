@@ -25,7 +25,7 @@ export function InvestigationToolsSummary({ tools }: { tools: InvestigationTools
     {tools.fiveWhys ? <section>
       <h4>5 porqués <Status value={tools.fiveWhys.status} /></h4>
       {tools.fiveWhys.problem ? <p className="prose-value"><strong>Problema:</strong> {tools.fiveWhys.problem}</p> : null}
-      <ol>{tools.fiveWhys.whys.map((why, index) => <li key={index} className="prose-value">{why}</li>)}</ol>
+      {tools.fiveWhys.whys.length ? <ol>{tools.fiveWhys.whys.map((why, index) => <li key={index} className="prose-value">{why || "—"}</li>)}</ol> : null}
     </section> : null}
     {ishikawa.length ? <section>
       <h4>Ishikawa (6M)</h4>

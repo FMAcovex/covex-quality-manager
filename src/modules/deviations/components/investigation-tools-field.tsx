@@ -2,7 +2,7 @@
 import { useState, type MouseEvent } from "react";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import {
-  CAUSE_STATUSES, ISHIKAWA_CATEGORIES, MAX_TOOL_CAUSES, MAX_WHYS, rootCauseSuggestion,
+  CAUSE_STATUSES, ISHIKAWA_CATEGORIES, MAX_TOOL_CAUSES, MAX_WHYS, looseInvestigationTools, rootCauseSuggestion,
   type InvestigationTools, type RootCauseSuggestion, type ToolCause,
 } from "../investigation-tools";
 
@@ -32,10 +32,9 @@ function serialize(state: State): InvestigationTools {
   };
 }
 
-function lenientParse(json: string | undefined): InvestigationTools | null {
-  if (!json) return null;
-  try { return JSON.parse(json) as InvestigationTools; } catch { /* Valor del envío anterior ilegible: se parte de lo guardado. */ return null; }
-}
+const NOTE_ID = "investigation-tools-note";
+/** Nombre accesible de una fila: su texto (recortado) o su posición si aún no tiene. */
+const rowName = (cause: ToolCause, position: number) => cause.text.trim() ? `«${cause.text.trim().slice(0, 60)}»` : `causa ${position} sin descripción`;
 
 /**
  * D-123: 5 porqués, Ishikawa (6M) y brainstorming dentro de «E. Investigación». Ayudan a ordenar
@@ -48,9 +47,11 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
   submittedJson?: string;
   error?: string;
 }) {
-  const [state, setState] = useState<State>(() => initialState(lenientParse(submittedJson) ?? defaultValue));
+  const [initial] = useState<State>(() => initialState(looseInvestigationTools(submittedJson) ?? defaultValue));
+  const [state, setState] = useState<State>(initial);
   const [message, setMessage] = useState("");
-  const hasContent = !!serialize(state).fiveWhys || state.causes.length > 0;
+  // Abierto si al cargar ya hay contenido o un error; después lo decide quien edita.
+  const [open, setOpen] = useState(() => !!error || !!serialize(initial).fiveWhys || initial.causes.length > 0);
   const full = state.causes.length >= MAX_TOOL_CAUSES;
 
   const updateCause = (uid: number, patch: Partial<ToolCause>) => setState((current) => ({ ...current, causes: current.causes.map((cause) => cause.uid === uid ? { ...cause, ...patch } : cause) }));
@@ -62,10 +63,14 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
     const form = event.currentTarget.form;
     if (!suggestion || !form) return;
     const rootCause = form.elements.namedItem("rootCause");
+    let already = false;
     if (rootCause instanceof HTMLTextAreaElement) {
       const current = rootCause.value.trim();
-      if (!current.includes(suggestion.text)) rootCause.value = current ? `${current}\n${suggestion.text}` : suggestion.text;
-      rootCause.dispatchEvent(new Event("input", { bubbles: true }));
+      already = current.split(/\r?\n/).some((line) => line.trim() === suggestion.text);
+      if (!already) {
+        rootCause.value = current ? `${current}\n${suggestion.text}` : suggestion.text;
+        rootCause.dispatchEvent(new Event("input", { bubbles: true }));
+      }
     }
     const check = (name: string, value: string) => {
       const box = form.querySelector<HTMLInputElement>(`input[type="checkbox"][name="${name}"][value="${value}"]`);
@@ -73,25 +78,29 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
     };
     if (suggestion.category) check("rootCauseCategories", suggestion.category);
     check("investigationMethods", suggestion.method);
-    setMessage(`Copiado a «Causa raíz»${suggestion.category ? ` con la categoría ${rootCauseCategoryLabel(suggestion.category, true)}` : ""}. Revisa la redacción antes de guardar.`);
+    setMessage(`${already ? "Ya estaba en «Causa raíz»" : "Copiado a «Causa raíz»"}${suggestion.category ? ` con la categoría ${rootCauseCategoryLabel(suggestion.category, true)}` : ""}. Revisa la redacción antes de guardar.`);
   }
 
-  const statusSelect = (value: Status, onChange: (value: Status) => void, label = "Estado") => (
+  const statusSelect = (value: Status, onChange: (value: Status) => void, label = "Estado", accessibleName?: string) => (
     <label className="field">
       <span>{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value as Status)}>
+      <select value={value} aria-label={accessibleName} onChange={(e) => onChange(e.target.value as Status)}>
         {CAUSE_STATUSES.map(([key, text]) => <option key={key} value={key}>{text}</option>)}
       </select>
     </label>
   );
-  const rootCauseButton = (suggestion: RootCauseSuggestion | null, label = "Usar como causa raíz") => (
-    <button type="button" className="button small" disabled={!suggestion} title={suggestion ? undefined : "Solo se puede usar una causa confirmada"} onClick={(event) => copyToRootCause(suggestion, event)}>{label}</button>
+  const rootCauseButton = (suggestion: RootCauseSuggestion | null, label: string, accessibleName?: string) => (
+    <button type="button" className="button small" disabled={!suggestion} aria-label={accessibleName} aria-describedby={suggestion ? undefined : NOTE_ID} onClick={(event) => copyToRootCause(suggestion, event)}>{label}</button>
   );
-  const causeRow = (cause: Row, withCategory: boolean) => (
+  const causeRow = (cause: Row, withCategory: boolean) => {
+    const name = rowName(cause, state.causes.indexOf(cause) + 1);
+    const missingText = !cause.text.trim() && !!cause.evidence.trim();
+    return (
     <div className={`dynamic-row investigation-cause-row status-${cause.status.toLowerCase()}${withCategory ? " with-category" : ""}`} key={cause.uid}>
-      <label className="field">
+      <label className={`field${missingText ? " has-error" : ""}`}>
         <span>{cause.method === "ISHIKAWA" ? "Causa posible *" : "Idea / causa posible *"}</span>
-        <textarea rows={2} value={cause.text} maxLength={1000} onChange={(e) => updateCause(cause.uid, { text: e.target.value })} />
+        <textarea rows={2} value={cause.text} maxLength={1000} aria-invalid={missingText || undefined} onChange={(e) => updateCause(cause.uid, { text: e.target.value })} />
+        {missingText ? <small className="field-error">Falta la descripción de la causa.</small> : null}
       </label>
       {withCategory ? (
         <label className="field">
@@ -106,20 +115,21 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
         <span>Evidencia / comprobación</span>
         <textarea rows={2} value={cause.evidence} maxLength={1000} onChange={(e) => updateCause(cause.uid, { evidence: e.target.value })} />
       </label>
-      {statusSelect(cause.status, (status) => updateCause(cause.uid, { status }))}
+      {statusSelect(cause.status, (status) => updateCause(cause.uid, { status }), "Estado", `Estado de ${name}`)}
       <div className="investigation-row-actions">
-        {rootCauseButton(rootCauseSuggestion(cause))}
-        <button type="button" className="button danger small" onClick={() => removeCause(cause.uid)}>Quitar</button>
+        {rootCauseButton(rootCauseSuggestion(cause), "Usar como causa raíz", `Usar ${name} como causa raíz`)}
+        <button type="button" className="button danger small" aria-label={`Quitar ${name}`} onClick={() => removeCause(cause.uid)}>Quitar</button>
       </div>
     </div>
-  );
+    );
+  };
 
   const whySuggestion = rootCauseSuggestion({ problem: state.problem, whys: state.whys, status: state.whysStatus });
   return (
-    <details className="field full investigation-tools" open={hasContent || !!error}>
+    <details className="field full investigation-tools" open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary>Herramientas de análisis (opcional): 5 porqués, Ishikawa (6M) y brainstorming</summary>
       <input type="hidden" name="investigationToolsJson" value={JSON.stringify(serialize(state))} />
-      <p className="muted-note">Ayudan a ordenar la investigación y quedan en el expediente, pero no se imprimen en el Anexo III. Cada causa es una hipótesis hasta que la marques como descartada o confirmada. «Usar como causa raíz» solo está disponible para lo confirmado: copia el texto a «Causa raíz» y marca su categoría; revisa la redacción antes de guardar.</p>
+      <p className="muted-note" id={NOTE_ID}>Ayudan a ordenar la investigación y quedan en el expediente, pero no se imprimen en el Anexo III. Cada causa es una hipótesis hasta que la marques como descartada o confirmada. «Usar como causa raíz» solo está disponible para lo confirmado: copia el texto a «Causa raíz» y marca su categoría; revisa la redacción antes de guardar.</p>
       {error ? <p className="field-error" role="alert">{error}</p> : null}
       <p className="visually-hidden" role="status" aria-live="polite">{message}</p>
       {message ? <p className="investigation-tools-message" aria-hidden="true">{message}</p> : null}

@@ -540,7 +540,7 @@ Tiene las mismas guardas y captura B2 que `AlertRule` (raíz de administración/
 
 ## Herramientas de investigación de Desviaciones (D-123)
 
-La migración `20261030000100_deviation_investigation_tools` añade `Deviation.investigationTools` (JSONB, opcional; un CHECK exige objeto). Contiene:
+La migración `20261029000200_deviation_investigation_tools` añade `Deviation.investigationTools` (JSONB, opcional; un CHECK exige objeto). Contiene:
 - `fiveWhys`: `{ problem, whys[≤5], status }` o `null`;
 - `causes[≤60]`: `{ method: ISHIKAWA|BRAINSTORMING, category: 6M|null, text, evidence, status }`.
 

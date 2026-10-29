@@ -53,10 +53,16 @@ export const emptyInvestigationTools = (): InvestigationTools => ({ fiveWhys: nu
 const filled = (value: unknown) => typeof value === "string" && value.trim() !== "";
 const isObject = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 
+/** Quita los huecos del final de los porqués (los demás conservan su número). */
+function trimTrailing(whys: unknown[]) {
+  const end = whys.reduce<number>((last, why, index) => filled(why) || typeof why !== "string" ? index + 1 : last, 0);
+  return whys.slice(0, end);
+}
+
 /** Quita las filas en blanco que deja el formulario; lo demás se valida tal cual. */
 function withoutBlankRows(value: Record<string, unknown>) {
   const five = isObject(value.fiveWhys) ? value.fiveWhys : null;
-  const whys = five && Array.isArray(five.whys) ? five.whys.filter(filled) : five?.whys;
+  const whys = five && Array.isArray(five.whys) ? trimTrailing(five.whys) : five?.whys;
   const fiveWhys = five && (filled(five.problem) || (Array.isArray(whys) ? whys.length > 0 : whys !== undefined)) ? { ...five, whys } : null;
   const causes = Array.isArray(value.causes) ? value.causes.filter((cause) => !isObject(cause) || filled(cause.text) || filled(cause.evidence)) : value.causes;
   return { fiveWhys, causes };
@@ -69,7 +75,11 @@ export function parseInvestigationTools(raw: FormDataEntryValue | null): { tools
   try { value = JSON.parse(raw); } catch { /* Entrada mal formada. */ return { tools: null, error: "Las herramientas de investigación no son válidas." }; }
   if (!isObject(value)) return { tools: null, error: "Las herramientas de investigación no son válidas." };
   const parsed = toolsSchema.safeParse(withoutBlankRows(value));
-  if (!parsed.success) return { tools: null, error: parsed.error.issues[0]?.message ?? "Revisa las herramientas de investigación." };
+  if (!parsed.success) {
+    // Los mensajes propios están en español; una forma inesperada (envío manipulado) da uno genérico.
+    const issue = parsed.error.issues[0];
+    return { tools: null, error: !issue || issue.code === "invalid_type" ? "Las herramientas de investigación no son válidas." : issue.message };
+  }
   return { tools: parsed.data.fiveWhys || parsed.data.causes.length ? parsed.data : null };
 }
 
@@ -77,6 +87,30 @@ export function parseInvestigationTools(raw: FormDataEntryValue | null): { tools
 export function storedInvestigationTools(value: unknown): InvestigationTools | null {
   const parsed = toolsSchema.safeParse(value);
   return parsed.success && (parsed.data.fiveWhys || parsed.data.causes.length) ? parsed.data : null;
+}
+
+const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T => allowed.includes(value as T) ? value as T : fallback;
+const str = (value: unknown) => typeof value === "string" ? value : "";
+
+/**
+ * Lo que el formulario envió en un guardado que no se completó, para volver a mostrarlo tal cual
+ * (aunque no sea válido) y que no se pierda lo escrito. Nunca falla con formas extrañas.
+ */
+export function looseInvestigationTools(json: string | undefined): InvestigationTools | null {
+  if (!json) return null;
+  let value: unknown;
+  try { value = JSON.parse(json); } catch { /* Ilegible: se parte de lo guardado. */ return null; }
+  if (!isObject(value)) return null;
+  const statuses = ["HYPOTHESIS", "DISCARDED", "CONFIRMED"] as const;
+  const five = isObject(value.fiveWhys) ? value.fiveWhys : null;
+  return {
+    fiveWhys: five ? { problem: str(five.problem), whys: Array.isArray(five.whys) ? five.whys.slice(0, MAX_WHYS).map(str) : [], status: pick(five.status, statuses, "HYPOTHESIS") } : null,
+    causes: (Array.isArray(value.causes) ? value.causes : []).filter(isObject).slice(0, MAX_TOOL_CAUSES).map((cause) => ({
+      method: pick(cause.method, ["ISHIKAWA", "BRAINSTORMING"] as const, "BRAINSTORMING"),
+      category: ISHIKAWA_CATEGORIES.includes(cause.category as never) ? cause.category as ToolCause["category"] : null,
+      text: str(cause.text), evidence: str(cause.evidence), status: pick(cause.status, statuses, "HYPOTHESIS"),
+    })),
+  };
 }
 
 export type RootCauseSuggestion = { text: string; category: (typeof ISHIKAWA_CATEGORIES)[number] | null; method: "ISHIKAWA" | "BRAINSTORMING" | "FIVE_WHYS" };

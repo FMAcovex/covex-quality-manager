@@ -35,7 +35,7 @@ async function main() {
     const cause = tools.locator(".investigation-cause-row").first();
     await cause.locator("textarea").first().fill(`${marker} instrucción sin verificación de plantilla`);
     await cause.locator("textarea").nth(1).fill("Revisión del PNT de etiquetado");
-    const use = cause.getByRole("button", { name: "Usar como causa raíz" });
+    const use = cause.getByRole("button", { name: /como causa raíz$/ });
     assert.equal(await use.isDisabled(), true, "una hipótesis no se puede usar como causa raíz");
     await cause.locator("select").selectOption("CONFIRMED");
     assert.equal(await use.isDisabled(), false);
@@ -48,9 +48,22 @@ async function main() {
     await use.click();
     assert.equal(await qa.locator('textarea[name="rootCause"]').inputValue(), `${marker} instrucción sin verificación de plantilla`);
 
-    // Brainstorming: una idea descartada con su categoría opcional.
+    // Quitar la única idea no cierra el panel mientras se edita.
+    await tools.getByRole("button", { name: "+ Añadir idea" }).click();
+    await tools.getByRole("button", { name: "Quitar causa 2 sin descripción" }).click();
+    assert.equal(await tools.evaluate((node) => (node as HTMLDetailsElement).open), true, "el panel sigue abierto");
+
+    // Un guardado rechazado (idea con evidencia pero sin descripción) conserva lo escrito.
     await tools.getByRole("button", { name: "+ Añadir idea" }).click();
     const idea = tools.locator(".investigation-cause-row.with-category").first();
+    await idea.locator("textarea").nth(1).fill("Comprobado en el registro de turnos");
+    await idea.getByText("Falta la descripción de la causa.").waitFor();
+    await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
+    await tools.getByText("Cada causa necesita una descripción.").waitFor();
+    assert.equal(await idea.locator("textarea").nth(1).inputValue(), "Comprobado en el registro de turnos", "se conserva lo escrito");
+    assert.equal(await tools.locator(".investigation-cause-row").count(), 2);
+
+    // Brainstorming: una idea descartada con su categoría opcional.
     await idea.locator("textarea").first().fill("Cambio de turno durante el etiquetado");
     await idea.locator("select").first().selectOption("PEOPLE");
     await idea.locator("select").nth(1).selectOption("DISCARDED");
@@ -63,7 +76,7 @@ async function main() {
       fiveWhys: { problem: "Etiqueta errónea en el lote", whys: ["Se usó la plantilla anterior", "La plantilla anterior seguía disponible en el sistema"], status: "HYPOTHESIS" },
       causes: [
         { method: "ISHIKAWA", category: "METHOD", text: `${marker} instrucción sin verificación de plantilla`, evidence: "Revisión del PNT de etiquetado", status: "CONFIRMED" },
-        { method: "BRAINSTORMING", category: "PEOPLE", text: "Cambio de turno durante el etiquetado", evidence: "", status: "DISCARDED" },
+        { method: "BRAINSTORMING", category: "PEOPLE", text: "Cambio de turno durante el etiquetado", evidence: "Comprobado en el registro de turnos", status: "DISCARDED" },
       ],
     });
     assert.equal(saved.rootCause, `${marker} instrucción sin verificación de plantilla`);

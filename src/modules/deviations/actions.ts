@@ -385,7 +385,9 @@ async function updateDeviationActionAuthenticatedContent(
     investigationMethods: existing.investigationMethods,
     rootCause: existing.rootCause,
     rootCauseCategories: existing.rootCauseCategories,
-    investigationTools: storedInvestigationTools(existing.investigationTools),
+    // Normalizado para comparar sin el orden de claves de JSONB; si no se puede leer, el valor bruto
+    // (así un valor ilegible que se sustituye queda en el historial).
+    investigationTools: storedInvestigationTools(existing.investigationTools) ?? existing.investigationTools ?? null,
     recurrentRootCause: existing.recurrentRootCause,
     recurrenceDetails: existing.recurrenceDetails,
     classification: existing.classification,

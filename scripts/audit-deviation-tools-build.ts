@@ -6,7 +6,7 @@ import { canonicalAuditJson } from "../src/lib/audit/canonical-json";
 
 // D-123: herramientas de investigación de Desviaciones (5 porqués, Ishikawa, brainstorming).
 // Solo amplía la política de captura; no cambia funciones, triggers ni tablas.
-export const deviationToolsMigration = "prisma/migrations/20261030000100_deviation_investigation_tools/migration.sql";
+export const deviationToolsMigration = "prisma/migrations/20261029000200_deviation_investigation_tools/migration.sql";
 const byPath = (a: { fieldPath: string }, b: { fieldPath: string }) => a.fieldPath < b.fieldPath ? -1 : a.fieldPath > b.fieldPath ? 1 : 0;
 
 export function deviationToolsCapturePolicy() {

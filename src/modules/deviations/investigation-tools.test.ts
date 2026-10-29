@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_TOOL_CAUSES, emptyInvestigationTools, parseInvestigationTools, rootCauseSuggestion, storedInvestigationTools } from "./investigation-tools";
+import { MAX_TOOL_CAUSES, emptyInvestigationTools, looseInvestigationTools, parseInvestigationTools, rootCauseSuggestion, storedInvestigationTools } from "./investigation-tools";
 
 // D-123: herramientas de análisis guiadas en la investigación de Desviaciones.
 const json = (value: unknown) => JSON.stringify(value);
@@ -13,7 +13,7 @@ describe("Herramientas de investigación (D-123)", () => {
     expect(parseInvestigationTools(json({ fiveWhys: { problem: " ", whys: ["", " "], status: "HYPOTHESIS" }, causes: [{ method: "BRAINSTORMING", category: null, text: " ", evidence: "", status: "HYPOTHESIS" }] }))).toEqual({ tools: null });
   });
 
-  it("lee 5 porqués, Ishikawa y brainstorming y recorta los porqués vacíos", () => {
+  it("lee 5 porqués, Ishikawa y brainstorming; los porqués conservan su posición", () => {
     const parsed = parseInvestigationTools(json({
       fiveWhys: { problem: "Etiqueta errónea en el lote", whys: ["Se usó la plantilla anterior", "", "No se retiró del sistema"], status: "CONFIRMED" },
       causes: [
@@ -22,7 +22,9 @@ describe("Herramientas de investigación (D-123)", () => {
       ],
     }));
     expect(parsed.error).toBeUndefined();
-    expect(parsed.tools?.fiveWhys).toEqual({ problem: "Etiqueta errónea en el lote", whys: ["Se usó la plantilla anterior", "No se retiró del sistema"], status: "CONFIRMED" });
+    expect(parsed.tools?.fiveWhys).toEqual({ problem: "Etiqueta errónea en el lote", whys: ["Se usó la plantilla anterior", "", "No se retiró del sistema"], status: "CONFIRMED" });
+    // Solo se quitan los huecos del final.
+    expect(parseInvestigationTools(json({ fiveWhys: { problem: "P", whys: ["a", "", " ", ""], status: "HYPOTHESIS" } })).tools?.fiveWhys?.whys).toEqual(["a"]);
     expect(parsed.tools?.causes).toHaveLength(2);
   });
 
@@ -55,5 +57,21 @@ describe("Herramientas de investigación (D-123)", () => {
     expect(rootCauseSuggestion({ problem: "P", whys: ["a", "b"], status: "CONFIRMED" })).toEqual({ text: "b", category: null, method: "FIVE_WHYS" });
     expect(rootCauseSuggestion({ problem: "P", whys: ["a", "b"], status: "HYPOTHESIS" })).toBeNull();
     expect(rootCauseSuggestion({ problem: "P", whys: [], status: "CONFIRMED" })).toBeNull();
+  });
+
+  it("un envío manipulado da un mensaje en español, nunca el de la librería", () => {
+    for (const value of [{ causes: "x" }, { causes: [{ method: "ISHIKAWA", category: "METHOD", text: "C" }] }, { fiveWhys: { whys: "no" } }]) {
+      expect(parseInvestigationTools(json(value)).error).toBe("Las herramientas de investigación no son válidas.");
+    }
+  });
+
+  it("tras un guardado fallido recupera lo escrito aunque no sea válido, sin romperse con formas extrañas", () => {
+    const written = { fiveWhys: null, causes: [{ method: "BRAINSTORMING", category: null, text: "", evidence: "Comprobado en el registro", status: "CONFIRMED" }] };
+    expect(parseInvestigationTools(json(written)).error).toBe("Cada causa necesita una descripción.");
+    expect(looseInvestigationTools(json(written))).toEqual(written);
+    expect(looseInvestigationTools(json({ causes: "x", fiveWhys: { whys: "no" } }))).toEqual({ fiveWhys: { problem: "", whys: [], status: "HYPOTHESIS" }, causes: [] });
+    expect(looseInvestigationTools(json({ causes: [{ method: "IA", category: "OTRA", text: 3, status: "PROBABLE" }] }))).toEqual({ fiveWhys: null, causes: [{ method: "BRAINSTORMING", category: null, text: "", evidence: "", status: "HYPOTHESIS" }] });
+    expect(looseInvestigationTools("{roto")).toBeNull();
+    expect(looseInvestigationTools(undefined)).toBeNull();
   });
 });

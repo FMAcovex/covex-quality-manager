@@ -131,7 +131,7 @@ export async function assertAuditProtection(tx: Prisma.TransactionClient) {
     ? await tx.$queryRaw<{present:boolean}[]>`SELECT EXISTS(SELECT 1 FROM "AuditCaptureFieldPolicy" WHERE "entityType"='Deviation' AND "fieldPath"='investigationTools') AS present`
     : [{ present: false }];
   if (!deviationTools?.present && version?.migrations) {
-    const [installed] = await tx.$queryRaw<{count:bigint}[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261030000100_deviation_investigation_tools' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
+    const [installed] = await tx.$queryRaw<{count:bigint}[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261029000200_deviation_investigation_tools' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     if (installed?.count) throw new AuditEngineError("PROTECTION");
   }
   const contract = deviationTools?.present ? deviationToolsContract : changeModels?.present ? changeModelsContract : pntAssignments?.present ? pntAssignmentsContract : deviationShift?.present ? deviationShiftContract : capaPlan?.present ? capaPlanContract : responsibleUsers?.present ? responsibleUsersContract : additionalLots?.present ? additionalLotsContract : rootCause?.present ? rootCauseContract : oosSigned?.present ? oosSignedContract : oosDocuments?.present ? oosDocumentsContract : oos?.present ? oosContract : review?.present ? cContract : critical?.present ? criticalContract : version?.staging ? stagingContract : version?.documents ? documentContract : version?.composition ? integrationContract : version?.capture ? captureContract : version?.present ? b2Contract : b1Contract;
