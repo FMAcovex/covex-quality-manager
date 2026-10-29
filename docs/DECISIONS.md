@@ -1308,3 +1308,22 @@ Decisión del responsable de Calidad: cada PR pasa, antes de fusionarse, por un 
 - Revisa el diff completo contra el código y `/docs`: errores de funcionamiento, permisos y seguridad, migraciones y captura del audit trail, pruebas que falten y desviaciones de las decisiones y de `AGENTS.md`.
 - Los hallazgos críticos o importantes se corrigen antes de fusionar, con una prueba que falle antes del arreglo cuando sea comprobable con una prueba (si no, se justifica en la PR). Los menores o descartados se explican en la PR, cuya descripción resume el resultado.
 - Es un control de desarrollo: no sustituye a la revisión humana ni a la validación GMP.
+
+## D-120 — Calendario de vencimientos (2026-10-29)
+
+Decisión del responsable de Calidad: ver en un calendario los plazos de todos los módulos.
+
+- **Página «Calendario»** (`/calendar`), con vista de mes o de semana, anterior, siguiente y «Hoy». Se llega desde el inicio: «Ver calendario» en los plazos del panel y «Ver en el calendario» en «Mis tareas». No se añade al menú principal.
+- **Qué aparece con «Todos los plazos»:**
+  - las mismas fuentes que los plazos del panel y las alertas:
+    - próximo seguimiento de desviaciones, CAPA, cambios, reclamaciones y devoluciones;
+    - ejecución prevista de cambios;
+    - próxima revisión de auditorías y hallazgos;
+    - revisión de la revisión vigente de cada PNT (el ciclo de vida manda si existe);
+  - las auditorías planificadas aún no realizadas;
+  - las acciones pendientes con fecha prevista de cualquier responsable (también las que aún no tienen), con la misma regla de pendiente que «Mis tareas» (D-102 y D-118).
+
+  El calendario muestra las fechas aunque su regla de alerta esté desactivada: las reglas deciden qué se avisa en el panel, no qué fechas existen. La eficacia CAPA pendiente, cuya fecha depende de la antelación configurada en su regla, no aparece.
+- **«Solo mis tareas»:** exactamente «Mis tareas» con fecha. Indica cuántas no tienen fecha y cuántas vencieron antes del periodo.
+- **Filtros:** área (módulo), departamento y vista. Lo vencido se marca en rojo y con la palabra «Vencida».
+- **No guarda nada:** solo lee. Mismos permisos de consulta que el panel. En móvil se muestra como lista por días. El recuento incluye los días de los meses vecinos que se ven en la cuadrícula.

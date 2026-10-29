@@ -136,6 +136,11 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Calendario de vencimientos (2026-10-29, D-120):**
+- **Qué cambia:** nueva página «Calendario» (mes o semana) con los plazos de todos los módulos, enlazada desde el inicio. Usa las mismas reglas que los plazos del panel y «Mis tareas», con filtros de área, departamento y «Solo mis tareas». En móvil se ve como lista por días.
+- **Sin cambios de datos:** no hay migración; las reglas de «Mis tareas» se reutilizan sin filtro de usuario para «Todos los plazos».
+- **Comprobado** con pruebas unitarias del periodo (semanas de lunes a domingo, cambios de mes, URL), el smoke `calendar-d120:smoke` (fuentes, filtros, vencidas, «Solo mis tareas» y mismas claves que el panel) y la regresión de «Mis tareas» y del panel.
+
 **PNT: responsables por función y de la revisión periódica (2026-10-27, D-118):**
 - **Qué cambia:** cada revisión de PNT en borrador, en revisión o pendiente de aprobación tiene responsables de Elaborar, Revisar y Aprobar, con usuario opcional y fecha prevista. El maestro tiene responsable de la revisión periódica. Se asignan con «Asignar responsables» en la pestaña Revisiones y se muestran en la ficha.
 - **Mis tareas:** «Elaborar/Revisar/Aprobar la revisión XX» solo mientras la revisión está en la fase de esa función. «Revisión periódica» cuando la vigente vence en 30 días o ya venció y no hay una nueva revisión en curso.

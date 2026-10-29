@@ -47,6 +47,7 @@
       "review-r2c:smoke",
       "hito10:smoke",
       "assigned-d102:smoke",
+      "calendar-d120:smoke",
       "template-install-d105:smoke"
     ],
     "ui": [],

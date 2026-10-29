@@ -74,6 +74,8 @@
 .dashboard-home .dashboard-two-col { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 18px; align-items: start; }
 .dashboard-home .dashboard-task-section { border-top: 3px solid #b9cce3; padding-top: 18px; }
 .dashboard-home .dashboard-heading > a { font-size: 11px; white-space: nowrap; }
+.dashboard-home .dashboard-heading-links { display: flex; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+.dashboard-home .dashboard-heading-links a { font-size: 11px; white-space: nowrap; }
 .dashboard-home .dashboard-hint { color: var(--dashboard-subtle); font-size: 11px; line-height: 1.6; margin: 0 0 14px; }
 .dashboard-home .dashboard-task-summary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .dashboard-home .dashboard-deadline-count { display: inline-flex; align-items: baseline; gap: 5px; padding: 7px 10px; border-radius: 6px; font-size: 11px; }

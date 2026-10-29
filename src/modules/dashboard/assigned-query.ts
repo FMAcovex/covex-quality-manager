@@ -37,6 +37,23 @@ export function sortAssigned(items: AssignedItem[]) {
  */
 export async function getAssignedItems(userId: string | null | undefined, filters: Pick<DashboardFilters, "year" | "department" | "module" | "asOf">) {
   if (!userId) return [];
+  return collectActionItems(userId, filters);
+}
+
+/**
+ * Calendario (D-120): las mismas acciones pendientes que «Mis tareas», de cualquier responsable
+ * (con usuario vinculado, solo con nombre escrito o sin responsable) y con fecha prevista en [from, to). No incluye
+ * lo que no tiene fecha ni lo que el calendario toma de las reglas del panel (seguimientos y
+ * revisión de PNT vigentes).
+ */
+export async function getDatedActionItems(filters: Pick<DashboardFilters, "department" | "module" | "asOf">, range: { from: Date; to: Date }) {
+  return (await collectActionItems(undefined, { ...filters, year: null }, range)).filter(item => item.dueDate && item.dueDate >= range.from && item.dueDate < range.to);
+}
+
+type ActionFilters = Pick<DashboardFilters, "year" | "department" | "module" | "asOf">;
+
+// Sin usuario, Prisma ignora `responsibleUserId: undefined`: mismas reglas de pendiente para todos.
+async function collectActionItems(userId: string | undefined, filters: ActionFilters, range?: { from: Date; to: Date }) {
   const today = utcDay(filters.asOf);
   const qms = { isActive: true, ...(filters.year ? { year: filters.year } : {}) };
   const dep = filters.department ? { departmentId: filters.department } : {};
@@ -48,21 +65,23 @@ export async function getAssignedItems(userId: string | null | undefined, filter
   const recordRef = { select: { id: true, qmsRecord: { select: { businessCode: true } } } } as const;
 
   const pntDoc = { administrativeStatus: { not: "ANNULLED" as const }, ...dep };
+  const all = !userId;
+  const within = range ? { gte: range.from, lt: range.to } : undefined;
 
   const [deviationPlans, capaActions, decisions, followups, tasks, complaintPlans, derived, auditActions, pntRevisions, pntPeriodic] = await Promise.all([
     wants("DEVIATION") ? prisma.deviationCapaPlan.findMany({
-      where: { ...pendingDeviationCapaPlan(userId), deviation: { status: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
+      where: { ...pendingDeviationCapaPlan(userId), plannedExecutionDate: within, deviation: { status: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
       select: { id: true, description: true, plannedExecutionDate: true, deviation: recordRef },
     }) : [],
     wants("CAPA") ? prisma.capaPlannedAction.findMany({
-      where: { responsibleUserId: userId, capa: { status: { in: ["DRAFT", "OPEN"] }, qmsRecord: qms, ...dep } },
+      where: { responsibleUserId: userId, plannedExecutionDate: within, capa: { status: { in: ["DRAFT", "OPEN"] }, qmsRecord: qms, ...dep } },
       select: { id: true, description: true, plannedExecutionDate: true, capa: recordRef },
     }) : [],
-    wants("CHANGE_CONTROL") ? prisma.changeControl.findMany({
+    wants("CHANGE_CONTROL") && !all ? prisma.changeControl.findMany({
       where: { requestDecisionResponsibleUserId: userId, requestDecision: "PENDING", finalStatus: { not: "CLOSED" }, qmsRecord: qms, ...dep },
       select: { id: true, description: true, qmsRecord: { select: { businessCode: true } } },
     }) : [],
-    wants("CHANGE_CONTROL") ? prisma.changeControl.findMany({
+    wants("CHANGE_CONTROL") && !all ? prisma.changeControl.findMany({
       where: { followupResponsibleUserId: userId, dictamenResult: "APPROVED", finalStatus: { not: "CLOSED" }, qmsRecord: qms, ...dep },
       select: {
         id: true, description: true, qmsRecord: { select: { businessCode: true } },
@@ -70,34 +89,35 @@ export async function getAssignedItems(userId: string | null | undefined, filter
       },
     }) : [],
     wants("CHANGE_CONTROL") ? prisma.changeControlTask.findMany({
-      where: { ...pendingChangeTask(userId), changeControl: { finalStatus: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
+      where: { ...pendingChangeTask(userId), plannedDate: within, changeControl: { finalStatus: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
       select: { id: true, description: true, plannedDate: true, changeControl: recordRef },
     }) : [],
     wants("COMPLAINT") ? prisma.complaintCapaPlan.findMany({
-      where: { ...pendingComplaintCapaPlan(userId), complaint: { status: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
+      where: { ...pendingComplaintCapaPlan(userId), plannedExecutionDate: within, complaint: { status: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
       select: { id: true, description: true, plannedExecutionDate: true, complaint: recordRef },
     }) : [],
     wants("COMPLAINT") ? prisma.complaintDerivedAction.findMany({
-      where: { responsibleUserId: userId, complaint: { status: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
+      where: { responsibleUserId: userId, plannedExecutionDate: within, complaint: { status: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
       select: { id: true, actionType: true, description: true, plannedExecutionDate: true, complaint: recordRef },
     }) : [],
     wants("AUDIT") ? prisma.auditFindingAction.findMany({
       where: {
         ...pendingAuditAction(userId),
+        targetDate: within,
         finding: { isActive: true, audit: { qmsRecord: qms, ...(filters.department ? { departments: { some: { departmentId: filters.department, isActive: true } } } : {}) } },
       },
       select: { id: true, description: true, targetDate: true, finding: { select: { reference: true, audit: recordRef } } },
     }) : [],
     wants("PNT") ? prisma.controlledDocumentRevision.findMany({
-      where: { ...pendingPntRevision(userId), document: pntDoc },
+      where: { ...pendingPntRevision(userId), document: pntDoc, ...(within ? { AND: [{ OR: [{ preparationTargetDate: within }, { reviewTargetDate: within }, { approvalTargetDate: within }] }] } : {}) },
       select: {
         id: true, revisionCode: true, status: true, titleSnapshot: true, baseCodeSnapshot: true,
         preparationTargetDate: true, reviewTargetDate: true, approvalTargetDate: true,
         document: { select: { id: true, baseCode: true, title: true } },
       },
     }) : [],
-    wants("PNT") ? prisma.controlledDocument.findMany({
-      where: { ...pntDoc, ...pendingPntPeriodicReview(userId, today) },
+    wants("PNT") && !all ? prisma.controlledDocument.findMany({
+      where: { ...pntDoc, ...pendingPntPeriodicReview(userId ?? "", today) },
       select: {
         id: true, baseCode: true, title: true,
         revisions: {

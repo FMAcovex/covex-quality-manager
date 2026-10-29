@@ -24,17 +24,18 @@ export const isAssignedToMe = (value: string | undefined | null) => value === AS
 export const pendingAuditActionStatuses = ["OPEN", "IN_PROGRESS", "PENDING_VERIFICATION"] as const;
 const doneTaskStates: Prisma.ChangeControlTaskStateWhereInput = { status: { in: ["COMPLETED", "NOT_APPLICABLE"] } };
 
-export const pendingDeviationCapaPlan = (userId: string) => ({ responsibleUserId: userId, proposalStatus: "PROPOSED" }) satisfies Prisma.DeviationCapaPlanWhereInput;
-export const pendingComplaintCapaPlan = (userId: string) => ({ responsibleUserId: userId, proposalStatus: "PROPOSED" }) satisfies Prisma.ComplaintCapaPlanWhereInput;
-export const pendingChangeTask = (userId: string) => ({ responsibleUserId: userId, states: { none: doneTaskStates } }) satisfies Prisma.ChangeControlTaskWhereInput;
-export const pendingAuditAction = (userId: string) => ({ responsibleUserId: userId, isActive: true, status: { in: [...pendingAuditActionStatuses] }, finding: { isActive: true } }) satisfies Prisma.AuditFindingActionWhereInput;
+// Con `userId` sin definir, Prisma no filtra por responsable: es la misma regla para todos (calendario, D-120).
+export const pendingDeviationCapaPlan = (userId: string | undefined) => ({ responsibleUserId: userId, proposalStatus: "PROPOSED" }) satisfies Prisma.DeviationCapaPlanWhereInput;
+export const pendingComplaintCapaPlan = (userId: string | undefined) => ({ responsibleUserId: userId, proposalStatus: "PROPOSED" }) satisfies Prisma.ComplaintCapaPlanWhereInput;
+export const pendingChangeTask = (userId: string | undefined) => ({ responsibleUserId: userId, states: { none: doneTaskStates } }) satisfies Prisma.ChangeControlTaskWhereInput;
+export const pendingAuditAction = (userId: string | undefined) => ({ responsibleUserId: userId, isActive: true, status: { in: [...pendingAuditActionStatuses] }, finding: { isActive: true } }) satisfies Prisma.AuditFindingActionWhereInput;
 
 /** Revisiones que bloquean la tarea de revisión periódica: ya hay una nueva revisión en marcha. */
 export const pntRevisionInProgressStatuses: ControlledDocumentRevisionStatus[] = ["DRAFT", "IN_REVIEW", "PENDING_APPROVAL", "APPROVED_PENDING_EFFECTIVE"];
 export const pntPeriodicHorizonDays = 30;
 const DAY = 86_400_000;
 
-export const pendingPntRevision = (userId: string) => ({
+export const pendingPntRevision = (userId: string | undefined) => ({
   OR: revisionFunctions.map(f => ({ status: f.status, [`${f.key}ResponsibleUserId`]: userId })),
 }) satisfies Prisma.ControlledDocumentRevisionWhereInput;
 
