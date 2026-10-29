@@ -110,6 +110,7 @@
     "returns-r4b:ui:smoke": "tsx scripts/smoke-returns-r4b-ui.ts",
     "oos:smoke": "node --conditions=react-server --import tsx scripts/smoke-oos.ts",
     "assigned-d102:smoke": "node --conditions=react-server --import tsx scripts/smoke-assigned-d102.ts",
+    "change-models:ui:smoke": "tsx scripts/smoke-change-models-ui.ts",
     "calendar-d120:smoke": "node --conditions=react-server --import tsx scripts/smoke-calendar-d120.ts",
     "template-install-d105:smoke": "node --conditions=react-server --import tsx scripts/smoke-template-install-d105.ts",
     "oos:ui:smoke": "tsx scripts/smoke-oos-ui.ts",

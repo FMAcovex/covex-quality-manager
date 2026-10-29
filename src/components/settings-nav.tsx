@@ -6,6 +6,7 @@ const items=[
   ["/settings/versions","Versiones y plantillas"],
   ["/settings/parameters","Parámetros"],
   ["/settings/alerts","Vencimientos"],
+  ["/settings/change-models","Modelos de cambio"],
   ["/settings/history","Historial"],
 ] as const;
 

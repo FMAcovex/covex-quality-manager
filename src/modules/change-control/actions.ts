@@ -12,6 +12,7 @@ import {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { createdFromModelNote } from "./models";
 import { responsibleUsersProblem } from "@/lib/auth/app-users";
 import { optionalUserId } from "@/lib/qms/responsible-user";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
@@ -355,13 +356,22 @@ async function createChangeControlActionAuthenticatedContent(
         );
       }
 
+      // D-122: si el alta partió de un modelo, queda anotado en el historial con la versión que se
+      // usó al prerrellenar (aunque el modelo se haya editado o desactivado después).
+      const fromModelId = formData.get("fromModelId");
+      const current = typeof fromModelId === "string" && fromModelId
+        ? await tx.changeControlModel.findUnique({ where: { id: fromModelId }, select: { name: true, version: true } })
+        : null;
+      const usedVersion = Number(formData.get("fromModelVersion"));
+      const model = current ? { name: current.name, version: Number.isInteger(usedVersion) && usedVersion >= 1 && usedVersion <= current.version ? usedVersion : current.version } : null;
+      const createdReason = v.finalStatus === "DRAFT" ? "Borrador inicial del Control de Cambio" : "Alta del Control de Cambio";
       await tx.changeHistory.create({
         data: {
           qmsRecordId: qmsRecord.id,
           changedByText: parsed.actor,
           fieldPath: "__created__",
           newValue: jsonValue(scalarSnapshot(v)),
-          reason: v.finalStatus === "DRAFT" ? "Borrador inicial del Control de Cambio" : "Alta del Control de Cambio",
+          reason: model ? `${createdReason} ${createdFromModelNote(model)}` : createdReason,
           source: "UI",
         },
       });

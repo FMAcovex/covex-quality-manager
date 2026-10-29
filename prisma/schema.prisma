@@ -418,6 +418,7 @@ model QmsRelation {
 }
 
 model Department {
+  changeControlModels ChangeControlModel[]
   authorizedUsers     AuthUserDepartment[]
   id                  String               @id @default(uuid())
   code                String               @unique
@@ -1467,6 +1468,31 @@ model AlertRule {
   updatedAt   DateTime      @updatedAt
 
   @@index([module, kind, isActive])
+}
+
+/// D-122: modelos de Control de cambios (configuración). Solo prerrellenan el alta; el usuario
+/// revisa y guarda. Capturado por B2 como configuración, igual que AlertRule.
+model ChangeControlModel {
+  id                String               @id @default(uuid())
+  name              String
+  purpose           String?              @db.Text
+  isActive          Boolean              @default(true)
+  departmentId      String?
+  department        Department?          @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  scope             ChangeControlScope[] @default([])
+  otherScope        String?
+  changeDescription String?              @db.Text
+  justification     String?              @db.Text
+  providedDocuments String?              @db.Text
+  tasks             Json                 @default("[]")
+  version           Int                  @default(1)
+  createdByText     String
+  updatedByText     String
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([isActive, name])
+  @@index([departmentId])
 }
 
 model ConfigurationChange {

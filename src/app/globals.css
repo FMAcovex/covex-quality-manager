@@ -2997,3 +2997,10 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
 .audit-trail-empty { height: auto; padding-block: 22px; }
 .audit-trail-empty p { margin: 0; }
 @media (max-width: 759px) { .record-actions > .muted-note { text-align: left; } }
+
+/* D-122: modelos de Control de cambios. */
+.change-model-item { border-top: 1px solid var(--border); padding: 12px 0; }
+.change-model-item > summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.change-model-item[open] > summary { margin-bottom: 12px; }
+.change-model-picker { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 14px; }
+.change-model-picker .field { min-width: 260px; }

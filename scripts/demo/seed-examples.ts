@@ -327,6 +327,20 @@ async function pntAssignments() {
   }
 }
 
+// D-122: dos modelos de Control de cambios de ejemplo. Solo se crean si aún no hay ninguno.
+async function changeModels() {
+  if (await prisma.changeControlModel.count()) return;
+  const models = [
+    { name: "Cambio de proveedor de material (ejemplo)", purpose: "Sustitución o alta de un proveedor de materia prima o material de acondicionamiento.", scope: ["SUPPLIER", "MATERIAL"] as const,
+      changeDescription: "Material afectado, proveedor actual, proveedor propuesto y diferencias conocidas entre ambos.", justification: "Motivo del cambio (suministro, coste, calidad…) y beneficio esperado.", providedDocuments: "Especificaciones y certificado de análisis del proveedor propuesto.",
+      tasks: ["Evaluar y aprobar al proveedor propuesto", "Actualizar la especificación del material", "Analizar los primeros lotes recibidos"] },
+    { name: "Sustitución de equipo (ejemplo)", purpose: "Cambio de un equipo por otro modelo o fabricante.", scope: ["EQUIPMENT", "DOCUMENTATION"] as const,
+      changeDescription: "Equipo actual, equipo nuevo y uso previsto.", justification: "Motivo de la sustitución (fin de soporte, avería, capacidad…).", providedDocuments: "Ficha técnica del equipo nuevo.",
+      tasks: ["Cualificación IQ/OQ del equipo nuevo", "Actualizar el PNT de uso del equipo", "Formar al personal usuario"] },
+  ];
+  for (const model of models) await prisma.changeControlModel.create({ data: { ...model, scope: [...model.scope], createdByText: ACTOR, updatedByText: ACTOR } });
+}
+
 // Datos que exige el Plan de auditoría externa (entidad, fecha, introducción, alcance, duración y programa).
 const SUPPLIER_PLAN = {
   estuches: {
@@ -395,6 +409,7 @@ async function main() {
     await changeFollowupVersions();
     await supplierAuditPlans();
     await pntAssignments();
+    await changeModels();
     return;
   }
   departments = Object.fromEntries((await prisma.department.findMany({ select: { id: true, code: true, name: true } })).map((d) => [d.code, d]));
@@ -408,6 +423,7 @@ async function main() {
   const o = await oos();
   await pnts();
   await pntAssignments();
+  await changeModels();
 
   // CAPA creadas desde su origen (registradas en el plan de la desviación o la reclamación).
   const devLimpieza = await prisma.deviation.findUniqueOrThrow({ where: { qmsRecordId: dev.limpieza.id } });
