@@ -68,6 +68,7 @@
       "ux-v3:ui:smoke",
       "ux-v4:ui:smoke",
       "change-models:ui:smoke",
+      "deviation-tools:ui:smoke",
       "be1b:smoke",
       "phase4b3-c:smoke"
     ]

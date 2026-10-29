@@ -24,3 +24,11 @@ describe("Desviaciones · turno en la versión (D-116)", () => {
     expect(snapshot.deviation.shift).toBeNull();
   });
 });
+
+describe("Desviaciones · herramientas de investigación en la versión (D-123)", () => {
+  it("la foto de la versión conserva las herramientas; sin ellas queda null", () => {
+    const tools = { fiveWhys: { problem: "P", whys: ["a"], status: "HYPOTHESIS" }, causes: [] };
+    expect(serializeDeviationVersion({ ...record, investigationTools: tools } as never).deviation.investigationTools).toEqual(tools);
+    expect(serializeDeviationVersion(record as never).deviation.investigationTools).toBeNull();
+  });
+});

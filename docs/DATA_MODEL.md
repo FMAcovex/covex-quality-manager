@@ -537,3 +537,14 @@ La migración `20261029000100_change_control_models` añade `ChangeControlModel`
 - `version` (sube con cada cambio), `createdByText`, `updatedByText`.
 
 Tiene las mismas guardas y captura B2 que `AlertRule` (raíz de administración/configuración). Cada alta o cambio deja una fila de `ConfigurationChange` con `entityType = ChangeControlModel` y `entityKey` = id del modelo. No hay FK desde `ChangeControl`: el historial de alta guarda el nombre y la versión del modelo usado.
+
+## Herramientas de investigación de Desviaciones (D-123)
+
+La migración `20261029000200_deviation_investigation_tools` añade `Deviation.investigationTools` (JSONB, opcional; un CHECK exige objeto). Contiene:
+- `fiveWhys`: `{ problem, whys[≤5], status }` o `null`;
+- `causes[≤60]`: `{ method: ISHIKAWA|BRAINSTORMING, category: 6M|null, text, evidence, status }`.
+
+`status` es `HYPOTHESIS`, `DISCARDED` o `CONFIRMED`. Sin contenido se guarda `null`.
+
+Se valida en servidor (`src/modules/deviations/investigation-tools.ts`), entra en la versión del expediente y la captura B2 lo registra como JSON no crítico. No se usa en el Anexo III.
+

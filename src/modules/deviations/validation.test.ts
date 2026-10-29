@@ -151,3 +151,24 @@ describe("Desviaciones · turno (D-116)", () => {
   });
 });
 
+
+describe("Desviaciones · herramientas de investigación (D-123)", () => {
+  const tools = { fiveWhys: null, causes: [{ method: "ISHIKAWA", category: "METHOD", text: "Instrucción sin verificación", evidence: "Revisión del PNT", status: "CONFIRMED" }] };
+  it("son opcionales y se guardan validadas", () => {
+    expect(parseDeviationForm(baseForm()).values.investigationTools).toBeNull();
+    const form = baseForm();
+    form.set("investigationToolsJson", JSON.stringify(tools));
+    const parsed = parseDeviationForm(form);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.values.investigationTools).toEqual(tools);
+  });
+
+  it("un valor no válido bloquea el guardado con el error en su campo, también en borrador", () => {
+    const form = baseForm();
+    form.set("status", "DRAFT");
+    form.set("investigationToolsJson", JSON.stringify({ causes: [{ ...tools.causes[0], category: null }] }));
+    const parsed = parseDeviationForm(form);
+    expect(parsed.errors).toContain("Cada causa del Ishikawa necesita su categoría (6M).");
+    expect(parsed.fieldIssues.investigationToolsJson).toEqual(["Cada causa del Ishikawa necesita su categoría (6M)."]);
+  });
+});

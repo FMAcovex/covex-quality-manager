@@ -18,6 +18,7 @@ import capaPlanContract from "../../../ops/backup/audit-contract-capa-plan.json"
 import deviationShiftContract from "../../../ops/backup/audit-contract-deviation-shift.json";
 import pntAssignmentsContract from "../../../ops/backup/audit-contract-pnt-assignments.json";
 import changeModelsContract from "../../../ops/backup/audit-contract-change-control-models.json";
+import deviationToolsContract from "../../../ops/backup/audit-contract-deviation-investigation-tools.json";
 import { AuditEngineError } from "./domain";
 import { canonicalAuditJson } from "./canonical-json";
 
@@ -125,7 +126,15 @@ export async function assertAuditProtection(tx: Prisma.TransactionClient) {
     const [installed] = await tx.$queryRaw<{count:bigint}[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261029000100_change_control_models' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     if (installed?.count) throw new AuditEngineError("PROTECTION");
   }
-  const contract = changeModels?.present ? changeModelsContract : pntAssignments?.present ? pntAssignmentsContract : deviationShift?.present ? deviationShiftContract : capaPlan?.present ? capaPlanContract : responsibleUsers?.present ? responsibleUsersContract : additionalLots?.present ? additionalLotsContract : rootCause?.present ? rootCauseContract : oosSigned?.present ? oosSignedContract : oosDocuments?.present ? oosDocumentsContract : oos?.present ? oosContract : review?.present ? cContract : critical?.present ? criticalContract : version?.staging ? stagingContract : version?.documents ? documentContract : version?.composition ? integrationContract : version?.capture ? captureContract : version?.present ? b2Contract : b1Contract;
+  // D-123: herramientas de investigación de Desviaciones; solo amplía la política de captura.
+  const [deviationTools] = version?.capture
+    ? await tx.$queryRaw<{present:boolean}[]>`SELECT EXISTS(SELECT 1 FROM "AuditCaptureFieldPolicy" WHERE "entityType"='Deviation' AND "fieldPath"='investigationTools') AS present`
+    : [{ present: false }];
+  if (!deviationTools?.present && version?.migrations) {
+    const [installed] = await tx.$queryRaw<{count:bigint}[]>`SELECT count(*) AS count FROM "_prisma_migrations" WHERE migration_name='20261029000200_deviation_investigation_tools' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`;
+    if (installed?.count) throw new AuditEngineError("PROTECTION");
+  }
+  const contract = deviationTools?.present ? deviationToolsContract : changeModels?.present ? changeModelsContract : pntAssignments?.present ? pntAssignmentsContract : deviationShift?.present ? deviationShiftContract : capaPlan?.present ? capaPlanContract : responsibleUsers?.present ? responsibleUsersContract : additionalLots?.present ? additionalLotsContract : rootCause?.present ? rootCauseContract : oosSigned?.present ? oosSignedContract : oosDocuments?.present ? oosDocumentsContract : oos?.present ? oosContract : review?.present ? cContract : critical?.present ? criticalContract : version?.staging ? stagingContract : version?.documents ? documentContract : version?.composition ? integrationContract : version?.capture ? captureContract : version?.present ? b2Contract : b1Contract;
   const guardTables = version?.present && "guardTables" in contract ? contract.guardTables : [];
   const tables = await tx.$queryRaw<{ name: string; owner: string }[]>`SELECT c.relname AS name,pg_get_userbyid(c.relowner) AS owner FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=ANY(${contract.tables}::text[])`;
   if (tables.length !== contract.tables.length || new Set(tables.map(t=>t.owner)).size !== 1) throw new AuditEngineError("PROTECTION");
@@ -145,7 +154,7 @@ export async function assertAuditProtection(tx: Prisma.TransactionClient) {
   if (version?.capture) {
     const [metadata] = await tx.$queryRaw<{ policy: unknown }[]>`SELECT jsonb_agg(jsonb_build_object('entityType',t."entityType",'primaryKey',t."primaryKey",'rootPaths',t."rootPaths",'captureMode',t."captureMode",'fields',
       (SELECT jsonb_agg(jsonb_build_object('fieldPath',f."fieldPath",'valueType',f."valueType",'transform',f.transform,'critical',f.critical) ORDER BY f."fieldPath") FROM "AuditCaptureFieldPolicy" f WHERE f."entityType"=t."entityType")) ORDER BY t."entityType") AS policy FROM "AuditCaptureTablePolicy" t`;
-    const metadataContract = changeModels?.present ? changeModelsContract : pntAssignments?.present ? pntAssignmentsContract : deviationShift?.present ? deviationShiftContract : capaPlan?.present ? capaPlanContract : responsibleUsers?.present ? responsibleUsersContract : additionalLots?.present ? additionalLotsContract : rootCause?.present ? rootCauseContract : oosSigned?.present ? oosSignedContract : oosDocuments?.present ? oosDocumentsContract : oos?.present ? oosContract : version?.staging ? stagingContract : version?.documents ? documentContract : captureContract;
+    const metadataContract = deviationTools?.present ? deviationToolsContract : changeModels?.present ? changeModelsContract : pntAssignments?.present ? pntAssignmentsContract : deviationShift?.present ? deviationShiftContract : capaPlan?.present ? capaPlanContract : responsibleUsers?.present ? responsibleUsersContract : additionalLots?.present ? additionalLotsContract : rootCause?.present ? rootCauseContract : oosSigned?.present ? oosSignedContract : oosDocuments?.present ? oosDocumentsContract : oos?.present ? oosContract : version?.staging ? stagingContract : version?.documents ? documentContract : captureContract;
     if (createHash("sha256").update(canonicalAuditJson(metadata?.policy)).digest("hex")!==metadataContract.capturePolicySha256) throw new AuditEngineError("PROTECTION");
   }
 }

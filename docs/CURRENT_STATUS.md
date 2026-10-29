@@ -136,6 +136,20 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Herramientas de investigación en Desviaciones (2026-10-29, D-123):**
+- **Qué cambia:**
+  - en «E. Investigación», el desplegable «Herramientas de análisis» con 5 porqués, Ishikawa (6M) y brainstorming;
+  - cada causa es hipótesis, descartada o confirmada;
+  - «Usar como causa raíz» copia una causa confirmada a «Causa raíz» y marca su categoría y metodología;
+  - la ficha las muestra en «Investigación»;
+  - el Anexo III no cambia.
+- **Base de datos:** migración `20261029000200_deviation_investigation_tools` con la columna JSON `Deviation.investigationTools`, capturada por B2 (contrato `B2_DEVIATION_INVESTIGATION_TOOLS`).
+- **Demo:** dos desviaciones de ejemplo con Ishikawa y 5 porqués.
+- **Comprobado** con:
+  - pruebas unitarias (lectura, validación, «Usar como causa raíz», formulario y versión);
+  - el contrato de captura;
+  - el smoke `deviation-tools:ui:smoke`, que cubre solo lo confirmado, la categoría propuesta, el guardado, la ficha y que no hay cambios espurios.
+
 **Modelos de Control de cambios (2026-10-29, D-122):**
 - **Qué cambia:**
   - Configuración → «Modelos de cambio» para crear y editar casos tipo;
