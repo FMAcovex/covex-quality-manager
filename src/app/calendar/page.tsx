@@ -27,7 +27,7 @@ function href(query: CalendarQuery, changes: Partial<Record<"view" | "date" | "m
 
 function Entry({ item }: { item: CalendarItem }) {
   return <Link className={`calendar-item calendar-module-${item.module.toLowerCase()}${item.overdue ? " is-overdue" : ""}`} href={item.href} title={`${moduleLabel[item.module]} · ${item.code} · ${item.label} — ${item.detail}`}>
-    <strong>{item.code}</strong> <span>{item.label}</span>{item.overdue && <em className="calendar-overdue-tag">Vencida</em>}
+    {item.overdue && <em className="calendar-overdue-tag">Vencida</em>}<strong>{item.code}</strong> <span>{item.label}</span>
   </Link>;
 }
 
@@ -112,7 +112,7 @@ async function CalendarPageAuthenticatedContent({ searchParams }: { searchParams
       <section className="calendar-agenda" aria-label="Plazos por día">
         {!result.items.length && <p className="muted-note">No hay plazos en este periodo con estos filtros.</p>}
         {[...groups.entries()].map(([key, items]) => <div className="calendar-agenda-day" key={key}>
-          <h3>{longDay.format(new Date(`${key}T00:00:00Z`))}</h3>
+          <h3>{longDay.format(new Date(`${key}T00:00:00Z`)).replace(/^./, (c) => c.toUpperCase())}</h3>
           {items.map((item) => <Entry key={item.key} item={item} />)}
         </div>)}
       </section>
