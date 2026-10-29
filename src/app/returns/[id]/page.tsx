@@ -1,4 +1,5 @@
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
+import { PreviewLink } from "@/components/preview-link";
 import { uploadReturnEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
 import { ActorField } from "@/components/permissions";
@@ -773,7 +774,7 @@ async function ReturnDetailPageAuthenticatedContent({
                         href={`/api/returns/${id}/signed-pdf/annex-iii`}
                       >
                         Descargar PDF firmado
-                      </a></PermissionGate>
+                      </a><PreviewLink className="button" href={`/api/returns/${id}/signed-pdf/annex-iii`} mimeType="application/pdf" /></PermissionGate>
                     ) : null}
                   </div>
                   <div className="return-signed-document">
@@ -832,7 +833,7 @@ async function ReturnDetailPageAuthenticatedContent({
                         href={`/api/returns/${id}/signed-pdf/annex-v`}
                       >
                         Descargar PDF devuelto
-                      </a></PermissionGate>
+                      </a><PreviewLink className="button" href={`/api/returns/${id}/signed-pdf/annex-v`} mimeType="application/pdf" /></PermissionGate>
                     ) : null}
                   </div>
                   <div className="return-signed-document">
@@ -907,7 +908,7 @@ async function ReturnDetailPageAuthenticatedContent({
                         <strong className="document-generation-type">
                           {item.documentType}
                         </strong>
-                        {item.fileName?<PermissionGate permission="DOWNLOAD"><a className="button small" href={`/api/returns/${id}/documents/${item.id}`}>Descargar archivo histórico</a></PermissionGate>:null}
+                        {item.fileName?<PermissionGate permission="DOWNLOAD"><a className="button small" href={`/api/returns/${id}/documents/${item.id}`}>Descargar archivo histórico</a><PreviewLink href={`/api/returns/${id}/documents/${item.id}`} mimeType={item.mimeType} /></PermissionGate>:null}
                         <small className="muted-note document-generation-meta">
                           Generado {formatDate(item.generatedAt)} ·{" "}
                           {item.generatedByText ?? "Usuario no informado"}

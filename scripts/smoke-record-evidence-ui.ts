@@ -66,6 +66,16 @@ async function main() {
     assert.equal(download.headers()["x-content-type-options"], "nosniff");
     assert.match(download.headers()["content-disposition"] ?? "", /attachment; filename="etiqueta_lote.png"/);
     assert.deepEqual(Buffer.from(await download.body()), png);
+    // D-121: «Ver» abre la misma ruta en línea (pestaña nueva), con las mismas comprobaciones.
+    const preview = page.getByRole("link", { name: "Ver (se abre en una pestaña nueva)" });
+    assert.equal(await preview.getAttribute("href"), `${href}?preview=1`);
+    assert.equal(await preview.getAttribute("target"), "_blank");
+    const inline = await page.request.get(`${base}${href}?preview=1`);
+    assert.equal(inline.status(), 200);
+    assert.match(inline.headers()["content-disposition"] ?? "", /^inline; filename="etiqueta_lote.png"/);
+    assert.equal(inline.headers()["x-checksum-sha256"], stored.checksum);
+    assert.equal(inline.headers()["x-content-type-options"], "nosniff");
+    assert.deepEqual(Buffer.from(await inline.body()), png);
     // Una evidencia de otro expediente no se sirve por esta ruta.
     assert.equal((await page.request.get(`${base}/api/qms/${record.qmsRecordId}/evidence/${randomUUID()}`)).status(), 404);
 

@@ -1,4 +1,5 @@
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
+import { PreviewLink } from "@/components/preview-link";
 import { uploadChangeControlEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
 import { PermissionGate } from "@/components/permissions";
@@ -428,7 +429,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
                           {signedDocument ? (
                             <PermissionGate permission="DOWNLOAD"><a className="button small" href={`/api/changes/${id}/versions/${item.sequenceNumber}/signed-pdf`}>
                               Descargar PDF firmado
-                            </a></PermissionGate>
+                            </a><PreviewLink href={`/api/changes/${id}/versions/${item.sequenceNumber}/signed-pdf`} mimeType="application/pdf" /></PermissionGate>
                           ) : null}
                         </div>
                         {version ? (

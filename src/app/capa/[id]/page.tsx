@@ -1,4 +1,5 @@
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
+import { PreviewLink } from "@/components/preview-link";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
 import { ResponsibleUserNote } from "@/components/responsible-user-note";
 import { uploadCapaEvidenceAction } from "@/lib/qms/record-evidence-actions";
@@ -527,7 +528,7 @@ async function CapaDetailPageAuthenticatedContent({
                             href={`/api/capa/${id}/versions/${item.sequenceNumber}/signed-pdf`}
                           >
                             Descargar PDF firmado · {followupLabel(item.sequenceNumber)}
-                          </a></PermissionGate>
+                          </a><PreviewLink href={`/api/capa/${id}/versions/${item.sequenceNumber}/signed-pdf`} mimeType="application/pdf" /></PermissionGate>
                         ) : null}
                       </div>
                       <div className="version-signed-document">

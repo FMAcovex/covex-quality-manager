@@ -1,4 +1,5 @@
 import { getSimilarDeviations } from "@/modules/deviations/recurrence-queries";
+import { PreviewLink } from "@/components/preview-link";
 import { SimilarDeviations } from "@/modules/deviations/components/similar-deviations";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
@@ -682,7 +683,7 @@ async function DeviationDetailPageAuthenticatedContent({
                                 href={`/api/deviations/${id}/versions/${item.sequenceNumber}/signed-pdf`}
                               >
                                 Descargar PDF firmado {versionLabel(item.sequenceNumber)}
-                              </a></PermissionGate>
+                              </a><PreviewLink href={`/api/deviations/${id}/versions/${item.sequenceNumber}/signed-pdf`} mimeType="application/pdf" /></PermissionGate>
                             ) : null}
                           </div>
                           <div className="version-signed-document">
