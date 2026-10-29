@@ -25,6 +25,18 @@ async function main() {
     const tools = qa.locator("details.investigation-tools");
     await tools.locator("summary").click();
 
+    // Al abrir no se muestra ninguna herramienta: se elige la que se va a usar y solo se ve esa.
+    const legends = () => tools.locator("fieldset.investigation-tool legend").allTextContents();
+    assert.deepEqual(await legends(), [], "ninguna herramienta hasta elegirla");
+    await tools.getByRole("button", { name: "Ishikawa (6M)", exact: true }).click();
+    assert.deepEqual(await legends(), ["Ishikawa (6M)"], "solo la herramienta elegida");
+    // Se puede volver a ocultar mientras no tenga contenido.
+    await tools.getByRole("button", { name: "Ishikawa (6M)", exact: true }).click();
+    assert.deepEqual(await legends(), []);
+    await tools.getByRole("button", { name: "5 porqués", exact: true }).click();
+    await tools.getByRole("button", { name: "Ishikawa (6M)", exact: true }).click();
+    assert.deepEqual(await legends(), ["5 porqués", "Ishikawa (6M)"]);
+
     // 5 porqués.
     await tools.getByLabel("Problema").fill("Etiqueta errónea en el lote");
     await tools.getByLabel("¿Por qué? 1").fill("Se usó la plantilla anterior");
@@ -48,7 +60,15 @@ async function main() {
     await use.click();
     assert.equal(await qa.locator('textarea[name="rootCause"]').inputValue(), `${marker} instrucción sin verificación de plantilla`);
 
+    // Con contenido, una herramienta no se puede ocultar.
+    const ishikawaToggle = tools.getByRole("button", { name: "Ishikawa (6M)", exact: true });
+    assert.equal(await ishikawaToggle.getAttribute("aria-disabled"), "true");
+    await ishikawaToggle.click({ force: true });
+    assert.deepEqual(await legends(), ["5 porqués", "Ishikawa (6M)"], "con contenido no se oculta");
+    assert.equal(await ishikawaToggle.getAttribute("aria-pressed"), "true");
+
     // Quitar la única idea no cierra el panel mientras se edita.
+    await tools.getByRole("button", { name: "Brainstorming", exact: true }).click();
     await tools.getByRole("button", { name: "+ Añadir idea" }).click();
     await tools.getByRole("button", { name: "Quitar causa 2 sin descripción" }).click();
     assert.equal(await tools.evaluate((node) => (node as HTMLDetailsElement).open), true, "el panel sigue abierto");
@@ -92,6 +112,14 @@ async function main() {
     // Guardar sin tocarlas no las anota como cambio (el orden de claves del JSON no cuenta).
     await go(`/deviations/${saved.id}/edit`);
     await qa.locator("details.investigation-tools[open]").waitFor();
+    assert.deepEqual(await qa.locator("details.investigation-tools fieldset.investigation-tool legend").allTextContents(), ["5 porqués", "Ishikawa (6M)", "Brainstorming"], "lo guardado se muestra sin elegirlo");
+    // Vaciar una herramienta cargada para reescribirla no la hace desaparecer mientras se edita.
+    const editTools = qa.locator("details.investigation-tools");
+    for (const label of ["Problema", "¿Por qué? 1", "¿Por qué? 2"]) await editTools.getByLabel(label).fill("");
+    assert.deepEqual(await editTools.locator("fieldset.investigation-tool legend").allTextContents(), ["5 porqués", "Ishikawa (6M)", "Brainstorming"], "la herramienta vaciada sigue visible");
+    await editTools.getByLabel("Problema").fill("Etiqueta errónea en el lote");
+    await editTools.getByLabel("¿Por qué? 1").fill("Se usó la plantilla anterior");
+    await editTools.getByLabel("¿Por qué? 2").fill("La plantilla anterior seguía disponible en el sistema");
     const historyBefore = await prisma.changeHistory.count({ where: { qmsRecordId, fieldPath: "investigationTools" } });
     await qa.locator('textarea[name="howHappened"]').fill("Durante la revisión del lote");
     await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
