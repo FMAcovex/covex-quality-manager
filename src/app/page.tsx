@@ -172,7 +172,10 @@ async function HomePageAuthenticatedContent({
       <section id="dashboard-my-tasks" className="dashboard-section dashboard-my-tasks" aria-labelledby="dashboard-my-tasks-title">
         <div className="dashboard-heading">
           <div><p className="eyebrow">Tu trabajo</p><h2 id="dashboard-my-tasks-title">Mis tareas</h2></div>
-          {assignedItems.length > myTasks.length ? <Link href={queryLink({ ...query, tasks: "mine" }, 1) + "#dashboard-tasks"} className="summary-link">Ver todas ({number(assignedItems.length)}) →</Link> : null}
+          <div className="dashboard-heading-links">
+            <Link href="/calendar?scope=mine" className="summary-link">Ver en el calendario →</Link>
+            {assignedItems.length > myTasks.length ? <Link href={queryLink({ ...query, tasks: "mine" }, 1) + "#dashboard-tasks"} className="summary-link">Ver todas ({number(assignedItems.length)}) →</Link> : null}
+          </div>
         </div>
         <div className="dashboard-task-summary" aria-label="Resumen de mis tareas">
           <span className="dashboard-deadline-count overdue"><strong>{number(assignedCounts.overdue)}</strong> vencidas</span>
@@ -244,7 +247,10 @@ async function HomePageAuthenticatedContent({
         <section id="dashboard-tasks" className="dashboard-section dashboard-task-section" aria-labelledby="dashboard-tasks-title">
           <div className="dashboard-heading">
             <div><p className="eyebrow">Acción y seguimiento</p><h2 id="dashboard-tasks-title">{mine ? "Asignadas a mí" : "Plazos vencidos y próximos"}</h2></div>
-            <PermissionGate permission="READ" module="SYSTEM"><Link href="/settings/alerts" className="summary-link">Reglas de alertas →</Link></PermissionGate>
+            <div className="dashboard-heading-links">
+              <Link href="/calendar" className="summary-link">Ver calendario →</Link>
+              <PermissionGate permission="READ" module="SYSTEM"><Link href="/settings/alerts" className="summary-link">Reglas de alertas →</Link></PermissionGate>
+            </div>
           </div>
           {mine ? (
             <>

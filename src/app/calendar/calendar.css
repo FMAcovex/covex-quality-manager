@@ -1,0 +1,65 @@
+/* Calendario de vencimientos (D-120). Mismo lenguaje visual que el panel: superficies blancas,
+   bordes suaves y texto en tinta; el color del módulo solo marca el borde izquierdo de cada plazo. */
+.calendar-workspace {
+  --calendar-deviation: #0d63ce;
+  --calendar-capa: #7a4cc2;
+  --calendar-change_control: #0f7b6c;
+  --calendar-complaint: #b4580e;
+  --calendar-return: #8a6d1a;
+  --calendar-audit: #3d5a80;
+  --calendar-oos: #a63d74;
+  --calendar-pnt: #5a6880;
+}
+.calendar-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+.calendar-filters .field { min-width: 170px; }
+.calendar-filters .filter-actions { display: flex; gap: 8px; }
+.calendar-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin: 4px 0 8px; }
+.calendar-nav { display: flex; gap: 6px; }
+.calendar-title { margin: 0; font-size: 19px; letter-spacing: -.02em; }
+.calendar-summary { margin: 0 0 0 auto; font-size: var(--font-md); color: var(--muted); }
+.calendar-summary-overdue { color: var(--danger-strong); }
+
+.calendar-grid { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
+.calendar-weekdays, .calendar-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.calendar-weekdays div { padding: 8px 10px; font-size: var(--font-sm); font-weight: 600; color: var(--muted); background: var(--surface-soft); border-bottom: 1px solid var(--border); }
+.calendar-day { min-height: 118px; padding: 6px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.calendar-week .calendar-day:last-child { border-right: 0; }
+.calendar-week:last-child .calendar-day { border-bottom: 0; }
+.calendar-view-week .calendar-day { min-height: 320px; }
+.calendar-day.is-outside { background: var(--surface-soft); }
+.calendar-day.is-outside .calendar-day-number { color: #9aa6b8; }
+.calendar-day-number { font-size: var(--font-sm); font-weight: 600; color: var(--muted); align-self: flex-start; min-width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: var(--radius-pill); }
+.calendar-day.is-today .calendar-day-number { background: var(--blue); color: #fff; }
+
+.calendar-item { display: block; padding: 4px 6px; border-left: 3px solid var(--muted); border-radius: 4px; background: var(--surface-soft); color: var(--text); font-size: var(--font-xs); line-height: 1.35; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-item:hover, .calendar-item:focus-visible { background: var(--blue-soft); }
+.calendar-item strong { font-weight: 600; }
+.calendar-item.is-overdue { background: #fdeeee; }
+.calendar-overdue-tag { margin-left: 4px; font-style: normal; font-weight: 600; color: var(--danger-strong); }
+.calendar-more { font-size: var(--font-xs); color: var(--blue-dark); }
+
+.calendar-module-deviation { border-left-color: var(--calendar-deviation); }
+.calendar-module-capa { border-left-color: var(--calendar-capa); }
+.calendar-module-change_control { border-left-color: var(--calendar-change_control); }
+.calendar-module-complaint { border-left-color: var(--calendar-complaint); }
+.calendar-module-return { border-left-color: var(--calendar-return); }
+.calendar-module-audit { border-left-color: var(--calendar-audit); }
+.calendar-module-oos { border-left-color: var(--calendar-oos); }
+.calendar-module-pnt { border-left-color: var(--calendar-pnt); }
+
+/* En escritorio se ve la cuadrícula; en móvil, la lista por días. */
+.calendar-agenda { display: none; }
+.calendar-agenda-day { padding: 10px 0; border-bottom: 1px solid var(--border); display: grid; gap: 6px; }
+.calendar-agenda-day h3 { margin: 0; font-size: var(--font-base); text-transform: capitalize; }
+.calendar-agenda .calendar-item { white-space: normal; font-size: var(--font-md); }
+
+.calendar-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; list-style: none; padding: 0; margin: 14px 0 0; font-size: var(--font-sm); color: var(--muted); }
+.calendar-legend li { padding-left: 8px; border-left: 3px solid var(--muted); }
+.calendar-legend li.is-overdue { border-left-color: var(--danger-strong); color: var(--danger-strong); }
+
+@media (max-width: 768px) {
+  .calendar-grid { display: none; }
+  .calendar-agenda { display: block; }
+  .calendar-summary { margin-left: 0; }
+  .calendar-filters .field { min-width: 0; flex: 1 1 140px; }
+}
