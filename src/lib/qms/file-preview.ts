@@ -22,8 +22,11 @@ export function previewHref(href: string) {
   return href + (href.includes("?") ? "&" : "?") + "preview=1";
 }
 
-/** Cabecera Content-Disposition: `inline` solo si se pide la vista previa y el tipo lo admite. */
+/**
+ * Cabecera Content-Disposition: `inline` solo si se pide la vista previa y el tipo lo admite. El
+ * nombre se limpia aquí también para que ningún carácter rompa la cabecera.
+ */
 export function contentDisposition(request: Request, fileName: string, mimeType: string | null | undefined) {
   const inline = new URL(request.url).searchParams.get("preview") === "1" && canPreview(mimeType);
-  return `${inline ? "inline" : "attachment"}; filename="${fileName}"`;
+  return `${inline ? "inline" : "attachment"}; filename="${fileName.replace(/[^a-zA-Z0-9._-]+/g, "_") || "archivo"}"`;
 }

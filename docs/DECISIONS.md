@@ -1338,5 +1338,5 @@ Decisión del responsable de Calidad: ver los archivos sin descargarlos, con la 
   - los archivos históricos de Devoluciones;
   - los documentos recibidos de Auditorías.
 - **Solo PDF, PNG y JPG.** Word y Excel se siguen descargando: el navegador no los muestra y convertirlos exigiría instalar un conversor en el servidor.
-- **Misma ruta y mismos permisos que la descarga.** La vista previa añade `?preview=1` y la ruta responde «en línea» solo si el tipo guardado del archivo es PDF o imagen. Se mantienen las comprobaciones de la descarga: permiso de descargar, huella SHA-256 del archivo y `nosniff`.
+- **Misma ruta y mismos permisos que la descarga.** La vista previa añade `?preview=1` y la ruta responde «en línea» solo si el tipo guardado del archivo es PDF o imagen. Se mantienen las mismas comprobaciones que la descarga de cada ruta (permiso de descargar y, donde la ruta la hace, la huella SHA-256), y todas las rutas cambiadas envían `nosniff`.
 - No cambia ningún dato ni plantilla.
