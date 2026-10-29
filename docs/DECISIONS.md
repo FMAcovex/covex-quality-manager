@@ -1321,9 +1321,9 @@ Decisión del responsable de Calidad: ver en un calendario los plazos de todos l
     - próxima revisión de auditorías y hallazgos;
     - revisión de la revisión vigente de cada PNT (el ciclo de vida manda si existe);
   - las auditorías planificadas aún no realizadas;
-  - las acciones pendientes con fecha prevista de todos los responsables, con la misma regla de pendiente que «Mis tareas» (D-102 y D-118).
+  - las acciones pendientes con fecha prevista de cualquier responsable (también las que aún no tienen), con la misma regla de pendiente que «Mis tareas» (D-102 y D-118).
 
-  La eficacia CAPA pendiente, que depende de la antelación configurada en su regla de alerta, no aparece.
+  El calendario muestra las fechas aunque su regla de alerta esté desactivada: las reglas deciden qué se avisa en el panel, no qué fechas existen. La eficacia CAPA pendiente, cuya fecha depende de la antelación configurada en su regla, no aparece.
 - **«Solo mis tareas»:** exactamente «Mis tareas» con fecha. Indica cuántas no tienen fecha y cuántas vencieron antes del periodo.
 - **Filtros:** área (módulo), departamento y vista. Lo vencido se marca en rojo y con la palabra «Vencida».
-- **No guarda nada:** solo lee. Mismos permisos de consulta que el panel. En móvil se muestra como lista por días.
+- **No guarda nada:** solo lee. Mismos permisos de consulta que el panel. En móvil se muestra como lista por días. El recuento incluye los días de los meses vecinos que se ven en la cuadrícula.

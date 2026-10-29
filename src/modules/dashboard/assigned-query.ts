@@ -41,8 +41,8 @@ export async function getAssignedItems(userId: string | null | undefined, filter
 }
 
 /**
- * Calendario (D-120): las mismas acciones pendientes que «Mis tareas», de todos los responsables
- * (con usuario vinculado o solo con nombre escrito) y con fecha prevista en [from, to). No incluye
+ * Calendario (D-120): las mismas acciones pendientes que «Mis tareas», de cualquier responsable
+ * (con usuario vinculado, solo con nombre escrito o sin responsable) y con fecha prevista en [from, to). No incluye
  * lo que no tiene fecha ni lo que el calendario toma de las reglas del panel (seguimientos y
  * revisión de PNT vigentes).
  */

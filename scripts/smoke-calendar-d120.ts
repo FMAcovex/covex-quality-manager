@@ -78,8 +78,8 @@ async function main() {
     assert.deepEqual(mine(own.items).map((item) => item.date.toISOString().slice(0, 10)), [`${year}-03-12`]);
     assert(own.undated >= 1, "La acción sin fecha se cuenta como no visible");
 
-    // Mismas claves que el panel para los plazos que comparten regla.
-    const dashboard = await getDashboardData({ year: null, department: depA.id, module: "ALL", state: "ALL", taskView: "all", page: 1, asOf });
+    // Mismas claves que el panel para los plazos que comparten regla («próximos»: lo anterior de la base queda como vencido).
+    const dashboard = await getDashboardData({ year: null, department: depA.id, module: "ALL", state: "ALL", taskView: "upcoming", page: 1, asOf });
     const dashboardKeys = new Set(dashboard.tasks.map((task) => task.key));
     for (const key of [`DEV-F-${devOpen.id}`, `PNT-R-${pnt.id}`]) {
       assert(dashboardKeys.has(key), "El panel muestra " + key);

@@ -28,7 +28,7 @@
 .calendar-view-week .calendar-day { min-height: 320px; }
 .calendar-view-week .calendar-item { white-space: normal; }
 .calendar-day.is-outside { background: var(--surface-soft); }
-.calendar-day.is-outside .calendar-day-number { color: #9aa6b8; }
+.calendar-day.is-outside .calendar-day-number { color: var(--muted); font-weight: 400; }
 .calendar-day-number { font-size: var(--font-sm); font-weight: 600; color: var(--muted); align-self: flex-start; min-width: 24px; height: 24px; display: inline-grid; place-items: center; border-radius: var(--radius-pill); }
 .calendar-day.is-today .calendar-day-number { background: var(--blue); color: #fff; }
 

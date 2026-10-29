@@ -86,22 +86,23 @@ async function CalendarPageAuthenticatedContent({ searchParams }: { searchParams
           <Link className="button small" href={href(query, { date: calendarDayKey(shiftAnchor(query.view, query.anchor, 1)) })} aria-label={query.view === "week" ? "Semana siguiente" : "Mes siguiente"}>Siguiente →</Link>
         </div>
         <h2 className="calendar-title">{calendarTitle(query.view, query.anchor)}</h2>
-        <p className="calendar-summary" aria-live="polite"><strong>{result.items.length}</strong> plazos{overdue ? <> · <strong className="calendar-summary-overdue">{overdue}</strong> vencidos</> : null}</p>
+        <p className="calendar-summary" aria-live="polite"><strong>{result.items.length}</strong> plazos en pantalla{overdue ? <> · <strong className="calendar-summary-overdue">{overdue}</strong> vencidos</> : null}</p>
       </div>
 
       {query.scope === "mine"
         ? <p className="section-help">Tus tareas de «Mis tareas» con fecha prevista.{result.undated ? ` ${result.undated} sin fecha no aparecen en el calendario.` : ""}{result.overdueBefore ? ` ${result.overdueBefore} vencidas antes de este periodo.` : ""} <Link href="/?tasks=mine#dashboard-tasks">Ver «Mis tareas»</Link></p>
         : <p className="section-help">Lo vencido antes de este periodo sigue en los plazos del panel. <Link href="/?tasks=overdue#dashboard-tasks">Ver plazos vencidos</Link></p>}
 
-      <div className={`calendar-grid calendar-view-${query.view}`} role="grid" aria-label={calendarTitle(query.view, query.anchor)}>
+      <div className={`calendar-grid calendar-view-${query.view}`} role="table" aria-label={calendarTitle(query.view, query.anchor)}>
         <div className="calendar-weekdays" role="row">{weekdays.map((day) => <div key={day} role="columnheader">{day}</div>)}</div>
         {weeks.map((week) => <div className="calendar-week" role="row" key={calendarDayKey(week[0])}>
           {week.map((day) => {
             const key = calendarDayKey(day), items = groups.get(key) ?? [];
             const shown = query.view === "month" ? items.slice(0, MONTH_CELL_LIMIT) : items;
             const outside = query.view === "month" && day.getUTCMonth() !== month;
-            return <div role="gridcell" key={key} className={`calendar-day${outside ? " is-outside" : ""}${key === today ? " is-today" : ""}`} aria-label={`${longDay.format(day)}: ${items.length} plazos`}>
-              <span className="calendar-day-number">{day.getUTCDate()}</span>
+            return <div role="cell" key={key} className={`calendar-day${outside ? " is-outside" : ""}${key === today ? " is-today" : ""}`} aria-current={key === today ? "date" : undefined}>
+              <span className="calendar-day-number" aria-hidden="true">{day.getUTCDate()}</span>
+              <span className="visually-hidden">{longDay.format(day)}{items.length ? `: ${items.length} plazos` : ""}</span>
               {shown.map((item) => <Entry key={item.key} item={item} />)}
               {items.length > shown.length && <Link className="calendar-more" href={href(query, { view: "week", date: key })}>+{items.length - shown.length} más</Link>}
             </div>;
