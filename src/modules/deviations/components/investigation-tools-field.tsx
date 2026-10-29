@@ -39,6 +39,12 @@ const TOOLS: [Tool, string][] = [["FIVE_WHYS", "5 porqués"], ["ISHIKAWA", "Ishi
 /** Nombre accesible de una fila: su texto (recortado) o su posición si aún no tiene. */
 const rowName = (cause: ToolCause, position: number) => cause.text.trim() ? `«${cause.text.trim().slice(0, 60)}»` : `causa ${position} sin descripción`;
 
+function toolInUse(state: State, tool: Tool) {
+  return tool === "FIVE_WHYS"
+    ? !!state.problem.trim() || state.whys.some((why) => why.trim())
+    : state.causes.some((cause) => cause.method === tool);
+}
+
 /**
  * D-123: 5 porqués, Ishikawa (6M) y brainstorming dentro de «E. Investigación». Ayudan a ordenar
  * la investigación; no se imprimen en el Anexo III. Solo una causa marcada como confirmada se
@@ -55,13 +61,15 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
   const [message, setMessage] = useState("");
   // Abierto si al cargar ya hay contenido o un error; después lo decide quien edita.
   const [open, setOpen] = useState(() => !!error || !!serialize(initial).fiveWhys || initial.causes.length > 0);
-  // Solo se muestran las herramientas elegidas y las que ya tienen contenido (nunca se oculta trabajo hecho).
-  const [chosen, setChosen] = useState<Tool[]>([]);
-  const inUse = (tool: Tool) => tool === "FIVE_WHYS"
-    ? !!state.problem.trim() || state.whys.some((why) => why.trim())
-    : state.causes.some((cause) => cause.method === tool);
+  // Solo se muestran las herramientas elegidas y las que tienen contenido (nunca se oculta trabajo hecho).
+  // Las que ya traían contenido al cargar cuentan como elegidas: vaciarlas para reescribir no las oculta.
+  const [chosen, setChosen] = useState<Tool[]>(() => TOOLS.map(([tool]) => tool).filter((tool) => toolInUse(initial, tool)));
+  const inUse = (tool: Tool) => toolInUse(state, tool);
   const visible = (tool: Tool) => chosen.includes(tool) || inUse(tool);
-  const toggleTool = (tool: Tool) => setChosen((current) => current.includes(tool) ? current.filter((item) => item !== tool) : [...current, tool]);
+  const toggleTool = (tool: Tool) => {
+    if (inUse(tool)) return;
+    setChosen((current) => current.includes(tool) ? current.filter((item) => item !== tool) : [...current, tool]);
+  };
   const full = state.causes.length >= MAX_TOOL_CAUSES;
 
   const updateCause = (uid: number, patch: Partial<ToolCause>) => setState((current) => ({ ...current, causes: current.causes.map((cause) => cause.uid === uid ? { ...cause, ...patch } : cause) }));
@@ -147,7 +155,7 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
       <div className="investigation-tool-picker" role="group" aria-label="Herramientas que se muestran">
         <span>Herramienta:</span>
         {TOOLS.map(([tool, label]) => (
-          <button key={tool} type="button" className="button small" aria-pressed={visible(tool)} disabled={inUse(tool)} aria-describedby={inUse(tool) ? PICKER_NOTE_ID : undefined} onClick={() => toggleTool(tool)}>{label}</button>
+          <button key={tool} type="button" className="button small" aria-pressed={visible(tool)} aria-disabled={inUse(tool) || undefined} aria-describedby={inUse(tool) ? PICKER_NOTE_ID : undefined} onClick={() => toggleTool(tool)}>{label}</button>
         ))}
       </div>
       <small className="muted-note investigation-tool-picker-note" id={PICKER_NOTE_ID}>Elige la herramienta que vas a usar; puedes añadir otra cuando quieras. Las que ya tienen contenido se muestran siempre.</small>

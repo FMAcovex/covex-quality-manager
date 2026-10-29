@@ -3025,7 +3025,7 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
 .investigation-tool-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
 .investigation-tool-picker > span { font-weight: 600; font-size: var(--font-sm); }
 .investigation-tool-picker .button[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--blue-dark); }
-.investigation-tool-picker .button[aria-pressed="true"]:disabled { opacity: 1; cursor: default; }
+.investigation-tool-picker .button[aria-disabled="true"] { cursor: default; }
 .investigation-tool-picker-note { display: block; margin-top: 4px; }
 .investigation-tools-message { margin: 6px 0; color: var(--success); font-size: var(--font-sm); }
 .investigation-tools .field-error { margin: 4px 0; color: #a5281f; font-size: 12px; }

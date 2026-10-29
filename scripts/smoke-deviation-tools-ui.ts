@@ -62,7 +62,9 @@ async function main() {
 
     // Con contenido, una herramienta no se puede ocultar.
     const ishikawaToggle = tools.getByRole("button", { name: "Ishikawa (6M)", exact: true });
-    assert.equal(await ishikawaToggle.isDisabled(), true);
+    assert.equal(await ishikawaToggle.getAttribute("aria-disabled"), "true");
+    await ishikawaToggle.click({ force: true });
+    assert.deepEqual(await legends(), ["5 porqués", "Ishikawa (6M)"], "con contenido no se oculta");
     assert.equal(await ishikawaToggle.getAttribute("aria-pressed"), "true");
 
     // Quitar la única idea no cierra el panel mientras se edita.
@@ -111,6 +113,13 @@ async function main() {
     await go(`/deviations/${saved.id}/edit`);
     await qa.locator("details.investigation-tools[open]").waitFor();
     assert.deepEqual(await qa.locator("details.investigation-tools fieldset.investigation-tool legend").allTextContents(), ["5 porqués", "Ishikawa (6M)", "Brainstorming"], "lo guardado se muestra sin elegirlo");
+    // Vaciar una herramienta cargada para reescribirla no la hace desaparecer mientras se edita.
+    const editTools = qa.locator("details.investigation-tools");
+    for (const label of ["Problema", "¿Por qué? 1", "¿Por qué? 2"]) await editTools.getByLabel(label).fill("");
+    assert.deepEqual(await editTools.locator("fieldset.investigation-tool legend").allTextContents(), ["5 porqués", "Ishikawa (6M)", "Brainstorming"], "la herramienta vaciada sigue visible");
+    await editTools.getByLabel("Problema").fill("Etiqueta errónea en el lote");
+    await editTools.getByLabel("¿Por qué? 1").fill("Se usó la plantilla anterior");
+    await editTools.getByLabel("¿Por qué? 2").fill("La plantilla anterior seguía disponible en el sistema");
     const historyBefore = await prisma.changeHistory.count({ where: { qmsRecordId, fieldPath: "investigationTools" } });
     await qa.locator('textarea[name="howHappened"]').fill("Durante la revisión del lote");
     await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
