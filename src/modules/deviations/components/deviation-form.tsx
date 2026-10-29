@@ -3,6 +3,7 @@ import { SimilarDeviations } from "@/modules/deviations/components/similar-devia
 import type { SimilarDeviation } from "@/modules/deviations/recurrence-queries";
 import { AdditionalLotsField } from "@/components/additional-lots-field";
 import { RootCauseCategoryField } from "@/components/root-cause-category-field";
+import { InvestigationToolsField } from "./investigation-tools-field";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 import { dispositionChoice, dispositionOptions } from "@/modules/deviations/disposition";
@@ -507,6 +508,7 @@ export function DeviationForm({
         <div className="form-grid">
           <TextArea label="Investigación realizada / resultado y conclusiones" name="investigation" defaultValue={formDefaults.investigation} required issues={issues.investigation} />
           <TriStateSelect label="¿Investigación concluyente?" name="investigationConclusive" defaultValue={formDefaults.investigationConclusive} required issues={issues.investigationConclusive} />
+          <InvestigationToolsField defaultValue={defaults.investigationTools} submittedJson={typeof submitted?.investigationToolsJson === "string" ? submitted.investigationToolsJson : undefined} error={issues.investigationToolsJson?.[0]} />
         </div>
       </section>
 

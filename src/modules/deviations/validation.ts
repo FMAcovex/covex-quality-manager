@@ -1,5 +1,6 @@
 import { parseAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
+import { parseInvestigationTools } from "./investigation-tools";
 import { z } from "zod";
 import { rowUserIdSchema } from "@/lib/qms/responsible-user";
 import type { CapaPlanInput, ImmediateActionInput } from "@/modules/deviations/types";
@@ -158,6 +159,8 @@ export function parseDeviationForm(formData: FormData) {
   const supplierLot = text(formData, "supplierLot");
   const additional = parseAdditionalLots(formData.get("additionalLotsJson"));
   if (additional.error) addIssue("additionalLotsJson", additional.error, true);
+  const tools = parseInvestigationTools(formData.get("investigationToolsJson"));
+  if (tools.error) addIssue("investigationToolsJson", tools.error, true);
   const affectedEquipmentLine = text(formData, "affectedEquipmentLine");
   const otherOrigin = text(formData, "otherOrigin");
 
@@ -305,6 +308,7 @@ export function parseDeviationForm(formData: FormData) {
       investigationMethods: methods,
       rootCause,
       rootCauseCategories: rootCauseCategoriesFrom(formData),
+      investigationTools: tools.tools,
       recurrentRootCause,
       recurrenceDetails,
       classification: deviationClassification,

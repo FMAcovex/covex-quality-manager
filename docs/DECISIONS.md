@@ -1358,3 +1358,29 @@ Decisión del responsable de Calidad: empezar los Controles de cambios habituale
   - los modelos no se borran, se desactivan;
   - cambiar un modelo no modifica los expedientes ya creados.
 - Solo Controles de cambios. Otros módulos, si se piden, en una PR propia.
+
+## D-123 — Herramientas de investigación guiadas en Desviaciones (2026-10-30)
+
+Decisión del responsable de Calidad: ayudar a ordenar la investigación de una desviación con 5 porqués, Ishikawa (6M) y brainstorming. No hay anexo del PNT para estas herramientas, así que se trabajan dentro del formulario.
+
+- **Dónde:** en «E. Investigación» del formulario de Desviaciones, en un desplegable opcional «Herramientas de análisis». La ficha las muestra en solo lectura dentro de «Investigación».
+- **Qué contienen:**
+  - 5 porqués: problema y hasta cinco «¿por qué?», con el estado de la cadena;
+  - Ishikawa: causas posibles agrupadas por las 6M (sin «No determinada»);
+  - brainstorming: ideas con categoría 6M opcional;
+  - cada causa con evidencia o comprobación (opcional) y estado.
+- **Hipótesis frente a confirmada.** Cada causa es una hipótesis hasta que quien investiga la marca como descartada o confirmada. La aplicación no cambia estados ni propone causas: sin IA.
+- **«Usar como causa raíz»** solo está disponible para una causa confirmada (o el último porqué de una cadena confirmada). Con un clic copia el texto a «Causa raíz» sin duplicarlo y marca su categoría 6M y la metodología. No guarda nada: se revisa la redacción y se guarda como siempre.
+- **No cambia el Anexo III.** Las herramientas no se imprimen; la causa raíz, la categoría y la metodología siguen siendo los campos de siempre.
+- **Trazabilidad:**
+  - se guardan con el expediente (campo `investigationTools`), en sus versiones y en el historial de modificaciones;
+  - la captura B2 las registra como un campo JSON no crítico;
+  - guardar sin tocarlas no las anota como cambio.
+- **Validación en servidor:**
+  - estados y herramientas cerrados;
+  - categoría 6M obligatoria en Ishikawa;
+  - hasta 60 causas y 5 porqués;
+  - 1000 caracteres por texto.
+
+  Un valor no válido bloquea el guardado, también en borrador.
+- Solo Desviaciones. Otros módulos, si se piden, en una PR propia.

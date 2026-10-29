@@ -5,6 +5,7 @@ import { authorizedAction } from "@/lib/auth/action-guard";
 import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import { InvestigationMethod, Prisma, QmsRecordType, RootCauseCategory } from "@prisma/client";
+import { storedInvestigationTools } from "./investigation-tools";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -176,6 +177,7 @@ async function createDeviationActionAuthenticatedContent(
           investigationMethods: v.investigationMethods as InvestigationMethod[],
           rootCause: v.rootCause,
           rootCauseCategories: v.rootCauseCategories as RootCauseCategory[],
+          investigationTools: v.investigationTools ?? Prisma.DbNull,
           recurrentRootCause: v.recurrentRootCause,
           recurrenceDetails: v.recurrenceDetails,
           classification: v.classification,
@@ -383,6 +385,7 @@ async function updateDeviationActionAuthenticatedContent(
     investigationMethods: existing.investigationMethods,
     rootCause: existing.rootCause,
     rootCauseCategories: existing.rootCauseCategories,
+    investigationTools: storedInvestigationTools(existing.investigationTools),
     recurrentRootCause: existing.recurrentRootCause,
     recurrenceDetails: existing.recurrenceDetails,
     classification: existing.classification,
@@ -551,6 +554,7 @@ async function updateDeviationActionAuthenticatedContent(
           investigationMethods: v.investigationMethods as InvestigationMethod[],
           rootCause: v.rootCause,
           rootCauseCategories: v.rootCauseCategories as RootCauseCategory[],
+          investigationTools: v.investigationTools ?? Prisma.DbNull,
           recurrentRootCause: v.recurrentRootCause,
           recurrenceDetails: v.recurrenceDetails,
           classification: v.classification,

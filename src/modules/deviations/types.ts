@@ -1,3 +1,4 @@
+import type { InvestigationTools } from "./investigation-tools";
 import type { AdditionalLot } from "@/lib/qms/additional-lots";
 
 export type FormState = {
@@ -67,6 +68,8 @@ export type DeviationFormDefaults = {
   investigationMethods?: string[];
   rootCause?: string;
   rootCauseCategories?: string[];
+  /** D-123: herramientas de análisis de la investigación. */
+  investigationTools?: InvestigationTools | null;
   recurrentRootCause?: "YES" | "NO" | "NA" | "";
   recurrenceDetails?: string;
   classification?: "CRITICAL" | "MAJOR" | "MINOR" | "";

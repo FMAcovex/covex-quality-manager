@@ -3,6 +3,8 @@ import { PreviewLink } from "@/components/preview-link";
 import { SimilarDeviations } from "@/modules/deviations/components/similar-deviations";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
+import { storedInvestigationTools } from "@/modules/deviations/investigation-tools";
+import { InvestigationToolsSummary } from "@/modules/deviations/components/investigation-tools-summary";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
 import { uploadDeviationEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
@@ -458,6 +460,7 @@ async function DeviationDetailPageAuthenticatedContent({
               <div id={reviewTarget.investigation.anchorId} className="info-item full review-target"><dt><span>Investigación realizada</span><ReviewMarker target={reviewTarget.investigation} /></dt><dd className="prose-value">{text(deviation.investigation)}</dd></div>
               <div className="info-item"><dt>Resultado</dt><dd>{investigationResultLabel(deviation.investigationConclusive)}</dd></div>
             </dl>
+            <InvestigationToolsSummary tools={storedInvestigationTools(deviation.investigationTools)} />
           </div>
           <div className="card root-cause-card">
             <h2>Causa raíz</h2>
