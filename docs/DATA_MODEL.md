@@ -526,3 +526,14 @@ La migración aditiva `20261027000100_pnt_assignments` añade columnas opcionale
 - `ControlledDocumentRevision`: para cada función (`preparation` = Elabora, `review` = Revisa, `approval` = Aprueba), `…Responsible` (texto), `…ResponsibleUserId` (UUID, FK a `AuthUser`) y `…TargetDate` (DATE).
 
 Las FK son ON DELETE RESTRICT, con índice por cada usuario. Las 11 columnas se añaden a la política de captura B2 (contrato `B2_PNT_ASSIGNMENTS`). No registran quién elaboró, revisó o aprobó el documento aprobado ni cambian el estado de la revisión.
+
+## Modelos de Control de cambios (D-122)
+
+La migración `20261029000100_change_control_models` añade `ChangeControlModel`, configuración que solo prerrellena el alta de un Control de cambios:
+- `name`, `purpose`, `isActive`;
+- `departmentId` (FK opcional a `Department`), `scope` (`ChangeControlScope[]`), `otherScope`;
+- `changeDescription`, `justification`, `providedDocuments`;
+- `tasks` (JSONB, lista de textos);
+- `version` (sube con cada cambio), `createdByText`, `updatedByText`.
+
+Tiene las mismas guardas y captura B2 que `AlertRule` (raíz de administración/configuración). Cada alta o cambio deja una fila de `ConfigurationChange` con `entityType = ChangeControlModel` y `entityKey` = id del modelo. No hay FK desde `ChangeControl`: el historial de alta guarda el nombre y la versión del modelo usado.

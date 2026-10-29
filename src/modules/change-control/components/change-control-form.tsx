@@ -148,6 +148,8 @@ export function ChangeControlForm({
   returnTo,
   detailTab,
   baselineLocked = false,
+  fromModelId,
+  fromModelVersion,
 }: {
   mode: "create" | "edit";
   action: (state: ChangeControlFormState, formData: FormData) => Promise<ChangeControlFormState>;
@@ -159,6 +161,10 @@ export function ChangeControlForm({
   returnTo?: string;
   detailTab?: string;
   baselineLocked?: boolean;
+  /** D-122: el alta se prerrellenó con este modelo; se anota en el historial al guardar. */
+  fromModelId?: string;
+  /** Versión del modelo que se mostró al prerrellenar (el modelo puede cambiar antes de guardar). */
+  fromModelVersion?: number;
 }) {
   const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -202,6 +208,8 @@ export function ChangeControlForm({
     <UnsavedChangesGuard pending={pending} saveError={Boolean(state.error)} />
     <InvalidFieldsSummary />
       <input type="hidden" name="returnTo" value={returnTo ?? ""}/>
+      {fromModelId ? <input type="hidden" name="fromModelId" value={fromModelId}/> : null}
+      {fromModelId && fromModelVersion ? <input type="hidden" name="fromModelVersion" value={fromModelVersion}/> : null}
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
       <input type="hidden" name="tasksJson" value={JSON.stringify(tasks)} />
 

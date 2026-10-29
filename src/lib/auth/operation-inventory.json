@@ -687,6 +687,33 @@
       "dynamicCreate": false
     },
     {
+      "file": "src/modules/change-control/model-actions.ts",
+      "name": "createChangeModelAction",
+      "params": [
+        "previous",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/change-control/model-actions.ts",
+      "name": "updateChangeModelAction",
+      "params": [
+        "id",
+        "previous",
+        "fd"
+      ],
+      "module": "SYSTEM",
+      "permission": "MANAGE_CONFIGURATION",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
       "file": "src/modules/configuration/admin-actions.ts",
       "name": "createDepartmentAction",
       "params": [
@@ -1709,6 +1736,7 @@
     "src/app/returns/page.tsx",
     "src/app/search/page.tsx",
     "src/app/settings/alerts/page.tsx",
+    "src/app/settings/change-models/page.tsx",
     "src/app/settings/catalogs/page.tsx",
     "src/app/settings/history/page.tsx",
     "src/app/settings/page.tsx",

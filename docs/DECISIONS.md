@@ -1340,3 +1340,21 @@ Decisión del responsable de Calidad: ver los archivos sin descargarlos, con la 
 - **Solo PDF, PNG y JPG.** Word y Excel se siguen descargando: el navegador no los muestra y convertirlos exigiría instalar un conversor en el servidor.
 - **Misma ruta y mismos permisos que la descarga.** La vista previa añade `?preview=1` y la ruta responde «en línea» solo si el tipo guardado del archivo es PDF o imagen. Se mantienen las mismas comprobaciones que la descarga de cada ruta (permiso de descargar y, donde la ruta la hace, la huella SHA-256), y todas las rutas cambiadas envían `nosniff`.
 - No cambia ningún dato ni plantilla.
+
+## D-122 — Modelos de Control de cambios (2026-10-29)
+
+Decisión del responsable de Calidad: empezar los Controles de cambios habituales desde un caso tipo.
+
+- **Configuración → Modelos de cambio.** Calidad crea y edita modelos con permiso de gestionar la configuración. Cada modelo tiene:
+  - nombre, «cuándo usarlo» y estado (activo o inactivo);
+  - lo que prerrellena: departamento, alcance (y «Otros»), textos guía de descripción, justificación y documentos aportados, y las acciones habituales del plan de ejecución (una por línea, sin responsable ni fecha).
+- **«Partir de un modelo»** en el alta de un Control de cambios. El formulario sale prerrellenado y todo se puede cambiar. No se guarda nada hasta pulsar Guardar.
+- **Nunca prerrellena:** fechas, código, solicitante, decisión de la solicitud, evaluación, clasificación, implicaciones, resultado del Dictamen ni seguimiento. Son datos de cada caso.
+- **Trazabilidad:**
+  - el historial de alta del cambio indica «desde el modelo X (versión N)», con la versión que se usó al prerrellenar;
+  - cada cambio de un modelo sube su versión y queda en el historial de configuración (identificado por el id del modelo, no por su nombre) y en la captura del audit trail, como las reglas de alerta;
+  - los nombres no se repiten (sin distinguir mayúsculas);
+  - un departamento desactivado no se puede elegir, pero el modelo que ya lo tenía lo conserva al editarse;
+  - los modelos no se borran, se desactivan;
+  - cambiar un modelo no modifica los expedientes ya creados.
+- Solo Controles de cambios. Otros módulos, si se piden, en una PR propia.

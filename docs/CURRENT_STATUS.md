@@ -136,6 +136,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Modelos de Control de cambios (2026-10-29, D-122):**
+- **Qué cambia:**
+  - Configuración → «Modelos de cambio» para crear y editar casos tipo;
+  - en «Nuevo Control de Cambio», «Partir de un modelo» prerrellena departamento, alcance, textos guía y acciones habituales del plan;
+  - nada se guarda hasta pulsar Guardar, y el historial de alta indica el modelo.
+- **Base de datos:** migración `20261029000100_change_control_models` con la tabla `ChangeControlModel`, capturada por B2 como configuración (contrato `B2_CHANGE_CONTROL_MODELS`).
+- **Demo:** dos modelos de ejemplo.
+- **Comprobado** con pruebas unitarias (formulario, límites y qué se prerrellena), contrato de captura y el smoke `change-models:ui:smoke`.
+
 **Vista previa de PDF e imágenes (2026-10-29, D-121):**
 - **Qué cambia:** botón «Ver» junto a la descarga de evidencias, PDF firmados, archivos históricos de Devoluciones y documentos recibidos de Auditorías. Abre PDF, PNG o JPG en una pestaña nueva; Word y Excel se siguen descargando.
 - **Seguridad:** misma ruta, permisos y comprobación de huella que la descarga; solo se sirve «en línea» si el tipo guardado es PDF o imagen.

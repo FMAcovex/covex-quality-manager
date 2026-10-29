@@ -138,3 +138,38 @@ it("installs templates from Configuración (D-105) only by catalog fingerprint: 
   expect((await asQa(()=>installTemplatesAction(state,upload()))).error).toMatch(/al menos un archivo/);
   expect({templates:await inspector.templateVersion.count(),history:await inspector.configurationChange.count(),operations:await inspector.auditOperation.count()}).toEqual(before);
 });
+
+it("captures Change Control models (D-122) inside the TR02 boundary: evidence by id, readable validation errors, rollback and replay",async()=>{
+  const {createChangeModelAction,updateChangeModelAction}=await import("../../src/modules/change-control/model-actions");
+  const state={};
+  const fields=(values:Record<string,string>={})=>form({name:"Synthetic capture model",isActive:"true",changeDescription:"Synthetic description",tasks:"First action\nSecond action",actor:"Spoofed executor",...values});
+  expect(await asQa(()=>createChangeModelAction(state,fields()))).toMatchObject({saved:true});
+  const model=await inspector.changeControlModel.findFirstOrThrow({where:{name:"Synthetic capture model"}});
+  expect(model.tasks).toEqual(["First action","Second action"]);
+  const history=await inspector.configurationChange.findFirstOrThrow({where:{entityType:"ChangeControlModel",entityKey:model.id}});
+  expect(history.action).toBe("CREATE");expect(history.changedByText).toBe(qa.name);
+  const evidence=await inspector.auditOperationEvidence.findFirstOrThrow({where:{configurationChangeId:history.id},include:{operation:{include:{events:true}}}});
+  expect(evidence.operation.operation).toBe("TR02");expect(evidence.operation.actorUserId).toBe(qa.id);
+  expect(evidence.operation.events.some(e=>e.entityType==="ChangeControlModel"&&e.entityId===model.id&&e.fieldPath==="name")).toBe(true);
+  const counts=async()=>({operations:await inspector.auditOperation.count(),history:await inspector.configurationChange.count(),models:await inspector.changeControlModel.count()});
+  const before=await counts();
+  expect(await asQa(()=>createChangeModelAction(state,fields({name:"SYNTHETIC CAPTURE MODEL"})))).toMatchObject({error:"Ya existe un modelo con ese nombre."});
+  expect(await counts()).toEqual(before);
+  await inspector.$executeRawUnsafe('ALTER TABLE "ConfigurationChange" ADD CONSTRAINT b2_capture_model_failure CHECK (action=\'NEVER_SUCCESS\') NOT VALID');
+  try {
+    const failed=await asQa(()=>updateChangeModelAction(model.id,state,fields({name:"Must roll back",updatedAt:model.updatedAt.toISOString()})));
+    expect(failed.error).toBe("No se ha podido guardar el modelo.");
+    expect(await inspector.changeControlModel.findUniqueOrThrow({where:{id:model.id}})).toEqual(model);
+    expect(await counts()).toEqual(before);
+  } finally {await inspector.$executeRawUnsafe('ALTER TABLE "ConfigurationChange" DROP CONSTRAINT b2_capture_model_failure');}
+  const requestId=randomUUID();
+  const save=()=>asQa(()=>updateChangeModelAction(model.id,state,fields({isActive:"false",updatedAt:model.updatedAt.toISOString(),_covexAuditRequestId:requestId})));
+  expect(await save()).toMatchObject({saved:true});
+  const saved=await inspector.changeControlModel.findUniqueOrThrow({where:{id:model.id}});
+  expect(saved).toMatchObject({isActive:false,version:2});
+  expect((await inspector.configurationChange.findFirstOrThrow({where:{entityType:"ChangeControlModel",entityKey:model.id,action:"DEACTIVATE"}})).changedByText).toBe(qa.name);
+  const after=await counts();
+  expect(await save()).toMatchObject({saved:true});
+  expect(await counts()).toEqual(after);
+  expect(await inspector.changeControlModel.findUniqueOrThrow({where:{id:model.id}})).toEqual(saved);
+});
