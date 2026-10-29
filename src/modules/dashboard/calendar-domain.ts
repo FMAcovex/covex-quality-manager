@@ -37,11 +37,11 @@ export function parseCalendarQuery(query: Record<string, string | string[] | und
   const rawDate = first(query.date);
   const parsed = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? new Date(`${rawDate}T00:00:00Z`) : null;
   const anchor = parsed && !Number.isNaN(parsed.getTime()) && isoDay(parsed) === rawDate ? parsed : utcDay(today);
-  const module = first(query.module);
+  const area = first(query.module);
   return {
     view: first(query.view) === "week" ? "week" : "month",
     anchor,
-    module: (modules as readonly string[]).includes(module) ? module as DashboardModule : "ALL",
+    module: (modules as readonly string[]).includes(area) ? area as DashboardModule : "ALL",
     department: first(query.department),
     scope: first(query.scope) === "mine" ? "mine" : "all",
   };
