@@ -662,6 +662,7 @@ export function CapaForm({
             label="Observaciones internas"
             name="internalObservations"
             defaultValue={formDefaults.internalObservations}
+            issues={issues.internalObservations}
           />
 
           <label className="field">

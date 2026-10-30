@@ -150,7 +150,9 @@ describe("Controles de cambios: tablas de los textos en su casilla (D-127)", () 
     description: "Descripción ficticia",
     evaluation: "Evaluación ficticia",
     dictamenObservations: "Observaciones ficticias",
-    textTables: { description: [table("Plan")], evaluation: [table("Riesgos")], dictamenObservations: [table("Condiciones")] },
+    justification: "Justificación ficticia",
+    providedDocuments: "Documentos ficticios",
+    textTables: { description: [table("Plan")], justification: [table("Motivos")], providedDocuments: [table("Anexos")], evaluation: [table("Riesgos")], dictamenObservations: [table("Condiciones")] },
   } as ChangeDocumentRecord;
   const inSameCell = (xml: string, text: string, caption: string) => {
     const from = xml.indexOf(text), to = xml.indexOf(caption);
@@ -161,11 +163,13 @@ describe("Controles de cambios: tablas de los textos en su casilla (D-127)", () 
     templates.current = syntheticDocx(grid(1, {}));
     const iii = getZipEntryText(readZip(await generateChangeAnnexIII(withTables)), "word/document.xml");
     expect(inSameCell(iii, "Descripción ficticia", "Tabla 1. Plan")).toBe(true);
-    expect(iii).not.toContain("Tabla 2.");
+    expect(inSameCell(iii, "Justificación ficticia", "Tabla 2. Motivos")).toBe(true);
+    expect(inSameCell(iii, "Documentos ficticios", "Tabla 3. Anexos")).toBe(true);
+    expect(iii).not.toContain("Tabla 4.");
     templates.current = syntheticDocx(grid(4, {}));
     const iv = getZipEntryText(readZip(await generateChangeAnnexIV(withTables)), "word/document.xml");
-    expect(inSameCell(iv, "Evaluación ficticia", "Tabla 2. Riesgos")).toBe(true);
-    expect(inSameCell(iv, "Observaciones ficticias", "Tabla 3. Condiciones")).toBe(true);
+    expect(inSameCell(iv, "Evaluación ficticia", "Tabla 4. Riesgos")).toBe(true);
+    expect(inSameCell(iv, "Observaciones ficticias", "Tabla 5. Condiciones")).toBe(true);
     expect(iv).not.toContain("Tabla 1.");
   });
 });

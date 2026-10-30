@@ -105,6 +105,18 @@ async function main() {
     assert.deepEqual(capa.textTables, { rootCause: expected("Causas evaluadas") });
     await go(`/capa/${capa.id}`);
     await qa.locator(".text-table-view", { hasText: "Tabla 1. Causas evaluadas" }).waitFor();
+    // Volver a guardar sin tocarla no la anota como cambio; cambiar una celda, sí.
+    const resave = async (path: string, url: RegExp, edit?: () => Promise<void>) => {
+      await go(path);
+      if (edit) await edit();
+      await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
+      await qa.waitForURL(url, { timeout: 30000 });
+    };
+    const tableHistory = (qmsRecordId: string) => prisma.changeHistory.count({ where: { qmsRecordId, fieldPath: "textTables" } });
+    await resave(`/capa/${capa.id}/edit`, /\/capa\/[0-9a-f-]{36}(\?|$)/);
+    assert.equal(await tableHistory(capa.qmsRecordId), 0, "CAPA: guardar sin tocar la tabla no anota cambios");
+    await resave(`/capa/${capa.id}/edit`, /\/capa\/[0-9a-f-]{36}(\?|$)/, () => qa.locator("fieldset.text-table-editor").getByLabel(/^Fila 1, columna 2 · /).fill("No conforme"));
+    assert.equal(await tableHistory(capa.qmsRecordId), 1, "CAPA: el cambio de la tabla queda en el historial");
 
     // Control de cambios: tabla en «Evaluación del cambio» (Anexo IV), en la ficha del dictamen.
     await go("/changes/new");
@@ -117,6 +129,10 @@ async function main() {
     assert.deepEqual(change.textTables, { evaluation: expected("Riesgos del cambio") });
     await go(`/changes/${change.id}?tab=dictamen`);
     await qa.locator(".change-evaluation-card .text-table-view", { hasText: "Tabla 1. Riesgos del cambio" }).waitFor();
+    await resave(`/changes/${change.id}/edit`, /\/changes\/[0-9a-f-]{36}(\?|$)/);
+    assert.equal(await tableHistory(change.qmsRecordId), 0, "Cambio: guardar sin tocar la tabla no anota cambios");
+    await resave(`/changes/${change.id}/edit`, /\/changes\/[0-9a-f-]{36}(\?|$)/, () => qa.locator("fieldset.text-table-editor").getByLabel(/^Fila 1, columna 2 · /).fill("No conforme"));
+    assert.equal(await tableHistory(change.qmsRecordId), 1, "Cambio: el cambio de la tabla queda en el historial");
 
     assert.deepEqual(errors, []);
     console.log("D-127 OK (Desviaciones, CAPA y Controles de cambios): tablas bajo el texto, pegado desde Excel, Intro sin guardar, error de título sin perder la tabla, guardado, ficha, sin cambios espurios y cambio real en el historial.");

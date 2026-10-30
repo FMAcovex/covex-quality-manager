@@ -390,7 +390,7 @@ async function CapaDetailPageAuthenticatedContent({
               </table>
             </div>
           ) : <div className="empty-panel">No hay seguimientos de acción registrados.</div>}
-          {capa.actionFollowupObservations || reviewMode ? (
+          {capa.actionFollowupObservations || textTables.actionFollowupObservations || reviewMode ? (
             <div id={reviewTarget.actionFollowupObservations.anchorId} className="info-item full review-target" style={{ marginTop: 16 }}>
               <dt><span>Observaciones</span><ReviewMarker target={reviewTarget.actionFollowupObservations} /></dt>
               <dd className="prose-value"><FormattedText value={capa.actionFollowupObservations} /><TextTablesView items={textTables.actionFollowupObservations} /></dd>
