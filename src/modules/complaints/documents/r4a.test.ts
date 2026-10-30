@@ -27,4 +27,13 @@ describe("R4A · documentos por snapshot",()=>{
   expect(serializeComplaintVersion(source).businessCode).toBe("R/C/001/2026");
  });
  it("resuelve el UUID de plantilla III de reclamaciones",()=>{expect(recordVersionTemplateId("COMPLAINT",{complaint:{annexIIITemplateVersionId:"uuid-iii"}})).toBe("uuid-iii");});
+ it("D-127: con varias acciones vinculadas (filas copiadas), cada tabla va en la casilla de su apartado",async()=>{
+  const table=(title:string)=>({title,columns:["Dato"],rows:[["valor"]]});
+  const xml=getZipEntryText(readZip(await generateComplaintAnnexIII({...record(),textTables:{description:[table("Hechos")],communicationSummary:[table("Llamadas")],conclusion:[table("Cierre")]}} as ComplaintDocumentRecord)),"word/document.xml");
+  const inSameCell=(text:string,caption:string)=>{const from=xml.indexOf(text),to=xml.indexOf(caption);return from>0&&to>from&&!xml.slice(from,to).includes("</w:tc>");};
+  expect(inSameCell("Descripción histórica V01","Tabla 1. Hechos")).toBe(true);
+  expect(inSameCell("COMUNICACIÓN POSTERIOR A ACCIONES","Tabla 2. Llamadas")).toBe(true);
+  expect(inSameCell("CONCLUSIÓN PARTE I","Tabla 3. Cierre")).toBe(true);
+ });
 });
+

@@ -1,4 +1,5 @@
 import { FormWithIndex } from "@/components/form-with-index";
+import { storedTextTables } from "@/lib/forms/text-tables";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { notFound } from "next/navigation";
 import { PermissionGate } from "@/components/permissions";
@@ -73,6 +74,7 @@ async function EditOosPageAuthenticatedContent({ params, searchParams }: { param
     rootCauseCategories: record.rootCauseCategories,
     closedAt: day(record.closedAt),
     internalObservations: str(record.internalObservations),
+    textTables: storedTextTables(record.textTables),
   };
   return <section className="workspace">
     <div className="page-heading"><div><p className="eyebrow">OOS</p><h1>Editar {qmsRecordDisplayCode(record.qmsRecord)}</h1></div></div>

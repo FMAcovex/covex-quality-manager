@@ -5,12 +5,14 @@ import { revalidatePath } from "next/cache";
 import { authorizedAction } from "@/lib/auth/action-guard";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
+import { orderedTextTables } from "@/lib/forms/text-tables";
 import { preserveFormState } from "@/lib/forms/preserved-state";
 import { assignOperationalBusinessCode, OperationalBusinessCodeError } from "@/lib/qms/business-code";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
 import { allowedOutgoingRelationTypes } from "@/lib/qms/relation-rules";
 import { createQmsRelation, deactivateOperationalRelation, linkOperationalRelationByBusinessCode } from "@/lib/qms/relation-service";
 import { keepsOperationalStatus } from "@/modules/lifecycle";
+import { OOS_TABLE_FIELDS } from "./text-tables";
 import { parseOosForm, type OosFormValues } from "./validation";
 import type { OosFormState } from "./types";
 
@@ -74,6 +76,7 @@ function recordData(values: OosFormValues, department: Department | null, existi
     rootCauseCategories: values.rootCauseCategories,
     closedAt: date(values.closedAt),
     internalObservations: values.internalObservations,
+    textTables: orderedTextTables(values.textTables, OOS_TABLE_FIELDS) ?? Prisma.DbNull,
   };
 }
 

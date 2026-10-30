@@ -11,6 +11,8 @@ import { useActionState,useState,useEffect } from "react";
 import { BulletTextField } from "@/components/bullet-textarea";
 
 import { submittedDefaults } from "@/lib/forms/preserved-state";
+import { initialFieldTables, type TextTable } from "@/lib/forms/text-tables";
+import type { RETURN_TABLE_FIELDS } from "@/modules/returns/text-tables";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import type { DepartmentOption,ReturnFormDefaults,ReturnFormState,ReturnProductInput } from "@/modules/returns/types";
 
@@ -22,8 +24,8 @@ const emptyProduct:ReturnProductInput={departmentId:"",productType:"API",otherPr
 function Field({label,name,defaultValue,type="text",required=false,span=""}:{label:string;name:string;defaultValue?:string;type?:string;required?:boolean;span?:string}){
   return <label className={`field ${span}`}><span>{label}{required?" *":""}</span><input name={name} type={type} defaultValue={defaultValue??""} required={required}/></label>;
 }
-function TextArea({label,name,defaultValue,required=false}:{label:string;name:string;defaultValue?:string;required?:boolean}){
-  return <BulletTextField label={label} name={name} defaultValue={defaultValue??""} required={required}/>;
+function TextArea({label,name,defaultValue,required=false,tables}:{label:string;name:string;defaultValue?:string;required?:boolean;tables?:TextTable[]}){
+  return <BulletTextField label={label} name={name} defaultValue={defaultValue??""} required={required} tables={tables}/>;
 }
 function Tri({label,name,defaultValue,required=false}:{label:string;name:string;defaultValue?:string;required?:boolean}){
   return <label className="field"><span>{label}{required?" *":""}</span><select name={name} defaultValue={defaultValue??""} required={required}><option value="">No informado</option><option value="YES">Sí</option><option value="NO">No</option><option value="NA">N/A</option></select></label>;
@@ -36,6 +38,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
   const access = usePresentationAccess();
   const [state,formAction,pending]=useActionState(action,initial);
   const formDefaults=submittedDefaults(defaults,state.submittedValues);
+  const tablesFor=(field:(typeof RETURN_TABLE_FIELDS)[number])=>initialFieldTables(field,state.submittedValues,defaults.textTables);
   const [products,setProducts]=useState(defaults.products?.length?defaults.products:[{...emptyProduct}]);
   const [departmentId,setDepartmentId]=useState(formDefaults.departmentId??"");
   const [communicationDate,setCommunicationDate]=useState(formDefaults.communicationDate??"");
@@ -115,8 +118,8 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
     <section className="form-section">
       <h2>3. Motivo y documentación</h2>
       <div className="form-grid return-form-grid">
-        <TextArea label="Observaciones o incidencias" name="reasonObservations" defaultValue={formDefaults.reasonObservations} required={!draft}/>
-        <TextArea label="Documentación anexada" name="attachedDocumentation" defaultValue={formDefaults.attachedDocumentation} required={!draft}/>
+        <TextArea tables={tablesFor("reasonObservations")} label="Observaciones o incidencias" name="reasonObservations" defaultValue={formDefaults.reasonObservations} required={!draft}/>
+        <TextArea tables={tablesFor("attachedDocumentation")} label="Documentación anexada" name="attachedDocumentation" defaultValue={formDefaults.attachedDocumentation} required={!draft}/>
       </div>
     </section>
 
@@ -126,7 +129,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
         {([['medicineFromWholesale','Medicamento procede de mayorista autorizado'],['temperatureControlled','Temperatura controlada'],['serializedMedicine','Medicamento serializado'],['declarationRequired','GC requiere declaración del cliente'],['qcRequired','Requiere evaluación de Control de Calidad'],['requiresFollowup','Requiere próximo seguimiento']] as const).map(([key,label])=><label className="field" key={key}><span>{label}</span><input type="checkbox" name={key} checked={context[key]} onChange={e=>setContext({...context,[key]:e.target.checked})}/></label>)}
       </div>
       <p className="section-help">La aceptación autoriza gestionar la devolución. La reincorporación necesita una decisión técnica documentada y comprobaciones conformes. Los productos permanecen segregados durante la evaluación.</p>
-      <BulletTextField hidden={!applicability.medicine||applicability.cold||context.medicineFromWholesale} label="Justificación y evaluación de riesgos del plazo excepcional de 10 días" name="ambientPeriodRiskJustification" defaultValue={formDefaults.ambientPeriodRiskJustification}><small className="muted-note">Para oficina de farmacia o entidad sin autorización mayorista: una excepción debe demostrar la integridad del producto y quedar documentada y aprobada por GC/DT.</small></BulletTextField>
+      <BulletTextField tables={tablesFor("ambientPeriodRiskJustification")} hidden={!applicability.medicine||applicability.cold||context.medicineFromWholesale} label="Justificación y evaluación de riesgos del plazo excepcional de 10 días" name="ambientPeriodRiskJustification" defaultValue={formDefaults.ambientPeriodRiskJustification}><small className="muted-note">Para oficina de farmacia o entidad sin autorización mayorista: una excepción debe demostrar la integridad del producto y quedar documentada y aprobada por GC/DT.</small></BulletTextField>
       <h2>4. Comprobaciones para posible reintegración</h2>
       <div className="form-grid return-check-grid">
         <Tri label="Plazo aceptable de devolución" name="withinAcceptedReturnPeriod" defaultValue={formDefaults.withinAcceptedReturnPeriod} required={assessment}/>
@@ -162,16 +165,16 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
       <div className="form-grid return-form-grid">
         <label className="field"><span>Decisión{closed?" *":""}</span><select name="decision" defaultValue={formDefaults.decision??"PENDING"}><option value="PENDING">Pendiente</option><option value="ACCEPTED">Aceptada</option><option value="REJECTED">Rechazada</option></select></label>
         <Field label="Fecha decisión" name="decisionDate" type="date" defaultValue={formDefaults.decisionDate} required={closed}/>
-        <BulletTextField label="Destino final" name="finalDestination" value={destination} onChange={e=>setDestination(e.target.value)} required={closed}/>
-        <TextArea label="Evaluación y justificación de la decisión" name="decisionObservations" defaultValue={formDefaults.decisionObservations}/>
+        <BulletTextField tables={tablesFor("finalDestination")} label="Destino final" name="finalDestination" value={destination} onChange={e=>setDestination(e.target.value)} required={closed}/>
+        <TextArea tables={tablesFor("decisionObservations")} label="Evaluación y justificación de la decisión" name="decisionObservations" defaultValue={formDefaults.decisionObservations}/>
         <Field label="Garantía de Calidad · nombre documental" name="qaApprovalName" defaultValue={formDefaults.qaApprovalName}/>
         <Field label="Dirección Técnica · nombre documental" name="technicalApprovalName" defaultValue={formDefaults.technicalApprovalName}/>
         <Field label="Gestión de destrucción" name="destructionManagedBy" defaultValue={formDefaults.destructionManagedBy}/>
-        <TextArea label="Certificado / evidencia de destrucción" name="destructionCertificate" defaultValue={formDefaults.destructionCertificate}/>
+        <TextArea tables={tablesFor("destructionCertificate")} label="Certificado / evidencia de destrucción" name="destructionCertificate" defaultValue={formDefaults.destructionCertificate}/>
         <Field label="Firmante declaración cliente" name="customerDeclarationSignatoryName" defaultValue={formDefaults.customerDeclarationSignatoryName}/>
         <Field label="Cargo del firmante" name="customerDeclarationSignatoryRole" defaultValue={formDefaults.customerDeclarationSignatoryRole}/>
         <Field label="Fecha declaración" name="customerDeclarationSignedAt" type="date" defaultValue={formDefaults.customerDeclarationSignedAt}/>
-        <TextArea label="Observaciones declaración" name="customerDeclarationObservations" defaultValue={formDefaults.customerDeclarationObservations}/>
+        <TextArea tables={tablesFor("customerDeclarationObservations")} label="Observaciones declaración" name="customerDeclarationObservations" defaultValue={formDefaults.customerDeclarationObservations}/>
         <Field label="Próximo seguimiento" name="nextFollowupDate" type="date" defaultValue={formDefaults.nextFollowupDate} required={!draft&&!closed&&context.requiresFollowup}/>
         <TextArea label="Plan del seguimiento" name="followupComment"/>
         <Tri label="Trazabilidad actualizada" name="traceabilityUpdated" defaultValue={formDefaults.traceabilityUpdated} required={closed}/>
@@ -184,7 +187,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
       <h2>8. Control interno</h2>
       <p className="section-help">Campos opcionales de control interno.</p>
       <div className="form-grid return-form-grid">
-        <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations}/>
+        <TextArea tables={tablesFor("internalObservations")} label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations}/>
         <label className="field"><span>Documento firmado disponible</span><select name="signedDocumentAvailable" defaultValue={formDefaults.signedDocumentAvailable??""}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>
         <label className="field"><span>Control del dato</span><select name="dataQualityStatus" defaultValue={formDefaults.dataQualityStatus??"REVIEW_REQUIRED"}><option value="COMPLETE">Completo</option><option value="INCOMPLETE">Incompleto</option><option value="REVIEW_REQUIRED">Pendiente revisar</option></select></label>
         <TextArea label="Motivo de la actuación / cambio" name="changeReason"/>

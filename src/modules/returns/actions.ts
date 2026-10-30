@@ -8,6 +8,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { persistenceFormError } from "@/lib/forms/persistence-error";
 import { preserveFormState } from "@/lib/forms/preserved-state";
+import { orderedTextTables } from "@/lib/forms/text-tables";
+import { RETURN_TABLE_FIELDS } from "@/modules/returns/text-tables";
 import {
   createQmsRelation,
   deactivateOperationalRelation,
@@ -67,7 +69,8 @@ function recordData(v:ReturnType<typeof parseReturnForm>["values"],department:{i
   temperatureExcursionEvaluated:v.temperatureExcursionEvaluated,coldChainReturnSystemValidated:v.coldChainReturnSystemValidated,decision:v.decision,
   finalDestination:v.finalDestination,decisionObservations:existing&&!submitted?.has("decisionObservations")?existing.decisionObservations:v.decisionObservations,qaApprovalName:existing&&!submitted?.has("qaApprovalName")?existing.qaApprovalName:v.qaApprovalName,technicalApprovalName:existing&&!submitted?.has("technicalApprovalName")?existing.technicalApprovalName:v.technicalApprovalName,decisionDate:d(v.decisionDate),
   destructionManagedBy:existing&&!submitted?.has("destructionManagedBy")?existing.destructionManagedBy:v.destructionManagedBy,destructionCertificate:existing&&!submitted?.has("destructionCertificate")?existing.destructionCertificate:v.destructionCertificate,traceabilityUpdated:v.traceabilityUpdated,
-  closedAt:v.status==="CLOSED"?d(v.closedAt):null,status:v.status,internalObservations:v.internalObservations,signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
+  closedAt:v.status==="CLOSED"?d(v.closedAt):null,status:v.status,internalObservations:v.internalObservations,
+  textTables:orderedTextTables(v.textTables,RETURN_TABLE_FIELDS)??Prisma.DbNull,signedDocumentAvailable:v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
  };
 }
 const replaceProducts=saveReturnProducts;

@@ -1,5 +1,6 @@
 import { FormWithIndex } from "@/components/form-with-index";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
+import { storedTextTables } from "@/lib/forms/text-tables";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { appUserOptions } from "@/lib/auth/app-users";
@@ -46,7 +47,7 @@ async function EditComplaintPageAuthenticatedContent({params,searchParams}:{para
   effectivenessStatus:r.effectivenessStatus,effectivenessAssessment:r.effectivenessAssessment??undefined,closeActionStatus:r.closeActionStatus??undefined,
   closeActionReferences:r.closeActionReferences??undefined,closeConclusion:r.closeConclusion??undefined,
   approvalNames:r.approvalNames??undefined,closeApprovalNames:r.closeApprovalNames??undefined,closedAt:r.closedAt?.toISOString().slice(0,10),status:r.status,
-  internalObservations:r.internalObservations??undefined,signedDocumentAvailable:b(r.signedDocumentAvailable),dataQualityStatus:r.dataQualityStatus,
+  internalObservations:r.internalObservations??undefined,textTables:storedTextTables(r.textTables),signedDocumentAvailable:b(r.signedDocumentAvailable),dataQualityStatus:r.dataQualityStatus,
   capaPlans:r.capaPlans.map(x=>({id:x.id,actionType:x.actionType,description:x.description,plannedExecutionDate:x.plannedExecutionDate?.toISOString().slice(0,10)??"",responsible:x.responsible??"",responsibleUserId:x.responsibleUserId,businessCapaCode:x.businessCapaCode??""})),
   derivedActions:r.derivedActions.map(x=>({id:x.id,actionType:x.actionType,businessCode:x.businessCode??"",description:x.description??"",responsible:x.responsible??"",responsibleUserId:x.responsibleUserId,plannedExecutionDate:x.plannedExecutionDate?.toISOString().slice(0,10)??"",sortOrder:x.sortOrder}))
  };

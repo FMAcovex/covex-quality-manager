@@ -3,6 +3,8 @@ import { returnContext, returnApplicability, reintegrationRequested, generalRetu
 import { fieldIssuesFromErrors, type FieldIssueRule } from "@/lib/forms/field-issues";
 import type { ReturnProductInput } from "@/modules/returns/types";
 import { cleanText } from "@/lib/forms/bullets";
+import { parseTextTables, tableSummaryErrors } from "@/lib/forms/text-tables";
+import { RETURN_TABLE_FIELDS, RETURN_TABLE_FIELD_LABELS } from "./text-tables";
 
 const typeSchema=z.enum(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"]);
 const productTypeSchema=z.enum(["API","INTERMEDIATE","MEDICINE","SUPPLEMENT","IMPORTED_PRODUCT","MEDICAL_DEVICE","COSMETIC","OTHER"]);
@@ -159,7 +161,12 @@ export function parseReturnForm(fd:FormData,existingNextFollowup?:string){
   if(status==="OPEN"&&text(fd,"nextFollowupDate")!==existingNextFollowup&&text(fd,"nextFollowupDate")&&!text(fd,"followupComment"))errors.push("Indica el comentario/responsable de la planificación del seguimiento.");
   // D-117: si el formulario envía la fecha vacía, se rechaza aunque haya una guardada; solo se conserva la guardada cuando el campo no llega.
   if(status==="OPEN"&&context.requiresFollowup&&!text(fd,"nextFollowupDate")&&(fd.has("nextFollowupDate")||!existingNextFollowup))errors.push("Una devolución abierta que requiere seguimiento necesita próxima fecha.");
-  return {errors,fieldIssues:fieldIssuesFromErrors(errors,[...triIssues,...returnFieldRules]),actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
+  const fieldIssues=fieldIssuesFromErrors(errors,[...triIssues,...returnFieldRules]);
+  // D-127: tablas de los textos largos; sus errores van al campo y al resumen.
+  const textTables=parseTextTables(fd,RETURN_TABLE_FIELDS);
+  for(const [field,messages] of Object.entries(textTables.issues))fieldIssues[field]=[...(fieldIssues[field]??[]),...messages];
+  errors.push(...tableSummaryErrors(textTables.issues,RETURN_TABLE_FIELD_LABELS));
+  return {errors,fieldIssues,actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
     businessCode,departmentId,communicationDate,receivedAt:text(fd,"receivedAt"),createdByText,returnType,otherReturnType:text(fd,"otherReturnType"),
     customerEntity,country:text(fd,"country"),address:text(fd,"address"),relatedDocument:text(fd,"relatedDocument"),conservationConditions:text(fd,"conservationConditions"),
     deliveryNote:text(fd,"deliveryNote"),reasonObservations:text(fd,"reasonObservations"),attachedDocumentation:text(fd,"attachedDocumentation"),
@@ -177,7 +184,7 @@ export function parseReturnForm(fd:FormData,existingNextFollowup?:string){
     coldChainReturnSystemValidated:tri("coldChainReturnSystemValidated"),decision,finalDestination:text(fd,"finalDestination"),
     decisionObservations:text(fd,"decisionObservations"),qaApprovalName:text(fd,"qaApprovalName"),technicalApprovalName:text(fd,"technicalApprovalName"),
     decisionDate:text(fd,"decisionDate"),destructionManagedBy:text(fd,"destructionManagedBy"),destructionCertificate:text(fd,"destructionCertificate"),
-    traceabilityUpdated:tri("traceabilityUpdated"),closedAt:text(fd,"closedAt"),status,internalObservations:text(fd,"internalObservations"),
+    traceabilityUpdated:tri("traceabilityUpdated"),closedAt:text(fd,"closedAt"),status,internalObservations:text(fd,"internalObservations"),textTables:textTables.value,
     signedDocumentAvailable:bool(fd,"signedDocumentAvailable"),dataQualityStatus:en(qualitySchema,text(fd,"dataQualityStatus"))??"REVIEW_REQUIRED",
     context,nextFollowupDate:text(fd,"nextFollowupDate"),followupComment:text(fd,"followupComment"),products:ps,fromComplaintId:text(fd,"fromComplaintId"),changeReason:text(fd,"changeReason")
   }};

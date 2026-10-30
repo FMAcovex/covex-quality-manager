@@ -1,4 +1,7 @@
 import { FormattedText } from "@/components/formatted-text";
+import { TextTablesView } from "@/components/text-tables-view";
+import { numberTextTables, storedTextTables } from "@/lib/forms/text-tables";
+import { OOS_TABLE_FIELDS } from "@/modules/oos/text-tables";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { PreviewLink } from "@/components/preview-link";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
@@ -77,6 +80,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
   const { tab: rawTab, returnTo, auditPage, review, thread } = await searchParams;
   const [record, annexIIIReady, annexIVReady] = await Promise.all([getOosDetail(id), isActiveTemplateAssetReady("OOS", "OOS_ANNEX_III"), isActiveTemplateAssetReady("OOS", "OOS_ANNEX_IV")]);
   if (!record) notFound();
+  const textTables = numberTextTables(storedTextTables(record.textTables), OOS_TABLE_FIELDS);
   // D-103: sin la plantilla instalada, el botón se muestra desactivado con el motivo, en vez de dar error al pulsarlo.
   const annexButton = (ready: boolean, annex: "iii" | "iv", label: string) => ready
     ? <a className="button" href={`/api/oos/${id}/annex-${annex}`}>{label}</a>
@@ -195,7 +199,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
         </dl>
       </ReviewCard>
       <ReviewCard target={target.detection} title="Detección del fuera de especificaciones">
-        <div className="prose-value prose-block"><FormattedText value={record.detectionDescription} /></div>
+        <div className="prose-value prose-block"><FormattedText value={record.detectionDescription} /><TextTablesView items={textTables.detectionDescription} /></div>
       </ReviewCard>
       <ReviewCard target={target.result} title="Resultado">
         <dl className="info-grid">
@@ -205,7 +209,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
           <Item label="Categoría de la causa (6M)">{record.rootCauseCategories.length ? record.rootCauseCategories.map((value) => rootCauseCategoryLabel(value, true)).join(", ") : "No informada"}</Item>
         </dl>
       </ReviewCard>
-      {record.internalObservations ? <div className="card"><h2>Observaciones internas</h2><div className="prose-value prose-block"><FormattedText value={record.internalObservations} /></div></div> : null}
+      {record.internalObservations || textTables.internalObservations ? <div className="card"><h2>Observaciones internas</h2><div className="prose-value prose-block"><FormattedText value={record.internalObservations} /><TextTablesView items={textTables.internalObservations} /></div></div> : null}
     </> : null}
 
     {tab === "phase-i" ? <>
@@ -225,8 +229,8 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
       <div className="card">
         <h2>Investigación en el laboratorio</h2>
         <dl className="info-grid">
-          <ReviewItem target={target.phaseIInvestigation} label="Investigación (causa raíz)"><div className="prose-value"><FormattedText value={record.phaseIInvestigation} /></div></ReviewItem>
-          <ReviewItem target={target.phaseIConclusion} label="Conclusiones"><div className="prose-value"><FormattedText value={record.phaseIConclusion} /></div></ReviewItem>
+          <ReviewItem target={target.phaseIInvestigation} label="Investigación (causa raíz)"><div className="prose-value"><FormattedText value={record.phaseIInvestigation} /><TextTablesView items={textTables.phaseIInvestigation} /></div></ReviewItem>
+          <ReviewItem target={target.phaseIConclusion} label="Conclusiones"><div className="prose-value"><FormattedText value={record.phaseIConclusion} /><TextTablesView items={textTables.phaseIConclusion} /></div></ReviewItem>
         </dl>
       </div>
       <ReviewCard target={target.phaseIVerdict} title="Disposición final y dictamen">
@@ -243,17 +247,17 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
       <h2>Investigación a gran escala</h2>
       <dl className="info-grid">
         <Item label="Fecha de emisión">{formatOosDate(record.phaseIIIssueDate)}</Item>
-        <ReviewItem target={target.phaseIIProductionReview} label="Revisión de la producción"><div className="prose-value"><FormattedText value={record.phaseIIProductionReview} /></div></ReviewItem>
-        <ReviewItem target={target.phaseIIRetesting} label="Repetición de pruebas"><div className="prose-value"><FormattedText value={record.phaseIIRetesting} /></div></ReviewItem>
-        <ReviewItem target={target.phaseIIResampling} label="Remuestreo"><div className="prose-value"><FormattedText value={record.phaseIIResampling} /></div></ReviewItem>
-        <ReviewItem target={target.phaseIIConclusion} label="Conclusión de la investigación"><div className="prose-value"><FormattedText value={record.phaseIIConclusion} /></div></ReviewItem>
+        <ReviewItem target={target.phaseIIProductionReview} label="Revisión de la producción"><div className="prose-value"><FormattedText value={record.phaseIIProductionReview} /><TextTablesView items={textTables.phaseIIProductionReview} /></div></ReviewItem>
+        <ReviewItem target={target.phaseIIRetesting} label="Repetición de pruebas"><div className="prose-value"><FormattedText value={record.phaseIIRetesting} /><TextTablesView items={textTables.phaseIIRetesting} /></div></ReviewItem>
+        <ReviewItem target={target.phaseIIResampling} label="Remuestreo"><div className="prose-value"><FormattedText value={record.phaseIIResampling} /><TextTablesView items={textTables.phaseIIResampling} /></div></ReviewItem>
+        <ReviewItem target={target.phaseIIConclusion} label="Conclusión de la investigación"><div className="prose-value"><FormattedText value={record.phaseIIConclusion} /><TextTablesView items={textTables.phaseIIConclusion} /></div></ReviewItem>
       </dl>
     </div>
     <ReviewCard target={target.phaseIIVerdict} title="Dictamen">
       <dl className="info-grid">
         <Verdict verdict={record.phaseIIVerdict} quantity={record.phaseIIVerdictQuantity} destroy={record.phaseIIDestroyQuantity} returned={record.phaseIIReturnQuantity} other={record.phaseIIVerdictOther} />
         <Item label="Emitido por · Garantía de Calidad">{txt(record.phaseIIIssuedBy)} · {formatOosDate(record.phaseIIIssuedAt)}</Item>
-        <Item label="Departamentos afectados" full><div className="prose-value"><FormattedText value={record.phaseIIAffectedDepartments} /></div></Item>
+        <Item label="Departamentos afectados" full><div className="prose-value"><FormattedText value={record.phaseIIAffectedDepartments} /><TextTablesView items={textTables.phaseIIAffectedDepartments} /></div></Item>
       </dl>
     </ReviewCard></> : null}
 

@@ -1,6 +1,8 @@
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { applyValueMarks,escapeXml,markValue,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { applyValueMarks,escapeXml,insertWordCellTables,markValue,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { storedTextTables } from "@/lib/forms/text-tables";
+import { returnAnnexTablePlacements } from "@/modules/returns/text-tables";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { annexGeneratorXml } from "@/modules/configuration/annex-generator-views";
 import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
@@ -17,7 +19,10 @@ export type ReturnDocumentRecord={
  packagingIntegrityOk:string|null;customerDeclarationAvailable:string|null;customerDeclarationSignatoryName:string|null;customerDeclarationSignatoryRole:string|null;customerDeclarationSignedAt:Date|null;customerDeclarationObservations:string|null;
  storageTransportConditionsOk:string|null;noUseDamageContamination:string|null;noRecallAlertBlock:string|null;expiryAcceptable:string|null;
  qcAssessmentCompleted:string|null;storageTemperatureRecord:string|null;returnTransportTempEvidence:string|null;transportPackagingSuitable:string|null;receiptTemperatureAcceptable:string|null;temperatureExcursionEvaluated:string|null;coldChainReturnSystemValidated:string|null;
- decision:string;finalDestination:string|null;decisionObservations:string|null;qaApprovalName:string|null;technicalApprovalName:string|null;decisionDate:Date|null;destructionManagedBy:string|null;destructionCertificate:string|null;traceabilityUpdated:string|null;internalObservations:string|null;
+ decision:string;finalDestination:string|null;
+ /** D-127: tablas de los textos largos, por campo. */
+ textTables?:unknown;
+ decisionObservations:string|null;qaApprovalName:string|null;technicalApprovalName:string|null;decisionDate:Date|null;destructionManagedBy:string|null;destructionCertificate:string|null;traceabilityUpdated:string|null;internalObservations:string|null;
  products:Product[];followups:Followup[];annexIIITemplateVersion?:{versionCode:string}|null;annexIVTemplateVersion?:{versionCode:string}|null;annexVTemplateVersion?:{versionCode:string}|null;annexVITemplateVersion?:{versionCode:string}|null;
 };
 const date=(v:Date|null|undefined)=>v?new Intl.DateTimeFormat("es-ES").format(v):"";
@@ -57,6 +62,8 @@ export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
  xml=setWordCellTextBalanced(xml,7,0,0,`${box(r.decision==="ACCEPTED","Aceptada")}    ${box(r.decision==="REJECTED","Rechazada")}`);
  xml=setWordCellTextBalanced(xml,7,1,1,[text(r.finalDestination),text(r.decisionObservations),r.decisionDate?`Fecha decisión: ${date(r.decisionDate)}`:"",contextFromExtraData(r.extraData).ambientPeriodRiskJustification?`Justificación y evaluación de riesgos del plazo excepcional: ${contextFromExtraData(r.extraData).ambientPeriodRiskJustification}`:""].filter(Boolean).join("\n"));
  xml=setWordCellTextBalanced(xml,8,1,0,`Nombre, fecha y firma:\n${text(r.qaApprovalName)}`);xml=setWordCellTextBalanced(xml,8,1,1,`Nombre, fecha y firma:\n${text(r.technicalApprovalName)}`);
+ // D-127: tablas de los textos, al final de su casilla (después de rellenar y copiar la fila de productos).
+ xml=insertWordCellTables(xml,returnAnnexTablePlacements(storedTextTables(r.textTables),"III",r.products.length));
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 
@@ -88,6 +95,8 @@ export async function generateReturnAnnexV(r:ReturnDocumentRecord){
  xml=setWordCellTextBalanced(xml,4,0,1,["Nombre/Puesto/Firma/Fecha:",text(r.customerDeclarationSignatoryName),text(r.customerDeclarationSignatoryRole),date(r.customerDeclarationSignedAt)].filter(Boolean).join(" / "));
  xml=setWordCellTextBalanced(xml,5,0,1,`Nombre/Firma/Fecha:\n${text(r.qaApprovalName)}`);
  xml=setWordCellTextBalanced(xml,5,1,1,`Nombre/Firma/Fecha:\n${text(r.technicalApprovalName)}`);
+ // D-127: tablas de la declaración, al final de su casilla.
+ xml=insertWordCellTables(xml,returnAnnexTablePlacements(storedTextTables(r.textTables),"V"));
  xml=keepOnlyFinalSectionProperties(xml);
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }

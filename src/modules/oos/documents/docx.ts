@@ -1,7 +1,9 @@
 import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import type { OosInvestigationResult, OosMaterialKind, OosPhaseIDisposition, OosStatus, OosVerdict, QmsRecordType } from "@prisma/client";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
-import { applyValueMarks, fillWordCellBalanced, fillWordRowCellsBalanced, markValue, transformWordRowsBalanced, transformWordTableBalanced } from "@/lib/ooxml/xml";
+import { applyValueMarks, fillWordCellBalanced, fillWordRowCellsBalanced, insertWordCellTables, markValue, transformWordRowsBalanced, transformWordTableBalanced } from "@/lib/ooxml/xml";
+import { storedTextTables } from "@/lib/forms/text-tables";
+import { oosAnnexTablePlacements } from "@/modules/oos/text-tables";
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import { qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { formatOosDate, oosEvaluationKeys, oosInvestigationResultLabels, readOosEvaluation } from "@/modules/oos/domain";
@@ -52,6 +54,8 @@ export type OosDocumentRecord = {
   phaseIIIssuedBy: string | null;
   phaseIIIssuedAt: Date | null;
   phaseIIAffectedDepartments: string | null;
+  /** D-127: tablas de los textos largos, por campo. */
+  textTables?: unknown;
   investigationResult: OosInvestigationResult | null;
   closedAt: Date | null;
   qmsRecord: { businessCode: string | null; sourceRelations: { targetRecord: { recordType: QmsRecordType; businessCode: string | null; annulledBusinessCode: string | null } }[] };
@@ -134,6 +138,8 @@ export function fillOosAnnexIII(template: Buffer, record: OosDocumentRecord) {
     set(2, 13, 2, date(record.phaseIIssuedAt), { replaceHint: true });
     set(2, 14, 0, text(record.phaseIApprovedBy), { mode: "paragraphs" });
     set(2, 14, 2, date(record.phaseIApprovedAt), { replaceHint: true });
+    // D-127: tablas de Fase I, al final de su casilla (después de rellenar el resto).
+    xml = insertWordCellTables(xml, oosAnnexTablePlacements(storedTextTables(record.textTables), "III"));
     return completeFormPageCount(xml);
   });
 }
@@ -153,6 +159,8 @@ export function fillOosAnnexIV(template: Buffer, record: OosDocumentRecord) {
     set(1, 8, 0, text(record.phaseIIIssuedBy), { mode: "paragraphs" });
     set(1, 8, 2, date(record.phaseIIIssuedAt), { replaceHint: true });
     set(1, 9, 0, text(record.phaseIIAffectedDepartments), { mode: "paragraphs" });
+    // D-127: tablas de Fase II, al final de su casilla (después de rellenar el resto).
+    xml = insertWordCellTables(xml, oosAnnexTablePlacements(storedTextTables(record.textTables), "IV"));
     return completeFormPageCount(xml);
   });
 }

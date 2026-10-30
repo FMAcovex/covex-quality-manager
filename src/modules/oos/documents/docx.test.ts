@@ -87,4 +87,19 @@ describe("numeración del formulario", () => {
     expect(completeFormPageCount(xml)).toBe('<w:t xml:space="preserve">Página 1 de </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>2</w:t><w:t>Página 2 de 2</w:t><w:t>X</w:t>');
     expect(completeFormPageCount("<w:t>Sin numeración X</w:t>")).toBe("<w:t>Sin numeración X</w:t>");
   });
+
+  it("D-127: las tablas de los textos van en la casilla de su apartado, con la numeración del expediente", () => {
+    const table = (title: string) => ({ title, columns: ["Dato"], rows: [["valor"]] });
+    const withTables = { ...record, textTables: { phaseIInvestigation: [table("Ensayos")], phaseIIRetesting: [table("Repeticiones")] } } as OosDocumentRecord;
+    const inSameCell = (xml: string, text: string, caption: string) => {
+      const from = xml.indexOf(text), to = xml.indexOf(caption);
+      return from > 0 && to > from && !xml.slice(from, to).includes("</w:tc>");
+    };
+    const iii = getZipEntryText(readZip(fillOosAnnexIII(template([[15, 6], [25, 3], [18, 6]]), withTables)), "word/document.xml");
+    expect(inSameCell(iii, ">Investigación<", "Tabla 1. Ensayos")).toBe(true);
+    expect(iii).not.toContain("Tabla 2.");
+    const iv = getZipEntryText(readZip(fillOosAnnexIV(template([[9, 2], [13, 6]]), withTables)), "word/document.xml");
+    expect(inSameCell(iv, ">Repetición<", "Tabla 2. Repeticiones")).toBe(true);
+  });
 });
+

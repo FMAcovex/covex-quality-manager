@@ -13,6 +13,7 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { InvalidFieldsSummary } from "@/components/invalid-fields-summary";
 import { generalErrors } from "@/lib/forms/field-issues";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
+import { initialFieldTables, type TextTable } from "@/lib/forms/text-tables";
 import {
   oosAreaLabels,
   oosClosingResults,
@@ -23,6 +24,7 @@ import {
   oosVerdictLabels,
 } from "../domain";
 import type { OosDepartmentOption, OosFormDefaults, OosFormState } from "../types";
+import type { OOS_TABLE_FIELDS } from "../text-tables";
 
 const initial: OosFormState = { error: null };
 type Status = "DRAFT" | "OPEN" | "CLOSED";
@@ -32,8 +34,8 @@ function Field({ label, name, defaultValue, type = "text", required = false, spa
   return <label className={`field ${span}`}><span>{label}{required ? " *" : ""}</span><input name={name} type={type} defaultValue={defaultValue ?? ""} required={required} /></label>;
 }
 
-function TextArea({ label, name, defaultValue, required = false, help }: { label: string; name: string; defaultValue?: string; required?: boolean; help?: string }) {
-  return <BulletTextField label={label} name={name} defaultValue={defaultValue ?? ""} required={required}>{help ? <small className="muted-note">{help}</small> : null}</BulletTextField>;
+function TextArea({ label, name, defaultValue, required = false, help, tables }: { label: string; name: string; defaultValue?: string; required?: boolean; help?: string; tables?: TextTable[] }) {
+  return <BulletTextField label={label} name={name} defaultValue={defaultValue ?? ""} required={required} tables={tables}>{help ? <small className="muted-note">{help}</small> : null}</BulletTextField>;
 }
 
 function Verdict({ phase, defaults, required }: { phase: "phaseI" | "phaseII"; defaults: OosFormDefaults; required: boolean }) {
@@ -60,6 +62,7 @@ export function OosForm({ mode, action, departments, defaults = {}, recordId, ca
   const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, initial);
   const formDefaults = submittedDefaults(defaults, state.submittedValues);
+  const tablesFor = (field: (typeof OOS_TABLE_FIELDS)[number]) => initialFieldTables(field, state.submittedValues, defaults.textTables);
   const codeLocked = mode === "edit" && Boolean(defaults.businessCode);
   const [status, setStatus] = useState<Status>(formDefaults.status ?? "DRAFT");
   const [area, setArea] = useState<string>(formDefaults.area ?? "");
@@ -116,7 +119,7 @@ export function OosForm({ mode, action, departments, defaults = {}, recordId, ca
         <Field label="Hora del OOS" name="oosTime" type="time" defaultValue={formDefaults.oosTime} />
         <Field label="OOS detectado por (analista)" name="detectedBy" defaultValue={formDefaults.detectedBy} />
         <Field label="Turno" name="shift" defaultValue={formDefaults.shift} />
-        <TextArea label="Detección del fuera de especificaciones" name="detectionDescription" defaultValue={formDefaults.detectionDescription} required={!draft} help="Descripción del OOS: ¿qué, quién, cómo, dónde, cuándo y por qué?" />
+        <TextArea tables={tablesFor("detectionDescription")} label="Detección del fuera de especificaciones" name="detectionDescription" defaultValue={formDefaults.detectionDescription} required={!draft} help="Descripción del OOS: ¿qué, quién, cómo, dónde, cuándo y por qué?" />
       </div>
     </section>
 
@@ -134,8 +137,8 @@ export function OosForm({ mode, action, departments, defaults = {}, recordId, ca
     <section className="form-section">
       <h2>4. Fase I · Investigación en el laboratorio</h2>
       <div className="form-grid return-form-grid">
-        <TextArea label="Investigación (establecer causa raíz)" name="phaseIInvestigation" defaultValue={formDefaults.phaseIInvestigation} />
-        <TextArea label="Conclusiones del fuera de especificación" name="phaseIConclusion" defaultValue={formDefaults.phaseIConclusion} required={closed && disposition === "LAB_ERROR"} help="Indicar si la investigación ha sido concluyente y se confirma error de laboratorio." />
+        <TextArea tables={tablesFor("phaseIInvestigation")} label="Investigación (establecer causa raíz)" name="phaseIInvestigation" defaultValue={formDefaults.phaseIInvestigation} />
+        <TextArea tables={tablesFor("phaseIConclusion")} label="Conclusiones del fuera de especificación" name="phaseIConclusion" defaultValue={formDefaults.phaseIConclusion} required={closed && disposition === "LAB_ERROR"} help="Indicar si la investigación ha sido concluyente y se confirma error de laboratorio." />
         <label id="phase-i-disposition" className="field span-2"><span>Disposición final{closed ? " *" : ""}</span><select name="phaseIDisposition" value={disposition} onChange={(event) => setDisposition(event.target.value)} required={closed}><option value="">Pendiente</option>{Object.entries(oosPhaseIDispositionLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><small className="muted-note">«A gran escala» habilita la Fase II (Anexo IV).</small></label>
         <Verdict phase="phaseI" defaults={formDefaults} required={closed && disposition === "LAB_ERROR"} />
         <Field label="Emitido por · Control de Calidad" name="phaseIIssuedBy" defaultValue={formDefaults.phaseIIssuedBy} required={closed && disposition === "LAB_ERROR"} />
@@ -150,14 +153,14 @@ export function OosForm({ mode, action, departments, defaults = {}, recordId, ca
       <p className="section-help">Anexo IV. La realiza y coordina Garantía de Calidad con los departamentos implicados.</p>
       <div className="form-grid return-form-grid">
         <Field label="Fecha emisión" name="phaseIIIssueDate" type="date" defaultValue={formDefaults.phaseIIIssueDate} />
-        <TextArea label="Revisión de la producción" name="phaseIIProductionReview" defaultValue={formDefaults.phaseIIProductionReview} help="1. Motivo de la investigación. 2. Aspectos del proceso que pueden haber causado el problema. 3. Revisión de la documentación con causa real o probable. 4. Si el problema ha ocurrido anteriormente. 5. Acciones correctivas tomadas." />
-        <TextArea label="Repetición de pruebas" name="phaseIIRetesting" defaultValue={formDefaults.phaseIIRetesting} help="Pruebas adicionales a realizar y manejo científico o técnico de los datos." />
-        <TextArea label="Remuestreo" name="phaseIIResampling" defaultValue={formDefaults.phaseIIResampling} help="Plan de muestreo y análisis adicionales." />
-        <TextArea label="Conclusión de la investigación" name="phaseIIConclusion" defaultValue={formDefaults.phaseIIConclusion} required={closed && phaseII} />
+        <TextArea tables={tablesFor("phaseIIProductionReview")} label="Revisión de la producción" name="phaseIIProductionReview" defaultValue={formDefaults.phaseIIProductionReview} help="1. Motivo de la investigación. 2. Aspectos del proceso que pueden haber causado el problema. 3. Revisión de la documentación con causa real o probable. 4. Si el problema ha ocurrido anteriormente. 5. Acciones correctivas tomadas." />
+        <TextArea tables={tablesFor("phaseIIRetesting")} label="Repetición de pruebas" name="phaseIIRetesting" defaultValue={formDefaults.phaseIIRetesting} help="Pruebas adicionales a realizar y manejo científico o técnico de los datos." />
+        <TextArea tables={tablesFor("phaseIIResampling")} label="Remuestreo" name="phaseIIResampling" defaultValue={formDefaults.phaseIIResampling} help="Plan de muestreo y análisis adicionales." />
+        <TextArea tables={tablesFor("phaseIIConclusion")} label="Conclusión de la investigación" name="phaseIIConclusion" defaultValue={formDefaults.phaseIIConclusion} required={closed && phaseII} />
         {phaseII ? <Verdict phase="phaseII" defaults={formDefaults} required={closed} /> : null}
         <Field label="Emitido por · Garantía de Calidad" name="phaseIIIssuedBy" defaultValue={formDefaults.phaseIIIssuedBy} required={closed && phaseII} />
         <Field label="Fecha emisión del informe" name="phaseIIIssuedAt" type="date" defaultValue={formDefaults.phaseIIIssuedAt} required={closed && phaseII} />
-        <TextArea label="Departamentos afectados" name="phaseIIAffectedDepartments" defaultValue={formDefaults.phaseIIAffectedDepartments} help="Todos los departamentos afectados, con quién firma y la fecha." />
+        <TextArea tables={tablesFor("phaseIIAffectedDepartments")} label="Departamentos afectados" name="phaseIIAffectedDepartments" defaultValue={formDefaults.phaseIIAffectedDepartments} help="Todos los departamentos afectados, con quién firma y la fecha." />
       </div>
     </section>
 
@@ -174,7 +177,7 @@ export function OosForm({ mode, action, departments, defaults = {}, recordId, ca
     <section className="form-section">
       <h2>Control interno</h2>
       <div className="form-grid return-form-grid">
-        <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations} />
+        <TextArea tables={tablesFor("internalObservations")} label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations} />
         {mode === "edit" ? <TextArea label="Motivo del cambio" name="changeReason" /> : null}
       </div>
     </section>

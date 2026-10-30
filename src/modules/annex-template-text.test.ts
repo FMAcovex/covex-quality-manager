@@ -18,7 +18,7 @@ vi.mock("@/modules/returns/documents/templates", () => ({ loadReturnPntTemplate:
 const { generateChangeAnnexIII } = await import("@/modules/change-control/documents/annex-iii");
 const { generateChangeAnnexIV } = await import("@/modules/change-control/documents/annex-iv");
 const { generateChangeAnnexV } = await import("@/modules/change-control/documents/annex-v");
-const { generateReturnAnnexV } = await import("@/modules/returns/documents/docx");
+const { generateReturnAnnexIII, generateReturnAnnexV } = await import("@/modules/returns/documents/docx");
 
 const grid = (tables: number, extra: Record<number, Record<string, string | { text: string; sdt?: boolean }>>) =>
   Array.from({ length: tables }, (_, index) => ({ rows: 20, cells: 6, text: extra[index] }));
@@ -171,6 +171,37 @@ describe("Controles de cambios: tablas de los textos en su casilla (D-127)", () 
     expect(inSameCell(iv, "Evaluación ficticia", "Tabla 4. Riesgos")).toBe(true);
     expect(inSameCell(iv, "Observaciones ficticias", "Tabla 5. Condiciones")).toBe(true);
     expect(iv).not.toContain("Tabla 1.");
+  });
+});
+
+describe("Devoluciones: tablas de los textos en su casilla (D-127)", () => {
+  const table = (title: string) => ({ title, columns: ["Dato"], rows: [["valor"]] });
+  const product = (code: string) => ({ productNameCode: code, productType: "MEDICINE", format: null, lot: "L-1", expiryReanalysis: null, quantity: "1", unit: "ud" });
+  const record = {
+    qmsRecord: { businessCode: "DEV/LG-002/2096" },
+    reasonObservations: "Motivo ficticio",
+    finalDestination: "Destrucción",
+    decisionObservations: "Decisión ficticia",
+    customerDeclarationObservations: "Declaración ficticia",
+    products: [product("P-1"), product("P-2"), product("P-3")],
+    followups: [],
+    extraData: null,
+    textTables: { reasonObservations: [table("Incidencias")], decisionObservations: [table("Criterios")], customerDeclarationObservations: [table("Unidades")] },
+  } as unknown as ReturnDocumentRecord;
+  const inSameCell = (xml: string, text: string, caption: string) => {
+    const from = xml.indexOf(text), to = xml.indexOf(caption);
+    return from > 0 && to > from && !xml.slice(from, to).includes("</w:tc>");
+  };
+
+  it("el informe (Anexo III; las filas de productos copiadas no mueven sus casillas, que están en otras tablas) y la declaración (Anexo V) llevan sus tablas", async () => {
+    templates.current = syntheticDocx(grid(9, {}));
+    const iii = getZipEntryText(readZip(await generateReturnAnnexIII(record)), "word/document.xml");
+    expect(inSameCell(iii, "Motivo ficticio", "Tabla 1. Incidencias")).toBe(true);
+    expect(inSameCell(iii, "Decisión ficticia", "Tabla 2. Criterios")).toBe(true);
+    expect(iii).not.toContain("Tabla 3.");
+    templates.current = syntheticDocx(grid(6, {}));
+    const v = getZipEntryText(readZip(await generateReturnAnnexV(record)), "word/document.xml");
+    expect(inSameCell(v, "Declaración ficticia", "Tabla 3. Unidades")).toBe(true);
   });
 });
 

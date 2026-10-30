@@ -1050,6 +1050,9 @@ model Complaint {
   capaPlans                             ComplaintCapaPlan[]
   derivedActions                        ComplaintDerivedAction[]
 
+  /// D-127: tablas de los textos largos, por campo; salen en el anexo dentro de la casilla del apartado.
+  textTables Json?
+
   @@index([departmentId])
   @@index([openedAt])
   @@index([complaintType])
@@ -1195,6 +1198,9 @@ model ReturnRecord {
   updatedAt                        DateTime          @updatedAt
   products                         ReturnProduct[]
   followups                        ReturnFollowup[]
+
+  /// D-127: tablas de los textos largos, por campo; salen en el anexo dentro de la casilla del apartado.
+  textTables Json?
 
   @@index([departmentId])
   @@index([communicationDate])
@@ -2913,6 +2919,9 @@ model OosRecord {
   extraData                  Json?
   createdAt                  DateTime                @default(now())
   updatedAt                  DateTime                @updatedAt
+
+  /// D-127: tablas de los textos largos, por campo; salen en el anexo dentro de la casilla del apartado.
+  textTables Json?
 
   @@index([departmentId])
   @@index([status])
