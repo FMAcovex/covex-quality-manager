@@ -1404,6 +1404,8 @@ Decisión del responsable de Calidad, que completa D-123.
 
   Cada causa sale con su estado y su evidencia, también las descartadas, porque muestran qué se comprobó y se excluyó.
 - **Se cumplimenta la plantilla, no se cambia.** Es texto en la casilla existente, con el formato de valor de siempre; la plantilla v06 no se modifica. Comprobado generando el anexo con la plantilla v06.
-- El anexo de cada versión imprime las herramientas de esa versión. Sin herramientas, la casilla queda como antes (solo la causa raíz).
+- El anexo de cada versión imprime las herramientas de esa versión. Sin herramientas, la casilla queda como antes (solo la causa raíz). Un anexo de una versión anterior a D-124 que ya tenía herramientas (D-123) se genera ahora con ellas, así que puede no coincidir con la copia descargada entonces; la copia firmada de referencia es la que se adjuntó.
+- En el anexo cada causa ocupa una línea: los saltos de línea dentro de una causa se convierten en espacios, y se quitan los caracteres de control.
+- Una causa del FTA en blanco con causas debajo bloquea el guardado («Cada causa necesita una descripción»); solo se descartan las causas finales en blanco.
 - No hay cambios de base de datos: el FTA va en el mismo campo `investigationTools`, que ya captura B2.
 

@@ -41,13 +41,13 @@ export function InvestigationToolsSummary({ tools }: { tools: InvestigationTools
     {tools.fta ? <section>
       <h4>FTA (árbol de fallos)</h4>
       {tools.fta.top ? <p className="prose-value"><strong>Evento principal:</strong> {tools.fta.top}</p> : null}
-      <ul className="investigation-cause-list fta-summary">
+      {tools.fta.nodes.length ? <ul className="investigation-cause-list fta-summary">
         {tools.fta.nodes.map((node, index) => <li key={index} style={{ marginLeft: `calc(${node.depth - 1} * 24px)` }}>
-          <Status value={node.status} /> <span className="prose-value">{node.text}</span>
+          <span className="visually-hidden">Nivel {node.depth}: </span><Status value={node.status} /> <span className="prose-value">{node.text}</span>
           {ftaIsLeaf(tools.fta!.nodes, index) ? null : <small className="muted-note"> · sus causas: {node.gate === "AND" ? "todas a la vez (Y)" : "basta una (O)"}</small>}
           {node.evidence ? <small className="muted-note investigation-evidence">Evidencia: {node.evidence}</small> : null}
         </li>)}
-      </ul>
+      </ul> : null}
     </section> : null}
   </div>;
 }

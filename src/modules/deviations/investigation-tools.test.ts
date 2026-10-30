@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_TOOL_CAUSES, emptyInvestigationTools, ftaSuggestion, looseInvestigationTools, parseInvestigationTools, rootCauseAnnexText, rootCauseSuggestion, storedInvestigationTools } from "./investigation-tools";
+import { MAX_TOOL_CAUSES, emptyInvestigationTools, ftaSuggestion, investigationToolsForStorage, looseInvestigationTools, parseInvestigationTools, rootCauseAnnexText, rootCauseSuggestion, storedInvestigationTools } from "./investigation-tools";
 
 // D-123: herramientas de análisis guiadas en la investigación de Desviaciones.
 const json = (value: unknown) => JSON.stringify(value);
@@ -146,5 +146,40 @@ describe("Texto de las herramientas para la casilla de causa raíz del Anexo III
     expect(rootCauseAnnexText(null, null)).toBe("");
     const tools = parseInvestigationTools(json({ causes: [{ method: "BRAINSTORMING", category: "METHOD", text: "Idea", evidence: "", status: "HYPOTHESIS" }] })).tools;
     expect(rootCauseAnnexText(null, tools)).toBe("Análisis — Brainstorming\n- Idea [Método] (hipótesis)");
+  });
+});
+
+describe("Hallazgos de la revisión independiente de D-124", () => {
+  const node = (depth: number, text: string, extra: Record<string, unknown> = {}) => ({ depth, text, evidence: "", status: "HYPOTHESIS", gate: "OR", ...extra });
+  const tree = (nodes: unknown[]) => json({ fta: { top: "Evento", nodes } });
+
+  it("una causa en blanco con causas debajo bloquea el guardado en vez de mover sus causas a otra rama", () => {
+    expect(parseInvestigationTools(tree([node(1, "A"), node(2, "B"), node(1, ""), node(2, "C")])).error).toBe("Cada causa necesita una descripción.");
+    expect(parseInvestigationTools(tree([node(1, ""), node(2, "C")])).error).toBe("Cada causa necesita una descripción.");
+    // Una causa final en blanco sí se descarta, como el resto de filas vacías.
+    expect(parseInvestigationTools(tree([node(1, "A"), node(2, "")])).tools?.fta?.nodes.map((n) => n.text)).toEqual(["A"]);
+  });
+
+  it("una fila vacía debajo no impide usar como causa raíz una causa confirmada", () => {
+    const nodes = [node(1, "A", { status: "CONFIRMED" }), node(2, "")] as never[];
+    expect(ftaSuggestion({ nodes }, 0)).toEqual({ text: "A", category: null, method: "FTA" });
+  });
+
+  it("en el anexo cada causa ocupa una línea (sin saltos internos) y sin caracteres de control", () => {
+    const tools = parseInvestigationTools(json({
+      causes: [{ method: "ISHIKAWA", category: "METHOD", text: "Primera línea\nsegunda línea", evidence: "Ev\r\nidencia", status: "CONFIRMED" }],
+      fta: { top: "Evento", nodes: [node(1, "Padre"), node(2, "Hijo\ncon salto")] },
+    })).tools;
+    expect(rootCauseAnnexText("Causa\u0007 raíz", tools).split("\n")).toEqual([
+      "Causa raíz", "",
+      "Análisis — Ishikawa (6M)", "Método: Primera línea segunda línea (confirmada; evidencia: Ev idencia)", "",
+      "Análisis — FTA (árbol de fallos)", "Evento principal: Evento", "- Padre (hipótesis) — sus causas: basta una (O)", "    - Hijo con salto (hipótesis)",
+    ]);
+  });
+
+  it("para guardar, un FTA vacío no añade la clave (lo guardado antes de D-124 no cambia)", () => {
+    const tools = parseInvestigationTools(json({ causes: [{ method: "BRAINSTORMING", category: null, text: "Idea", evidence: "", status: "HYPOTHESIS" }] })).tools!;
+    expect(investigationToolsForStorage(tools)).toEqual({ fiveWhys: null, causes: tools.causes });
+    expect(investigationToolsForStorage(null)).toBeNull();
   });
 });
