@@ -4,7 +4,7 @@ import { prisma } from "../src/lib/db";
 import { isolatedTestEnvironment, authConfiguration } from "../src/lib/auth/config";
 import { chromium, authenticatedPage } from "./auth-fixtures/browser";
 
-// D-127: tablas en los textos largos de Desviaciones. Se añaden bajo el campo, se pegan desde Excel,
+// D-127: tablas en los textos largos (Desviaciones, CAPA, Cambios, OOS, Reclamaciones y Devoluciones). Se añaden bajo el campo, se pegan desde Excel,
 // se guardan con el botón Guardar (validadas en el servidor) y la ficha las muestra numeradas.
 async function main() {
   assert(isolatedTestEnvironment(), "Exclusivamente base sintética aislada");
@@ -134,8 +134,50 @@ async function main() {
     await resave(`/changes/${change.id}/edit`, /\/changes\/[0-9a-f-]{36}(\?|$)/, () => qa.locator("fieldset.text-table-editor").getByLabel(/^Fila 1, columna 2 · /).fill("No conforme"));
     assert.equal(await tableHistory(change.qmsRecordId), 1, "Cambio: el cambio de la tabla queda en el historial");
 
+    // OOS: tabla en «Detección», en la ficha (Resumen). El historial del OOS es una sola foto por edición.
+    await go("/oos/new");
+    await qa.locator('[name="materialName"]').fill(`${marker} OOS`);
+    await addTable("Detección del fuera de especificaciones", "Resultados del ensayo");
+    await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
+    await qa.waitForURL(/\/oos\/[0-9a-f-]{36}(\?|$)/, { timeout: 30000 });
+    const oos = await prisma.oosRecord.findFirstOrThrow({ where: { materialName: `${marker} OOS` } });
+    others.push(oos.qmsRecordId);
+    assert.deepEqual(oos.textTables, { detectionDescription: expected("Resultados del ensayo") });
+    await go(`/oos/${oos.id}`);
+    await qa.locator(".text-table-view", { hasText: "Tabla 1. Resultados del ensayo" }).waitFor();
+    // Al editar, la tabla vuelve al editor y se conserva al guardar otro cambio.
+    await resave(`/oos/${oos.id}/edit`, /\/oos\/[0-9a-f-]{36}(\?|$)/, () => qa.locator('[name="lotNumber"]').fill("L-TABLAS"));
+    assert.deepEqual((await prisma.oosRecord.findUniqueOrThrow({ where: { id: oos.id } })).textTables, { detectionDescription: expected("Resultados del ensayo") });
+
+    // Reclamaciones: tabla en «Descripción», en la ficha (Parte I).
+    await go("/complaints/new");
+    await qa.locator('input[name="complaintType"][value="CUSTOMER"]').check();
+    await qa.locator('[name="partyName"]').fill(`${marker} cliente`);
+    await addTable("Descripción de la reclamación", "Unidades afectadas");
+    await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
+    await qa.waitForURL(/\/complaints\/[0-9a-f-]{36}(\?|$)/, { timeout: 30000 });
+    const complaint = await prisma.complaint.findFirstOrThrow({ where: { partyName: `${marker} cliente` } });
+    others.push(complaint.qmsRecordId);
+    assert.deepEqual(complaint.textTables, { description: expected("Unidades afectadas") });
+    await go(`/complaints/${complaint.id}?tab=part-i`);
+    await qa.locator(".text-table-view", { hasText: "Tabla 1. Unidades afectadas" }).waitFor();
+    await resave(`/complaints/${complaint.id}/edit`, /\/complaints\/[0-9a-f-]{36}(\?|$)/, () => qa.locator("fieldset.text-table-editor").getByLabel(/^Fila 1, columna 2 · /).fill("No conforme"));
+    assert.deepEqual((await prisma.complaint.findUniqueOrThrow({ where: { id: complaint.id } })).textTables, { description: [{ title: "Unidades afectadas", columns: ["Elemento", "Resultado"], rows: [["Uno", "No conforme"]] }] });
+
+    // Devoluciones: tabla en «Observaciones o incidencias», en la ficha (Resumen).
+    await go("/returns/new");
+    await qa.locator('[name="customerEntity"]').fill(`${marker} entidad`);
+    await addTable("Observaciones o incidencias", "Unidades recibidas");
+    await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
+    await qa.waitForURL(/\/returns\/[0-9a-f-]{36}(\?|$)/, { timeout: 30000 });
+    const returned = await prisma.returnRecord.findFirstOrThrow({ where: { customerEntity: `${marker} entidad` } });
+    others.push(returned.qmsRecordId);
+    assert.deepEqual(returned.textTables, { reasonObservations: expected("Unidades recibidas") });
+    await go(`/returns/${returned.id}`);
+    await qa.locator(".text-table-view", { hasText: "Tabla 1. Unidades recibidas" }).waitFor();
+
     assert.deepEqual(errors, []);
-    console.log("D-127 OK (Desviaciones, CAPA y Controles de cambios): tablas bajo el texto, pegado desde Excel, Intro sin guardar, error de título sin perder la tabla, guardado, ficha, sin cambios espurios y cambio real en el historial.");
+    console.log("D-127 OK (Desviaciones, CAPA, Controles de cambios, OOS, Reclamaciones y Devoluciones): tablas bajo el texto, pegado desde Excel, Intro sin guardar, error de título sin perder la tabla, guardado, ficha, sin cambios espurios y cambio real en el historial.");
   } finally {
     await browser.close();
     if (qmsRecordId) {
@@ -147,6 +189,12 @@ async function main() {
     for (const id of others) {
       await prisma.changeHistory.deleteMany({ where: { qmsRecordId: id } });
       await prisma.capa.deleteMany({ where: { qmsRecordId: id } });
+      await prisma.oosRecord.deleteMany({ where: { qmsRecordId: id } });
+      await prisma.complaintCapaPlan.deleteMany({ where: { complaint: { qmsRecordId: id } } });
+      await prisma.complaintDerivedAction.deleteMany({ where: { complaint: { qmsRecordId: id } } });
+      await prisma.complaint.deleteMany({ where: { qmsRecordId: id } });
+      await prisma.returnProduct.deleteMany({ where: { returnRecord: { qmsRecordId: id } } });
+      await prisma.returnRecord.deleteMany({ where: { qmsRecordId: id } });
       await prisma.changeControlTask.deleteMany({ where: { changeControl: { qmsRecordId: id } } });
       await prisma.changeControl.deleteMany({ where: { qmsRecordId: id } });
       await prisma.qmsRecordVersion.deleteMany({ where: { qmsRecordId: id } });

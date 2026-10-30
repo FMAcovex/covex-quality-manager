@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { capaSnapshotToAnnexRecord, changeControlSnapshotToRecord, serializeCapaVersion, serializeChangeControlVersion } from "@/lib/qms/versioning";
+import { capaSnapshotToAnnexRecord, changeControlSnapshotToRecord, complaintSnapshotToAnnexRecord, serializeCapaVersion, serializeChangeControlVersion, serializeComplaintVersion, serializeReturnVersion } from "@/lib/qms/versioning";
+import { serializeOosVersion } from "@/modules/oos/signed-documents";
 import { capaAnnexTablePlacements } from "@/modules/capa/text-tables";
 import { changeControlAnnexTablePlacements } from "@/modules/change-control/text-tables";
 import { storedTextTables } from "@/lib/forms/text-tables";
@@ -26,6 +27,21 @@ describe("CAPA y Controles de cambios · las tablas de una versión llegan a su 
     const changeSnapshot = JSON.parse(JSON.stringify(serializeChangeControlVersion({ ...change, textTables: evaluation } as never)));
     const changeRecord = changeControlSnapshotToRecord(changeSnapshot) as { textTables?: unknown };
     expect(changeControlAnnexTablePlacements(storedTextTables(changeRecord.textTables), "IV").map(({ table, row, cell }) => [table, row, cell])).toEqual([[0, 5, 0]]);
+  });
+});
+
+describe("OOS, Reclamaciones y Devoluciones · tablas de los textos en la versión (D-127)", () => {
+  it("la foto de la versión conserva las tablas y el anexo de una versión de reclamación las recibe", () => {
+    const complaint = { qmsRecord: { businessCode: "R/001/2026", year: 2026, sourceRelations: [] }, capaPlans: [], derivedActions: [], followups: [], sourceTypes: [], scopeTypes: [], affectedObjectTypes: [], categoryTypes: [], resolutionActions: [], additionalLots: [] };
+    const complaintSnapshot = JSON.parse(JSON.stringify(serializeComplaintVersion({ ...complaint, textTables: tables } as never)));
+    expect(complaintSnapshot.complaint.textTables).toEqual(tables);
+    expect((complaintSnapshotToAnnexRecord(complaintSnapshot) as { textTables?: unknown }).textTables).toEqual(tables);
+    expect(serializeComplaintVersion(complaint as never).complaint.textTables).toBeNull();
+    const returnRecord = { qmsRecord: { businessCode: "DV/001/2026", year: 2026, targetRelations: [] }, products: [], followups: [] };
+    expect(serializeReturnVersion({ ...returnRecord, textTables: tables } as never).returnRecord.textTables).toEqual(tables);
+    expect(serializeReturnVersion(returnRecord as never).returnRecord.textTables).toBeNull();
+    const oos = { qmsRecord: { businessCode: "OOS/001/2026", year: 2026, sourceRelations: [] }, textTables: tables };
+    expect(serializeOosVersion(oos as never).oos.textTables).toEqual(tables);
   });
 });
 

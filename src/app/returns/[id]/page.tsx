@@ -1,4 +1,7 @@
 import { FormattedText } from "@/components/formatted-text";
+import { TextTablesView } from "@/components/text-tables-view";
+import { numberTextTables, storedTextTables } from "@/lib/forms/text-tables";
+import { RETURN_TABLE_FIELDS } from "@/modules/returns/text-tables";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
 import { PreviewLink } from "@/components/preview-link";
 import { uploadReturnEvidenceAction } from "@/lib/qms/record-evidence-actions";
@@ -87,6 +90,7 @@ async function ReturnDetailPageAuthenticatedContent({
   const onSummary = tab === "summary";
   const r = await getReturnDetail(id);
   if (!r) notFound();
+  const textTables = numberTextTables(storedTextTables(r.textTables), RETURN_TABLE_FIELDS);
 
   const complaintOrigins = r.qmsRecord.targetRelations
     .filter(
@@ -373,7 +377,7 @@ async function ReturnDetailPageAuthenticatedContent({
                       <span>Motivo / incidencias</span>
                       <ReviewMarker target={reviewTarget.reasonObservations} />
                     </dt>
-                    <dd className="prose-value"><FormattedText value={r.reasonObservations} /></dd>
+                    <dd className="prose-value"><FormattedText value={r.reasonObservations} /><TextTablesView items={textTables.reasonObservations} /></dd>
                   </div>
                   <div
                     id={reviewTarget.attachedDocumentation.anchorId}
@@ -383,7 +387,7 @@ async function ReturnDetailPageAuthenticatedContent({
                       <span>Documentación anexada</span>
                       <ReviewMarker target={reviewTarget.attachedDocumentation} />
                     </dt>
-                    <dd className="prose-value"><FormattedText value={r.attachedDocumentation} /></dd>
+                    <dd className="prose-value"><FormattedText value={r.attachedDocumentation} /><TextTablesView items={textTables.attachedDocumentation} /></dd>
                   </div>
                   <div
                     id={reviewTarget.finalDestination.anchorId}
@@ -393,7 +397,7 @@ async function ReturnDetailPageAuthenticatedContent({
                       <span>Destino final</span>
                       <ReviewMarker target={reviewTarget.finalDestination} />
                     </dt>
-                    <dd className="prose-value"><FormattedText value={r.finalDestination} /></dd>
+                    <dd className="prose-value"><FormattedText value={r.finalDestination} /><TextTablesView items={textTables.finalDestination} /></dd>
                   </div>
                   <div
                     id={reviewTarget.traceabilityUpdated.anchorId}

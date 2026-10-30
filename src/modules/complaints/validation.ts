@@ -5,6 +5,8 @@ import { z } from "zod";
 import type { ComplaintDerivedActionInput } from "@/modules/complaints/types";
 import { fieldIssuesFromErrors, type FieldIssueRule } from "@/lib/forms/field-issues";
 import { cleanText } from "@/lib/forms/bullets";
+import { parseTextTables, tableSummaryErrors } from "@/lib/forms/text-tables";
+import { COMPLAINT_TABLE_FIELDS, COMPLAINT_TABLE_FIELD_LABELS } from "./text-tables";
 
 const typeSchema=z.enum(["PROVIDER","CUSTOMER"]);
 const classificationSchema=z.enum(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"]);
@@ -254,7 +256,12 @@ export function parseComplaintForm(fd:FormData,linked:{capa?:boolean;returns?:bo
     const value=text(fd,name);
     if(value&&(!/^\d{4}-\d{2}-\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value).toISOString().slice(0,10)!==value))errors.push(`La fecha ${name} no es válida.`);
   }
-  return {errors,fieldIssues:fieldIssuesFromErrors(errors,complaintFieldRules),actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
+  const fieldIssues=fieldIssuesFromErrors(errors,complaintFieldRules);
+  // D-127: tablas de los textos largos; sus errores van al campo y al resumen.
+  const textTables=parseTextTables(fd,COMPLAINT_TABLE_FIELDS);
+  for(const [field,messages] of Object.entries(textTables.issues))fieldIssues[field]=[...(fieldIssues[field]??[]),...messages];
+  errors.push(...tableSummaryErrors(textTables.issues,COMPLAINT_TABLE_FIELD_LABELS));
+  return {errors,fieldIssues,actor:text(fd,"modifiedByText")??createdByText??"Usuario no informado",values:{
     businessCode,departmentId,openedAt,detectionDate:text(fd,"detectionDate"),receptionDate:text(fd,"receptionDate"),detectedBy:text(fd,"detectedBy"),createdByText,
     complaintType,sourceTypes,sourceOther:text(fd,"sourceOther"),scopeTypes,scopeOther:text(fd,"scopeOther"),
     affectedObjectTypes,affectedObjectOther:text(fd,"affectedObjectOther"),categoryTypes,categoryOther:text(fd,"categoryOther"),
@@ -282,7 +289,7 @@ export function parseComplaintForm(fd:FormData,linked:{capa?:boolean;returns?:bo
     responseSufficient:bool(fd,"responseSufficient"),effectivenessStatus,effectivenessAssessment:text(fd,"effectivenessAssessment"),
     closeActionStatus:text(fd,"closeActionStatus"),closeActionReferences:text(fd,"closeActionReferences"),
     closeConclusion:text(fd,"closeConclusion"),approvalNames:text(fd,"approvalNames"),closeApprovalNames:text(fd,"closeApprovalNames"),
-    closedAt:text(fd,"closedAt"),status,internalObservations:text(fd,"internalObservations"),
+    closedAt:text(fd,"closedAt"),status,internalObservations:text(fd,"internalObservations"),textTables:textTables.value,
     signedDocumentAvailable:bool(fd,"signedDocumentAvailable"),dataQualityStatus:enumValue(qualitySchema,text(fd,"dataQualityStatus"))??"REVIEW_REQUIRED",
     capaPlans,derivedActions,changeReason:text(fd,"changeReason")
   }};

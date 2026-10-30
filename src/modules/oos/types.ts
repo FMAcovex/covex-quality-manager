@@ -1,4 +1,5 @@
 import type { AdditionalLot } from "@/lib/qms/additional-lots";
+import type { TextTables } from "@/lib/forms/text-tables";
 import type { OosEvaluationKey } from "./domain";
 
 export type OosFormState = {
@@ -61,6 +62,8 @@ export type OosFormDefaults = Partial<{
   rootCauseCategories: string[];
   closedAt: string;
   internalObservations: string;
+  /** D-127: tablas de los textos largos, por campo. */
+  textTables: TextTables;
 }> & Partial<{ [K in OosEvaluationKey as `evaluation.${K}`]: string }>;
 
 export type OosDepartmentOption = { id: string; code: string; name: string };

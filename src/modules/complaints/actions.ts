@@ -32,6 +32,8 @@ import type { FollowupActionState } from "@/components/basic-followup-form";
 import { complaintVersionSource, lockComplaintVersion, refreshComplaintRelationSnapshot } from "@/modules/complaints/version-service";
 import { keepsOperationalStatus } from "@/modules/lifecycle";
 import { formText } from "@/lib/forms/bullets";
+import { orderedTextTables } from "@/lib/forms/text-tables";
+import { COMPLAINT_TABLE_FIELDS } from "@/modules/complaints/text-tables";
 
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
@@ -69,6 +71,7 @@ function complaintData(v:ReturnType<typeof parseComplaintForm>["values"],departm
   // including new versions, and ignore any legacy fields posted by old clients.
   closeConclusion:v.closeConclusion,approvalNames:existing?.approvalNames??null,
   closeApprovalNames:existing?.closeApprovalNames??null,closedAt:v.status==="CLOSED"?d(v.closedAt):null,status:v.status,internalObservations:v.internalObservations,
+  textTables:orderedTextTables(v.textTables,COMPLAINT_TABLE_FIELDS)??Prisma.DbNull,
   signedDocumentAvailable:existing?.signedDocumentAvailable??v.signedDocumentAvailable,dataQualityStatus:v.dataQualityStatus
  };
 }

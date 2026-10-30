@@ -230,3 +230,15 @@ describe("errores por campo y etiquetas legibles (D-117)", () => {
     expect(parsed.errors.some((message)=>/[a-z][A-Z]/.test(message.split(" ")[0]))).toBe(false);
   });
 });
+
+describe("Devoluciones · tablas de los textos (D-127)", () => {
+  it("lee las tablas y un error de tabla bloquea en su campo, con el apartado en el resumen", () => {
+    const form = operationalForm();
+    form.set("textTables:reasonObservations", JSON.stringify([{ title: "Unidades recibidas", columns: ["Lote", "Unidades"], rows: [["L-1", "12"]] }]));
+    expect(parseReturnForm(form).values.textTables).toEqual({ reasonObservations: [{ title: "Unidades recibidas", columns: ["Lote", "Unidades"], rows: [["L-1", "12"]] }] });
+    form.set("textTables:decisionObservations", JSON.stringify([{ title: "", columns: ["a"], rows: [["b"]] }]));
+    const parsed = parseReturnForm(form);
+    expect(parsed.fieldIssues.decisionObservations).toEqual(["1.ª tabla: falta el título."]);
+    expect(parsed.errors).toContain("Observaciones de la decisión · 1.ª tabla: falta el título.");
+  });
+});

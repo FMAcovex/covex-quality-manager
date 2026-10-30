@@ -1,3 +1,4 @@
+import type { TextTables } from "@/lib/forms/text-tables";
 import type { AdditionalLot } from "@/lib/qms/additional-lots";
 
 export type ComplaintCapaPlanInput={id?:string;actionType:"CORRECTIVE"|"PREVENTIVE";description:string;plannedExecutionDate:string;responsible:string;responsibleUserId?:string|null;businessCapaCode?:string};
@@ -97,6 +98,8 @@ export type ComplaintFormDefaults = {
   closedAt?: string;
   status?: "DRAFT" | "OPEN" | "CLOSED";
   internalObservations?: string;
+  /** D-127: tablas de los textos largos, por campo. */
+  textTables?: TextTables;
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";
   capaPlans?: ComplaintCapaPlanInput[];

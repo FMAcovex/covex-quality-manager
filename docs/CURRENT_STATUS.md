@@ -181,8 +181,17 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - se guardan en `Capa.textTables` y `ChangeControl.textTables` (migración `20261031000100_capa_change_text_tables`, contrato B2 `B2_CAPA_CHANGE_TEXT_TABLES`);
   - la ficha las muestra numeradas; el Anexo III de CAPA y los Anexos III (solicitud) y IV (dictamen) de Controles de cambios las escriben dentro de la casilla de su apartado, teniendo en cuenta las filas copiadas de acciones y seguimientos;
   - las utilidades comunes (tablas iniciales tras un error, resumen de errores con el apartado y ubicación en el anexo) quedan en `src/lib/forms/text-tables.ts` y las usan los tres módulos.
-- **Pendiente:** los textos propios de cada seguimiento de CAPA (no van al anexo); OOS, Reclamaciones y Devoluciones.
+- **Pendiente:** los textos propios de cada seguimiento de CAPA (no van al anexo); OOS, Reclamaciones y Devoluciones (hechos en la tercera parte).
 - **Comprobado** con pruebas unitarias (validación, versiones, contrato B2, anexos con filas copiadas) y el smoke `text-tables:ui:smoke` ampliado a CAPA y Controles de cambios.
+
+**Tablas en los textos largos de OOS, Reclamaciones y Devoluciones (2026-10-31, D-127, tercera parte):**
+- **Qué cambia:**
+  - los textos largos de OOS (detección, investigación y conclusiones de la Fase I, apartados de la Fase II, departamentos afectados, observaciones internas), de Reclamaciones (19 textos del Anexo III y observaciones internas) y de Devoluciones (motivo, documentación, justificación del plazo, destino final, decisión, certificado de destrucción, declaración del cliente, observaciones internas) admiten tablas;
+  - se guardan en `OosRecord.textTables`, `Complaint.textTables` y `ReturnRecord.textTables` (migración `20261031000200_oos_complaint_return_text_tables`, contrato B2 `B2_QMS_TEXT_TABLES`) y entran en las versiones de Reclamaciones y Devoluciones;
+  - la ficha las muestra numeradas bajo el texto de su apartado;
+  - los anexos las escriben dentro de la casilla de su apartado: OOS Anexos III y IV, Reclamaciones Anexo III (v03 y anteriores, con las filas copiadas de acciones o CAPA), Devoluciones Anexos III (con las filas copiadas de productos) y V.
+- **Comprobado** con pruebas unitarias (validación de los tres módulos, versiones, contrato B2, anexos) y el smoke `text-tables:ui:smoke` ampliado a OOS, Reclamaciones y Devoluciones.
+- **Pendiente:** tablas en los textos propios de cada seguimiento de CAPA.
 
 **FTA y herramientas en el Anexo III de Desviaciones (2026-10-30, D-124):**
 - **Qué cambia:**

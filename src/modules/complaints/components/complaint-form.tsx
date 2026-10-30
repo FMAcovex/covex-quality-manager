@@ -13,6 +13,8 @@ import { generalErrors } from "@/lib/forms/field-issues";
 
 import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
+import { initialFieldTables, type TextTable } from "@/lib/forms/text-tables";
+import type { COMPLAINT_TABLE_FIELDS } from "@/modules/complaints/text-tables";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import { useActionState, useEffect, useState } from "react";
 import { BulletTextField } from "@/components/bullet-textarea";
@@ -32,8 +34,8 @@ const emptyDerived:ComplaintDerivedActionInput={actionType:"RETURN",businessCode
 function Field({label,name,defaultValue,type="text",required=false,span="",help,hidden=false}:{label:string;name:string;defaultValue?:string;type?:string;required?:boolean;span?:string;help?:string;hidden?:boolean}) {
  return <label className={`field ${span}`} hidden={hidden} style={hidden?{display:"none"}:undefined}><span>{label}{required?" *":""}</span>{help?<small className="muted-note">{help}</small>:null}<input name={name} type={type} defaultValue={defaultValue??""} required={required}/></label>;
 }
-function TextArea({label,name,defaultValue,help,required=false}:{label:string;name:string;defaultValue?:string;help?:string;required?:boolean}) {
- return <BulletTextField label={label} help={help?<small className="muted-note">{help}</small>:null} name={name} defaultValue={defaultValue??""} required={required}/>;
+function TextArea({label,name,defaultValue,help,required=false,tables}:{label:string;name:string;defaultValue?:string;help?:string;required?:boolean;tables?:TextTable[]}) {
+ return <BulletTextField label={label} help={help?<small className="muted-note">{help}</small>:null} name={name} defaultValue={defaultValue??""} required={required} tables={tables}/>;
 }
 function Bool({label,name,defaultValue,required=false,onChange}:{label:string;name:string;defaultValue?:string;required?:boolean;onChange?:(value:string)=>void}) {
  return <label className="field"><span>{label}{required?" *":""}</span><select name={name} onChange={e=>onChange?.(e.target.value)} defaultValue={defaultValue??""} required={required}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>;
@@ -65,6 +67,7 @@ export function ComplaintForm({mode,action,departments,users=[],defaults={},comp
   if(state.savedRecordId)window.location.assign(mode==="edit" && cancelHref ? cancelHref : `/complaints/${state.savedRecordId}`);
  },[state.savedRecordId,mode,cancelHref]);
  const formDefaults=submittedDefaults(defaults,state.submittedValues);
+ const tablesFor=(field:(typeof COMPLAINT_TABLE_FIELDS)[number])=>initialFieldTables(field,state.submittedValues,defaults.textTables);
  const [capas,setCapas]=useState<ComplaintCapaPlanInput[]>(defaults.capaPlans??[]);
  const [derived,setDerived]=useState<ComplaintDerivedActionInput[]>(defaults.derivedActions??[]);
  const [selectedActions,setSelectedActions]=useState<string[]>(formDefaults.resolutionActions??[]);
@@ -146,12 +149,12 @@ export function ComplaintForm({mode,action,departments,users=[],defaults={},comp
 
   {simplified?<p className="analytics-note">Incidencia comercial, administrativa o logística sin impacto GMP ni ambiental: documenta descripción, ausencia de impacto, evaluador y decisión. Si se identifica impacto, selecciona una criticidad y completa el Informe de Reclamación.</p>:null}
   <section className="form-section"><p className="eyebrow">A)</p><h2>Descripción de la reclamación</h2><div className="form-grid">
-   <TextArea label="Descripción de la reclamación" name="description" defaultValue={formDefaults.description} required={!draft}/>
+   <TextArea tables={tablesFor("description")} label="Descripción de la reclamación" name="description" defaultValue={formDefaults.description} required={!draft}/>
    <Checks label="Categoría / motivo" name="categoryTypes" options={categoryOptions} defaults={formDefaults.categoryTypes} required={fullRequired} onChange={groupChanged("categoryTypes")}/>
    <Field label="Otra categoría · especificar" name="categoryOther" hidden={!groups.categoryTypes.includes("OTHER")} defaultValue={formDefaults.categoryOther} span="span-2"/>
    <Bool label="¿Reclamación recurrente?" name="recurrent" onChange={value=>setRecurrent(value as typeof recurrent)} defaultValue={formDefaults.recurrent} required={fullRequired}/>
    <Field label="Referencia de recurrencia" name="recurrenceReference" hidden={recurrent!=="true"} defaultValue={formDefaults.recurrenceReference} span="span-2"/>
-   <TextArea label="Evidencias / documentación adjunta" name="attachedDocumentation" defaultValue={formDefaults.attachedDocumentation}/>
+   <TextArea tables={tablesFor("attachedDocumentation")} label="Evidencias / documentación adjunta" name="attachedDocumentation" defaultValue={formDefaults.attachedDocumentation}/>
    <Field label="Emitido por" name="emittedBy" defaultValue={formDefaults.emittedBy} required={!draft}/>
    <Field label="Validado por Garantía de Calidad (si aplica)" name="qaValidatedBy" defaultValue={formDefaults.qaValidatedBy} span="span-2"/>
   </div></section>
@@ -168,18 +171,18 @@ export function ComplaintForm({mode,action,departments,users=[],defaults={},comp
    <div className="form-grid">
     <Checks label="Medidas inmediatas / de contención (realizadas o pendientes)" name="containmentActions" options={containmentOptions} defaults={formDefaults.containmentActions} required={fullRequired} onChange={groupChanged("containmentActions")}/>
     <Field label="Otra medida de contención" name="containmentOther" hidden={!groups.containmentActions.includes("OTHER")} defaultValue={formDefaults.containmentOther} span="span-2"/>
-    <TextArea label="Justificación del riesgo, alcance y medidas" name="riskJustification" defaultValue={formDefaults.riskJustification} help="Incluir estado, responsable, fecha y referencia cuando aplique." required={fullRequired}/>
+    <TextArea tables={tablesFor("riskJustification")} label="Justificación del riesgo, alcance y medidas" name="riskJustification" defaultValue={formDefaults.riskJustification} help="Incluir estado, responsable, fecha y referencia cuando aplique." required={fullRequired}/>
    </div>
    <h3>B.2. Investigación</h3>
    <div className="form-grid">
-    <TextArea label="Investigación, evidencias, alcance a otros lotes/productos/clientes y conclusión del impacto" name="investigation" defaultValue={formDefaults.investigation} required={fullRequired}/>
-    <TextArea label="Conclusión del impacto" name="impactAssessment" defaultValue={formDefaults.impactAssessment} required={!draft}/>
+    <TextArea tables={tablesFor("investigation")} label="Investigación, evidencias, alcance a otros lotes/productos/clientes y conclusión del impacto" name="investigation" defaultValue={formDefaults.investigation} required={fullRequired}/>
+    <TextArea tables={tablesFor("impactAssessment")} label="Conclusión del impacto" name="impactAssessment" defaultValue={formDefaults.impactAssessment} required={!draft}/>
     <label className="field"><span>Resultado{draft?"":" *"}</span><select name="investigationResult" defaultValue={formDefaults.investigationResult??""} required={fullRequired}><option value="">Pendiente</option><option value="PROCEDENT">Procedente</option><option value="NOT_PROCEDENT">No procedente</option><option value="INCONCLUSIVE">No concluyente</option><option value="NOT_ATTRIBUTABLE_TO_COVEX">No atribuible a COVEX</option></select></label>
    </div>
   </section>
 
   <section className="form-section"><p className="eyebrow">C)</p><h2>Análisis de causa raíz</h2>
-   <TextArea label="Causa y evidencias que la sustentan; justificar si no se determina o no se requiere su análisis" name="rootCause" defaultValue={formDefaults.rootCause} required={fullRequired}/>
+   <TextArea tables={tablesFor("rootCause")} label="Causa y evidencias que la sustentan; justificar si no se determina o no se requiere su análisis" name="rootCause" defaultValue={formDefaults.rootCause} required={fullRequired}/>
    <RootCauseCategoryField defaultValue={formDefaults.rootCauseCategories}/>
   </section>
 
@@ -192,11 +195,11 @@ export function ComplaintForm({mode,action,departments,users=[],defaults={},comp
    <Tri label="¿Requiere activar GC-00/029 Retirada?" name="recallProcedureRequired" defaultValue={formDefaults.recallProcedureRequired} required={fullRequired}/>
    <Tri label="¿Requiere notificación a autoridad sanitaria?" name="authorityNotificationRequired" defaultValue={formDefaults.authorityNotificationRequired} required={fullRequired}/>
    <Tri label="¿Requiere comunicación al titular / cliente responsable?" name="responsiblePartyCommunicationRequired" defaultValue={formDefaults.responsiblePartyCommunicationRequired} required={fullRequired}/>
-   <TextArea label="Justificación" name="regulatoryJustification" defaultValue={formDefaults.regulatoryJustification} required={fullRequired}/>
+   <TextArea tables={tablesFor("regulatoryJustification")} label="Justificación" name="regulatoryJustification" defaultValue={formDefaults.regulatoryJustification} required={fullRequired}/>
   </div></section>
 
   <section className="form-section"><p className="eyebrow">F)</p><h2>Líneas de actuación y resolución</h2>
-   <TextArea label="Líneas de actuación y resolución" name="resolutionLines" defaultValue={formDefaults.resolutionLines} help="Indica destino, responsables, plazo y responsable de control/seguimiento." required={fullRequired}/>
+   <TextArea tables={tablesFor("resolutionLines")} label="Líneas de actuación y resolución" name="resolutionLines" defaultValue={formDefaults.resolutionLines} help="Indica destino, responsables, plazo y responsable de control/seguimiento." required={fullRequired}/>
   </section>
 
   <section className="form-section"><p className="eyebrow">G)</p><h2>Acciones derivadas</h2><div className="form-grid">
@@ -250,11 +253,11 @@ export function ComplaintForm({mode,action,departments,users=[],defaults={},comp
    </div>:null}
 
    <div className="complaint-action-texts">
-    <div hidden={!actionSelected("IMMEDIATE_ACTION")}><TextArea label="Acción inmediata · especificar" name="immediateActionDetails" defaultValue={formDefaults.immediateActionDetails} required={!draft&&hasActions==="true"&&actionSelected("IMMEDIATE_ACTION")}/></div>
-    <div hidden={!actionSelected("RECALL")}><TextArea label="Retirada del mercado · especificar" name="recallActionDetails" defaultValue={formDefaults.recallActionDetails} required={!draft&&hasActions==="true"&&actionSelected("RECALL")}/></div>
-    <div hidden={!actionSelected("CREDIT")}><TextArea label="Abono · especificar" name="creditActionDetails" defaultValue={formDefaults.creditActionDetails} required={!draft&&hasActions==="true"&&actionSelected("CREDIT")}/></div>
-    <div hidden={!actionSelected("REPLACEMENT")}><TextArea label="Reposición · especificar" name="replacementActionDetails" defaultValue={formDefaults.replacementActionDetails} required={!draft&&hasActions==="true"&&actionSelected("REPLACEMENT")}/></div>
-    <div hidden={!actionSelected("OTHER")}><TextArea label="Otros · especificar" name="otherResolutionDetails" defaultValue={formDefaults.otherResolutionDetails} required={!draft&&hasActions==="true"&&actionSelected("OTHER")}/></div>
+    <div hidden={!actionSelected("IMMEDIATE_ACTION")}><TextArea tables={tablesFor("immediateActionDetails")} label="Acción inmediata · especificar" name="immediateActionDetails" defaultValue={formDefaults.immediateActionDetails} required={!draft&&hasActions==="true"&&actionSelected("IMMEDIATE_ACTION")}/></div>
+    <div hidden={!actionSelected("RECALL")}><TextArea tables={tablesFor("recallActionDetails")} label="Retirada del mercado · especificar" name="recallActionDetails" defaultValue={formDefaults.recallActionDetails} required={!draft&&hasActions==="true"&&actionSelected("RECALL")}/></div>
+    <div hidden={!actionSelected("CREDIT")}><TextArea tables={tablesFor("creditActionDetails")} label="Abono · especificar" name="creditActionDetails" defaultValue={formDefaults.creditActionDetails} required={!draft&&hasActions==="true"&&actionSelected("CREDIT")}/></div>
+    <div hidden={!actionSelected("REPLACEMENT")}><TextArea tables={tablesFor("replacementActionDetails")} label="Reposición · especificar" name="replacementActionDetails" defaultValue={formDefaults.replacementActionDetails} required={!draft&&hasActions==="true"&&actionSelected("REPLACEMENT")}/></div>
+    <div hidden={!actionSelected("OTHER")}><TextArea tables={tablesFor("otherResolutionDetails")} label="Otros · especificar" name="otherResolutionDetails" defaultValue={formDefaults.otherResolutionDetails} required={!draft&&hasActions==="true"&&actionSelected("OTHER")}/></div>
    </div>
   </>:<div className="empty-panel complaint-actions-empty">No se requieren acciones derivadas. Este apartado no será obligatorio.</div>}
   </section>
@@ -263,12 +266,12 @@ export function ComplaintForm({mode,action,departments,users=[],defaults={},comp
    <Field label="Fecha" name="communicationDate" type="date" defaultValue={formDefaults.communicationDate} required={fullRequired}/>
    <Field label="Medio" name="communicationMedium" defaultValue={formDefaults.communicationMedium} required={fullRequired}/>
    <Field label="Emisor / destinatario" name="communicationParties" defaultValue={formDefaults.communicationParties} required={fullRequired} span="span-2"/>
-   <TextArea label="Resumen de lo comunicado o solicitado" name="communicationSummary" defaultValue={formDefaults.communicationSummary} required={fullRequired}/>
+   <TextArea tables={tablesFor("communicationSummary")} label="Resumen de lo comunicado o solicitado" name="communicationSummary" defaultValue={formDefaults.communicationSummary} required={fullRequired}/>
   </div></section>
 
   <section className="form-section"><p className="eyebrow">I)</p><h2>Conclusión de la Parte I y seguimiento</h2><div className="form-grid">
    <label className="field span-2"><span>Decisión sobre Parte II{draft?"":" *"}</span><select name="partIIRequired" value={partIIDecision} onChange={e=>setPartIIDecision(e.target.value as "pending"|"true"|"false")} required={fullRequired}><option value="pending">Pendiente de decisión / seguimiento</option><option value="true">Continúa en Parte II</option><option value="false">No procede Parte II · cierre en Parte I</option></select></label>
-   <TextArea label="Conclusión, pendientes y justificación de la decisión" name="conclusion" defaultValue={formDefaults.conclusion} required={!draft}/>
+   <TextArea tables={tablesFor("conclusion")} label="Conclusión, pendientes y justificación de la decisión" name="conclusion" defaultValue={formDefaults.conclusion} required={!draft}/>
    {open?<Field label="Próximo seguimiento" name="nextFollowupDate" type="date" defaultValue={formDefaults.nextFollowupDate} required help="Obligatorio mientras la reclamación permanezca abierta."/>:null}
   </div></section>
 
@@ -278,17 +281,17 @@ export function ComplaintForm({mode,action,departments,users=[],defaults={},comp
     <h3>A) Respuesta del proveedor o al / del cliente</h3><div className="form-grid">
      <Field label="Fecha de respuesta" name="responseDate" type="date" defaultValue={formDefaults.responseDate} required={!draft&&partII}/>
      <Field label="Medio de respuesta" name="responseMedium" defaultValue={formDefaults.responseMedium} required={!draft&&partII}/>
-     <TextArea label="Resumen de la respuesta, compromisos y valoración de suficiencia" name="responseSummary" defaultValue={formDefaults.responseSummary} required={!draft&&partII}/>
+     <TextArea tables={tablesFor("responseSummary")} label="Resumen de la respuesta, compromisos y valoración de suficiencia" name="responseSummary" defaultValue={formDefaults.responseSummary} required={!draft&&partII}/>
      <Bool label="¿Respuesta suficiente?" name="responseSufficient" defaultValue={formDefaults.responseSufficient} required={!draft&&partII}/>
     </div>
     <h3>B) Verificación de la eficacia</h3><div className="form-grid">
      <label className="field"><span>Verificación de eficacia{draft?"":" *"}</span><select name="effectivenessStatus" defaultValue={formDefaults.effectivenessStatus??"PENDING"} required={!draft&&partII}><option value="PENDING">Pendiente</option><option value="ACCEPTABLE">Conforme</option><option value="NOT_ACCEPTABLE">No conforme</option><option value="NOT_REQUIRED">N/A</option></select></label>
-     <TextArea label="Valoración de eficacia" name="effectivenessAssessment" defaultValue={formDefaults.effectivenessAssessment}/>
+     <TextArea tables={tablesFor("effectivenessAssessment")} label="Valoración de eficacia" name="effectivenessAssessment" defaultValue={formDefaults.effectivenessAssessment}/>
     </div>
     <h3>C) Cierre de la reclamación</h3><div className="form-grid">
      <label className="field"><span>Estado de las acciones{draft?"":" *"}</span><select name="closeActionStatus" defaultValue={formDefaults.closeActionStatus??""} required={!draft&&partII}><option value="">No informado</option><option value="COMPLETED">Completadas</option><option value="LINKED">Vinculadas a seguimiento independiente</option><option value="PENDING">Pendientes</option></select></label>
      <Field label="Referencias / responsable del seguimiento" name="closeActionReferences" defaultValue={formDefaults.closeActionReferences} required={!draft&&partII} span="span-2"/>
-     <TextArea label="Conclusión: suficiencia de evidencias, resolución y situación final" name="closeConclusion" defaultValue={formDefaults.closeConclusion} required={partII&&recordStatus==="CLOSED"}/>
+     <TextArea tables={tablesFor("closeConclusion")} label="Conclusión: suficiencia de evidencias, resolución y situación final" name="closeConclusion" defaultValue={formDefaults.closeConclusion} required={partII&&recordStatus==="CLOSED"}/>
     </div>
    </div>
   </section>
@@ -299,7 +302,7 @@ export function ComplaintForm({mode,action,departments,users=[],defaults={},comp
   </div></section>
 
   <section className="form-section"><h2>Control interno</h2><p className="section-help">Este apartado no forma parte de la obligatoriedad documental del Anexo III.</p><div className="form-grid">
-   <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations}/>
+   <TextArea tables={tablesFor("internalObservations")} label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations}/>
    <label className="field"><span>Control del dato</span><select name="dataQualityStatus" defaultValue={formDefaults.dataQualityStatus??"REVIEW_REQUIRED"}><option value="COMPLETE">Completo</option><option value="INCOMPLETE">Incompleto</option><option value="REVIEW_REQUIRED">Pendiente revisar</option></select></label>
   </div></section>
 

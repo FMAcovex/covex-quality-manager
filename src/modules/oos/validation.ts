@@ -4,6 +4,8 @@ import { z } from "zod";
 import { oosClosingResults, oosEvaluationKeys, type OosPhaseIEvaluation } from "./domain";
 import { fieldIssuesFromErrors, type FieldIssueRule } from "@/lib/forms/field-issues";
 import { cleanText } from "@/lib/forms/bullets";
+import { parseTextTables, tableSummaryErrors } from "@/lib/forms/text-tables";
+import { OOS_TABLE_FIELDS, OOS_TABLE_FIELD_LABELS } from "./text-tables";
 
 const areaSchema = z.enum(["API", "MD"]);
 const statusSchema = z.enum(["DRAFT", "OPEN", "CLOSED"]);
@@ -143,6 +145,10 @@ export function parseOosForm(fd: FormData) {
   }
 
   const fieldIssues = fieldIssuesFromErrors(errors, [...requiredIssues, ...oosFieldRules]);
+  // D-127: tablas de los textos largos; sus errores van al campo y al resumen.
+  const textTables = parseTextTables(fd, OOS_TABLE_FIELDS);
+  for (const [field, messages] of Object.entries(textTables.issues)) fieldIssues[field] = [...(fieldIssues[field] ?? []), ...messages];
+  errors.push(...tableSummaryErrors(textTables.issues, OOS_TABLE_FIELD_LABELS));
   return {
     fieldIssues,
     errors,
@@ -198,6 +204,7 @@ export function parseOosForm(fd: FormData) {
       rootCauseCategories: rootCauseCategoriesFrom(fd),
       closedAt: status === "CLOSED" ? text(fd, "closedAt") : null,
       internalObservations: text(fd, "internalObservations"),
+      textTables: textTables.value,
       changeReason: text(fd, "changeReason"),
     },
   };

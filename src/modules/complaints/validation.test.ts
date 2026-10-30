@@ -164,3 +164,15 @@ describe("errores por campo (D-117)", () => {
     expect(Object.values(parsed.fieldIssues).flat()).toEqual(expect.arrayContaining(parsed.errors));
   });
 });
+
+describe("Reclamaciones · tablas de los textos (D-127)", () => {
+  it("lee las tablas y un error de tabla bloquea en su campo, con el apartado en el resumen", () => {
+    const form = validOperationalForm();
+    form.set("textTables:investigation", JSON.stringify([{ title: "Lotes revisados", columns: ["Lote"], rows: [["L-1"]] }]));
+    expect(parseComplaintForm(form).values.textTables).toEqual({ investigation: [{ title: "Lotes revisados", columns: ["Lote"], rows: [["L-1"]] }] });
+    form.set("textTables:rootCause", JSON.stringify([{ title: "", columns: ["a"], rows: [["b"]] }]));
+    const parsed = parseComplaintForm(form);
+    expect(parsed.fieldIssues.rootCause).toEqual(["1.ª tabla: falta el título."]);
+    expect(parsed.errors).toContain("Causa raíz · 1.ª tabla: falta el título.");
+  });
+});

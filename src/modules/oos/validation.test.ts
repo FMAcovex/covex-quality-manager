@@ -136,3 +136,15 @@ describe("errores por campo (D-117)", () => {
     expect(Object.values(parsed.fieldIssues).flat().sort()).toEqual([...parsed.errors].sort());
   });
 });
+
+describe("OOS · tablas de los textos (D-127)", () => {
+  it("lee las tablas y un error de tabla bloquea en su campo, con el apartado en el resumen", () => {
+    const fd = form({ ...opening, "textTables:phaseIInvestigation": JSON.stringify([{ title: "Resultados", columns: ["Ensayo", "Valor"], rows: [["Valoración", "93,1 %"]] }]) });
+    expect(parseOosForm(fd).values.textTables).toEqual({ phaseIInvestigation: [{ title: "Resultados", columns: ["Ensayo", "Valor"], rows: [["Valoración", "93,1 %"]] }] });
+    fd.set("textTables:phaseIIRetesting", JSON.stringify([{ title: "", columns: ["a"], rows: [["b"]] }]));
+    const parsed = parseOosForm(fd);
+    expect(parsed.fieldIssues.phaseIIRetesting).toEqual(["1.ª tabla: falta el título."]);
+    expect(parsed.errors).toContain("Repetición de pruebas · 1.ª tabla: falta el título.");
+    expect(parsed.values.textTables).toBeNull();
+  });
+});

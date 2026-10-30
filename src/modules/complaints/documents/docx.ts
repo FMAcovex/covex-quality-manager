@@ -1,7 +1,9 @@
 import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { insertWordCellTables,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { storedTextTables } from "@/lib/forms/text-tables";
+import { complaintAnnexTablePlacements } from "@/modules/complaints/text-tables";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { annexGeneratorView, annexGeneratorXml } from "@/modules/configuration/annex-generator-views";
 import { loadComplaintPntTemplate } from "@/modules/complaints/documents/templates";
@@ -10,6 +12,8 @@ type Capa={actionType:string;description:string;plannedExecutionDate:Date|null;r
 type Derived={actionType:string;businessCode:string|null;description:string|null;responsible:string|null;plannedExecutionDate:Date|null};
 type Followup={followupDate:Date;comment:string;nextFollowupDate:Date|null;evidenceReference:string|null};
 export type ComplaintDocumentRecord={
+ /** D-127: tablas de los textos largos, por campo. */
+ textTables?:unknown;
  relations?:Array<{recordType:string;businessCode:string|null}>;
  qmsRecord:{businessCode:string|null};recordVersionLabel?:string|null;versionFollowupDate?:Date|null;purchaseDeliveryReference?:string|null;openedAt:Date|null;detectionDate:Date|null;receptionDate:Date|null;detectedBy:string|null;complaintType:string;
  sourceTypes:string[];sourceOther:string|null;scopeTypes:string[];scopeOther:string|null;affectedObjectTypes:string[];affectedObjectOther:string|null;
@@ -104,6 +108,8 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
   xml=setWordCellTextBalanced(xml,2,1,0,text(r.rootCause));xml=setWordCellTextBalanced(xml,2,8,0,resolutionText(r));
   xml=replaceWordRowWithCopies(xml,2,13,r.capaPlans.length?r.capaPlans.map(x=>[x.businessCapaCode??"",x.description,date(x.plannedExecutionDate),text(x.responsible)]):[["","","",""]]);
   xml=setWordCellTextBalanced(xml,3,1,0,text(r.conclusion));xml=setWordCellTextBalanced(xml,5,2,0,text(r.responseSummary));xml=setWordCellTextBalanced(xml,5,7,0,text(r.closeConclusion));
+  // D-127: tablas de los textos, al final de su casilla (después de rellenar y copiar filas).
+  xml=insertWordCellTables(xml,complaintAnnexTablePlacements(storedTextTables(r.textTables),"legacy",Math.max(1,r.capaPlans.length)));
   updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
  }
 
@@ -172,6 +178,8 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
    ])
   ];
   xml=replaceWordRowWithCopies(xml,1,55,linkedActionRows.length?linkedActionRows:[["","","",""]]);
+  // D-127: tablas de los textos, al final de su casilla (después de rellenar y copiar filas).
+  xml=insertWordCellTables(xml,complaintAnnexTablePlacements(storedTextTables(r.textTables),"v03",Math.max(1,linkedActionRows.length)));
  }
 
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
