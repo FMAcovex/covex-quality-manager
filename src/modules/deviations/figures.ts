@@ -25,8 +25,8 @@ export function parseFigureSection(value: unknown): FigureSection | null {
 export const figureSectionLabel = (section: string) => DEVIATION_FIGURE_SECTIONS.find(([key]) => key === section)?.[1] ?? section;
 
 /** Número de cada figura: orden de alta en todo el expediente (las evidencias no se borran, así que no cambia). */
-export function numberFigures<T extends { generatedAt: Date }>(figures: readonly T[]): (T & { number: number })[] {
+export function numberFigures<T extends { id: string; generatedAt: Date }>(figures: readonly T[]): (T & { number: number })[] {
   return [...figures]
-    .sort((a, b) => a.generatedAt.getTime() - b.generatedAt.getTime())
+    .sort((a, b) => a.generatedAt.getTime() - b.generatedAt.getTime() || (a.id < b.id ? -1 : 1))
     .map((figure, index) => ({ ...figure, number: index + 1 }));
 }

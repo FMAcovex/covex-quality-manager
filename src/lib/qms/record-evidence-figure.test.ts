@@ -11,4 +11,11 @@ describe("Figuras: solo imágenes (D-125)", () => {
     await expect(storeRecordEvidence({ qmsRecordId: "r", file: pdf, description: "Informe", reference: "", actor: "QA", figure: { section: "INVESTIGATION", label: "E. Investigación" } }))
       .rejects.toThrow(/Una figura debe ser una imagen PNG o JPG|Solo se admiten/);
   });
+
+  it("rechaza una imagen cuyo tamaño no se puede leer (rompería el Anexo III)", async () => {
+    const broken = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff])], "rota.jpg", { type: "image/jpeg" });
+    await expect(storeRecordEvidence({ qmsRecordId: "r", file: broken, description: "Rota", reference: "", actor: "QA", figure: { section: "INVESTIGATION", label: "E. Investigación" } }))
+      .rejects.toThrow("No se puede leer el tamaño de la figura.");
+  });
 });
+

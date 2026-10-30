@@ -58,10 +58,11 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
 
   // D-125: figuras de los apartados que existían en esa versión (todas si es la vigente sin congelar).
   const figureItems = numberFigures(await listRecordFigures(deviation.qmsRecordId, { until: storedVersion?.frozenAt ?? null }));
-  const figures = await Promise.all(figureItems.map(async (item) => {
+  const figures = [];
+  for (const item of figureItems) { // una a una, para no cargar todas las imágenes a la vez
     const file = await recordFigureFile(deviation.qmsRecordId, item.id);
-    return { number: item.number, caption: `${figureSectionLabel(item.section!)}: ${item.description}`, bytes: Buffer.from(file.fileData), mimeType: file.mimeType ?? "image/png" };
-  }));
+    figures.push({ number: item.number, caption: `${figureSectionLabel(item.section!)}: ${item.description}`, bytes: Buffer.from(file.fileData), mimeType: file.mimeType ?? "image/png" });
+  }
 
   try {
     const buffer = await generateAnnexIII(annexRecord, figures);

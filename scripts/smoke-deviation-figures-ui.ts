@@ -32,6 +32,19 @@ async function main() {
     // Texto escrito sin guardar: adjuntar una figura no lo pierde ni guarda el formulario.
     await qa.locator('textarea[name="howHappened"]').fill("Texto sin guardar");
 
+    // Pegar texto que también trae imagen (celdas de Excel) en un campo de texto: se pega el texto, no es figura.
+    const pastedTextPrevented = await qa.locator('textarea[name="investigation"]').evaluate(async (textarea) => {
+      const canvas = document.createElement("canvas"); canvas.width = 20; canvas.height = 20;
+      const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), "image/png"));
+      const data = new DataTransfer(); data.setData("text/plain", "Lote\tTemperatura"); data.items.add(new File([blob], "celdas.png", { type: "image/png" }));
+      const event = new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true });
+      textarea.dispatchEvent(event);
+      return event.defaultPrevented;
+    });
+    assert.equal(pastedTextPrevented, false, "el texto pegado no se convierte en figura");
+    await qa.waitForTimeout(300);
+    assert.equal(await qa.getByAltText("Vista previa de la figura").count(), 0);
+
     // Pegar (Ctrl+V) una captura dentro de un campo de texto de «E. Investigación».
     await qa.locator('textarea[name="investigation"]').evaluate(async (textarea) => {
       const canvas = document.createElement("canvas"); canvas.width = 320; canvas.height = 200;
@@ -45,8 +58,20 @@ async function main() {
     await investigation.getByRole("button", { name: "Adjuntar figura" }).click();
     await investigation.getByText("Describe qué muestra la figura.").waitFor();
     await investigation.getByLabel("Qué muestra la figura *").fill("Registro de temperatura con el pico");
+    // Si el envío falla (red, sesión), se avisa y no se pierde lo escrito en el formulario.
+    let failed = false;
+    await qa.route("**/*", async (route) => {
+      if (!failed && route.request().method() === "POST" && route.request().headers()["next-action"]) { failed = true; await route.abort(); return; }
+      await route.continue();
+    });
     await investigation.getByRole("button", { name: "Adjuntar figura" }).click();
+    await investigation.getByText("No se ha podido adjuntar la figura. Inténtalo de nuevo.").waitFor();
+    await qa.unroute("**/*");
+    assert.equal(await qa.locator('textarea[name="howHappened"]').inputValue(), "Texto sin guardar", "un fallo no pierde lo escrito");
+    // Enter en el pie adjunta la figura; no guarda el formulario de la desviación.
+    await investigation.getByLabel("Qué muestra la figura *").press("Enter");
     await investigation.getByText("Figura adjuntada en «E. Investigación».").waitFor();
+    assert.match(qa.url(), /\/edit(\?|$)/, "sigue en la edición");
     await investigation.getByText("Figura 1.").waitFor();
 
     // Elegir un archivo en «C. Descripción del evento»: es la figura 2 del expediente.

@@ -4,6 +4,7 @@ import { DocumentType, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { safeSignedPdfFileName } from "./signed-version-document";
 import { validateEvidenceFile } from "./evidence-validation";
+import { imageSize } from "@/lib/ooxml/figures";
 
 const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
@@ -43,6 +44,8 @@ export async function storeRecordEvidence(input: {
   const bytes = new Uint8Array(await input.file.arrayBuffer());
   const mimeType = validateEvidenceFile(input.file.name, input.file.type, bytes);
   if (input.figure && !mimeType.startsWith("image/")) throw new Error("Una figura debe ser una imagen PNG o JPG.");
+  // Una figura que no se puede medir rompería la hoja de figuras del Anexo III, y las evidencias no se borran.
+  if (input.figure) imageSize(Buffer.from(bytes));
   const fileName = safeSignedPdfFileName(input.file.name);
   const checksum = digest(bytes);
 
@@ -103,13 +106,13 @@ export async function listRecordEvidence(qmsRecordId: string): Promise<RecordEvi
 
 /**
  * D-125: figuras del expediente (imágenes con apartado), en orden de alta. `until` limita a las que
- * existían al registrar una versión; `withData` trae el binario verificado para el anexo.
+ * existían al congelar una versión.
  */
 export async function listRecordFigures(qmsRecordId: string, options: { until?: Date | null } = {}) {
   const items = await listRecordEvidence(qmsRecordId);
   return items
     .filter((item) => item.section && item.mimeType?.startsWith("image/") && (!options.until || item.generatedAt <= options.until))
-    .sort((a, b) => a.generatedAt.getTime() - b.generatedAt.getTime());
+    .sort((a, b) => a.generatedAt.getTime() - b.generatedAt.getTime() || (a.id < b.id ? -1 : 1));
 }
 
 export async function recordFigureFile(qmsRecordId: string, documentId: string) {

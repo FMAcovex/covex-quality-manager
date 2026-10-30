@@ -65,3 +65,31 @@ describe("Hoja de figuras del Anexo III (D-125)", () => {
     expect(Number(cx)).toBe(Math.round(Number(cy) / 10));
   });
 });
+
+describe("Hallazgos de la revisión independiente de D-125", () => {
+  it("una figura que no se puede leer no rompe el anexo: sale un aviso en su lugar", () => {
+    const zip = entries();
+    appendFiguresPage(zip, [
+      { number: 1, caption: "Rota", bytes: Buffer.from([0xff, 0xd8, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]), mimeType: "image/jpeg" },
+      { number: 2, caption: "Buena", bytes: png(400, 300), mimeType: "image/png" },
+    ], "X");
+    const xml = text(zip, "word/document.xml");
+    expect(xml).toContain("Figura 1. Rota (la imagen no se puede mostrar; está en las evidencias del expediente)");
+    expect(xml.match(/<wp:inline/g)).toHaveLength(1);
+    expect(zip.some((entry) => entry.name.includes("covex-figura-1"))).toBe(false);
+  });
+
+  it("los identificadores de dibujo no chocan con los que ya tiene la plantilla", () => {
+    const zip = entries();
+    const doc = zip.find((entry) => entry.name === "word/document.xml")!;
+    doc.data = Buffer.from(doc.data.toString().replace("<w:p/>", '<w:p><wp:docPr id="9001" name="logo"/></w:p>'));
+    zip.push({ name: "word/header1.xml", data: Buffer.from('<w:hdr><wp:docPr id="12000" name="x"/></w:hdr>') });
+    appendFiguresPage(zip, [{ number: 1, caption: "A", bytes: png(10, 10), mimeType: "image/png" }], "X");
+    expect(text(zip, "word/document.xml")).toContain('<wp:docPr id="12001" name="Figura 1"/>');
+  });
+
+  it("rechaza tamaños imposibles", () => {
+    expect(() => imageSize(png(0, 10))).toThrow("No se puede leer el tamaño de la figura.");
+    expect(() => imageSize(png(100000, 10))).toThrow("No se puede leer el tamaño de la figura.");
+  });
+});
