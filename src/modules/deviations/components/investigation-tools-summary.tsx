@@ -1,5 +1,5 @@
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
-import { ISHIKAWA_CATEGORIES, causeStatusLabel, type InvestigationTools, type ToolCause } from "../investigation-tools";
+import { ISHIKAWA_CATEGORIES, causeStatusLabel, ftaIsLeaf, type InvestigationTools, type ToolCause } from "../investigation-tools";
 
 const statusClass: Record<ToolCause["status"], string> = { HYPOTHESIS: "warning", DISCARDED: "neutral", CONFIRMED: "conforming" };
 const Status = ({ value }: { value: ToolCause["status"] }) => <span className={`badge ${statusClass[value]}`}>{causeStatusLabel(value)}</span>;
@@ -21,7 +21,7 @@ export function InvestigationToolsSummary({ tools }: { tools: InvestigationTools
   const brainstorming = tools.causes.filter((cause) => cause.method === "BRAINSTORMING");
   return <div className="investigation-tools-summary">
     <h3>Herramientas de análisis</h3>
-    <p className="muted-note">Material de trabajo de la investigación; no se imprime en el Anexo III.</p>
+    <p className="muted-note">Se imprimen en el Anexo III, en la casilla de causa raíz, debajo de la causa raíz redactada.</p>
     {tools.fiveWhys ? <section>
       <h4>5 porqués <Status value={tools.fiveWhys.status} /></h4>
       {tools.fiveWhys.problem ? <p className="prose-value"><strong>Problema:</strong> {tools.fiveWhys.problem}</p> : null}
@@ -37,6 +37,17 @@ export function InvestigationToolsSummary({ tools }: { tools: InvestigationTools
     {brainstorming.length ? <section>
       <h4>Brainstorming</h4>
       <CauseList causes={brainstorming} showCategory />
+    </section> : null}
+    {tools.fta ? <section>
+      <h4>FTA (árbol de fallos)</h4>
+      {tools.fta.top ? <p className="prose-value"><strong>Evento principal:</strong> {tools.fta.top}</p> : null}
+      <ul className="investigation-cause-list fta-summary">
+        {tools.fta.nodes.map((node, index) => <li key={index} style={{ marginLeft: `calc(${node.depth - 1} * 24px)` }}>
+          <Status value={node.status} /> <span className="prose-value">{node.text}</span>
+          {ftaIsLeaf(tools.fta!.nodes, index) ? null : <small className="muted-note"> · sus causas: {node.gate === "AND" ? "todas a la vez (Y)" : "basta una (O)"}</small>}
+          {node.evidence ? <small className="muted-note investigation-evidence">Evidencia: {node.evidence}</small> : null}
+        </li>)}
+      </ul>
     </section> : null}
   </div>;
 }

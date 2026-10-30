@@ -15,6 +15,7 @@ import {
 import { DEFAULT_DEVIATION_ANNEX_III_VERSION, loadAnnexIIITemplate } from "@/modules/deviations/documents/templates";
 import { dispositionAnnexMarks, dispositionChoice } from "@/modules/deviations/disposition";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
+import { rootCauseAnnexText, storedInvestigationTools } from "@/modules/deviations/investigation-tools";
 
 type AnnexIIIRecord = {
   qmsRecord: { businessCode: string | null };
@@ -51,6 +52,8 @@ type AnnexIIIRecord = {
   investigationConclusive: string | null;
   investigationMethods: string[];
   rootCause: string | null;
+  /** D-124: herramientas de análisis; se imprimen debajo de la causa raíz. */
+  investigationTools?: unknown;
   recurrentRootCause: string | null;
   recurrenceDetails: string | null;
   classification: string | null;
@@ -94,6 +97,12 @@ export function fillEventRow(xml: string, record: Pick<AnnexIIIRecord, "eventDat
   xml = setWordCellText(xml, 0, 5, 1, date(record.eventDateTime));
   xml = setWordCellText(xml, 0, 5, 2, time(record.eventDateTime));
   return setWordCellText(xml, 0, 5, 5, value(record.shift));
+}
+
+// D-124: casilla «Causa raíz» (tabla 2, fila 14): la causa raíz y, debajo, el análisis de todas las
+// herramientas usadas. Se cumplimenta la casilla existente; la plantilla no cambia.
+export function fillRootCauseCell(xml: string, record: Pick<AnnexIIIRecord, "rootCause" | "investigationTools">) {
+  return setWordCellText(xml, 2, 14, 0, rootCauseAnnexText(record.rootCause, storedInvestigationTools(record.investigationTools)));
 }
 
 function markOrigin(xml: string, row: number, hasValue: boolean) {
@@ -200,7 +209,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setWordSdtCheckbox(xml, 2, 10, 0, methods.has("FIVE_WHYS"));
   xml = setWordSdtCheckbox(xml, 2, 11, 0, methods.has("FTA"));
   xml = setWordSdtCheckbox(xml, 2, 12, 0, methods.has("ISHIKAWA"));
-  xml = setWordCellText(xml, 2, 14, 0, value(record.rootCause));
+  xml = fillRootCauseCell(xml, record);
   xml = setTriStateCell(xml, 2, 15, 1, record.recurrentRootCause);
   xml = setWordCellText(xml, 2, 16, 1, value(record.recurrenceDetails));
   if (record.immediateActions.length) {

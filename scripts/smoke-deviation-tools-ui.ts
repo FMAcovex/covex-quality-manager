@@ -88,6 +88,23 @@ async function main() {
     await idea.locator("select").first().selectOption("PEOPLE");
     await idea.locator("select").nth(1).selectOption("DISCARDED");
 
+    // FTA (D-124): evento principal, una causa con otra debajo; solo la causa final confirmada se usa.
+    await tools.getByRole("button", { name: "FTA (árbol de fallos)", exact: true }).click();
+    await tools.getByLabel("Evento principal (el fallo)").fill("Lote expedido con etiqueta errónea");
+    await tools.getByRole("button", { name: "+ Añadir causa del evento principal" }).click();
+    const parent = tools.locator(".fta-node").first();
+    await parent.locator("textarea").first().fill("Plantilla anterior en uso");
+    await parent.getByRole("button", { name: /^Añadir una causa debajo de/ }).click();
+    const child = tools.locator(".fta-node").nth(1);
+    assert.equal(await child.evaluate((node) => node.classList.contains("fta-depth-2")), true, "la nueva causa cuelga un nivel más adentro");
+    await child.locator("textarea").first().fill(`${marker} versión anterior sin retirar`);
+    await child.getByRole("combobox").selectOption("CONFIRMED");
+    await parent.getByRole("combobox", { name: /^Estado de/ }).selectOption("CONFIRMED");
+    assert.equal(await parent.getByRole("button", { name: /como causa raíz$/ }).isDisabled(), true, "una causa con causas debajo no es causa final");
+    await parent.getByRole("combobox", { name: /^Relación de las causas/ }).selectOption("AND");
+    await child.getByRole("button", { name: /como causa raíz$/ }).click();
+    assert.equal(await qa.locator('input[name="investigationMethods"][value="FTA"]').isChecked(), true, "marca FTA en la metodología");
+
     await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
     await qa.waitForURL(/\/deviations\/[0-9a-f-]{36}(\?|$)/, { timeout: 30000 });
     const saved = await prisma.deviation.findFirstOrThrow({ where: { whatHappened: `${marker} etiqueta errónea` } });
@@ -98,8 +115,12 @@ async function main() {
         { method: "ISHIKAWA", category: "METHOD", text: `${marker} instrucción sin verificación de plantilla`, evidence: "Revisión del PNT de etiquetado", status: "CONFIRMED" },
         { method: "BRAINSTORMING", category: "PEOPLE", text: "Cambio de turno durante el etiquetado", evidence: "Comprobado en el registro de turnos", status: "DISCARDED" },
       ],
+      fta: { top: "Lote expedido con etiqueta errónea", nodes: [
+        { depth: 1, text: "Plantilla anterior en uso", evidence: "", status: "CONFIRMED", gate: "AND" },
+        { depth: 2, text: `${marker} versión anterior sin retirar`, evidence: "", status: "CONFIRMED", gate: "OR" },
+      ] },
     });
-    assert.equal(saved.rootCause, `${marker} instrucción sin verificación de plantilla`);
+    assert.deepEqual(saved.rootCause?.split(/\r?\n/), [`${marker} instrucción sin verificación de plantilla`, `${marker} versión anterior sin retirar`]);
     assert.deepEqual(saved.rootCauseCategories, ["METHOD"]);
 
     // La ficha las muestra en la investigación, con su estado.
@@ -112,11 +133,11 @@ async function main() {
     // Guardar sin tocarlas no las anota como cambio (el orden de claves del JSON no cuenta).
     await go(`/deviations/${saved.id}/edit`);
     await qa.locator("details.investigation-tools[open]").waitFor();
-    assert.deepEqual(await qa.locator("details.investigation-tools fieldset.investigation-tool legend").allTextContents(), ["5 porqués", "Ishikawa (6M)", "Brainstorming"], "lo guardado se muestra sin elegirlo");
+    assert.deepEqual(await qa.locator("details.investigation-tools fieldset.investigation-tool legend").allTextContents(), ["5 porqués", "Ishikawa (6M)", "Brainstorming", "FTA (árbol de fallos)"], "lo guardado se muestra sin elegirlo");
     // Vaciar una herramienta cargada para reescribirla no la hace desaparecer mientras se edita.
     const editTools = qa.locator("details.investigation-tools");
     for (const label of ["Problema", "¿Por qué? 1", "¿Por qué? 2"]) await editTools.getByLabel(label).fill("");
-    assert.deepEqual(await editTools.locator("fieldset.investigation-tool legend").allTextContents(), ["5 porqués", "Ishikawa (6M)", "Brainstorming"], "la herramienta vaciada sigue visible");
+    assert.deepEqual(await editTools.locator("fieldset.investigation-tool legend").allTextContents(), ["5 porqués", "Ishikawa (6M)", "Brainstorming", "FTA (árbol de fallos)"], "la herramienta vaciada sigue visible");
     await editTools.getByLabel("Problema").fill("Etiqueta errónea en el lote");
     await editTools.getByLabel("¿Por qué? 1").fill("Se usó la plantilla anterior");
     await editTools.getByLabel("¿Por qué? 2").fill("La plantilla anterior seguía disponible en el sistema");
@@ -128,7 +149,7 @@ async function main() {
     assert.equal(await prisma.changeHistory.count({ where: { qmsRecordId, fieldPath: "investigationTools" } }), historyBefore);
 
     assert.deepEqual(errors, []);
-    console.log("D-123 OK: 5 porqués, Ishikawa y brainstorming; solo lo confirmado pasa a causa raíz con su categoría; guardado, ficha y sin cambios espurios.");
+    console.log("D-123/D-124 OK: 5 porqués, Ishikawa, brainstorming y FTA; solo lo confirmado pasa a causa raíz con su categoría; guardado, ficha y sin cambios espurios.");
   } finally {
     await browser.close();
     if (qmsRecordId) {

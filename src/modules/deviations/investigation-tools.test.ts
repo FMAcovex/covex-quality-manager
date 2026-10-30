@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_TOOL_CAUSES, emptyInvestigationTools, looseInvestigationTools, parseInvestigationTools, rootCauseSuggestion, storedInvestigationTools } from "./investigation-tools";
+import { MAX_TOOL_CAUSES, emptyInvestigationTools, ftaSuggestion, looseInvestigationTools, parseInvestigationTools, rootCauseAnnexText, rootCauseSuggestion, storedInvestigationTools } from "./investigation-tools";
 
 // D-123: herramientas de análisis guiadas en la investigación de Desviaciones.
 const json = (value: unknown) => JSON.stringify(value);
@@ -66,12 +66,85 @@ describe("Herramientas de investigación (D-123)", () => {
   });
 
   it("tras un guardado fallido recupera lo escrito aunque no sea válido, sin romperse con formas extrañas", () => {
-    const written = { fiveWhys: null, causes: [{ method: "BRAINSTORMING", category: null, text: "", evidence: "Comprobado en el registro", status: "CONFIRMED" }] };
+    const written = { fiveWhys: null, causes: [{ method: "BRAINSTORMING", category: null, text: "", evidence: "Comprobado en el registro", status: "CONFIRMED" }], fta: null };
     expect(parseInvestigationTools(json(written)).error).toBe("Cada causa necesita una descripción.");
     expect(looseInvestigationTools(json(written))).toEqual(written);
-    expect(looseInvestigationTools(json({ causes: "x", fiveWhys: { whys: "no" } }))).toEqual({ fiveWhys: { problem: "", whys: [], status: "HYPOTHESIS" }, causes: [] });
-    expect(looseInvestigationTools(json({ causes: [{ method: "IA", category: "OTRA", text: 3, status: "PROBABLE" }] }))).toEqual({ fiveWhys: null, causes: [{ method: "BRAINSTORMING", category: null, text: "", evidence: "", status: "HYPOTHESIS" }] });
+    expect(looseInvestigationTools(json({ causes: "x", fiveWhys: { whys: "no" } }))).toEqual({ fiveWhys: { problem: "", whys: [], status: "HYPOTHESIS" }, causes: [], fta: null });
+    expect(looseInvestigationTools(json({ causes: [{ method: "IA", category: "OTRA", text: 3, status: "PROBABLE" }] }))).toEqual({ fiveWhys: null, causes: [{ method: "BRAINSTORMING", category: null, text: "", evidence: "", status: "HYPOTHESIS" }], fta: null });
     expect(looseInvestigationTools("{roto")).toBeNull();
     expect(looseInvestigationTools(undefined)).toBeNull();
+  });
+});
+
+describe("FTA: árbol de fallos con sangrías (D-124)", () => {
+  const node = (depth: number, text: string, extra: Record<string, unknown> = {}) => ({ depth, text, evidence: "", status: "HYPOTHESIS", gate: "OR", ...extra });
+  const tree = (nodes: unknown[]) => json({ fta: { top: "Lote con etiqueta errónea", nodes } });
+
+  it("lee el evento principal y las causas en esquema; sin contenido no guarda nada", () => {
+    const parsed = parseInvestigationTools(tree([node(1, "Plantilla incorrecta", { gate: "AND" }), node(2, "Versión anterior disponible"), node(2, "Sin verificación"), node(1, "Error de impresora")]));
+    expect(parsed.error).toBeUndefined();
+    expect(parsed.tools?.fta?.nodes.map((n) => [n.depth, n.text, n.gate])).toEqual([[1, "Plantilla incorrecta", "AND"], [2, "Versión anterior disponible", "OR"], [2, "Sin verificación", "OR"], [1, "Error de impresora", "OR"]]);
+    expect(parseInvestigationTools(json({ fta: { top: " ", nodes: [node(1, " ")] } }))).toEqual({ tools: null });
+  });
+
+  it("valida la forma del árbol: empieza en el primer nivel, no salta niveles y como máximo 4", () => {
+    expect(parseInvestigationTools(tree([node(2, "Sin padre")])).error).toBe("El árbol de fallos no es válido: cada causa cuelga del nivel anterior.");
+    expect(parseInvestigationTools(tree([node(1, "A"), node(3, "Salta un nivel")])).error).toBe("El árbol de fallos no es válido: cada causa cuelga del nivel anterior.");
+    expect(parseInvestigationTools(tree([node(1, "A"), node(2, "B"), node(3, "C"), node(4, "D"), node(5, "E")])).error).toBe("Como máximo 4 niveles en el árbol de fallos.");
+    expect(parseInvestigationTools(tree([node(1, "A", { gate: "XOR" })])).error).toBe("Relación entre causas no válida.");
+  });
+
+  it("solo una causa final (sin causas debajo) y confirmada se puede usar como causa raíz, con la metodología FTA", () => {
+    const parsed = parseInvestigationTools(tree([node(1, "Plantilla incorrecta", { status: "CONFIRMED" }), node(2, "Versión anterior disponible", { status: "CONFIRMED" }), node(1, "Error de impresora", { status: "HYPOTHESIS" })]));
+    const fta = parsed.tools!.fta!;
+    expect(ftaSuggestion(fta, 0)).toBeNull();
+    expect(ftaSuggestion(fta, 1)).toEqual({ text: "Versión anterior disponible", category: null, method: "FTA" });
+    expect(ftaSuggestion(fta, 2)).toBeNull();
+  });
+
+  it("recupera un árbol escrito aunque no sea válido", () => {
+    expect(looseInvestigationTools(json({ fta: { top: 3, nodes: [{ depth: 9, text: "x", gate: "Y" }, "raro"] } }))?.fta).toEqual({ top: "", nodes: [{ depth: 4, text: "x", evidence: "", status: "HYPOTHESIS", gate: "OR" }] });
+  });
+});
+
+describe("Texto de las herramientas para la casilla de causa raíz del Anexo III (D-124)", () => {
+  it("imprime todas las herramientas usadas, con estado y evidencia, debajo de la causa raíz", () => {
+    const tools = parseInvestigationTools(json({
+      fiveWhys: { problem: "Tres días sin firma", whys: ["Supervisor de vacaciones", "", "Sin suplente en el formato"], status: "CONFIRMED" },
+      causes: [
+        { method: "ISHIKAWA", category: "MACHINE", text: "Fallo del compresor", evidence: "Histórico revisado", status: "CONFIRMED" },
+        { method: "ISHIKAWA", category: "PEOPLE", text: "Puerta mal cerrada", evidence: "Sin aperturas en el registro", status: "DISCARDED" },
+        { method: "BRAINSTORMING", category: null, text: "Cambio de turno", evidence: "", status: "HYPOTHESIS" },
+      ],
+      fta: { top: "Temperatura fuera de rango", nodes: [{ depth: 1, text: "Fallo de frío", evidence: "", status: "CONFIRMED", gate: "AND" }, { depth: 2, text: "Compresor parado", evidence: "Registro del equipo", status: "CONFIRMED", gate: "OR" }] },
+    })).tools;
+    expect(rootCauseAnnexText("Formato sin suplente de verificación.", tools).split("\n")).toEqual([
+      "Formato sin suplente de verificación.",
+      "",
+      "Análisis — 5 porqués (confirmada)",
+      "Problema: Tres días sin firma",
+      "1. ¿Por qué? Supervisor de vacaciones",
+      "2. ¿Por qué? —",
+      "3. ¿Por qué? Sin suplente en el formato",
+      "",
+      "Análisis — Ishikawa (6M)",
+      "Mano de obra: Puerta mal cerrada (descartada; evidencia: Sin aperturas en el registro)",
+      "Máquina: Fallo del compresor (confirmada; evidencia: Histórico revisado)",
+      "",
+      "Análisis — Brainstorming",
+      "- Cambio de turno (hipótesis)",
+      "",
+      "Análisis — FTA (árbol de fallos)",
+      "Evento principal: Temperatura fuera de rango",
+      "- Fallo de frío (confirmada) — sus causas: todas a la vez (Y)",
+      "    - Compresor parado (confirmada; evidencia: Registro del equipo)",
+    ]);
+  });
+
+  it("sin herramientas queda la causa raíz tal cual; sin causa raíz, solo el análisis", () => {
+    expect(rootCauseAnnexText("Causa", null)).toBe("Causa");
+    expect(rootCauseAnnexText(null, null)).toBe("");
+    const tools = parseInvestigationTools(json({ causes: [{ method: "BRAINSTORMING", category: "METHOD", text: "Idea", evidence: "", status: "HYPOTHESIS" }] })).tools;
+    expect(rootCauseAnnexText(null, tools)).toBe("Análisis — Brainstorming\n- Idea [Método] (hipótesis)");
   });
 });
