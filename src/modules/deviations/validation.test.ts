@@ -180,5 +180,16 @@ describe("Desviaciones · herramientas de investigación (D-123)", () => {
     expect(parsed.fieldIssues.rootCause).toBeDefined();
     expect(parsed.values.investigation).toBe("Revisión del registro:\r\n• Alarma sin aviso");
   });
+
+  it("D-127: lee las tablas de los textos y un error de tabla bloquea en su campo", () => {
+    const form = baseForm();
+    form.set("textTables:investigation", JSON.stringify([{ title: "Lotes", columns: ["Lote"], rows: [["L-1"]] }]));
+    expect(parseDeviationForm(form).values.textTables).toEqual({ investigation: [{ title: "Lotes", columns: ["Lote"], rows: [["L-1"]] }] });
+    form.set("status", "DRAFT");
+    form.set("textTables:rootCause", JSON.stringify([{ title: "", columns: ["a"], rows: [["b"]] }]));
+    const parsed = parseDeviationForm(form);
+    expect(parsed.fieldIssues.rootCause).toEqual(["1.ª tabla: falta el título."]);
+    expect(parsed.errors).toContain("1.ª tabla: falta el título.");
+  });
 });
 

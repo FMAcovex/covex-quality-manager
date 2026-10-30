@@ -662,3 +662,56 @@ export function extractWordBodyRange(
   );
 }
 
+
+/** D-127: tabla de un texto largo, para la casilla de su apartado (sin estilos de la plantilla). */
+type CellTable = { number: number; table: { title: string; columns: string[]; rows: string[][] } };
+
+function tableCellXml(text: string, width: number, header: boolean) {
+  const rPr = annexValueRunProperties(header ? "<w:rPr><w:b/></w:rPr>" : "");
+  const paragraphs = text.split(/\r?\n/).map((line) => `<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`).join("");
+  return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/></w:tcPr>${paragraphs}</w:tc>`;
+}
+
+function cellTableXml({ number, table }: CellTable, available: number) {
+  const width = Math.floor(available / table.columns.length);
+  const border = (side: string) => `<w:${side} w:val="single" w:sz="4" w:space="0" w:color="auto"/>`;
+  const row = (cells: string[], header: boolean) =>
+    `<w:tr><w:trPr><w:cantSplit/>${header ? "<w:tblHeader/>" : ""}</w:trPr>${cells.map((cell) => tableCellXml(cell, width, header)).join("")}</w:tr>`;
+  const caption = `<w:p><w:pPr><w:keepNext/><w:spacing w:before="120" w:after="60"/></w:pPr><w:r>${annexValueRunProperties("<w:rPr><w:b/></w:rPr>")}<w:t xml:space="preserve">${escapeXml(`Tabla ${number}. ${table.title}`)}</w:t></w:r></w:p>`;
+  return caption +
+    `<w:tbl><w:tblPr><w:tblW w:w="${width * table.columns.length}" w:type="dxa"/><w:tblBorders>${["top", "left", "bottom", "right", "insideH", "insideV"].map(border).join("")}</w:tblBorders>` +
+    `<w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="57" w:type="dxa"/><w:right w:w="57" w:type="dxa"/></w:tblCellMar></w:tblPr>` +
+    `<w:tblGrid>${table.columns.map(() => `<w:gridCol w:w="${width}"/>`).join("")}</w:tblGrid>` +
+    row(table.columns, true) + table.rows.map((cells) => row(cells, false)).join("") +
+    // Una casilla de Word debe terminar en párrafo: uno mínimo tras la tabla.
+    `</w:tbl><w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="120" w:lineRule="exact"/></w:pPr></w:p>`;
+}
+
+/**
+ * D-127: añade las tablas de cada apartado al final de su casilla, después del texto. Se llama al final
+ * de rellenar la plantilla: inserta de la última casilla a la primera para que una tabla añadida no
+ * desplace los índices de las tablas de la plantilla que quedan por tratar.
+ */
+export function insertWordCellTables(
+  documentXml: string,
+  placements: Array<{ table: number; row: number; cell: number; tables: CellTable[] }>,
+) {
+  const ordered = placements
+    .filter((placement) => placement.tables.length)
+    .sort((a, b) => b.table - a.table || b.row - a.row || b.cell - a.cell);
+  let xml = documentXml;
+  for (const placement of ordered) {
+    xml = transformWordTableBalanced(xml, placement.table, (tableXml) => {
+      const row = directTableRows(tableXml)[placement.row];
+      if (!row) throw new Error(`Direct Word row not found: table ${placement.table}, row ${placement.row}`);
+      const cell = directRowCells(row.xml)[placement.cell];
+      if (!cell) throw new Error(`Direct Word cell not found: ${placement.cell}`);
+      const cellWidth = Number(cell.xml.match(/<w:tcW w:w="(\d+)" w:type="dxa"\/>/)?.[1] ?? 9216);
+      const available = Math.max(1000, cellWidth - 216);
+      const updatedCell = cell.xml.slice(0, -"</w:tc>".length) + placement.tables.map((item) => cellTableXml(item, available)).join("") + "</w:tc>";
+      const updatedRow = row.xml.slice(0, cell.start) + updatedCell + row.xml.slice(cell.end);
+      return tableXml.slice(0, row.start) + updatedRow + tableXml.slice(row.end);
+    });
+  }
+  return xml;
+}

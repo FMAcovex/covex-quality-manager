@@ -163,6 +163,18 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - un Anexo III generado con la plantilla v06 real (solo en local).
 - **Siguiente:** tablas editables (opción B, dentro de la casilla del anexo) en los seis módulos.
 
+**Tablas en los textos largos de Desviaciones (2026-10-30, D-127, primera parte):**
+- **Qué cambia:**
+  - bajo cada texto largo de una desviación, «+ Añadir tabla»: título, cabecera y filas; se puede pegar desde Excel;
+  - se guardan con el botón Guardar, validadas en el servidor, en `Deviation.textTables` (migración `20261030000100_deviation_text_tables`, contrato B2 `B2_DEVIATION_TEXT_TABLES`);
+  - la ficha las muestra numeradas («Tabla N») en su apartado;
+  - el Anexo III las escribe como tablas de Word dentro de la casilla del apartado.
+- **Comprobado** con:
+  - pruebas unitarias (lectura y límites, pegado de Excel, numeración, tabla de Word en la casilla, ubicación en el Anexo III, versión, contrato B2);
+  - el smoke `text-tables:ui:smoke`: añadir, pegar desde Excel, error de título sin perder la tabla, guardado, ficha y sin cambios espurios;
+  - un Anexo III generado con la plantilla v06 real (solo en local).
+- **Siguiente:** Controles de cambios y CAPA; después OOS, Reclamaciones y Devoluciones.
+
 **FTA y herramientas en el Anexo III de Desviaciones (2026-10-30, D-124):**
 - **Qué cambia:**
   - cuarta herramienta, FTA (árbol de fallos), en esquema con sangrías (hasta 4 niveles) y relación O/Y; solo una causa final y confirmada pasa a «Causa raíz» y marca «FTA»;

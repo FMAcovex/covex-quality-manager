@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { documentCellTexts, missingTemplateWords } from "@/lib/ooxml/template-text";
 
 vi.mock("@/modules/deviations/documents/templates", () => ({ loadAnnexIIITemplate: async () => Buffer.alloc(0) }));
-const { fillDispositionCell, fillEventRow, fillRootCauseCell, setImpactCell } = await import("@/modules/deviations/documents/annex-iii");
+const { fillDispositionCell, fillEventRow, fillRootCauseCell, fillTextTables, setImpactCell } = await import("@/modules/deviations/documents/annex-iii");
 
 // Casillas y textos literales del Anexo III v06 (bloques de impacto y disposición final).
 const box = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>☐</w:t></w:r></w:sdtContent></w:sdt>`;
@@ -106,3 +106,23 @@ describe("Desviaciones Anexo III: casilla de causa raíz con el análisis (D-124
     expect(documentCellTexts(fillRootCauseCell(rootXml, { rootCause: "Causa", investigationTools: { causes: "x" } }))[2][14][0]).toBe("Causa");
   });
 });
+
+describe("Desviaciones Anexo III: tablas de los textos dentro de su casilla (D-127)", () => {
+  const table = (title: string) => ({ title, columns: ["Lote", "Estado"], rows: [["L-1", "Retenido"]] });
+  it("cada tabla va al final de la casilla de su apartado, numerada en el orden del expediente", () => {
+    const xml = fillTextTables(documentXml, { textTables: { dispositionComments: [table("Destino")], otherProcessesImpactDetails: [table("Productos"), table("Procesos")] } });
+    // La casilla conserva todo su contenido de la plantilla y la tabla va justo después.
+    const caption = '<w:p><w:pPr><w:keepNext/>';
+    const impactCell = impact("Impacto sobre otros procesos/productos", " (detallar cuales):");
+    expect(xml).toContain(impactCell.slice(0, -"</w:tc>".length) + caption);
+    expect(xml).toContain(dispositionCell.slice(0, -"</w:tc>".length) + caption);
+    const order = ["Tabla 1. Productos", "Tabla 2. Procesos", "Tabla 3. Destino"].map((text) => xml.indexOf(text));
+    expect(order.every((position, index) => position > 0 && (index === 0 || position > order[index - 1]))).toBe(true);
+  });
+
+  it("sin tablas, o con un valor ilegible, el documento no cambia", () => {
+    expect(fillTextTables(documentXml, { textTables: null })).toBe(documentXml);
+    expect(fillTextTables(documentXml, { textTables: { investigation: "x" } })).toBe(documentXml);
+  });
+});
+

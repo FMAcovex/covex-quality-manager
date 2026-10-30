@@ -11,12 +11,15 @@ import {
   setWordCellText,
   setWordSdtCheckbox,
   transformWordCell,
+  insertWordCellTables,
 } from "@/lib/ooxml/xml";
 import { DEFAULT_DEVIATION_ANNEX_III_VERSION, loadAnnexIIITemplate } from "@/modules/deviations/documents/templates";
 import { dispositionAnnexMarks, dispositionChoice } from "@/modules/deviations/disposition";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { appendFiguresPage, type DocumentFigure } from "@/lib/ooxml/figures";
 import { rootCauseAnnexText, storedInvestigationTools } from "@/modules/deviations/investigation-tools";
+import { storedTextTables } from "@/lib/forms/text-tables";
+import { deviationAnnexTablePlacements } from "@/modules/deviations/text-tables";
 
 type AnnexIIIRecord = {
   qmsRecord: { businessCode: string | null };
@@ -55,6 +58,7 @@ type AnnexIIIRecord = {
   rootCause: string | null;
   /** D-124: herramientas de análisis; se imprimen debajo de la causa raíz. */
   investigationTools?: unknown;
+  textTables?: unknown;
   recurrentRootCause: string | null;
   recurrenceDetails: string | null;
   classification: string | null;
@@ -149,6 +153,11 @@ export function setImpactCell(xml: string, row: number, cell: number, state: str
     xml = setWordSdtCheckbox(xml, 3, row, cell * 3 + index, state === option);
   });
   return detail ? appendWordCellText(xml, 3, row, cell, detail) : xml;
+}
+
+/** D-127: las tablas de cada texto, al final de la casilla de su apartado. Va después de rellenar el resto. */
+export function fillTextTables(xml: string, record: Pick<AnnexIIIRecord, "textTables">) {
+  return insertWordCellTables(xml, deviationAnnexTablePlacements(storedTextTables(record.textTables)));
 }
 
 /** `figures` (D-125): hoja «Figuras» tras la última página; la plantilla no se modifica. */
@@ -254,6 +263,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord, figures: readonly
   xml = fillDispositionCell(xml, record);
   xml = setTriStateCell(xml, 4, 4, 1, record.clientNotification);
 
+  xml = fillTextTables(xml, record);
   updateZipEntry(entries, "word/document.xml", xml);
   appendFiguresPage(entries, figures, value(record.qmsRecord.businessCode));
   sanitizeOfficeMetadata(entries);

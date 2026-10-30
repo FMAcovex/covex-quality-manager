@@ -1,6 +1,8 @@
 "use client";
 import { useId, useRef, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { continueBullet, toggleBullets, type TextEdit } from "@/lib/forms/bullets";
+import type { TextTable } from "@/lib/forms/text-tables";
+import { TextTablesEditor } from "./text-tables-editor";
 
 function applyEdit(textarea: HTMLTextAreaElement, edit: TextEdit) {
   textarea.focus();
@@ -20,7 +22,7 @@ function applyEdit(textarea: HTMLTextAreaElement, edit: TextEdit) {
  * D-126: campo de texto largo con viñetas. El botón «• Viñetas» pone o quita «• » en las líneas
  * seleccionadas e Intro continúa la lista (en una viñeta vacía, la termina). Se guarda como texto.
  */
-export function BulletTextarea({ id, label, fieldLabel, help, after, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+export function BulletTextarea({ id, label, fieldLabel, help, after, tables, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & {
   id: string;
   /** Contenido de la etiqueta visible (con el asterisco si es obligatorio). */
   label: ReactNode;
@@ -29,6 +31,8 @@ export function BulletTextarea({ id, label, fieldLabel, help, after, ...props }:
   /** Ayuda bajo la etiqueta y nota o error bajo el campo: se anuncian con el campo (aria-describedby). */
   help?: ReactNode;
   after?: ReactNode;
+  /** D-127: tablas del campo (solo en los campos que las admiten; requiere `name`). */
+  tables?: TextTable[];
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const describedBy = [props["aria-describedby"], help ? `${id}-help` : null, after ? `${id}-after` : null].filter(Boolean).join(" ") || undefined;
@@ -68,6 +72,7 @@ export function BulletTextarea({ id, label, fieldLabel, help, after, ...props }:
           applyEdit(textarea, edit);
         }}
       />
+      {tables && typeof props.name === "string" ? <TextTablesEditor field={props.name} fieldLabel={fieldLabel} initial={tables} /> : null}
       {after ? <div id={`${id}-after`} className="text-field-note">{after}</div> : null}
     </>
   );

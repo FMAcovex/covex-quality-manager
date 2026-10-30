@@ -549,3 +549,9 @@ La migración `20261029000200_deviation_investigation_tools` añade `Deviation.i
 
 Se valida en servidor (`src/modules/deviations/investigation-tools.ts`), entra en la versión del expediente y la captura B2 lo registra como JSON no crítico. Desde D-124 se imprime como texto en la casilla de causa raíz del Anexo III, debajo de la causa raíz.
 
+## Tablas de los textos largos (D-127)
+
+La migración `20261030000100_deviation_text_tables` añade `Deviation.textTables` (JSONB, opcional; un CHECK exige objeto). Es un objeto por campo de texto largo (`investigation`, `rootCause`, `otherProcessesImpactDetails`…) con una lista de tablas `{ title, columns[1..8], rows[≤50][columns] }`, todo texto (≤500 caracteres por celda, ≤10 tablas por campo). Sin tablas se guarda `null`.
+
+Se valida en servidor (`src/lib/forms/text-tables.ts`), entra en la versión del expediente y la captura B2 lo registra como JSON no crítico (contrato `B2_DEVIATION_TEXT_TABLES`). Las tablas se numeran en el orden de los apartados (`src/modules/deviations/text-tables.ts`) y se escriben en el Anexo III como tablas de Word dentro de la casilla de su apartado. Los demás módulos tendrán su propia columna en PR posteriores.
+
