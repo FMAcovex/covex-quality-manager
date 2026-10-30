@@ -15,6 +15,7 @@ import {
 import { DEFAULT_DEVIATION_ANNEX_III_VERSION, loadAnnexIIITemplate } from "@/modules/deviations/documents/templates";
 import { dispositionAnnexMarks, dispositionChoice } from "@/modules/deviations/disposition";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
+import { appendFiguresPage, type DocumentFigure } from "@/lib/ooxml/figures";
 import { rootCauseAnnexText, storedInvestigationTools } from "@/modules/deviations/investigation-tools";
 
 type AnnexIIIRecord = {
@@ -150,7 +151,8 @@ export function setImpactCell(xml: string, row: number, cell: number, state: str
   return detail ? appendWordCellText(xml, 3, row, cell, detail) : xml;
 }
 
-export async function generateAnnexIII(record: AnnexIIIRecord) {
+/** `figures` (D-125): hoja «Figuras» tras la última página; la plantilla no se modifica. */
+export async function generateAnnexIII(record: AnnexIIIRecord, figures: readonly DocumentFigure[] = []) {
   const templateVersion = record.anexoIIITemplateVersion?.versionCode ?? DEFAULT_DEVIATION_ANNEX_III_VERSION;
   const entries = readZip(await loadAnnexIIITemplate(templateVersion));
   let xml = getZipEntryText(entries, "word/document.xml");
@@ -253,6 +255,7 @@ export async function generateAnnexIII(record: AnnexIIIRecord) {
   xml = setTriStateCell(xml, 4, 4, 1, record.clientNotification);
 
   updateZipEntry(entries, "word/document.xml", xml);
+  appendFiguresPage(entries, figures, value(record.qmsRecord.businessCode));
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);
 }

@@ -136,6 +136,19 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**Figuras en los apartados de Desviaciones (2026-10-30, D-125):**
+- **Qué cambia:**
+  - en la edición, cada apartado (C, D, E, F-G, I y K-L) admite figuras: se pega (Ctrl+V), se arrastra o se elige una imagen, se describe y se guarda con «Adjuntar figura», aparte del botón Guardar;
+  - cada figura es una evidencia inalterable con su apartado, numerada en todo el expediente;
+  - la ficha muestra las miniaturas en su apartado;
+  - el Anexo III añade una hoja «Figuras» tras la última página, sin tocar la plantilla.
+- **Privacidad:** el navegador quita los metadatos de la imagen y respeta su orientación.
+- **Sin cambios de base de datos:** el apartado va en los metadatos de la evidencia.
+- **Comprobado** con:
+  - pruebas unitarias (apartados, numeración, tamaño de PNG y JPEG, hoja de figuras y rechazo de no imágenes);
+  - el smoke `deviation-figures:ui:smoke`: pegar, elegir archivo, adjuntar, que no guarda el formulario, numeración, ficha y Evidencias;
+  - un Anexo III generado con la plantilla v06 real (solo en local).
+
 **FTA y herramientas en el Anexo III de Desviaciones (2026-10-30, D-124):**
 - **Qué cambia:**
   - cuarta herramienta, FTA (árbol de fallos), en esquema con sangrías (hasta 4 niveles) y relación O/Y; solo una causa final y confirmada pasa a «Causa raíz» y marca «FTA»;

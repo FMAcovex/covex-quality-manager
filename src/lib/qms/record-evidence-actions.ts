@@ -5,6 +5,7 @@ import { authorizedAction } from "@/lib/auth/action-guard";
 import { prisma } from "@/lib/db";
 import { signedDocumentActor } from "./signed-version-document";
 import { storeRecordEvidence } from "./record-evidence";
+import { figureSectionLabel, parseFigureSection } from "@/modules/deviations/figures";
 
 export type RecordEvidenceState = { error: string | null; success: string | null };
 
@@ -30,8 +31,12 @@ async function uploadEvidence(module: EvidenceModule, id: string, formData: Form
   if (!(file instanceof File) || file.size === 0) return { error: "Selecciona el archivo de la evidencia.", success: null };
   const qmsRecordId = await qmsRecordIdOf(module, id);
   if (!qmsRecordId) return { error: "El expediente no existe.", success: null };
+  let section: string | null = null;
   try {
+    // D-125: solo las desviaciones tienen figuras por apartado.
+    section = module === "deviation" ? parseFigureSection(formData.get("section")) : null;
     await storeRecordEvidence({
+      figure: section ? { section, label: figureSectionLabel(section) } : null,
       qmsRecordId,
       file,
       description: String(formData.get("description") ?? ""),
@@ -42,7 +47,7 @@ async function uploadEvidence(module: EvidenceModule, id: string, formData: Form
     return { error: error instanceof Error ? error.message : "No se pudo adjuntar la evidencia.", success: null };
   }
   revalidatePath(`${detailPaths[module]}/${id}`);
-  return { error: null, success: `Evidencia «${file.name}» adjuntada.` };
+  return { error: null, success: section ? `Figura adjuntada en «${figureSectionLabel(section)}».` : `Evidencia «${file.name}» adjuntada.` };
 }
 
 async function uploadDeviationEvidenceActionAuthenticatedContent(deviationId: string, _state: RecordEvidenceState, formData: FormData) {

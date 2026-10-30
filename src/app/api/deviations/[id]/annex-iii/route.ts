@@ -5,6 +5,8 @@ import { NextResponse } from "next/server";
 import { parseCapaAnnexVersion } from "@/modules/capa/documents/version-query";
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { generateAnnexIII } from "@/modules/deviations/documents/annex-iii";
+import { listRecordFigures, recordFigureFile } from "@/lib/qms/record-evidence";
+import { figureSectionLabel, numberFigures } from "@/modules/deviations/figures";
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { templateUnavailableResponse } from "@/lib/http/template-error-response";
 import {
@@ -54,8 +56,16 @@ async function GETAuthenticatedContent(request: Request, context: { params: Prom
       } as unknown as AnnexRecord)
     : ({ ...deviation, recordVersionLabel } as AnnexRecord);
 
+  // D-125: figuras de los apartados que existían en esa versión (todas si es la vigente sin congelar).
+  const figureItems = numberFigures(await listRecordFigures(deviation.qmsRecordId, { until: storedVersion?.frozenAt ?? null }));
+  const figures = [];
+  for (const item of figureItems) { // una a una, para no cargar todas las imágenes a la vez
+    const file = await recordFigureFile(deviation.qmsRecordId, item.id);
+    figures.push({ number: item.number, caption: `${figureSectionLabel(item.section!)}: ${item.description}`, bytes: Buffer.from(file.fileData), mimeType: file.mimeType ?? "image/png" });
+  }
+
   try {
-    const buffer = await generateAnnexIII(annexRecord);
+    const buffer = await generateAnnexIII(annexRecord, figures);
     await storeWorkingDocument({
       data: {
         qmsRecordId: deviation.qmsRecordId,

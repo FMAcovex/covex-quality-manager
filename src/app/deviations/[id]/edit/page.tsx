@@ -10,6 +10,8 @@ import Link from "next/link";
 import { updateDeviationAction } from "@/modules/deviations/actions";
 import { DeviationForm } from "@/modules/deviations/components/deviation-form";
 import { getDeviationDetail, getDeviationFormLookups } from "@/modules/deviations/queries";
+import { deviationFiguresBySection } from "@/modules/deviations/figure-queries";
+import { uploadDeviationEvidenceAction } from "@/lib/qms/record-evidence-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +36,10 @@ async function EditDeviationPageAuthenticatedContent({
     getDeviationFormLookups(),
   ]);
   if (!deviation) notFound();
-  const [similarDeviations, users] = await Promise.all([
+  const [similarDeviations, users, figures] = await Promise.all([
     getSimilarDeviations(deviation),
     appUserOptions([...deviation.immediateActions.map((item) => item.executedByUserId), ...deviation.capaPlans.map((item) => item.responsibleUserId)]),
+    deviationFiguresBySection(deviation.qmsRecordId),
   ]);
 
   const action = updateDeviationAction.bind(null, id);
@@ -60,6 +63,9 @@ async function EditDeviationPageAuthenticatedContent({
         currentVersionSequence={deviation.qmsRecord.versions.at(-1)?.sequenceNumber ?? 0}
         similarDeviations={similarDeviations}
         users={users}
+        qmsRecordId={deviation.qmsRecord.isActive ? deviation.qmsRecordId : undefined}
+        figures={figures}
+        figureAction={deviation.qmsRecord.isActive ? uploadDeviationEvidenceAction.bind(null, id) : undefined}
         defaults={{
           businessCode: deviation.qmsRecord.businessCode ?? "",
           departmentId: deviation.departmentId ?? "",
