@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_TABLE_COLUMNS,
   MAX_TABLE_ROWS,
+  annexTablePlacements,
+  initialFieldTables,
   numberTextTables,
+  tableSummaryErrors,
   orderedTextTables,
   parsePastedTable,
   pasteIntoTable,
@@ -123,6 +126,31 @@ describe("orderedTextTables", () => {
     expect(JSON.stringify(orderedTextTables(stored, fields))).toBe('{"investigation":[{"title":"A","columns":["a"],"rows":[]}],"rootCause":[{"title":"C","columns":["a"],"rows":[["b"]]}]}');
     expect(orderedTextTables({}, fields)).toBeNull();
     expect(orderedTextTables(null, fields)).toBeNull();
+  });
+});
+
+describe("utilidades comunes de los módulos", () => {
+  const table = (title: string) => ({ title, columns: ["a"], rows: [["b"]] });
+  it("initialFieldTables: tras un error, las enviadas (aunque estén incompletas); si no, las guardadas", () => {
+    const sent = { "textTables:rootCause": JSON.stringify([{ title: "", columns: ["x"], rows: [] }]), "textTables:investigation": "" };
+    expect(initialFieldTables("rootCause", sent, { rootCause: [table("Guardada")] })).toEqual([{ title: "", columns: ["x"], rows: [] }]);
+    expect(initialFieldTables("investigation", sent, { investigation: [table("Guardada")] })).toEqual([]);
+    expect(initialFieldTables("investigation", undefined, { investigation: [table("Guardada")] })).toEqual([table("Guardada")]);
+    expect(initialFieldTables("rootCause", { "textTables:rootCause": "{roto" }, null)).toEqual([]);
+  });
+
+  it("tableSummaryErrors: el resumen nombra el apartado", () => {
+    expect(tableSummaryErrors({ rootCause: ["1.ª tabla: falta el título."] }, { rootCause: "Causa raíz" })).toEqual(["Causa raíz · 1.ª tabla: falta el título."]);
+  });
+
+  it("annexTablePlacements: numera, ubica y baja las casillas que quedan bajo filas copiadas", () => {
+    const placements = annexTablePlacements(
+      { a: [table("A")], b: [table("B")], c: [table("C")] },
+      ["a", "b", "c", "d"],
+      { a: { table: 0, row: 5, cell: 0 }, b: { table: 1, row: 1, cell: 0 }, c: { table: 1, row: 8, cell: 1 }, d: null },
+      [{ table: 1, row: 3, count: 4 }],
+    );
+    expect(placements.map((item) => [item.table, item.row, item.cell, item.tables[0].number])).toEqual([[0, 5, 0, 1], [1, 1, 0, 2], [1, 11, 1, 3]]);
   });
 });
 

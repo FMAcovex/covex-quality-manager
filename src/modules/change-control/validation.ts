@@ -2,6 +2,8 @@ import { z } from "zod";
 import { optionalUserId, rowUserIdSchema } from "@/lib/qms/responsible-user";
 import type { ChangeTaskInput } from "@/modules/change-control/types";
 import { cleanText } from "@/lib/forms/bullets";
+import { parseTextTables, tableSummaryErrors } from "@/lib/forms/text-tables";
+import { CHANGE_CONTROL_TABLE_FIELD_LABELS, CHANGE_CONTROL_TABLE_FIELDS } from "./text-tables";
 
 const scope = z.enum([
   "INSTALLATIONS",
@@ -182,6 +184,11 @@ export function parseChangeControlForm(formData: FormData) {
     ["tasks", "Un cambio aprobado debe tener al menos una acción en el plan de ejecución."],
   ].forEach(([field, message]) => bindIssue(field, message));
 
+  // D-127: tablas de los textos largos; un error se muestra en su campo y no deja guardar.
+  const textTables = parseTextTables(formData, CHANGE_CONTROL_TABLE_FIELDS);
+  for (const [field, messages] of Object.entries(textTables.issues)) fieldIssues[field] = [...(fieldIssues[field] ?? []), ...messages];
+  errors.push(...tableSummaryErrors(textTables.issues, CHANGE_CONTROL_TABLE_FIELD_LABELS));
+
   return {
     errors,
     fieldIssues,
@@ -230,6 +237,7 @@ export function parseChangeControlForm(formData: FormData) {
       nextFollowupDate: text(formData, "nextFollowupDate"),
       dictamenObservations: text(formData, "dictamenObservations"),
       internalObservations: text(formData, "internalObservations"),
+      textTables: textTables.value,
       signedDocumentAvailable: bool(formData, "signedDocumentAvailable"),
       dataQualityStatus:
         enumValue(dataQuality, text(formData, "dataQualityStatus")) ?? "REVIEW_REQUIRED",

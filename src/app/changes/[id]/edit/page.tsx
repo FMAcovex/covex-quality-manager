@@ -8,6 +8,7 @@ import { updateChangeControlAction } from "@/modules/change-control/actions";
 import { ChangeControlForm } from "@/modules/change-control/components/change-control-form";
 import { getChangeControlDetail, getChangeControlLookups } from "@/modules/change-control/queries";
 import { nextFollowupDateFromHistory } from "@/modules/change-control/domain";
+import { storedTextTables } from "@/lib/forms/text-tables";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,7 @@ async function EditChangeControlPageAuthenticatedContent({ params, searchParams 
       : nextFollowupDate?.slice(0, 10),
     dictamenObservations: record.dictamenObservations ?? undefined,
     internalObservations: record.internalObservations ?? undefined,
+    textTables: storedTextTables(record.textTables),
     signedDocumentAvailable: boolValue(record.signedDocumentAvailable),
     dataQualityStatus: record.dataQualityStatus,
     finalStatus: record.finalStatus,

@@ -115,3 +115,16 @@ describe("parseChangeControlForm · CC1", () => {
     );
   });
 });
+
+describe("Controles de cambios · tablas de los textos (D-127)", () => {
+  it("lee las tablas y un error de tabla bloquea en su campo, con el apartado en el resumen", () => {
+    const form = operationalBase();
+    form.set("textTables:evaluation", JSON.stringify([{ title: "Riesgos", columns: ["Riesgo"], rows: [["Bajo"]] }]));
+    expect(parseChangeControlForm(form).values.textTables).toEqual({ evaluation: [{ title: "Riesgos", columns: ["Riesgo"], rows: [["Bajo"]] }] });
+    form.set("textTables:description", JSON.stringify([{ title: "", columns: ["a"], rows: [["b"]] }]));
+    const parsed = parseChangeControlForm(form);
+    expect(parsed.fieldIssues.description).toEqual(["1.ª tabla: falta el título."]);
+    expect(parsed.errors).toContain("Descripción del cambio · 1.ª tabla: falta el título.");
+  });
+});
+

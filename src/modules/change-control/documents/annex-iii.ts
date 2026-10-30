@@ -1,5 +1,7 @@
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
-import { setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { insertWordCellTables, setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { storedTextTables } from "@/lib/forms/text-tables";
+import { changeControlAnnexTablePlacements } from "@/modules/change-control/text-tables";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadChangeAnnexIIITemplate } from "@/modules/change-control/documents/templates";
 import type { ChangeDocumentRecord } from "@/modules/change-control/documents/types";
@@ -84,6 +86,8 @@ export async function generateChangeAnnexIII(record: ChangeDocumentRecord) {
     ].join("\n"),
   );
 
+  // D-127: tablas de la solicitud, al final de su casilla (después de rellenar el resto).
+  xml = insertWordCellTables(xml, changeControlAnnexTablePlacements(storedTextTables(record.textTables), "III"));
   updateZipEntry(entries, "word/document.xml", xml);
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);

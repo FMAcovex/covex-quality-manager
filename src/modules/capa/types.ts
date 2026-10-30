@@ -1,3 +1,5 @@
+import type { TextTables } from "@/lib/forms/text-tables";
+
 export type CapaFormState = {
   error: string | null;
   fieldErrors?: string[];
@@ -56,6 +58,8 @@ export type CapaFormDefaults = {
   effectivenessEvidence?: string;
   effectiveClosedAt?: string;
   conclusion?: string;
+  /** D-127: tablas de los textos largos, por campo. */
+  textTables?: TextTables | null;
   internalObservations?: string;
   signedDocumentAvailable?: "" | "true" | "false";
   dataQualityStatus?: "COMPLETE" | "INCOMPLETE" | "REVIEW_REQUIRED";

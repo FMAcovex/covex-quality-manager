@@ -82,6 +82,8 @@ export function BulletTextarea({ id, label, fieldLabel, help, after, tables, ...
 export function BulletTextField({ label, className = "field full", requiredMark, hidden, children, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label: string;
   help?: ReactNode;
+  /** D-127: tablas del campo (solo en los campos que las admiten). */
+  tables?: TextTable[];
   className?: string;
   /** Muestra « *» aunque el navegador no exija el campo (obligatorio solo al cerrar, etc.). */
   requiredMark?: boolean;

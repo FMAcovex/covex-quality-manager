@@ -1,10 +1,13 @@
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import {
+  insertWordCellTables,
   fillWordRowBalanced,
   replaceWordRowsRangeBalanced,
   setWordCellTextBalanced,
 } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
+import { storedTextTables } from "@/lib/forms/text-tables";
+import { changeControlAnnexTablePlacements } from "@/modules/change-control/text-tables";
 import { loadChangeAnnexIVTemplate } from "@/modules/change-control/documents/templates";
 import type { ChangeDocumentRecord, ChangeDocumentTask } from "@/modules/change-control/documents/types";
 
@@ -153,6 +156,8 @@ export async function generateChangeAnnexIV(record: ChangeDocumentRecord) {
     ].join("\n"),
   );
 
+  // D-127: tablas del dictamen, al final de su casilla (después de rellenar el resto).
+  xml = insertWordCellTables(xml, changeControlAnnexTablePlacements(storedTextTables(record.textTables), "IV"));
   updateZipEntry(entries, "word/document.xml", xml);
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);

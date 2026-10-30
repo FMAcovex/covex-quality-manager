@@ -38,6 +38,8 @@ import {
 } from "@/lib/qms/versioning";
 import { acceptsFollowup, keepsOperationalStatus } from "@/modules/lifecycle";
 import { followupFinalStatus } from "@/modules/change-control/lifecycle";
+import { orderedTextTables, storedTextTables } from "@/lib/forms/text-tables";
+import { CHANGE_CONTROL_TABLE_FIELDS } from "./text-tables";
 
 /** Usuarios responsables del formulario principal (D-101). */
 function changeUserIds(v: ReturnType<typeof parseChangeControlForm>["values"]) {
@@ -96,6 +98,7 @@ function scalarSnapshot(v: ReturnType<typeof parseChangeControlForm>["values"]) 
     followupResponsibleUserId: v.followupResponsibleUserId,
     dictamenObservations: v.dictamenObservations,
     internalObservations: v.internalObservations,
+    textTables: orderedTextTables(v.textTables, CHANGE_CONTROL_TABLE_FIELDS),
     signedDocumentAvailable: v.signedDocumentAvailable,
     dataQualityStatus: v.dataQualityStatus,
     finalStatus: v.finalStatus,
@@ -296,6 +299,7 @@ async function createChangeControlActionAuthenticatedContent(
           followupResponsibleUserId: v.followupResponsibleUserId,
           dictamenObservations: v.dictamenObservations,
           internalObservations: v.internalObservations,
+          textTables: orderedTextTables(v.textTables, CHANGE_CONTROL_TABLE_FIELDS) ?? Prisma.DbNull,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
           finalStatus: v.finalStatus,
@@ -487,6 +491,8 @@ async function updateChangeControlActionAuthenticatedContent(
     dictamenResult: existing.dictamenResult,
     dictamenDate: existing.dictamenDate?.toISOString().slice(0, 10) ?? null,
     followupResponsibleUserId: existing.followupResponsibleUserId,
+    // Normalizado para comparar sin el orden de claves de JSONB; si no se puede leer, el valor bruto.
+    textTables: orderedTextTables(storedTextTables(existing.textTables), CHANGE_CONTROL_TABLE_FIELDS) ?? existing.textTables ?? null,
   };
 
   try {
@@ -576,6 +582,7 @@ async function updateChangeControlActionAuthenticatedContent(
           followupResponsibleUserId: v.followupResponsibleUserId,
           dictamenObservations: v.dictamenObservations,
           internalObservations: v.internalObservations,
+          textTables: orderedTextTables(v.textTables, CHANGE_CONTROL_TABLE_FIELDS) ?? Prisma.DbNull,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
           finalStatus: v.finalStatus,

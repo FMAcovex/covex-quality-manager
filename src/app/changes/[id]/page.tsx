@@ -1,4 +1,7 @@
 import { FormattedText } from "@/components/formatted-text";
+import { TextTablesView } from "@/components/text-tables-view";
+import { numberTextTables, storedTextTables } from "@/lib/forms/text-tables";
+import { CHANGE_CONTROL_TABLE_FIELDS } from "@/modules/change-control/text-tables";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
 import { PreviewLink } from "@/components/preview-link";
 import { uploadChangeControlEvidenceAction } from "@/lib/qms/record-evidence-actions";
@@ -126,6 +129,8 @@ async function ChangeControlDetailPageAuthenticatedContent({
     PENDING: reviewThreads.filter((item) => item.status === "PENDING").length,
     ACCEPTED: reviewThreads.filter((item) => item.status === "ACCEPTED").length,
   });
+  // D-127: tablas de los textos, numeradas en el orden del expediente.
+  const textTables = numberTextTables(storedTextTables(record.textTables), CHANGE_CONTROL_TABLE_FIELDS);
   const reviewTarget = {
     infoDescription: reviewTargetWithValue(changeControlReviewTargets.infoDescription, displayValue(record.description)),
     infoDepartment: reviewTargetWithValue(changeControlReviewTargets.infoDepartment, department),
@@ -276,15 +281,15 @@ async function ChangeControlDetailPageAuthenticatedContent({
           </section>
           <section id={reviewTarget.description.anchorId} className="review-target change-prose-section">
             <h3 className="review-target-heading"><span>Descripción del cambio</span><ReviewMarker target={reviewTarget.description} /></h3>
-            <FormattedText as="div" value={record.description} />
+            <FormattedText as="div" value={record.description} /><TextTablesView items={textTables.description} />
           </section>
           <section id={reviewTarget.justification.anchorId} className="review-target change-prose-section">
             <h3 className="review-target-heading"><span>Justificación del cambio</span><ReviewMarker target={reviewTarget.justification} /></h3>
-            <FormattedText as="div" value={record.justification} />
+            <FormattedText as="div" value={record.justification} /><TextTablesView items={textTables.justification} />
           </section>
           <section id={reviewTarget.providedDocuments.anchorId} className="review-target change-prose-section">
             <h3 className="review-target-heading"><span>Documentos aportados</span><ReviewMarker target={reviewTarget.providedDocuments} /></h3>
-            <FormattedText as="div" value={record.providedDocuments} />
+            <FormattedText as="div" value={record.providedDocuments} /><TextTablesView items={textTables.providedDocuments} />
           </section>
           <section className="change-decision-panel">
             <div className="change-decision-heading">
@@ -316,7 +321,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
 
           <div id={reviewTarget.evaluation.anchorId} className="review-target card change-evaluation-card">
             <h2 className="review-target-heading"><span>Evaluación del cambio</span><ReviewMarker target={reviewTarget.evaluation} /></h2>
-            <FormattedText as="div" value={record.evaluation} />
+            <FormattedText as="div" value={record.evaluation} /><TextTablesView items={textTables.evaluation} />
           </div>
 
           <div className="card">
@@ -374,7 +379,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
             </section>
             <section id={reviewTarget.dictamenObservations.anchorId} className="review-target change-prose-section">
               <h2 className="review-target-heading"><span>Observaciones</span><ReviewMarker target={reviewTarget.dictamenObservations} /></h2>
-              <FormattedText as="div" value={record.dictamenObservations} />
+              <FormattedText as="div" value={record.dictamenObservations} /><TextTablesView items={textTables.dictamenObservations} />
             </section>
             <section className="change-internal-panel">
               <div>
@@ -382,7 +387,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
                 <h2>Control interno</h2>
               </div>
               <dl className="info-grid">
-                <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value"><FormattedText value={record.internalObservations} /></dd></div>
+                <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value"><FormattedText value={record.internalObservations} /><TextTablesView items={textTables.internalObservations} /></dd></div>
                 <div className="info-item"><dt>Documento firmado disponible</dt><dd>{record.signedDocumentAvailable === true ? "Sí" : record.signedDocumentAvailable === false ? "No" : "—"}</dd></div>
                 <div className="info-item"><dt>Control del dato</dt><dd>{record.dataQualityStatus === "COMPLETE" ? "Completo" : record.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Pendiente de revisar"}</dd></div>
               </dl>

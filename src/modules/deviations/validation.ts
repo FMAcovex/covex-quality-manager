@@ -1,7 +1,7 @@
 import { parseAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { parseInvestigationTools } from "./investigation-tools";
-import { parseTextTables } from "@/lib/forms/text-tables";
+import { parseTextTables, tableSummaryErrors } from "@/lib/forms/text-tables";
 import { DEVIATION_TABLE_FIELD_LABELS, DEVIATION_TABLE_FIELDS } from "./text-tables";
 import { z } from "zod";
 import { rowUserIdSchema } from "@/lib/qms/responsible-user";
@@ -165,11 +165,8 @@ export function parseDeviationForm(formData: FormData) {
   if (tools.error) addIssue("investigationToolsJson", tools.error, true);
   // D-127: tablas de los textos largos; un error se muestra en su campo y no deja guardar.
   const textTables = parseTextTables(formData, DEVIATION_TABLE_FIELDS);
-  for (const [field, messages] of Object.entries(textTables.issues)) {
-    fieldIssues[field] = [...(fieldIssues[field] ?? []), ...messages];
-    // En el resumen, con el nombre del apartado: «Causa raíz · 1.ª tabla: falta el título.».
-    errors.push(...messages.map((message) => `${DEVIATION_TABLE_FIELD_LABELS[field as keyof typeof DEVIATION_TABLE_FIELD_LABELS]} · ${message}`));
-  }
+  for (const [field, messages] of Object.entries(textTables.issues)) fieldIssues[field] = [...(fieldIssues[field] ?? []), ...messages];
+  errors.push(...tableSummaryErrors(textTables.issues, DEVIATION_TABLE_FIELD_LABELS));
   const affectedEquipmentLine = text(formData, "affectedEquipmentLine");
   const otherOrigin = text(formData, "otherOrigin");
 

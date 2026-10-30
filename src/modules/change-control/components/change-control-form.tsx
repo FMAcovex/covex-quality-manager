@@ -18,6 +18,8 @@ import type {
   ChangeTaskInput,
 } from "@/modules/change-control/types";
 import { scopeLabels } from "@/modules/change-control/domain";
+import { initialFieldTables, type TextTable } from "@/lib/forms/text-tables";
+import { CHANGE_CONTROL_TABLE_FIELDS } from "../text-tables";
 
 type Department = { id: string; code: string; name: string };
 
@@ -67,6 +69,7 @@ function TextArea({
   help,
   required = false,
   issues,
+  tables,
 }: {
   label: string;
   name: string;
@@ -74,11 +77,12 @@ function TextArea({
   help?: string;
   required?: boolean;
   issues?: string[];
+  tables?: TextTable[];
 }) {
   const id = useId();
   return (
     <div className={`field span-3 ${issues?.length ? "has-error" : ""}`}>
-      <BulletTextarea id={id} label={<>{label}{required ? " *" : ""}</>} fieldLabel={label} help={help ? <small className="muted-note">{help}</small> : null} name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} after={issues?.length ? <FieldIssue messages={issues} /> : null} />
+      <BulletTextarea id={id} label={<>{label}{required ? " *" : ""}</>} fieldLabel={label} tables={tables} help={help ? <small className="muted-note">{help}</small> : null} name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} after={issues?.length ? <FieldIssue messages={issues} /> : null} />
     </div>
   );
 }
@@ -168,6 +172,8 @@ export function ChangeControlForm({
   const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, initialState);
   const formDefaults = submittedDefaults(defaults, state.submittedValues);
+  // D-127: tablas de cada texto; tras un error de guardado, las que se enviaron.
+  const tablesFor = (field: (typeof CHANGE_CONTROL_TABLE_FIELDS)[number]) => initialFieldTables(field, state.submittedValues, defaults?.textTables);
   const [tasks, setTasks] = useState<ChangeTaskInput[]>(
     defaults.tasks?.length ? defaults.tasks : [{ ...emptyTask }],
   );
@@ -270,9 +276,9 @@ export function ChangeControlForm({
           <Field label="Especificar Otros" name="otherScope" defaultValue={formDefaults.otherScope} issues={issues.otherScope} />
           <Field label="Nombre y apellidos del solicitante" name="requesterName" defaultValue={formDefaults.requesterName} required={!draft} span="span-2" issues={issues.requesterName} />
           <Field label="Puesto" name="requesterPosition" defaultValue={formDefaults.requesterPosition} required={!draft} span="span-2" issues={issues.requesterPosition} />
-          <TextArea label="Descripción del cambio" name="description" defaultValue={formDefaults.description} required={!draft} issues={issues.description} />
-          <TextArea label="Justificación del cambio" name="justification" defaultValue={formDefaults.justification} required={!draft} issues={issues.justification} />
-          <TextArea label="Relación de documentos que se aportan" name="providedDocuments" defaultValue={formDefaults.providedDocuments} required={!draft} help="Si no se aportan documentos, indique No aplica." issues={issues.providedDocuments} />
+          <TextArea tables={tablesFor("description")} label="Descripción del cambio" name="description" defaultValue={formDefaults.description} required={!draft} issues={issues.description} />
+          <TextArea tables={tablesFor("justification")} label="Justificación del cambio" name="justification" defaultValue={formDefaults.justification} required={!draft} issues={issues.justification} />
+          <TextArea tables={tablesFor("providedDocuments")} label="Relación de documentos que se aportan" name="providedDocuments" defaultValue={formDefaults.providedDocuments} required={!draft} help="Si no se aportan documentos, indique No aplica." issues={issues.providedDocuments} />
           <label className="field">
             <span>Solicitud</span>
             <select name="requestDecision" defaultValue={formDefaults.requestDecision ?? "PENDING"}>
@@ -294,7 +300,7 @@ export function ChangeControlForm({
           El Dictamen aprobado constituye la línea base. Una vez aprobado, sus acciones quedan bloqueadas; las nuevas tareas se añaden desde los seguimientos.
         </p>
         <div className="form-grid">
-          <TextArea label="Evaluación del cambio" name="evaluation" defaultValue={formDefaults.evaluation} required={!draft} issues={issues.evaluation} />
+          <TextArea tables={tablesFor("evaluation")} label="Evaluación del cambio" name="evaluation" defaultValue={formDefaults.evaluation} required={!draft} issues={issues.evaluation} />
           <label className="field">
             <span>Clasificación{draft ? "" : " *"}</span>
             <select name="classification" defaultValue={formDefaults.classification ?? ""} required={!draft}>
@@ -478,7 +484,7 @@ export function ChangeControlForm({
           <Field label="Fecha del próximo seguimiento" name="nextFollowupDate" type="date" defaultValue={formDefaults.nextFollowupDate} required={!draft && dictamenResult === "APPROVED"} issues={issues.nextFollowupDate} />
           <Field label="Responsable de seguimiento" name="followupResponsible" defaultValue={formDefaults.followupResponsible} required={!draft && dictamenResult === "APPROVED"} issues={issues.followupResponsible} />
           <ResponsibleUserSelect users={users} name="followupResponsibleUserId" textName="followupResponsible" defaultValue={formDefaults.followupResponsibleUserId} />
-          <TextArea label="Observaciones" name="dictamenObservations" defaultValue={formDefaults.dictamenObservations} required={!draft && dictamenResult !== "PENDING"} issues={issues.dictamenObservations} />
+          <TextArea tables={tablesFor("dictamenObservations")} label="Observaciones" name="dictamenObservations" defaultValue={formDefaults.dictamenObservations} required={!draft && dictamenResult !== "PENDING"} issues={issues.dictamenObservations} />
         </div>
       </section>
 
@@ -494,7 +500,7 @@ export function ChangeControlForm({
             </select>
             <small className="muted-note">{draft ? "En borrador pueden quedar campos pendientes. Al abrir se validarán los obligatorios." : "El expediente está en ciclo operativo."}</small>
           </label>
-          <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations} />
+          <TextArea tables={tablesFor("internalObservations")} label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations}  issues={issues.internalObservations} />
           <BooleanSelect label="Documento firmado disponible" name="signedDocumentAvailable" defaultValue={formDefaults.signedDocumentAvailable} />
           <label className="field">
             <span>Control del dato</span>

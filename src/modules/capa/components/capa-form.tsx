@@ -22,6 +22,8 @@ import type {
   CapaOriginInput,
   CapaPlannedActionInput,
 } from "@/modules/capa/types";
+import { initialFieldTables, type TextTable } from "@/lib/forms/text-tables";
+import { CAPA_TABLE_FIELDS } from "../text-tables";
 
 type Department = { id: string; code: string; name: string };
 
@@ -85,6 +87,7 @@ function TextArea({
   required = false,
   issues,
   span = "span-3",
+  tables,
 }: {
   label: string;
   name: string;
@@ -93,9 +96,11 @@ function TextArea({
   required?: boolean;
   issues?: string[];
   span?: string;
+  tables?: TextTable[];
 }) {
   return (
     <BulletTextField
+      tables={tables}
       className={`field ${span} ${issues?.length ? "has-error" : ""}`}
       label={label}
       help={help ? <small className="muted-note">{help}</small> : null}
@@ -154,6 +159,8 @@ export function CapaForm({
   const access = usePresentationAccess();
   const [state, formAction, pending] = useActionState(action, initialState);
   const formDefaults = submittedDefaults(defaults, state.submittedValues);
+  // D-127: tablas de cada texto; tras un error de guardado, las que se enviaron.
+  const tablesFor = (field: (typeof CAPA_TABLE_FIELDS)[number]) => initialFieldTables(field, state.submittedValues, defaults?.textTables);
 
   const [actions, setActions] = useState<CapaPlannedActionInput[]>(
     defaults.plannedActions?.length ? defaults.plannedActions : [{ ...emptyAction }],
@@ -374,14 +381,14 @@ export function CapaForm({
             required={!draft}
             issues={issues.applicableTo}
           />
-          <TextArea
+          <TextArea tables={tablesFor("defectDescription")}
             label="Descripción breve del defecto"
             name="defectDescription"
             defaultValue={formDefaults.defectDescription}
             required={!draft}
             issues={issues.defectDescription}
           />
-          <TextArea
+          <TextArea tables={tablesFor("rootCause")}
             label="Causa raíz"
             name="rootCause"
             defaultValue={formDefaults.rootCause}
@@ -524,7 +531,7 @@ export function CapaForm({
         </div>
 
         <div className="form-grid capa-section-body">
-          <TextArea
+          <TextArea tables={tablesFor("actionFollowupObservations")}
             label="Observaciones"
             name="actionFollowupObservations"
             defaultValue={formDefaults.actionFollowupObservations}
@@ -560,7 +567,7 @@ export function CapaForm({
             issues={issues.operationalClosedAt}
           />
 
-          <TextArea
+          <TextArea tables={tablesFor("operationalStatusDescription")}
             label="Estado"
             name="operationalStatusDescription"
             defaultValue={formDefaults.operationalStatusDescription}
@@ -604,7 +611,7 @@ export function CapaForm({
             issues={issues.effectiveClosedAt}
           />
 
-          <TextArea
+          <TextArea tables={tablesFor("effectivenessAssessment")}
             label="Evaluación de la eficacia"
             name="effectivenessAssessment"
             defaultValue={formDefaults.effectivenessAssessment}
@@ -617,7 +624,7 @@ export function CapaForm({
       <section className="form-section">
         <h2>7. Conclusión</h2>
         <div className="form-grid">
-          <TextArea
+          <TextArea tables={tablesFor("conclusion")}
             label="Conclusión / cierre"
             name="conclusion"
             defaultValue={formDefaults.conclusion}
@@ -651,10 +658,11 @@ export function CapaForm({
       <section className="form-section">
         <h2>Control interno</h2>
         <div className="form-grid">
-          <TextArea
+          <TextArea tables={tablesFor("internalObservations")}
             label="Observaciones internas"
             name="internalObservations"
             defaultValue={formDefaults.internalObservations}
+            issues={issues.internalObservations}
           />
 
           <label className="field">
