@@ -225,8 +225,8 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
       <div className="card">
         <h2>Investigación en el laboratorio</h2>
         <dl className="info-grid">
-          <ReviewItem target={target.phaseIInvestigation} label="Investigación (causa raíz)"><span className="prose-value"><FormattedText value={record.phaseIInvestigation} /></span></ReviewItem>
-          <ReviewItem target={target.phaseIConclusion} label="Conclusiones"><span className="prose-value"><FormattedText value={record.phaseIConclusion} /></span></ReviewItem>
+          <ReviewItem target={target.phaseIInvestigation} label="Investigación (causa raíz)"><div className="prose-value"><FormattedText value={record.phaseIInvestigation} /></div></ReviewItem>
+          <ReviewItem target={target.phaseIConclusion} label="Conclusiones"><div className="prose-value"><FormattedText value={record.phaseIConclusion} /></div></ReviewItem>
         </dl>
       </div>
       <ReviewCard target={target.phaseIVerdict} title="Disposición final y dictamen">
@@ -243,17 +243,17 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
       <h2>Investigación a gran escala</h2>
       <dl className="info-grid">
         <Item label="Fecha de emisión">{formatOosDate(record.phaseIIIssueDate)}</Item>
-        <ReviewItem target={target.phaseIIProductionReview} label="Revisión de la producción"><span className="prose-value"><FormattedText value={record.phaseIIProductionReview} /></span></ReviewItem>
-        <ReviewItem target={target.phaseIIRetesting} label="Repetición de pruebas"><span className="prose-value"><FormattedText value={record.phaseIIRetesting} /></span></ReviewItem>
-        <ReviewItem target={target.phaseIIResampling} label="Remuestreo"><span className="prose-value"><FormattedText value={record.phaseIIResampling} /></span></ReviewItem>
-        <ReviewItem target={target.phaseIIConclusion} label="Conclusión de la investigación"><span className="prose-value"><FormattedText value={record.phaseIIConclusion} /></span></ReviewItem>
+        <ReviewItem target={target.phaseIIProductionReview} label="Revisión de la producción"><div className="prose-value"><FormattedText value={record.phaseIIProductionReview} /></div></ReviewItem>
+        <ReviewItem target={target.phaseIIRetesting} label="Repetición de pruebas"><div className="prose-value"><FormattedText value={record.phaseIIRetesting} /></div></ReviewItem>
+        <ReviewItem target={target.phaseIIResampling} label="Remuestreo"><div className="prose-value"><FormattedText value={record.phaseIIResampling} /></div></ReviewItem>
+        <ReviewItem target={target.phaseIIConclusion} label="Conclusión de la investigación"><div className="prose-value"><FormattedText value={record.phaseIIConclusion} /></div></ReviewItem>
       </dl>
     </div>
     <ReviewCard target={target.phaseIIVerdict} title="Dictamen">
       <dl className="info-grid">
         <Verdict verdict={record.phaseIIVerdict} quantity={record.phaseIIVerdictQuantity} destroy={record.phaseIIDestroyQuantity} returned={record.phaseIIReturnQuantity} other={record.phaseIIVerdictOther} />
         <Item label="Emitido por · Garantía de Calidad">{txt(record.phaseIIIssuedBy)} · {formatOosDate(record.phaseIIIssuedAt)}</Item>
-        <Item label="Departamentos afectados" full><span className="prose-value"><FormattedText value={record.phaseIIAffectedDepartments} /></span></Item>
+        <Item label="Departamentos afectados" full><div className="prose-value"><FormattedText value={record.phaseIIAffectedDepartments} /></div></Item>
       </dl>
     </ReviewCard></> : null}
 

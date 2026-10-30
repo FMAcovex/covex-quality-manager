@@ -71,6 +71,12 @@ export function cleanText(value: string): string | null {
   return value.replace(/^•[ \t]*(?:\r?\n|$)/gm, "").trim() || null;
 }
 
+/** Un campo de texto de un formulario enviado, limpio como `cleanText` (null si falta o queda vacío). */
+export function formText(formData: FormData, name: string): string | null {
+  const value = formData.get(name);
+  return typeof value === "string" ? cleanText(value) : null;
+}
+
 /** Separa un texto en párrafos y listas de viñetas seguidas, para mostrarlo en la ficha. */
 export function textBlocks(value: string): TextBlock[] {
   const lines = value.split(/\r?\n/);

@@ -1,3 +1,5 @@
+import { formText } from "@/lib/forms/bullets";
+
 export type CapaFollowupLifecycleState = {
   status: "OPEN" | "CLOSED" | "CANCELLED";
   operationalClosedAt: string | null;
@@ -28,12 +30,8 @@ type ParseOptions = {
 /** Estados que puede fijar un seguimiento de CAPA. */
 export const capaFollowupStatuses = ["OPEN", "CLOSED", "CANCELLED"] as const;
 
-function text(formData: FormData, name: string) {
-  const value = formData.get(name);
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed || null;
-}
+// D-126: sin viñetas vacías; un texto sin contenido no cuenta como relleno.
+const text = formText;
 
 function validDate(value: string | null) {
   if (!value) return true;

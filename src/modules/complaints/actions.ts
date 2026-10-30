@@ -31,6 +31,7 @@ import { complaintNewVersionErrors,complaintSaveMode,complaintVersionKind } from
 import type { FollowupActionState } from "@/components/basic-followup-form";
 import { complaintVersionSource, lockComplaintVersion, refreshComplaintRelationSnapshot } from "@/modules/complaints/version-service";
 import { keepsOperationalStatus } from "@/modules/lifecycle";
+import { formText } from "@/lib/forms/bullets";
 
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
@@ -158,7 +159,7 @@ async function updateComplaintActionAuthenticatedContent(id:string,previous:Comp
  const assigned=await Promise.all([prisma.complaintCapaPlan.findMany({where:{complaintId:id},select:{responsibleUserId:true}}),prisma.complaintDerivedAction.findMany({where:{complaintId:id},select:{responsibleUserId:true}})]);
  const userProblem=await responsibleUsersProblem(complaintUserIds(v),assigned.flat().map(x=>x.responsibleUserId)); if(userProblem)return preserveFormState(previous,fd,{error:"No se puede guardar la reclamación.",fieldErrors:[userProblem]});
  const saveMode=complaintSaveMode(fd.get("saveMode"));
- const versionReason=String(fd.get("changeReason")??"").trim();
+ const versionReason=formText(fd,"changeReason")??"";
  const versionFollowupDate=String(fd.get("versionFollowupDate")??"").trim();
  const versionErrors=saveMode==="CREATE_VERSION"?complaintNewVersionErrors(versionFollowupDate,versionReason):[];
  if(versionErrors.length)return preserveFormState(previous,fd,{error:"No se puede generar la nueva versión.",fieldErrors:versionErrors});

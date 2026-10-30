@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanText, continueBullet, isBulletLine, textBlocks, toggleBullets, type TextEdit } from "./bullets";
+import { cleanText, continueBullet, formText, isBulletLine, textBlocks, toggleBullets, type TextEdit } from "./bullets";
 
 function apply(value: string, edit: TextEdit) {
   return value.slice(0, edit.from) + edit.text + value.slice(edit.to);
@@ -141,6 +141,17 @@ describe("cleanText", () => {
     expect(cleanText("• ")).toBeNull();
     expect(cleanText("\n•\n  ")).toBeNull();
     expect(cleanText("- guion")).toBe("- guion");
+  });
+});
+
+describe("formText", () => {
+  it("lee un campo del formulario sin viñetas vacías (motivos de versión y similares)", () => {
+    const form = new FormData();
+    form.set("changeReason", "• ");
+    form.set("other", " Motivo\r\n• revisado\r\n• ");
+    expect(formText(form, "changeReason")).toBeNull();
+    expect(formText(form, "other")).toBe("Motivo\r\n• revisado");
+    expect(formText(form, "missing")).toBeNull();
   });
 });
 

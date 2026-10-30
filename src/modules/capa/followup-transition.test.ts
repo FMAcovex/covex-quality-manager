@@ -142,4 +142,15 @@ describe("Hito 10.8C3-C1: transición de seguimiento CAPA", () => {
       "Una CAPA cancelada debe incluir el motivo de cancelación.",
     );
   });
+
+  it("D-126: una viñeta vacía no cuenta como actuación ni como motivo de cancelación", () => {
+    const form = baseForm();
+    form.set("description", "• ");
+    form.set("status", "CANCELLED");
+    form.set("cancellationReason", "•\r\n• ");
+    const parsed = parseCapaFollowupTransition(form, { current: current(), hasExistingExecutionEvidence: false });
+    expect(parsed.errors).toContain("La actuación realizada / resultado es obligatoria.");
+    expect(parsed.errors.some((error) => /cancelaci/i.test(error))).toBe(true);
+  });
 });
+

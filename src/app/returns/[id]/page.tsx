@@ -607,7 +607,7 @@ async function ReturnDetailPageAuthenticatedContent({
                             <span>
                               Seguimiento <ReviewMarker target={target} />
                             </span>
-                            <p>{item.comment}</p>
+                            <FormattedText as="div" value={item.comment} />
                           </div>
                           <div className="return-followup-field">
                             <span>Próximo seguimiento</span>
