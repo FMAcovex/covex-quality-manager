@@ -193,7 +193,7 @@ describe("Devoluciones: tablas de los textos en su casilla (D-127)", () => {
     return from > 0 && to > from && !xml.slice(from, to).includes("</w:tc>");
   };
 
-  it("el informe (Anexo III, con filas de productos copiadas) y la declaración (Anexo V) llevan sus tablas", async () => {
+  it("el informe (Anexo III; las filas de productos copiadas no mueven sus casillas, que están en otras tablas) y la declaración (Anexo V) llevan sus tablas", async () => {
     templates.current = syntheticDocx(grid(9, {}));
     const iii = getZipEntryText(readZip(await generateReturnAnnexIII(record)), "word/document.xml");
     expect(inSameCell(iii, "Motivo ficticio", "Tabla 1. Incidencias")).toBe(true);

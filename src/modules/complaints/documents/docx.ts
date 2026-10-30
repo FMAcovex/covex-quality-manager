@@ -109,7 +109,7 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
   xml=replaceWordRowWithCopies(xml,2,13,r.capaPlans.length?r.capaPlans.map(x=>[x.businessCapaCode??"",x.description,date(x.plannedExecutionDate),text(x.responsible)]):[["","","",""]]);
   xml=setWordCellTextBalanced(xml,3,1,0,text(r.conclusion));xml=setWordCellTextBalanced(xml,5,2,0,text(r.responseSummary));xml=setWordCellTextBalanced(xml,5,7,0,text(r.closeConclusion));
   // D-127: tablas de los textos, al final de su casilla (después de rellenar y copiar filas).
-  xml=insertWordCellTables(xml,complaintAnnexTablePlacements(storedTextTables(r.textTables),"legacy",Math.max(1,r.capaPlans.length)));
+  xml=insertWordCellTables(xml,complaintAnnexTablePlacements(storedTextTables(r.textTables),"legacy",Math.max(1,r.capaPlans.length),r.resolutionActions));
   updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
  }
 
@@ -179,7 +179,7 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
   ];
   xml=replaceWordRowWithCopies(xml,1,55,linkedActionRows.length?linkedActionRows:[["","","",""]]);
   // D-127: tablas de los textos, al final de su casilla (después de rellenar y copiar filas).
-  xml=insertWordCellTables(xml,complaintAnnexTablePlacements(storedTextTables(r.textTables),"v03",Math.max(1,linkedActionRows.length)));
+  xml=insertWordCellTables(xml,complaintAnnexTablePlacements(storedTextTables(r.textTables),"v03",Math.max(1,linkedActionRows.length),r.resolutionActions));
  }
 
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);

@@ -175,6 +175,9 @@ async function main() {
     assert.deepEqual(returned.textTables, { reasonObservations: expected("Unidades recibidas") });
     await go(`/returns/${returned.id}`);
     await qa.locator(".text-table-view", { hasText: "Tabla 1. Unidades recibidas" }).waitFor();
+    // Guardar otro cambio conserva la tabla tal cual.
+    await resave(`/returns/${returned.id}/edit`, /\/returns\/[0-9a-f-]{36}(\?|$)/, () => qa.locator('[name="country"]').fill("España"));
+    assert.deepEqual((await prisma.returnRecord.findUniqueOrThrow({ where: { id: returned.id } })).textTables, { reasonObservations: expected("Unidades recibidas") });
 
     assert.deepEqual(errors, []);
     console.log("D-127 OK (Desviaciones, CAPA, Controles de cambios, OOS, Reclamaciones y Devoluciones): tablas bajo el texto, pegado desde Excel, Intro sin guardar, error de título sin perder la tabla, guardado, ficha, sin cambios espurios y cambio real en el historial.");

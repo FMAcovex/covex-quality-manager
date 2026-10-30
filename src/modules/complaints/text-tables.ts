@@ -73,30 +73,44 @@ const ANNEX_III_V03: Partial<Record<Field, AnnexCell>> = {
   closeConclusion: { table: 3, row: 12, cell: 0 },
 };
 
-const legacyResolution = { table: 2, row: 8, cell: 0 };
-/** Casillas de las plantillas del Anexo III anteriores a la v03 (sin las casillas que no tienen). */
+/**
+ * Casillas de las plantillas del Anexo III anteriores a la v03 (sin las casillas que no tienen). Los detalles
+ * de cada actuación no se imprimen en ellas, así que sus tablas tampoco.
+ */
 const ANNEX_III_LEGACY: Partial<Record<Field, AnnexCell>> = {
   description: { table: 1, row: 10, cell: 0 },
   attachedDocumentation: { table: 1, row: 12, cell: 1 },
   investigation: { table: 1, row: 16, cell: 0 },
   impactAssessment: { table: 1, row: 16, cell: 0 },
   rootCause: { table: 2, row: 1, cell: 0 },
-  resolutionLines: legacyResolution,
-  immediateActionDetails: legacyResolution,
-  recallActionDetails: legacyResolution,
-  creditActionDetails: legacyResolution,
-  replacementActionDetails: legacyResolution,
-  otherResolutionDetails: legacyResolution,
+  resolutionLines: { table: 2, row: 8, cell: 0 },
   conclusion: { table: 3, row: 1, cell: 0 },
   responseSummary: { table: 5, row: 2, cell: 0 },
   closeConclusion: { table: 5, row: 7, cell: 0 },
 };
 
+/** Actuación de la que depende cada detalle; su texto solo se imprime con la actuación marcada. */
+const DETAIL_ACTIONS: Partial<Record<Field, string>> = {
+  immediateActionDetails: "IMMEDIATE_ACTION",
+  recallActionDetails: "RECALL",
+  creditActionDetails: "CREDIT",
+  replacementActionDetails: "REPLACEMENT",
+  otherResolutionDetails: "OTHER",
+};
+/** Actuaciones con casilla propia en la v03; las demás se imprimen en «Otros». */
+const BOXED_ACTIONS = new Set(["RETURN", "CORRECTIVE_ACTION", "PREVENTIVE_ACTION", "IMMEDIATE_ACTION", "RECALL", "CREDIT", "REPLACEMENT", "OTHER"]);
+
 /**
  * Dónde va cada tabla en el Anexo III según la plantilla (`v03` o anterior). `linkedRows`: filas que la
- * plantilla copia (acciones vinculadas en la v03, CAPA en las anteriores; al menos una).
+ * plantilla copia (acciones vinculadas en la v03, CAPA en las anteriores; al menos una). Las tablas de un
+ * detalle de actuación siguen a su texto: solo salen con la actuación marcada («Otros», también con
+ * actuaciones sin casilla propia). La numeración sigue siendo la de todo el expediente.
  */
-export function complaintAnnexTablePlacements(tables: TextTables, mapping: "v03" | "legacy", linkedRows: number) {
+export function complaintAnnexTablePlacements(tables: TextTables, mapping: "v03" | "legacy", linkedRows: number, resolutionActions: readonly string[]) {
   const copied = mapping === "v03" ? { table: 1, row: 55, count: linkedRows } : { table: 2, row: 13, count: linkedRows };
-  return annexTablePlacements(tables, COMPLAINT_TABLE_FIELDS, mapping === "v03" ? ANNEX_III_V03 : ANNEX_III_LEGACY, [copied]);
+  const selected = new Set(resolutionActions);
+  const printed = (action: string) => selected.has(action) || (action === "OTHER" && resolutionActions.some((item) => !BOXED_ACTIONS.has(item)));
+  const cells = { ...(mapping === "v03" ? ANNEX_III_V03 : ANNEX_III_LEGACY) };
+  for (const [field, action] of Object.entries(DETAIL_ACTIONS) as [Field, string][]) if (!printed(action)) delete cells[field];
+  return annexTablePlacements(tables, COMPLAINT_TABLE_FIELDS, cells, [copied]);
 }
