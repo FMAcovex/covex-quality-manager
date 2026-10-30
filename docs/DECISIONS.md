@@ -1372,7 +1372,7 @@ Decisión del responsable de Calidad: ayudar a ordenar la investigación de una 
   - cada causa con evidencia o comprobación (opcional) y estado.
 - **Hipótesis frente a confirmada.** Cada causa es una hipótesis hasta que quien investiga la marca como descartada o confirmada. La aplicación no cambia estados ni propone causas: sin IA.
 - **«Usar como causa raíz»** solo está disponible para una causa confirmada (o el último porqué de una cadena confirmada). Con un clic copia el texto a «Causa raíz» sin duplicarlo y marca su categoría 6M y la metodología. No guarda nada: se revisa la redacción y se guarda como siempre.
-- **No cambia el Anexo III.** Las herramientas no se imprimen; la causa raíz, la categoría y la metodología siguen siendo los campos de siempre.
+- **No cambia el Anexo III.** Las herramientas no se imprimen; la causa raíz, la categoría y la metodología siguen siendo los campos de siempre. *Sustituido por D-124: desde entonces se imprimen en la casilla de causa raíz.*
 - **Trazabilidad:**
   - se guardan con el expediente (campo `investigationTools`), en sus versiones y en el historial de modificaciones;
   - la captura B2 las registra como un campo JSON no crítico;
@@ -1385,3 +1385,27 @@ Decisión del responsable de Calidad: ayudar a ordenar la investigación de una 
 
   Un valor no válido bloquea el guardado, también en borrador, y el formulario conserva lo escrito para corregirlo.
 - Solo Desviaciones. Otros módulos, si se piden, en una PR propia.
+
+## D-124 — FTA y herramientas de investigación en el Anexo III de Desviaciones (2026-10-30)
+
+Decisión del responsable de Calidad, que completa D-123.
+
+- **FTA (árbol de fallos) como cuarta herramienta.**
+  - Un evento principal (el fallo) y sus causas en esquema con sangrías, hasta 4 niveles.
+  - En una causa con causas debajo se indica si basta una (O) o hacen falta todas a la vez (Y).
+  - Cada causa tiene evidencia y estado (hipótesis, descartada o confirmada), como el resto.
+  - Solo una causa final (sin causas debajo) y confirmada se puede usar como causa raíz; marca la casilla «FTA» de la metodología, que ya existe en la plantilla.
+  - Quitar una causa quita también las que cuelgan de ella.
+- **Las herramientas se imprimen en el Anexo III.** En la casilla «Análisis de causa raíz» (apartado G) va primero la causa raíz redactada, como hasta ahora, y debajo el análisis de **todas** las herramientas usadas:
+  - 5 porqués: problema y cada porqué, con el estado de la cadena;
+  - Ishikawa: las causas por categoría 6M;
+  - brainstorming: las ideas, con su categoría si la tienen;
+  - FTA: el evento principal y el esquema con sangrías y la relación O/Y.
+
+  Cada causa sale con su estado y su evidencia, también las descartadas, porque muestran qué se comprobó y se excluyó.
+- **Se cumplimenta la plantilla, no se cambia.** Es texto en la casilla existente, con el formato de valor de siempre; la plantilla v06 no se modifica. Comprobado generando el anexo con la plantilla v06.
+- El anexo de cada versión imprime las herramientas de esa versión. Sin herramientas, la casilla queda como antes (solo la causa raíz). Un anexo de una versión anterior a D-124 que ya tenía herramientas (D-123) se genera ahora con ellas, así que puede no coincidir con la copia descargada entonces; la copia firmada de referencia es la que se adjuntó.
+- En el anexo cada causa ocupa una línea: los saltos de línea dentro de una causa se convierten en espacios, y se quitan los caracteres de control.
+- Una causa del FTA en blanco con causas debajo bloquea el guardado («Cada causa necesita una descripción»); solo se descartan las causas finales en blanco.
+- No hay cambios de base de datos: el FTA va en el mismo campo `investigationTools`, que ya captura B2.
+

@@ -3027,6 +3027,10 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
 .investigation-tool-picker .button[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--blue-dark); }
 .investigation-tool-picker .button[aria-disabled="true"] { cursor: default; }
 .investigation-tool-picker-note { display: block; margin-top: 4px; }
+.fta-tree { --fta-indent: 28px; }
+.fta-tree .fta-node:not(.fta-depth-1) { border-left: 3px solid var(--border); }
+.dynamic-row.investigation-cause-row.fta-node { grid-template-columns: 2fr 1.4fr minmax(120px, 0.9fr) minmax(170px, 1fr) auto; }
+@media (max-width: 900px) { .fta-tree { --fta-indent: 12px; } .dynamic-row.investigation-cause-row.fta-node { grid-template-columns: 1fr; } }
 .investigation-tools-message { margin: 6px 0; color: var(--success); font-size: var(--font-sm); }
 .investigation-tools .field-error { margin: 4px 0; color: #a5281f; font-size: 12px; }
 .investigation-tools-summary { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }

@@ -542,9 +542,10 @@ Tiene las mismas guardas y captura B2 que `AlertRule` (raíz de administración/
 
 La migración `20261029000200_deviation_investigation_tools` añade `Deviation.investigationTools` (JSONB, opcional; un CHECK exige objeto). Contiene:
 - `fiveWhys`: `{ problem, whys[≤5], status }` o `null`;
-- `causes[≤60]`: `{ method: ISHIKAWA|BRAINSTORMING, category: 6M|null, text, evidence, status }`.
+- `causes[≤60]`: `{ method: ISHIKAWA|BRAINSTORMING, category: 6M|null, text, evidence, status }`;
+- `fta` (D-124): `{ top, nodes[≤60] }` o `null`; cada nodo `{ depth: 1..4, text, evidence, status, gate: OR|AND }` en orden de esquema (cada nodo cuelga del anterior de un nivel menos).
 
 `status` es `HYPOTHESIS`, `DISCARDED` o `CONFIRMED`. Sin contenido se guarda `null`.
 
-Se valida en servidor (`src/modules/deviations/investigation-tools.ts`), entra en la versión del expediente y la captura B2 lo registra como JSON no crítico. No se usa en el Anexo III.
+Se valida en servidor (`src/modules/deviations/investigation-tools.ts`), entra en la versión del expediente y la captura B2 lo registra como JSON no crítico. Desde D-124 se imprime como texto en la casilla de causa raíz del Anexo III, debajo de la causa raíz.
 

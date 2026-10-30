@@ -160,7 +160,7 @@ describe("Desviaciones · herramientas de investigación (D-123)", () => {
     form.set("investigationToolsJson", JSON.stringify(tools));
     const parsed = parseDeviationForm(form);
     expect(parsed.errors).toEqual([]);
-    expect(parsed.values.investigationTools).toEqual(tools);
+    expect(parsed.values.investigationTools).toEqual({ ...tools, fta: null });
   });
 
   it("un valor no válido bloquea el guardado con el error en su campo, también en borrador", () => {

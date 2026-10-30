@@ -136,6 +136,17 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - La previsualización del índice lista los departamentos de cada hoja con su nombre de cabecera y da de alta de una vez los que faltan.
 - Los anulados en el índice no se dan de alta. Con el índice general de 2025 se dan de alta 26, y la inclusión en bloque cubre 676 vigentes y 91 anuladas; las 32 filas de los departamentos anulados quedan fuera.
 
+**FTA y herramientas en el Anexo III de Desviaciones (2026-10-30, D-124):**
+- **Qué cambia:**
+  - cuarta herramienta, FTA (árbol de fallos), en esquema con sangrías (hasta 4 niveles) y relación O/Y; solo una causa final y confirmada pasa a «Causa raíz» y marca «FTA»;
+  - el Anexo III imprime en la casilla de causa raíz, debajo de la causa raíz, todas las herramientas usadas con el estado y la evidencia de cada causa;
+  - la ficha muestra también el FTA.
+- **Sin cambios de base de datos:** el FTA va en `Deviation.investigationTools`.
+- **Comprobado** con:
+  - pruebas unitarias (FTA, texto del anexo y casilla de la plantilla);
+  - `deviation-tools:ui:smoke` ampliado con el FTA;
+  - un Anexo III generado con la plantilla v06 real (solo en local; la plantilla no se versiona).
+
 **Herramientas de investigación en Desviaciones (2026-10-29, D-123):**
 - **Qué cambia:**
   - en «E. Investigación», el desplegable «Herramientas de análisis» con 5 porqués, Ishikawa (6M) y brainstorming; se elige la herramienta y solo se muestra esa (y las que ya tienen contenido);

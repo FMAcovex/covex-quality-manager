@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { documentCellTexts, missingTemplateWords } from "@/lib/ooxml/template-text";
 
 vi.mock("@/modules/deviations/documents/templates", () => ({ loadAnnexIIITemplate: async () => Buffer.alloc(0) }));
-const { fillDispositionCell, fillEventRow, setImpactCell } = await import("@/modules/deviations/documents/annex-iii");
+const { fillDispositionCell, fillEventRow, fillRootCauseCell, setImpactCell } = await import("@/modules/deviations/documents/annex-iii");
 
 // Casillas y textos literales del Anexo III v06 (bloques de impacto y disposición final).
 const box = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>☐</w:t></w:r></w:sdtContent></w:sdt>`;
@@ -83,3 +83,26 @@ describe("Desviaciones Anexo III: fecha, hora y turno del evento (D-116)", () =>
   });
 });
 
+describe("Desviaciones Anexo III: casilla de causa raíz con el análisis (D-124)", () => {
+  // Tabla 2 del Anexo III v06: la causa raíz va en la fila 14, celda 0.
+  const rootXml = [empty(1), empty(1), table(Array.from({ length: 15 }, () => [cell()]))].join("<w:p/>");
+  const investigationTools = {
+    fiveWhys: { problem: "Tres días sin firma", whys: ["Supervisor de vacaciones", "Sin suplente en el formato"], status: "CONFIRMED" },
+    causes: [{ method: "ISHIKAWA", category: "PEOPLE", text: "Puerta mal cerrada", evidence: "Sin aperturas", status: "DISCARDED" }],
+    fta: null,
+  };
+
+  it("escribe la causa raíz y, debajo, todas las herramientas usadas, cada línea en su párrafo", () => {
+    const xml = fillRootCauseCell(rootXml, { rootCause: "Formato sin suplente.", investigationTools });
+    expect(documentCellTexts(xml)[2][14][0].split("\n")).toEqual([
+      "Formato sin suplente.", "",
+      "Análisis — 5 porqués (confirmada)", "Problema: Tres días sin firma", "1. ¿Por qué? Supervisor de vacaciones", "2. ¿Por qué? Sin suplente en el formato", "",
+      "Análisis — Ishikawa (6M)", "Mano de obra: Puerta mal cerrada (descartada; evidencia: Sin aperturas)",
+    ]);
+  });
+
+  it("sin herramientas (o con un valor ilegible) queda solo la causa raíz, como antes", () => {
+    expect(documentCellTexts(fillRootCauseCell(rootXml, { rootCause: "Causa", investigationTools: null }))[2][14][0]).toBe("Causa");
+    expect(documentCellTexts(fillRootCauseCell(rootXml, { rootCause: "Causa", investigationTools: { causes: "x" } }))[2][14][0]).toBe("Causa");
+  });
+});
