@@ -17,6 +17,7 @@ const REVIEWED_BINARY_CONSUMERS = [
   "src/app/api/changes/[id]/versions/[sequence]/signed-pdf/route.ts",
   "src/app/api/complaints/[id]/versions/[sequence]/signed-pdf/route.ts",
   "src/app/api/controlled-documents/[id]/revisions/[revisionId]/documents/[objectId]/route.ts",
+  "src/app/api/deviations/[id]/annex-iii/route.ts",
   "src/app/api/deviations/[id]/versions/[sequence]/signed-pdf/route.ts",
   "src/app/api/oos/[id]/signed-pdf/[annex]/route.ts",
   "src/app/api/qms/[id]/document-originals/[custodyId]/route.ts",

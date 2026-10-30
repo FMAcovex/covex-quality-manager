@@ -17,6 +17,8 @@ export type RecordEvidenceItem = {
   description: string;
   reference: string | null;
   size: number | null;
+  /** D-125: apartado del expediente al que ilustra (figura); null en las evidencias normales. */
+  section: string | null;
 };
 
 /**
@@ -29,6 +31,8 @@ export async function storeRecordEvidence(input: {
   description: string;
   reference: string;
   actor: string;
+  /** D-125: figura de un apartado (solo imágenes). El llamador valida la clave del apartado. */
+  figure?: { section: string; label: string } | null;
 }) {
   const description = input.description.trim();
   const reference = input.reference.trim();
@@ -38,6 +42,7 @@ export async function storeRecordEvidence(input: {
   }
   const bytes = new Uint8Array(await input.file.arrayBuffer());
   const mimeType = validateEvidenceFile(input.file.name, input.file.type, bytes);
+  if (input.figure && !mimeType.startsWith("image/")) throw new Error("Una figura debe ser una imagen PNG o JPG.");
   const fileName = safeSignedPdfFileName(input.file.name);
   const checksum = digest(bytes);
 
@@ -55,7 +60,7 @@ export async function storeRecordEvidence(input: {
         mimeType,
         checksum,
         generatedByText: input.actor,
-        metadata: { source: "RECEIVED", description, reference: reference || null, size: bytes.length },
+        metadata: { source: "RECEIVED", description, reference: reference || null, size: bytes.length, ...(input.figure ? { section: input.figure.section } : {}) },
       },
     });
     await tx.changeHistory.create({
@@ -63,8 +68,8 @@ export async function storeRecordEvidence(input: {
         qmsRecordId: input.qmsRecordId,
         changedByText: input.actor,
         fieldPath: "__evidence__",
-        newValue: { documentId: document.id, fileName, size: bytes.length, checksum, description, reference: reference || null },
-        reason: `Evidencia adjunta: ${description}`,
+        newValue: { documentId: document.id, fileName, size: bytes.length, checksum, description, reference: reference || null, ...(input.figure ? { section: input.figure.section } : {}) },
+        reason: input.figure ? `Figura adjunta (${input.figure.label}): ${description}` : `Evidencia adjunta: ${description}`,
         source: "UI",
       },
     });
@@ -91,8 +96,26 @@ export async function listRecordEvidence(qmsRecordId: string): Promise<RecordEvi
       description: metadataText(metadata, "description") ?? "",
       reference: metadataText(metadata, "reference"),
       size: typeof size === "number" ? size : null,
+      section: metadataText(metadata, "section"),
     };
   });
+}
+
+/**
+ * D-125: figuras del expediente (imágenes con apartado), en orden de alta. `until` limita a las que
+ * existían al registrar una versión; `withData` trae el binario verificado para el anexo.
+ */
+export async function listRecordFigures(qmsRecordId: string, options: { until?: Date | null } = {}) {
+  const items = await listRecordEvidence(qmsRecordId);
+  return items
+    .filter((item) => item.section && item.mimeType?.startsWith("image/") && (!options.until || item.generatedAt <= options.until))
+    .sort((a, b) => a.generatedAt.getTime() - b.generatedAt.getTime());
+}
+
+export async function recordFigureFile(qmsRecordId: string, documentId: string) {
+  const result = await getRecordEvidence(qmsRecordId, documentId);
+  if ("error" in result) throw new Error("No se ha podido verificar la integridad de una figura.");
+  return result.document;
 }
 
 /** Binario de una evidencia del expediente, con el checksum verificado. */

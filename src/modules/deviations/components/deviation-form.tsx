@@ -4,6 +4,10 @@ import type { SimilarDeviation } from "@/modules/deviations/recurrence-queries";
 import { AdditionalLotsField } from "@/components/additional-lots-field";
 import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import { InvestigationToolsField } from "./investigation-tools-field";
+import { SectionFigures } from "./section-figures";
+import type { FigureView } from "./figure-thumbs";
+import type { FigureSection } from "../figures";
+import type { RecordEvidenceState } from "@/lib/qms/record-evidence-actions";
 import { usePresentationAccess, PermissionGate } from "@/components/permissions";
 import { CsrfField } from "@/components/csrf";
 import { dispositionChoice, dispositionOptions } from "@/modules/deviations/disposition";
@@ -181,6 +185,9 @@ export function DeviationForm({
   similarDeviations,
   users = [],
   fromAuditFindingId,
+  qmsRecordId,
+  figures,
+  figureAction,
 }: {
   action: FormAction;
   departments: DepartmentOption[];
@@ -197,8 +204,15 @@ export function DeviationForm({
   users?: AppUserOption[];
   /** R5B2: alta desde un hallazgo de auditoría; al guardar queda atribuida. */
   fromAuditFindingId?: string;
+  /** D-125: figuras por apartado (solo al editar; se adjuntan aparte del botón Guardar). */
+  qmsRecordId?: string;
+  figures?: Partial<Record<FigureSection, FigureView[]>>;
+  figureAction?: (state: RecordEvidenceState, formData: FormData) => Promise<RecordEvidenceState>;
 }) {
   const access = usePresentationAccess();
+  const figureSlot = (section: FigureSection) => figureAction && qmsRecordId
+    ? <SectionFigures section={section} qmsRecordId={qmsRecordId} figures={figures?.[section] ?? []} action={figureAction} />
+    : null;
   const [state, formAction, pending] = useActionState(action, { error: null });
   const submitted = state.submittedValues;
   const formDefaults = new Proxy(defaults, {
@@ -472,6 +486,8 @@ export function DeviationForm({
           <TextArea label="¿Cuándo ocurrió?" name="whenHappened" defaultValue={formDefaults.whenHappened} required issues={issues.whenHappened} />
           <TextArea label="¿Dónde ocurrió?" name="whereHappened" defaultValue={formDefaults.whereHappened} required issues={issues.whereHappened} />
           <TextArea label="¿Cómo se detectó / cómo ocurrió?" name="howHappened" defaultValue={formDefaults.howHappened} required issues={issues.howHappened} />
+          {figureSlot("DESCRIPTION")}
+          {mode === "create" ? <p className="muted-note full">Las figuras (imágenes pegadas en cada apartado) se añaden al editar la desviación, una vez creada.</p> : null}
         </div>
       </section>
 
@@ -500,6 +516,7 @@ export function DeviationForm({
           ))}
           <div><button type="button" className="button small" onClick={() => setActions((current) => [...current, { ...emptyAction }])}>+ Añadir acción inmediata</button></div>
         </div>
+        {figureSlot("IMMEDIATE_ACTIONS")}
       </section>
 
       <section className="form-section">
@@ -509,6 +526,7 @@ export function DeviationForm({
           <TextArea label="Investigación realizada / resultado y conclusiones" name="investigation" defaultValue={formDefaults.investigation} required issues={issues.investigation} />
           <TriStateSelect label="¿Investigación concluyente?" name="investigationConclusive" defaultValue={formDefaults.investigationConclusive} required issues={issues.investigationConclusive} />
           <InvestigationToolsField defaultValue={defaults.investigationTools} submittedJson={typeof submitted?.investigationToolsJson === "string" ? submitted.investigationToolsJson : undefined} error={issues.investigationToolsJson?.[0]} />
+          {figureSlot("INVESTIGATION")}
         </div>
       </section>
 
@@ -547,6 +565,7 @@ export function DeviationForm({
             <textarea name="recurrenceDetails" defaultValue={formDefaults.recurrenceDetails ?? ""} required aria-invalid={issues.recurrenceDetails?.length ? true : undefined} />
             <FieldIssue messages={issues.recurrenceDetails} />
           </label>
+          {figureSlot("ROOT_CAUSE")}
         </div>
       </section>
 
@@ -581,6 +600,7 @@ export function DeviationForm({
             <textarea name="otherProcessesImpactDetails" defaultValue={formDefaults.otherProcessesImpactDetails ?? ""} required aria-invalid={issues.otherProcessesImpactDetails?.length ? true : undefined} />
             <FieldIssue messages={issues.otherProcessesImpactDetails} />
           </label>
+          {figureSlot("IMPACT")}
         </div>
       </section>
 
@@ -638,6 +658,7 @@ export function DeviationForm({
           <Field label="Cantidad" name="dispositionQuantity" defaultValue={formDefaults.dispositionQuantity} required issues={issues.dispositionQuantity} />
           <TriStateSelect label="Notificación al cliente" name="clientNotification" defaultValue={formDefaults.clientNotification} required issues={issues.clientNotification} />
           <TextArea label="Comentarios de disposición" name="dispositionComments" defaultValue={formDefaults.dispositionComments} required issues={issues.dispositionComments} />
+          {figureSlot("CONCLUSION")}
         </div>
       </section>
 

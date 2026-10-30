@@ -3042,3 +3042,20 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
 @media (max-width: 900px) {
   .dynamic-row.investigation-cause-row, .dynamic-row.investigation-cause-row.with-category { grid-template-columns: 1fr; }
 }
+
+/* D-125: figuras por apartado en Desviaciones. */
+.section-figures { border-top: 1px dashed var(--border); padding-top: 10px; }
+.figure-thumbs { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; }
+.figure-thumbs li { width: 180px; display: grid; gap: 4px; font-size: var(--font-sm); }
+.figure-thumbs img { width: 180px; height: 120px; object-fit: contain; background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.figure-captions { margin: 6px 0; padding-left: 18px; font-size: var(--font-sm); }
+.figure-drop { border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 10px 12px; background: var(--surface-soft); }
+.figure-drop:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.figure-pending { display: grid; grid-template-columns: 220px 1fr auto; gap: 12px; align-items: end; }
+.figure-pending img { width: 220px; max-height: 160px; object-fit: contain; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+.figure-actions { display: flex; gap: 6px; }
+.form-success-inline { margin: 4px 0; color: var(--success); font-size: var(--font-sm); }
+.figure-block { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
+.figure-block h3 { margin: 0 0 4px; font-size: var(--font-md); }
+@media (max-width: 700px) { .figure-pending { grid-template-columns: 1fr; } .figure-pending img { width: 100%; } }
+

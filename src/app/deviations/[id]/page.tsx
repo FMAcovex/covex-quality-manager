@@ -5,6 +5,8 @@ import { storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { storedInvestigationTools } from "@/modules/deviations/investigation-tools";
 import { InvestigationToolsSummary } from "@/modules/deviations/components/investigation-tools-summary";
+import { FigureThumbs } from "@/modules/deviations/components/figure-thumbs";
+import { deviationFiguresBySection } from "@/modules/deviations/figure-queries";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
 import { uploadDeviationEvidenceAction } from "@/lib/qms/record-evidence-actions";
 import { RecordTimeline } from "@/components/record-timeline";
@@ -137,6 +139,11 @@ async function DeviationDetailPageAuthenticatedContent({
   const deviation = await getDeviationDetail(id);
   if (!deviation) notFound();
   const similarDeviations = await getSimilarDeviations(deviation);
+  // D-125: figuras de cada apartado, en la pestaña «Desviación».
+  const figures = activeTab === "deviation" ? await deviationFiguresBySection(deviation.qmsRecordId) : {};
+  const figureBlock = (section: keyof typeof figures) => figures[section]?.length
+    ? <div className="figure-block"><h3>Figuras</h3><FigureThumbs qmsRecordId={deviation.qmsRecordId} figures={figures[section]!} /></div>
+    : null;
 
   const code = qmsRecordDisplayCode(deviation.qmsRecord, "Sin codificación");
   const hasCode = Boolean(deviation.qmsRecord.businessCode ?? deviation.qmsRecord.annulledBusinessCode);
@@ -449,6 +456,7 @@ async function DeviationDetailPageAuthenticatedContent({
             {deviation.whereHappened || reviewMode ? <div id={reviewTarget.whereHappened.anchorId} className="info-item review-target"><dt><span>Dónde ocurrió</span><ReviewMarker target={reviewTarget.whereHappened} /></dt><dd className="prose-value">{text(deviation.whereHappened)}</dd></div> : null}
             {deviation.howHappened || reviewMode ? <div id={reviewTarget.howHappened.anchorId} className="info-item review-target"><dt><span>Cómo ocurrió / cómo se detectó</span><ReviewMarker target={reviewTarget.howHappened} /></dt><dd className="prose-value">{text(deviation.howHappened)}</dd></div> : null}
           </dl>
+          {figureBlock("DESCRIPTION")}
         </div>
           </section>
           <section className="deviation-part" id={deviationPartAnchors.investigation}>
@@ -461,6 +469,7 @@ async function DeviationDetailPageAuthenticatedContent({
               <div className="info-item"><dt>Resultado</dt><dd>{investigationResultLabel(deviation.investigationConclusive)}</dd></div>
             </dl>
             <InvestigationToolsSummary tools={storedInvestigationTools(deviation.investigationTools)} />
+            {figureBlock("INVESTIGATION")}
           </div>
           <div className="card root-cause-card">
             <h2>Causa raíz</h2>
@@ -472,6 +481,7 @@ async function DeviationDetailPageAuthenticatedContent({
               <div className="info-item full"><SimilarDeviations items={similarDeviations} /></div>
               <div id={reviewTarget.recurrenceDetails.anchorId} className="info-item wide review-target"><dt><span>Antecedentes / detalle</span><ReviewMarker target={reviewTarget.recurrenceDetails} /></dt><dd className="prose-value">{text(deviation.recurrenceDetails)}</dd></div>
             </dl>
+            {figureBlock("ROOT_CAUSE")}
           </div>
           <div id={reviewTarget.impactAssessment.anchorId} className="card review-target">
             <div className="review-target-heading"><h2>Evaluación de impacto</h2><ReviewMarker target={reviewTarget.impactAssessment} /></div>
@@ -483,6 +493,7 @@ async function DeviationDetailPageAuthenticatedContent({
               <div className="info-item"><dt>Otros procesos/productos</dt><dd>{triStateLabel(deviation.otherProcessesImpact)}</dd></div>
               <div className="info-item wide"><dt>Detalle</dt><dd className="prose-value">{text(deviation.otherProcessesImpactDetails)}</dd></div>
             </dl>
+            {figureBlock("IMPACT")}
           </div>
         </>
           </section>
@@ -518,6 +529,7 @@ async function DeviationDetailPageAuthenticatedContent({
                 </table>
               </div>
             ) : <div className="empty-panel">No se han registrado acciones inmediatas.</div>}
+            {figureBlock("IMMEDIATE_ACTIONS")}
           </div>
           <div id={reviewTarget.capaPlans.anchorId} className="card review-target">
             <div className="review-target-heading"><h2>CAPA propuestas</h2><ReviewMarker target={reviewTarget.capaPlans} /></div>
@@ -584,6 +596,7 @@ async function DeviationDetailPageAuthenticatedContent({
             <div className="info-item"><dt>Fecha de cierre</dt><dd>{formatDate(deviation.closedAt)}</dd></div>
             <div id={reviewTarget.dispositionComments.anchorId} className="info-item full review-target"><dt><span>Comentarios de disposición</span><ReviewMarker target={reviewTarget.dispositionComments} /></dt><dd className="prose-value">{text(deviation.dispositionComments)}</dd></div>
           </dl>
+          {figureBlock("CONCLUSION")}
         </div>
           </section>
         </FormWithIndex>

@@ -1409,3 +1409,17 @@ Decisión del responsable de Calidad, que completa D-123.
 - Una causa del FTA en blanco con causas debajo bloquea el guardado («Cada causa necesita una descripción»); solo se descartan las causas finales en blanco.
 - No hay cambios de base de datos: el FTA va en el mismo campo `investigationTools`, que ya captura B2.
 
+## D-125 — Figuras en los apartados de Desviaciones (2026-10-30)
+
+Decisión del responsable de Calidad: poder poner imágenes junto al texto de una desviación sin convertir los campos en un editor de texto enriquecido (opción B) y con una hoja de figuras al final del Anexo III.
+
+- **Dónde:** en los apartados C (Descripción del evento), D (Acción inmediata), E (Investigación), F-G (Causa raíz), I (Impacto) y K-L (Conclusión y cierre) del formulario de edición. En el alta no: se añaden una vez creada la desviación.
+- **Cómo:** se pega una imagen (Ctrl+V) en cualquier punto del apartado, se arrastra o se elige un archivo; se describe («Qué muestra la figura») y se guarda con **«Adjuntar figura»**. Es una acción explícita aparte del botón Guardar: no guarda el resto del formulario ni se pierde lo escrito.
+- **Qué se guarda:** cada figura es una **evidencia** del expediente (D-096): inalterable, con SHA-256, sin sustituir ni borrar, en el historial y en la pestaña Evidencias, con el apartado al que ilustra. Mismo permiso que adjuntar evidencias.
+- **Privacidad:** el navegador vuelve a dibujar la imagen antes de enviarla: respeta la orientación, la limita a 2400 px de lado y quita los metadatos (ubicación, cámara…). Las capturas quedan en PNG y las fotos en JPEG. Si la imagen original es prueba por sí misma, se adjunta además en Evidencias, que la conserva tal cual.
+- **Numeración:** «Figura 1, 2…» por orden de alta en todo el expediente; no cambia porque las evidencias no se borran. En el texto se puede citar («ver figura 2»).
+- **Ficha:** cada apartado de la pestaña «Desviación» muestra sus figuras en miniatura; cada una abre la imagen.
+- **Anexo III:** las casillas de la plantilla no llevan imágenes. Tras la última página se añade una hoja **«Figuras del expediente …»** con cada figura ajustada a la página y su pie («Figura N. Apartado: descripción»). La plantilla no se modifica: la hoja va después de su contenido y conserva la cabecera y el pie. El anexo de una versión congelada incluye solo las figuras que existían entonces. Comprobado con la plantilla v06.
+- No hay cambios de base de datos: el apartado va en los metadatos de la evidencia.
+- Solo Desviaciones. Otros módulos, si se piden, en una PR propia.
+
