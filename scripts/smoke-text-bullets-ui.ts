@@ -77,6 +77,18 @@ async function main() {
     await go(`/changes/${change.id}?tab=dictamen`);
     assert.deepEqual(await qa.locator(".change-evaluation-card .text-bullets li").allTextContents(), ["Riesgo bajo", "Sin impacto en validación"]);
 
+    // CAPA, OOS, Reclamaciones y Devoluciones: el mismo botón en sus textos largos.
+    for (const path of ["/capa/new", "/oos/new", "/complaints/new", "/returns/new"]) {
+      await go(path);
+      const button = qa.getByRole("button", { name: /^Viñetas en «/ }).first();
+      const textarea = button.locator("xpath=ancestor::div[contains(@class,'text-field-head')][1]/following-sibling::textarea[1]");
+      await textarea.fill("Primera\nSegunda");
+      await textarea.press("Control+a");
+      await button.click();
+      assert.equal(await textarea.inputValue(), "• Primera\n• Segunda", `viñetas en ${path}`);
+      assert.ok(await qa.getByRole("button", { name: /^Viñetas en «/ }).count() >= 3, `textos largos con viñetas en ${path}`);
+    }
+
     assert.deepEqual(errors, []);
     console.log("D-126 OK: viñetas con el botón, Intro y deshacer; se guardan como texto y la ficha las muestra como lista.");
   } finally {

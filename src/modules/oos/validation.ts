@@ -3,6 +3,7 @@ import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import { oosClosingResults, oosEvaluationKeys, type OosPhaseIEvaluation } from "./domain";
 import { fieldIssuesFromErrors, type FieldIssueRule } from "@/lib/forms/field-issues";
+import { cleanText } from "@/lib/forms/bullets";
 
 const areaSchema = z.enum(["API", "MD"]);
 const statusSchema = z.enum(["DRAFT", "OPEN", "CLOSED"]);
@@ -13,7 +14,7 @@ const resultSchema = z.enum(["INVALIDATED", "CONFIRMED", "INCONCLUSIVE"]);
 
 function text(fd: FormData, name: string) {
   const value = fd.get(name);
-  return typeof value === "string" && value.trim() ? value.trim() : null;
+  return typeof value === "string" ? cleanText(value) : null; // D-126: sin viñetas vacías
 }
 
 function option<T extends z.ZodTypeAny>(schema: T, value: string | null): z.infer<T> | null {

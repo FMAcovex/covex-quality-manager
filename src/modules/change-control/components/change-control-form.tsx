@@ -78,8 +78,7 @@ function TextArea({
   const id = useId();
   return (
     <div className={`field span-3 ${issues?.length ? "has-error" : ""}`}>
-      <BulletTextarea id={id} label={<>{label}{required ? " *" : ""}</>} fieldLabel={label} help={help ? <small className="muted-note">{help}</small> : null} name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
-      <FieldIssue messages={issues} />
+      <BulletTextarea id={id} label={<>{label}{required ? " *" : ""}</>} fieldLabel={label} help={help ? <small className="muted-note">{help}</small> : null} name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} after={issues?.length ? <FieldIssue messages={issues} /> : null} />
     </div>
   );
 }

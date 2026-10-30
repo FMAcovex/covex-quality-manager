@@ -118,8 +118,7 @@ function TextArea({
   const id = useId();
   return (
     <div className={`field full ${issues?.length ? "has-error" : ""}`}>
-      <BulletTextarea id={id} label={<>{label}{required ? " *" : ""}</>} fieldLabel={label} help={help ? <small className="muted-note">{help}</small> : null} name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
-      <FieldIssue messages={issues} />
+      <BulletTextarea id={id} label={<>{label}{required ? " *" : ""}</>} fieldLabel={label} help={help ? <small className="muted-note">{help}</small> : null} name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} after={issues?.length ? <FieldIssue messages={issues} /> : null} />
     </div>
   );
 }
@@ -561,8 +560,7 @@ export function DeviationForm({
           <TriStateSelect label="¿Causa raíz recurrente?" name="recurrentRootCause" defaultValue={formDefaults.recurrentRootCause} required issues={issues.recurrentRootCause} />
           {similarDeviations ? <SimilarDeviations items={similarDeviations} /> : null}
           <div className={`field span-3 ${issues.recurrenceDetails?.length ? "has-error" : ""}`}>
-            <BulletTextarea id="deviation-recurrenceDetails" label="Antecedentes / detalle de recurrencia *" fieldLabel="Antecedentes / detalle de recurrencia" name="recurrenceDetails" defaultValue={formDefaults.recurrenceDetails ?? ""} required aria-invalid={issues.recurrenceDetails?.length ? true : undefined} />
-            <FieldIssue messages={issues.recurrenceDetails} />
+            <BulletTextarea id="deviation-recurrenceDetails" label="Antecedentes / detalle de recurrencia *" fieldLabel="Antecedentes / detalle de recurrencia" name="recurrenceDetails" defaultValue={formDefaults.recurrenceDetails ?? ""} required aria-invalid={issues.recurrenceDetails?.length ? true : undefined} after={issues.recurrenceDetails?.length ? <FieldIssue messages={issues.recurrenceDetails} /> : null} />
           </div>
           {figureSlot("ROOT_CAUSE")}
         </div>
@@ -595,8 +593,7 @@ export function DeviationForm({
           <TriStateSelect label="Otros procesos / productos" name="otherProcessesImpact" defaultValue={formDefaults.otherProcessesImpact} required issues={issues.otherProcessesImpact} />
           <TriStateSelect label="Afecta a producto terminado" name="affectsFinishedProduct" defaultValue={formDefaults.affectsFinishedProduct} required issues={issues.affectsFinishedProduct} />
           <div className={`field span-2 ${issues.otherProcessesImpactDetails?.length ? "has-error" : ""}`}>
-            <BulletTextarea id="deviation-otherProcessesImpactDetails" label="Detalle / justificación de impacto *" fieldLabel="Detalle / justificación de impacto" name="otherProcessesImpactDetails" defaultValue={formDefaults.otherProcessesImpactDetails ?? ""} required aria-invalid={issues.otherProcessesImpactDetails?.length ? true : undefined} />
-            <FieldIssue messages={issues.otherProcessesImpactDetails} />
+            <BulletTextarea id="deviation-otherProcessesImpactDetails" label="Detalle / justificación de impacto *" fieldLabel="Detalle / justificación de impacto" name="otherProcessesImpactDetails" defaultValue={formDefaults.otherProcessesImpactDetails ?? ""} required aria-invalid={issues.otherProcessesImpactDetails?.length ? true : undefined} after={issues.otherProcessesImpactDetails?.length ? <FieldIssue messages={issues.otherProcessesImpactDetails} /> : null} />
           </div>
           {figureSlot("IMPACT")}
         </div>

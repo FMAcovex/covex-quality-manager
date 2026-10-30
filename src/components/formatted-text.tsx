@@ -1,4 +1,4 @@
-import { textBlocks } from "@/lib/forms/bullets";
+import { cleanText, textBlocks } from "@/lib/forms/bullets";
 
 /**
  * D-126: muestra un texto largo con sus viñetas («• » al principio de línea) como lista. Un texto sin
@@ -6,7 +6,8 @@ import { textBlocks } from "@/lib/forms/bullets";
  * dentro de un párrafo).
  */
 export function FormattedText({ value, as, className }: { value: string | null | undefined; as?: "div"; className?: string }) {
-  const text = value?.trim() ? value : "—";
+  // Sin espacios de los extremos ni viñetas vacías, como se guarda ahora (D-126).
+  const text = (value ? cleanText(value) : null) ?? "—";
   const blocks = textBlocks(text);
   const content = blocks.some((block) => block.kind === "bullets")
     ? blocks.map((block, index) => block.kind === "bullets"

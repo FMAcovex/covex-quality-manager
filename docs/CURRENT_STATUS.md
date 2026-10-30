@@ -151,16 +151,17 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 
 **Viñetas en los textos largos (2026-10-30, D-126):**
 - **Qué cambia:**
-  - en los formularios de Desviaciones y Controles de cambios, los textos largos tienen el botón «• Viñetas»: pone o quita la viñeta en las líneas seleccionadas;
+  - en los formularios de Desviaciones, Controles de cambios, CAPA, OOS, Reclamaciones y Devoluciones, los textos largos tienen el botón «• Viñetas»: pone o quita la viñeta en las líneas seleccionadas;
+  - el servidor quita las viñetas vacías: no se guardan ni cuentan como relleno de un campo obligatorio;
   - Intro continúa la lista y, en una viñeta vacía, la termina;
   - la ficha muestra las viñetas como lista;
   - en los anexos Word cada viñeta es un párrafo con sangría francesa.
 - **Sin cambios de base de datos:** se guarda como texto con «• » al principio de la línea; los textos antiguos no cambian.
 - **Comprobado** con:
-  - pruebas unitarias (poner y quitar viñetas, Intro, bloques para la ficha y párrafos Word);
-  - el smoke `text-bullets:ui:smoke`: botón, Intro, deshacer, guardado, ficha de la desviación y del control de cambios;
+  - pruebas unitarias (poner y quitar viñetas, Intro, viñetas vacías, bloques y componente de la ficha, párrafos Word, campo obligatorio);
+  - el smoke `text-bullets:ui:smoke`: botón, Intro, deshacer, guardado, fichas de la desviación y del control de cambios, y el botón en CAPA, OOS, Reclamaciones y Devoluciones;
   - un Anexo III generado con la plantilla v06 real (solo en local).
-- **Siguiente:** tablas editables (opción B, dentro de la casilla del anexo) en «E. Investigación» e «I. Impacto» de Desviaciones y en «Evaluación del cambio».
+- **Siguiente:** tablas editables (opción B, dentro de la casilla del anexo) en los seis módulos.
 
 **FTA y herramientas en el Anexo III de Desviaciones (2026-10-30, D-124):**
 - **Qué cambia:**

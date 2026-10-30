@@ -19,7 +19,7 @@ export function bulletText(line: string) {
 }
 
 function lineStartAt(value: string, index: number) {
-  return value.lastIndexOf("\n", index - 1) + 1;
+  return index <= 0 ? 0 : value.lastIndexOf("\n", index - 1) + 1;
 }
 
 function lineEndAt(value: string, index: number) {
@@ -63,32 +63,43 @@ export function continueBullet(value: string, selectionStart: number, selectionE
   return { from: selectionStart, to: selectionStart, text: "\n" + BULLET_PREFIX, selectionStart: caret, selectionEnd: caret };
 }
 
-/** Separa un texto en párrafos y listas de viñetas seguidas, para mostrarlo en la ficha. */
-export function textBlocks(value: string): TextBlock[] {
-  const blocks: TextBlock[] = [];
-  let text: string[] = [];
-  let separators: string[] = [];
-  const lines = value.split(/(\r?\n)/);
-  for (let index = 0; index < lines.length; index += 2) {
-    const line = lines[index];
-    const separator = lines[index + 1] ?? "";
-    if (isBulletLine(line)) {
-      if (text.length) blocks.push({ kind: "text", text: joinLines(text, separators) });
-      text = [];
-      separators = [];
-      const item = bulletText(line);
-      const last = blocks[blocks.length - 1];
-      if (last?.kind === "bullets") last.items.push(item);
-      else blocks.push({ kind: "bullets", items: [item] });
-    } else {
-      text.push(line);
-      separators.push(separator);
-    }
-  }
-  if (text.length && (text.length > 1 || text[0] || !blocks.length)) blocks.push({ kind: "text", text: joinLines(text, separators) });
-  return blocks;
+/**
+ * Limpieza en el servidor de un texto largo: quita las viñetas vacías (un «•» sin texto, que deja el
+ * Intro tras la última viñeta) y los espacios de los extremos. Sin texto, null: no cuenta como relleno.
+ */
+export function cleanText(value: string): string | null {
+  return value.replace(/^•[ \t]*(?:\r?\n|$)/gm, "").trim() || null;
 }
 
-function joinLines(lines: string[], separators: string[]) {
-  return lines.map((line, index) => line + (index < lines.length - 1 ? separators[index] : "")).join("");
+/** Separa un texto en párrafos y listas de viñetas seguidas, para mostrarlo en la ficha. */
+export function textBlocks(value: string): TextBlock[] {
+  const lines = value.split(/\r?\n/);
+  if (!lines.some(isBulletLine)) return [{ kind: "text", text: value }];
+  const blocks: TextBlock[] = [];
+  let text: string[] = [];
+  // Las líneas en blanco junto a una lista van como bloques vacíos propios: se ven igual antes y después.
+  const flush = (final: boolean) => {
+    let start = 0, end = text.length;
+    while (start < end && !text[start].trim()) start++;
+    while (end > start && !text[end - 1].trim()) end--;
+    const empty = { kind: "text", text: "" } as const;
+    if (blocks.length) for (let index = 0; index < start; index++) blocks.push({ ...empty });
+    if (end > start) blocks.push({ kind: "text", text: text.slice(start, end).join("\n") });
+    if (!final) for (let index = end; index < text.length; index++) blocks.push({ ...empty });
+    text = [];
+  };
+  for (const line of lines) {
+    if (!isBulletLine(line)) {
+      text.push(line);
+      continue;
+    }
+    flush(false);
+    const item = bulletText(line);
+    if (!item.trim()) continue;
+    const last = blocks[blocks.length - 1];
+    if (last?.kind === "bullets") last.items.push(item);
+    else blocks.push({ kind: "bullets", items: [item] });
+  }
+  flush(true);
+  return blocks;
 }

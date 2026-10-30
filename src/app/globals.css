@@ -3065,5 +3065,8 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
 .text-bullets { margin: 2px 0; padding-left: 1.4em; white-space: normal; }
 .text-bullets li { white-space: pre-wrap; overflow-wrap: anywhere; }
 .text-bullets li + li { margin-top: 2px; }
+.text-field-note { display: contents; }
 .text-block { display: block; }
+/* Antes era un <p>: conserva su margen (una lista no puede ir dentro de un párrafo). */
+.prose-block { margin: 1em 0; }
 .text-block:empty { min-height: .6em; }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { continueBullet, isBulletLine, textBlocks, toggleBullets, type TextEdit } from "./bullets";
+import { cleanText, continueBullet, isBulletLine, textBlocks, toggleBullets, type TextEdit } from "./bullets";
 
 function apply(value: string, edit: TextEdit) {
   return value.slice(0, edit.from) + edit.text + value.slice(edit.to);
@@ -59,6 +59,11 @@ describe("toggleBullets", () => {
     expect(apply(value, edit)).toBe("• uno\ndos\ntres");
   });
 
+  it("en la primera línea de un texto que empieza por un salto de línea", () => {
+    const edit = toggleBullets("\nTexto", 0, 0);
+    expect(edit).toEqual({ from: 0, to: 0, text: "• ", selectionStart: 2, selectionEnd: 2 });
+  });
+
   it("respeta los saltos de línea de Windows", () => {
     const value = "uno\r\ndos";
     expect(apply(value, toggleBullets(value, 0, value.length))).toBe("• uno\r\n• dos");
@@ -107,6 +112,20 @@ describe("textBlocks", () => {
     expect(textBlocks("- uno\r\n- dos")).toEqual([{ kind: "text", text: "- uno\r\n- dos" }]);
   });
 
+  it("una línea en blanco antes o después de la lista se conserva igual a los dos lados", () => {
+    expect(textBlocks("Texto\n\n• a\n\nFin")).toEqual([
+      { kind: "text", text: "Texto" },
+      { kind: "text", text: "" },
+      { kind: "bullets", items: ["a"] },
+      { kind: "text", text: "" },
+      { kind: "text", text: "Fin" },
+    ]);
+  });
+
+  it("no muestra viñetas vacías", () => {
+    expect(textBlocks("• a\n•\n• \n• b")).toEqual([{ kind: "bullets", items: ["a", "b"] }]);
+  });
+
   it("una línea vacía separa dos listas", () => {
     expect(textBlocks("• a\n\n• b")).toEqual([
       { kind: "bullets", items: ["a"] },
@@ -115,3 +134,13 @@ describe("textBlocks", () => {
     ]);
   });
 });
+
+describe("cleanText", () => {
+  it("quita las viñetas vacías y los espacios de los extremos; sin texto, null", () => {
+    expect(cleanText("  Texto\r\n• uno\r\n• \r\n•\t\r\n• dos\r\n• ")).toBe("Texto\r\n• uno\r\n• dos");
+    expect(cleanText("• ")).toBeNull();
+    expect(cleanText("\n•\n  ")).toBeNull();
+    expect(cleanText("- guion")).toBe("- guion");
+  });
+});
+

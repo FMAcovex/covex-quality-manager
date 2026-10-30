@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { optionalUserId, rowUserIdSchema } from "@/lib/qms/responsible-user";
 import type { ChangeTaskInput } from "@/modules/change-control/types";
+import { cleanText } from "@/lib/forms/bullets";
 
 const scope = z.enum([
   "INSTALLATIONS",
@@ -29,9 +30,8 @@ const taskSchema = z.object({
 
 function text(formData: FormData, name: string) {
   const raw = formData.get(name);
-  if (typeof raw !== "string") return null;
-  const value = raw.trim();
-  return value || null;
+  // D-126: quita las viñetas vacías; un texto sin contenido no cuenta como relleno.
+  return typeof raw === "string" ? cleanText(raw) : null;
 }
 
 function bool(formData: FormData, name: string) {

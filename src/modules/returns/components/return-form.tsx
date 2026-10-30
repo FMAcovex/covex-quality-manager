@@ -8,6 +8,8 @@ import { generalErrors } from "@/lib/forms/field-issues";
 
 import Link from "next/link";
 import { useActionState,useState,useEffect } from "react";
+import { BulletTextField } from "@/components/bullet-textarea";
+
 import { submittedDefaults } from "@/lib/forms/preserved-state";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import type { DepartmentOption,ReturnFormDefaults,ReturnFormState,ReturnProductInput } from "@/modules/returns/types";
@@ -21,7 +23,7 @@ function Field({label,name,defaultValue,type="text",required=false,span=""}:{lab
   return <label className={`field ${span}`}><span>{label}{required?" *":""}</span><input name={name} type={type} defaultValue={defaultValue??""} required={required}/></label>;
 }
 function TextArea({label,name,defaultValue,required=false}:{label:string;name:string;defaultValue?:string;required?:boolean}){
-  return <label className="field full"><span>{label}{required?" *":""}</span><textarea name={name} defaultValue={defaultValue??""} required={required}/></label>;
+  return <BulletTextField label={label} name={name} defaultValue={defaultValue??""} required={required}/>;
 }
 function Tri({label,name,defaultValue,required=false}:{label:string;name:string;defaultValue?:string;required?:boolean}){
   return <label className="field"><span>{label}{required?" *":""}</span><select name={name} defaultValue={defaultValue??""} required={required}><option value="">No informado</option><option value="YES">Sí</option><option value="NO">No</option><option value="NA">N/A</option></select></label>;
@@ -103,7 +105,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
             <label className="field"><span>Fecha recepción firma</span><input type="date" value={p.receivedByDate} onChange={e=>patch(i,{receivedByDate:e.target.value})}/></label>
             <label className="field"><span>Verificado por</span><input value={p.verifiedBy} onChange={e=>patch(i,{verifiedBy:e.target.value})}/></label>
             <label className="field"><span>Fecha verificación</span><input type="date" value={p.verifiedByDate} onChange={e=>patch(i,{verifiedByDate:e.target.value})}/></label>
-            <label className="field full"><span>Observaciones de recepción</span><textarea value={p.receptionObservations} onChange={e=>patch(i,{receptionObservations:e.target.value})}/></label>
+            <BulletTextField label="Observaciones de recepción" value={p.receptionObservations} onChange={e=>patch(i,{receptionObservations:e.target.value})}/>
           </div>
         </article>)}
       </div>
@@ -124,7 +126,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
         {([['medicineFromWholesale','Medicamento procede de mayorista autorizado'],['temperatureControlled','Temperatura controlada'],['serializedMedicine','Medicamento serializado'],['declarationRequired','GC requiere declaración del cliente'],['qcRequired','Requiere evaluación de Control de Calidad'],['requiresFollowup','Requiere próximo seguimiento']] as const).map(([key,label])=><label className="field" key={key}><span>{label}</span><input type="checkbox" name={key} checked={context[key]} onChange={e=>setContext({...context,[key]:e.target.checked})}/></label>)}
       </div>
       <p className="section-help">La aceptación autoriza gestionar la devolución. La reincorporación necesita una decisión técnica documentada y comprobaciones conformes. Los productos permanecen segregados durante la evaluación.</p>
-      <label className="field full" hidden={!applicability.medicine||applicability.cold||context.medicineFromWholesale}><span>Justificación y evaluación de riesgos del plazo excepcional de 10 días</span><textarea name="ambientPeriodRiskJustification" defaultValue={formDefaults.ambientPeriodRiskJustification}/><small className="muted-note">Para oficina de farmacia o entidad sin autorización mayorista: una excepción debe demostrar la integridad del producto y quedar documentada y aprobada por GC/DT.</small></label>
+      <BulletTextField hidden={!applicability.medicine||applicability.cold||context.medicineFromWholesale} label="Justificación y evaluación de riesgos del plazo excepcional de 10 días" name="ambientPeriodRiskJustification" defaultValue={formDefaults.ambientPeriodRiskJustification}><small className="muted-note">Para oficina de farmacia o entidad sin autorización mayorista: una excepción debe demostrar la integridad del producto y quedar documentada y aprobada por GC/DT.</small></BulletTextField>
       <h2>4. Comprobaciones para posible reintegración</h2>
       <div className="form-grid return-check-grid">
         <Tri label="Plazo aceptable de devolución" name="withinAcceptedReturnPeriod" defaultValue={formDefaults.withinAcceptedReturnPeriod} required={assessment}/>
@@ -160,7 +162,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
       <div className="form-grid return-form-grid">
         <label className="field"><span>Decisión{closed?" *":""}</span><select name="decision" defaultValue={formDefaults.decision??"PENDING"}><option value="PENDING">Pendiente</option><option value="ACCEPTED">Aceptada</option><option value="REJECTED">Rechazada</option></select></label>
         <Field label="Fecha decisión" name="decisionDate" type="date" defaultValue={formDefaults.decisionDate} required={closed}/>
-        <label className="field full"><span>Destino final{closed?" *":""}</span><textarea name="finalDestination" value={destination} onChange={e=>setDestination(e.target.value)} required={closed}/></label>
+        <BulletTextField label="Destino final" name="finalDestination" value={destination} onChange={e=>setDestination(e.target.value)} required={closed}/>
         <TextArea label="Evaluación y justificación de la decisión" name="decisionObservations" defaultValue={formDefaults.decisionObservations}/>
         <Field label="Garantía de Calidad · nombre documental" name="qaApprovalName" defaultValue={formDefaults.qaApprovalName}/>
         <Field label="Dirección Técnica · nombre documental" name="technicalApprovalName" defaultValue={formDefaults.technicalApprovalName}/>

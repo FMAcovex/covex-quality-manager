@@ -1,5 +1,5 @@
 "use client";
-import { useRef, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { useId, useRef, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { continueBullet, toggleBullets, type TextEdit } from "@/lib/forms/bullets";
 
 function applyEdit(textarea: HTMLTextAreaElement, edit: TextEdit) {
@@ -20,15 +20,18 @@ function applyEdit(textarea: HTMLTextAreaElement, edit: TextEdit) {
  * D-126: campo de texto largo con viñetas. El botón «• Viñetas» pone o quita «• » en las líneas
  * seleccionadas e Intro continúa la lista (en una viñeta vacía, la termina). Se guarda como texto.
  */
-export function BulletTextarea({ id, label, fieldLabel, help, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+export function BulletTextarea({ id, label, fieldLabel, help, after, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & {
   id: string;
   /** Contenido de la etiqueta visible (con el asterisco si es obligatorio). */
   label: ReactNode;
   /** Nombre del campo para el botón («Viñetas en «…»»). */
   fieldLabel: string;
+  /** Ayuda bajo la etiqueta y nota o error bajo el campo: se anuncian con el campo (aria-describedby). */
   help?: ReactNode;
+  after?: ReactNode;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const describedBy = [props["aria-describedby"], help ? `${id}-help` : null, after ? `${id}-after` : null].filter(Boolean).join(" ") || undefined;
   return (
     <>
       <div className="text-field-head">
@@ -48,14 +51,16 @@ export function BulletTextarea({ id, label, fieldLabel, help, ...props }: Textar
           • Viñetas
         </button>
       </div>
-      {help}
+      {help ? <div id={`${id}-help`} className="text-field-note">{help}</div> : null}
       <textarea
         {...props}
         id={id}
         ref={ref}
+        aria-describedby={describedBy}
         onKeyDown={(event) => {
           props.onKeyDown?.(event);
-          if (event.defaultPrevented || event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || event.nativeEvent.isComposing) return;
+          // keyCode 229: Intro que confirma una composición (IME) en Safari.
+          if (event.defaultPrevented || event.key !== "Enter" || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
           const textarea = event.currentTarget;
           const edit = continueBullet(textarea.value, textarea.selectionStart, textarea.selectionEnd);
           if (!edit) return;
@@ -63,6 +68,26 @@ export function BulletTextarea({ id, label, fieldLabel, help, ...props }: Textar
           applyEdit(textarea, edit);
         }}
       />
+      {after ? <div id={`${id}-after`} className="text-field-note">{after}</div> : null}
     </>
   );
 }
+
+/** Campo completo (contenedor `.field`, etiqueta, ayuda y texto con viñetas) para los formularios. */
+export function BulletTextField({ label, className = "field full", requiredMark, hidden, children, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  label: string;
+  help?: ReactNode;
+  className?: string;
+  /** Muestra « *» aunque el navegador no exija el campo (obligatorio solo al cerrar, etc.). */
+  requiredMark?: boolean;
+  /** Nota o error bajo el campo; se anuncia con él. */
+  children?: ReactNode;
+}) {
+  const id = useId();
+  return (
+    <div className={className} hidden={hidden}>
+      <BulletTextarea id={id} label={<>{label}{requiredMark ?? props.required ? " *" : ""}</>} fieldLabel={label} after={children} {...props} />
+    </div>
+  );
+}
+

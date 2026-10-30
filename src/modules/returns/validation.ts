@@ -2,6 +2,7 @@ import { z } from "zod";
 import { returnContext, returnApplicability, reintegrationRequested, generalReturnChecks, coldReturnChecks, validReturnDate, returnCheckLabels } from "./rules";
 import { fieldIssuesFromErrors, type FieldIssueRule } from "@/lib/forms/field-issues";
 import type { ReturnProductInput } from "@/modules/returns/types";
+import { cleanText } from "@/lib/forms/bullets";
 
 const typeSchema=z.enum(["COMMERCIAL","COMPLAINT","RECALL","EXPIRY","TRANSPORT","OTHER"]);
 const productTypeSchema=z.enum(["API","INTERMEDIATE","MEDICINE","SUPPLEMENT","IMPORTED_PRODUCT","MEDICAL_DEVICE","COSMETIC","OTHER"]);
@@ -10,7 +11,7 @@ const statusSchema=z.enum(["DRAFT","OPEN","CLOSED"]);
 const triSchema=z.enum(["YES","NO","NA"]);
 const qualitySchema=z.enum(["COMPLETE","INCOMPLETE","REVIEW_REQUIRED"]);
 
-function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"&&v.trim()?v.trim():null;}
+function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"?cleanText(v):null;} // D-126: sin viñetas vacías
 function bool(fd:FormData,name:string){const v=text(fd,name);return (v==="true"||v==="on")?true:v==="false"?false:null;}
 function en<T extends z.ZodTypeAny>(s:T,v:string|null){if(!v)return null;const r=s.safeParse(v);return r.success?r.data:null;}
 
