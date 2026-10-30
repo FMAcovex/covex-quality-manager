@@ -1,3 +1,5 @@
+import { bulletText, isBulletLine } from "@/lib/forms/bullets";
+
 export function escapeXml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -87,10 +89,21 @@ function transformNth(source: string, regex: RegExp, index: number, transform: (
   return result;
 }
 
+/**
+ * Un párrafo de dato. D-126: una línea «• texto» se escribe como viñeta con sangría francesa, para que
+ * el texto que pasa de línea quede alineado; las demás líneas no cambian.
+ */
+function valueParagraph(line: string, rPr: string, jc = "") {
+  if (!isBulletLine(line)) {
+    return `<w:p>${jc ? `<w:pPr>${jc}</w:pPr>` : ""}<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`;
+  }
+  return `<w:p><w:pPr><w:ind w:left="284" w:hanging="284"/>${jc}</w:pPr><w:r>${rPr}<w:t>•</w:t><w:tab/><w:t xml:space="preserve">${escapeXml(bulletText(line))}</w:t></w:r></w:p>`;
+}
+
 function paragraphXml(text: string) {
-  const parts = text.split(/\r?\n/);
-  return parts
-    .map((part) => `<w:p><w:r>${annexValueRunProperties()}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`)
+  return text
+    .split(/\r?\n/)
+    .map((part) => valueParagraph(part, annexValueRunProperties()))
     .join("");
 }
 
@@ -123,10 +136,7 @@ export function setWordCellText(documentXml: string, table: number, row: number,
 function variableParagraphXml(text: string) {
   return text
     .split(/\r?\n/)
-    .map(
-      (part) =>
-        `<w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r>${annexValueRunProperties()}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`,
-    )
+    .map((part) => valueParagraph(part, annexValueRunProperties(), '<w:jc w:val="both"/>'))
     .join("");
 }
 
@@ -339,10 +349,7 @@ function directRowCells(rowXml: string): XmlBlock[] {
 function paragraphXmlWithColor(text: string, color?: string) {
   return text
     .split(/\r?\n/)
-    .map((part) => {
-      const rPr = annexValueRunProperties(color ? `<w:color w:val="${escapeXml(color)}"/>` : "");
-      return `<w:p><w:r>${rPr}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`;
-    })
+    .map((part) => valueParagraph(part, annexValueRunProperties(color ? `<w:color w:val="${escapeXml(color)}"/>` : "")))
     .join("");
 }
 

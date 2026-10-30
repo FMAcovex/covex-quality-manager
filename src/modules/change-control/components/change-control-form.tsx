@@ -10,7 +10,8 @@ import { submittedDefaults } from "@/lib/forms/preserved-state";
 import { ResponsibleUserPicker, ResponsibleUserSelect } from "@/components/responsible-user-select";
 import type { AppUserOption } from "@/lib/qms/responsible-user";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useId, useState } from "react";
+import { BulletTextarea } from "@/components/bullet-textarea";
 import type {
   ChangeControlFormDefaults,
   ChangeControlFormState,
@@ -74,13 +75,12 @@ function TextArea({
   required?: boolean;
   issues?: string[];
 }) {
+  const id = useId();
   return (
-    <label className={`field span-3 ${issues?.length ? "has-error" : ""}`}>
-      <span>{label}{required ? " *" : ""}</span>
-      {help ? <small className="muted-note">{help}</small> : null}
-      <textarea name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
+    <div className={`field span-3 ${issues?.length ? "has-error" : ""}`}>
+      <BulletTextarea id={id} label={<>{label}{required ? " *" : ""}</>} fieldLabel={label} help={help ? <small className="muted-note">{help}</small> : null} name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} />
       <FieldIssue messages={issues} />
-    </label>
+    </div>
   );
 }
 

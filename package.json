@@ -113,6 +113,7 @@
     "change-models:ui:smoke": "tsx scripts/smoke-change-models-ui.ts",
     "deviation-tools:ui:smoke": "tsx scripts/smoke-deviation-tools-ui.ts",
     "deviation-figures:ui:smoke": "tsx scripts/smoke-deviation-figures-ui.ts",
+    "text-bullets:ui:smoke": "tsx scripts/smoke-text-bullets-ui.ts",
     "calendar-d120:smoke": "node --conditions=react-server --import tsx scripts/smoke-calendar-d120.ts",
     "template-install-d105:smoke": "node --conditions=react-server --import tsx scripts/smoke-template-install-d105.ts",
     "oos:ui:smoke": "tsx scripts/smoke-oos-ui.ts",

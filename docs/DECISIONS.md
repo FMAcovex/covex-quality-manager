@@ -1423,3 +1423,13 @@ Decisión del responsable de Calidad: poder poner imágenes junto al texto de un
 - No hay cambios de base de datos: el apartado va en los metadatos de la evidencia.
 - Solo Desviaciones. Otros módulos, si se piden, en una PR propia.
 
+## D-126 — Viñetas en los textos largos de Desviaciones y Controles de cambios (2026-10-30)
+
+Decisión del responsable de Calidad: poder escribir listas de puntos en los textos largos (por ejemplo, los hechos de una investigación). Es la primera parte de la propuesta de tablas (opción B, tablas dentro de la casilla del anexo), que irá en una PR propia.
+
+- **Dónde:** todos los campos de texto largo de Desviaciones (descripción del evento, investigación, causa raíz, recurrencia, detalle de impacto, conclusión, disposición, observaciones…) y de Controles de cambios (descripción, justificación, documentos aportados, evaluación, observaciones del dictamen…).
+- **Cómo:** el botón **«• Viñetas»**, junto a la etiqueta del campo, pone o quita la viñeta en las líneas seleccionadas (o en la del cursor). Intro dentro de una viñeta crea la siguiente; Intro en una viñeta vacía termina la lista; Mayúsculas+Intro hace un salto de línea normal. Se puede deshacer con Ctrl+Z.
+- **Qué se guarda:** texto normal, con «• » al principio de cada viñeta. No hay cambios de base de datos y el buscador, el historial de modificaciones y las versiones funcionan igual. Los textos existentes no cambian: una línea que empieza por «-» se queda como está.
+- **Ficha:** las viñetas se muestran como lista; un texto sin viñetas se ve igual que antes.
+- **Anexos Word:** cada viñeta es un párrafo con sangría francesa (el texto que pasa de línea queda alineado bajo el texto, no bajo el punto), en Arial 11 como el resto de datos. Se aplica en el escritor común de las casillas, así que cualquier línea que empiece por «• » sale igual en todos los anexos. La plantilla no cambia. Comprobado con el Anexo III v06.
+

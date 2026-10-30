@@ -1,3 +1,4 @@
+import { FormattedText } from "@/components/formatted-text";
 import { getSimilarDeviations } from "@/modules/deviations/recurrence-queries";
 import { PreviewLink } from "@/components/preview-link";
 import { SimilarDeviations } from "@/modules/deviations/components/similar-deviations";
@@ -358,7 +359,7 @@ async function DeviationDetailPageAuthenticatedContent({
               <div className="info-item"><dt>Medidas adoptadas</dt><dd>{measuresLabel(deviation)}</dd></div>
               <div className="info-item"><dt>Documento firmado</dt><dd>{currentVersion ? `${versionLabel(currentVersion.sequenceNumber)} · ${currentSignedDocument ? "Disponible" : "No cargado"}` : "Sin versión"}</dd></div>
               <div className="info-item"><dt>Calidad del dato</dt><dd>{dataQualityLabel(deviation.dataQualityStatus)}</dd></div>
-              <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value">{text(deviation.internalObservations)}</dd></div>
+              <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value"><FormattedText value={deviation.internalObservations} /></dd></div>
             </dl>
           </div>
 
@@ -450,11 +451,11 @@ async function DeviationDetailPageAuthenticatedContent({
             </div>
           </div>
           <dl className="description-detail-grid">
-            <div id={reviewTarget.whatHappened.anchorId} className="info-item full review-target"><dt><span>Qué sucedió / qué debía haber sucedido</span><ReviewMarker target={reviewTarget.whatHappened} /></dt><dd className="prose-value">{text(deviation.whatHappened)}</dd></div>
-            {deviation.whoInvolved || reviewMode ? <div id={reviewTarget.whoInvolved.anchorId} className="info-item review-target"><dt><span>Quién estuvo implicado</span><ReviewMarker target={reviewTarget.whoInvolved} /></dt><dd className="prose-value">{text(deviation.whoInvolved)}</dd></div> : null}
-            {deviation.whenHappened || reviewMode ? <div id={reviewTarget.whenHappened.anchorId} className="info-item review-target"><dt><span>Cuándo ocurrió</span><ReviewMarker target={reviewTarget.whenHappened} /></dt><dd className="prose-value">{text(deviation.whenHappened)}</dd></div> : null}
-            {deviation.whereHappened || reviewMode ? <div id={reviewTarget.whereHappened.anchorId} className="info-item review-target"><dt><span>Dónde ocurrió</span><ReviewMarker target={reviewTarget.whereHappened} /></dt><dd className="prose-value">{text(deviation.whereHappened)}</dd></div> : null}
-            {deviation.howHappened || reviewMode ? <div id={reviewTarget.howHappened.anchorId} className="info-item review-target"><dt><span>Cómo ocurrió / cómo se detectó</span><ReviewMarker target={reviewTarget.howHappened} /></dt><dd className="prose-value">{text(deviation.howHappened)}</dd></div> : null}
+            <div id={reviewTarget.whatHappened.anchorId} className="info-item full review-target"><dt><span>Qué sucedió / qué debía haber sucedido</span><ReviewMarker target={reviewTarget.whatHappened} /></dt><dd className="prose-value"><FormattedText value={deviation.whatHappened} /></dd></div>
+            {deviation.whoInvolved || reviewMode ? <div id={reviewTarget.whoInvolved.anchorId} className="info-item review-target"><dt><span>Quién estuvo implicado</span><ReviewMarker target={reviewTarget.whoInvolved} /></dt><dd className="prose-value"><FormattedText value={deviation.whoInvolved} /></dd></div> : null}
+            {deviation.whenHappened || reviewMode ? <div id={reviewTarget.whenHappened.anchorId} className="info-item review-target"><dt><span>Cuándo ocurrió</span><ReviewMarker target={reviewTarget.whenHappened} /></dt><dd className="prose-value"><FormattedText value={deviation.whenHappened} /></dd></div> : null}
+            {deviation.whereHappened || reviewMode ? <div id={reviewTarget.whereHappened.anchorId} className="info-item review-target"><dt><span>Dónde ocurrió</span><ReviewMarker target={reviewTarget.whereHappened} /></dt><dd className="prose-value"><FormattedText value={deviation.whereHappened} /></dd></div> : null}
+            {deviation.howHappened || reviewMode ? <div id={reviewTarget.howHappened.anchorId} className="info-item review-target"><dt><span>Cómo ocurrió / cómo se detectó</span><ReviewMarker target={reviewTarget.howHappened} /></dt><dd className="prose-value"><FormattedText value={deviation.howHappened} /></dd></div> : null}
           </dl>
           {figureBlock("DESCRIPTION")}
         </div>
@@ -465,7 +466,7 @@ async function DeviationDetailPageAuthenticatedContent({
           <div className="card">
             <h2>Investigación</h2>
             <dl className="info-grid compact-info-grid">
-              <div id={reviewTarget.investigation.anchorId} className="info-item full review-target"><dt><span>Investigación realizada</span><ReviewMarker target={reviewTarget.investigation} /></dt><dd className="prose-value">{text(deviation.investigation)}</dd></div>
+              <div id={reviewTarget.investigation.anchorId} className="info-item full review-target"><dt><span>Investigación realizada</span><ReviewMarker target={reviewTarget.investigation} /></dt><dd className="prose-value"><FormattedText value={deviation.investigation} /></dd></div>
               <div className="info-item"><dt>Resultado</dt><dd>{investigationResultLabel(deviation.investigationConclusive)}</dd></div>
             </dl>
             <InvestigationToolsSummary tools={storedInvestigationTools(deviation.investigationTools)} />
@@ -474,12 +475,12 @@ async function DeviationDetailPageAuthenticatedContent({
           <div className="card root-cause-card">
             <h2>Causa raíz</h2>
             <dl className="info-grid compact-info-grid">
-              <div id={reviewTarget.rootCause.anchorId} className="info-item full review-target"><dt><span>Causa raíz establecida</span><ReviewMarker target={reviewTarget.rootCause} /></dt><dd className="prose-value">{text(deviation.rootCause)}</dd></div>
+              <div id={reviewTarget.rootCause.anchorId} className="info-item full review-target"><dt><span>Causa raíz establecida</span><ReviewMarker target={reviewTarget.rootCause} /></dt><dd className="prose-value"><FormattedText value={deviation.rootCause} /></dd></div>
               <div className="info-item"><dt>Categoría (6M)</dt><dd>{deviation.rootCauseCategories.length ? deviation.rootCauseCategories.map((value) => rootCauseCategoryLabel(value, true)).join(", ") : "No informada"}</dd></div>
               <div className="info-item"><dt>Metodología</dt><dd>{deviation.investigationMethods.length ? deviation.investigationMethods.map(investigationMethodLabel).join(", ") : "No informada"}</dd></div>
               <div className="info-item"><dt>Recurrencia</dt><dd>{triStateLabel(deviation.recurrentRootCause)}</dd></div>
               <div className="info-item full"><SimilarDeviations items={similarDeviations} /></div>
-              <div id={reviewTarget.recurrenceDetails.anchorId} className="info-item wide review-target"><dt><span>Antecedentes / detalle</span><ReviewMarker target={reviewTarget.recurrenceDetails} /></dt><dd className="prose-value">{text(deviation.recurrenceDetails)}</dd></div>
+              <div id={reviewTarget.recurrenceDetails.anchorId} className="info-item wide review-target"><dt><span>Antecedentes / detalle</span><ReviewMarker target={reviewTarget.recurrenceDetails} /></dt><dd className="prose-value"><FormattedText value={deviation.recurrenceDetails} /></dd></div>
             </dl>
             {figureBlock("ROOT_CAUSE")}
           </div>
@@ -491,7 +492,7 @@ async function DeviationDetailPageAuthenticatedContent({
               <div className="info-item"><dt>Estabilidad</dt><dd>{triStateLabel(deviation.stabilityImpact)}</dd></div>
               <div className="info-item"><dt>Producto terminado</dt><dd>{triStateLabel(deviation.affectsFinishedProduct)}</dd></div>
               <div className="info-item"><dt>Otros procesos/productos</dt><dd>{triStateLabel(deviation.otherProcessesImpact)}</dd></div>
-              <div className="info-item wide"><dt>Detalle</dt><dd className="prose-value">{text(deviation.otherProcessesImpactDetails)}</dd></div>
+              <div className="info-item wide"><dt>Detalle</dt><dd className="prose-value"><FormattedText value={deviation.otherProcessesImpactDetails} /></dd></div>
             </dl>
             {figureBlock("IMPACT")}
           </div>
@@ -589,12 +590,12 @@ async function DeviationDetailPageAuthenticatedContent({
         <div className="card">
           <h2>Conclusión y disposición</h2>
           <dl className="info-grid conclusion-grid">
-            <div id={reviewTarget.conclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión / cierre</span><ReviewMarker target={reviewTarget.conclusion} /></dt><dd className="prose-value">{text(deviation.conclusion)}</dd></div>
+            <div id={reviewTarget.conclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión / cierre</span><ReviewMarker target={reviewTarget.conclusion} /></dt><dd className="prose-value"><FormattedText value={deviation.conclusion} /></dd></div>
             <div id={reviewTarget.disposition.anchorId} className="info-item review-target"><dt><span>Disposición</span><ReviewMarker target={reviewTarget.disposition} /></dt><dd>{text(deviation.disposition)}</dd></div>
             <div className="info-item"><dt>Cantidad</dt><dd>{text(deviation.dispositionQuantity)}</dd></div>
             <div className="info-item"><dt>Notificación al cliente</dt><dd>{triStateLabel(deviation.clientNotification)}</dd></div>
             <div className="info-item"><dt>Fecha de cierre</dt><dd>{formatDate(deviation.closedAt)}</dd></div>
-            <div id={reviewTarget.dispositionComments.anchorId} className="info-item full review-target"><dt><span>Comentarios de disposición</span><ReviewMarker target={reviewTarget.dispositionComments} /></dt><dd className="prose-value">{text(deviation.dispositionComments)}</dd></div>
+            <div id={reviewTarget.dispositionComments.anchorId} className="info-item full review-target"><dt><span>Comentarios de disposición</span><ReviewMarker target={reviewTarget.dispositionComments} /></dt><dd className="prose-value"><FormattedText value={deviation.dispositionComments} /></dd></div>
           </dl>
           {figureBlock("CONCLUSION")}
         </div>

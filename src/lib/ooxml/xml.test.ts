@@ -67,3 +67,19 @@ describe("tipografía de los datos de los anexos (D-103)", () => {
     }
   });
 });
+
+describe("viñetas en los datos de los anexos (D-126)", () => {
+  const doc = '<w:document><w:body><w:tbl><w:tr><w:tc><w:p><w:r><w:t>x</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>';
+  const text = "Hechos:\n• Alarma sin aviso & sin registro\n- guion normal";
+  it("una línea «• » es un párrafo con sangría francesa y tabulación; el resto no cambia", () => {
+    for (const xml of [setWordCellText(doc, 0, 0, 0, text), setWordCellTextBalanced(doc, 0, 0, 0, text), setWordVariableCellText(doc, 0, 0, 0, text)]) {
+      const paragraphs = xml.match(/<w:p>[\s\S]*?<\/w:p>/g)!;
+      expect(paragraphs).toHaveLength(3);
+      expect(paragraphs[1]).toMatch(/^<w:p><w:pPr><w:ind w:left="284" w:hanging="284"\/>(?:<w:jc w:val="both"\/>)?<\/w:pPr><w:r><w:rPr>[\s\S]*?<\/w:rPr><w:t>•<\/w:t><w:tab\/><w:t xml:space="preserve">Alarma sin aviso &amp; sin registro<\/w:t><\/w:r><\/w:p>$/);
+      expect(paragraphs[0]).not.toContain("w:ind");
+      expect(paragraphs[2]).not.toContain("w:ind");
+      expect(paragraphs[2]).toContain(">- guion normal<");
+    }
+  });
+});
+

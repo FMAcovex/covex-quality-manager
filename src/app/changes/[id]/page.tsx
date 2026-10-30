@@ -1,3 +1,4 @@
+import { FormattedText } from "@/components/formatted-text";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
 import { PreviewLink } from "@/components/preview-link";
 import { uploadChangeControlEvidenceAction } from "@/lib/qms/record-evidence-actions";
@@ -248,7 +249,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
           <h2>Información</h2>
           <section id={reviewTarget.infoDescription.anchorId} className="review-target change-overview-description">
             <h3 className="review-target-heading"><span>Descripción del cambio</span><ReviewMarker target={reviewTarget.infoDescription} /></h3>
-            <p>{displayValue(record.description)}</p>
+            <FormattedText as="div" value={record.description} />
           </section>
           <dl className="change-overview-meta">
             <div id={reviewTarget.infoDepartment.anchorId} className="review-target info-item"><dt><span>Departamento</span><ReviewMarker target={reviewTarget.infoDepartment} /></dt><dd>{department}</dd></div>
@@ -275,15 +276,15 @@ async function ChangeControlDetailPageAuthenticatedContent({
           </section>
           <section id={reviewTarget.description.anchorId} className="review-target change-prose-section">
             <h3 className="review-target-heading"><span>Descripción del cambio</span><ReviewMarker target={reviewTarget.description} /></h3>
-            <p>{displayValue(record.description)}</p>
+            <FormattedText as="div" value={record.description} />
           </section>
           <section id={reviewTarget.justification.anchorId} className="review-target change-prose-section">
             <h3 className="review-target-heading"><span>Justificación del cambio</span><ReviewMarker target={reviewTarget.justification} /></h3>
-            <p>{displayValue(record.justification)}</p>
+            <FormattedText as="div" value={record.justification} />
           </section>
           <section id={reviewTarget.providedDocuments.anchorId} className="review-target change-prose-section">
             <h3 className="review-target-heading"><span>Documentos aportados</span><ReviewMarker target={reviewTarget.providedDocuments} /></h3>
-            <p>{displayValue(record.providedDocuments)}</p>
+            <FormattedText as="div" value={record.providedDocuments} />
           </section>
           <section className="change-decision-panel">
             <div className="change-decision-heading">
@@ -315,7 +316,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
 
           <div id={reviewTarget.evaluation.anchorId} className="review-target card change-evaluation-card">
             <h2 className="review-target-heading"><span>Evaluación del cambio</span><ReviewMarker target={reviewTarget.evaluation} /></h2>
-            <p>{displayValue(record.evaluation)}</p>
+            <FormattedText as="div" value={record.evaluation} />
           </div>
 
           <div className="card">
@@ -373,7 +374,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
             </section>
             <section id={reviewTarget.dictamenObservations.anchorId} className="review-target change-prose-section">
               <h2 className="review-target-heading"><span>Observaciones</span><ReviewMarker target={reviewTarget.dictamenObservations} /></h2>
-              <p>{displayValue(record.dictamenObservations)}</p>
+              <FormattedText as="div" value={record.dictamenObservations} />
             </section>
             <section className="change-internal-panel">
               <div>
@@ -381,7 +382,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
                 <h2>Control interno</h2>
               </div>
               <dl className="info-grid">
-                <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value">{displayValue(record.internalObservations)}</dd></div>
+                <div className="info-item full"><dt>Observaciones internas</dt><dd className="prose-value"><FormattedText value={record.internalObservations} /></dd></div>
                 <div className="info-item"><dt>Documento firmado disponible</dt><dd>{record.signedDocumentAvailable === true ? "Sí" : record.signedDocumentAvailable === false ? "No" : "—"}</dd></div>
                 <div className="info-item"><dt>Control del dato</dt><dd>{record.dataQualityStatus === "COMPLETE" ? "Completo" : record.dataQualityStatus === "INCOMPLETE" ? "Incompleto" : "Pendiente de revisar"}</dd></div>
               </dl>

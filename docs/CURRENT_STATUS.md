@@ -149,6 +149,19 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - el smoke `deviation-figures:ui:smoke`: pegar, elegir archivo, adjuntar, que no guarda el formulario, numeración, ficha y Evidencias;
   - un Anexo III generado con la plantilla v06 real (solo en local).
 
+**Viñetas en los textos largos (2026-10-30, D-126):**
+- **Qué cambia:**
+  - en los formularios de Desviaciones y Controles de cambios, los textos largos tienen el botón «• Viñetas»: pone o quita la viñeta en las líneas seleccionadas;
+  - Intro continúa la lista y, en una viñeta vacía, la termina;
+  - la ficha muestra las viñetas como lista;
+  - en los anexos Word cada viñeta es un párrafo con sangría francesa.
+- **Sin cambios de base de datos:** se guarda como texto con «• » al principio de la línea; los textos antiguos no cambian.
+- **Comprobado** con:
+  - pruebas unitarias (poner y quitar viñetas, Intro, bloques para la ficha y párrafos Word);
+  - el smoke `text-bullets:ui:smoke`: botón, Intro, deshacer, guardado, ficha de la desviación y del control de cambios;
+  - un Anexo III generado con la plantilla v06 real (solo en local).
+- **Siguiente:** tablas editables (opción B, dentro de la casilla del anexo) en «E. Investigación» e «I. Impacto» de Desviaciones y en «Evaluación del cambio».
+
 **FTA y herramientas en el Anexo III de Desviaciones (2026-10-30, D-124):**
 - **Qué cambia:**
   - cuarta herramienta, FTA (árbol de fallos), en esquema con sangrías (hasta 4 niveles) y relación O/Y; solo una causa final y confirmada pasa a «Causa raíz» y marca «FTA»;
