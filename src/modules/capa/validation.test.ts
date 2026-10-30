@@ -239,3 +239,16 @@ describe("acciones propuestas sin descripción (D-117)", () => {
     expect(parsed.values.plannedActions).toHaveLength(1);
   });
 });
+
+describe("CAPA · tablas de los textos (D-127)", () => {
+  it("lee las tablas y un error de tabla bloquea en su campo, con el apartado en el resumen", () => {
+    const form = base();
+    form.set("textTables:rootCause", JSON.stringify([{ title: "Causas", columns: ["Causa"], rows: [["Compresor"]] }]));
+    expect(parseCapaForm(form).values.textTables).toEqual({ rootCause: [{ title: "Causas", columns: ["Causa"], rows: [["Compresor"]] }] });
+    form.set("textTables:conclusion", JSON.stringify([{ title: "", columns: ["a"], rows: [["b"]] }]));
+    const parsed = parseCapaForm(form);
+    expect(parsed.fieldIssues.conclusion).toEqual(["1.ª tabla: falta el título."]);
+    expect(parsed.errors).toContain("Conclusión · 1.ª tabla: falta el título.");
+  });
+});
+

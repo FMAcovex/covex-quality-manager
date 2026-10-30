@@ -12,6 +12,7 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const errors: string[] = [];
   let qmsRecordId: string | null = null;
+  const others: string[] = [];
   try {
     const qa = await authenticatedPage(browser);
     qa.on("pageerror", e => errors.push(e.message));
@@ -80,8 +81,45 @@ async function main() {
     await qa.waitForURL(/\/deviations\/[0-9a-f-]{36}(\?|$)/, { timeout: 30000 });
     assert.equal(await prisma.changeHistory.count({ where: { qmsRecordId, fieldPath: "textTables" } }), 1);
 
+    // Pegar una tabla de Excel en la primera celda de una tabla nueva bajo el campo indicado.
+    const addTable = async (fieldLabel: string, title: string) => {
+      await qa.getByRole("button", { name: `Añadir tabla en «${fieldLabel}»` }).click();
+      const editor = qa.locator("fieldset.text-table-editor", { hasText: `1.ª tabla de «${fieldLabel}»` });
+      await editor.getByLabel("Título *").fill(title);
+      await editor.getByLabel(/^Cabecera, columna 1 · /).evaluate((input) => {
+        const data = new DataTransfer();
+        data.setData("text/plain", "Elemento\tResultado\r\nUno\tConforme\r\n");
+        input.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+      });
+    };
+    const expected = (title: string) => [{ title, columns: ["Elemento", "Resultado"], rows: [["Uno", "Conforme"]] }];
+
+    // CAPA: tabla en «Causa raíz», guardada con el borrador y en la ficha.
+    await go("/capa/new");
+    await qa.locator('textarea[name="defectDescription"]').fill(`${marker} defecto CAPA`);
+    await addTable("Causa raíz", "Causas evaluadas");
+    await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
+    await qa.waitForURL(/\/capa\/[0-9a-f-]{36}(\?|$)/, { timeout: 30000 });
+    const capa = await prisma.capa.findFirstOrThrow({ where: { defectDescription: `${marker} defecto CAPA` } });
+    others.push(capa.qmsRecordId);
+    assert.deepEqual(capa.textTables, { rootCause: expected("Causas evaluadas") });
+    await go(`/capa/${capa.id}`);
+    await qa.locator(".text-table-view", { hasText: "Tabla 1. Causas evaluadas" }).waitFor();
+
+    // Control de cambios: tabla en «Evaluación del cambio» (Anexo IV), en la ficha del dictamen.
+    await go("/changes/new");
+    await qa.locator('textarea[name="description"]').fill(`${marker} cambio`);
+    await addTable("Evaluación del cambio", "Riesgos del cambio");
+    await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
+    await qa.waitForURL(/\/changes\/[0-9a-f-]{36}/, { timeout: 30000 });
+    const change = await prisma.changeControl.findFirstOrThrow({ where: { description: `${marker} cambio` } });
+    others.push(change.qmsRecordId);
+    assert.deepEqual(change.textTables, { evaluation: expected("Riesgos del cambio") });
+    await go(`/changes/${change.id}?tab=dictamen`);
+    await qa.locator(".change-evaluation-card .text-table-view", { hasText: "Tabla 1. Riesgos del cambio" }).waitFor();
+
     assert.deepEqual(errors, []);
-    console.log("D-127 OK: tablas bajo el texto, pegado desde Excel, Intro sin guardar, error de título sin perder la tabla, guardado, ficha, sin cambios espurios y cambio real en el historial.");
+    console.log("D-127 OK (Desviaciones, CAPA y Controles de cambios): tablas bajo el texto, pegado desde Excel, Intro sin guardar, error de título sin perder la tabla, guardado, ficha, sin cambios espurios y cambio real en el historial.");
   } finally {
     await browser.close();
     if (qmsRecordId) {
@@ -89,6 +127,14 @@ async function main() {
       await prisma.deviation.deleteMany({ where: { qmsRecordId } });
       await prisma.qmsRecordVersion.deleteMany({ where: { qmsRecordId } });
       await prisma.qmsRecord.deleteMany({ where: { id: qmsRecordId } });
+    }
+    for (const id of others) {
+      await prisma.changeHistory.deleteMany({ where: { qmsRecordId: id } });
+      await prisma.capa.deleteMany({ where: { qmsRecordId: id } });
+      await prisma.changeControlTask.deleteMany({ where: { changeControl: { qmsRecordId: id } } });
+      await prisma.changeControl.deleteMany({ where: { qmsRecordId: id } });
+      await prisma.qmsRecordVersion.deleteMany({ where: { qmsRecordId: id } });
+      await prisma.qmsRecord.deleteMany({ where: { id } });
     }
     await prisma.$disconnect();
   }

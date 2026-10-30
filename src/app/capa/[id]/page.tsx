@@ -1,4 +1,7 @@
 import { FormattedText } from "@/components/formatted-text";
+import { TextTablesView } from "@/components/text-tables-view";
+import { numberTextTables, storedTextTables } from "@/lib/forms/text-tables";
+import { CAPA_TABLE_FIELDS } from "@/modules/capa/text-tables";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { PreviewLink } from "@/components/preview-link";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
@@ -127,6 +130,8 @@ async function CapaDetailPageAuthenticatedContent({
     .map((item) => item.sourceRecord);
   const hasOosOrigin = capa.qmsRecord.targetRelations.some((item) => item.relationType === "GENERATES" && item.sourceRecord.recordType === "OOS");
 
+  // D-127: tablas de los textos, numeradas en el orden del expediente.
+  const textTables = numberTextTables(storedTextTables(capa.textTables), CAPA_TABLE_FIELDS);
   const reviewTarget = {
     actionType: reviewTargetWithValue(
       capaReviewTargets.actionType,
@@ -298,11 +303,11 @@ async function CapaDetailPageAuthenticatedContent({
               <div id={reviewTarget.actionType.anchorId} className="info-item review-target"><dt><span>Tipo CAPA</span><ReviewMarker target={reviewTarget.actionType} /></dt><dd>{capaTypeLabel(capa.actionType)}</dd></div>
               <div className="info-item"><dt>Departamento</dt><dd>{capa.departmentCodeSnapshot ?? "—"} · {capa.departmentNameSnapshot ?? ""}</dd></div>
               <div id={reviewTarget.applicableTo.anchorId} className="info-item full review-target"><dt><span>Materia / material / producto / sistema / equipo</span><ReviewMarker target={reviewTarget.applicableTo} /></dt><dd>{capa.applicableTo ?? "—"}</dd></div>
-              <div id={reviewTarget.defectDescription.anchorId} className="info-item full review-target"><dt><span>Descripción breve del defecto</span><ReviewMarker target={reviewTarget.defectDescription} /></dt><dd className="prose-value"><FormattedText value={capa.defectDescription} /></dd></div>
-              <div id={reviewTarget.rootCause.anchorId} className="info-item full review-target"><dt><span>Causa raíz</span><ReviewMarker target={reviewTarget.rootCause} /></dt><dd className="prose-value"><FormattedText value={capa.rootCause} /></dd></div>
+              <div id={reviewTarget.defectDescription.anchorId} className="info-item full review-target"><dt><span>Descripción breve del defecto</span><ReviewMarker target={reviewTarget.defectDescription} /></dt><dd className="prose-value"><FormattedText value={capa.defectDescription} /><TextTablesView items={textTables.defectDescription} /></dd></div>
+              <div id={reviewTarget.rootCause.anchorId} className="info-item full review-target"><dt><span>Causa raíz</span><ReviewMarker target={reviewTarget.rootCause} /></dt><dd className="prose-value"><FormattedText value={capa.rootCause} /><TextTablesView items={textTables.rootCause} /></dd></div>
               <div className="info-item full"><dt>Categoría de causa raíz (6M)</dt><dd>{capa.rootCauseCategories.length ? capa.rootCauseCategories.map((value) => rootCauseCategoryLabel(value, true)).join(", ") : "No informada"}</dd></div>
               {capa.impactAssessment || reviewMode ? <div id={reviewTarget.impactAssessment.anchorId} className="info-item full review-target"><dt><span>Evaluación de impacto</span><ReviewMarker target={reviewTarget.impactAssessment} /></dt><dd className="prose-value"><FormattedText value={capa.impactAssessment} /></dd></div> : null}
-              <div id={reviewTarget.internalObservations.anchorId} className="info-item full review-target"><dt><span>Observaciones internas</span><ReviewMarker target={reviewTarget.internalObservations} /></dt><dd className="prose-value"><FormattedText value={capa.internalObservations} /></dd></div>
+              <div id={reviewTarget.internalObservations.anchorId} className="info-item full review-target"><dt><span>Observaciones internas</span><ReviewMarker target={reviewTarget.internalObservations} /></dt><dd className="prose-value"><FormattedText value={capa.internalObservations} /><TextTablesView items={textTables.internalObservations} /></dd></div>
             </dl>
           </div>
 
@@ -388,7 +393,7 @@ async function CapaDetailPageAuthenticatedContent({
           {capa.actionFollowupObservations || reviewMode ? (
             <div id={reviewTarget.actionFollowupObservations.anchorId} className="info-item full review-target" style={{ marginTop: 16 }}>
               <dt><span>Observaciones</span><ReviewMarker target={reviewTarget.actionFollowupObservations} /></dt>
-              <dd className="prose-value"><FormattedText value={capa.actionFollowupObservations} /></dd>
+              <dd className="prose-value"><FormattedText value={capa.actionFollowupObservations} /><TextTablesView items={textTables.actionFollowupObservations} /></dd>
             </div>
           ) : null}
 
@@ -404,7 +409,7 @@ async function CapaDetailPageAuthenticatedContent({
               <dl className="info-grid">
                 <div className="info-item"><dt>Estado CAPA</dt><dd>{capaStatusLabel(capa.status)}</dd></div>
                 <div className="info-item"><dt>Fecha de cierre y ejecución</dt><dd>{formatDate(capa.operationalClosedAt)}</dd></div>
-                <div className="info-item full"><dt>Estado</dt><dd className="prose-value"><FormattedText value={capa.operationalStatusDescription ?? capa.cancellationReason} /></dd></div>
+                <div className="info-item full"><dt>Estado</dt><dd className="prose-value"><FormattedText value={capa.operationalStatusDescription ?? capa.cancellationReason} /><TextTablesView items={textTables.operationalStatusDescription} /></dd></div>
               </dl>
             </section>
 
@@ -413,7 +418,7 @@ async function CapaDetailPageAuthenticatedContent({
               <dl className="info-grid">
                 <div className="info-item"><dt>Verificación de la eficacia</dt><dd>{effectivenessLabel(capa.effectivenessStatus)}</dd></div>
                 <div className="info-item"><dt>Fecha de verificación final</dt><dd>{formatDate(capa.effectiveClosedAt)}</dd></div>
-                <div id={reviewTarget.effectivenessAssessment.anchorId} className="info-item full review-target"><dt><span>Evaluación</span><ReviewMarker target={reviewTarget.effectivenessAssessment} /></dt><dd className="prose-value"><FormattedText value={capa.effectivenessAssessment} /></dd></div>
+                <div id={reviewTarget.effectivenessAssessment.anchorId} className="info-item full review-target"><dt><span>Evaluación</span><ReviewMarker target={reviewTarget.effectivenessAssessment} /></dt><dd className="prose-value"><FormattedText value={capa.effectivenessAssessment} /><TextTablesView items={textTables.effectivenessAssessment} /></dd></div>
               </dl>
             </section>
           </div>
@@ -421,7 +426,7 @@ async function CapaDetailPageAuthenticatedContent({
           <section className="state-efficacy-panel" style={{ marginTop: 14 }}>
             <h3>Conclusión</h3>
             <dl className="info-grid">
-              <div id={reviewTarget.conclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión / cierre</span><ReviewMarker target={reviewTarget.conclusion} /></dt><dd className="prose-value"><FormattedText value={capa.conclusion} /></dd></div>
+              <div id={reviewTarget.conclusion.anchorId} className="info-item full review-target"><dt><span>Conclusión / cierre</span><ReviewMarker target={reviewTarget.conclusion} /></dt><dd className="prose-value"><FormattedText value={capa.conclusion} /><TextTablesView items={textTables.conclusion} /></dd></div>
               <div className="info-item"><dt>Fecha de próximo seguimiento</dt><dd>{formatDate(capa.nextFollowupDate)}</dd></div>
             </dl>
           </section>

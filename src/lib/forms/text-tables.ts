@@ -175,3 +175,47 @@ export function pasteIntoTable(table: TextTable, row: number, column: number, pa
   }));
   return { table: { title: table.title, columns: grid[0], rows: grid.slice(1) }, truncated: neededWidth > width || neededHeight > height };
 }
+
+/** Tablas iniciales de un campo del formulario: tras un error de guardado, las enviadas; si no, las guardadas. */
+export function initialFieldTables(field: string, submitted: Record<string, string | string[]> | undefined, stored: TextTables | null | undefined): TextTable[] {
+  const sent = submitted?.[textTablesInputName(field)];
+  if (typeof sent !== "string") return stored?.[field] ?? [];
+  if (!sent) return [];
+  try {
+    return storedTextTables({ [field]: JSON.parse(sent) })[field] ?? [];
+  } catch {
+    // Lo enviado no es JSON (no lo genera el editor): se empieza sin tablas en ese campo.
+    return [];
+  }
+}
+
+/** Errores de tablas para el resumen del formulario, con el nombre del apartado («Causa raíz · 1.ª tabla: …»). */
+export function tableSummaryErrors(issues: Record<string, string[]>, labels: Partial<Record<string, string>>) {
+  return Object.entries(issues).flatMap(([field, messages]) => messages.map((message) => `${labels[field] ?? field} · ${message}`));
+}
+
+export type AnnexCell = { table: number; row: number; cell: number };
+
+/**
+ * Dónde va cada tabla en un anexo: numeradas en el orden de los apartados, en la casilla de su campo
+ * (null: el campo no va al anexo). `copiedRows`: filas de la plantilla que el anexo copia una vez por
+ * elemento (acciones, seguimientos…); las casillas que quedan debajo bajan tantas filas como copias extra.
+ */
+export function annexTablePlacements(
+  tables: TextTables,
+  fieldOrder: readonly string[],
+  cells: Partial<Record<string, AnnexCell | null>>,
+  copiedRows: Array<{ table: number; row: number; count: number }> = [],
+) {
+  const numbered = numberTextTables(tables, fieldOrder);
+  return fieldOrder.flatMap((field) => {
+    const cell = cells[field];
+    const items = numbered[field];
+    if (!cell || !items?.length) return [];
+    const shift = copiedRows
+      .filter((copied) => copied.table === cell.table && cell.row > copied.row)
+      .reduce((total, copied) => total + Math.max(0, copied.count - 1), 0);
+    return [{ ...cell, row: cell.row + shift, tables: items }];
+  });
+}
+

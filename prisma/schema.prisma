@@ -715,6 +715,9 @@ model Capa {
   actionFollowups              CapaActionFollowup[]
   followups                    CapaFollowup[]
 
+  /// D-127: tablas de los textos largos, por campo; salen en el anexo dentro de la casilla del apartado.
+  textTables Json?
+
   @@index([departmentId])
   @@index([actionType])
   @@index([status])
@@ -853,6 +856,9 @@ model ChangeControl {
   updatedAt                        DateTime                     @updatedAt
   tasks                            ChangeControlTask[]
   followups                        ChangeControlFollowup[]
+
+  /// D-127: tablas de los textos largos, por campo; salen en el anexo dentro de la casilla del apartado.
+  textTables Json?
 
   @@index([departmentId])
   @@index([requestDate])

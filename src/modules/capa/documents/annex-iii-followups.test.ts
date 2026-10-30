@@ -134,4 +134,45 @@ describe("Anexo III CAPA por QmsRecordVersion", () => {
     expect(xml).toContain("5/1/2097");
     expect(xml).not.toContain("Informe inicial CAPA");
   });
+
+  it("D-127: cada tabla va en la casilla de su apartado aunque se copien filas de acciones y seguimientos", async () => {
+    const table = (title: string) => ({ title, columns: ["Dato"], rows: [["valor"]] });
+    const doc = await generateCapaAnnexIII({
+      qmsRecord: { businessCode: "AC/C3/003/2097" },
+      recordVersionSequenceNumber: 1,
+      recordVersionReason: "Motivo",
+      versionFollowupDate: new Date("2097-02-10"),
+      actionType: "CORRECTIVE",
+      openedAt: new Date("2097-01-01"),
+      originType: null,
+      originCode: null,
+      origins: [],
+      applicableTo: "Sistema",
+      defectDescription: "Defecto",
+      rootCause: "Causa ficticia",
+      status: "OPEN",
+      operationalStatusDescription: "En curso",
+      cancellationReason: null,
+      effectivenessStatus: "PENDING",
+      effectivenessAssessment: null,
+      operationalClosedAt: null,
+      effectiveClosedAt: null,
+      conclusion: "Acción implantada",
+      nextFollowupDate: null,
+      actionFollowupObservations: "Observación general",
+      plannedActions: [1, 2, 3].map((n) => ({ description: `Acción ${n}`, responsible: "QA", plannedExecutionDate: null, impact: null })),
+      actionFollowups: [1, 2, 3].map((n) => ({ followupDate: new Date("2097-01-10"), description: `Seguimiento ${n}` })),
+      textTables: { rootCause: [table("Causas")], actionFollowupObservations: [table("Revisiones")], conclusion: [table("Cierre")] },
+      annexIIITemplateVersion: { versionCode: "05" },
+    } as never);
+    const xml = getZipEntryText(readZip(doc), "word/document.xml");
+    const inSameCell = (text: string, caption: string) => {
+      const from = xml.indexOf(text), to = xml.indexOf(caption);
+      return from > 0 && to > from && !xml.slice(from, to).includes("</w:tc>");
+    };
+    expect(inSameCell("Causa ficticia", "Tabla 1. Causas")).toBe(true);
+    expect(inSameCell("Observación general", "Tabla 2. Revisiones")).toBe(true);
+    expect(inSameCell("Acción implantada", "Tabla 3. Cierre")).toBe(true);
+  });
 });
+

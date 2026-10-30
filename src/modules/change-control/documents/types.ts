@@ -53,6 +53,8 @@ export type ChangeDocumentRecord = {
   requestDecisionRole?: string | null;
   requestDecisionDate?: Date | null;
   evaluation?: string | null;
+  /** D-127: tablas de los textos largos, por campo. */
+  textTables?: unknown;
   classification?: "MAJOR" | "MINOR" | null;
   plannedImplementationDate?: Date | null;
   committeeRequired?: boolean | null;

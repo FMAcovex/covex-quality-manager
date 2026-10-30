@@ -8,6 +8,8 @@ import type {
   CapaSaveIntent,
 } from "@/modules/capa/types";
 import { cleanText } from "@/lib/forms/bullets";
+import { parseTextTables, tableSummaryErrors } from "@/lib/forms/text-tables";
+import { CAPA_TABLE_FIELD_LABELS, CAPA_TABLE_FIELDS } from "./text-tables";
 
 const actionType = z.enum(["CORRECTIVE", "PREVENTIVE"]);
 const status = z.enum(["DRAFT", "OPEN", "CLOSED", "CANCELLED"]);
@@ -163,6 +165,11 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
   }
   if (intent === "CREATE_FOLLOWUP_VERSION" && !changeReason) addIssue("changeReason", "El motivo del nuevo seguimiento es obligatorio.");
 
+  // D-127: tablas de los textos largos; un error se muestra en su campo y no deja guardar.
+  const textTables = parseTextTables(formData, CAPA_TABLE_FIELDS);
+  for (const [field, messages] of Object.entries(textTables.issues)) fieldIssues[field] = [...(fieldIssues[field] ?? []), ...messages];
+  errors.push(...tableSummaryErrors(textTables.issues, CAPA_TABLE_FIELD_LABELS));
+
   const firstOrigin = origins[0];
   return {
     errors, fieldIssues,
@@ -191,6 +198,7 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
       effectivenessEvidence: text(formData, "effectivenessEvidence"),
       effectiveClosedAt, conclusion,
       internalObservations: text(formData, "internalObservations"),
+      textTables: textTables.value,
       signedDocumentAvailable: text(formData, "signedDocumentAvailable") === "true" ? true : text(formData, "signedDocumentAvailable") === "false" ? false : null,
       dataQualityStatus: enumValue(dataQuality, text(formData, "dataQualityStatus")) ?? "REVIEW_REQUIRED",
       plannedActions,

@@ -6,10 +6,13 @@ import {
 } from "@/lib/ooxml/zip";
 import {
   appendWordVariableCellText,
+  insertWordCellTables,
   replaceWordRowWithVariableCopies,
   setWordSdtCheckbox,
   setWordVariableCellText,
 } from "@/lib/ooxml/xml";
+import { storedTextTables } from "@/lib/forms/text-tables";
+import { capaAnnexTablePlacements } from "@/modules/capa/text-tables";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { DEFAULT_CAPA_ANNEX_III_VERSION, loadCapaAnnexIIITemplate } from "@/modules/capa/documents/templates";
 
@@ -39,6 +42,8 @@ type CapaAnnexRecord = {
   conclusion: string | null;
   nextFollowupDate: Date | null;
   actionFollowupObservations: string | null;
+  /** D-127: tablas de los textos largos, por campo. */
+  textTables?: unknown;
   plannedActions: Array<{
     description: string;
     responsible: string | null;
@@ -82,6 +87,21 @@ function matchesOriginType(value: string | null, type: "DEVIATION" | "COMPLAINT"
     return normalized === "DEVIATION" || normalized.includes("DESVI");
   }
   return normalized === "COMPLAINT" || normalized.includes("RECLAM");
+}
+
+// Filas de la plantilla que se copian una vez por acción planificada (tabla 0) y por seguimiento de acción (tabla 1).
+const PLANNED_ACTIONS_ROW = { table: 0, row: 17 };
+const ACTION_FOLLOWUPS_ROW = { table: 1, row: 2 };
+
+/**
+ * D-127: las tablas de cada texto, al final de la casilla de su apartado. Va después de rellenar el resto,
+ * así que las casillas bajo una fila copiada bajan tantas filas como copias extra.
+ */
+export function fillCapaTextTables(xml: string, record: Pick<CapaAnnexRecord, "textTables" | "plannedActions" | "actionFollowups">) {
+  return insertWordCellTables(xml, capaAnnexTablePlacements(storedTextTables(record.textTables), [
+    { ...PLANNED_ACTIONS_ROW, count: record.plannedActions.length },
+    { ...ACTION_FOLLOWUPS_ROW, count: record.actionFollowups.length },
+  ]));
 }
 
 export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
@@ -157,8 +177,8 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
   if (record.plannedActions.length) {
     xml = replaceWordRowWithVariableCopies(
       xml,
-      0,
-      17,
+      PLANNED_ACTIONS_ROW.table,
+      PLANNED_ACTIONS_ROW.row,
       record.plannedActions.map((action) => [
         action.description,
         action.responsible ?? "",
@@ -202,8 +222,8 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
   if (record.actionFollowups.length) {
     xml = replaceWordRowWithVariableCopies(
       xml,
-      1,
-      2,
+      ACTION_FOLLOWUPS_ROW.table,
+      ACTION_FOLLOWUPS_ROW.row,
       record.actionFollowups.map((followup) => [
         date(followup.followupDate),
         followup.description ?? "",
@@ -211,6 +231,7 @@ export async function generateCapaAnnexIII(record: CapaAnnexRecord) {
     );
   }
 
+  xml = fillCapaTextTables(xml, record);
   updateZipEntry(entries, "word/document.xml", xml);
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);

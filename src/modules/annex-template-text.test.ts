@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { docxCellTexts, missingTemplateWords, syntheticDocx } from "@/lib/ooxml/template-text";
+import { getZipEntryText, readZip } from "@/lib/ooxml/zip";
 import type { ChangeDocumentRecord } from "@/modules/change-control/documents/types";
 import type { ReturnDocumentRecord } from "@/modules/returns/documents/docx";
 
@@ -141,3 +142,31 @@ describe("Anexos sobre plantilla: el texto oficial se conserva (D-098)", () => {
     expect(missingTemplateWords("Cantidad ______", "Cantidad 25 kg")).toEqual([]);
   });
 });
+
+describe("Controles de cambios: tablas de los textos en su casilla (D-127)", () => {
+  const table = (title: string) => ({ title, columns: ["Dato"], rows: [["valor"]] });
+  const withTables = {
+    ...change,
+    description: "Descripción ficticia",
+    evaluation: "Evaluación ficticia",
+    dictamenObservations: "Observaciones ficticias",
+    textTables: { description: [table("Plan")], evaluation: [table("Riesgos")], dictamenObservations: [table("Condiciones")] },
+  } as ChangeDocumentRecord;
+  const inSameCell = (xml: string, text: string, caption: string) => {
+    const from = xml.indexOf(text), to = xml.indexOf(caption);
+    return from > 0 && to > from && !xml.slice(from, to).includes("</w:tc>");
+  };
+
+  it("la solicitud (Anexo III) lleva las de la descripción; el dictamen (Anexo IV), las de evaluación y observaciones, con la numeración del expediente", async () => {
+    templates.current = syntheticDocx(grid(1, {}));
+    const iii = getZipEntryText(readZip(await generateChangeAnnexIII(withTables)), "word/document.xml");
+    expect(inSameCell(iii, "Descripción ficticia", "Tabla 1. Plan")).toBe(true);
+    expect(iii).not.toContain("Tabla 2.");
+    templates.current = syntheticDocx(grid(4, {}));
+    const iv = getZipEntryText(readZip(await generateChangeAnnexIV(withTables)), "word/document.xml");
+    expect(inSameCell(iv, "Evaluación ficticia", "Tabla 2. Riesgos")).toBe(true);
+    expect(inSameCell(iv, "Observaciones ficticias", "Tabla 3. Condiciones")).toBe(true);
+    expect(iv).not.toContain("Tabla 1.");
+  });
+});
+

@@ -23,7 +23,7 @@ import { deviationProvenanceOptions } from "@/modules/deviations/domain";
 
 import { useActionState, useEffect, useId, useState } from "react";
 import { BulletTextarea } from "@/components/bullet-textarea";
-import { storedTextTables, textTablesInputName, type TextTable } from "@/lib/forms/text-tables";
+import { initialFieldTables, type TextTable } from "@/lib/forms/text-tables";
 import { DEVIATION_TABLE_FIELDS } from "../text-tables";
 import Link from "next/link";
 import type {
@@ -227,13 +227,7 @@ export function DeviationForm({
     },
   }) as DeviationFormDefaults;
   // D-127: tablas de cada texto; tras un error de guardado, las que se enviaron.
-  const tablesFor = (field: (typeof DEVIATION_TABLE_FIELDS)[number]): TextTable[] => {
-    const sent = submitted?.[textTablesInputName(field)];
-    if (typeof sent === "string") {
-      try { return sent ? storedTextTables({ [field]: JSON.parse(sent) })[field] ?? [] : []; } catch { return []; }
-    }
-    return defaults.textTables?.[field] ?? [];
-  };
+  const tablesFor = (field: (typeof DEVIATION_TABLE_FIELDS)[number]) => initialFieldTables(field, submitted, defaults.textTables);
   const [actions, setActions] = useState<ImmediateActionInput[]>(formDefaults.immediateActions ?? []);
   const [capas, setCapas] = useState<CapaPlanInput[]>(formDefaults.capaPlans ?? []);
   const [origin, setOrigin] = useState<OriginType>(() => inferOrigin(formDefaults));

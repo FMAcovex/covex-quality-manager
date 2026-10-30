@@ -175,6 +175,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - un Anexo III generado con la plantilla v06 real (solo en local).
 - **Siguiente:** Controles de cambios y CAPA; después OOS, Reclamaciones y Devoluciones.
 
+**Tablas en los textos largos de CAPA y Controles de cambios (2026-10-31, D-127, segunda parte):**
+- **Qué cambia:**
+  - los textos largos del formulario de CAPA (defecto, causa raíz, seguimiento de acciones, estado, eficacia, conclusión, observaciones) y de Controles de cambios (descripción, justificación, documentos, evaluación, observaciones del dictamen, observaciones internas) admiten tablas;
+  - se guardan en `Capa.textTables` y `ChangeControl.textTables` (migración `20261031000100_capa_change_text_tables`, contrato B2 `B2_CAPA_CHANGE_TEXT_TABLES`);
+  - la ficha las muestra numeradas; el Anexo III de CAPA y los Anexos III (solicitud) y IV (dictamen) de Controles de cambios las escriben dentro de la casilla de su apartado, teniendo en cuenta las filas copiadas de acciones y seguimientos;
+  - las utilidades comunes (tablas iniciales tras un error, resumen de errores con el apartado y ubicación en el anexo) quedan en `src/lib/forms/text-tables.ts` y las usan los tres módulos.
+- **Pendiente:** los textos propios de cada seguimiento de CAPA (no van al anexo); OOS, Reclamaciones y Devoluciones.
+- **Comprobado** con pruebas unitarias (validación, versiones, contrato B2, anexos con filas copiadas) y el smoke `text-tables:ui:smoke` ampliado a CAPA y Controles de cambios.
+
 **FTA y herramientas en el Anexo III de Desviaciones (2026-10-30, D-124):**
 - **Qué cambia:**
   - cuarta herramienta, FTA (árbol de fallos), en esquema con sangrías (hasta 4 niveles) y relación O/Y; solo una causa final y confirmada pasa a «Causa raíz» y marca «FTA»;
