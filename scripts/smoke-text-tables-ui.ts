@@ -23,7 +23,7 @@ async function main() {
     await qa.locator('textarea[name="whatHappened"]').fill(`${marker} excursión de temperatura`);
 
     // Tabla en «Investigación»: pegar celdas de Excel en la primera celda reparte filas y columnas.
-    await qa.getByRole("button", { name: "Añadir una tabla en «Investigación realizada / resultado y conclusiones»" }).click();
+    await qa.getByRole("button", { name: "Añadir tabla en «Investigación realizada / resultado y conclusiones»" }).click();
     const table = qa.locator("fieldset.text-table-editor", { hasText: "1.ª tabla de «Investigación realizada / resultado y conclusiones»" });
     const firstCell = table.getByLabel(/^Cabecera, columna 1 · /);
     await firstCell.evaluate((input) => {
@@ -33,6 +33,12 @@ async function main() {
     });
     assert.equal(await table.getByLabel(/^Cabecera, columna 3 · /).inputValue(), "Estado", "pegar añade las columnas que faltan");
     assert.equal(await table.getByLabel(/^Fila 2, columna 1 · /).inputValue(), "L24-0902");
+    // Intro en una celda pasa a la de debajo; no envía el formulario (el guardado es explícito).
+    await table.getByLabel(/^Fila 1, columna 1 · /).press("Enter");
+    assert.equal(await table.getByLabel(/^Fila 2, columna 1 · /).evaluate((input) => input === document.activeElement), true, "Intro baja a la celda siguiente");
+    await qa.waitForTimeout(500);
+    assert.match(qa.url(), /\/deviations\/new/, "Intro no guarda");
+    assert.equal(await prisma.deviation.count({ where: { whatHappened: `${marker} excursión de temperatura` } }), 0);
 
     // Sin título no se guarda: el error sale en el campo y no se pierde la tabla.
     await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
@@ -41,7 +47,7 @@ async function main() {
     await qa.locator("fieldset.text-table-editor").getByLabel("Título *").fill("Lotes en la cámara C-03");
 
     // Una segunda tabla en «Causa raíz», que se quita sin dejar rastro.
-    await qa.getByRole("button", { name: "Añadir una tabla en «Causa raíz»" }).click();
+    await qa.getByRole("button", { name: "Añadir tabla en «Causa raíz»" }).click();
     await qa.getByRole("button", { name: "Quitar tabla" }).nth(1).click();
     assert.equal(await qa.locator("fieldset.text-table-editor").count(), 1);
 
@@ -67,8 +73,15 @@ async function main() {
     await qa.waitForURL(/\/deviations\/[0-9a-f-]{36}(\?|$)/, { timeout: 30000 });
     assert.equal(await prisma.changeHistory.count({ where: { qmsRecordId, fieldPath: "textTables" } }), 0);
 
+    // Cambiar una celda sí queda en el historial de modificaciones.
+    await go(`/deviations/${deviation.id}/edit`);
+    await qa.locator("fieldset.text-table-editor").getByLabel(/^Fila 2, columna 3 · /).fill("Retenido");
+    await qa.getByRole("button", { name: /Guardar borrador/ }).first().click();
+    await qa.waitForURL(/\/deviations\/[0-9a-f-]{36}(\?|$)/, { timeout: 30000 });
+    assert.equal(await prisma.changeHistory.count({ where: { qmsRecordId, fieldPath: "textTables" } }), 1);
+
     assert.deepEqual(errors, []);
-    console.log("D-127 OK: tablas bajo el texto, pegado desde Excel, error de título sin perder la tabla, guardado, ficha y sin cambios espurios.");
+    console.log("D-127 OK: tablas bajo el texto, pegado desde Excel, Intro sin guardar, error de título sin perder la tabla, guardado, ficha, sin cambios espurios y cambio real en el historial.");
   } finally {
     await browser.close();
     if (qmsRecordId) {

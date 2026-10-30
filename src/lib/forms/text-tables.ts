@@ -14,11 +14,16 @@ export type TextTable = { title: string; columns: string[]; rows: string[][] };
 export type TextTables = Partial<Record<string, TextTable[]>>;
 export type NumberedTable = { number: number; table: TextTable };
 
+// Topes holgados solo contra envíos desmesurados; los límites de uso se comprueban después, con su mensaje.
+const MAX_FIELD_JSON = 300_000;
 const tableShape = z.object({
-  title: z.string(),
-  columns: z.array(z.string()).min(1),
-  rows: z.array(z.array(z.string())),
+  title: z.string().max(10_000),
+  columns: z.array(z.string().max(10_000)).min(1).max(50),
+  rows: z.array(z.array(z.string().max(10_000)).max(50)).max(500),
 }).refine((table) => table.rows.every((row) => row.length === table.columns.length));
+
+// Caracteres de control que Word no admite en el documento (se conservan tabulación y saltos de línea).
+const clean = (value: string) => value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").trim();
 
 /** Nombre del campo oculto del formulario con las tablas de un campo de texto. */
 export function textTablesInputName(field: string) {
@@ -38,9 +43,13 @@ export function parseTextTables(formData: FormData, fields: readonly string[]) {
   for (const field of fields) {
     const raw = formData.get(textTablesInputName(field));
     if (typeof raw !== "string" || !raw.trim()) continue;
+    if (raw.length > MAX_FIELD_JSON) {
+      issues[field] = ["Las tablas de este apartado son demasiado grandes."];
+      continue;
+    }
     let parsed: z.infer<typeof tableShape>[];
     try {
-      parsed = z.array(tableShape).parse(JSON.parse(raw));
+      parsed = z.array(tableShape).max(50).parse(JSON.parse(raw));
     } catch {
       // Dato enviado por el cliente que no es JSON o no tiene forma de tabla: es un error de validación del campo.
       issues[field] = ["Las tablas no tienen un formato válido."];
@@ -49,9 +58,9 @@ export function parseTextTables(formData: FormData, fields: readonly string[]) {
     const problems: string[] = [];
     const tables: TextTable[] = [];
     parsed.forEach((table, index) => {
-      const title = table.title.trim();
-      const columns = table.columns.map((cell) => cell.trim());
-      const rows = table.rows.map((row) => row.map((cell) => cell.trim())).filter(filled);
+      const title = clean(table.title);
+      const columns = table.columns.map(clean);
+      const rows = table.rows.map((row) => row.map(clean)).filter(filled);
       const hasData = filled(columns) || rows.length > 0;
       if (!title && !hasData) return;
       if (!title) problems.push(`${ordinal(index)}: falta el título.`);
@@ -108,21 +117,37 @@ export function numberTextTables(tables: TextTables, fieldOrder: readonly string
   return numbered;
 }
 
-/** Celdas copiadas de Excel (tabulaciones, saltos de línea y comillas) como filas de igual longitud. */
+/**
+ * Celdas copiadas de Excel (tabulaciones y saltos de línea) como filas de igual longitud. Una celda entre
+ * comillas (como las copia Excel cuando llevan saltos de línea o comillas) se lee como una sola; una celda
+ * con varias líneas queda en una línea, porque el editor y la casilla del anexo son de una línea por celda.
+ */
 export function parsePastedTable(text: string): string[][] {
+  const source = text.replace(/\r\n?/g, "\n").replace(/\n$/, "");
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = "";
-  let quoted = false;
-  const source = text.replace(/\r\n?/g, "\n").replace(/\n$/, "");
+  // ¿Empieza aquí una celda entre comillas bien cerrada (comilla final seguida de tabulación, salto o fin)?
+  const quotedEnd = (start: number) => {
+    for (let index = start + 1; index < source.length; index++) {
+      if (source[index] !== '"') continue;
+      if (source[index + 1] === '"') { index++; continue; }
+      const next = source[index + 1];
+      return next === undefined || next === "\t" || next === "\n" ? index : -1;
+    }
+    return -1;
+  };
   for (let index = 0; index < source.length; index++) {
     const char = source[index];
-    if (quoted) {
-      if (char === '"' && source[index + 1] === '"') { cell += '"'; index++; }
-      else if (char === '"') quoted = false;
-      else cell += char;
-    } else if (char === '"' && cell === "") quoted = true;
-    else if (char === "\t") { row.push(cell); cell = ""; }
+    if (char === '"' && cell === "") {
+      const end = quotedEnd(index);
+      if (end > 0) {
+        cell = source.slice(index + 1, end).replace(/""/g, '"').replace(/\s*\n\s*/g, " ");
+        index = end;
+        continue;
+      }
+    }
+    if (char === "\t") { row.push(cell); cell = ""; }
     else if (char === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
     else cell += char;
   }
@@ -130,4 +155,23 @@ export function parsePastedTable(text: string): string[][] {
   rows.push(row);
   const width = Math.max(...rows.map((cells) => cells.length));
   return rows.map((cells) => [...cells, ...Array(width - cells.length).fill("")]);
+}
+
+/**
+ * Pega filas en una tabla a partir de la celda indicada (fila -1 es la cabecera), añadiendo las filas y
+ * columnas que falten hasta los límites. `truncated` indica que algo no cabía y se ha dejado fuera.
+ */
+export function pasteIntoTable(table: TextTable, row: number, column: number, pasted: string[][]) {
+  const pastedWidth = Math.max(0, ...pasted.map((cells) => cells.length));
+  const neededWidth = Math.max(table.columns.length, column + pastedWidth);
+  const neededHeight = Math.max(table.rows.length + 1, row + 1 + pasted.length);
+  const width = Math.min(MAX_TABLE_COLUMNS, neededWidth);
+  const height = Math.min(MAX_TABLE_ROWS + 1, neededHeight);
+  const grid = [table.columns, ...table.rows].map((cells) => [...cells, ...Array(Math.max(0, width - cells.length)).fill("")].slice(0, width));
+  while (grid.length < height) grid.push(Array(width).fill(""));
+  pasted.forEach((cells, offset) => cells.forEach((value, at) => {
+    const target = grid[row + 1 + offset];
+    if (target && column + at < width) target[column + at] = value;
+  }));
+  return { table: { title: table.title, columns: grid[0], rows: grid.slice(1) }, truncated: neededWidth > width || neededHeight > height };
 }

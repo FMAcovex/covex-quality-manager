@@ -709,7 +709,7 @@ export function DeviationForm({
               El PDF firmado se carga y controla por versión desde la pestaña Versiones del expediente.
             </small>
           </div>
-          <TextArea label="Observaciones internas" name="internalObservations" tables={tablesFor("internalObservations")} defaultValue={formDefaults.internalObservations} />
+          <TextArea label="Observaciones internas" name="internalObservations" tables={tablesFor("internalObservations")} defaultValue={formDefaults.internalObservations}  issues={issues.internalObservations} />
         </div>
       </section>
 

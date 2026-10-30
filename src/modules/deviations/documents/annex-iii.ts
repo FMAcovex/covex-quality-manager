@@ -155,9 +155,24 @@ export function setImpactCell(xml: string, row: number, cell: number, state: str
   return detail ? appendWordCellText(xml, 3, row, cell, detail) : xml;
 }
 
-/** D-127: las tablas de cada texto, al final de la casilla de su apartado. Va después de rellenar el resto. */
-export function fillTextTables(xml: string, record: Pick<AnnexIIIRecord, "textTables">) {
-  return insertWordCellTables(xml, deviationAnnexTablePlacements(storedTextTables(record.textTables)));
+// Filas de la plantilla que se copian una vez por acción inmediata (tabla 2) y por CAPA (tabla 3).
+const IMMEDIATE_ACTIONS_ROW = { table: 2, row: 3 };
+const CAPA_PLANS_ROW = { table: 3, row: 12 };
+
+/**
+ * D-127: las tablas de cada texto, al final de la casilla de su apartado. Va después de rellenar el resto,
+ * así que las casillas bajo una fila copiada (acciones inmediatas, CAPA) bajan tantas filas como copias extra.
+ */
+export function fillTextTables(xml: string, record: Pick<AnnexIIIRecord, "textTables" | "immediateActions" | "capaPlans">) {
+  const copied = [
+    { ...IMMEDIATE_ACTIONS_ROW, extra: Math.max(0, record.immediateActions.length - 1) },
+    { ...CAPA_PLANS_ROW, extra: Math.max(0, record.capaPlans.length - 1) },
+  ];
+  const placements = deviationAnnexTablePlacements(storedTextTables(record.textTables)).map((placement) => {
+    const shift = copied.find((rows) => rows.table === placement.table && placement.row > rows.row)?.extra ?? 0;
+    return { ...placement, row: placement.row + shift };
+  });
+  return insertWordCellTables(xml, placements);
 }
 
 /** `figures` (D-125): hoja «Figuras» tras la última página; la plantilla no se modifica. */
@@ -226,8 +241,8 @@ export async function generateAnnexIII(record: AnnexIIIRecord, figures: readonly
   if (record.immediateActions.length) {
     xml = replaceWordRowWithCopies(
       xml,
-      2,
-      3,
+      IMMEDIATE_ACTIONS_ROW.table,
+      IMMEDIATE_ACTIONS_ROW.row,
       record.immediateActions.map((action) => [
         action.description,
         value(action.executedBy),
@@ -248,8 +263,8 @@ export async function generateAnnexIII(record: AnnexIIIRecord, figures: readonly
   if (record.capaPlans.length) {
     xml = replaceWordRowWithCopies(
       xml,
-      3,
-      12,
+      CAPA_PLANS_ROW.table,
+      CAPA_PLANS_ROW.row,
       record.capaPlans.map((plan) => [
         plan.businessCapaCode || plan.linkedCapaRecord?.businessCode || "",
         plan.description,

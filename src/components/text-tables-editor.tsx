@@ -1,6 +1,6 @@
 "use client";
-import { useState, type ClipboardEvent } from "react";
-import { MAX_TABLE_COLUMNS, MAX_TABLE_ROWS, MAX_TABLES_PER_FIELD, parsePastedTable, textTablesInputName, type TextTable } from "@/lib/forms/text-tables";
+import { useState, type ClipboardEvent, type KeyboardEvent } from "react";
+import { MAX_TABLE_COLUMNS, MAX_TABLE_ROWS, MAX_TABLES_PER_FIELD, parsePastedTable, pasteIntoTable, textTablesInputName, type TextTable } from "@/lib/forms/text-tables";
 
 const emptyTable = (): TextTable => ({ title: "", columns: ["", ""], rows: [["", ""], ["", ""]] });
 
@@ -20,22 +20,27 @@ export function TextTablesEditor({ field, fieldLabel, initial }: { field: string
       ? { ...table, columns: table.columns.map((cell, position) => (position === column ? value : cell)) }
       : { ...table, rows: table.rows.map((cells, position) => (position === row ? cells.map((cell, at) => (at === column ? value : cell)) : cells)) });
 
+  const [truncated, setTruncated] = useState<number | null>(null);
+
   function paste(index: number, row: number, column: number, event: ClipboardEvent<HTMLInputElement>) {
     const text = event.clipboardData.getData("text/plain");
     if (!/[\t\n]/.test(text.replace(/\r?\n$/, ""))) return;
     event.preventDefault();
-    const pasted = parsePastedTable(text);
-    update(index, (table) => {
-      const width = Math.min(MAX_TABLE_COLUMNS, Math.max(table.columns.length, column + pasted[0].length));
-      const grid = [table.columns, ...table.rows].map((cells) => [...cells, ...Array(width - cells.length).fill("")]);
-      const height = Math.min(MAX_TABLE_ROWS + 1, Math.max(grid.length, row + 1 + pasted.length));
-      while (grid.length < height) grid.push(Array(width).fill(""));
-      pasted.forEach((cells, offset) => cells.forEach((value, at) => {
-        const target = grid[row + 1 + offset];
-        if (target && column + at < width) target[column + at] = value;
-      }));
-      return { ...table, columns: grid[0], rows: grid.slice(1) };
-    });
+    const result = pasteIntoTable(tables[index], row, column, parsePastedTable(text));
+    update(index, () => result.table);
+    setTruncated(result.truncated ? index : null);
+  }
+
+  // Intro en una celda no envía el formulario (el guardado es explícito): pasa a la celda de debajo.
+  function enter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    const input = event.currentTarget;
+    const cell = input.closest("td, th");
+    const row = cell?.parentElement;
+    const position = cell && row ? Array.from(row.children).indexOf(cell) : -1;
+    const next = row?.tagName === "TR" ? (row.parentElement?.tagName === "THEAD" ? row.closest("table")?.querySelector("tbody tr") : row.nextElementSibling) : null;
+    next?.children[position]?.querySelector<HTMLInputElement>("input")?.focus();
   }
 
   return (
@@ -49,6 +54,7 @@ export function TextTablesEditor({ field, fieldLabel, initial }: { field: string
             aria-label={`${label} · ${name}`}
             onChange={(event) => setCell(index, row, column, event.target.value)}
             onPaste={(event) => paste(index, row, column, event)}
+            onKeyDown={enter}
           />
         );
         return (
@@ -56,7 +62,7 @@ export function TextTablesEditor({ field, fieldLabel, initial }: { field: string
             <legend>{name}</legend>
             <label className="text-table-title">
               <span>Título *</span>
-              <input type="text" value={table.title} maxLength={200} onChange={(event) => update(index, (current) => ({ ...current, title: event.target.value }))} />
+              <input type="text" value={table.title} maxLength={200} aria-required="true" onKeyDown={enter} onChange={(event) => update(index, (current) => ({ ...current, title: event.target.value }))} />
             </label>
             <div className="text-table-scroll">
               <table className="text-table-grid">
@@ -78,6 +84,7 @@ export function TextTablesEditor({ field, fieldLabel, initial }: { field: string
                 </tbody>
               </table>
             </div>
+            {truncated === index ? <p className="field-error" role="status">Lo pegado no cabía entero: como máximo {MAX_TABLE_COLUMNS} columnas y {MAX_TABLE_ROWS} filas.</p> : null}
             <div className="text-table-actions">
               <button type="button" className="button small" disabled={table.rows.length >= MAX_TABLE_ROWS} onClick={() => update(index, (current) => ({ ...current, rows: [...current.rows, Array(current.columns.length).fill("")] }))}>+ Fila</button>
               <button type="button" className="button small" disabled={table.columns.length >= MAX_TABLE_COLUMNS} onClick={() => update(index, (current) => ({ columns: [...current.columns, ""], rows: current.rows.map((cells) => [...cells, ""]), title: current.title }))}>+ Columna</button>
@@ -88,7 +95,7 @@ export function TextTablesEditor({ field, fieldLabel, initial }: { field: string
         );
       })}
       <div className="text-tables-add">
-        <button type="button" className="button small" disabled={tables.length >= MAX_TABLES_PER_FIELD} aria-label={`Añadir una tabla en «${fieldLabel}»`} onClick={() => setTables((current) => [...current, emptyTable()])}>+ Añadir tabla</button>
+        <button type="button" className="button small" disabled={tables.length >= MAX_TABLES_PER_FIELD} aria-label={`Añadir tabla en «${fieldLabel}»`} onClick={() => setTables((current) => [...current, emptyTable()])}>+ Añadir tabla</button>
         {tables.length ? <small className="muted-note">Para traer una tabla de Excel, copia sus celdas y pégalas (Ctrl+V) en la primera celda. Las tablas se numeran en todo el expediente y salen en el anexo, dentro de la casilla de este apartado.</small> : null}
       </div>
       <input type="hidden" name={textTablesInputName(field)} value={tables.length ? JSON.stringify(tables) : ""} />

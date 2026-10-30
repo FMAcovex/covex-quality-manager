@@ -18,6 +18,23 @@ export const DEVIATION_TABLE_FIELDS = [
   "internalObservations",
 ] as const;
 
+/** Nombre de cada campo, para los mensajes del resumen de errores. */
+export const DEVIATION_TABLE_FIELD_LABELS: Record<(typeof DEVIATION_TABLE_FIELDS)[number], string> = {
+  affectedDocumentation: "Documentación afectada",
+  whatHappened: "Qué sucedió",
+  whoInvolved: "Quién estuvo implicado",
+  whenHappened: "Cuándo ocurrió",
+  whereHappened: "Dónde ocurrió",
+  howHappened: "Cómo ocurrió",
+  investigation: "Investigación",
+  rootCause: "Causa raíz",
+  recurrenceDetails: "Antecedentes de recurrencia",
+  otherProcessesImpactDetails: "Detalle de impacto",
+  conclusion: "Conclusión",
+  dispositionComments: "Comentarios de disposición",
+  internalObservations: "Observaciones internas",
+};
+
 /** Casilla del Anexo III de cada campo (tabla, fila, celda de la plantilla); null si no va al anexo. */
 const ANNEX_III_CELLS: Record<(typeof DEVIATION_TABLE_FIELDS)[number], { table: number; row: number; cell: number } | null> = {
   affectedDocumentation: { table: 0, row: 18, cell: 0 },

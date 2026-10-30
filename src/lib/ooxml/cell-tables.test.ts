@@ -37,6 +37,15 @@ describe("tablas dentro de la casilla del anexo (D-127)", () => {
     expect(setWordCellText(doc, 1, 1, 0, "nuevo")).toContain(">nuevo<");
   });
 
+  it("lee el ancho de la casilla con los atributos en cualquier orden; sin ancho en dxa, ocupa la casilla en %", () => {
+    const one = (tcW: string) => `<w:document><w:body><w:tbl><w:tr><w:tc><w:tcPr>${tcW}</w:tcPr><w:p/></w:tc></w:tr></w:tbl></w:body></w:document>`;
+    const swapped = insertWordCellTables(one('<w:tcW w:type="dxa" w:w="4000"/>'), [{ table: 0, row: 0, cell: 0, tables: [{ number: 1, table: lots }] }]);
+    expect(swapped).toContain('<w:tblW w:w="3784" w:type="dxa"/>');
+    const relative = insertWordCellTables(one('<w:tcW w:w="2500" w:type="pct"/>'), [{ table: 0, row: 0, cell: 0, tables: [{ number: 1, table: lots }] }]);
+    expect(relative).toContain('<w:tblW w:w="5000" w:type="pct"/>');
+    expect(relative).not.toContain("<w:tblLayout");
+  });
+
   it("sin tablas no cambia nada", () => {
     expect(insertWordCellTables(doc, [])).toBe(doc);
     expect(insertWordCellTables(doc, [{ table: 0, row: 0, cell: 0, tables: [] }])).toBe(doc);

@@ -5,6 +5,7 @@ import {
   numberTextTables,
   orderedTextTables,
   parsePastedTable,
+  pasteIntoTable,
   parseTextTables,
   storedTextTables,
   textTablesInputName,
@@ -53,9 +54,32 @@ describe("parseTextTables", () => {
     expect(parseTextTables(form({ investigation: [{ title: "Lotes", columns: ["", ""], rows: [["", ""]] }] }), fields).issues.investigation).toEqual(["1.ª tabla: no tiene datos."]);
   });
 
+  it("quita caracteres de control y rechaza un envío desmesurado", () => {
+    expect(parseTextTables(form({ investigation: [{ title: "T\u0007", columns: ["a\u0000"], rows: [["b\u001F"]] }] }), fields).value).toEqual({ investigation: [{ title: "T", columns: ["a"], rows: [["b"]] }] });
+    const huge = [{ title: "T", columns: ["a"], rows: Array(5000).fill(["x".repeat(100)]) }];
+    expect(parseTextTables(form({ investigation: huge }), fields).issues.investigation).toEqual(["Las tablas de este apartado son demasiado grandes."]);
+  });
+
   it("rechaza datos que no son tablas y filas con otro número de celdas", () => {
     expect(parseTextTables(form({ investigation: "no es json" }), fields).issues.investigation).toEqual(["Las tablas no tienen un formato válido."]);
     expect(parseTextTables(form({ investigation: [{ title: "T", columns: ["a", "b"], rows: [["solo una"]] }] }), fields).issues.investigation).toEqual(["Las tablas no tienen un formato válido."]);
+  });
+});
+
+describe("pasteIntoTable", () => {
+  const base = { title: "T", columns: ["a", "b"], rows: [["1", "2"]] };
+  it("reparte desde la celda (fila -1 es la cabecera) y añade filas y columnas", () => {
+    expect(pasteIntoTable(base, -1, 1, [["x", "y"], ["z", "w"]])).toEqual({ table: { title: "T", columns: ["a", "x", "y"], rows: [["1", "z", "w"]] }, truncated: false });
+    expect(pasteIntoTable(base, 0, 0, [["p"], ["q"]])).toEqual({ table: { title: "T", columns: ["a", "b"], rows: [["p", "2"], ["q", ""]] }, truncated: false });
+  });
+
+  it("recorta a los límites y lo avisa", () => {
+    const wide = pasteIntoTable(base, -1, 0, [Array(MAX_TABLE_COLUMNS + 2).fill("c")]);
+    expect(wide.table.columns).toHaveLength(MAX_TABLE_COLUMNS);
+    expect(wide.truncated).toBe(true);
+    const tall = pasteIntoTable(base, 0, 0, Array(MAX_TABLE_ROWS + 3).fill(["r"]));
+    expect(tall.table.rows).toHaveLength(MAX_TABLE_ROWS);
+    expect(tall.truncated).toBe(true);
   });
 });
 
@@ -79,9 +103,13 @@ describe("storedTextTables", () => {
 
 describe("parsePastedTable", () => {
   it("convierte celdas copiadas de Excel (tabulaciones y saltos de línea, comillas) en filas", () => {
-    expect(parsePastedTable("Lote\tTemp.\r\nL-1\t9,4\r\nL-2\t\"varias\r\nlíneas\"\r\n")).toEqual([["Lote", "Temp."], ["L-1", "9,4"], ["L-2", "varias\nlíneas"]]);
+    // Una celda con varias líneas queda en una (el editor y la casilla son de una línea).
+    expect(parsePastedTable("Lote\tTemp.\r\nL-1\t9,4\r\nL-2\t\"varias\r\nlíneas\"\r\n")).toEqual([["Lote", "Temp."], ["L-1", "9,4"], ["L-2", "varias líneas"]]);
     expect(parsePastedTable("a\t\"con \"\"comillas\"\"\"")).toEqual([["a", "con \"comillas\""]]);
     expect(parsePastedTable("texto suelto")).toEqual([["texto suelto"]]);
+    // Comillas que no delimitan la celda se toman tal cual.
+    expect(parsePastedTable("\"Lote A\" retenido\tok")).toEqual([["\"Lote A\" retenido", "ok"]]);
+    expect(parsePastedTable("\"abc\tdef\nghi")).toEqual([["\"abc", "def"], ["ghi", ""]]);
   });
 
   it("iguala el número de celdas de todas las filas", () => {

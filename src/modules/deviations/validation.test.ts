@@ -189,7 +189,7 @@ describe("Desviaciones · herramientas de investigación (D-123)", () => {
     form.set("textTables:rootCause", JSON.stringify([{ title: "", columns: ["a"], rows: [["b"]] }]));
     const parsed = parseDeviationForm(form);
     expect(parsed.fieldIssues.rootCause).toEqual(["1.ª tabla: falta el título."]);
-    expect(parsed.errors).toContain("1.ª tabla: falta el título.");
+    expect(parsed.errors).toContain("Causa raíz · 1.ª tabla: falta el título.");
   });
 });
 
