@@ -15,6 +15,8 @@ import Link from "next/link";
 import { submittedDefaults } from "@/lib/forms/preserved-state";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import { useActionState, useEffect, useState } from "react";
+import { BulletTextField } from "@/components/bullet-textarea";
+
 import type {
   ComplaintCapaPlanInput,
   ComplaintDerivedActionInput,
@@ -31,7 +33,7 @@ function Field({label,name,defaultValue,type="text",required=false,span="",help,
  return <label className={`field ${span}`} hidden={hidden} style={hidden?{display:"none"}:undefined}><span>{label}{required?" *":""}</span>{help?<small className="muted-note">{help}</small>:null}<input name={name} type={type} defaultValue={defaultValue??""} required={required}/></label>;
 }
 function TextArea({label,name,defaultValue,help,required=false}:{label:string;name:string;defaultValue?:string;help?:string;required?:boolean}) {
- return <label className="field full"><span>{label}{required?" *":""}</span>{help?<small className="muted-note">{help}</small>:null}<textarea name={name} defaultValue={defaultValue??""} required={required}/></label>;
+ return <BulletTextField label={label} help={help?<small className="muted-note">{help}</small>:null} name={name} defaultValue={defaultValue??""} required={required}/>;
 }
 function Bool({label,name,defaultValue,required=false,onChange}:{label:string;name:string;defaultValue?:string;required?:boolean;onChange?:(value:string)=>void}) {
  return <label className="field"><span>{label}{required?" *":""}</span><select name={name} onChange={e=>onChange?.(e.target.value)} defaultValue={defaultValue??""} required={required}><option value="">No informado</option><option value="true">Sí</option><option value="false">No</option></select></label>;

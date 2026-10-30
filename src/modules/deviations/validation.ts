@@ -4,6 +4,7 @@ import { parseInvestigationTools } from "./investigation-tools";
 import { z } from "zod";
 import { rowUserIdSchema } from "@/lib/qms/responsible-user";
 import type { CapaPlanInput, ImmediateActionInput } from "@/modules/deviations/types";
+import { cleanText } from "@/lib/forms/bullets";
 
 const triState = z.enum(["YES", "NO", "NA"]);
 const classification = z.enum(["CRITICAL", "MAJOR", "MINOR"]);
@@ -35,9 +36,8 @@ const capaPlanSchema = z.object({
 
 function text(formData: FormData, name: string): string | null {
   const value = formData.get(name);
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed || null;
+  // D-126: quita las viñetas vacías; un texto sin contenido no cuenta como relleno.
+  return typeof value === "string" ? cleanText(value) : null;
 }
 
 function enumValue<T extends z.ZodTypeAny>(schema: T, value: string | null) {

@@ -1423,3 +1423,12 @@ Decisión del responsable de Calidad: poder poner imágenes junto al texto de un
 - No hay cambios de base de datos: el apartado va en los metadatos de la evidencia.
 - Solo Desviaciones. Otros módulos, si se piden, en una PR propia.
 
+## D-126 — Viñetas en los textos largos de los seis módulos de expedientes (2026-10-30)
+
+Decisión del responsable de Calidad: poder escribir listas de puntos en los textos largos (por ejemplo, los hechos de una investigación) en Desviaciones y Controles de cambios, ampliada después por el mismo responsable a CAPA, OOS, Reclamaciones y Devoluciones. Auditorías y Documentación controlada (PNT) quedan fuera. Es la primera parte de la propuesta de tablas (opción B, tablas dentro de la casilla del anexo), que irá en una PR propia.
+
+- **Dónde:** los campos de texto largo de los formularios de los seis módulos (descripciones, investigación, causa raíz, impacto, evaluaciones, conclusiones, observaciones, seguimiento de CAPA…). No en las celdas de las tablas de acciones o tareas.
+- **Cómo:** el botón **«• Viñetas»**, junto a la etiqueta del campo, pone o quita la viñeta en las líneas seleccionadas (o en la del cursor). Intro dentro de una viñeta crea la siguiente; Intro en una viñeta vacía termina la lista; Mayúsculas+Intro hace un salto de línea normal. Se puede deshacer con Ctrl+Z.
+- **Qué se guarda:** texto normal; una viñeta es una línea que empieza por «•» seguido de un espacio o una tabulación (así también sale bien un texto pegado de Word). El servidor quita las viñetas vacías (un «•» sin texto), también en los seguimientos de CAPA y en los motivos de versión: no se guardan ni cuentan como relleno de un campo obligatorio. Un texto antiguo con un «•» suelto lo pierde al volver a guardarse (queda en el historial de modificaciones). No hay cambios de base de datos y el buscador, el historial de modificaciones y las versiones funcionan igual. Los textos existentes no cambian: una línea que empieza por «-» se queda como está.
+- **Ficha:** las viñetas se muestran como lista; un texto sin viñetas se ve igual que antes.
+- **Anexos Word:** cada viñeta es un párrafo con sangría francesa (el texto que pasa de línea queda alineado bajo el texto, no bajo el punto), en Arial 11 como el resto de datos. Se aplica en los escritores comunes de las casillas (también en las casillas de OOS que se rellenan bajo la guía de la plantilla), así que cualquier línea que empiece por «• » sale igual en todos los anexos. La plantilla no cambia. Comprobado con el Anexo III v06 de Desviaciones.

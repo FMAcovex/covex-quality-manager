@@ -798,10 +798,10 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .change-overview-description { max-width: 980px; padding: 20px 0 22px; }
 .change-overview-description h3,
 .change-prose-section h3 { margin: 0 0 8px; }
-.change-overview-description p,
-.change-prose-section p,
-.change-evaluation-card p { margin: 0; white-space: pre-wrap; line-height: 1.65; overflow-wrap: anywhere; }
-.change-overview-description p { font-size: 16px; color: #26384f; }
+.change-overview-description :is(p, .formatted-text),
+.change-prose-section :is(p, .formatted-text),
+.change-evaluation-card :is(p, .formatted-text) { margin: 0; white-space: pre-wrap; line-height: 1.65; overflow-wrap: anywhere; }
+.change-overview-description :is(p, .formatted-text) { font-size: 16px; color: #26384f; }
 .change-overview-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 18px 0; border-top: 1px solid var(--border); }
 .change-date-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding-top: 18px; border-top: 1px solid var(--border); }
 .change-date-pair > div { min-width: 0; padding: 2px 24px; border-right: 1px solid var(--border); }
@@ -822,7 +822,7 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .change-dictamen-result > dl > div { padding: 2px 22px; border-left: 1px solid var(--border); }
 .change-dictamen-result dt { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
 .change-dictamen-result dd { margin: 0; font-weight: 700; }
-.change-evaluation-card p { max-width: 1080px; }
+.change-evaluation-card :is(p, .formatted-text) { max-width: 1080px; }
 .change-requirements { margin-top: 16px; border-top: 1px solid var(--border); }
 .change-requirement-header,
 .change-requirement-row { display: grid; grid-template-columns: minmax(220px, 1.15fr) minmax(110px, .4fr) minmax(260px, 1.6fr); gap: 20px; align-items: start; }
@@ -1000,7 +1000,8 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .relation-card a { color: var(--blue-dark); text-decoration: none; }
 .relation-card a:hover { text-decoration: underline; }
 .followup-form { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
-.followup-form .field > span { min-height: 31px; display: flex; align-items: flex-end; line-height: 1.3; }
+.followup-form .field > span,
+.followup-form .field > .text-field-head { min-height: 31px; display: flex; align-items: flex-end; line-height: 1.3; }
 .followup-form .form-submit { display: flex; justify-content: flex-end; align-items: flex-end; }
 .form-feedback {
   grid-column: 1 / -1;
@@ -1018,7 +1019,8 @@ a.button { display: inline-flex; align-items: center; justify-content: center; t
 .document-block .document-actions { margin-top: 0; }
 @media (max-width: 760px) {
   .followup-form, .document-grid { grid-template-columns: 1fr; }
-  .followup-form .field > span { min-height: auto; }
+  .followup-form .field > span,
+  .followup-form .field > .text-field-head { min-height: auto; }
 }
 
 /* Hito 10.8A — relaciones QMS y tarjetas vinculadas */
@@ -2198,7 +2200,8 @@ button[disabled] {
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
 }
-.return-followup-comment > p {
+.return-followup-comment > p,
+.return-followup-comment > .formatted-text {
   white-space: pre-wrap;
 }
 @media (max-width: 1100px) {
@@ -3059,3 +3062,15 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
 .figure-block h3 { margin: 0 0 4px; font-size: var(--font-md); }
 @media (max-width: 700px) { .figure-pending { grid-template-columns: 1fr; } .figure-pending img { width: 100%; } }
 
+/* D-126: viñetas en los textos largos (formulario y ficha). */
+.text-field-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.text-field-head .button.small { flex: none; min-height: 24px; padding: 0 9px; font-size: 11.5px; font-weight: 600; }
+.text-bullets { margin: 2px 0; padding-left: 1.4em; white-space: normal; }
+.text-bullets li { white-space: pre-wrap; overflow-wrap: anywhere; }
+.text-bullets li + li { margin-top: 2px; }
+.text-field-note { display: contents; }
+.text-block { display: block; }
+/* Antes era un <p>: conserva su margen (una lista no puede ir dentro de un párrafo). */
+.prose-block { margin: 1em 0; }
+.timeline-item .prose-timeline { margin: 5px 0; line-height: 1.45; }
+.text-block:empty { min-height: .6em; }

@@ -38,6 +38,7 @@ import {
   startNextVersion,
 } from "@/lib/qms/versioning";
 import { keepsOperationalStatus } from "@/modules/lifecycle";
+import { formText } from "@/lib/forms/bullets";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -290,7 +291,7 @@ async function updateDeviationActionAuthenticatedContent(
 ): Promise<FormState> {
   const parsed = parseDeviationForm(formData);
   const saveMode = deviationSaveMode(formData.get("saveMode"));
-  const versionReason = formData.get("changeReason")?.toString().trim() || "";
+  const versionReason = formText(formData, "changeReason") ?? "";
   if (parsed.errors.length) {
     return formError(previous, formData, "No se puede guardar el expediente.", parsed.errors, parsed.fieldIssues);
   }
@@ -619,7 +620,7 @@ async function updateDeviationActionAuthenticatedContent(
             fieldPath: key,
             oldValue: jsonValue((oldSnapshot as Record<string, unknown>)[key]),
             newValue: jsonValue(newValue),
-            reason: formData.get("changeReason")?.toString().trim() || null,
+            reason: formText(formData, "changeReason"),
             source: "UI",
           })),
         });

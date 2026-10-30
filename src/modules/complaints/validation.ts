@@ -4,6 +4,7 @@ import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import type { ComplaintDerivedActionInput } from "@/modules/complaints/types";
 import { fieldIssuesFromErrors, type FieldIssueRule } from "@/lib/forms/field-issues";
+import { cleanText } from "@/lib/forms/bullets";
 
 const typeSchema=z.enum(["PROVIDER","CUSTOMER"]);
 const classificationSchema=z.enum(["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"]);
@@ -19,7 +20,7 @@ const resolutionSchema=z.enum([
   "RECALL","CREDIT","REPLACEMENT","OTHER"
 ]);
 
-function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"&&v.trim()?v.trim():null;}
+function text(fd:FormData,name:string){const v=fd.get(name);return typeof v==="string"?cleanText(v):null;} // D-126: sin viñetas vacías
 function bool(fd:FormData,name:string){const v=text(fd,name);return v==="true"?true:v==="false"?false:null;}
 function enumValue<T extends z.ZodTypeAny>(schema:T,value:string|null){if(!value)return null;const r=schema.safeParse(value);return r.success?r.data:null;}
 function list(fd:FormData,name:string){return fd.getAll(name).map(String).map(x=>x.trim()).filter(Boolean);}

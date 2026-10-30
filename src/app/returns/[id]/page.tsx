@@ -1,3 +1,4 @@
+import { FormattedText } from "@/components/formatted-text";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
 import { PreviewLink } from "@/components/preview-link";
 import { uploadReturnEvidenceAction } from "@/lib/qms/record-evidence-actions";
@@ -372,7 +373,7 @@ async function ReturnDetailPageAuthenticatedContent({
                       <span>Motivo / incidencias</span>
                       <ReviewMarker target={reviewTarget.reasonObservations} />
                     </dt>
-                    <dd className="prose-value">{txt(r.reasonObservations)}</dd>
+                    <dd className="prose-value"><FormattedText value={r.reasonObservations} /></dd>
                   </div>
                   <div
                     id={reviewTarget.attachedDocumentation.anchorId}
@@ -382,7 +383,7 @@ async function ReturnDetailPageAuthenticatedContent({
                       <span>Documentación anexada</span>
                       <ReviewMarker target={reviewTarget.attachedDocumentation} />
                     </dt>
-                    <dd className="prose-value">{txt(r.attachedDocumentation)}</dd>
+                    <dd className="prose-value"><FormattedText value={r.attachedDocumentation} /></dd>
                   </div>
                   <div
                     id={reviewTarget.finalDestination.anchorId}
@@ -392,7 +393,7 @@ async function ReturnDetailPageAuthenticatedContent({
                       <span>Destino final</span>
                       <ReviewMarker target={reviewTarget.finalDestination} />
                     </dt>
-                    <dd className="prose-value">{txt(r.finalDestination)}</dd>
+                    <dd className="prose-value"><FormattedText value={r.finalDestination} /></dd>
                   </div>
                   <div
                     id={reviewTarget.traceabilityUpdated.anchorId}
@@ -471,9 +472,7 @@ async function ReturnDetailPageAuthenticatedContent({
                         </div>
                         <div className="info-item full">
                           <dt>Observaciones recepción</dt>
-                          <dd className="prose-value">
-                            {txt(item.receptionObservations)}
-                          </dd>
+                          <dd className="prose-value"><FormattedText value={item.receptionObservations} /></dd>
                         </div>
                       </dl>
                     </article>
@@ -608,7 +607,7 @@ async function ReturnDetailPageAuthenticatedContent({
                             <span>
                               Seguimiento <ReviewMarker target={target} />
                             </span>
-                            <p>{item.comment}</p>
+                            <FormattedText as="div" value={item.comment} />
                           </div>
                           <div className="return-followup-field">
                             <span>Próximo seguimiento</span>

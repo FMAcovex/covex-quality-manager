@@ -3,6 +3,8 @@ import { CsrfField } from "@/components/csrf";
 
 
 import { useActionState, useState } from "react";
+import { BulletTextField } from "@/components/bullet-textarea";
+
 import type { FollowupActionState } from "@/components/basic-followup-form";
 import type { CapaFollowupDefaults } from "@/modules/capa/types";
 
@@ -56,18 +58,12 @@ export function CapaFollowupForm({
         <span>Motivo</span>
         <input name="reason" />
       </label>
-      <label className="field full">
-        <span>Actuación realizada / resultado *</span>
-        <textarea name="description" required />
-      </label>
+      <BulletTextField label="Actuación realizada / resultado" name="description" required />
       <label className="field">
         <span>Evidencia / referencia de ejecución</span>
         <input name="evidenceReference" />
       </label>
-      <label className="field full">
-        <span>Observaciones</span>
-        <textarea name="observations" />
-      </label>
+      <BulletTextField label="Observaciones" name="observations" />
 
       <div className="field full">
         <strong>2. Estado y cierre operativo</strong>
@@ -113,10 +109,7 @@ export function CapaFollowupForm({
               defaultValue={defaults.operationalClosedAt ?? ""}
             />
           </label>
-          <label className="field full">
-            <span>Conclusión / cierre operativo *</span>
-            <textarea name="conclusion" defaultValue={defaults.conclusion ?? ""} />
-          </label>
+          <BulletTextField label="Conclusión / cierre operativo" requiredMark name="conclusion" defaultValue={defaults.conclusion ?? ""} />
         </>
       ) : (
         <>
@@ -130,13 +123,7 @@ export function CapaFollowupForm({
       )}
 
       {status === "CANCELLED" ? (
-        <label className="field full">
-          <span>Motivo de cancelación *</span>
-          <textarea
-            name="cancellationReason"
-            defaultValue={defaults.cancellationReason ?? ""}
-          />
-        </label>
+        <BulletTextField label="Motivo de cancelación" requiredMark name="cancellationReason" defaultValue={defaults.cancellationReason ?? ""} />
       ) : (
         <input
           type="hidden"
@@ -170,30 +157,12 @@ export function CapaFollowupForm({
           </option>
         </select>
       </label>
-      <label className="field full">
-        <span>Criterio de eficacia</span>
-        <textarea
-          name="effectivenessCriteria"
-          defaultValue={defaults.effectivenessCriteria ?? ""}
-        />
-      </label>
+      <BulletTextField label="Criterio de eficacia" name="effectivenessCriteria" defaultValue={defaults.effectivenessCriteria ?? ""} />
 
       {effectivenessStatus !== "PENDING" ? (
         <>
-          <label className="field full">
-            <span>Valoración de la eficacia</span>
-            <textarea
-              name="effectivenessAssessment"
-              defaultValue={defaults.effectivenessAssessment ?? ""}
-            />
-          </label>
-          <label className="field full">
-            <span>Evidencia de eficacia</span>
-            <textarea
-              name="effectivenessEvidence"
-              defaultValue={defaults.effectivenessEvidence ?? ""}
-            />
-          </label>
+          <BulletTextField label="Valoración de la eficacia" name="effectivenessAssessment" defaultValue={defaults.effectivenessAssessment ?? ""} />
+          <BulletTextField label="Evidencia de eficacia" name="effectivenessEvidence" defaultValue={defaults.effectivenessEvidence ?? ""} />
         </>
       ) : (
         <>

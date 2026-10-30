@@ -7,6 +7,7 @@ import type {
   CapaPlannedActionInput,
   CapaSaveIntent,
 } from "@/modules/capa/types";
+import { cleanText } from "@/lib/forms/bullets";
 
 const actionType = z.enum(["CORRECTIVE", "PREVENTIVE"]);
 const status = z.enum(["DRAFT", "OPEN", "CLOSED", "CANCELLED"]);
@@ -39,9 +40,8 @@ const originSchema = z.object({
 
 function text(formData: FormData, name: string): string | null {
   const value = formData.get(name);
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed || null;
+  // D-126: quita las viñetas vacías; un texto sin contenido no cuenta como relleno.
+  return typeof value === "string" ? cleanText(value) : null;
 }
 function enumValue<T extends z.ZodTypeAny>(schema: T, value: string | null) {
   if (!value) return null;

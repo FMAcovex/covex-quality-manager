@@ -171,4 +171,14 @@ describe("Desviaciones · herramientas de investigación (D-123)", () => {
     expect(parsed.errors).toContain("Cada causa del Ishikawa necesita su categoría (6M).");
     expect(parsed.fieldIssues.investigationToolsJson).toEqual(["Cada causa del Ishikawa necesita su categoría (6M)."]);
   });
+
+  it("D-126: una viñeta vacía no cuenta como texto y no se guarda", () => {
+    const form = baseForm();
+    form.set("rootCause", "• ");
+    form.set("investigation", "Revisión del registro:\r\n• Alarma sin aviso\r\n• ");
+    const parsed = parseDeviationForm(form);
+    expect(parsed.fieldIssues.rootCause).toBeDefined();
+    expect(parsed.values.investigation).toBe("Revisión del registro:\r\n• Alarma sin aviso");
+  });
 });
+

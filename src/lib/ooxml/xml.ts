@@ -1,3 +1,5 @@
+import { bulletText, isBulletLine } from "@/lib/forms/bullets";
+
 export function escapeXml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -87,10 +89,36 @@ function transformNth(source: string, regex: RegExp, index: number, transform: (
   return result;
 }
 
+/**
+ * Un párrafo de dato. D-126: una línea «• texto» se escribe como viñeta con sangría francesa, para que
+ * el texto que pasa de línea quede alineado; las demás líneas no cambian.
+ */
+function valueParagraph(line: string, rPr: string, jc = "") {
+  if (!isBulletLine(line)) {
+    return `<w:p>${jc ? `<w:pPr>${jc}</w:pPr>` : ""}<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r></w:p>`;
+  }
+  return `<w:p>${withHangingIndent(jc ? `<w:pPr>${jc}</w:pPr>` : "")}${bulletRun(line, rPr)}</w:p>`;
+}
+
+const BULLET_INDENT = '<w:ind w:left="284" w:hanging="284"/>';
+
+/** Sangría francesa de la viñeta, en su sitio dentro de w:pPr (CT_PPr: w:ind va antes de w:jc, w:rPr…). */
+function withHangingIndent(pPr: string) {
+  if (!pPr) return `<w:pPr>${BULLET_INDENT}</w:pPr>`;
+  const rest = pPr.replace(/<w:ind\b[^>]*\/>/g, "");
+  const after = rest.search(/<w:(?:contextualSpacing|mirrorIndents|suppressOverlap|jc|textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)\b|<\/w:pPr>/);
+  return rest.slice(0, after) + BULLET_INDENT + rest.slice(after);
+}
+
+/** «•», tabulación hasta la sangría y el texto de la viñeta. */
+function bulletRun(line: string, rPr: string) {
+  return `<w:r>${rPr}<w:t>•</w:t><w:tab/><w:t xml:space="preserve">${escapeXml(bulletText(line))}</w:t></w:r>`;
+}
+
 function paragraphXml(text: string) {
-  const parts = text.split(/\r?\n/);
-  return parts
-    .map((part) => `<w:p><w:r>${annexValueRunProperties()}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`)
+  return text
+    .split(/\r?\n/)
+    .map((part) => valueParagraph(part, annexValueRunProperties()))
     .join("");
 }
 
@@ -123,10 +151,7 @@ export function setWordCellText(documentXml: string, table: number, row: number,
 function variableParagraphXml(text: string) {
   return text
     .split(/\r?\n/)
-    .map(
-      (part) =>
-        `<w:p><w:pPr><w:jc w:val="both"/></w:pPr><w:r>${annexValueRunProperties()}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`,
-    )
+    .map((part) => valueParagraph(part, annexValueRunProperties(), '<w:jc w:val="both"/>'))
     .join("");
 }
 
@@ -339,10 +364,7 @@ function directRowCells(rowXml: string): XmlBlock[] {
 function paragraphXmlWithColor(text: string, color?: string) {
   return text
     .split(/\r?\n/)
-    .map((part) => {
-      const rPr = annexValueRunProperties(color ? `<w:color w:val="${escapeXml(color)}"/>` : "");
-      return `<w:p><w:r>${rPr}<w:t xml:space="preserve">${escapeXml(part)}</w:t></w:r></w:p>`;
-    })
+    .map((part) => valueParagraph(part, annexValueRunProperties(color ? `<w:color w:val="${escapeXml(color)}"/>` : "")))
     .join("");
 }
 
@@ -496,7 +518,10 @@ function fillCellPreservingTemplate(cellXml: string, text: string, options: Word
     const pPr = (anchor[0].match(/<w:pPr\b[\s\S]*?<\/w:pPr>/)?.[0] ?? "").replace(/<w:jc\b[^>]*\/>/, "");
     const rPr = valueRunProperties(anchor[0]);
     const at = guidance ? anchor.index! + anchor[0].length : anchor.index!;
-    const added = text.split(/\r?\n/).map((line) => `<w:p>${pPr}${valueRun(line, rPr)}</w:p>`).join("");
+    const added = text
+      .split(/\r?\n/)
+      .map((line) => (isBulletLine(line) ? `<w:p>${withHangingIndent(pPr)}${bulletRun(line, rPr)}</w:p>` : `<w:p>${pPr}${valueRun(line, rPr)}</w:p>`))
+      .join("");
     return cell.slice(0, at) + added + cell.slice(at);
   }
   const rPr = valueRunProperties(last[0]);
@@ -637,16 +662,3 @@ export function extractWordBodyRange(
   );
 }
 
-export function setWordParagraphText(
-  documentXml: string,
-  paragraphIndex: number,
-  text: string,
-) {
-  return transformNth(documentXml, /<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, paragraphIndex, (paragraph) => {
-    const pPr = paragraph.match(/<w:pPr[\s\S]*?<\/w:pPr>/)?.[0] ?? "";
-    const open = paragraph.match(/^<w:p(?:\s[^>]*)?>/)?.[0] ?? "<w:p>";
-    return `${open}${pPr}${paragraphXml(text)}</w:p>`
-      .replace("<w:p><w:r>", "<w:r>")
-      .replace("</w:r></w:p></w:p>", "</w:r></w:p>");
-  });
-}

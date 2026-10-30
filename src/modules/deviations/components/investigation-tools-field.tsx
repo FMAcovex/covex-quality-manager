@@ -1,6 +1,7 @@
 "use client";
 import { useState, type MouseEvent } from "react";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
+import { bulletText, isBulletLine } from "@/lib/forms/bullets";
 import {
   CAUSE_STATUSES, ISHIKAWA_CATEGORIES, MAX_FTA_DEPTH, MAX_TOOL_CAUSES, MAX_WHYS, ftaIsLeaf, ftaSuggestion, looseInvestigationTools, rootCauseSuggestion,
   type FtaNode, type InvestigationTools, type RootCauseSuggestion, type ToolCause,
@@ -110,7 +111,8 @@ export function InvestigationToolsField({ defaultValue, submittedJson, error }: 
     let already = false;
     if (rootCause instanceof HTMLTextAreaElement) {
       const current = rootCause.value.trim();
-      already = current.split(/\r?\n/).some((line) => line.trim() === suggestion.text);
+      // Una línea con viñeta («• texto», D-126) también cuenta como ya copiada.
+      already = current.split(/\r?\n/).some((line) => (isBulletLine(line) ? bulletText(line) : line).trim() === suggestion.text);
       if (!already) {
         rootCause.value = current ? `${current}\n${suggestion.text}` : suggestion.text;
         rootCause.dispatchEvent(new Event("input", { bubbles: true }));

@@ -8,6 +8,8 @@ import { InvalidFieldsSummary } from "@/components/invalid-fields-summary";
 
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
+import { BulletTextField } from "@/components/bullet-textarea";
+
 import { submittedDefaults } from "@/lib/forms/preserved-state";
 import { ResponsibleUserPicker } from "@/components/responsible-user-select";
 import type { AppUserOption } from "@/lib/qms/responsible-user";
@@ -93,17 +95,17 @@ function TextArea({
   span?: string;
 }) {
   return (
-    <label className={`field ${span} ${issues?.length ? "has-error" : ""}`}>
-      <span>{label}{required ? " *" : ""}</span>
-      {help ? <small className="muted-note">{help}</small> : null}
-      <textarea
-        name={name}
-        defaultValue={defaultValue ?? ""}
-        required={required}
-        aria-invalid={issues?.length ? true : undefined}
-      />
-      <FieldIssue messages={issues} />
-    </label>
+    <BulletTextField
+      className={`field ${span} ${issues?.length ? "has-error" : ""}`}
+      label={label}
+      help={help ? <small className="muted-note">{help}</small> : null}
+      name={name}
+      defaultValue={defaultValue ?? ""}
+      required={required}
+      aria-invalid={issues?.length ? true : undefined}
+    >
+      {issues?.length ? <FieldIssue messages={issues} /> : null}
+    </BulletTextField>
   );
 }
 

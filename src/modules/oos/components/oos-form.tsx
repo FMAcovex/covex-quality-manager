@@ -4,6 +4,8 @@ import { AdditionalLotsField } from "@/components/additional-lots-field";
 import { RootCauseCategoryField } from "@/components/root-cause-category-field";
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
+import { BulletTextField } from "@/components/bullet-textarea";
+
 import { CsrfField } from "@/components/csrf";
 import { ControlledBusinessCodeField } from "@/components/controlled-business-code-field";
 import { PermissionGate, usePresentationAccess } from "@/components/permissions";
@@ -31,7 +33,7 @@ function Field({ label, name, defaultValue, type = "text", required = false, spa
 }
 
 function TextArea({ label, name, defaultValue, required = false, help }: { label: string; name: string; defaultValue?: string; required?: boolean; help?: string }) {
-  return <label className="field full"><span>{label}{required ? " *" : ""}</span><textarea name={name} defaultValue={defaultValue ?? ""} required={required} />{help ? <small className="muted-note">{help}</small> : null}</label>;
+  return <BulletTextField label={label} name={name} defaultValue={defaultValue ?? ""} required={required}>{help ? <small className="muted-note">{help}</small> : null}</BulletTextField>;
 }
 
 function Verdict({ phase, defaults, required }: { phase: "phaseI" | "phaseII"; defaults: OosFormDefaults; required: boolean }) {

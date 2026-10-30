@@ -67,3 +67,28 @@ describe("tipografía de los datos de los anexos (D-103)", () => {
     }
   });
 });
+
+describe("viñetas en los datos de los anexos (D-126)", () => {
+  const doc = '<w:document><w:body><w:tbl><w:tr><w:tc><w:p><w:r><w:t>x</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>';
+  const text = "Hechos:\n• Alarma sin aviso & sin registro\n- guion normal";
+  it("una línea «• » es un párrafo con sangría francesa y tabulación; el resto no cambia", () => {
+    for (const xml of [setWordCellText(doc, 0, 0, 0, text), setWordCellTextBalanced(doc, 0, 0, 0, text), setWordVariableCellText(doc, 0, 0, 0, text)]) {
+      const paragraphs = xml.match(/<w:p>[\s\S]*?<\/w:p>/g)!;
+      expect(paragraphs).toHaveLength(3);
+      expect(paragraphs[1]).toMatch(/^<w:p><w:pPr><w:ind w:left="284" w:hanging="284"\/>(?:<w:jc w:val="both"\/>)?<\/w:pPr><w:r><w:rPr>[\s\S]*?<\/w:rPr><w:t>•<\/w:t><w:tab\/><w:t xml:space="preserve">Alarma sin aviso &amp; sin registro<\/w:t><\/w:r><\/w:p>$/);
+      expect(paragraphs[0]).not.toContain("w:ind");
+      expect(paragraphs[2]).not.toContain("w:ind");
+      expect(paragraphs[2]).toContain(">- guion normal<");
+    }
+  });
+
+  it("también en las casillas que se rellenan bajo la guía de la plantilla (OOS)", () => {
+    const cell = '<w:document><w:body><w:tbl><w:tr><w:tc><w:p><w:pPr><w:spacing w:after="0"/><w:ind w:firstLine="200"/><w:jc w:val="center"/><w:rPr><w:sz w:val="18"/></w:rPr></w:pPr><w:r><w:t>(Describir)</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>';
+    const xml = fillWordCellBalanced(cell, 0, 0, 0, "Hechos:\r\n• Muestra & réplica\r\nFin", { mode: "paragraphs" });
+    const added = xml.slice(xml.indexOf("(Describir)")).match(/<w:p>[\s\S]*?<\/w:p>/g)!;
+    expect(added).toHaveLength(3);
+    expect(added[1]).toMatch(/^<w:p><w:pPr><w:spacing w:after="0"\/><w:ind w:left="284" w:hanging="284"\/><w:rPr><w:sz w:val="18"\/><\/w:rPr><\/w:pPr><w:r><w:rPr>[\s\S]*?<\/w:rPr><w:t>•<\/w:t><w:tab\/><w:t xml:space="preserve">Muestra &amp; réplica<\/w:t><\/w:r><\/w:p>$/);
+    expect(added[0]).toContain('<w:ind w:firstLine="200"/>');
+    expect(added[2]).toContain('<w:ind w:firstLine="200"/>');
+  });
+});
