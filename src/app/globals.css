@@ -3074,3 +3074,23 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
 .prose-block { margin: 1em 0; }
 .timeline-item .prose-timeline { margin: 5px 0; line-height: 1.45; }
 .text-block:empty { min-height: .6em; }
+
+/* D-127: tablas de los textos largos (editor del formulario y ficha). */
+.text-tables { display: grid; gap: 10px; }
+.text-table-editor { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+.text-table-editor legend { font-size: 12px; font-weight: 700; color: #485970; padding: 0 4px; }
+.text-table-title { display: grid; gap: 4px; max-width: 520px; }
+.text-table-title > span { font-size: 12px; font-weight: 700; color: #485970; }
+.text-table-title input, .text-table-grid input { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 5px 7px; background: #fff; color: var(--text); font-size: 13px; }
+.text-table-scroll { overflow-x: auto; max-width: 100%; }
+.text-table-grid { border-collapse: collapse; min-width: 100%; }
+.text-table-grid th, .text-table-grid td { padding: 2px; min-width: 90px; vertical-align: top; }
+.text-table-grid th:last-child, .text-table-grid td:last-child { min-width: 0; width: 1%; white-space: nowrap; }
+.text-table-grid thead input { font-weight: 700; background: #f5f8fc; }
+.text-table-actions, .text-tables-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.text-table-view { margin: 10px 0 4px; }
+.text-table-view figcaption { margin-bottom: 4px; }
+.text-table { border-collapse: collapse; min-width: 50%; }
+.text-table th, .text-table td { border: 1px solid var(--border); padding: 5px 9px; text-align: left; vertical-align: top; white-space: pre-wrap; }
+.text-table th { background: #f5f8fc; font-weight: 700; }
+

@@ -573,6 +573,8 @@ model Deviation {
   rootCauseCategories         RootCauseCategory[]        @default([])
   /// D-123: 5 porqués, Ishikawa 6M y brainstorming de la investigación (no van al Anexo III).
   investigationTools          Json?
+  /// D-127: tablas de los textos largos, por campo; salen en el Anexo III dentro de la casilla del apartado.
+  textTables                  Json?
   recurrentRootCause          TriState?
   recurrenceDetails           String?
   classification              DeviationClassification?

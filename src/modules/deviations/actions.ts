@@ -6,6 +6,8 @@ import { qmsDetailUrl } from "@/lib/qms/list-return-navigation";
 
 import { InvestigationMethod, Prisma, QmsRecordType, RootCauseCategory } from "@prisma/client";
 import { investigationToolsForStorage, storedInvestigationTools } from "./investigation-tools";
+import { orderedTextTables, storedTextTables } from "@/lib/forms/text-tables";
+import { DEVIATION_TABLE_FIELDS } from "./text-tables";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -179,6 +181,7 @@ async function createDeviationActionAuthenticatedContent(
           rootCause: v.rootCause,
           rootCauseCategories: v.rootCauseCategories as RootCauseCategory[],
           investigationTools: investigationToolsForStorage(v.investigationTools) ?? Prisma.DbNull,
+          textTables: orderedTextTables(v.textTables, DEVIATION_TABLE_FIELDS) ?? Prisma.DbNull,
           recurrentRootCause: v.recurrentRootCause,
           recurrenceDetails: v.recurrenceDetails,
           classification: v.classification,
@@ -389,6 +392,7 @@ async function updateDeviationActionAuthenticatedContent(
     // Normalizado para comparar sin el orden de claves de JSONB; si no se puede leer, el valor bruto
     // (así un valor ilegible que se sustituye queda en el historial).
     investigationTools: storedInvestigationTools(existing.investigationTools) ?? existing.investigationTools ?? null,
+    textTables: orderedTextTables(storedTextTables(existing.textTables), DEVIATION_TABLE_FIELDS) ?? existing.textTables ?? null,
     recurrentRootCause: existing.recurrentRootCause,
     recurrenceDetails: existing.recurrenceDetails,
     classification: existing.classification,
@@ -558,6 +562,7 @@ async function updateDeviationActionAuthenticatedContent(
           rootCause: v.rootCause,
           rootCauseCategories: v.rootCauseCategories as RootCauseCategory[],
           investigationTools: investigationToolsForStorage(v.investigationTools) ?? Prisma.DbNull,
+          textTables: orderedTextTables(v.textTables, DEVIATION_TABLE_FIELDS) ?? Prisma.DbNull,
           recurrentRootCause: v.recurrentRootCause,
           recurrenceDetails: v.recurrenceDetails,
           classification: v.classification,

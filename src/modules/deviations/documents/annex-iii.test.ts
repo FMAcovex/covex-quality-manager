@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { documentCellTexts, missingTemplateWords } from "@/lib/ooxml/template-text";
 
 vi.mock("@/modules/deviations/documents/templates", () => ({ loadAnnexIIITemplate: async () => Buffer.alloc(0) }));
-const { fillDispositionCell, fillEventRow, fillRootCauseCell, setImpactCell } = await import("@/modules/deviations/documents/annex-iii");
+const { fillDispositionCell, fillEventRow, fillRootCauseCell, fillTextTables, setImpactCell } = await import("@/modules/deviations/documents/annex-iii");
 
 // Casillas y textos literales del Anexo III v06 (bloques de impacto y disposición final).
 const box = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>☐</w:t></w:r></w:sdtContent></w:sdt>`;
@@ -106,3 +106,41 @@ describe("Desviaciones Anexo III: casilla de causa raíz con el análisis (D-124
     expect(documentCellTexts(fillRootCauseCell(rootXml, { rootCause: "Causa", investigationTools: { causes: "x" } }))[2][14][0]).toBe("Causa");
   });
 });
+
+describe("Desviaciones Anexo III: tablas de los textos dentro de su casilla (D-127)", () => {
+  const table = (title: string) => ({ title, columns: ["Lote", "Estado"], rows: [["L-1", "Retenido"]] });
+  it("cada tabla va al final de la casilla de su apartado, numerada en el orden del expediente", () => {
+    const xml = fillTextTables(documentXml, { textTables: { dispositionComments: [table("Destino")], otherProcessesImpactDetails: [table("Productos"), table("Procesos")] }, immediateActions: [], capaPlans: [] });
+    // La casilla conserva todo su contenido de la plantilla y la tabla va justo después.
+    const caption = '<w:p><w:pPr><w:keepNext/>';
+    const impactCell = impact("Impacto sobre otros procesos/productos", " (detallar cuales):");
+    expect(xml).toContain(impactCell.slice(0, -"</w:tc>".length) + caption);
+    expect(xml).toContain(dispositionCell.slice(0, -"</w:tc>".length) + caption);
+    const order = ["Tabla 1. Productos", "Tabla 2. Procesos", "Tabla 3. Destino"].map((text) => xml.indexOf(text));
+    expect(order.every((position, index) => position > 0 && (index === 0 || position > order[index - 1]))).toBe(true);
+  });
+
+  it("con varias acciones inmediatas o CAPA, la tabla sigue yendo a su casilla (filas copiadas de la plantilla)", async () => {
+    const { replaceWordRowWithCopies } = await import("@/lib/ooxml/xml");
+    const marked = (tableIndex: number, rows: number) => `<w:tbl>${Array.from({ length: rows }, (_, row) => `<w:tr>${[0, 1].map((at) => cell(p(run(`T${tableIndex}R${row}C${at}`)))).join("")}</w:tr>`).join("")}</w:tbl>`;
+    let xml = [marked(0, 1), marked(1, 1), marked(2, 17), marked(3, 13), marked(4, 4)].join("<w:p/>");
+    const actions = [{ description: "a" }, { description: "b" }, { description: "c" }];
+    const capas = [{ actionType: "CORRECTIVE" }, { actionType: "PREVENTIVE" }];
+    xml = replaceWordRowWithCopies(xml, 2, 3, actions.map((action) => [action.description]));
+    xml = replaceWordRowWithCopies(xml, 3, 12, capas.map((capa) => [capa.actionType]));
+    const out = fillTextTables(xml, {
+      textTables: { investigation: [table("Lotes")], rootCause: [table("Causas")], otherProcessesImpactDetails: [table("Otros")] },
+      immediateActions: actions as never, capaPlans: capas as never,
+    });
+    const after = (marker: string, caption: string) => out.indexOf(caption) > out.indexOf(marker) && out.slice(out.indexOf(marker), out.indexOf(caption)).match(/<\/w:tc>/g) === null;
+    expect(after("T2R6C0", "Tabla 1. Lotes")).toBe(true);
+    expect(after("T2R14C0", "Tabla 2. Causas")).toBe(true);
+    expect(after("T3R6C1", "Tabla 3. Otros")).toBe(true);
+  });
+
+  it("sin tablas, o con un valor ilegible, el documento no cambia", () => {
+    expect(fillTextTables(documentXml, { textTables: null, immediateActions: [], capaPlans: [] })).toBe(documentXml);
+    expect(fillTextTables(documentXml, { textTables: { investigation: "x" }, immediateActions: [], capaPlans: [] })).toBe(documentXml);
+  });
+});
+

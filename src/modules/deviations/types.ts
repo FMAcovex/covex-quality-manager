@@ -1,4 +1,5 @@
 import type { InvestigationTools } from "./investigation-tools";
+import type { TextTables } from "@/lib/forms/text-tables";
 import type { AdditionalLot } from "@/lib/qms/additional-lots";
 
 export type FormState = {
@@ -70,6 +71,8 @@ export type DeviationFormDefaults = {
   rootCauseCategories?: string[];
   /** D-123: herramientas de análisis de la investigación. */
   investigationTools?: InvestigationTools | null;
+  /** D-127: tablas de los textos largos, por campo. */
+  textTables?: TextTables | null;
   recurrentRootCause?: "YES" | "NO" | "NA" | "";
   recurrenceDetails?: string;
   classification?: "CRITICAL" | "MAJOR" | "MINOR" | "";

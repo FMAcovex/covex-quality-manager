@@ -1,5 +1,6 @@
 import { FormWithIndex } from "@/components/form-with-index";
 import { storedInvestigationTools } from "@/modules/deviations/investigation-tools";
+import { storedTextTables } from "@/lib/forms/text-tables";
 import { appUserOptions } from "@/lib/auth/app-users";
 import { getSimilarDeviations } from "@/modules/deviations/recurrence-queries";
 import { storedAdditionalLots } from "@/lib/qms/additional-lots";
@@ -103,6 +104,7 @@ async function EditDeviationPageAuthenticatedContent({
           rootCause: deviation.rootCause ?? "",
           rootCauseCategories: deviation.rootCauseCategories,
           investigationTools: storedInvestigationTools(deviation.investigationTools),
+          textTables: storedTextTables(deviation.textTables),
           recurrentRootCause: deviation.recurrentRootCause ?? "",
           recurrenceDetails: deviation.recurrenceDetails ?? "",
           classification: deviation.classification ?? "",

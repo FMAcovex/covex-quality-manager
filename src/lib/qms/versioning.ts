@@ -128,6 +128,7 @@ export function serializeDeviationVersion(record: DeviationVersionSource) {
       rootCause: record.rootCause ?? null,
       rootCauseCategories: record.rootCauseCategories ?? [],
       investigationTools: record.investigationTools ?? null,
+      textTables: record.textTables ?? null,
       recurrentRootCause: record.recurrentRootCause ?? null,
       recurrenceDetails: record.recurrenceDetails ?? null,
       classification: record.classification ?? null,

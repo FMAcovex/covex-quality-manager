@@ -23,6 +23,8 @@ import { deviationProvenanceOptions } from "@/modules/deviations/domain";
 
 import { useActionState, useEffect, useId, useState } from "react";
 import { BulletTextarea } from "@/components/bullet-textarea";
+import { storedTextTables, textTablesInputName, type TextTable } from "@/lib/forms/text-tables";
+import { DEVIATION_TABLE_FIELDS } from "../text-tables";
 import Link from "next/link";
 import type {
   CapaPlanInput,
@@ -107,6 +109,7 @@ function TextArea({
   help,
   required = false,
   issues,
+  tables,
 }: {
   label: string;
   name: string;
@@ -114,11 +117,12 @@ function TextArea({
   help?: string;
   required?: boolean;
   issues?: string[];
+  tables?: TextTable[];
 }) {
   const id = useId();
   return (
     <div className={`field full ${issues?.length ? "has-error" : ""}`}>
-      <BulletTextarea id={id} label={<>{label}{required ? " *" : ""}</>} fieldLabel={label} help={help ? <small className="muted-note">{help}</small> : null} name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} after={issues?.length ? <FieldIssue messages={issues} /> : null} />
+      <BulletTextarea id={id} label={<>{label}{required ? " *" : ""}</>} fieldLabel={label} tables={tables} help={help ? <small className="muted-note">{help}</small> : null} name={name} defaultValue={defaultValue ?? ""} required={required} aria-invalid={issues?.length ? true : undefined} after={issues?.length ? <FieldIssue messages={issues} /> : null} />
     </div>
   );
 }
@@ -222,6 +226,14 @@ export function DeviationForm({
       return Reflect.get(target, prop);
     },
   }) as DeviationFormDefaults;
+  // D-127: tablas de cada texto; tras un error de guardado, las que se enviaron.
+  const tablesFor = (field: (typeof DEVIATION_TABLE_FIELDS)[number]): TextTable[] => {
+    const sent = submitted?.[textTablesInputName(field)];
+    if (typeof sent === "string") {
+      try { return sent ? storedTextTables({ [field]: JSON.parse(sent) })[field] ?? [] : []; } catch { return []; }
+    }
+    return defaults.textTables?.[field] ?? [];
+  };
   const [actions, setActions] = useState<ImmediateActionInput[]>(formDefaults.immediateActions ?? []);
   const [capas, setCapas] = useState<CapaPlanInput[]>(formDefaults.capaPlans ?? []);
   const [origin, setOrigin] = useState<OriginType>(() => inferOrigin(formDefaults));
@@ -472,7 +484,7 @@ export function DeviationForm({
         <h2>B. Documentación afectada</h2>
         <p className="section-help">Documentos, procedimientos, instrucciones o registros afectados por la desviación.</p>
         <div className="form-grid">
-          <TextArea label="Documentación afectada" name="affectedDocumentation" defaultValue={formDefaults.affectedDocumentation} required issues={issues.affectedDocumentation} />
+          <TextArea label="Documentación afectada" name="affectedDocumentation" tables={tablesFor("affectedDocumentation")} defaultValue={formDefaults.affectedDocumentation} required issues={issues.affectedDocumentation} />
         </div>
       </section>
 
@@ -480,11 +492,11 @@ export function DeviationForm({
         <h2>C. Descripción del evento</h2>
         <p className="section-help">Registrar hechos observables. No incluir aquí causas, impacto, hipótesis ni acciones futuras.</p>
         <div className="form-grid">
-          <TextArea label="¿Qué sucedió / qué debía haber sucedido?" name="whatHappened" defaultValue={formDefaults.whatHappened} required issues={issues.whatHappened} />
-          <TextArea label="¿Quién estuvo implicado y cuál fue su papel?" name="whoInvolved" defaultValue={formDefaults.whoInvolved} required issues={issues.whoInvolved} />
-          <TextArea label="¿Cuándo ocurrió?" name="whenHappened" defaultValue={formDefaults.whenHappened} required issues={issues.whenHappened} />
-          <TextArea label="¿Dónde ocurrió?" name="whereHappened" defaultValue={formDefaults.whereHappened} required issues={issues.whereHappened} />
-          <TextArea label="¿Cómo se detectó / cómo ocurrió?" name="howHappened" defaultValue={formDefaults.howHappened} required issues={issues.howHappened} />
+          <TextArea label="¿Qué sucedió / qué debía haber sucedido?" name="whatHappened" tables={tablesFor("whatHappened")} defaultValue={formDefaults.whatHappened} required issues={issues.whatHappened} />
+          <TextArea label="¿Quién estuvo implicado y cuál fue su papel?" name="whoInvolved" tables={tablesFor("whoInvolved")} defaultValue={formDefaults.whoInvolved} required issues={issues.whoInvolved} />
+          <TextArea label="¿Cuándo ocurrió?" name="whenHappened" tables={tablesFor("whenHappened")} defaultValue={formDefaults.whenHappened} required issues={issues.whenHappened} />
+          <TextArea label="¿Dónde ocurrió?" name="whereHappened" tables={tablesFor("whereHappened")} defaultValue={formDefaults.whereHappened} required issues={issues.whereHappened} />
+          <TextArea label="¿Cómo se detectó / cómo ocurrió?" name="howHappened" tables={tablesFor("howHappened")} defaultValue={formDefaults.howHappened} required issues={issues.howHappened} />
           {figureSlot("DESCRIPTION")}
           {mode === "create" ? <p className="muted-note full">Las figuras (imágenes pegadas en cada apartado) se añaden al editar la desviación, una vez creada.</p> : null}
         </div>
@@ -522,7 +534,7 @@ export function DeviationForm({
         <h2>E. Investigación</h2>
         <p className="section-help">Documentar la investigación realizada y si las evidencias permiten alcanzar una conclusión.</p>
         <div className="form-grid">
-          <TextArea label="Investigación realizada / resultado y conclusiones" name="investigation" defaultValue={formDefaults.investigation} required issues={issues.investigation} />
+          <TextArea label="Investigación realizada / resultado y conclusiones" name="investigation" tables={tablesFor("investigation")} defaultValue={formDefaults.investigation} required issues={issues.investigation} />
           <TriStateSelect label="¿Investigación concluyente?" name="investigationConclusive" defaultValue={formDefaults.investigationConclusive} required issues={issues.investigationConclusive} />
           <InvestigationToolsField defaultValue={defaults.investigationTools} submittedJson={typeof submitted?.investigationToolsJson === "string" ? submitted.investigationToolsJson : undefined} error={issues.investigationToolsJson?.[0]} />
           {figureSlot("INVESTIGATION")}
@@ -555,12 +567,12 @@ export function DeviationForm({
             </div>
             <FieldIssue messages={issues.investigationMethods} />
           </div>
-          <TextArea label="Causa raíz" name="rootCause" defaultValue={formDefaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." required issues={issues.rootCause} />
+          <TextArea label="Causa raíz" name="rootCause" tables={tablesFor("rootCause")} defaultValue={formDefaults.rootCause} help="Registrar únicamente la causa de fondo sustentada por la investigación." required issues={issues.rootCause} />
           <RootCauseCategoryField defaultValue={formDefaults.rootCauseCategories} />
           <TriStateSelect label="¿Causa raíz recurrente?" name="recurrentRootCause" defaultValue={formDefaults.recurrentRootCause} required issues={issues.recurrentRootCause} />
           {similarDeviations ? <SimilarDeviations items={similarDeviations} /> : null}
           <div className={`field span-3 ${issues.recurrenceDetails?.length ? "has-error" : ""}`}>
-            <BulletTextarea id="deviation-recurrenceDetails" label="Antecedentes / detalle de recurrencia *" fieldLabel="Antecedentes / detalle de recurrencia" name="recurrenceDetails" defaultValue={formDefaults.recurrenceDetails ?? ""} required aria-invalid={issues.recurrenceDetails?.length ? true : undefined} after={issues.recurrenceDetails?.length ? <FieldIssue messages={issues.recurrenceDetails} /> : null} />
+            <BulletTextarea id="deviation-recurrenceDetails" tables={tablesFor("recurrenceDetails")} label="Antecedentes / detalle de recurrencia *" fieldLabel="Antecedentes / detalle de recurrencia" name="recurrenceDetails" defaultValue={formDefaults.recurrenceDetails ?? ""} required aria-invalid={issues.recurrenceDetails?.length ? true : undefined} after={issues.recurrenceDetails?.length ? <FieldIssue messages={issues.recurrenceDetails} /> : null} />
           </div>
           {figureSlot("ROOT_CAUSE")}
         </div>
@@ -593,7 +605,7 @@ export function DeviationForm({
           <TriStateSelect label="Otros procesos / productos" name="otherProcessesImpact" defaultValue={formDefaults.otherProcessesImpact} required issues={issues.otherProcessesImpact} />
           <TriStateSelect label="Afecta a producto terminado" name="affectsFinishedProduct" defaultValue={formDefaults.affectsFinishedProduct} required issues={issues.affectsFinishedProduct} />
           <div className={`field span-2 ${issues.otherProcessesImpactDetails?.length ? "has-error" : ""}`}>
-            <BulletTextarea id="deviation-otherProcessesImpactDetails" label="Detalle / justificación de impacto *" fieldLabel="Detalle / justificación de impacto" name="otherProcessesImpactDetails" defaultValue={formDefaults.otherProcessesImpactDetails ?? ""} required aria-invalid={issues.otherProcessesImpactDetails?.length ? true : undefined} after={issues.otherProcessesImpactDetails?.length ? <FieldIssue messages={issues.otherProcessesImpactDetails} /> : null} />
+            <BulletTextarea id="deviation-otherProcessesImpactDetails" tables={tablesFor("otherProcessesImpactDetails")} label="Detalle / justificación de impacto *" fieldLabel="Detalle / justificación de impacto" name="otherProcessesImpactDetails" defaultValue={formDefaults.otherProcessesImpactDetails ?? ""} required aria-invalid={issues.otherProcessesImpactDetails?.length ? true : undefined} after={issues.otherProcessesImpactDetails?.length ? <FieldIssue messages={issues.otherProcessesImpactDetails} /> : null} />
           </div>
           {figureSlot("IMPACT")}
         </div>
@@ -648,11 +660,11 @@ export function DeviationForm({
         <h2>K-L. Conclusión y cierre</h2>
         <p className="section-help">La conclusión sintetiza investigación, causa, impacto, CAPA y disposición. No debe introducir información nueva.</p>
         <div className="form-grid">
-          <TextArea label="Conclusión / cierre" name="conclusion" defaultValue={formDefaults.conclusion} required issues={issues.conclusion} />
+          <TextArea label="Conclusión / cierre" name="conclusion" tables={tablesFor("conclusion")} defaultValue={formDefaults.conclusion} required issues={issues.conclusion} />
           <DispositionSelect defaultValue={formDefaults.disposition} issues={issues.disposition} />
           <Field label="Cantidad" name="dispositionQuantity" defaultValue={formDefaults.dispositionQuantity} required issues={issues.dispositionQuantity} />
           <TriStateSelect label="Notificación al cliente" name="clientNotification" defaultValue={formDefaults.clientNotification} required issues={issues.clientNotification} />
-          <TextArea label="Comentarios de disposición" name="dispositionComments" defaultValue={formDefaults.dispositionComments} required issues={issues.dispositionComments} />
+          <TextArea label="Comentarios de disposición" name="dispositionComments" tables={tablesFor("dispositionComments")} defaultValue={formDefaults.dispositionComments} required issues={issues.dispositionComments} />
           {figureSlot("CONCLUSION")}
         </div>
       </section>
@@ -697,7 +709,7 @@ export function DeviationForm({
               El PDF firmado se carga y controla por versión desde la pestaña Versiones del expediente.
             </small>
           </div>
-          <TextArea label="Observaciones internas" name="internalObservations" defaultValue={formDefaults.internalObservations} />
+          <TextArea label="Observaciones internas" name="internalObservations" tables={tablesFor("internalObservations")} defaultValue={formDefaults.internalObservations}  issues={issues.internalObservations} />
         </div>
       </section>
 

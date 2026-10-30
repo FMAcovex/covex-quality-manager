@@ -32,3 +32,11 @@ describe("Desviaciones · herramientas de investigación en la versión (D-123)"
     expect(serializeDeviationVersion(record as never).deviation.investigationTools).toBeNull();
   });
 });
+
+describe("Desviaciones · tablas de los textos en la versión (D-127)", () => {
+  it("la foto de la versión conserva las tablas; sin ellas queda null", () => {
+    const tables = { investigation: [{ title: "Lotes", columns: ["Lote"], rows: [["L-1"]] }] };
+    expect(serializeDeviationVersion({ ...record, textTables: tables } as never).deviation.textTables).toEqual(tables);
+    expect(serializeDeviationVersion(record as never).deviation.textTables).toBeNull();
+  });
+});
