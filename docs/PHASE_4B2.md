@@ -183,6 +183,8 @@ El registro no contiene mensajes, datos de expedientes, formularios, SQL ni cred
 
 ## 15. Actualización, reversión y evidencia
 
+Resumen para IT y Calidad, con número de versión, notas, preproducción y verificación de los anexos: [PROCEDIMIENTO_ACTUALIZACION.md](PROCEDIMIENTO_ACTUALIZACION.md) (D-131).
+
 Para cada release: registrar SHA/digest, version de app, checksums/migraciones, aprobación de configuración no secreta, fecha/responsable, CI y controles, backup previo verificado/restaurable y plan de recuperación. `release-manifest.json` identifica commit, versión, Node, lock y todas las migraciones SHA-256. El empaquetador exige SHA de checkout exacto; el builder Docker debe verificar el checkout antes de pasar el build arg.
 
 Cerrar escrituras/ventana cuando proceda → backup previo → revisar y aplicar migraciones explícitas por migrador → desplegar imagen/release aprobado → health/OIDC/permisos/documentos → apertura autorizada. Conservar release y configuración anteriores; no usar `latest` ni auto-updaters. systemd: parar servicio, cambiar enlace `current` de forma controlada y arrancar. Docker: cambiar digest aprobado/recrear app, conservar DB/volumen. Reinicio/actualización de PostgreSQL requiere su propio procedimiento de backup/prueba.

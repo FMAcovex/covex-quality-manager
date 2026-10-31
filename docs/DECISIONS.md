@@ -1479,3 +1479,39 @@ Corrección de una contradicción encontrada al probar D-129 con los perfiles de
 - Los siete módulos de expedientes (Desviaciones, CAPA, Controles de cambios, Reclamaciones, Devoluciones, Auditorías y OOS) declaran «Configuración» en su contrato. El editor de roles la ofrece en esos módulos, solo con ámbito «Todos». Concederla en un módulo permite gestionar sus plantillas, formularios, catálogos y reglas de alerta; entrar en Configuración sigue exigiendo «Consultar» de Sistema.
 - No cambian las guardas, los roles guardados ni los permisos efectivos: hay que conceder el permiso en la política de rol, que queda pendiente de aceptación QA/DT como cualquier otro cambio. En la demo, el perfil de Garantía de Calidad lo recibe al instalar los usuarios.
 - PNT no cambia: sus plantillas y formularios no se configuran desde esta pantalla.
+
+## D-131 — Versiones, novedades y procedimiento de actualización (2026-10-31)
+
+Decisión del responsable de Calidad: saber qué versión está instalada, qué cambia en cada una y cómo llega una actualización a la aplicación en uso.
+
+- **Número `MAYOR.MENOR.CORRECCIÓN`** en `package.json`:
+  - CORRECCIÓN: arreglos sin cambios en la base de datos;
+  - MENOR: novedades o cualquier migración;
+  - MAYOR: cambios que reorganizan el trabajo o los datos.
+  - Hasta la puesta en marcha aceptada por IT y QA, 0.x; esa versión será la 1.0.0. Esta entrega pasa de 0.1.0 a 0.2.0.
+  - Cada versión que se instala es una etiqueta `vX.Y.Z` de un commit de `main`, o de una rama desde la etiqueta instalada en una corrección urgente, que después se incorpora a `main`. Fusionar en `main` no instala nada.
+- **Notas de versión para los usuarios** en `src/lib/release/release-notes.ts`:
+  - contenido: resumen, novedades, correcciones, qué deben hacer Calidad o IT y si cambia la base de datos;
+  - Calidad las revisa en la PR;
+  - con la sesión iniciada, la aplicación muestra la versión instalada al pie de cada página, con un enlace a «Novedades» (`/novedades`), que puede consultar cualquier usuario.
+- **`pnpm release:check`** compara con la entrega anterior (la etiqueta `vX.Y.Z` más alta) y falla si:
+  - no la encuentra, salvo en la primera entrega (`--first-release`);
+  - la versión no sube;
+  - faltan las notas;
+  - hay migraciones que las notas no declaran;
+  - con migraciones, solo sube la corrección;
+  - una migración ya entregada se ha modificado, renombrado o borrado;
+  - hay cambios sin confirmar en la versión, las notas o las migraciones.
+
+  Muestra el resumen para IT. Un test exige que la versión de `package.json` tenga sus notas.
+- **Procedimiento** en [PROCEDIMIENTO_ACTUALIZACION.md](PROCEDIMIENTO_ACTUALIZACION.md):
+  - cambio por PR;
+  - preparación de la versión;
+  - preproducción, con verificación de los anexos (D-128) y visto bueno de Calidad;
+  - producción: copia previa, migraciones (siempre `pnpm db:deploy` y cotejo con el manifiesto; las notas no deciden si se migra), instalación, comprobaciones y evidencia de PHASE_4B2 §15;
+  - aviso a los usuarios;
+  - qué hacer si algo sale mal.
+- **Pendiente y fuera de esta decisión:**
+  - el entorno de preproducción, que prepara IT;
+  - el control de cambios de sistemas informatizados que defina QA;
+  - la validación GMP.
