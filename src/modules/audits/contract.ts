@@ -20,6 +20,7 @@ export const auditModule: QmsRecordModuleContract = {
     "GENERATE_DOCUMENT",
     "AUDIT_ISSUE_REPORT",
     "AUDIT_ISSUE_PROGRAMME",
+    "MANAGE_CONFIGURATION",
   ],
   relations: {
     outgoing: [

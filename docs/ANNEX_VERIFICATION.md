@@ -1,6 +1,6 @@
 # Verificación de los anexos con las plantillas reales (D-128)
 
-Comprueba que los 24 anexos que genera la aplicación se rellenan bien con las plantillas oficiales. Repite el método de la verificación del 18/10/2026 ([ANNEX_VERIFICATION_2026-10-18.md](ANNEX_VERIFICATION_2026-10-18.md)) con un solo comando. Se ejecuta antes de cada actualización y cuando se cambia un anexo o un generador.
+Comprueba que los 24 anexos que genera la aplicación se rellenan bien con las plantillas oficiales. Para revisar una revisión nueva de un anexo desde la aplicación, con un expediente real y antes de activarla, está el botón «Probar» de Configuración → Versiones (D-129, [GUIA_PLANTILLAS_CALIDAD.md](GUIA_PLANTILLAS_CALIDAD.md)). Repite el método de la verificación del 18/10/2026 ([ANNEX_VERIFICATION_2026-10-18.md](ANNEX_VERIFICATION_2026-10-18.md)) con un solo comando. Se ejecuta antes de cada actualización y cuando se cambia un anexo o un generador.
 
 Las plantillas reales **no** se versionan, porque el repositorio es público. Se usan en el equipo o el servidor donde se ejecuta el comando. La carpeta de salida (`informe-anexos/`, ignorada por Git) guarda una copia de cada plantilla, el anexo generado y el informe.
 

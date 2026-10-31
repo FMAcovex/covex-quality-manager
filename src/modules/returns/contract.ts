@@ -19,6 +19,7 @@ export const returnModule: QmsRecordModuleContract = {
     "EXPORT",
     "ATTACH_DOCUMENT",
     "GENERATE_DOCUMENT",
+    "MANAGE_CONFIGURATION",
   ],
   // Devolución solo es destino desde Reclamación.
   relations: { outgoing: [] },

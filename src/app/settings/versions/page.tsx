@@ -19,6 +19,7 @@ import { evaluateRequiredTemplateReadiness } from "@/modules/configuration/templ
 import { pendingTemplateActivationChecks } from "@/modules/configuration/template-activation";
 import type { TemplateActivationCheck } from "@/modules/configuration/template-compatibility";
 import { TemplateInstallForm } from "@/modules/configuration/components/template-install-form";
+import { trialKind } from "@/modules/configuration/template-trial-rules";
 
 export const dynamic = "force-dynamic";
 
@@ -289,6 +290,26 @@ async function VersionsPageAuthenticatedContent() {
                         >
                           Descargar
                         </a></PermissionGate>
+                      ) : null}
+
+                      {(template.fileName || template.filePath) && trialKind(template.documentType) ? (
+                        <PermissionGate permission="MANAGE_CONFIGURATION" module={template.module}><details>
+                          <summary className="button small" title="Generar el anexo con esta versión y un expediente real, sin activarla">Probar</summary>
+                          {/* D-129: genera el anexo con esta versión sin activarla y sin guardar nada en el expediente. */}
+                          <form method="get" action={`/api/settings/templates/${template.id}/trial`} className="admin-pop-form">
+                            <label>
+                              {trialKind(template.documentType) === "year" ? "Año (opcional)" : "Código del expediente (opcional)"}
+                              <input
+                                name="ref"
+                                maxLength={80}
+                                inputMode={trialKind(template.documentType) === "year" ? "numeric" : undefined}
+                                placeholder={trialKind(template.documentType) === "year" ? "Año en curso" : "El último modificado"}
+                              />
+                            </label>
+                            <button className="button small">Generar prueba</button>
+                            <small className="muted-note">El archivo empieza por «PRUEBA» y no se guarda en el expediente.</small>
+                          </form>
+                        </details></PermissionGate>
                       ) : null}
 
                       {!template.isActive && activationChecks.get(template.id)?.status === "incompatible" ? (

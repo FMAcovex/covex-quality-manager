@@ -19,6 +19,7 @@ export const deviationModule: QmsRecordModuleContract = {
     "EXPORT",
     "ATTACH_DOCUMENT",
     "GENERATE_DOCUMENT",
+    "MANAGE_CONFIGURATION",
   ],
   relations: {
     outgoing: [
