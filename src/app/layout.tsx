@@ -26,7 +26,8 @@ export default async function RootLayout({
   let access = null;
   try { if (jar.has("__Host-covex-session") || jar.has("covex-session")) access = presentationAccess(await requireUser(), "SYSTEM"); }
   catch (error) { if (!(error instanceof AccessError)) throw error; }
-  const shell = <AppShell version={appVersion}><Suspense fallback={<PageLoading />}>{children}</Suspense></AppShell>;
+  // La versión solo se enseña con sesión iniciada (como el menú, D-117).
+  const shell = <AppShell version={access ? appVersion : undefined}><Suspense fallback={<PageLoading />}>{children}</Suspense></AppShell>;
   return (
     <html lang="es">
       <body>

@@ -1489,23 +1489,26 @@ Decisión del responsable de Calidad: saber qué versión está instalada, qué 
   - MENOR: novedades o cualquier migración;
   - MAYOR: cambios que reorganizan el trabajo o los datos.
   - Hasta la puesta en marcha aceptada por IT y QA, 0.x; esa versión será la 1.0.0. Esta entrega pasa de 0.1.0 a 0.2.0.
-  - Cada versión que se instala es una etiqueta `vX.Y.Z` de un commit de `main`. Fusionar en `main` no instala nada.
+  - Cada versión que se instala es una etiqueta `vX.Y.Z` de un commit de `main`, o de una rama desde la etiqueta instalada en una corrección urgente, que después se incorpora a `main`. Fusionar en `main` no instala nada.
 - **Notas de versión para los usuarios** en `src/lib/release/release-notes.ts`:
   - contenido: resumen, novedades, correcciones, qué deben hacer Calidad o IT y si cambia la base de datos;
   - Calidad las revisa en la PR;
-  - la aplicación muestra la versión instalada al pie de cada página, con un enlace a «Novedades» (`/novedades`), que puede consultar cualquier usuario.
-- **`pnpm release:check`** compara con la entrega anterior (la última etiqueta) y falla si:
+  - con la sesión iniciada, la aplicación muestra la versión instalada al pie de cada página, con un enlace a «Novedades» (`/novedades`), que puede consultar cualquier usuario.
+- **`pnpm release:check`** compara con la entrega anterior (la etiqueta `vX.Y.Z` más alta) y falla si:
+  - no la encuentra, salvo en la primera entrega (`--first-release`);
   - la versión no sube;
   - faltan las notas;
   - hay migraciones que las notas no declaran;
-  - con migraciones, solo sube la corrección.
+  - con migraciones, solo sube la corrección;
+  - una migración ya entregada se ha modificado, renombrado o borrado;
+  - hay cambios sin confirmar en la versión, las notas o las migraciones.
 
   Muestra el resumen para IT. Un test exige que la versión de `package.json` tenga sus notas.
 - **Procedimiento** en [PROCEDIMIENTO_ACTUALIZACION.md](PROCEDIMIENTO_ACTUALIZACION.md):
   - cambio por PR;
   - preparación de la versión;
   - preproducción, con verificación de los anexos (D-128) y visto bueno de Calidad;
-  - producción: copia previa, migraciones, instalación, comprobaciones y evidencia de PHASE_4B2 §15;
+  - producción: copia previa, migraciones (siempre `pnpm db:deploy` y cotejo con el manifiesto; las notas no deciden si se migra), instalación, comprobaciones y evidencia de PHASE_4B2 §15;
   - aviso a los usuarios;
   - qué hacer si algo sale mal.
 - **Pendiente y fuera de esta decisión:**

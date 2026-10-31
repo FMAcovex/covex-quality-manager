@@ -196,11 +196,11 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 **Versiones, novedades y procedimiento de actualización (2026-10-31, D-131):**
 - **Qué cambia:**
   - La aplicación pasa a la versión 0.2.0. El número sigue `MAYOR.MENOR.CORRECCIÓN`, y cualquier cambio en la base de datos sube al menos el MENOR.
-  - Al pie de cada página se ve la versión instalada, con un enlace a «Novedades» (`/novedades`). Las notas están en `src/lib/release/release-notes.ts`.
-  - `pnpm release:check` comprueba la versión, las notas y las migraciones nuevas desde la última etiqueta `vX.Y.Z`, y muestra el resumen para IT.
+  - Con la sesión iniciada, al pie de cada página se ve la versión instalada, con un enlace a «Novedades» (`/novedades`). Las notas están en `src/lib/release/release-notes.ts`.
+  - `pnpm release:check` comprueba la versión, las notas y las migraciones desde la etiqueta `vX.Y.Z` más alta (las ya entregadas no pueden cambiar), y muestra el resumen para IT.
   - Procedimiento para IT y Calidad, con preproducción: [PROCEDIMIENTO_ACTUALIZACION.md](PROCEDIMIENTO_ACTUALIZACION.md).
 - **Pendiente:**
-  - etiquetar la primera entrega (`v0.2.0`) cuando se instale;
+  - etiquetar la primera entrega (`v0.2.0`) cuando se instale; se comprueba con `pnpm release:check -- --first-release`;
   - que IT prepare la preproducción;
   - que QA defina el control de cambios de sistemas informatizados.
 - **Comprobado:** pruebas unitarias de las reglas de versión (y de que la versión del repositorio tiene sus notas), `pnpm release:check` contra un commit anterior (lista las 5 migraciones nuevas) y la página en la aplicación compilada.

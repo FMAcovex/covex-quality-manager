@@ -33,6 +33,44 @@ export function compareVersions(a: Version, b: Version) {
   return 0;
 }
 
+/** Fecha AAAA-MM-DD que existe (no 2026-13-01 ni 2026-02-30). */
+function validDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+/** Etiqueta de entrega: exactamente `vMAYOR.MENOR.CORRECCIÓN` (ni `v0.2.0-rc1` ni otras que empiecen por «v»). */
+export function releaseTagVersion(tag: string): Version | null {
+  return tag.startsWith("v") && !/\s/.test(tag) ? parseVersion(tag.slice(1)) : null;
+}
+
+/** Entrega anterior: la etiqueta de entrega de versión más alta, sin contar las que están en el propio commit. */
+export function previousReleaseTag(tags: readonly string[], tagsAtHead: readonly string[]): string | null {
+  const candidates = tags
+    .filter((tag) => !tagsAtHead.includes(tag))
+    .map((tag) => ({ tag, version: releaseTagVersion(tag) }))
+    .filter((item): item is { tag: string; version: Version } => item.version !== null)
+    .sort((a, b) => compareVersions(b.version, a.version));
+  return candidates[0]?.tag ?? null;
+}
+
+/**
+ * Cambios en `prisma/migrations` a partir de `git diff --no-renames --name-status`: las migraciones nuevas y cualquier
+ * otro cambio (modificada, borrada…), que nunca se admite porque Prisma lo trataría como otra migración o rechazaría el historial.
+ */
+export function migrationChanges(nameStatus: string) {
+  const added: string[] = [];
+  const altered: string[] = [];
+  for (const line of nameStatus.split("\n").filter(Boolean)) {
+    const [status, file] = line.split("\t");
+    if (!file?.startsWith("prisma/migrations/")) continue;
+    if (status === "A" && /^prisma\/migrations\/[^/]+\/migration\.sql$/.test(file)) added.push(file.split("/")[2]);
+    else if (status !== "A") altered.push(`${status} ${file}`);
+  }
+  return { added: added.sort(), altered };
+}
+
 /** Problemas de las notas de versión en conjunto: versiones válidas, sin repetir, de la más reciente a la más antigua. */
 export function releaseNotesProblems(notes: readonly ReleaseNote[]): string[] {
   const problems: string[] = [];
@@ -41,7 +79,7 @@ export function releaseNotesProblems(notes: readonly ReleaseNote[]): string[] {
     const version = parseVersion(note.version);
     if (!version) { problems.push(`Notas: «${note.version}» no es un número de versión MAYOR.MENOR.CORRECCIÓN.`); continue; }
     if (previous && compareVersions(version, previous) >= 0) problems.push(`Notas: la ${note.version} debe ir después de una versión mayor (de la más reciente a la más antigua, sin repetir).`);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(note.date)) problems.push(`Notas ${note.version}: la fecha debe ser AAAA-MM-DD.`);
+    if (!validDate(note.date)) problems.push(`Notas ${note.version}: la fecha debe ser AAAA-MM-DD.`);
     if (!note.summary.trim()) problems.push(`Notas ${note.version}: falta el resumen.`);
     if (!note.changes.length && !note.fixes.length) problems.push(`Notas ${note.version}: no hay novedades ni correcciones.`);
     previous = version;
@@ -57,11 +95,20 @@ export type ReleaseCheckInput = {
   notes: readonly ReleaseNote[];
   /** Migraciones añadidas desde la entrega anterior; null si no se conoce la anterior. */
   newMigrations: readonly string[] | null;
+  /** Migraciones ya entregadas que han cambiado (modificadas, borradas o renombradas). */
+  alteredMigrations?: readonly string[];
+  /** Primera entrega: no hay entrega anterior con la que comparar. Sin esto, faltar la anterior es un problema. */
+  firstRelease?: boolean;
+  /** Etiquetas de entrega que ya tiene el commit: deben coincidir con la versión. */
+  tagsAtHead?: readonly string[];
 };
 
 /** Problemas que impiden entregar la versión. Lista vacía = se puede entregar. */
-export function releaseProblems({ version, previousVersion, notes, newMigrations }: ReleaseCheckInput): string[] {
+export function releaseProblems({ version, previousVersion, notes, newMigrations, alteredMigrations = [], firstRelease = false, tagsAtHead = [] }: ReleaseCheckInput): string[] {
   const problems = releaseNotesProblems(notes);
+  if (previousVersion === null && !firstRelease) problems.push("No se encuentra la entrega anterior (etiqueta vX.Y.Z): trae las etiquetas (git fetch --tags) o indícala con --from; solo la primera entrega usa --first-release.");
+  for (const change of alteredMigrations) problems.push(`Una migración ya entregada ha cambiado (${change}): las migraciones entregadas no se modifican, renombran ni borran; los cambios van en una migración nueva.`);
+  for (const tag of tagsAtHead.filter((item) => releaseTagVersion(item) && item !== `v${version}`)) problems.push(`El commit ya tiene la etiqueta ${tag}, que no coincide con la versión ${version} de package.json.`);
   const current = parseVersion(version);
   if (!current) return [...problems, `package.json: «${version}» no es un número de versión MAYOR.MENOR.CORRECCIÓN.`];
   const note = notes.find((item) => item.version === version);

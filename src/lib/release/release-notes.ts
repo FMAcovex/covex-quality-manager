@@ -10,7 +10,7 @@ export const releaseNotes: readonly ReleaseNote[] = [
   {
     version: "0.2.0",
     date: "2026-10-31",
-    summary: "Primera versión con notas. Recoge las mejoras de la segunda quincena de octubre de 2026; la aplicación sigue sin validar para uso GMP.",
+    summary: "Primera versión con notas. Recoge las mejoras del 29 al 31 de octubre de 2026. La aplicación sigue sin validar para uso GMP.",
     changes: [
       "Tablas dentro de los textos largos de los seis módulos de expedientes y de los seguimientos de las acciones de CAPA; salen en los anexos dentro de su casilla.",
       "Viñetas en los textos largos, también en los anexos.",

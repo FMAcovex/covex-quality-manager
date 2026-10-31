@@ -1,6 +1,6 @@
 # Cómo se actualiza la aplicación (D-131)
 
-Cómo llega un cambio a la aplicación en uso, sin perder datos y con Calidad al tanto. Es un resumen para IT y Calidad. Los comandos técnicos detallados están en [PHASE_4B2.md](PHASE_4B2.md), §8, §9, §10, §13 y §15.
+Cómo llega un cambio a la aplicación en uso, sin perder datos y con Calidad al tanto. Es un resumen para IT y Calidad. Los comandos técnicos detallados están en [PHASE_4B2.md](PHASE_4B2.md), §7 a §10, §13 y §15.
 
 **Límites.** La aplicación no está validada para uso GMP. Este procedimiento no sustituye al control de cambios de sistemas informatizados de COVEX, que debe definir QA. Hasta entonces, cada actualización queda registrada en la PR, las notas de versión y la evidencia de despliegue. El entorno de **preproducción** está pendiente de que IT lo prepare.
 
@@ -32,11 +32,13 @@ El número es `MAYOR.MENOR.CORRECCIÓN` (en `package.json`):
 
 Pasos:
 1. Subir el número en `package.json` y escribir las notas en `src/lib/release/release-notes.ts`: resumen, novedades, correcciones, qué deben hacer Calidad o IT y si cambia la base de datos. Se escriben para los usuarios, sin jerga técnica. **Calidad revisa las notas en la PR.**
-2. Ejecutar `pnpm release:check`. Compara con la entrega anterior (la última etiqueta `vX.Y.Z`) y falla si:
+2. Confirmar los cambios y ejecutar `pnpm release:check` en un clon con las etiquetas (`git fetch --tags`). Compara con la entrega anterior (la etiqueta `vX.Y.Z` más alta) y falla si:
+   - no encuentra la entrega anterior (la primera entrega se comprueba con `--first-release`);
    - la versión no sube;
    - faltan las notas;
    - hay migraciones nuevas que las notas no declaran;
-   - con migraciones, solo sube la corrección.
+   - con migraciones, solo sube la corrección;
+   - una migración ya entregada se ha modificado, renombrado o borrado.
 
    Muestra el resumen para IT: versión, commit, migraciones nuevas y lo que hay que hacer.
 3. Fusionar y etiquetar el commit de `main` como `vX.Y.Z`. Esa etiqueta es la que se instala.
@@ -59,7 +61,7 @@ Un entorno igual que producción (mismo sistema, PostgreSQL 16, configuración y
 
 1. **Avisar** a los usuarios de la ventana y cerrar el acceso durante la actualización.
 2. **Copia de seguridad previa**, verificada (`python3 ops/backup/backup.py backup …`, PHASE_4B2 §10). Sin copia verificada no se sigue.
-3. **Base de datos:** si las notas dicen que cambia, aplicar las migraciones con el usuario de migraciones (`pnpm db:deploy`, PHASE_4B2 §7). Nunca `db:push` ni `migrate reset`.
+3. **Base de datos:** aplicar siempre las migraciones con el usuario de migraciones (`pnpm db:deploy`, PHASE_4B2 §7); si no hay pendientes, no hace nada. Después, comprobar que el historial de la base de datos coincide con las migraciones del manifiesto de la versión (`ops/postgres/schema-evidence.sql`, PHASE_4B2 §15). Lo que digan las notas es información para los usuarios, no el criterio para migrar. Nunca `db:push` ni `migrate reset`.
 4. **Instalar** la versión etiquetada. Con Docker, la imagen del commit. Sin Docker, el paquete de `ops/release.py`. Hay que conservar la versión y la configuración anteriores.
 5. **Comprobar**:
    - estado (`/api/health`);
@@ -87,4 +89,4 @@ Calidad avisa a los usuarios. Las novedades se pueden leer en la propia aplicaci
 
 ## Correcciones urgentes
 
-Siguen los mismos pasos, normalmente como CORRECCIÓN y sin cambios en la base de datos. La preproducción se puede limitar a lo corregido y a la verificación de los anexos, si Calidad lo acepta.
+Siguen los mismos pasos, normalmente como CORRECCIÓN y sin cambios en la base de datos. Si `main` ya tiene cambios sin entregar, la corrección se prepara en una rama desde la etiqueta instalada, se etiqueta allí y después se incorpora también a `main`. La preproducción se puede limitar a lo corregido y a la verificación de los anexos, si Calidad lo acepta.

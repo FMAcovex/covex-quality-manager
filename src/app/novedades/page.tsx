@@ -16,7 +16,7 @@ function NovedadesPageAuthenticatedContent() {
         <div>
           <p className="eyebrow">COVEX Quality Manager</p>
           <h1>Novedades</h1>
-          <p className="muted-note">Versión instalada: <strong>{appVersion}</strong>. Cada versión se prueba antes de instalarla; la aplicación no está validada para uso GMP.</p>
+          <p className="muted-note">Versión instalada: <strong>{appVersion}</strong>. Cada versión se debe probar antes de instalarla; la aplicación no está validada para uso GMP.</p>
         </div>
       </div>
       {releaseNotes.map((note) => (
