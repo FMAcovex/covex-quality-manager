@@ -187,6 +187,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 **Historial de Controles de cambios sin cambios espurios (2026-10-31):**
 - **Qué cambia:** al editar un control de cambios, la foto anterior para el historial de modificaciones (operativo, no audit trail GMP) tiene ahora las mismas claves y la misma forma que la del formulario (`src/modules/change-control/history-snapshot.ts`). Antes le faltaban 28 de sus 47 campos (decisión de la solicitud, implicaciones, estabilidad, observaciones del dictamen, estado, calidad del dato, acciones del dictamen…), así que cada guardado los anotaba como cambiados aunque no se hubieran tocado.
 - **Comprobado** con una prueba unitaria de un expediente completo (dictamen aprobado con acciones) que, sin cambios, no da ninguna diferencia y, con cambios, solo los reales; y con `text-tables:ui:smoke`, que falla con el código anterior (anotaba `stabilityAccelerated`, `stabilityOngoing`, `dataQualityStatus`, `finalStatus` y `tasks`) y pasa con el arreglo.
+- Las dos fotos ordenan el alcance como el formulario y comparan los textos como llegan del formulario (saltos de línea, viñetas vacías y espacios en los extremos), para que los expedientes sembrados o importados tampoco den cambios falsos.
 - **No cambia:** las entradas ya anotadas en el historial se conservan.
 
 **Tablas en las filas de «Seguimiento de la acción» de CAPA (2026-10-31, D-127, cuarta parte):**

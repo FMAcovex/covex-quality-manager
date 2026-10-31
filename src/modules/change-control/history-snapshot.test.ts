@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { ChangeControl, ChangeControlTask } from "@prisma/client";
 import { scalarSnapshot, storedScalarSnapshot } from "./history-snapshot";
 import { parseChangeControlForm } from "./validation";
+import { scopeLabels } from "./domain";
+
+const scopeOrder = Object.keys(scopeLabels);
 
 const date = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const userId = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -50,8 +53,8 @@ function unchangedForm() {
     tasksJson: JSON.stringify([{ id: "task-1", departmentId: "dep-1", description: "Actualizar el PNT", responsible: "Jefa de producción", responsibleUserId: userId, plannedDate: "2026-11-30" }]),
   };
   for (const [name, value] of Object.entries(fields)) form.set(name, value);
-  form.append("scope", "PROCESS");
-  form.append("scope", "EQUIPMENT");
+  // El navegador envía las casillas del alcance en el orden del formulario.
+  for (const value of scopeOrder.filter((item) => ["PROCESS", "EQUIPMENT"].includes(item))) form.append("scope", value);
   return form;
 }
 
@@ -74,5 +77,28 @@ describe("historial de Controles de cambios: guardar sin cambios no anota nada",
     const differing = Object.keys(fromForm).filter((key) =>
       JSON.stringify(fromForm[key as keyof typeof fromForm] ?? null) !== JSON.stringify(fromStored[key as keyof typeof fromStored] ?? null));
     expect(differing).toEqual(["dictamenObservations", "tasks"]);
+  });
+
+  const differences = (form: FormData, record: typeof stored) => {
+    const fromForm = scalarSnapshot(parseChangeControlForm(form).values);
+    const fromStored = storedScalarSnapshot(record);
+    return Object.keys(fromForm).filter((key) =>
+      JSON.stringify(fromForm[key as keyof typeof fromForm] ?? null) !== JSON.stringify(fromStored[key as keyof typeof fromStored] ?? null));
+  };
+
+  it("datos guardados fuera del formulario (semillas, importación) no dan diferencias falsas", () => {
+    // Alcance en otro orden, saltos de línea LF (el formulario envía CRLF), espacios en los extremos y tablas vacías.
+    const form = unchangedForm();
+    form.set("evaluation", "Línea 1\r\nLínea 2");
+    expect(differences(form, { ...stored, scope: ["EQUIPMENT", "PROCESS"], evaluation: "Línea 1\nLínea 2", description: "Cambio de equipo ", textTables: { evaluation: [{ rows: [["Bajo"]], columns: ["Riesgo"], title: "Riesgos" }], otro: [] } } as never)).toEqual([]);
+    const empty = unchangedForm();
+    empty.delete("textTables:evaluation");
+    expect(differences(empty, { ...stored, textTables: {} } as never)).toEqual([]);
+  });
+
+  it("con el dictamen aprobado, cambiar solo el responsable (usuario) de una acción se anota", () => {
+    const form = unchangedForm();
+    form.set("tasksJson", JSON.stringify([{ id: "task-1", departmentId: "dep-1", description: "Actualizar el PNT", responsible: "Jefa de producción", responsibleUserId: null, plannedDate: "2026-11-30" }]));
+    expect(differences(form, stored)).toEqual(["tasks"]);
   });
 });

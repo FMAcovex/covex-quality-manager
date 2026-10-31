@@ -2,6 +2,8 @@ import type { ChangeControl, ChangeControlTask, QmsRecord } from "@prisma/client
 import { orderedTextTables, storedTextTables } from "@/lib/forms/text-tables";
 import type { parseChangeControlForm } from "./validation";
 import { CHANGE_CONTROL_TABLE_FIELDS } from "./text-tables";
+import { scopeLabels } from "./domain";
+import { cleanText } from "@/lib/forms/bullets";
 
 type FormValues = ReturnType<typeof parseChangeControlForm>["values"];
 type TaskLike = {
@@ -13,6 +15,19 @@ type TaskLike = {
 };
 
 const day = (value: Date | null) => value?.toISOString().slice(0, 10) ?? null;
+const SCOPE_ORDER = Object.keys(scopeLabels);
+/** Alcance en el orden del formulario (el navegador envía las casillas en ese orden). */
+const orderedScope = <T extends string>(scope: T[]) => [...scope].sort((a, b) => SCOPE_ORDER.indexOf(a) - SCOPE_ORDER.indexOf(b));
+
+/**
+ * Textos en la forma en que llegan del formulario: saltos de línea LF (el envío los convierte en CRLF),
+ * sin viñetas vacías ni espacios en los extremos. Así no cuentan como cambio los datos guardados fuera del
+ * formulario (semillas, importación).
+ */
+function normalizeTexts<T extends Record<string, unknown>>(snapshot: T): T {
+  return Object.fromEntries(Object.entries(snapshot).map(([key, value]) =>
+    [key, typeof value === "string" ? cleanText(value.replace(/\r\n?/g, "\n")) : value])) as T;
+}
 
 /** Acciones del dictamen para el historial: sin identificadores (se recrean al guardar) y con la misma forma. */
 function taskSnapshot(tasks: TaskLike[]) {
@@ -27,13 +42,13 @@ function taskSnapshot(tasks: TaskLike[]) {
 
 /** Valores del formulario que se comparan para el historial de modificaciones (operativo, no audit trail GMP). */
 export function scalarSnapshot(v: FormValues) {
-  return {
+  return normalizeTexts({
     businessCode: v.businessCode,
     departmentId: v.departmentId,
     requestDate: v.requestDate,
     requesterName: v.requesterName,
     requesterPosition: v.requesterPosition,
-    scope: v.scope,
+    scope: orderedScope(v.scope),
     otherScope: v.otherScope,
     description: v.description,
     justification: v.justification,
@@ -75,7 +90,7 @@ export function scalarSnapshot(v: FormValues) {
     dataQualityStatus: v.dataQualityStatus,
     finalStatus: v.finalStatus,
     tasks: taskSnapshot(v.tasks),
-  };
+  });
 }
 
 /**
@@ -85,13 +100,13 @@ export function scalarSnapshot(v: FormValues) {
 export function storedScalarSnapshot(
   existing: ChangeControl & { qmsRecord: Pick<QmsRecord, "businessCode">; tasks: ChangeControlTask[] },
 ): ReturnType<typeof scalarSnapshot> {
-  return {
+  return normalizeTexts({
     businessCode: existing.qmsRecord.businessCode,
     departmentId: existing.departmentId,
     requestDate: day(existing.requestDate),
     requesterName: existing.requesterName,
     requesterPosition: existing.requesterPosition,
-    scope: existing.scope,
+    scope: orderedScope(existing.scope),
     otherScope: existing.otherScope,
     description: existing.description,
     justification: existing.justification,
@@ -128,13 +143,15 @@ export function storedScalarSnapshot(
     followupResponsibleUserId: existing.followupResponsibleUserId,
     dictamenObservations: existing.dictamenObservations,
     internalObservations: existing.internalObservations,
-    // Normalizado para comparar sin el orden de claves de JSONB; si no se puede leer, el valor bruto.
-    textTables: orderedTextTables(storedTextTables(existing.textTables), CHANGE_CONTROL_TABLE_FIELDS) ?? (existing.textTables as never) ?? null,
+    // Normalizado para comparar sin el orden de claves de JSONB (un objeto sin tablas válidas es «sin tablas»);
+    // si no es un objeto, el valor bruto.
+    textTables: orderedTextTables(storedTextTables(existing.textTables), CHANGE_CONTROL_TABLE_FIELDS)
+      ?? (existing.textTables && typeof existing.textTables === "object" && !Array.isArray(existing.textTables) ? null : (existing.textTables as never) ?? null),
     signedDocumentAvailable: existing.signedDocumentAvailable,
     dataQualityStatus: existing.dataQualityStatus,
     finalStatus: existing.finalStatus,
     tasks: taskSnapshot(existing.tasks
       .filter((item) => item.origin === "DICTAMEN")
       .map((item) => ({ ...item, plannedDate: day(item.plannedDate) ?? "" }))),
-  };
+  });
 }
