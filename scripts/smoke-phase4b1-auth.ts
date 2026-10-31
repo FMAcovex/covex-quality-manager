@@ -71,6 +71,37 @@ async function main() {
     let actor = "";
     await asUser(manager, () => authorizedAction(actions[i], args(entities[0].id), async values => { actor = String((values[2] as FormData).get("actor")); })); assert.equal(actor, manager.name);
     form.set("status", "CLOSED"); await blocked(manager, entities[0].id); form.delete("status");
+    if (accessModule !== "AUDIT" && accessModule !== "PNT") {
+      // Como la página de edición (4B1): sin permiso de cierre no se guarda un expediente cerrado, ni reabriéndolo ni dejándolo cerrado.
+      const statusField = accessModule === "CHANGE_CONTROL" ? "finalStatus" : "status";
+      const model = { DEVIATION: "deviation", CAPA: "capa", CHANGE_CONTROL: "changeControl", COMPLAINT: "complaint", RETURN: "returnRecord" }[accessModule as "DEVIATION"];
+      type Writable = { update(args: object): Promise<Record<string, unknown>>; findUniqueOrThrow(args: object): Promise<Record<string, unknown>> };
+      const delegate = (prisma as unknown as Record<string, Writable>)[model];
+      const original = String((await delegate.findUniqueOrThrow({ where: { id: entities[0].id } }))[statusField]);
+      const setStored = (value: string) => delegate.update({ where: { id: entities[0].id }, data: { [statusField]: value } });
+      await setStored("CLOSED");
+      form.set(statusField, "CLOSED"); await blocked(manager, entities[0].id);
+      form.set(statusField, "OPEN"); await blocked(manager, entities[0].id);
+      form.delete(statusField); await blocked(manager, entities[0].id);
+      if (accessModule === "CHANGE_CONTROL") {
+        // Como la página del seguimiento (4B1): sin CLOSE no se edita el seguimiento que cerró el control (podría reabrirlo).
+        const closing = await prisma.changeControlFollowup.create({ data: { changeControlId: entities[0].id, sequenceNumber: 1, followupDate: new Date("2096-01-10"), responsible: "Responsable sintético", executionStatus: "EXECUTED", effectivenessStatus: "ACCEPTABLE", closeChange: true } });
+        const followupForm = new FormData(); followupForm.set("nextFollowupDate", "2096-02-01"); followupForm.set("remainOpenReason", "Reapertura no autorizada");
+        let reopened = false;
+        await assert.rejects(asUser(manager, () => authorizedAction("updateChangeControlFollowupAction", [entities[0].id, closing.id, {}, followupForm], async () => { reopened = true; })), e => Boolean(e && typeof e === "object" && "status" in e && e.status === 403), "Seguimiento de cierre sin CLOSE");
+        assert.equal(reopened, false);
+        let edited = false;
+        await asUser(user, () => authorizedAction("updateChangeControlFollowupAction", [entities[0].id, closing.id, {}, followupForm], async () => { edited = true; }));
+        assert(edited, "Con CLOSE se edita el seguimiento de cierre");
+        await prisma.changeControlFollowup.delete({ where: { id: closing.id } });
+      }
+      // Con permiso de cierre (QA) sí se guarda.
+      form.set(statusField, "CLOSED");
+      let saved = false;
+      await asUser(user, () => authorizedAction(actions[i], args(entities[0].id), async () => { saved = true; }));
+      assert(saved, "Con CLOSE se guarda un expediente cerrado " + accessModule);
+      form.delete(statusField); await setStored(original);
+    }
     const assigned = entities[1].qmsRecordId ?? entities[1].id;
     await prisma.authRecordAssignment.upsert({ where: { userId_module_recordId: { userId: manager.id, module: accessModule, recordId: assigned } }, create: { userId: manager.id, module: accessModule, recordId: assigned }, update: {} });
     await asUser(manager, () => authorizedAction(actions[i], args(entities[1].id), async () => undefined));
