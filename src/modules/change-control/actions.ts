@@ -38,8 +38,9 @@ import {
 } from "@/lib/qms/versioning";
 import { acceptsFollowup, keepsOperationalStatus } from "@/modules/lifecycle";
 import { followupFinalStatus } from "@/modules/change-control/lifecycle";
-import { orderedTextTables, storedTextTables } from "@/lib/forms/text-tables";
+import { orderedTextTables } from "@/lib/forms/text-tables";
 import { CHANGE_CONTROL_TABLE_FIELDS } from "./text-tables";
+import { scalarSnapshot, storedScalarSnapshot } from "./history-snapshot";
 
 /** Usuarios responsables del formulario principal (D-101). */
 function changeUserIds(v: ReturnType<typeof parseChangeControlForm>["values"]) {
@@ -52,58 +53,6 @@ function toDate(value: string | null | undefined) {
 
 function jsonValue(value: unknown): Prisma.InputJsonValue {
   return { value: value === undefined ? null : value } as Prisma.InputJsonValue;
-}
-
-function scalarSnapshot(v: ReturnType<typeof parseChangeControlForm>["values"]) {
-  return {
-    businessCode: v.businessCode,
-    departmentId: v.departmentId,
-    requestDate: v.requestDate,
-    requesterName: v.requesterName,
-    requesterPosition: v.requesterPosition,
-    scope: v.scope,
-    otherScope: v.otherScope,
-    description: v.description,
-    justification: v.justification,
-    providedDocuments: v.providedDocuments,
-    requestDecision: v.requestDecision,
-    requestDecisionResponsible: v.requestDecisionResponsible,
-    requestDecisionResponsibleUserId: v.requestDecisionResponsibleUserId,
-    requestDecisionRole: v.requestDecisionRole,
-    requestDecisionDate: v.requestDecisionDate,
-    evaluation: v.evaluation,
-    classification: v.classification,
-    plannedImplementationDate: v.plannedImplementationDate,
-    committeeRequired: v.committeeRequired,
-    committeeDetails: v.committeeDetails,
-    clientNotificationRequired: v.clientNotificationRequired,
-    clientNotificationDetails: v.clientNotificationDetails,
-    authorityRequired: v.authorityRequired,
-    authorityDetails: v.authorityDetails,
-    pqrRequired: v.pqrRequired,
-    pqrProducts: v.pqrProducts,
-    pqrPeriod: v.pqrPeriod,
-    stabilityRequired: v.stabilityRequired,
-    stabilityAccelerated: v.stabilityAccelerated,
-    stabilityOngoing: v.stabilityOngoing,
-    additionalAnalysisRequired: v.additionalAnalysisRequired,
-    additionalAnalysisDetails: v.additionalAnalysisDetails,
-    additionalValidationRequired: v.additionalValidationRequired,
-    additionalValidationDetails: v.additionalValidationDetails,
-    otherImplicationRequired: v.otherImplicationRequired,
-    otherImplicationDetails: v.otherImplicationDetails,
-    dictamenResult: v.dictamenResult,
-    dictamenDate: v.dictamenDate,
-    followupResponsible: v.followupResponsible,
-    followupResponsibleUserId: v.followupResponsibleUserId,
-    dictamenObservations: v.dictamenObservations,
-    internalObservations: v.internalObservations,
-    textTables: orderedTextTables(v.textTables, CHANGE_CONTROL_TABLE_FIELDS),
-    signedDocumentAvailable: v.signedDocumentAvailable,
-    dataQualityStatus: v.dataQualityStatus,
-    finalStatus: v.finalStatus,
-    tasks: v.tasks,
-  };
 }
 
 async function taskCreateData(
@@ -472,28 +421,8 @@ async function updateChangeControlActionAuthenticatedContent(
     }
   }
 
-  const oldSnapshot = {
-    businessCode: existing.qmsRecord.businessCode,
-    departmentId: existing.departmentId,
-    requestDate: existing.requestDate?.toISOString().slice(0, 10) ?? null,
-    requesterName: existing.requesterName,
-    requesterPosition: existing.requesterPosition,
-    scope: existing.scope,
-    otherScope: existing.otherScope,
-    description: existing.description,
-    justification: existing.justification,
-    providedDocuments: existing.providedDocuments,
-    requestDecision: existing.requestDecision,
-    requestDecisionResponsibleUserId: existing.requestDecisionResponsibleUserId,
-    evaluation: existing.evaluation,
-    classification: existing.classification,
-    plannedImplementationDate: existing.plannedImplementationDate?.toISOString().slice(0, 10) ?? null,
-    dictamenResult: existing.dictamenResult,
-    dictamenDate: existing.dictamenDate?.toISOString().slice(0, 10) ?? null,
-    followupResponsibleUserId: existing.followupResponsibleUserId,
-    // Normalizado para comparar sin el orden de claves de JSONB; si no se puede leer, el valor bruto.
-    textTables: orderedTextTables(storedTextTables(existing.textTables), CHANGE_CONTROL_TABLE_FIELDS) ?? existing.textTables ?? null,
-  };
+  // Misma forma que la foto del formulario: solo se anotan los campos que de verdad cambian.
+  const oldSnapshot = storedScalarSnapshot(existing);
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -608,13 +537,13 @@ async function updateChangeControlActionAuthenticatedContent(
 
       const newSnapshot = scalarSnapshot(v);
       for (const [fieldPath, value] of Object.entries(newSnapshot)) {
-        if (JSON.stringify((oldSnapshot as Record<string, unknown>)[fieldPath] ?? null) !== JSON.stringify(value ?? null)) {
+        if (JSON.stringify(oldSnapshot[fieldPath as keyof typeof oldSnapshot] ?? null) !== JSON.stringify(value ?? null)) {
           await tx.changeHistory.create({
             data: {
               qmsRecordId: existing.qmsRecordId,
               changedByText: parsed.actor,
               fieldPath,
-              oldValue: jsonValue((oldSnapshot as Record<string, unknown>)[fieldPath]),
+              oldValue: jsonValue(oldSnapshot[fieldPath as keyof typeof oldSnapshot]),
               newValue: jsonValue(value),
               reason: v.changeReason,
               source: "UI",

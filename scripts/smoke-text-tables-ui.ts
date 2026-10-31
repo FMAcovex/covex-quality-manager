@@ -147,8 +147,12 @@ async function main() {
     assert.deepEqual(change.textTables, { evaluation: expected("Riesgos del cambio") });
     await go(`/changes/${change.id}?tab=dictamen`);
     await qa.locator(".change-evaluation-card .text-table-view", { hasText: "Tabla 1. Riesgos del cambio" }).waitFor();
+    const historyBefore = await prisma.changeHistory.count({ where: { qmsRecordId: change.qmsRecordId } });
     await resave(`/changes/${change.id}/edit`, /\/changes\/[0-9a-f-]{36}(\?|$)/);
     assert.equal(await tableHistory(change.qmsRecordId), 0, "Cambio: guardar sin tocar la tabla no anota cambios");
+    // Guardar sin tocar nada no anota ningún campo en el historial (antes se anotaban los que faltaban en la foto anterior).
+    const spurious = await prisma.changeHistory.findMany({ where: { qmsRecordId: change.qmsRecordId }, orderBy: { changedAt: "asc" }, skip: historyBefore });
+    assert.deepEqual(spurious.map((entry) => entry.fieldPath), [], "Cambio: guardar sin cambios no anota nada en el historial");
     await resave(`/changes/${change.id}/edit`, /\/changes\/[0-9a-f-]{36}(\?|$)/, () => qa.locator("fieldset.text-table-editor").getByLabel(/^Fila 1, columna 2 · /).fill("No conforme"));
     assert.equal(await tableHistory(change.qmsRecordId), 1, "Cambio: el cambio de la tabla queda en el historial");
 
