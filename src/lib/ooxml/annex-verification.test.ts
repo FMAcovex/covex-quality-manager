@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareExcelAnnex, compareWordAnnex, tokenDecoder } from "./annex-verification";
+import { checkboxOptions, compareExcelAnnex, compareWordAnnex, compareWordHeadersFooters, inconsistentCheckboxControls, tokenDecoder } from "./annex-verification";
 import { getZipEntryText, readZip, writeZip } from "./zip";
 import { xlsxCells } from "./xlsx-cells";
 
@@ -132,3 +132,76 @@ describe("decodificación de fechas y celdas numéricas", () => {
     expect([...xlsxCells(entries, { numbers: true }).get("H")!]).toEqual([["A1", "47853"], ["B1", "Texto"]]);
   });
 });
+
+describe("casillas de verificación (☐/☒)", () => {
+  const box = (checked: boolean, glyph = checked ? "☒" : "☐") => `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="${checked ? 1 : 0}"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>${glyph}</w:t></w:r></w:sdtContent></w:sdt>`;
+  const boxCell = (...items: string[]) => `<w:tc><w:p>${items.join("")}</w:p></w:tc>`;
+  const run = (text: string) => `<w:r><w:t xml:space="preserve">${text}</w:t></w:r>`;
+
+  it("la opción de cada casilla es el texto que la sigue o, si no sigue nada, el que la precede", () => {
+    expect(checkboxOptions("☒ Sí ☐ No")).toEqual([{ checked: true, label: "Sí" }, { checked: false, label: "No" }]);
+    // Pregunta delante de las casillas (Anexo IV de Cambios): la opción sigue a la casilla.
+    expect(checkboxOptions("¿Comité? ☐ Sí ☒ No")).toEqual([{ checked: false, label: "Sí" }, { checked: true, label: "No" }]);
+    expect(checkboxOptions("Conforme ☒")).toEqual([{ checked: true, label: "Conforme" }]);
+    // Opción delante de la casilla (impactos del Anexo III de Desviaciones): se decide con el texto de la plantilla,
+    // porque el anexo añade los datos detrás.
+    expect(checkboxOptions("Impacto sobre el registro SI ☐ NO ☒ NA ☐").map((box) => box.label)).toEqual(["Impacto sobre el registro SI", "NO", "NA"]);
+    expect(checkboxOptions("SI ☐ (detallar cuales): NO ☒ NA ☐ ⟦Deviation.detalle⟧", "SI ☐ (detallar cuales): NO ☐ NA ☐")[1]).toEqual({ checked: true, label: "(detallar cuales): NO" });
+    expect(checkboxOptions("☒")).toEqual([{ checked: true, label: "" }]);
+    expect(checkboxOptions("Sin casillas")).toEqual([]);
+  });
+
+  it("lista las casillas marcadas con su opción y una clave por posición y opción, sin el texto de la plantilla", () => {
+    const template = doc(`<w:tbl><w:tr>${cell("Clasificación:")}${boxCell(box(false), run(" Mayor "), box(false), run(" Menor"))}</w:tr></w:tbl>`);
+    const output = doc(`<w:tbl><w:tr>${cell("Clasificación:")}${boxCell(box(false), run(" Mayor "), box(true), run(" Menor"))}</w:tr></w:tbl>`);
+    const result = compareWordAnnex(template, output, decode);
+    expect(result.altered).toEqual([]);
+    expect(result.checkboxProblems).toEqual([]);
+    expect(result.checked.map(({ where, label }) => [where, label])).toEqual([["Tabla 1, fila 1, casilla 2, opción 2", "Menor"]]);
+    expect(result.checked[0].key).toMatch(/^Tabla 1, fila 1, casilla 2, opción 2#[0-9a-f]{16}$/);
+    expect(result.checked[0].key).not.toContain("Menor");
+  });
+
+  it("si la casilla está sola, la opción es la etiqueta de la derecha o, si no hay, la de la izquierda (no otra casilla)", () => {
+    const right = (checked: boolean) => doc(`<w:tbl><w:tr>${cell("☐")}${boxCell(box(checked))}${cell("Cliente:")}</w:tr></w:tbl>`);
+    expect(compareWordAnnex(right(false), right(true), decode).checked[0].label).toBe("Cliente:");
+    const left = (checked: boolean) => doc(`<w:tbl><w:tr>${cell("¿Afecta al producto?")}${boxCell(box(checked))}</w:tr></w:tbl>`);
+    expect(compareWordAnnex(left(false), left(true), decode).checked[0].label).toBe("¿Afecta al producto?");
+  });
+
+  it("avisa de una casilla que falta o sobra respecto a la plantilla", () => {
+    const template = doc(`<w:tbl><w:tr>${boxCell(box(false), run(" Sí "), box(false), run(" No"))}</w:tr></w:tbl>`);
+    const output = doc(`<w:tbl><w:tr>${boxCell(box(true), run(" Sí No"))}</w:tr></w:tbl>`);
+    expect(compareWordAnnex(template, output, decode).altered).toContain("Tabla 1, fila 1, casilla 1: tiene 1 casillas de verificación; la plantilla, 2.");
+  });
+
+  it("detecta un control de Word cuyo símbolo no coincide con su estado", () => {
+    const shownChecked = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>☒</w:t></w:r></w:sdtContent></w:sdt>`;
+    expect(inconsistentCheckboxControls(shownChecked)).toEqual([{ shows: true, state: false }]);
+    expect(inconsistentCheckboxControls(box(true) + box(false))).toEqual([]);
+    const result = compareWordAnnex(doc(`<w:tbl><w:tr>${boxCell(box(false), run(" Sí"))}</w:tr></w:tbl>`), doc(`<w:tbl><w:tr>${boxCell(shownChecked, run(" Sí"))}</w:tr></w:tbl>`), decode);
+    expect(result.checkboxProblems).toEqual(["Tabla 1, fila 1, casilla 1: la casilla se ve marcada (☒), pero su control de Word está sin marcar."]);
+  });
+});
+
+describe("cabeceras y pies de Word", () => {
+  const part = (name: string, text: string) => ({ name, data: Buffer.from(`<w:hdr><w:p><w:r><w:t xml:space="preserve">${text}</w:t></w:r></w:p></w:hdr>`) });
+  const empty = () => compareWordAnnex(doc(""), doc(""), decode);
+
+  it("compara el texto de cada parte, cuenta los datos impresos y avisa de partes que faltan o sobran", () => {
+    const result = empty();
+    compareWordHeadersFooters(
+      [part("word/header1.xml", "ANEXO III PNT GC-00/002"), part("word/footer1.xml", "Página Código: ____"), part("word/footer2.xml", "Pie par")],
+      [part("word/header1.xml", "ANEXO III PNT"), part("word/footer1.xml", "Página Código: ⟦Audit.businessCode⟧"), part("word/footer3.xml", "Otro")],
+      decode, result,
+    );
+    expect(result.altered).toEqual([
+      "Encabezado (header1.xml): falta «GC-00/002»",
+      "Pie (footer2.xml): falta en el anexo.",
+      "Pie (footer3.xml): no está en la plantilla.",
+    ]);
+    expect([...result.printed]).toEqual(["Audit.businessCode"]);
+    expect(result.filled.map((item) => item.where)).toEqual(["Pie (footer1.xml)"]);
+  });
+});
+

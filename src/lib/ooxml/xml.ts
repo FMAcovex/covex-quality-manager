@@ -229,7 +229,16 @@ export function setWordSdtCheckbox(
 export function markFirstCheckbox(documentXml: string, table: number, row: number, cell: number, checked: boolean) {
   return transformWordCell(documentXml, table, row, cell, (xml) => {
     if (!checked) return xml;
-    return xml.replace("☐", "☒");
+    const glyph = xml.indexOf("☐");
+    if (glyph < 0) return xml;
+    const marked = xml.slice(0, glyph) + "☒" + xml.slice(glyph + 1);
+    // Si la casilla es un control de Word, también su estado: si no, se ve marcada y Word la trata como sin
+    // marcar al pulsarla. El control que la contiene es el último abierto antes del símbolo y sin cerrar.
+    const start = Math.max(marked.lastIndexOf("<w:sdt>", glyph), marked.lastIndexOf("<w:sdt ", glyph));
+    if (start < 0 || marked.slice(start, glyph).includes("</w:sdt>")) return marked;
+    const head = marked.slice(start, glyph);
+    if (!head.includes("<w14:checkbox")) return marked;
+    return marked.slice(0, start) + head.replace(/(<w14:checked\b[^>]*w14:val=")[^"]*(")/, (_, before: string, after: string) => `${before}1${after}`) + marked.slice(glyph);
   });
 }
 

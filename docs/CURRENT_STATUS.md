@@ -193,6 +193,16 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Verificación de los anexos: casillas marcadas, cabeceras y pies (2026-10-31, D-132):**
+- **Qué cambia:**
+  - `pnpm annexes:verify` comprueba también qué casillas ☒ se marcan, que cada control de casilla de Word muestra su estado y el texto de las cabeceras y los pies.
+  - El informe lista cada casilla marcada con su opción, junto a los valores de las opciones del expediente de demostración.
+- **Corregido:** en el Anexo III de Desviaciones, las casillas «Acciones correctivas», «Acciones preventivas» y «Sin acciones inmediatas» se veían marcadas, pero su control de Word seguía sin marcar (`markFirstCheckbox`).
+- **Comprobado:**
+  - con las plantillas oficiales, los 24 anexos son correctos y las 66 casillas marcadas se revisaron a mano;
+  - cambiando a propósito el generador para marcar la opción equivocada, la verificación lo detecta;
+  - pruebas unitarias del comparador y de `markFirstCheckbox`, que fallaban antes del arreglo.
+
 **Versiones, novedades y procedimiento de actualización (2026-10-31, D-131):**
 - **Qué cambia:**
   - La aplicación pasa a la versión 0.2.0. El número sigue `MAYOR.MENOR.CORRECCIÓN`, y cualquier cambio en la base de datos sube al menos el MENOR.

@@ -56,18 +56,25 @@ Con esos expedientes se generan los anexos con los mismos generadores que las de
    Un campo que deje de imprimirse sin estar en la lista es un fallo.
 4. **Que cada campo sigue en su casilla.** La lista guarda en qué casillas sale cada campo (`positions`). Un campo que cambia de casilla es un fallo aunque se imprima, por ejemplo con columnas o casillas desplazadas.
 5. **Que cada tabla sale en la casilla donde sale el texto de su campo**, y solo si sale ese texto. En los anexos que no llevan tablas de los textos no debe salir ninguna.
+6. **Qué casillas de verificación se marcan (☒)** (D-132).
+   - El informe lista cada casilla marcada con su opción (por ejemplo, «Tabla 4, fila 6, casilla 1, opción 2 · NO»). Al lado van los valores de las opciones del expediente de demostración, para comprobar a mano que cada ☒ es la opción correcta.
+   - La lista de lo previsto guarda qué casillas se marcan, como posición + huella de la opción. Una casilla marcada que no estaba prevista, o una prevista que ya no se marca, es un fallo.
+   - También es un fallo una casilla de la tabla con distinto número de casillas de verificación que la plantilla, salvo que esté prevista (por ejemplo, filas de ejemplo que el anexo sustituye).
+7. **Que los controles de casilla de Word son coherentes.** Si una casilla se ve marcada (☒) pero su control de Word está sin marcar, o al revés, Word la cambia al pulsarla. Es un fallo que no se puede dar por bueno: hay que corregir el generador.
+8. **Las cabeceras y los pies de Word**, parte a parte, con el mismo criterio que el cuerpo. Los datos que caen en ellos cuentan como impresos; por ejemplo, el código de auditoría que sustituye a `AE/XXXX/YY/AAAA` en el pie del informe externo, que está previsto.
 
 También se avisa de una fila o una casilla de la plantilla que falta, de una hoja que falta o sobra, y de un número de tablas distinto.
 
 ## Cuando falla
 
 - **Fallo real:** se corrige el generador y se vuelve a ejecutar.
-- **Cambio intencionado de una plantilla o de un generador:** se revisa el informe y se regenera la lista con `--write-expected`. Solo se reescriben los anexos generados; lo previsto para los demás se conserva. No se puede dar por bueno un anexo que no se genera ni una tabla fuera de su casilla. Hay que revisar el diff de `scripts/verify-annexes-expected.json` antes de versionarlo, porque cada línea nueva es un texto de plantilla o un campo que se da por bueno.
+- **Cambio intencionado de una plantilla o de un generador:** se revisa el informe y se regenera la lista con `--write-expected`. Solo se reescriben los anexos generados; lo previsto para los demás se conserva. No se puede dar por bueno un anexo que no se genera, una tabla fuera de su casilla ni un control de casilla incoherente. Hay que revisar el diff de `scripts/verify-annexes-expected.json` antes de versionarlo, porque cada línea nueva es un texto de plantilla, un campo o una casilla marcada que se da por buena.
 
 ## Límites
-- No se comprueban las casillas de verificación ni los valores de las listas: una casilla ☒ cuenta igual que la ☐. Las pruebas automáticas de cada generador cubren qué opción se marca.
+- Qué opción se marca se comprueba con los valores del expediente de demostración, uno por campo. La primera vez se revisa a mano (el informe pone los valores al lado) y después se fija en la lista de lo previsto. Otras combinaciones de valores las cubren las pruebas automáticas de cada generador.
+- Solo se leen las casillas ☐/☒. Las que se dibujan con símbolos de fuentes como Wingdings no se leerían. En las plantillas actuales esos símbolos son viñetas (Anexo IV de Cambios, historial del plan maestro de auditorías externas), no casillas.
 - Los campos JSON solo llevan marcador donde se indica: los otros lotes y la justificación del plazo de Devoluciones. No llevan marcador las herramientas de investigación de Desviaciones (D-124) ni el resto de `extraData`, y lo que imprimen lo cubren sus pruebas.
-- Las cabeceras, los pies y los cuadros de texto de Word no se comparan.
+- Los cuadros de texto de Word se comparan con el resto del texto fuera de las tablas, sin posición propia.
 - Los marcadores llevan el modelo, no el camino completo: `QmsRecord.*` o `QmsRelation[1].*` pueden ser del expediente o del relacionado.
 - Se usa el expediente vigente, no la foto de una versión anterior, y sin figuras (D-125).
 
@@ -75,8 +82,11 @@ También se avisa de una fila o una casilla de la plantilla que falta, de una ho
 - Los informes de reclamación v02 (PNT histórico) no se verifican si no se aporta su PNT.
 - La comprobación de la aplicación instalada (descarga desde la ficha, versiones del expediente) la cubren las pruebas automáticas y los smokes. Este comando usa los mismos generadores con el expediente vigente.
 
-## Resultado 31/10/2026
+## Resultado 31/10/2026 (casillas y cabeceras: D-132)
 
 Se verificó con las plantillas oficiales de `ANEXOS PARA APP.zip`, las de auditorías, el PNT GC-10/014/04 de OOS, el paquete parcial verificado de Reclamaciones v03 y el `.docx` del PMAI V04. Los 24 anexos salen correctos.
 
 La verificación encontró un fallo, ya corregido. En el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional se imprimía aunque la justificación no saliera. Ahora sigue a su texto, como las de los detalles de actuación de Reclamaciones.
+
+Con las casillas, las cabeceras y los pies (D-132), los 24 anexos salen correctos. Se revisaron a mano las 66 casillas marcadas frente a los valores del expediente de demostración, y todas son la opción correcta. La ampliación encontró un fallo, ya corregido: en el Anexo III de Desviaciones, las casillas «Acciones correctivas», «Acciones preventivas» y «Sin acciones inmediatas» se veían marcadas, pero su control de Word seguía sin marcar (`markFirstCheckbox`).
+
