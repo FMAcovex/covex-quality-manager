@@ -20,6 +20,7 @@ vi.mock("@/modules/deviations/queries", () => ({ getDeviationDetail: mocks.getDe
 vi.mock("@/modules/deviations/documents/annex-iii", () => ({ generateAnnexIII: mocks.generateAnnexIII }));
 vi.mock("@/modules/capa/documents/export-data", () => ({ getCapaExportRows: mocks.getCapaExportRows }));
 vi.mock("@/modules/capa/documents/xlsx", () => ({ generateCapaAnnexIV: mocks.generateCapaAnnexIV }));
+vi.mock("@/lib/qms/versioning", async (original) => ({ ...(await original<typeof import("@/lib/qms/versioning")>()), deviationSnapshotToAnnexRecord: (snapshot: unknown) => ({ fromSnapshot: snapshot }) }));
 vi.mock("@/lib/qms/working-document", () => ({ storeWorkingDocument: () => { throw new Error("La prueba no debe guardar documentos de trabajo."); } }));
 
 import { identityContext, type AccessPermission, type Principal } from "@/lib/auth/context";
@@ -37,7 +38,7 @@ beforeEach(() => {
   mocks.resourceScope.mockResolvedValue({ id: "qms-1", departmentIds: ["dep-1"] });
   mocks.templateFindUnique.mockResolvedValue({ module: "DEVIATION", documentType: "DEVIATION_ANNEX_III", versionCode: "07" });
   mocks.deviationFindFirst.mockResolvedValue(openDeviation);
-  mocks.getDeviationDetail.mockResolvedValue({ id: "dev-1", anexoIIITemplateVersion: { versionCode: "06" }, qmsRecord: { versions: [{ sequenceNumber: 0 }, { sequenceNumber: 2 }] } });
+  mocks.getDeviationDetail.mockResolvedValue({ id: "dev-1", anexoIIITemplateVersion: { versionCode: "06" }, qmsRecord: { versions: [{ sequenceNumber: 0, snapshot: "s0" }, { sequenceNumber: 2, snapshot: "s2" }] } });
   mocks.generateAnnexIII.mockResolvedValue(Buffer.from("docx"));
   mocks.getCapaExportRows.mockResolvedValue([{ id: "fila" }]);
   mocks.generateCapaAnnexIV.mockResolvedValue(Buffer.from("xlsx"));
@@ -46,7 +47,8 @@ beforeEach(() => {
 describe("D-129: probar una versión de plantilla con un expediente", () => {
   it("genera con la versión probada (no con la del expediente) y el último expediente con código fuera de borrador", async () => {
     const file = await as(quality, () => generateTemplateTrial("tpl-07", null));
-    expect(mocks.generateAnnexIII).toHaveBeenCalledWith(expect.objectContaining({ anexoIIITemplateVersion: { versionCode: "07" }, recordVersionLabel: "V02" }));
+    // Como la descarga por defecto: la última versión congelada, con la versión de plantilla probada.
+    expect(mocks.generateAnnexIII).toHaveBeenCalledWith({ fromSnapshot: "s2", anexoIIITemplateVersion: { versionCode: "07" }, recordVersionLabel: "V02" });
     expect(mocks.loadStoredTemplateAsset).toHaveBeenCalledWith("DEVIATION", "DEVIATION_ANNEX_III", "07");
     const query = mocks.deviationFindFirst.mock.calls[0][0];
     expect(query.where).toEqual({ status: { not: "DRAFT" }, qmsRecord: { isActive: true, businessCode: { not: null } } });
@@ -54,9 +56,13 @@ describe("D-129: probar una versión de plantilla con un expediente", () => {
     expect(file).toEqual({ buffer: Buffer.from("docx"), fileName: "PRUEBA_DEVIATION_ANNEX_III_v07_D_GC-00_001_2026.docx", mimeType: expect.stringContaining("wordprocessingml") });
   });
 
-  it("con un código, busca ese expediente sin distinguir mayúsculas", async () => {
-    await as(quality, () => generateTemplateTrial("tpl-07", " d/gc-00/001/2026 "));
-    expect(mocks.deviationFindFirst.mock.calls[0][0].where).toEqual({ qmsRecord: { businessCode: { equals: "d/gc-00/001/2026", mode: "insensitive" } } });
+  it("con un código, busca primero ese código exacto y, si no está, sin distinguir mayúsculas", async () => {
+    await as(quality, () => generateTemplateTrial("tpl-07", " D/GC-00/001/2026 "));
+    expect(mocks.deviationFindFirst.mock.calls[0][0].where).toEqual({ qmsRecord: { businessCode: "D/GC-00/001/2026" } });
+    expect(mocks.deviationFindFirst).toHaveBeenCalledTimes(1);
+    mocks.deviationFindFirst.mockClear().mockResolvedValueOnce(null);
+    await as(quality, () => generateTemplateTrial("tpl-07", "d/gc-00/001/2026"));
+    expect(mocks.deviationFindFirst.mock.calls[1][0]).toMatchObject({ where: { qmsRecord: { businessCode: { equals: "d/gc-00/001/2026", mode: "insensitive" } } }, orderBy: [{ id: "asc" }] });
   });
 
   it("un expediente en borrador, anulado o inexistente se explica y no se genera", async () => {
@@ -66,6 +72,7 @@ describe("D-129: probar una versión de plantilla con un expediente", () => {
       [null, "No hay ningún expediente de Desviaciones con el código «X-1»", 404],
     ] as const) {
       mocks.deviationFindFirst.mockResolvedValueOnce(row);
+      if (!row) mocks.deviationFindFirst.mockResolvedValueOnce(null); // ni exacto ni sin mayúsculas
       const error = await as(quality, () => generateTemplateTrial("tpl-07", "X-1")).catch((caught: unknown) => caught);
       expect(error).toBeInstanceOf(TemplateTrialError);
       expect((error as TemplateTrialError).message).toContain(message);

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { AccessError, currentIdentity, type AccessModule, type AccessPermission } from "@/lib/auth/context";
 import { assertPermission } from "@/lib/auth/policy";
 import { resourceScope } from "@/lib/auth/resources";
-import { versionLabel } from "@/lib/qms/versioning";
+import { capaSnapshotToAnnexRecord, capaSnapshotVersionFollowupDate, changeControlSnapshotToRecord, complaintSnapshotToAnnexRecord, deviationSnapshotToAnnexRecord, versionLabel } from "@/lib/qms/versioning";
 import { loadStoredTemplateAsset } from "@/modules/configuration/template-assets";
 import { parseTrialReference, TemplateTrialError, trialFileName, trialKind } from "@/modules/configuration/template-trial-rules";
 import { generateAnnexIII } from "@/modules/deviations/documents/annex-iii";
@@ -77,7 +77,9 @@ async function pickRecord(module: RecordModule, code: string | null, extra: Reco
   const select = { id: true, [model.status]: true, qmsRecord: { select: { businessCode: true, isActive: true } } };
   const read = (row: Record<string, unknown> | null) => row ? { ...(row as unknown as RecordRow), status: String(row[model.status]) } : null;
   if (code) {
-    const found = read(await delegate.findFirst({ where: { qmsRecord: { businessCode: { equals: code, mode: "insensitive" } } }, select }));
+    // Primero el código exacto; si no, sin distinguir mayúsculas (el código es único con mayúsculas distintas).
+    const found = read(await delegate.findFirst({ where: { qmsRecord: { businessCode: code } }, select }))
+      ?? read(await delegate.findFirst({ where: { qmsRecord: { businessCode: { equals: code, mode: "insensitive" } } }, orderBy: [{ id: "asc" }], select }));
     if (!found) throw new TemplateTrialError(`No hay ningún expediente de ${model.label} con el código «${code}».`, 404);
     if (!found.qmsRecord.isActive) throw new TemplateTrialError(`El expediente ${code} está anulado; prueba con otro.`);
     if (found.status === "DRAFT") throw new TemplateTrialError(`El expediente ${code} está en borrador y sus documentos no se generan; prueba con otro.`);
@@ -99,7 +101,11 @@ function required<T>(value: T | null | undefined, message = "El expediente ya no
   return value;
 }
 
-const latestSequence = (record: { qmsRecord: { versions: Array<{ sequenceNumber: number }> } }) => record.qmsRecord.versions.at(-1)?.sequenceNumber ?? 0;
+/** Última versión congelada del expediente: la que usa por defecto la descarga desde la ficha (versiones en orden ascendente). */
+const latestVersion = <V extends { sequenceNumber: number }>(record: { qmsRecord: { versions: V[] } }) => record.qmsRecord.versions.at(-1) ?? null;
+
+/** Mensajes de los generadores de auditorías que señalan datos que faltan en la auditoría, no un fallo de la plantilla. */
+const AUDIT_DATA_GAPS = ["Completa entidad, fecha prevista", "El informe externo requiere un código de auditoría"];
 
 /**
  * D-129: genera un anexo con una versión concreta de su plantilla (activa o no) y un expediente real, con los
@@ -133,13 +139,33 @@ export async function generateTemplateTrial(templateId: string, rawReference: st
     case "DEVIATION_ANNEX_III": {
       const { id, code } = await record("DEVIATION");
       const detail = required(await getDeviationDetail(id));
-      return word(await generateAnnexIII({ ...detail, anexoIIITemplateVersion: version, recordVersionLabel: versionLabel(latestSequence(detail)) } as Parameters<typeof generateAnnexIII>[0]), code);
+      // Como la descarga por defecto: la última versión congelada si la hay; si no, el estado actual.
+      const stored = latestVersion(detail);
+      const source = stored ? deviationSnapshotToAnnexRecord(stored.snapshot) : detail;
+      return word(await generateAnnexIII({ ...source, anexoIIITemplateVersion: version, recordVersionLabel: versionLabel(stored?.sequenceNumber ?? 0) } as unknown as Parameters<typeof generateAnnexIII>[0]), code);
     }
-    case "DEVIATION_ANNEX_V": { const y = year(); return excel(await generateAnnexV(y, await getDeviationExportRows({ year: [String(y)] }), versionCode), String(y)); }
+    case "DEVIATION_ANNEX_V": {
+      const y = year();
+      try {
+        return excel(await generateAnnexV(y, await getDeviationExportRows({ year: [String(y)] }), versionCode), String(y));
+      } catch (error) {
+        // Como la descarga normal: el límite de filas del listado se explica (409), no es un fallo al rellenar la plantilla.
+        if (error instanceof Error && error.message.includes(" admite ")) throw new TemplateTrialError(error.message);
+        throw error;
+      }
+    }
     case "CAPA_ANNEX_III": {
       const { id, code } = await record("CAPA");
       const detail = required(await getCapaDetail(id));
-      return word(await generateCapaAnnexIII({ ...detail, annexIIITemplateVersion: version, recordVersionSequenceNumber: latestSequence(detail), recordVersionReason: null, versionFollowupDate: detail.openedAt } as unknown as Parameters<typeof generateCapaAnnexIII>[0]), code);
+      const stored = latestVersion(detail);
+      const source = stored ? capaSnapshotToAnnexRecord(stored.snapshot) : detail;
+      return word(await generateCapaAnnexIII({
+        ...source,
+        annexIIITemplateVersion: version,
+        recordVersionSequenceNumber: stored?.sequenceNumber ?? 0,
+        recordVersionReason: stored?.reason ?? null,
+        versionFollowupDate: stored ? capaSnapshotVersionFollowupDate(stored.snapshot, stored.sequenceNumber) : detail.openedAt,
+      } as unknown as Parameters<typeof generateCapaAnnexIII>[0]), code);
     }
     case "CAPA_ANNEX_IV": { const y = year(); return excel(await generateCapaAnnexIV(y, await getCapaExportRows({ year: [String(y)] }), versionCode), String(y)); }
     case "CHANGE_ANNEX_III":
@@ -150,17 +176,20 @@ export async function generateTemplateTrial(templateId: string, rawReference: st
       const detail = required(await getChangeControlDetail(id));
       if (documentType === "CHANGE_ANNEX_III") return word(await generateChangeAnnexIII({ ...detail, annexIIITemplateVersion: version } as Parameters<typeof generateChangeAnnexIII>[0]), code);
       if (documentType === "CHANGE_ANNEX_IV") return word(await generateChangeAnnexIV({ ...detail, annexIVTemplateVersion: version } as Parameters<typeof generateChangeAnnexIV>[0]), code);
-      const sequence = required(detail.followups.at(-1), "El control de cambio no tiene seguimientos.").sequenceNumber;
-      return word(await generateChangeAnnexV({ ...detail, annexVTemplateVersion: version } as Parameters<typeof generateChangeAnnexV>[0], sequence), code);
+      // Como la descarga por defecto: el seguimiento de la última versión congelada, con esa versión.
+      const stored = required(latestVersion(detail), "El control de cambio todavía no tiene versiones de seguimiento.");
+      return word(await generateChangeAnnexV({ ...changeControlSnapshotToRecord(stored.snapshot), annexVTemplateVersion: version } as unknown as Parameters<typeof generateChangeAnnexV>[0], stored.sequenceNumber), code);
     }
     case "CHANGE_ANNEX_VII": { const y = year(); return excel(await generateChangeAnnexVII(y, await getChangeControlExportRows({ year: [String(y)] }), versionCode), String(y)); }
     case "COMPLAINT_ANNEX_III":
     case "COMPLAINT_ANNEX_IV": {
       const { id, code } = await record("COMPLAINT");
       const detail = required(await getComplaintDetail(id));
+      const stored = latestVersion(detail);
+      const source = { ...(stored ? complaintSnapshotToAnnexRecord(stored.snapshot) : detail), recordVersionLabel: versionLabel(stored?.sequenceNumber ?? 0) };
       return documentType === "COMPLAINT_ANNEX_III"
-        ? word(await generateComplaintAnnexIII({ ...detail, annexIIITemplateVersion: version } as Parameters<typeof generateComplaintAnnexIII>[0]), code)
-        : word(await generateComplaintAnnexIV({ ...detail, annexIVTemplateVersion: version } as Parameters<typeof generateComplaintAnnexIV>[0]), code);
+        ? word(await generateComplaintAnnexIII({ ...source, annexIIITemplateVersion: version } as unknown as Parameters<typeof generateComplaintAnnexIII>[0]), code)
+        : word(await generateComplaintAnnexIV({ ...source, annexIVTemplateVersion: version } as unknown as Parameters<typeof generateComplaintAnnexIV>[0]), code);
     }
     case "COMPLAINT_ANNEX_V": { const y = year(); return excel(await generateComplaintAnnexV(y, await getComplaintExportRows({ year: [String(y)] }), versionCode), String(y)); }
     case "RETURN_ANNEX_III":
@@ -203,8 +232,8 @@ export async function generateTemplateTrial(templateId: string, rawReference: st
         if (documentType === "AUDIT_EXTERNAL_PLAN") return word(generateAuditExternalPlan(bytes, snapshot), code);
         return word(generateAuditReport(bytes, snapshot, sequence), code);
       } catch (error) {
-        // Datos que le faltan a la auditoría elegida (por ejemplo, el programa del plan externo): se explican, no son un fallo de la plantilla.
-        if (error instanceof Error && !(error instanceof TemplateTrialError)) throw new TemplateTrialError(`${error.message} Prueba con otra auditoría indicando su código.`);
+        // Solo los datos que le faltan a la auditoría elegida se explican como tales; cualquier otro fallo es de la plantilla.
+        if (error instanceof Error && AUDIT_DATA_GAPS.some((gap) => error.message.startsWith(gap))) throw new TemplateTrialError(`${error.message} Prueba con otra auditoría indicando su código.`);
         throw error;
       }
     }

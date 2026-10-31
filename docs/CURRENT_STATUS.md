@@ -195,12 +195,12 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 
 **Probar una plantilla con un expediente antes de activarla (2026-10-31, D-129 y D-130):**
 - **Qué cambia:**
-  - En Configuración → Versiones, cada versión de plantilla con archivo tiene un botón **Probar**. Genera el anexo con esa versión, aunque esté inactiva, y el expediente indicado o el último modificado del módulo; en los listados y programas, un año. El archivo se llama `PRUEBA_…` y no se guarda nada en el expediente.
+  - En Configuración → Versiones, cada versión de plantilla con archivo tiene un botón **Probar**. Genera el anexo con esa versión, aunque esté inactiva, y el expediente indicado o el último modificado del módulo, con los mismos datos que la descarga desde la ficha; en los listados y programas, un año. El archivo se llama `PRUEBA_…` y no se guarda nada en el expediente.
   - Exige «Configuración» del módulo y los permisos de la descarga normal en ese expediente.
   - Guía para Calidad: [GUIA_PLANTILLAS_CALIDAD.md](GUIA_PLANTILLAS_CALIDAD.md).
 - **Corrección (D-130):** «Configuración» se puede conceder por módulo en el editor de roles. Hasta ahora ningún rol real podía activar ni registrar la plantilla de un módulo, porque las guardas exigen ese permiso en el módulo y los contratos no lo declaraban.
 - **Comprobado:**
-  - pruebas unitarias del servicio (versión forzada, sin escrituras, permisos, borradores y anulados), de la ruta (páginas de error, nombre del archivo) y del editor de roles (falla antes de la corrección);
+  - pruebas unitarias del servicio (versión forzada, mismos datos que la descarga por defecto, sin escrituras, permisos con ámbito, borradores y anulados), de la guarda de la ruta («Configuración» en el módulo de la plantilla), de la ruta (páginas de error, nombre del archivo) y del editor de roles (falla antes de la corrección);
   - con las plantillas oficiales y la demo completa, en una base desechable: se generan los 24 anexos y una versión nueva inactiva;
   - en la aplicación compilada con el perfil de Garantía de Calidad: «Probar» descarga la prueba, un código inexistente muestra la explicación y «Activar» vuelve a aparecer.
 
