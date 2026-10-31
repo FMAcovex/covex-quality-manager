@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { annexValueRunProperties, applyValueMarks, fillWordCellBalanced, fillWordRowCellsBalanced, markFirstCheckbox, markValue, setWordCellText, setWordCellTextBalanced, setWordSdtCheckbox, setWordVariableCellText } from "@/lib/ooxml/xml";
+import { annexValueRunProperties, applyValueMarks, fillWordCellBalanced, fillWordRowCellsBalanced, markFirstCheckbox, markValue, syncCheckboxControlStates, setWordCellText, setWordCellTextBalanced, setWordSdtCheckbox, setWordVariableCellText } from "@/lib/ooxml/xml";
 import { inconsistentCheckboxControls } from "@/lib/ooxml/annex-verification";
 
 const XML = `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml"><w:body><w:tbl><w:tr><w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:tc><w:p><w:r><w:t>☐</w:t></w:r></w:p></w:tc></w:sdtContent></w:sdt><w:tc><w:p><w:r><w:t>Etiqueta</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>`;
@@ -111,6 +111,25 @@ describe("markFirstCheckbox", () => {
     expect(inconsistentCheckboxControls(two)).toEqual([]);
     expect(markFirstCheckbox(doc('<w:r><w:t>☐ Sí</w:t></w:r>'), 0, 0, 0, true)).toContain("☒ Sí");
     expect(markFirstCheckbox(doc(sdt("Sí")), 0, 0, 0, false)).toBe(doc(sdt("Sí")));
+  });
+});
+
+describe("syncCheckboxControlStates", () => {
+  const control = (checked: boolean, glyph: string, inner = (g: string) => `<w:r><w:t>${g}</w:t></w:r>`) =>
+    `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="${checked ? 1 : 0}"/></w14:checkbox></w:sdtPr><w:sdtContent>${inner(glyph)}</w:sdtContent></w:sdt>`;
+
+  it("alinea el estado de cada control de casilla con el símbolo que enseña, también si envuelve una casilla entera (Anexo III de Reclamaciones)", () => {
+    const wrapped = control(false, "☒", (g) => `<w:tc><w:p><w:r><w:t>${g}</w:t></w:r></w:p></w:tc>`);
+    const xml = `<w:tbl><w:tr>${wrapped}</w:tr></w:tbl>${control(true, "☐")}${control(true, "☒")}`;
+    const synced = syncCheckboxControlStates(xml);
+    expect(inconsistentCheckboxControls(synced)).toEqual([]);
+    expect(synced.match(/w14:val="(\d)"/g)).toEqual(['w14:val="1"', 'w14:val="0"', 'w14:val="1"']);
+    expect(syncCheckboxControlStates(synced)).toBe(synced);
+  });
+
+  it("no toca controles vacíos ni el resto del documento", () => {
+    const empty = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="1"/></w14:checkbox></w:sdtPr><w:sdtContent/></w:sdt><w:p><w:r><w:t>☒ texto</w:t></w:r></w:p>`;
+    expect(syncCheckboxControlStates(empty)).toBe(empty);
   });
 });
 

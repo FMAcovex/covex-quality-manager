@@ -27,7 +27,7 @@ export const releaseNotes: readonly ReleaseNote[] = [
       "El historial de Controles de cambios ya no anota cambios que no se han hecho.",
       "El permiso «Configuración» se puede conceder por módulo; sin él nadie podía activar plantillas de los módulos.",
       "En el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional solo sale con su texto.",
-      "En el Anexo III de Desviaciones, las casillas «Acciones correctivas», «Acciones preventivas» y «Sin acciones inmediatas» quedan marcadas también para Word (antes se veían marcadas, pero Word las trataba como sin marcar al pulsarlas).",
+      "Casillas marcadas también para Word en el Anexo III de Desviaciones (acciones correctivas, preventivas y sin acciones inmediatas) y en la clasificación del Anexo III de Reclamaciones: antes se veían marcadas, pero Word las trataba como sin marcar al pulsarlas.",
     ],
     actions: [
       "Quien administra los roles concede «Configuración» en los módulos cuyas plantillas gestiona Calidad (Configuración → Usuarios); la política queda pendiente de aceptación QA/DT.",

@@ -1529,5 +1529,9 @@ Amplía D-128 a lo que quedaba fuera, a petición del responsable de Calidad.
   - las 66 casillas marcadas son la opción que corresponde a los valores de la demostración;
   - el pie del informe de auditoría externa sustituye el marcador del código, como estaba previsto;
   - el Anexo V de Cambios sustituye las filas de ejemplo de su tabla de tareas.
-- **Fallo encontrado y corregido.** `markFirstCheckbox` cambiaba el símbolo de la casilla sin marcar el control de Word. Afectaba a «Acciones correctivas», «Acciones preventivas» y «Sin acciones inmediatas» del Anexo III de Desviaciones.
+- **Fallos encontrados y corregidos:** casillas que se veían marcadas, pero cuyo control de Word seguía sin marcar.
+  - En el Anexo III de Desviaciones, `markFirstCheckbox` cambiaba el símbolo sin el estado. Afectaba a «Acciones correctivas», «Acciones preventivas» y «Sin acciones inmediatas».
+  - En el Anexo III de Reclamaciones, la clasificación se escribe como texto dentro de un control que envuelve la casilla entera.
+  - Los generadores que escriben las casillas como texto (Reclamaciones, Devoluciones y Controles de cambios) alinean ahora el estado de cada control con su símbolo antes de guardar (`syncCheckboxControlStates`).
+- **Opciones dudosas.** Si el estilo de la plantilla no deja claro si la opción va delante o detrás de la casilla, el informe enseña las dos. Las claves de lo previsto usan la fila y la opción de la plantilla, no los datos del anexo.
 - Sin cambios en los datos, los permisos ni la interfaz. La verificación no sustituye a la validación GMP.

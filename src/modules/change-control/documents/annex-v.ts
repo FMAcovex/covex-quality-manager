@@ -2,8 +2,7 @@ import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/
 import {
   fillWordRowBalanced,
   replaceWordRowsRangeBalanced,
-  setWordCellTextBalanced,
-} from "@/lib/ooxml/xml";
+  setWordCellTextBalanced, syncCheckboxControlStates } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadChangeAnnexVTemplate } from "@/modules/change-control/documents/templates";
 import type {
@@ -180,6 +179,7 @@ export async function generateChangeAnnexV(
     ].join("\n"),
   );
 
+  xml = syncCheckboxControlStates(xml);
   updateZipEntry(entries, "word/document.xml", xml);
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);

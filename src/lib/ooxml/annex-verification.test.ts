@@ -177,10 +177,10 @@ describe("casillas de verificación (☐/☒)", () => {
 
   it("detecta un control de Word cuyo símbolo no coincide con su estado", () => {
     const shownChecked = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>☒</w:t></w:r></w:sdtContent></w:sdt>`;
-    expect(inconsistentCheckboxControls(shownChecked)).toEqual([{ shows: true, state: false }]);
+    expect(inconsistentCheckboxControls(shownChecked)).toEqual([{ shows: true, state: false, context: "" }]);
     expect(inconsistentCheckboxControls(box(true) + box(false))).toEqual([]);
     const result = compareWordAnnex(doc(`<w:tbl><w:tr>${boxCell(box(false), run(" Sí"))}</w:tr></w:tbl>`), doc(`<w:tbl><w:tr>${boxCell(shownChecked, run(" Sí"))}</w:tr></w:tbl>`), decode);
-    expect(result.checkboxProblems).toEqual(["Tabla 1, fila 1, casilla 1: la casilla se ve marcada (☒), pero su control de Word está sin marcar."]);
+    expect(result.checkboxProblems).toEqual(["Documento, control de casilla 1 (antes de «Sí»): se ve marcado (☒), pero su control de Word está sin marcar."]);
   });
 });
 
@@ -202,6 +202,56 @@ describe("cabeceras y pies de Word", () => {
     ]);
     expect([...result.printed]).toEqual(["Audit.businessCode"]);
     expect(result.filled.map((item) => item.where)).toEqual(["Pie (footer1.xml)"]);
+  });
+});
+
+describe("casillas: etiquetas dudosas y controles (revisión independiente de D-132)", () => {
+  const box = (checked: boolean) => `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="${checked ? 1 : 0}"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>${checked ? "☒" : "☐"}</w:t></w:r></w:sdtContent></w:sdt>`;
+  const boxCell = (...items: string[]) => `<w:tc><w:p>${items.join("")}</w:p></w:tc>`;
+
+  it("con texto tras la última casilla y sin pregunta delante, el estilo es dudoso y se enseñan las dos opciones", () => {
+    expect(checkboxOptions("SI ☐ NO ☒ NA ☐ (detallar)")[1]).toEqual({ checked: true, label: "NO ↔ NA" });
+    // Pregunta o etiqueta con «:» o «?» delante: la opción sigue a la casilla.
+    expect(checkboxOptions("Estado: ☐ Abierta ☒ Cerrada (fecha)")[1].label).toBe("Cerrada (fecha)");
+    // Los datos del anexo (marcadores) no cuentan para decidir el estilo (filas añadidas, sin plantilla).
+    expect(checkboxOptions("SI ☐ NO ☒ NA ☐ ⟦X.y⟧")[1].label).toBe("NO");
+  });
+
+  it("una casilla sola entre dos etiquetas enseña las dos; con una sola, esa", () => {
+    const row = (checked: boolean) => doc(`<w:tbl><w:tr>${cell("Sí")}${boxCell(box(checked))}${cell("No")}${boxCell(box(false))}</w:tr></w:tbl>`);
+    expect(compareWordAnnex(row(false), row(true), decode).checked[0].label).toBe("Sí ↔ No");
+  });
+
+  it("la clave de una casilla usa la fila de la plantilla: una fila añadida encima no cambia las de debajo", () => {
+    const table = (extra: number) => doc(`<w:tbl>${row("Acción")}${Array.from({ length: extra }, (_, i) => row(`⟦A${i}⟧`)).join("")}<w:tr>${boxCell(box(true), "<w:r><w:t> Cerrada</w:t></w:r>")}</w:tr></w:tbl>`);
+    const template = doc(`<w:tbl>${row("Acción")}${row("")}<w:tr>${boxCell(box(false), "<w:r><w:t> Cerrada</w:t></w:r>")}</w:tr></w:tbl>`);
+    const one = compareWordAnnex(template, table(1), decode).checked, three = compareWordAnnex(template, table(3), decode).checked;
+    expect(one.map((item) => item.key)).toEqual(three.map((item) => item.key));
+  });
+
+  it("la clave usa la opción de la plantilla, no los datos que el anexo escribe en la casilla", () => {
+    const template = doc(`<w:tbl><w:tr>${boxCell(box(false), "<w:r><w:t> Sí </w:t></w:r>", box(false), "<w:r><w:t> No Fecha:</w:t></w:r>")}</w:tr></w:tbl>`);
+    const withDate = (date: string) => doc(`<w:tbl><w:tr>${boxCell(box(false), "<w:r><w:t> Sí </w:t></w:r>", box(true), `<w:r><w:t> No Fecha: ${date}</w:t></w:r>`)}</w:tr></w:tbl>`);
+    expect(compareWordAnnex(template, withDate("01/02/2026"), decode).checked[0].key).toBe(compareWordAnnex(template, withDate("03/04/2027"), decode).checked[0].key);
+  });
+
+  it("revisa los controles de todo el documento, también el que envuelve una casilla entera, sin confundir controles vacíos", () => {
+    const wrapped = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:tc><w:p><w:r><w:t>☒</w:t></w:r></w:p></w:tc></w:sdtContent></w:sdt>`;
+    const result = compareWordAnnex(doc(`<w:tbl><w:tr>${cell("☐")}</w:tr></w:tbl>`), doc(`<w:tbl><w:tr>${wrapped}</w:tr></w:tbl>`), decode);
+    expect(result.checkboxProblems).toHaveLength(1);
+    const emptyThenGood = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="1"/></w14:checkbox></w:sdtPr><w:sdtContent/></w:sdt>${box(false)}`;
+    expect(inconsistentCheckboxControls(emptyThenGood)).toEqual([]);
+  });
+});
+
+describe("cabeceras y pies: controles de casilla", () => {
+  it("un control incoherente en un pie también es un problema", () => {
+    const control = `<w:sdt><w:sdtPr><w14:checkbox><w14:checked w14:val="0"/></w14:checkbox></w:sdtPr><w:sdtContent><w:r><w:t>☒</w:t></w:r></w:sdtContent></w:sdt><w:r><w:t> Copia controlada</w:t></w:r>`;
+    const footer = (inner: string) => ({ name: "word/footer1.xml", data: Buffer.from(`<w:ftr><w:p>${inner}</w:p></w:ftr>`) });
+    const result = compareWordAnnex(doc(""), doc(""), decode);
+    compareWordHeadersFooters([footer(control.replace("☒", "☐"))], [footer(control)], decode, result);
+    expect(result.checkboxProblems).toEqual(["Pie (footer1.xml), control de casilla 1 (antes de «Copia controlada»): se ve marcado (☒), pero su control de Word está sin marcar."]);
+    expect(result.checked.map((item) => item.where)).toEqual(["Pie (footer1.xml), opción 1"]);
   });
 });
 

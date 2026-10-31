@@ -197,7 +197,10 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Qué cambia:**
   - `pnpm annexes:verify` comprueba también qué casillas ☒ se marcan, que cada control de casilla de Word muestra su estado y el texto de las cabeceras y los pies.
   - El informe lista cada casilla marcada con su opción, junto a los valores de las opciones del expediente de demostración.
-- **Corregido:** en el Anexo III de Desviaciones, las casillas «Acciones correctivas», «Acciones preventivas» y «Sin acciones inmediatas» se veían marcadas, pero su control de Word seguía sin marcar (`markFirstCheckbox`).
+- **Corregido:** casillas que se veían marcadas, pero cuyo control de Word seguía sin marcar.
+  - Anexo III de Desviaciones: acciones correctivas, preventivas y sin acciones inmediatas (`markFirstCheckbox`).
+  - Anexo III de Reclamaciones: clasificación.
+  - Reclamaciones, Devoluciones y Controles de cambios alinean ahora los controles antes de guardar (`syncCheckboxControlStates`).
 - **Comprobado:**
   - con las plantillas oficiales, los 24 anexos son correctos y las 66 casillas marcadas se revisaron a mano;
   - cambiando a propósito el generador para marcar la opción equivocada, la verificación lo detecta;
