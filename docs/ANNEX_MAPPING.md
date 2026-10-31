@@ -55,6 +55,10 @@ La respuesta formal al cliente no se genera desde la aplicación para v03.
 - Una versión ya instalada no se sustituye por otro archivo. Solo se completa una versión registrada sin archivo o se sustituye una derivación anterior documentada del mismo PNT (OOS). Una revisión nueva se registra como versión nueva en Configuración → Versiones.
 - Las plantillas se guardan en la base de datos; los generadores ya no buscan copias en la carpeta `templates/`.
 
+## Verificación con las plantillas reales (D-128)
+
+`pnpm annexes:verify` comprueba casilla a casilla los 24 anexos con las plantillas oficiales, sin versionarlas. El procedimiento está en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
+
 ## Principios de control
 
 - La plantilla asociada a un expediente se conserva por versión; cambiar la plantilla activa no altera documentos históricos.

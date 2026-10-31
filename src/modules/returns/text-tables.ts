@@ -41,7 +41,13 @@ const ANNEX_CELLS: Record<"III" | "V", Partial<Record<Field, AnnexCell>>> = {
   V: { customerDeclarationObservations: { table: 3, row: 0, cell: 0 } },
 };
 
-/** Dónde va cada tabla en el anexo indicado; el Anexo III copia la fila de productos (tabla 3, fila 1). */
-export function returnAnnexTablePlacements(tables: TextTables, annex: "III" | "V", products = 0) {
-  return annexTablePlacements(tables, RETURN_TABLE_FIELDS, ANNEX_CELLS[annex], annex === "III" ? [{ table: 3, row: 1, count: products }] : []);
+/**
+ * Dónde va cada tabla en el anexo indicado; el Anexo III copia la fila de productos (tabla 3, fila 1). La
+ * justificación del plazo excepcional solo se imprime si existe: sus tablas siguen a su texto
+ * (`ambientJustification`). La numeración sigue siendo la de todo el expediente.
+ */
+export function returnAnnexTablePlacements(tables: TextTables, annex: "III" | "V", products = 0, printed: { ambientJustification?: boolean } = {}) {
+  const cells = { ...ANNEX_CELLS[annex] };
+  if (!printed.ambientJustification) delete cells.ambientPeriodRiskJustification;
+  return annexTablePlacements(tables, RETURN_TABLE_FIELDS, cells, annex === "III" ? [{ table: 3, row: 1, count: products }] : []);
 }

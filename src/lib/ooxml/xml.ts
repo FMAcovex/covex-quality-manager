@@ -383,6 +383,17 @@ function setDirectCell(rowXml: string, cellIndex: number, text: string, color?: 
     rowXml.slice(cell.end);
 }
 
+/**
+ * Tablas de primer nivel de un documento (las que no están dentro de otra tabla), con el XML de cada casilla
+ * directa de cada fila. Una tabla insertada en una casilla queda dentro del XML de esa casilla.
+ */
+export function wordTableGrid(documentXml: string): string[][][] {
+  const tables = balancedBlocks(documentXml, "w:tbl");
+  return tables
+    .filter((table) => !tables.some((outer) => outer !== table && table.start > outer.start && table.end < outer.end))
+    .map((table) => directTableRows(table.xml).map((row) => directRowCells(row.xml).map((cell) => cell.xml)));
+}
+
 export function transformWordTableBalanced(
   documentXml: string,
   tableIndex: number,

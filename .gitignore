@@ -59,3 +59,6 @@ release-manifest.json
 # Plantillas oficiales (demo, Codespaces o instalación al arrancar, D-107): nunca se versionan.
 plantillas/*
 !plantillas/README.md
+
+# Salida de la verificación de anexos (D-128): contiene las plantillas oficiales y los anexos generados.
+informe-anexos/
