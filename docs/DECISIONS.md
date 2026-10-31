@@ -1515,3 +1515,23 @@ Decisión del responsable de Calidad: saber qué versión está instalada, qué 
   - el entorno de preproducción, que prepara IT;
   - el control de cambios de sistemas informatizados que defina QA;
   - la validación GMP.
+
+## D-132 — La verificación de los anexos comprueba las casillas marcadas y las cabeceras y pies (2026-10-31)
+
+Amplía D-128 a lo que quedaba fuera, a petición del responsable de Calidad.
+
+- **Casillas ☒.** El informe lista cada casilla marcada con su opción y, al lado, los valores de las opciones del expediente de demostración, para revisarlas a mano.
+  - La lista de lo previsto guarda qué casillas se marcan como posición + huella de la opción, sin texto de las plantillas. Una casilla que se marca sin estar prevista, o que deja de marcarse, es un fallo.
+  - También lo es un número distinto de casillas de verificación que la plantilla en la misma casilla de la tabla, salvo que esté previsto.
+- **Controles de casilla de Word incoherentes.** Que el símbolo ☒/☐ no coincida con su estado `w14:checked` es un fallo que no se puede dar por bueno.
+- **Cabeceras y pies de Word**, comparados parte a parte con el criterio del cuerpo; sus datos cuentan como impresos.
+- **Primera revisión, con las plantillas oficiales:**
+  - las 66 casillas marcadas son la opción que corresponde a los valores de la demostración;
+  - el pie del informe de auditoría externa sustituye el marcador del código, como estaba previsto;
+  - el Anexo V de Cambios sustituye las filas de ejemplo de su tabla de tareas.
+- **Fallos encontrados y corregidos:** casillas que se veían marcadas, pero cuyo control de Word seguía sin marcar.
+  - En el Anexo III de Desviaciones, `markFirstCheckbox` cambiaba el símbolo sin el estado. Afectaba a «Acciones correctivas», «Acciones preventivas» y «Sin acciones inmediatas».
+  - En el Anexo III de Reclamaciones, la clasificación se escribe como texto dentro de un control que envuelve la casilla entera.
+  - Los generadores que escriben las casillas como texto (Reclamaciones, Devoluciones y Controles de cambios) alinean ahora el estado de cada control con su símbolo antes de guardar (`syncCheckboxControlStates`).
+- **Opciones dudosas.** Si el estilo de la plantilla no deja claro si la opción va delante o detrás de la casilla, el informe enseña las dos. Las claves de lo previsto usan la fila y la opción de la plantilla, no los datos del anexo.
+- Sin cambios en los datos, los permisos ni la interfaz. La verificación no sustituye a la validación GMP.

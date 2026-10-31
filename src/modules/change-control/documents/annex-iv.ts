@@ -3,8 +3,7 @@ import {
   insertWordCellTables,
   fillWordRowBalanced,
   replaceWordRowsRangeBalanced,
-  setWordCellTextBalanced,
-} from "@/lib/ooxml/xml";
+  setWordCellTextBalanced, syncCheckboxControlStates } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { storedTextTables } from "@/lib/forms/text-tables";
 import { changeControlAnnexTablePlacements } from "@/modules/change-control/text-tables";
@@ -158,6 +157,7 @@ export async function generateChangeAnnexIV(record: ChangeDocumentRecord) {
 
   // D-127: tablas del dictamen, al final de su casilla (después de rellenar el resto).
   xml = insertWordCellTables(xml, changeControlAnnexTablePlacements(storedTextTables(record.textTables), "IV"));
+  xml = syncCheckboxControlStates(xml);
   updateZipEntry(entries, "word/document.xml", xml);
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);

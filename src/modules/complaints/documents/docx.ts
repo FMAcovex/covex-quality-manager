@@ -1,7 +1,7 @@
 import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { insertWordCellTables,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { insertWordCellTables,replaceWordRowWithCopies,setWordCellTextBalanced, syncCheckboxControlStates } from "@/lib/ooxml/xml";
 import { storedTextTables } from "@/lib/forms/text-tables";
 import { complaintAnnexTablePlacements } from "@/modules/complaints/text-tables";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
@@ -110,7 +110,7 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
   xml=setWordCellTextBalanced(xml,3,1,0,text(r.conclusion));xml=setWordCellTextBalanced(xml,5,2,0,text(r.responseSummary));xml=setWordCellTextBalanced(xml,5,7,0,text(r.closeConclusion));
   // D-127: tablas de los textos, al final de su casilla (después de rellenar y copiar filas).
   xml=insertWordCellTables(xml,complaintAnnexTablePlacements(storedTextTables(r.textTables),"legacy",Math.max(1,r.capaPlans.length),r.resolutionActions));
-  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
+  xml=syncCheckboxControlStates(xml);updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
  }
 
  let xml=getZipEntryText(entries,"word/document.xml");
@@ -182,7 +182,7 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
   xml=insertWordCellTables(xml,complaintAnnexTablePlacements(storedTextTables(r.textTables),"v03",Math.max(1,linkedActionRows.length),r.resolutionActions));
  }
 
- updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
+ xml=syncCheckboxControlStates(xml);updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 
 export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
@@ -200,7 +200,7 @@ export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
   xml=setWordCellTextBalanced(xml,2,5,0,[resolutionText(r),text(r.communicationSummary),text(r.responseSummary)].filter(Boolean).join("\n\n"));
   xml=setWordCellTextBalanced(xml,2,7,0,text(r.closeConclusion||r.conclusion));
   xml=setWordCellTextBalanced(xml,3,2,0,text(r.emittedBy));xml=setWordCellTextBalanced(xml,3,4,0,text(r.approvalNames));
-  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
+  xml=syncCheckboxControlStates(xml);updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
  }
 
  const entries=readZip(await loadComplaintPntTemplate(version,DocumentType.COMPLAINT_ANNEX_IV));
@@ -209,5 +209,5 @@ export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
  xml=setWordCellTextBalanced(xml,0,4,1,text(r.reference));xml=setWordCellTextBalanced(xml,0,4,3,text(r.lotReference));xml=setWordCellTextBalanced(xml,0,5,3,text(r.quantity));xml=setWordCellTextBalanced(xml,0,6,3,text(r.expiryReanalysis));
  xml=setWordCellTextBalanced(xml,0,8,0,text(r.description));xml=setWordCellTextBalanced(xml,0,10,0,resolutionText(r));{const [left,right]=complaintResolutionCells(r);xml=setWordCellTextBalanced(xml,0,12,0,left);xml=setWordCellTextBalanced(xml,0,12,1,right);}
  xml=setWordCellTextBalanced(xml,0,14,0,text(r.closeConclusion||r.conclusion));
- updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
+ xml=syncCheckboxControlStates(xml);updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }

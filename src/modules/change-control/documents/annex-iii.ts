@@ -1,5 +1,5 @@
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
-import { insertWordCellTables, setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { insertWordCellTables, setWordCellTextBalanced, syncCheckboxControlStates } from "@/lib/ooxml/xml";
 import { storedTextTables } from "@/lib/forms/text-tables";
 import { changeControlAnnexTablePlacements } from "@/modules/change-control/text-tables";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
@@ -88,6 +88,7 @@ export async function generateChangeAnnexIII(record: ChangeDocumentRecord) {
 
   // D-127: tablas de la solicitud, al final de su casilla (después de rellenar el resto).
   xml = insertWordCellTables(xml, changeControlAnnexTablePlacements(storedTextTables(record.textTables), "III"));
+  xml = syncCheckboxControlStates(xml);
   updateZipEntry(entries, "word/document.xml", xml);
   sanitizeOfficeMetadata(entries);
   return writeZip(entries);

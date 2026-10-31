@@ -229,7 +229,16 @@ export function setWordSdtCheckbox(
 export function markFirstCheckbox(documentXml: string, table: number, row: number, cell: number, checked: boolean) {
   return transformWordCell(documentXml, table, row, cell, (xml) => {
     if (!checked) return xml;
-    return xml.replace("☐", "☒");
+    const glyph = xml.indexOf("☐");
+    if (glyph < 0) return xml;
+    const marked = xml.slice(0, glyph) + "☒" + xml.slice(glyph + 1);
+    // Si la casilla es un control de Word, también su estado: si no, se ve marcada y Word la trata como sin
+    // marcar al pulsarla. El control que la contiene es el último abierto antes del símbolo y sin cerrar.
+    const start = Math.max(marked.lastIndexOf("<w:sdt>", glyph), marked.lastIndexOf("<w:sdt ", glyph));
+    if (start < 0 || marked.slice(start, glyph).includes("</w:sdt>")) return marked;
+    const head = marked.slice(start, glyph);
+    if (!head.includes("<w14:checkbox")) return marked;
+    return marked.slice(0, start) + head.replace(/(<w14:checked\b[^>]*w14:val=")[^"]*(")/, (_, before: string, after: string) => `${before}1${after}`) + marked.slice(glyph);
   });
 }
 
@@ -735,4 +744,25 @@ export function insertWordCellTables(
     });
   }
   return xml;
+}
+
+/**
+ * Alinea el estado de cada control de casilla de Word (`w14:checked`) con el símbolo que enseña (☒/☐). Los
+ * generadores que escriben las casillas como texto (por ejemplo, reescribiendo la casilla de la tabla que el control
+ * envuelve) dejaban el estado anterior: Word la enseñaba marcada y la trataba como sin marcar al pulsarla (D-132).
+ */
+export function syncCheckboxControlStates(xml: string) {
+  return xml.replace(/<w14:checkbox>([\s\S]*?)<\/w14:checkbox>/g, (control, inner: string, offset: number) => {
+    const rest = xml.slice(offset + control.length);
+    // El contenido del propio control: antes del siguiente control de casilla; uno vacío no tiene símbolo.
+    const next = rest.indexOf("<w14:checkbox>");
+    const scope = next < 0 ? rest : rest.slice(0, next);
+    const open = scope.search(/<w:sdtContent(?:\s[^>]*)?>/);
+    if (open < 0) return control;
+    const close = scope.indexOf("</w:sdtContent>", open);
+    const glyph = scope.slice(open, close < 0 ? undefined : close).match(/[☐☒]/)?.[0];
+    if (!glyph) return control;
+    const value = glyph === "☒" ? "1" : "0";
+    return control.replace(/(<w14:checked\b[^>]*w14:val=")[^"]*(")/, (_, before: string, after: string) => `${before}${value}${after}`);
+  });
 }

@@ -185,7 +185,27 @@
       "tabla.Deviation.whoInvolved": [
         "Tabla 2, fila 5, casilla 1"
       ]
-    }
+    },
+    "checked": [
+      "Tabla 1, fila 8, casilla 1, opción 1#855280ef0cbffbb5",
+      "Tabla 1, fila 11, casilla 1, opción 1#36397a7a8494a00b",
+      "Tabla 1, fila 12, casilla 1, opción 1#47451b0945239b54",
+      "Tabla 1, fila 15, casilla 1, opción 1#5257d0a964fdc5c9",
+      "Tabla 1, fila 16, casilla 1, opción 1#ea3d9840a890e916",
+      "Tabla 1, fila 17, casilla 1, opción 1#a67b023dc4bf25e0",
+      "Tabla 3, fila 8, casilla 2, opción 1#2d7987f14bcde290",
+      "Tabla 3, fila 11, casilla 1, opción 1#c1c716bc0efe4d34",
+      "Tabla 3, fila 16, casilla 2, opción 2#876d27e6c2208129",
+      "Tabla 4, fila 4, casilla 1, opción 1#35dbb736bd23b938",
+      "Tabla 4, fila 6, casilla 1, opción 2#af57cba0ab4e6421",
+      "Tabla 4, fila 6, casilla 2, opción 2#37b2393d52989935",
+      "Tabla 4, fila 7, casilla 1, opción 3#b29098da4f624a22",
+      "Tabla 4, fila 7, casilla 2, opción 2#1e9d23d8fa09d5fc",
+      "Tabla 4, fila 8, casilla 2, opción 1#92da9a9d203ccfcc",
+      "Tabla 4, fila 11, casilla 1, opción 1#6277a4062e225d12",
+      "Tabla 5, fila 4, casilla 1, opción 5#a53ccda9d4def184",
+      "Tabla 5, fila 5, casilla 2, opción 2#0c40d437c60109e6"
+    ]
   },
   "DV_V": {
     "notPrinted": [
@@ -253,7 +273,8 @@
       "DeviationCapaPlan[1].businessCapaCode": [
         "TABLA OFICIAL!E6"
       ]
-    }
+    },
+    "checked": []
   },
   "CA_III": {
     "notPrinted": [
@@ -346,7 +367,13 @@
       "tabla.Capa.rootCause": [
         "Tabla 1, fila 15, casilla 1"
       ]
-    }
+    },
+    "checked": [
+      "Tabla 1, fila 2, casilla 1, opción 1#c440b9120011ffcf",
+      "Tabla 1, fila 9, casilla 2, opción 1#8b2920ed6d9ff699",
+      "Tabla 2, fila 7, casilla 1, opción 1#49fd3e040eb608d5",
+      "Tabla 2, fila 10, casilla 4, opción 1#b42275274d0b206e"
+    ]
   },
   "CA_IV": {
     "notPrinted": [
@@ -398,7 +425,8 @@
       "CapaPlannedAction[1].description": [
         "ANEXO 2026 IMPRIMIR!C5"
       ]
-    }
+    },
+    "checked": []
   },
   "CC_III": {
     "notPrinted": [
@@ -484,7 +512,12 @@
       "tabla.ChangeControl.providedDocuments": [
         "Tabla 1, fila 12, casilla 1"
       ]
-    }
+    },
+    "checked": [
+      "Tabla 1, fila 3, casilla 2, opción 3#c05c225757a2953a",
+      "Tabla 1, fila 3, casilla 2, opción 6#5b8d7bdf82ab2a1a",
+      "Tabla 1, fila 14, casilla 2, opción 1#fc49abca1b0bc8d0"
+    ]
   },
   "CC_IV": {
     "notPrinted": [
@@ -585,7 +618,21 @@
       "tabla.ChangeControl.evaluation": [
         "Tabla 1, fila 6, casilla 1"
       ]
-    }
+    },
+    "checked": [
+      "Tabla 1, fila 3, casilla 2, opción 3#c05c225757a2953a",
+      "Tabla 1, fila 3, casilla 2, opción 6#5b8d7bdf82ab2a1a",
+      "Tabla 1, fila 7, casilla 2, opción 2#1fb18663796eec99",
+      "Tabla 2, fila 2, casilla 1, opción 2#5c424519901363f8",
+      "Tabla 2, fila 2, casilla 1, opción 4#0e67b5a5c968d6d1",
+      "Tabla 2, fila 2, casilla 1, opción 6#e47198a9cb00734a",
+      "Tabla 2, fila 2, casilla 1, opción 8#820f992c50d14da8",
+      "Tabla 2, fila 2, casilla 1, opción 12#360382e5028ddb3f",
+      "Tabla 2, fila 2, casilla 1, opción 16#fedf4360ee8e9c9b",
+      "Tabla 2, fila 2, casilla 1, opción 18#8ad5fbc6c05e3a83",
+      "Tabla 2, fila 2, casilla 1, opción 21#7cff5d1bf29322b4",
+      "Tabla 2, fila 4, casilla 2, opción 1#d10c497c94c9a7f2"
+    ]
   },
   "CC_V": {
     "notPrinted": [
@@ -627,7 +674,8 @@
     "replacedTemplateText": [
       "Tabla 1, fila 2, casilla 2#91c6206754045e95",
       "Tabla 1, fila 3, casilla 4#871d1bc1fb5e3695",
-      "Tabla 1, fila 6, casilla 1#b7683c919b83f559"
+      "Tabla 1, fila 6, casilla 1#b7683c919b83f559",
+      "Tabla 1, fila 6, casilla 1#00f13286439ad3b6"
     ],
     "positions": {
       "ChangeControlFollowup[1].approvalByText": [
@@ -671,7 +719,12 @@
       "ChangeControlTaskState[1].evidenceComment": [
         "Tabla 1, fila 6, casilla 1"
       ]
-    }
+    },
+    "checked": [
+      "Tabla 2, fila 2, casilla 2, opción 1#8db4496522f80fd2",
+      "Tabla 2, fila 5, casilla 3, opción 1#1a5c4aadf4b294d5",
+      "Tabla 2, fila 8, casilla 3, opción 1#b2497f7b810ca7f6"
+    ]
   },
   "CC_VII": {
     "notPrinted": [
@@ -740,7 +793,8 @@
       "ChangeControlTask[1].plannedDate": [
         "ANEXO VII 2026 IMPRIMIR!G5"
       ]
-    }
+    },
+    "checked": []
   },
   "RC_III": {
     "notPrinted": [
@@ -946,7 +1000,33 @@
       "tabla.Complaint.rootCause": [
         "Tabla 2, fila 36, casilla 1"
       ]
-    }
+    },
+    "checked": [
+      "Tabla 2, fila 3, casilla 3, opción 1#0586c077d9c0ed34",
+      "Tabla 2, fila 4, casilla 2, opción 1#d778640ea6ba8569",
+      "Tabla 2, fila 7, casilla 2, opción 1#55dface794da6054",
+      "Tabla 2, fila 8, casilla 2, opción 1#7bae2bf0800f387a",
+      "Tabla 2, fila 13, casilla 1, opción 3#9b6363e7dab3162d",
+      "Tabla 2, fila 15, casilla 2, opción 2#b06cd47197ac7441",
+      "Tabla 2, fila 21, casilla 2, opción 2#b40cd6d7691c3807",
+      "Tabla 2, fila 22, casilla 2, opción 2#dae5a6c39760afa1",
+      "Tabla 2, fila 23, casilla 2, opción 2#4a121ec5fb9c86d1",
+      "Tabla 2, fila 24, casilla 2, opción 2#2b5671308fbf4e64",
+      "Tabla 2, fila 25, casilla 2, opción 2#f94bccb8f26ff1e2",
+      "Tabla 2, fila 27, casilla 1, opción 1#37ea98423426e976",
+      "Tabla 2, fila 33, casilla 2, opción 1#74b5ff876619cd95",
+      "Tabla 2, fila 41, casilla 1, opción 1#5afb7da1e5c395ad",
+      "Tabla 2, fila 44, casilla 2, opción 2#5a4489ca23267ab4",
+      "Tabla 2, fila 45, casilla 2, opción 2#e9862679d16976e5",
+      "Tabla 2, fila 46, casilla 2, opción 2#5bf402b8dddc60a3",
+      "Tabla 2, fila 47, casilla 2, opción 1#7a18cca2c8b911ec",
+      "Tabla 2, fila 53, casilla 1, opción 1#762237b7e1dbe4ff",
+      "Tabla 2, fila 62, casilla 1, opción 1#0160147e3d009a0c",
+      "Tabla 4, fila 6, casilla 2, opción 1#71ab247f1425ea6b",
+      "Tabla 4, fila 8, casilla 4, opción 1#8ecf48fa9cc96081",
+      "Tabla 4, fila 11, casilla 1, opción 2#a3078ad7673621f4",
+      "Tabla 4, fila 14, casilla 2, opción 1#58b68a88b36a34d3"
+    ]
   },
   "RC_IV": {
     "notPrinted": [
@@ -1049,7 +1129,8 @@
       "Complaint.responseSummary": [
         "Tabla 3, fila 6, casilla 1"
       ]
-    }
+    },
+    "checked": []
   },
   "RC_V": {
     "notPrinted": [
@@ -1136,7 +1217,8 @@
       "ComplaintFollowup[1].comment": [
         "AÑO!K5"
       ]
-    }
+    },
+    "checked": []
   },
   "DE_III": {
     "notPrinted": [
@@ -1250,7 +1332,11 @@
       "tabla.ReturnRecord.reasonObservations": [
         "Tabla 5, fila 1, casilla 1"
       ]
-    }
+    },
+    "checked": [
+      "Tabla 2, fila 2, casilla 4, opción 2#a7ea90189ba97f9e",
+      "Tabla 8, fila 1, casilla 1, opción 1#8d1b003207607d41"
+    ]
   },
   "DE_IV": {
     "notPrinted": [
@@ -1329,7 +1415,8 @@
       "ReturnRecord.receivedAt": [
         "Tabla 1, fila 2, casilla 1"
       ]
-    }
+    },
+    "checked": []
   },
   "DE_V": {
     "notPrinted": [
@@ -1407,7 +1494,8 @@
       "tabla.ReturnRecord.customerDeclarationObservations": [
         "Tabla 4, fila 1, casilla 1"
       ]
-    }
+    },
+    "checked": []
   },
   "DE_VI": {
     "notPrinted": [
@@ -1491,7 +1579,8 @@
       "ReturnRecord.relatedDocument": [
         "\"AÑO\"!C5"
       ]
-    }
+    },
+    "checked": []
   },
   "OO_III": {
     "notPrinted": [
@@ -1655,7 +1744,8 @@
       "tabla.OosRecord.phaseIInvestigation": [
         "Tabla 3, fila 3, casilla 1"
       ]
-    }
+    },
+    "checked": []
   },
   "OO_IV": {
     "notPrinted": [
@@ -1759,7 +1849,8 @@
       "tabla.OosRecord.phaseIIRetesting": [
         "Tabla 1, fila 6, casilla 1"
       ]
-    }
+    },
+    "checked": []
   },
   "OO_VI": {
     "notPrinted": [
@@ -1830,7 +1921,8 @@
       "OosRecord.materialName": [
         "Tabla 1, fila 5, casilla 3"
       ]
-    }
+    },
+    "checked": []
   },
   "AU_INT": {
     "notPrinted": [
@@ -1954,7 +2046,8 @@
       "AuditParticipant[3].position": [
         "Tabla 2, fila 7, casilla 2"
       ]
-    }
+    },
+    "checked": []
   },
   "AU_EXT": {
     "notPrinted": [
@@ -2008,7 +2101,9 @@
       "QmsRecord.annulledReason"
     ],
     "replacedTemplateText": [
-      "Texto fuera de tablas#675cc4f14ac86d15"
+      "Texto fuera de tablas#675cc4f14ac86d15",
+      "Pie (footer1.xml)#f197f102c6a6b504",
+      "Pie (footer2.xml)#94eb15b9ed8c735d"
     ],
     "positions": {
       "Audit.auditedContact": [
@@ -2086,7 +2181,8 @@
       "AuditParticipant[3].position": [
         "Tabla 2, fila 10, casilla 2"
       ]
-    }
+    },
+    "checked": []
   },
   "AU_CAPA": {
     "notPrinted": [
@@ -2260,7 +2356,8 @@
       "AuditFindingAction[1].verificationComment": [
         "CAPA Unificado!K11"
       ]
-    }
+    },
+    "checked": []
   },
   "AU_PLAN": {
     "notPrinted": [
@@ -2351,7 +2448,8 @@
       "Audit.programme": [
         "Tabla 1, fila 2, casilla 2"
       ]
-    }
+    },
+    "checked": []
   },
   "AU_PMAI": {
     "notPrinted": [
@@ -2425,7 +2523,8 @@
       "prog2.target": [
         "Tabla 1, fila 3, casilla 2"
       ]
-    }
+    },
+    "checked": []
   },
   "AU_PMAE": {
     "notPrinted": [
@@ -2507,6 +2606,7 @@
       "prog2.target": [
         "Tabla 2, fila 5, casilla 1"
       ]
-    }
+    },
+    "checked": []
   }
 }

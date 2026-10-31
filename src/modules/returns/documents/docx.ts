@@ -1,6 +1,6 @@
 import { DocumentType } from "@prisma/client";
 import { getZipEntryText,readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { applyValueMarks,escapeXml,insertWordCellTables,markValue,replaceWordRowWithCopies,setWordCellTextBalanced } from "@/lib/ooxml/xml";
+import { applyValueMarks,escapeXml,insertWordCellTables,markValue,replaceWordRowWithCopies,setWordCellTextBalanced, syncCheckboxControlStates } from "@/lib/ooxml/xml";
 import { storedTextTables } from "@/lib/forms/text-tables";
 import { returnAnnexTablePlacements } from "@/modules/returns/text-tables";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
@@ -64,7 +64,7 @@ export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
  xml=setWordCellTextBalanced(xml,8,1,0,`Nombre, fecha y firma:\n${text(r.qaApprovalName)}`);xml=setWordCellTextBalanced(xml,8,1,1,`Nombre, fecha y firma:\n${text(r.technicalApprovalName)}`);
  // D-127: tablas de los textos, al final de su casilla (después de rellenar y copiar la fila de productos).
  xml=insertWordCellTables(xml,returnAnnexTablePlacements(storedTextTables(r.textTables),"III",r.products.length,{ambientJustification:Boolean(contextFromExtraData(r.extraData).ambientPeriodRiskJustification)}));
- updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
+ xml=syncCheckboxControlStates(xml);updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 
 export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Product){
@@ -79,7 +79,7 @@ export async function generateReturnAnnexIV(r:ReturnDocumentRecord,product:Produ
  xml=setWordCellTextBalanced(xml,0,5,0,`OBSERVACIONES: ${text(product.receptionObservations)}`);
  xml=setWordCellTextBalanced(xml,0,6,0,`RECIBIDO POR: ${text(product.receivedBy)}\nFECHA: ${date(product.receivedByDate||r.receivedAt)}`);xml=setWordCellTextBalanced(xml,0,6,1,`VERIFICADO POR: ${text(product.verifiedBy)}\nFECHA: ${date(product.verifiedByDate||r.receivedAt)}`);
  if(version!=="03")xml=forcePortraitSections(xml);
- updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
+ xml=syncCheckboxControlStates(xml);updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 
 export async function generateReturnAnnexV(r:ReturnDocumentRecord){
@@ -98,5 +98,5 @@ export async function generateReturnAnnexV(r:ReturnDocumentRecord){
  // D-127: tablas de la declaración, al final de su casilla.
  xml=insertWordCellTables(xml,returnAnnexTablePlacements(storedTextTables(r.textTables),"V"));
  xml=keepOnlyFinalSectionProperties(xml);
- updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
+ xml=syncCheckboxControlStates(xml);updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }

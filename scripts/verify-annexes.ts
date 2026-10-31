@@ -5,7 +5,7 @@ import { Prisma, type DocumentType, type QmsRecordType } from "@prisma/client";
 import { prisma } from "../src/lib/db";
 import { withBytes } from "../src/lib/db-binary-omit";
 import { assertDisposableDatabase, assertOutputOutsideRepository } from "../src/lib/ooxml/annex-verification-guard";
-import { compareExcelAnnex, compareWordAnnex, tokenDecoder, type AnnexComparison } from "../src/lib/ooxml/annex-verification";
+import { compareExcelAnnex, compareWordAnnex, compareWordHeadersFooters, tokenDecoder, type AnnexComparison } from "../src/lib/ooxml/annex-verification";
 import { getZipEntryText, readZip } from "../src/lib/ooxml/zip";
 import { annexGeneratorXml } from "../src/modules/configuration/annex-generator-views";
 import { collectTemplateFiles, type InputFile } from "../src/modules/configuration/template-install";
@@ -81,6 +81,9 @@ const keepStrings = new Set(["businessCode", "annulledBusinessCode", "versionCod
 const dates: Record<string, string> = {};
 let dateIndex = 0;
 const tokens: Record<string, string[]> = {};
+// Valores de las opciones (listas y sí/no) del expediente de demostración, para comprobar a mano qué casilla se marca.
+const optionsByBag = new WeakMap<string[], string[]>();
+const optionsOf = (bag: string[]) => { let list = optionsByBag.get(bag); if (!list) optionsByBag.set(bag, list = []); return list; };
 const uniqueDate = (field: string) => {
   // A mediodía UTC y separadas dos días: un huso horario no la confunde con la del campo vecino.
   const date = new Date(Date.UTC(2031, 0, 1 + 2 * dateIndex++, 12));
@@ -98,6 +101,10 @@ function tokenize(value: Record<string, unknown>, model: string, prefix: string,
     if (field.kind === "scalar" && field.type === "String" && !field.isList && !field.isId && !/Id$/.test(key) && !keepStrings.has(key) && !(typeof current === "string" && /^[A-Z][A-Z0-9_]*$/.test(current))) {
       value[key] = `⟦${prefix}.${key}⟧`;
       bag.push(`${prefix}.${key}`);
+    } else if ((field.kind === "enum" || (field.kind === "scalar" && field.type === "Boolean")) && current !== null && current !== undefined && !field.isList) {
+      optionsOf(bag).push(`${prefix}.${key} = ${String(current)}`);
+    } else if (field.kind === "enum" && Array.isArray(current) && current.length) {
+      optionsOf(bag).push(`${prefix}.${key} = ${current.join(", ")}`);
     } else if (field.kind === "scalar" && field.type === "DateTime" && !["createdAt", "updatedAt"].includes(key)) {
       value[key] = uniqueDate(`${prefix}.${key}`);
     } else if (field.kind === "object" && current) {
@@ -246,7 +253,11 @@ function compare(annex: Annex): AnnexComparison {
   // La parte de la plantilla que rellena el generador (recortada del PNT o del plan maestro si procede).
   const view = annex.documentType === "AUDIT_ANNUAL_EXTERNAL_PROGRAMME" ? extractExternalProgramme(templateXml)
     : annex.documentType ? annexGeneratorXml(annex.documentType, annex.versionCode ?? "", templateXml) : templateXml;
-  return compareWordAnnex(view, getZipEntryText(readZip(annex.output), "word/document.xml"), decode);
+  const outputEntries = readZip(annex.output);
+  const result = compareWordAnnex(view, getZipEntryText(outputEntries, "word/document.xml"), decode);
+  // Cabeceras y pies, parte a parte (también los de un anexo recortado del PNT: son los del propio PNT).
+  compareWordHeadersFooters(readZip(annex.template), outputEntries, decode, result);
+  return result;
 }
 
 /** Cada tabla debe salir en la casilla donde sale el texto de su campo (y solo si sale ese texto). */
@@ -287,13 +298,15 @@ async function main() {
   mkdirSync(out, { recursive: true });
   // Por anexo: campos que no se imprimen a propósito, sustituciones previstas de texto de la plantilla
   // (posición + huella) y en qué casillas sale cada campo. Ningún texto de las plantillas.
-  type Expected = { notPrinted: string[]; replacedTemplateText: string[]; positions: Record<string, string[]> };
+  // checked: casillas ☒ previstas (posición + huella de la opción).
+  type Expected = { notPrinted: string[]; replacedTemplateText: string[]; positions: Record<string, string[]>; checked?: string[] };
   const expected: Record<string, Expected> = existsSync(EXPECTED_FILE) ? JSON.parse(readFileSync(EXPECTED_FILE, "utf8")) : {};
   // Con --write-expected solo se reescriben los anexos generados; lo previsto para los demás se conserva.
   const newExpected: Record<string, Expected> = { ...expected };
   const report: string[] = [`# Verificación de anexos con las plantillas reales`, "", `Generado el ${new Date().toISOString().slice(0, 10)}. Método y criterios en docs/ANNEX_VERIFICATION.md (D-128).`, ""];
-  const summary: string[] = ["| Anexo | Plantilla | Texto de plantilla cambiado no previsto | Campos no impresos no previstos | Campos en otra casilla | Tablas fuera de su casilla | Resultado |", "|---|---|---|---|---|---|---|"];
-  // Lo que --write-expected no puede dar por bueno: anexos sin generar y tablas fuera de su casilla.
+  const summary: string[] = ["| Anexo | Plantilla | Texto de plantilla cambiado no previsto | Campos no impresos no previstos | Campos en otra casilla | Casillas ☒ distintas de lo previsto | Tablas fuera de su casilla | Controles de casilla incoherentes | Resultado |", "|---|---|---|---|---|---|---|---|---|"];
+  // Lo que --write-expected no puede dar por bueno: anexos sin generar, tablas fuera de su casilla y controles
+  // de casilla cuyo símbolo no coincide con su estado.
   let blocking = failures.length, problems = failures.length;
   for (const annex of annexes) {
     const base = annex.name.replace(/\.(docx|xlsx)$/, ""), extension = annex.kind;
@@ -309,8 +322,13 @@ async function main() {
       if (!where.includes(cell.where)) where.push(cell.where);
     }
     for (const field of Object.keys(positions)) positions[field].sort();
-    newExpected[base] = { notPrinted, replacedTemplateText: result.alteredKeys, positions: Object.fromEntries(Object.entries(positions).sort(([a], [b]) => a.localeCompare(b))) };
-    const known = expected[base] ?? { notPrinted: [], replacedTemplateText: [], positions: {} };
+    const checkedKeys = result.checked.map((item) => item.key);
+    newExpected[base] = { notPrinted, replacedTemplateText: result.alteredKeys, positions: Object.fromEntries(Object.entries(positions).sort(([a], [b]) => a.localeCompare(b))), checked: checkedKeys };
+    const known = expected[base] ?? { notPrinted: [], replacedTemplateText: [], positions: {}, checked: [] };
+    // Qué casillas se marcan: una que se marca sin estar prevista, o una prevista que ya no se marca, es un fallo.
+    const allowedChecked = new Set(known.checked ?? []);
+    const unexpectedChecked = writeExpected ? [] : result.checked.filter((item) => !allowedChecked.has(item.key));
+    const lostChecked = writeExpected ? [] : [...allowedChecked].filter((key) => !checkedKeys.includes(key)).map((key) => key.replace(/#[0-9a-f]+$/, ""));
     const allowedFields = new Set(known.notPrinted), allowedText = new Set(known.replacedTemplateText);
     const unexpectedFields = writeExpected ? [] : notPrinted.filter((field) => !allowedFields.has(field));
     const unexpectedText = writeExpected ? [] : result.altered.filter((_, index) => !allowedText.has(result.alteredKeys[index]));
@@ -320,16 +338,23 @@ async function main() {
       .map(([field, where]) => `${field}: antes en ${where.join("; ")}; ahora en ${positions[field].join("; ")}`);
     const nowPrinted = [...allowedFields].filter((field) => !notPrinted.includes(field));
     const tables = tableProblems(annex, result);
-    const failed = unexpectedText.length + unexpectedFields.length + moved.length + tables.length;
+    const checkboxChanges = unexpectedChecked.length + lostChecked.length;
+    const failed = unexpectedText.length + unexpectedFields.length + moved.length + checkboxChanges + tables.length + result.checkboxProblems.length;
     problems += failed;
-    blocking += tables.length;
-    summary.push(`| ${base} | ${annex.versionCode ?? ""} | ${unexpectedText.length} | ${unexpectedFields.length} | ${moved.length} | ${tables.length} | ${failed ? "✗" : "✓"} |`);
+    blocking += tables.length + result.checkboxProblems.length;
+    summary.push(`| ${base} | ${annex.versionCode ?? ""} | ${unexpectedText.length} | ${unexpectedFields.length} | ${moved.length} | ${checkboxChanges} | ${tables.length} | ${result.checkboxProblems.length} | ${failed ? "✗" : "✓"} |`);
     report.push(`## ${base} (plantilla ${annex.versionCode ?? "—"})`, "", `### Casillas rellenadas (${result.filled.length})`, "");
     report.push(...result.filled.map((item) => `- ${item.where} · ${item.label} → ${item.text.slice(0, 300)}`), "");
     report.push(`### Texto de la plantilla que cambia (${result.altered.length}; ${unexpectedText.length} no previsto)`, "");
     report.push(...(result.altered.length ? result.altered.map((line) => `- ${unexpectedText.includes(line) ? "✗ NO PREVISTO · " : "previsto · "}${line}`) : ["—"]), "");
     report.push(`### Tablas de los textos (${tables.length} problemas)`, "", ...(tables.length ? tables.map((line) => `- ${line}`) : [annex.tables?.length ? "Cada tabla sale en la casilla de su texto." : "—"]), "");
     report.push(`### Campos en otra casilla (${moved.length})`, "", ...(moved.length ? moved.map((line) => `- ✗ ${line}`) : ["—"]), "");
+    report.push(`### Casillas marcadas ☒ (${result.checked.length}; ${checkboxChanges} distintas de lo previsto)`, "");
+    report.push(...(result.checked.length ? result.checked.map((item) => `- ${unexpectedChecked.includes(item) ? "✗ NO PREVISTA · " : ""}${item.where} · ${item.label}`) : ["—"]));
+    report.push(...lostChecked.map((where) => `- ✗ YA NO SE MARCA · ${where}`), "");
+    report.push(`### Controles de casilla incoherentes (${result.checkboxProblems.length})`, "", ...(result.checkboxProblems.length ? result.checkboxProblems.map((line) => `- ✗ ${line}`) : ["—"]), "");
+    const options = optionsOf(bag(annex.module));
+    if (options.length) report.push(`### Opciones del expediente de demostración (para comprobar qué casilla debe marcarse)`, "", [...new Set(options)].join(" · "), "");
     report.push(`### Campos del expediente que no se imprimen (${notPrinted.length} de ${all.length})`, "", notPrinted.join(", ") || "—", "");
     if (unexpectedFields.length) report.push(`**No previstos (fallo):** ${unexpectedFields.join(", ")}`, "");
     if (nowPrinted.length) report.push(`Ahora sí se imprimen (se pueden quitar de la lista): ${nowPrinted.join(", ")}`, "");
@@ -341,7 +366,7 @@ async function main() {
   console.log(`\nInforme: ${path.join(out, "INFORME.md")}`);
   if (writeExpected) {
     if (blocking) {
-      console.log(`\n✗ No se actualiza la lista: ${blocking} problema(s) que no se pueden dar por buenos (anexos sin generar o tablas fuera de su casilla).`);
+      console.log(`\n✗ No se actualiza la lista: ${blocking} problema(s) que no se pueden dar por buenos (anexos sin generar, tablas fuera de su casilla o controles de casilla incoherentes).`);
       process.exitCode = 1;
       return;
     }
