@@ -25,3 +25,13 @@ describe("CAPA · tablas de los seguimientos de la acción (D-127)", () => {
     ]);
   });
 });
+
+describe("CAPA · claves de filas huérfanas o dañadas (D-127)", () => {
+  it("la numeración solo cuenta las filas que hay; una clave guardada sin fila no deja hueco ni se recorre entera", () => {
+    const placements = capaAnnexTablePlacements({ "actionFollowups.3": [table("Huérfana")], conclusion: [table("Cierre")] }, 0);
+    expect(placements.flatMap((placement) => placement.tables.map((item) => [item.table.title, item.number]))).toEqual([["Cierre", 1]]);
+    const started = Date.now();
+    expect(capaTableFieldsFor({ "actionFollowups.99999999": [table("X")] }, 1)).toContain("actionFollowups.99999999");
+    expect(Date.now() - started).toBeLessThan(500);
+  });
+});

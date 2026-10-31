@@ -164,3 +164,9 @@ describe("validateTableList (tablas de un elemento de una lista, D-127)", () => 
     expect(validateTableList(undefined)).toEqual({ tables: [], problems: [] });
   });
 });
+
+describe("parseTextTables · valores que no son una lista", () => {
+  it("«null» en un campo sigue siendo un formato no válido", () => {
+    expect(parseTextTables(form({ investigation: "null" }), fields).issues.investigation).toEqual(["Las tablas no tienen un formato válido."]);
+  });
+});

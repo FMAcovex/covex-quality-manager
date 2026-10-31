@@ -270,3 +270,12 @@ describe("CAPA · tablas de los seguimientos de la acción (D-127)", () => {
     expect(invalid.errors).toContain("Seguimiento de acción 01 · 1.ª tabla: falta el título.");
   });
 });
+
+describe("CAPA · tope de tamaño de los seguimientos de la acción (D-127)", () => {
+  it("un envío desmesurado de filas con tablas no se guarda", () => {
+    const form = base();
+    const big = { title: "T", columns: ["a"], rows: Array(50).fill(["x".repeat(500)]) };
+    form.set("actionFollowupsJson", JSON.stringify(Array.from({ length: 80 }, (_, index) => ({ followupDate: "2026-10-01", description: `Fila ${index}`, tables: [big] }))));
+    expect(parseCapaForm(form).fieldIssues.actionFollowupsJson).toContain("Los seguimientos de la acción son demasiado grandes (reduce las tablas).");
+  });
+});

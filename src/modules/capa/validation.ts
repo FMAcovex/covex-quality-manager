@@ -25,6 +25,8 @@ const plannedActionSchema = z.object({
 });
 // D-117: la fila se lee sin exigir descripción para poder avisar en vez de descartarla en silencio.
 const plannedActionRowSchema = plannedActionSchema.extend({ description: z.string().trim() });
+/** Tope del envío de las filas de seguimiento de la acción con sus tablas (holgado para el uso normal). */
+const MAX_ACTION_FOLLOWUPS_JSON = 1_000_000;
 const actionFollowupSchema = z.object({
   followupDate: z.string().trim(),
   description: z.string().trim(),
@@ -89,7 +91,10 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
   const effectivenessStatus = enumValue(effectiveness, text(formData, "effectivenessStatus")) ?? "PENDING";
   const plannedActionRows = parseArray(text(formData, "plannedActionsJson"), plannedActionRowSchema);
   const plannedActions: CapaPlannedActionInput[] = plannedActionRows.filter((row) => row.description);
-  const actionFollowups = parseArray(text(formData, "actionFollowupsJson"), actionFollowupSchema);
+  // D-127: las filas llevan sus tablas; un envío desmesurado no se lee (como el tope de cada campo con tablas).
+  const actionFollowupsRaw = text(formData, "actionFollowupsJson");
+  const actionFollowupsTooBig = (actionFollowupsRaw?.length ?? 0) > MAX_ACTION_FOLLOWUPS_JSON;
+  const actionFollowups = actionFollowupsTooBig ? [] : parseArray(actionFollowupsRaw, actionFollowupSchema);
   const nextFollowupDate = text(formData, "nextFollowupDate");
   const operationalClosedAt = text(formData, "operationalClosedAt");
   const effectiveClosedAt = text(formData, "effectiveClosedAt");
@@ -146,6 +151,7 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
     if (item.followupDate && !item.description) addIssue("actionFollowupsJson", `La descripción del seguimiento de acción ${index + 1} es obligatoria cuando se registra una fecha.`);
     if (item.description && !item.followupDate) addIssue("actionFollowupsJson", `La fecha del seguimiento de acción ${index + 1} es obligatoria cuando se registra una descripción.`);
   });
+  if (actionFollowupsTooBig) addIssue("actionFollowupsJson", "Los seguimientos de la acción son demasiado grandes (reduce las tablas).");
   // D-127: tablas de cada seguimiento de la acción; los errores van al apartado con el número de la fila.
   const followupTables: Record<string, TextTable[]> = {};
   actionFollowups.forEach((item, index) => {

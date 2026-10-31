@@ -83,7 +83,7 @@ export function parseTextTables(formData: FormData, fields: readonly string[]) {
       issues[field] = ["Las tablas no tienen un formato válido."];
       continue;
     }
-    const { tables, problems } = validateTableList(json);
+    const { tables, problems } = validateTableList(json ?? "no es una lista");
     if (problems.length) issues[field] = problems;
     else if (tables.length) value[field] = tables;
   }

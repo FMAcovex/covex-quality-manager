@@ -51,10 +51,20 @@ export function capaTableFields(followups: number): string[] {
   return [...CAPA_TABLE_FIELDS.slice(0, at), ...Array.from({ length: followups }, (_, index) => actionFollowupTablesKey(index)), ...CAPA_TABLE_FIELDS.slice(at)];
 }
 
-/** Como `capaTableFields`, contando también las filas que ya tengan tablas guardadas (para no perderlas al comparar). */
+/**
+ * Como `capaTableFields`, con las claves de fila guardadas que ya no tienen fila (datos antiguos o dañados)
+ * a continuación, para no perderlas al normalizar lo guardado antes de compararlo con el historial. La
+ * numeración (ficha y anexo) usa `capaTableFields`, que solo cuenta las filas que hay.
+ */
 export function capaTableFieldsFor(tables: TextTables, followups: number) {
-  const stored = Object.keys(tables).map((key) => FOLLOWUP_KEY.exec(key)).filter(Boolean).map((match) => Number(match![1]) + 1);
-  return capaTableFields(Math.max(followups, ...stored));
+  const fields = capaTableFields(followups);
+  const orphans = Object.keys(tables)
+    .map((key) => ({ key, match: FOLLOWUP_KEY.exec(key) }))
+    .filter((item) => item.match && Number(item.match[1]) >= followups)
+    .sort((a, b) => Number(a.match![1]) - Number(b.match![1]))
+    .map((item) => item.key);
+  const at = fields.indexOf("actionFollowupObservations");
+  return [...fields.slice(0, at), ...orphans, ...fields.slice(at)];
 }
 
 /**
@@ -63,7 +73,7 @@ export function capaTableFieldsFor(tables: TextTables, followups: number) {
  * tabla 1). `copiedRows`: filas de la plantilla copiadas por acciones y seguimientos.
  */
 export function capaAnnexTablePlacements(tables: TextTables, followups: number, copiedRows: Array<{ table: number; row: number; count: number }> = []) {
-  const order = capaTableFieldsFor(tables, followups);
+  const order = capaTableFields(followups);
   const main = annexTablePlacements(tables, order, ANNEX_III_CELLS, copiedRows);
   const numbered = numberTextTables(tables, order);
   const rows = Array.from({ length: followups }, (_, index) => numbered[actionFollowupTablesKey(index)]?.length

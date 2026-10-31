@@ -1,7 +1,7 @@
 import { FormattedText } from "@/components/formatted-text";
 import { TextTablesView } from "@/components/text-tables-view";
 import { numberTextTables, storedTextTables } from "@/lib/forms/text-tables";
-import { actionFollowupTablesKey, capaTableFieldsFor } from "@/modules/capa/text-tables";
+import { actionFollowupTablesKey, capaTableFields } from "@/modules/capa/text-tables";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { PreviewLink } from "@/components/preview-link";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
@@ -131,7 +131,7 @@ async function CapaDetailPageAuthenticatedContent({
   const hasOosOrigin = capa.qmsRecord.targetRelations.some((item) => item.relationType === "GENERATES" && item.sourceRecord.recordType === "OOS");
 
   // D-127: tablas de los textos, numeradas en el orden del expediente.
-  const textTables = numberTextTables(storedTextTables(capa.textTables), capaTableFieldsFor(storedTextTables(capa.textTables), capa.actionFollowups.length));
+  const textTables = numberTextTables(storedTextTables(capa.textTables), capaTableFields(capa.actionFollowups.length));
   const reviewTarget = {
     actionType: reviewTargetWithValue(
       capaReviewTargets.actionType,

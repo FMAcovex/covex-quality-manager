@@ -181,7 +181,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - se guardan en `Capa.textTables` y `ChangeControl.textTables` (migración `20261031000100_capa_change_text_tables`, contrato B2 `B2_CAPA_CHANGE_TEXT_TABLES`);
   - la ficha las muestra numeradas; el Anexo III de CAPA y los Anexos III (solicitud) y IV (dictamen) de Controles de cambios las escriben dentro de la casilla de su apartado, teniendo en cuenta las filas copiadas de acciones y seguimientos;
   - las utilidades comunes (tablas iniciales tras un error, resumen de errores con el apartado y ubicación en el anexo) quedan en `src/lib/forms/text-tables.ts` y las usan los tres módulos.
-- **Pendiente:** OOS, Reclamaciones y Devoluciones (hechos en la tercera parte); filas de seguimiento de la acción de CAPA (hechas en la cuarta).
+- **Después:** OOS, Reclamaciones y Devoluciones (tercera parte) y filas de seguimiento de la acción de CAPA (cuarta parte).
 - **Comprobado** con pruebas unitarias (validación, versiones, contrato B2, anexos con filas copiadas) y el smoke `text-tables:ui:smoke` ampliado a CAPA y Controles de cambios.
 
 **Tablas en las filas de «Seguimiento de la acción» de CAPA (2026-10-31, D-127, cuarta parte):**
@@ -190,7 +190,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - se guardan en la columna existente `Capa.textTables` con la clave `actionFollowups.N` (sin migración ni contrato B2 nuevos) y entran en las versiones y el historial como el resto de tablas de CAPA;
   - se numeran después de la causa raíz; la ficha las muestra bajo la descripción de la fila y el Anexo III, en la casilla de descripción de su fila copiada;
   - el editor de tablas tiene una variante sin estado propio (`TextTablesFields`) para tablas dentro de listas, y la comprobación de una lista de tablas (`validateTableList`) es común.
-- **Comprobado** con pruebas unitarias (comprobación de listas, orden y casillas del anexo, validación del formulario, Anexo III con filas copiadas) y `text-tables:ui:smoke` ampliado.
+- **Comprobado** con pruebas unitarias (comprobación de listas, orden y casillas del anexo, claves de filas huérfanas, tope de tamaño de las filas, validación del formulario, Anexo III con filas copiadas) y `text-tables:ui:smoke` ampliado.
 - **Observación:** el formulario de «Seguimiento 01, 02…» con versión (`CapaFollowupForm`) no está enlazado desde ninguna página; los seguimientos con versión se crean desde el formulario principal. No se le han añadido tablas.
 
 **Tablas en los textos largos de OOS, Reclamaciones y Devoluciones (2026-10-31, D-127, tercera parte):**
@@ -201,7 +201,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - los anexos las escriben dentro de la casilla de su apartado: OOS Anexos III y IV, Reclamaciones Anexo III (v03 y anteriores, con las filas copiadas de acciones o CAPA), Devoluciones Anexos III y V;
   - en Reclamaciones, las tablas de un detalle de actuación (inmediata, retirada, abono, reposición, otros) solo salen si la actuación está marcada, como su texto; en las plantillas anteriores a la v03, que no imprimen esos detalles, no salen.
 - **Comprobado** con pruebas unitarias (validación de los tres módulos, versiones, contrato B2, anexos) y el smoke `text-tables:ui:smoke` ampliado a OOS, Reclamaciones y Devoluciones; las casillas de Devoluciones, también con sus plantillas reales (solo en local).
-- **Pendiente:** tablas en las filas de seguimiento de la acción de CAPA (hechas en la cuarta parte).
+- **Después:** tablas en las filas de seguimiento de la acción de CAPA (cuarta parte).
 
 **FTA y herramientas en el Anexo III de Desviaciones (2026-10-30, D-124):**
 - **Qué cambia:**

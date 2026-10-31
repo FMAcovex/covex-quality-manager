@@ -518,9 +518,9 @@ export function CapaForm({
               </div>
               <TextTablesFields
                 fieldLabel={`Seguimiento de acción ${String(index + 1).padStart(2, "0")}`}
-                tables={item.tables ?? []}
+                tables={Array.isArray(item.tables) ? item.tables : []}
                 setTables={(change) =>
-                  setActionFollowups((current) => current.map((row, i) => (i === index ? { ...row, tables: change(row.tables ?? []) } : row)))
+                  setActionFollowups((current) => current.map((row, i) => (i === index ? { ...row, tables: change(Array.isArray(row.tables) ? row.tables : []) } : row)))
                 }
               />
             </div>
