@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { missingTemplateWords } from "@/lib/ooxml/template-text";
 import { wordTableGrid } from "@/lib/ooxml/xml";
 import { xlsxCells } from "@/lib/ooxml/xlsx-cells";
@@ -14,8 +15,13 @@ export type FilledCell = { where: string; label: string; text: string };
 export type AnnexComparison = {
   /** Casillas con datos del expediente (las que difieren de la plantilla). */
   filled: FilledCell[];
-  /** Texto de la plantilla perdido o cambiado. */
+  /** Texto de la plantilla perdido o cambiado (para leer: se acorta a unas pocas palabras). */
   altered: string[];
+  /**
+   * Una clave por alteración, en el mismo orden: posición y huella de todo lo que falta (no solo de lo que se
+   * muestra), para dar por prevista una sustitución sin guardar el texto de la plantilla.
+   */
+  alteredKeys: string[];
   /** Campos del expediente que aparecen en el anexo. */
   printed: Set<string>;
   /** Texto de cada casilla del anexo (también el de las tablas insertadas en ella). */
@@ -42,8 +48,9 @@ export function tokenDecoder(dates: Record<string, string>): Decoder {
     const fields = [...text.matchAll(TOKEN)].map((match) => match[1]);
     const annotated = text.replace(DATE, (date) => (byText.has(date) ? `${date} [${byText.get(date)}]` : date));
     for (const match of text.matchAll(DATE)) if (byText.has(match[0])) fields.push(byText.get(match[0])!);
-    if (/^\d{5}(?:\.0+)?$/.test(text.trim()) && byText.has(String(Number(text.trim())))) {
-      const field = byText.get(String(Number(text.trim())))!;
+    // Número de serie de Excel, también con hora (parte decimal).
+    if (/^\d{5}(?:\.\d+)?$/.test(text.trim()) && byText.has(String(Math.floor(Number(text.trim()))))) {
+      const field = byText.get(String(Math.floor(Number(text.trim()))))!;
       return { fields: [...fields, field], annotated: `${text.trim()} [${field}]` };
     }
     return { fields, annotated };
@@ -81,6 +88,12 @@ function textOutsideTables(documentXml: string) {
 
 const hasData = (text: string, decode: Decoder) => decode(text).fields.length > 0;
 
+function alter(result: AnnexComparison, where: string, detail: string, everything: string) {
+  result.altered.push(`${where}: ${detail}`);
+  result.alteredKeys.push(`${where}#${createHash("sha256").update(`${where}\u0000${everything}`).digest("hex").slice(0, 16)}`);
+}
+const missingWords = (where: string, missing: string[]) => ({ where, detail: `falta ${quote(missing)}`, everything: missing.join(" ") });
+
 /** Etiqueta de una casilla: el texto de la plantilla más cercano a su izquierda o, si no, encima. */
 function labelFor(rows: string[][], r: number, c: number, decode: Decoder) {
   for (let k = c - 1; k >= 0; k--) if (rows[r][k] && !hasData(rows[r][k], decode)) return rows[r][k].slice(0, 70);
@@ -97,14 +110,15 @@ const rowMatches = (template: string[], output: string[]) =>
  */
 function alignRows(template: string[][], output: string[][]) {
   const LOOKAHEAD = 200;
-  const pairs: Array<{ t: number | null; o: number }> = [];
+  const pairs: Array<{ t: number | null; o: number | null }> = [];
   let o = 0;
   for (let t = 0; t < template.length; t++) {
     let found = -1;
     for (let k = o; k < Math.min(output.length, o + LOOKAHEAD); k++) if (rowMatches(template[t], output[k])) { found = k; break; }
     if (found < 0) {
-      // Sin fila equivalente: se compara con la que toca, para mostrar qué se ha perdido.
-      if (o < output.length) pairs.push({ t, o: o++ });
+      // Sin fila equivalente: se compara con la que toca, para mostrar qué se ha perdido; si ya no quedan
+      // filas, la fila de la plantilla falta.
+      pairs.push({ t, o: o < output.length ? o++ : null });
       continue;
     }
     while (o < found) pairs.push({ t: null, o: o++ });
@@ -117,11 +131,19 @@ function alignRows(template: string[][], output: string[][]) {
 export function compareWordAnnex(templateXml: string, outputXml: string, decode: Decoder): AnnexComparison {
   const toText = (grid: string[][][]) => grid.map((rows) => rows.map((cells) => cells.map(wordText)));
   const template = toText(wordTableGrid(templateXml)), output = toText(wordTableGrid(outputXml));
-  const result: AnnexComparison = { filled: [], altered: [], printed: new Set(), cells: [] };
-  if (template.length !== output.length) result.altered.push(`El anexo tiene ${output.length} tablas; la plantilla, ${template.length}.`);
+  const result: AnnexComparison = { filled: [], altered: [], alteredKeys: [], printed: new Set(), cells: [] };
+  if (template.length !== output.length) alter(result, "Documento", `el anexo tiene ${output.length} tablas; la plantilla, ${template.length}.`, `${output.length}/${template.length}`);
   output.forEach((rows, ti) => {
     const templateRows = template[ti] ?? [];
     for (const { t, o } of alignRows(templateRows, rows)) {
+      if (o === null) {
+        const lost = templateRows[t!].filter(Boolean).join(" · ");
+        alter(result, `Tabla ${ti + 1}, fila ${t! + 1}`, `falta la fila de la plantilla («${lost.split(/\s+/).slice(0, MAX_WORDS).join(" ")}»).`, lost);
+        continue;
+      }
+      if (t !== null && templateRows[t].length !== rows[o].length) {
+        alter(result, `Tabla ${ti + 1}, fila ${t + 1}`, `tiene ${rows[o].length} casillas; la plantilla, ${templateRows[t].length}.`, templateRows[t].join("\u0001"));
+      }
       rows[o].forEach((text, c) => {
         const where = `Tabla ${ti + 1}, fila ${o + 1}, casilla ${c + 1}${t === null ? " (fila añadida)" : ""}`;
         result.cells.push({ where, text });
@@ -130,7 +152,7 @@ export function compareWordAnnex(templateXml: string, outputXml: string, decode:
         const templateText = t === null ? null : templateRows[t][c] ?? null;
         if (templateText !== null) {
           const missing = missingTemplateWords(templateText, text);
-          if (missing.length) result.altered.push(`Tabla ${ti + 1}, fila ${t! + 1}, casilla ${c + 1}: falta ${quote(missing)}`);
+          if (missing.length) { const item = missingWords(`Tabla ${ti + 1}, fila ${t! + 1}, casilla ${c + 1}`, missing); alter(result, item.where, item.detail, item.everything); }
         }
         if (decoded.fields.length && text !== templateText) result.filled.push({ where, label: labelFor(rows, o, c, decode), text: decoded.annotated });
       });
@@ -138,7 +160,7 @@ export function compareWordAnnex(templateXml: string, outputXml: string, decode:
   });
   const outsideTemplate = textOutsideTables(templateXml), outsideOutput = textOutsideTables(outputXml);
   const missing = missingTemplateWords(outsideTemplate, outsideOutput);
-  if (missing.length) result.altered.push(`Texto fuera de tablas: falta ${quote(missing)}`);
+  if (missing.length) { const item = missingWords("Texto fuera de tablas", missing); alter(result, item.where, item.detail, item.everything); }
   const outside = decode(outsideOutput);
   outside.fields.forEach((field) => result.printed.add(field));
   if (outside.fields.length) result.filled.push({ where: "Fuera de tablas", label: "", text: outside.annotated.slice(0, 400) });
@@ -147,7 +169,7 @@ export function compareWordAnnex(templateXml: string, outputXml: string, decode:
 
 export function compareExcelAnnex(template: Buffer, output: Buffer, decode: Decoder): AnnexComparison {
   const before = xlsxCells(readZip(template), { numbers: true }), after = xlsxCells(readZip(output), { numbers: true });
-  const result: AnnexComparison = { filled: [], altered: [], printed: new Set(), cells: [] };
+  const result: AnnexComparison = { filled: [], altered: [], alteredKeys: [], printed: new Set(), cells: [] };
   const columnOf = (ref: string) => ref.replace(/\d+$/, ""), rowOf = (ref: string) => Number(ref.replace(/^[A-Z]+/, ""));
   const columnIndex = (column: string) => [...column].reduce((total, letter) => total * 26 + letter.charCodeAt(0) - 64, 0);
   // Filas de la hoja como listas de casillas por columna, en orden; vacías las que no tienen texto.
@@ -167,6 +189,11 @@ export function compareExcelAnnex(template: Buffer, output: Buffer, decode: Deco
     const columns = width > generated.columns.length ? original.columns : generated.columns;
     // Las filas de datos insertadas bajan la leyenda y la firma: se emparejan como en Word.
     for (const { t, o } of alignRows(templateRows, outputRows)) {
+      if (o === null) {
+        const lost = templateRows[t!].filter(Boolean).join(" · ");
+        alter(result, `${sheet}, fila ${original.rows[t!]} de la plantilla`, `falta la fila («${lost.split(/\s+/).slice(0, MAX_WORDS).join(" ")}»).`, lost);
+        continue;
+      }
       outputRows[o].forEach((text, c) => {
         const ref = `${columns[c]}${generated.rows[o]}`;
         const templateText = t === null ? "" : templateRows[t][c];
@@ -174,7 +201,7 @@ export function compareExcelAnnex(template: Buffer, output: Buffer, decode: Deco
         if (text) result.cells.push({ where: `${sheet}!${ref}`, text });
         if (templateText) {
           const missing = missingTemplateWords(templateText, text);
-          if (missing.length) result.altered.push(`${sheet}!${ref}: falta ${quote(missing)}`);
+          if (missing.length) { const item = missingWords(`${sheet}!${ref}`, missing); alter(result, item.where, item.detail, item.everything); }
         }
         const decoded = decode(text);
         decoded.fields.forEach((field) => result.printed.add(field));
@@ -186,6 +213,7 @@ export function compareExcelAnnex(template: Buffer, output: Buffer, decode: Deco
       });
     }
   });
-  [...before.keys()].slice(after.size).forEach((sheet) => result.altered.push(`Falta la hoja «${sheet}».`));
+  [...before.keys()].slice(after.size).forEach((sheet) => alter(result, "Libro", `falta la hoja «${sheet}».`, sheet));
+  [...after.keys()].slice(before.size).forEach((sheet) => alter(result, "Libro", `hoja de más «${sheet}».`, `+${sheet}`));
   return result;
 }

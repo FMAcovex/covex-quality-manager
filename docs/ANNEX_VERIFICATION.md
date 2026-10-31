@@ -6,7 +6,7 @@ Las plantillas reales **no** se versionan, porque el repositorio es público. Se
 
 ## Cómo se ejecuta
 
-1. Crear una base de datos **desechable**. Su nombre debe empezar por `covex_annexes_verify`; el comando se niega a usar cualquier otra base de datos. Por ejemplo, con el PostgreSQL de `compose.yaml`:
+1. Crear una base de datos **desechable**. Su nombre debe empezar por `covex_annexes_verify`; el comando se niega a usar cualquier otra base de datos, sin excepciones. La salida, que guarda copias de las plantillas, no puede quedar dentro del repositorio salvo en `informe-anexos/`. Por ejemplo, con el PostgreSQL de `compose.yaml`:
 
    ```bash
    docker compose exec postgres createdb -U covex covex_annexes_verify
@@ -26,6 +26,8 @@ Las plantillas reales **no** se versionan, porque el repositorio es público. Se
    4. genera los anexos y los compara.
 
    Con `--skip-setup`, repite solo la generación y la comparación sobre la misma base de datos.
+
+   Se verifica la versión **activa** de cada anexo, la que usan los expedientes nuevos, o la última instalada si no hay ninguna activa. El generador y la comparación usan la misma. Para verificar una revisión nueva antes de activarla, se indica con `--version DOCUMENTO=VERSIÓN`, por ejemplo `--version CAPA_ANNEX_III=06`. Se puede repetir para varios anexos.
 
 3. Leer `informe-anexos/INFORME.md`. El comando termina con error si algún anexo no sale como se espera.
 
@@ -52,14 +54,22 @@ Con esos expedientes se generan los anexos con los mismos generadores que las de
    - los campos de otro anexo.
 
    Un campo que deje de imprimirse sin estar en la lista es un fallo.
-4. **Que cada tabla sale en la casilla donde sale el texto de su campo**, y solo si sale ese texto.
+4. **Que cada campo sigue en su casilla.** La lista guarda en qué casillas sale cada campo (`positions`). Un campo que cambia de casilla es un fallo aunque se imprima, por ejemplo con columnas o casillas desplazadas.
+5. **Que cada tabla sale en la casilla donde sale el texto de su campo**, y solo si sale ese texto. En los anexos que no llevan tablas de los textos no debe salir ninguna.
+
+También se avisa de una fila o una casilla de la plantilla que falta, de una hoja que falta o sobra, y de un número de tablas distinto.
 
 ## Cuando falla
 
 - **Fallo real:** se corrige el generador y se vuelve a ejecutar.
-- **Cambio intencionado de una plantilla o de un generador:** se revisa el informe y se regenera la lista con `--write-expected`. Hay que revisar el diff de `scripts/verify-annexes-expected.json` antes de versionarlo, porque cada línea nueva es un texto de plantilla o un campo que se da por bueno.
+- **Cambio intencionado de una plantilla o de un generador:** se revisa el informe y se regenera la lista con `--write-expected`. Solo se reescriben los anexos generados; lo previsto para los demás se conserva. No se puede dar por bueno un anexo que no se genera ni una tabla fuera de su casilla. Hay que revisar el diff de `scripts/verify-annexes-expected.json` antes de versionarlo, porque cada línea nueva es un texto de plantilla o un campo que se da por bueno.
 
 ## Límites
+- No se comprueban las casillas de verificación ni los valores de las listas: una casilla ☒ cuenta igual que la ☐. Las pruebas automáticas de cada generador cubren qué opción se marca.
+- Los campos JSON solo llevan marcador donde se indica: los otros lotes y la justificación del plazo de Devoluciones. No llevan marcador las herramientas de investigación de Desviaciones (D-124) ni el resto de `extraData`, y lo que imprimen lo cubren sus pruebas.
+- Las cabeceras, los pies y los cuadros de texto de Word no se comparan.
+- Los marcadores llevan el modelo, no el camino completo: `QmsRecord.*` o `QmsRelation[1].*` pueden ser del expediente o del relacionado.
+- Se usa el expediente vigente, no la foto de una versión anterior, y sin figuras (D-125).
 
 - Se verifica el relleno de cada plantilla con un expediente completo de cada módulo, no todas las combinaciones de datos. Por ejemplo, en Reclamaciones solo se rellenan los detalles de las actuaciones que el expediente de demostración tiene marcadas.
 - Los informes de reclamación v02 (PNT histórico) no se verifican si no se aporta su PNT.
