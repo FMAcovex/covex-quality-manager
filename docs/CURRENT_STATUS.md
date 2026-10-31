@@ -193,6 +193,17 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Probar una plantilla con un expediente antes de activarla (2026-10-31, D-129 y D-130):**
+- **Qué cambia:**
+  - En Configuración → Versiones, cada versión de plantilla con archivo tiene un botón **Probar**. Genera el anexo con esa versión, aunque esté inactiva, y el expediente indicado o el último modificado del módulo; en los listados y programas, un año. El archivo se llama `PRUEBA_…` y no se guarda nada en el expediente.
+  - Exige «Configuración» del módulo y los permisos de la descarga normal en ese expediente.
+  - Guía para Calidad: [GUIA_PLANTILLAS_CALIDAD.md](GUIA_PLANTILLAS_CALIDAD.md).
+- **Corrección (D-130):** «Configuración» se puede conceder por módulo en el editor de roles. Hasta ahora ningún rol real podía activar ni registrar la plantilla de un módulo, porque las guardas exigen ese permiso en el módulo y los contratos no lo declaraban.
+- **Comprobado:**
+  - pruebas unitarias del servicio (versión forzada, sin escrituras, permisos, borradores y anulados), de la ruta (páginas de error, nombre del archivo) y del editor de roles (falla antes de la corrección);
+  - con las plantillas oficiales y la demo completa, en una base desechable: se generan los 24 anexos y una versión nueva inactiva;
+  - en la aplicación compilada con el perfil de Garantía de Calidad: «Probar» descarga la prueba, un código inexistente muestra la explicación y «Activar» vuelve a aparecer.
+
 **Guardar un expediente cerrado o cancelado exige su permiso también en el servidor (2026-10-31):**
 - **Qué cambia:** desde 4B1, la página de edición de un expediente cerrado solo se abre con permiso de cierre (CLOSE), y la de uno cancelado con permiso de anulación (ANNUL) (`page-guard.ts`). Las acciones de guardado de Desviaciones, CAPA, Controles de cambios, Reclamaciones, OOS y Devoluciones aplican ahora la misma regla con el estado guardado del expediente (`src/lib/auth/close-permission.ts`). Antes solo exigían CLOSE si el formulario enviaba «Cerrado», así que un envío directo a la acción sin ese permiso podía editar o reabrir un expediente cerrado.
 - **Sin cambios** en roles, permisos, interfaz ni datos: quien usa la aplicación ya no podía abrir esa edición.

@@ -19,6 +19,7 @@ export const changeControlModule: QmsRecordModuleContract = {
     "EXPORT",
     "ATTACH_DOCUMENT",
     "GENERATE_DOCUMENT",
+    "MANAGE_CONFIGURATION",
   ],
   // Sin relaciones operativas en V1 (D-018, D-047, D-083 MC-2).
   relations: { outgoing: [] },

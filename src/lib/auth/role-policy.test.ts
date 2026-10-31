@@ -12,6 +12,14 @@ describe("Editor de roles — permisos por módulo", () => {
     expect(roleEditorModules.map(m => m.key)).toEqual(["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT", "OOS", "PNT", "SYSTEM"]);
   });
 
+  it("D-130: «Configuración» se concede por módulo, porque activar sus plantillas, formularios y catálogos la exige en ese módulo", () => {
+    // Las guardas resuelven el módulo de la plantilla (route-guard / action-guard): sin este permiso nadie podría activarla.
+    for (const recordModule of ["DEVIATION", "CAPA", "CHANGE_CONTROL", "COMPLAINT", "RETURN", "AUDIT", "OOS"] as const) {
+      expect(roleGrantError({ module: recordModule, permission: "MANAGE_CONFIGURATION", scope: "ALL" }), recordModule).toBeNull();
+      expect(roleGrantError({ module: recordModule, permission: "MANAGE_CONFIGURATION", scope: "ASSIGNED" }), recordModule).toContain("solo admite el ámbito Todos");
+    }
+  });
+
   it("rechaza en servidor un permiso que el módulo no admite y conserva las reglas anteriores", () => {
     expect(roleGrantError({ module: "DEVIATION", permission: "EDIT", scope: "ASSIGNED" })).toBeNull();
     expect(roleGrantError({ module: "DEVIATION", permission: "PNT_ACTIVATE", scope: "ALL" })).toMatch(/Desviaciones no admite/);

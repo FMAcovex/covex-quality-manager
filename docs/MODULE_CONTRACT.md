@@ -137,7 +137,7 @@ Control de Cambios no participa en relaciones operativas en V1 (D-018, D-047). P
 
 ### 4.2 Implementado en PR 4 (2026-10-16)
 
-- Cada contrato declara `permissions`: los permisos que el módulo admite. `systemPermissions` (registro) declara los de `SYSTEM` (configuración, usuarios y audit trail). `permissionsForModule(module)` los expone.
+- Cada contrato declara `permissions`: los permisos que el módulo admite. Los siete módulos de expedientes declaran también «Configuración» (MANAGE_CONFIGURATION), que las guardas exigen en el módulo de la plantilla, el formulario o el catálogo (D-130). `systemPermissions` (registro) declara los de `SYSTEM` (configuración, usuarios y audit trail). `permissionsForModule(module)` los expone.
 - `src/modules/permissions.test.ts` obtiene **de forma estática** los pares módulo/permiso que el código comprueba:
   - inventario de Server Actions y rutas; `QMS` cuenta para todos los módulos con expediente;
   - operaciones de ciclo de vida PNT de `route-guard.ts`;

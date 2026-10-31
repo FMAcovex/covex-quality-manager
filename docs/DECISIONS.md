@@ -1459,3 +1459,22 @@ Decisión del responsable de Calidad: poder comprobar en cualquier momento, y an
 - **Una regla más para las tablas (D-127):** en todos los anexos, la tabla de un texto que solo se imprime en ciertos casos sigue a su texto. Ya era así en los detalles de actuación de Reclamaciones; ahora también en la justificación del plazo excepcional del Anexo III de Devoluciones.
 - La verificación no sustituye a la validación GMP ni a la revisión humana de los anexos.
 
+
+## D-129 — Probar una plantilla con un expediente antes de activarla (2026-10-31)
+
+Decisión del responsable de Calidad: cuando llega una revisión nueva de un anexo, poder ver cómo la rellena la aplicación con un expediente real antes de activarla.
+
+- **Botón «Probar»** en cada versión registrada de Configuración → Versiones, activa o inactiva, con archivo guardado. Genera el anexo con **esa versión** y los mismos generadores que las descargas (`src/modules/configuration/template-trial.ts`, ruta `GET /api/settings/templates/[id]/trial`).
+- **Con qué expediente:** el indicado por su código o, si no se indica, el último modificado del módulo que tenga código y no esté en borrador ni anulado. Los anexos que lo necesitan piden algo más: Anexo V de Cambios, un seguimiento; Anexo IV de Devoluciones, un producto; Anexo IV de OOS, Fase I a gran escala; informes de auditoría, el escenario que corresponde. Los listados anuales y los programas de auditoría se prueban con un año, por defecto el año en curso.
+- **No guarda nada:** ni documento de trabajo ni recibo ni historial. El archivo se llama `PRUEBA_<documento>_v<versión>_<expediente o año>`. Usa el estado actual del expediente, sin figuras (D-125).
+- **Permisos:** «Configuración» del módulo de la plantilla y, además, los de la descarga normal en ese expediente (descargar y generar documentos; exportar en los listados; descargar en los programas). Así la prueba no da acceso a expedientes que el usuario no podría descargar.
+- **Errores legibles:** un expediente que no sirve se explica en una página; un fallo del generador con esa revisión pide no activarla y da una referencia del registro de errores, sin detalles internos.
+- **Guía para Calidad** en [GUIA_PLANTILLAS_CALIDAD.md](GUIA_PLANTILLAS_CALIDAD.md). Complementa la comprobación de compatibilidad (D-100) y la verificación de los anexos antes de cada actualización (D-128); no las sustituye, ni a la validación GMP.
+
+## D-130 — «Configuración» se concede por módulo (2026-10-31)
+
+Corrección de una contradicción encontrada al probar D-129 con los perfiles de la demo. Activar o registrar la plantilla de un módulo, y sus formularios y catálogos, exige «Configuración» (MANAGE_CONFIGURATION) **en ese módulo** (PHASE_4B1: «Administración funcional exige MANAGE_CONFIGURATION según módulo»; `route-guard.ts` y `action-guard.ts` resuelven el módulo de la plantilla). Pero los contratos de los módulos no declaraban ese permiso, y el editor de roles solo admite los permisos del contrato (D-086). Resultado: ningún rol real podía activar una plantilla de módulo; solo las identidades de prueba, que tienen todos los permisos.
+
+- Los siete módulos de expedientes (Desviaciones, CAPA, Controles de cambios, Reclamaciones, Devoluciones, Auditorías y OOS) declaran «Configuración» en su contrato. El editor de roles la ofrece en esos módulos, solo con ámbito «Todos».
+- No cambian las guardas, los roles guardados ni los permisos efectivos: hay que conceder el permiso en la política de rol, que queda pendiente de aceptación QA/DT como cualquier otro cambio. En la demo, el perfil de Garantía de Calidad lo recibe al instalar los usuarios.
+- PNT no cambia: sus plantillas y formularios no se configuran desde esta pantalla.

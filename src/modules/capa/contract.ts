@@ -19,6 +19,7 @@ export const capaModule: QmsRecordModuleContract = {
     "EXPORT",
     "ATTACH_DOCUMENT",
     "GENERATE_DOCUMENT",
+    "MANAGE_CONFIGURATION",
   ],
   // CAPA solo es destino; sus orígenes se declaran en Desviación, Reclamación y Auditoría.
   relations: { outgoing: [] },
