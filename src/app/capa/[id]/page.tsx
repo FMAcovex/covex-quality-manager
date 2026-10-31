@@ -1,7 +1,7 @@
 import { FormattedText } from "@/components/formatted-text";
 import { TextTablesView } from "@/components/text-tables-view";
 import { numberTextTables, storedTextTables } from "@/lib/forms/text-tables";
-import { CAPA_TABLE_FIELDS } from "@/modules/capa/text-tables";
+import { actionFollowupTablesKey, capaTableFields } from "@/modules/capa/text-tables";
 import { rootCauseCategoryLabel } from "@/lib/qms/root-cause-categories";
 import { PreviewLink } from "@/components/preview-link";
 import { RecordEvidencePanel } from "@/components/record-evidence-panel";
@@ -131,7 +131,7 @@ async function CapaDetailPageAuthenticatedContent({
   const hasOosOrigin = capa.qmsRecord.targetRelations.some((item) => item.relationType === "GENERATES" && item.sourceRecord.recordType === "OOS");
 
   // D-127: tablas de los textos, numeradas en el orden del expediente.
-  const textTables = numberTextTables(storedTextTables(capa.textTables), CAPA_TABLE_FIELDS);
+  const textTables = numberTextTables(storedTextTables(capa.textTables), capaTableFields(capa.actionFollowups.length));
   const reviewTarget = {
     actionType: reviewTargetWithValue(
       capaReviewTargets.actionType,
@@ -382,7 +382,7 @@ async function CapaDetailPageAuthenticatedContent({
                       <tr id={target.anchorId} className="review-target" key={item.id}>
                         <td>{String(index + 1).padStart(2, "0")}</td>
                         <td>{formatDate(item.followupDate)}</td>
-                        <td className="table-cell-wrap"><span>{item.description ?? "—"}</span><ReviewMarker target={target} /></td>
+                        <td className="table-cell-wrap"><span>{item.description ?? "—"}</span><ReviewMarker target={target} /><TextTablesView items={textTables[actionFollowupTablesKey(index)]} /></td>
                       </tr>
                     );
                   })}

@@ -1,5 +1,5 @@
 "use client";
-import { useState, type ClipboardEvent, type KeyboardEvent } from "react";
+import { useState, type ClipboardEvent, type KeyboardEvent, type ReactNode } from "react";
 import { MAX_TABLE_COLUMNS, MAX_TABLE_ROWS, MAX_TABLES_PER_FIELD, parsePastedTable, pasteIntoTable, textTablesInputName, type TextTable } from "@/lib/forms/text-tables";
 
 const emptyTable = (): TextTable => ({ title: "", columns: ["", ""], rows: [["", ""], ["", ""]] });
@@ -11,6 +11,23 @@ const emptyTable = (): TextTable => ({ title: "", columns: ["", ""], rows: [["",
  */
 export function TextTablesEditor({ field, fieldLabel, initial }: { field: string; fieldLabel: string; initial: TextTable[] }) {
   const [tables, setTables] = useState<TextTable[]>(initial);
+  return (
+    <TextTablesFields fieldLabel={fieldLabel} tables={tables} setTables={setTables}>
+      <input type="hidden" name={textTablesInputName(field)} value={tables.length ? JSON.stringify(tables) : ""} />
+    </TextTablesFields>
+  );
+}
+
+/**
+ * El editor sin estado propio, para tablas que viajan dentro de otro dato del formulario (por ejemplo, cada
+ * fila de «Seguimiento de la acción» de CAPA). `setTables` recibe una función sobre las tablas actuales.
+ */
+export function TextTablesFields({ fieldLabel, tables, setTables, children }: {
+  fieldLabel: string;
+  tables: TextTable[];
+  setTables: (change: (current: TextTable[]) => TextTable[]) => void;
+  children?: ReactNode;
+}) {
   const update = (index: number, change: (table: TextTable) => TextTable) =>
     setTables((current) => current.map((table, position) => (position === index ? change(table) : table)));
 
@@ -98,7 +115,7 @@ export function TextTablesEditor({ field, fieldLabel, initial }: { field: string
         <button type="button" className="button small" disabled={tables.length >= MAX_TABLES_PER_FIELD} aria-label={`Añadir tabla en «${fieldLabel}»`} onClick={() => setTables((current) => [...current, emptyTable()])}>+ Añadir tabla</button>
         {tables.length ? <small className="muted-note">Para traer una tabla de Excel, copia sus celdas y pégalas (Ctrl+V) en la primera celda. Las tablas se numeran en todo el expediente y salen en el anexo, dentro de la casilla de este apartado.</small> : null}
       </div>
-      <input type="hidden" name={textTablesInputName(field)} value={tables.length ? JSON.stringify(tables) : ""} />
+      {children}
     </div>
   );
 }

@@ -56,7 +56,7 @@ import {
 } from "@/lib/qms/versioning";
 import { keepsOperationalStatus } from "@/modules/lifecycle";
 import { orderedTextTables, storedTextTables } from "@/lib/forms/text-tables";
-import { CAPA_TABLE_FIELDS } from "./text-tables";
+import { capaTableFields, capaTableFieldsFor } from "./text-tables";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -96,7 +96,7 @@ function snapshot(v: ReturnType<typeof parseCapaForm>["values"]) {
     effectiveClosedAt: v.effectiveClosedAt,
     conclusion: v.conclusion,
     internalObservations: v.internalObservations,
-    textTables: orderedTextTables(v.textTables, CAPA_TABLE_FIELDS),
+    textTables: orderedTextTables(v.textTables, capaTableFields(v.actionFollowups.length)),
     signedDocumentAvailable: v.signedDocumentAvailable,
     dataQualityStatus: v.dataQualityStatus,
     plannedActions: v.plannedActions,
@@ -245,7 +245,7 @@ async function createCapaActionAuthenticatedContent(
           effectiveClosedAt: toDate(v.effectiveClosedAt),
           conclusion: v.conclusion,
           internalObservations: v.internalObservations,
-          textTables: orderedTextTables(v.textTables, CAPA_TABLE_FIELDS) ?? Prisma.DbNull,
+          textTables: orderedTextTables(v.textTables, capaTableFields(v.actionFollowups.length)) ?? Prisma.DbNull,
           signedDocumentAvailable: v.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
           formVersionId: formVersion?.id,
@@ -529,7 +529,7 @@ async function updateCapaActionAuthenticatedContent(
     conclusion: existing.conclusion,
     internalObservations: existing.internalObservations,
     // Normalizado para comparar sin el orden de claves de JSONB; si no se puede leer, el valor bruto.
-    textTables: orderedTextTables(storedTextTables(existing.textTables), CAPA_TABLE_FIELDS) ?? existing.textTables ?? null,
+    textTables: orderedTextTables(storedTextTables(existing.textTables), capaTableFieldsFor(storedTextTables(existing.textTables), existing.actionFollowups.length)) ?? existing.textTables ?? null,
     signedDocumentAvailable: existing.signedDocumentAvailable,
     dataQualityStatus: existing.dataQualityStatus,
     plannedActions: existing.plannedActions.map((item) => ({
@@ -653,7 +653,7 @@ async function updateCapaActionAuthenticatedContent(
           effectiveClosedAt: toDate(v.effectiveClosedAt),
           conclusion: v.conclusion,
           internalObservations: v.internalObservations,
-          textTables: orderedTextTables(v.textTables, CAPA_TABLE_FIELDS) ?? Prisma.DbNull,
+          textTables: orderedTextTables(v.textTables, capaTableFields(v.actionFollowups.length)) ?? Prisma.DbNull,
           signedDocumentAvailable: existing.signedDocumentAvailable,
           dataQualityStatus: v.dataQualityStatus,
           extraData: becomingOperational

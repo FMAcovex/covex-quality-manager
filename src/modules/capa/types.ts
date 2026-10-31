@@ -1,4 +1,4 @@
-import type { TextTables } from "@/lib/forms/text-tables";
+import type { TextTable, TextTables } from "@/lib/forms/text-tables";
 
 export type CapaFormState = {
   error: string | null;
@@ -21,6 +21,8 @@ export type CapaPlannedActionInput = {
 export type CapaActionFollowupInput = {
   followupDate: string;
   description: string;
+  /** D-127: tablas de la descripción (en `Capa.textTables`, clave `actionFollowups.N`). */
+  tables?: TextTable[];
 };
 
 export type CapaOriginInput = {

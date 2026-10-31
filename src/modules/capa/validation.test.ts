@@ -252,3 +252,30 @@ describe("CAPA · tablas de los textos (D-127)", () => {
   });
 });
 
+
+describe("CAPA · tablas de los seguimientos de la acción (D-127)", () => {
+  it("las tablas de cada fila se guardan con su clave; un error lleva el número de la fila y no deja guardar", () => {
+    const form = base();
+    const tables = [{ title: "Lotes revisados", columns: ["Lote"], rows: [["L-1"]] }];
+    form.set("actionFollowupsJson", JSON.stringify([
+      { followupDate: "2026-10-01", description: "Primera" },
+      { followupDate: "2026-10-02", description: "Segunda", tables },
+    ]));
+    const parsed = parseCapaForm(form);
+    expect(parsed.values.textTables).toEqual({ "actionFollowups.1": tables });
+    expect(parsed.values.actionFollowups).toEqual([{ followupDate: "2026-10-01", description: "Primera" }, { followupDate: "2026-10-02", description: "Segunda" }]);
+    form.set("actionFollowupsJson", JSON.stringify([{ followupDate: "2026-10-01", description: "Primera", tables: [{ title: "", columns: ["a"], rows: [["b"]] }] }]));
+    const invalid = parseCapaForm(form);
+    expect(invalid.fieldIssues.actionFollowupsJson).toContain("Seguimiento de acción 01 · 1.ª tabla: falta el título.");
+    expect(invalid.errors).toContain("Seguimiento de acción 01 · 1.ª tabla: falta el título.");
+  });
+});
+
+describe("CAPA · tope de tamaño de los seguimientos de la acción (D-127)", () => {
+  it("un envío desmesurado de filas con tablas no se guarda", () => {
+    const form = base();
+    const big = { title: "T", columns: ["a"], rows: Array(50).fill(["x".repeat(500)]) };
+    form.set("actionFollowupsJson", JSON.stringify(Array.from({ length: 80 }, (_, index) => ({ followupDate: "2026-10-01", description: `Fila ${index}`, tables: [big] }))));
+    expect(parseCapaForm(form).fieldIssues.actionFollowupsJson).toContain("Los seguimientos de la acción son demasiado grandes (reduce las tablas).");
+  });
+});

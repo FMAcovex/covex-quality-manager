@@ -454,7 +454,7 @@
     "src/modules/audits/queries.ts": "033d89d1d6ea0812602cc8c3b6c1fbda975b3b95153fab8596120e23c4b28a79",
     "src/modules/audits/report-service.ts": "cc919335a92f31e3e257797ce4b6e252aca1f96cdac0889db8d39413da9a99ed",
     "src/modules/audits/service.ts": "0fcdcc2e9df299c09550b162d635d3473ecfe5f881a6f7219f02c59f51f6cd73",
-    "src/modules/capa/actions.ts": "c1b0323352b45960a840bde77c1a17008df851e4ab4c62b8226a6819a66e8d37",
+    "src/modules/capa/actions.ts": "3edb039599a694fe4798db7ddf05024ea386774ce4d295454e4cb444af4cc914",
     "src/modules/capa/complaint-origin.ts": "96c0260abfa9b17b018f29f4fb4b5723443c6d64120315e9ae8e4e41864a1284",
     "src/modules/capa/deviation-origin.ts": "74d99a901719300ba513e9a07f41c6d73415ec7663f6eefa61ae67cec62cb6f9",
     "src/modules/capa/followup-service.ts": "b99bab77e2bf4d4fef66a4acfab7c6c8c113618e91834843a1310893e10a6430",
