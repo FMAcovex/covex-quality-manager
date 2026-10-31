@@ -24,6 +24,10 @@ describe("permisos por el estado del expediente al guardarlo (como la página de
     expect(recordStatusTarget("updateComplaintAction", form({ status: "CLOSED" }))).toBe("CLOSED");
     expect(recordStatusTarget("updateDeviationAction", form({ status: " CLOSED " }))).toBe("CLOSED");
     expect(recordStatusTarget("updateDeviationAction", form({}))).toBeNull();
+    // Como lo leen los formularios: sin viñetas vacías ni espacios.
+    expect(recordStatusTarget("updateDeviationAction", form({ status: "CLOSED\n•" }))).toBe("CLOSED");
+    expect(recordStatusTarget("updateComplaintAction", form({ saveStatus: "•\nCLOSED" }))).toBe("CLOSED");
+    // Las auditorías no están: su servicio exige conservar «Cerrada» al editar una cerrada, así que la regla general de CLOSE ya las cubre.
     expect(recordStatusTarget("saveAuditAction", form({ status: "CLOSED" }))).toBeUndefined();
   });
 });

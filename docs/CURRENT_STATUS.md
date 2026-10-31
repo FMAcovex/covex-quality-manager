@@ -187,6 +187,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 **Guardar un expediente cerrado o cancelado exige su permiso también en el servidor (2026-10-31):**
 - **Qué cambia:** desde 4B1, la página de edición de un expediente cerrado solo se abre con permiso de cierre (CLOSE), y la de uno cancelado con permiso de anulación (ANNUL) (`page-guard.ts`). Las acciones de guardado de Desviaciones, CAPA, Controles de cambios, Reclamaciones, OOS y Devoluciones aplican ahora la misma regla con el estado guardado del expediente (`src/lib/auth/close-permission.ts`). Antes solo exigían CLOSE si el formulario enviaba «Cerrado», así que un envío directo a la acción sin ese permiso podía editar o reabrir un expediente cerrado.
 - **Sin cambios** en roles, permisos, interfaz ni datos: quien usa la aplicación ya no podía abrir esa edición.
+- También como la página: editar el seguimiento que cerró un control de cambios exige CLOSE (con él se podía reabrir el control). Y los estados enviados se comparan como los leen los formularios (sin viñetas vacías ni espacios), para que «CLOSED» con una viñeta vacía no evite el permiso de cierre o de anulación.
 - **Comprobado** con pruebas unitarias de la regla y `phase4b1:smoke` (PostgreSQL): sin CLOSE se rechaza guardar un expediente cerrado, tanto si sigue cerrado como si se reabre o no se envía estado; con CLOSE se guarda. Falla con la guarda anterior y pasa con la nueva.
 
 **Historial de Controles de cambios sin cambios espurios (2026-10-31):**

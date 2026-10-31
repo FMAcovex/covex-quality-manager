@@ -106,6 +106,18 @@ describe("4B1 protección directa de entradas", () => {
     const closer: Principal = { ...editor, grants: [...editor.grants, { module: "COMPLAINT", permission: "CLOSE", scope: "ALL" }] };
     await identityContext.run({ principal: closer, unitTest: true }, () => expect(authorizedAction("createComplaintAction", [{ error: null }, form("CLOSED")], run)).resolves.toBe("saved"));
   });
+  it("el estado se compara como lo lee el formulario: una viñeta vacía no evita CLOSE ni ANNUL", async () => {
+    configureTest();
+    const editor: Principal = { ...principal, id: "synthetic-status-editor", grants: (["DEVIATION", "CAPA", "COMPLAINT"] as const).flatMap((module) => (["EDIT", "CREATE"] as const).map((permission) => ({ module, permission, scope: "ALL" as const }))) };
+    const run = vi.fn(async () => "saved");
+    const form = (entries: Record<string, string>) => { const data = new FormData(); for (const [key, value] of Object.entries(entries)) data.set(key, value); return data; };
+    const denied = (action: string, args: unknown[]) => identityContext.run({ principal: editor, unitTest: true }, () => expect(authorizedAction(action, args, run)).rejects.toMatchObject({ status: 403 }));
+    await denied("updateDeviationAction", ["dev-1", {}, form({ status: "CLOSED\n•" })]);
+    await denied("updateComplaintAction", ["rec-1", {}, form({ saveStatus: "•\nCLOSED" })]);
+    await denied("createComplaintAction", [{ error: null }, form({ saveStatus: "• \r\nCLOSED" })]);
+    await denied("updateCapaAction", ["capa-1", {}, form({ status: "CANCELLED\n•" })]);
+    expect(run).not.toHaveBeenCalled();
+  });
   it("no habilita el arnés unitario por bandera sintética en producción", () => {
     configureTest(); vi.stubEnv("APP_ENV", "production"); expect(() => authConfiguration()).toThrow();
   });

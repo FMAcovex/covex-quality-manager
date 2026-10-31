@@ -4,7 +4,7 @@ import inventory from "./operation-inventory.json";
 import { AccessError, currentIdentity, identityContext, type AccessModule, type AccessPermission } from "./context";
 import { assertPermission } from "./policy";
 import { qmsScope, resourceScope, reviewScope } from "./resources";
-import { recordStatusPermissions, recordStatusSource, recordStatusTarget } from "./close-permission";
+import { formStatus, recordStatusPermissions, recordStatusSource, recordStatusTarget } from "./close-permission";
 import { requireCsrf, requireUser } from "./session";
 import { qmsRecordModuleKeys, qmsRecordTypes } from "@/modules/registry";
 
@@ -77,9 +77,16 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
     for (const required of recordStatusPermissions(recordStatusTarget(name, form) ?? null, currentStatus)) assertPermission(user, accessModule, required, scope);
   }
   // Reclamaciones envía el estado de destino en `saveStatus` (prevalece sobre `status`).
-  if (form?.get("status") === "CLOSED" || form?.get("saveStatus") === "CLOSED" || form?.get("treatmentStatus") === "CLOSED" || form?.get("finalStatus") === "CLOSED") assertPermission(user, accessModule, "CLOSE", scope);
-  if (form?.get("closeChange") === "true") assertPermission(user, accessModule, "CLOSE", scope);
-  if ([form?.get("status"), form?.get("administrativeStatus")].some(value => value === "ANNULLED" || value === "CANCELLED")) assertPermission(user, accessModule, "ANNUL", scope);
+  // Los estados se comparan como los leen los formularios (sin viñetas vacías ni espacios).
+  if (["status", "saveStatus", "treatmentStatus", "finalStatus"].some(field => formStatus(form, field) === "CLOSED")) assertPermission(user, accessModule, "CLOSE", scope);
+  if (formStatus(form, "closeChange") === "true") assertPermission(user, accessModule, "CLOSE", scope);
+  if (["status", "administrativeStatus"].some(field => ["ANNULLED", "CANCELLED"].includes(formStatus(form, field) ?? ""))) assertPermission(user, accessModule, "ANNUL", scope);
+  // Como la página del seguimiento (4B1): editar el seguimiento que cerró un control de cambios exige CLOSE
+  // (con él se puede reabrir el control).
+  if (name === "updateChangeControlFollowupAction" && !unit && typeof args[0] === "string" && typeof args[1] === "string") {
+    const followup = await prisma.changeControlFollowup.findFirst({ where: { id: args[1], changeControlId: args[0] }, select: { closeChange: true } });
+    if (followup?.closeChange) assertPermission(user, accessModule, "CLOSE", scope);
+  }
   if (form?.get("departmentId") && scope.id) assertPermission(user, accessModule, permission, { id: scope.id, departmentIds: [String(form.get("departmentId"))] });
   if (accessModule === "AUDIT" && form) {
     const departments = form.getAll("departmentIds").map(String);

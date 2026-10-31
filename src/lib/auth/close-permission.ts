@@ -1,21 +1,31 @@
-import type { AccessModule, AccessPermission } from "./context";
+import { cleanText } from "@/lib/forms/bullets";
+import type { AccessPermission } from "./context";
 
 /**
  * Acciones de edición de un expediente cuyo estado puede ser «Cerrado»: módulo, modelo y campo del estado
  * guardado, y campos del formulario con el estado de destino (el primero que llegue prevalece).
  */
-const RECORD_STATUS_ACTIONS: Record<string, { module: AccessModule; model: string; field: string; formFields: string[] }> = {
-  updateDeviationAction: { module: "DEVIATION", model: "deviation", field: "status", formFields: ["status"] },
-  updateCapaAction: { module: "CAPA", model: "capa", field: "status", formFields: ["status"] },
-  updateChangeControlAction: { module: "CHANGE_CONTROL", model: "changeControl", field: "finalStatus", formFields: ["finalStatus"] },
+const RECORD_STATUS_ACTIONS: Record<string, { model: string; field: string; formFields: string[] }> = {
+  updateDeviationAction: { model: "deviation", field: "status", formFields: ["status"] },
+  updateCapaAction: { model: "capa", field: "status", formFields: ["status"] },
+  updateChangeControlAction: { model: "changeControl", field: "finalStatus", formFields: ["finalStatus"] },
   // Reclamaciones envía el estado de destino en `saveStatus` (prevalece sobre `status`).
-  updateComplaintAction: { module: "COMPLAINT", model: "complaint", field: "status", formFields: ["saveStatus", "status"] },
-  updateOosAction: { module: "OOS", model: "oosRecord", field: "status", formFields: ["status"] },
-  updateReturnAction: { module: "RETURN", model: "returnRecord", field: "status", formFields: ["status"] },
+  updateComplaintAction: { model: "complaint", field: "status", formFields: ["saveStatus", "status"] },
+  updateOosAction: { model: "oosRecord", field: "status", formFields: ["status"] },
+  updateReturnAction: { model: "returnRecord", field: "status", formFields: ["status"] },
 };
 
 export function recordStatusSource(action: string) {
   return RECORD_STATUS_ACTIONS[action];
+}
+
+/**
+ * Un estado enviado, leído como lo leen los formularios de los módulos (`cleanText`: sin viñetas vacías ni
+ * espacios), para que la guarda compare lo mismo que después se guarda. null si no hay valor.
+ */
+export function formStatus(form: FormData | undefined, field: string) {
+  const value = form?.get(field);
+  return typeof value === "string" ? cleanText(value) : null;
 }
 
 /** Estado de destino que envía el formulario de la acción; null si no envía ninguno; undefined si la acción no es de las de expediente. */
@@ -23,8 +33,8 @@ export function recordStatusTarget(action: string, form: FormData | undefined): 
   const source = RECORD_STATUS_ACTIONS[action];
   if (!source) return undefined;
   for (const field of source.formFields) {
-    const value = form?.get(field);
-    if (typeof value === "string" && value.trim()) return value.trim();
+    const value = formStatus(form, field);
+    if (value) return value;
   }
   return null;
 }

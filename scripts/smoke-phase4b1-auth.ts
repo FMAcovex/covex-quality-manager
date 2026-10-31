@@ -83,6 +83,18 @@ async function main() {
       form.set(statusField, "CLOSED"); await blocked(manager, entities[0].id);
       form.set(statusField, "OPEN"); await blocked(manager, entities[0].id);
       form.delete(statusField); await blocked(manager, entities[0].id);
+      if (accessModule === "CHANGE_CONTROL") {
+        // Como la página del seguimiento (4B1): sin CLOSE no se edita el seguimiento que cerró el control (podría reabrirlo).
+        const closing = await prisma.changeControlFollowup.create({ data: { changeControlId: entities[0].id, sequenceNumber: 1, followupDate: new Date("2096-01-10"), responsible: "Responsable sintético", executionStatus: "EXECUTED", effectivenessStatus: "ACCEPTABLE", closeChange: true } });
+        const followupForm = new FormData(); followupForm.set("nextFollowupDate", "2096-02-01"); followupForm.set("remainOpenReason", "Reapertura no autorizada");
+        let reopened = false;
+        await assert.rejects(asUser(manager, () => authorizedAction("updateChangeControlFollowupAction", [entities[0].id, closing.id, {}, followupForm], async () => { reopened = true; })), e => Boolean(e && typeof e === "object" && "status" in e && e.status === 403), "Seguimiento de cierre sin CLOSE");
+        assert.equal(reopened, false);
+        let edited = false;
+        await asUser(user, () => authorizedAction("updateChangeControlFollowupAction", [entities[0].id, closing.id, {}, followupForm], async () => { edited = true; }));
+        assert(edited, "Con CLOSE se edita el seguimiento de cierre");
+        await prisma.changeControlFollowup.delete({ where: { id: closing.id } });
+      }
       // Con permiso de cierre (QA) sí se guarda.
       form.set(statusField, "CLOSED");
       let saved = false;
