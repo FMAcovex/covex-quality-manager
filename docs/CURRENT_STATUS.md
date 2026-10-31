@@ -184,6 +184,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Después:** OOS, Reclamaciones y Devoluciones (tercera parte) y filas de seguimiento de la acción de CAPA (cuarta parte).
 - **Comprobado** con pruebas unitarias (validación, versiones, contrato B2, anexos con filas copiadas) y el smoke `text-tables:ui:smoke` ampliado a CAPA y Controles de cambios.
 
+**Verificación de los anexos con las plantillas reales (2026-10-31, D-128):**
+- **Qué cambia:**
+  - `pnpm annexes:verify` comprueba los 24 anexos con las plantillas oficiales en una base de datos desechable. Informa de qué dato cae en cada casilla, del texto de plantilla que cambia y de los campos que no se imprimen, y falla si algo no es lo previsto.
+  - La lista de lo previsto (`scripts/verify-annexes-expected.json`) no guarda texto de las plantillas.
+  - El comparador está en `src/lib/ooxml/annex-verification.ts`, con pruebas.
+  - La lectura de celdas de Excel pasa a `src/lib/ooxml/xlsx-cells.ts`, compartida con la comprobación de compatibilidad (D-100).
+- **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
+- **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
+
 **Guardar un expediente cerrado o cancelado exige su permiso también en el servidor (2026-10-31):**
 - **Qué cambia:** desde 4B1, la página de edición de un expediente cerrado solo se abre con permiso de cierre (CLOSE), y la de uno cancelado con permiso de anulación (ANNUL) (`page-guard.ts`). Las acciones de guardado de Desviaciones, CAPA, Controles de cambios, Reclamaciones, OOS y Devoluciones aplican ahora la misma regla con el estado guardado del expediente (`src/lib/auth/close-permission.ts`). Antes solo exigían CLOSE si el formulario enviaba «Cerrado», así que un envío directo a la acción sin ese permiso podía editar o reabrir un expediente cerrado.
 - **Sin cambios** en roles, permisos, interfaz ni datos: quien usa la aplicación ya no podía abrir esa edición.

@@ -53,6 +53,7 @@
     "db:push": "prisma db push",
     "db:smoke": "tsx scripts/smoke-db.ts",
     "templates:install": "tsx scripts/install-templates.ts",
+    "annexes:verify": "node --conditions=react-server --import tsx scripts/verify-annexes.ts",
     "import:deviations": "tsx scripts/import-historical-deviations.ts",
     "import:smoke": "tsx scripts/smoke-import.ts",
     "indicators:smoke": "tsx scripts/smoke-indicators.ts",

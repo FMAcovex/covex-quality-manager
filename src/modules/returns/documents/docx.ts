@@ -63,7 +63,7 @@ export async function generateReturnAnnexIII(r:ReturnDocumentRecord){
  xml=setWordCellTextBalanced(xml,7,1,1,[text(r.finalDestination),text(r.decisionObservations),r.decisionDate?`Fecha decisión: ${date(r.decisionDate)}`:"",contextFromExtraData(r.extraData).ambientPeriodRiskJustification?`Justificación y evaluación de riesgos del plazo excepcional: ${contextFromExtraData(r.extraData).ambientPeriodRiskJustification}`:""].filter(Boolean).join("\n"));
  xml=setWordCellTextBalanced(xml,8,1,0,`Nombre, fecha y firma:\n${text(r.qaApprovalName)}`);xml=setWordCellTextBalanced(xml,8,1,1,`Nombre, fecha y firma:\n${text(r.technicalApprovalName)}`);
  // D-127: tablas de los textos, al final de su casilla (después de rellenar y copiar la fila de productos).
- xml=insertWordCellTables(xml,returnAnnexTablePlacements(storedTextTables(r.textTables),"III",r.products.length));
+ xml=insertWordCellTables(xml,returnAnnexTablePlacements(storedTextTables(r.textTables),"III",r.products.length,{ambientJustification:Boolean(contextFromExtraData(r.extraData).ambientPeriodRiskJustification)}));
  updateZipEntry(entries,"word/document.xml",xml);sanitizeOfficeMetadata(entries);return writeZip(entries);
 }
 

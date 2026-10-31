@@ -1,0 +1,2512 @@
+{
+  "DV_III": {
+    "notPrinted": [
+      "Deviation.createdByText",
+      "Deviation.internalObservations",
+      "Deviation.kpiExclusionReason",
+      "Deviation.processEquipmentSystem",
+      "DeviationFollowup[1].comment",
+      "DeviationFollowup[1].completedByText",
+      "DeviationFollowup[1].evidenceReference",
+      "DeviationFollowup[1].followupType",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 6, casilla 2#e6ace32d26707a0f",
+      "Tabla 1, fila 6, casilla 3#faae109f5cf8972d",
+      "Tabla 1, fila 6, casilla 6#747abda233b8e81f"
+    ],
+    "positions": {
+      "Deviation.affectedDocumentation": [
+        "Tabla 1, fila 19, casilla 1"
+      ],
+      "Deviation.affectedEquipmentLine": [
+        "Tabla 1, fila 16, casilla 3"
+      ],
+      "Deviation.affectedQuantity": [
+        "Tabla 1, fila 10, casilla 5"
+      ],
+      "Deviation.client": [
+        "Tabla 1, fila 11, casilla 3"
+      ],
+      "Deviation.conclusion": [
+        "Tabla 5, fila 2, casilla 1"
+      ],
+      "Deviation.detectedBy": [
+        "Tabla 1, fila 5, casilla 5"
+      ],
+      "Deviation.disposition": [
+        "Tabla 5, fila 4, casilla 1"
+      ],
+      "Deviation.dispositionComments": [
+        "Tabla 5, fila 4, casilla 1"
+      ],
+      "Deviation.dispositionQuantity": [
+        "Tabla 5, fila 4, casilla 1"
+      ],
+      "Deviation.eventDateTime": [
+        "Tabla 1, fila 6, casilla 2"
+      ],
+      "Deviation.finishedProductSystem": [
+        "Tabla 1, fila 8, casilla 3"
+      ],
+      "Deviation.howHappened": [
+        "Tabla 2, fila 11, casilla 1"
+      ],
+      "Deviation.investigation": [
+        "Tabla 3, fila 7, casilla 1"
+      ],
+      "Deviation.issueDate": [
+        "Tabla 1, fila 2, casilla 4"
+      ],
+      "Deviation.lotSize": [
+        "Tabla 1, fila 9, casilla 5"
+      ],
+      "Deviation.materialAffectedQuantity": [
+        "Tabla 1, fila 14, casilla 5"
+      ],
+      "Deviation.materialLot": [
+        "Tabla 1, fila 12, casilla 5"
+      ],
+      "Deviation.materialLotSize": [
+        "Tabla 1, fila 13, casilla 5"
+      ],
+      "Deviation.materialProcessAffected": [
+        "Tabla 1, fila 4, casilla 2"
+      ],
+      "Deviation.otherOrigin": [
+        "Tabla 1, fila 17, casilla 3"
+      ],
+      "Deviation.otherProcessesImpactDetails": [
+        "Tabla 4, fila 7, casilla 2"
+      ],
+      "Deviation.otroLote.cantidad": [
+        "Tabla 1, fila 14, casilla 5"
+      ],
+      "Deviation.otroLote.lote": [
+        "Tabla 1, fila 12, casilla 5"
+      ],
+      "Deviation.otroLote.nombre": [
+        "Tabla 1, fila 12, casilla 3"
+      ],
+      "Deviation.otroLote.tamaño": [
+        "Tabla 1, fila 13, casilla 5"
+      ],
+      "Deviation.productLot": [
+        "Tabla 1, fila 8, casilla 5"
+      ],
+      "Deviation.rawOrPackagingMaterial": [
+        "Tabla 1, fila 12, casilla 3"
+      ],
+      "Deviation.recurrenceDetails": [
+        "Tabla 3, fila 17, casilla 2"
+      ],
+      "Deviation.rootCause": [
+        "Tabla 3, fila 15, casilla 1"
+      ],
+      "Deviation.shift": [
+        "Tabla 1, fila 6, casilla 6"
+      ],
+      "Deviation.supplier": [
+        "Tabla 1, fila 15, casilla 3"
+      ],
+      "Deviation.supplierLot": [
+        "Tabla 1, fila 15, casilla 5"
+      ],
+      "Deviation.whatHappened": [
+        "Tabla 2, fila 3, casilla 1"
+      ],
+      "Deviation.whenHappened": [
+        "Tabla 2, fila 7, casilla 1"
+      ],
+      "Deviation.whereHappened": [
+        "Tabla 2, fila 9, casilla 1"
+      ],
+      "Deviation.whoInvolved": [
+        "Tabla 2, fila 5, casilla 1"
+      ],
+      "DeviationCapaPlan[1].businessCapaCode": [
+        "Tabla 4, fila 13, casilla 1"
+      ],
+      "DeviationCapaPlan[1].description": [
+        "Tabla 4, fila 13, casilla 2"
+      ],
+      "DeviationCapaPlan[1].plannedExecutionDate": [
+        "Tabla 4, fila 13, casilla 3"
+      ],
+      "DeviationCapaPlan[1].responsible": [
+        "Tabla 4, fila 13, casilla 4"
+      ],
+      "DeviationImmediateAction[1].description": [
+        "Tabla 3, fila 4, casilla 1"
+      ],
+      "DeviationImmediateAction[1].executedAt": [
+        "Tabla 3, fila 4, casilla 3"
+      ],
+      "DeviationImmediateAction[1].executedBy": [
+        "Tabla 3, fila 4, casilla 2"
+      ],
+      "tabla.Deviation.affectedDocumentation": [
+        "Tabla 1, fila 19, casilla 1"
+      ],
+      "tabla.Deviation.conclusion": [
+        "Tabla 5, fila 2, casilla 1"
+      ],
+      "tabla.Deviation.dispositionComments": [
+        "Tabla 5, fila 4, casilla 1"
+      ],
+      "tabla.Deviation.howHappened": [
+        "Tabla 2, fila 11, casilla 1"
+      ],
+      "tabla.Deviation.investigation": [
+        "Tabla 3, fila 7, casilla 1"
+      ],
+      "tabla.Deviation.otherProcessesImpactDetails": [
+        "Tabla 4, fila 7, casilla 2"
+      ],
+      "tabla.Deviation.recurrenceDetails": [
+        "Tabla 3, fila 17, casilla 2"
+      ],
+      "tabla.Deviation.rootCause": [
+        "Tabla 3, fila 15, casilla 1"
+      ],
+      "tabla.Deviation.whatHappened": [
+        "Tabla 2, fila 3, casilla 1"
+      ],
+      "tabla.Deviation.whenHappened": [
+        "Tabla 2, fila 7, casilla 1"
+      ],
+      "tabla.Deviation.whereHappened": [
+        "Tabla 2, fila 9, casilla 1"
+      ],
+      "tabla.Deviation.whoInvolved": [
+        "Tabla 2, fila 5, casilla 1"
+      ]
+    }
+  },
+  "DV_V": {
+    "notPrinted": [
+      "Deviation.affectedDocumentation",
+      "Deviation.affectedEquipmentLine",
+      "Deviation.affectedQuantity",
+      "Deviation.client",
+      "Deviation.conclusion",
+      "Deviation.createdByText",
+      "Deviation.detectedBy",
+      "Deviation.disposition",
+      "Deviation.dispositionComments",
+      "Deviation.dispositionQuantity",
+      "Deviation.finishedProductSystem",
+      "Deviation.howHappened",
+      "Deviation.internalObservations",
+      "Deviation.investigation",
+      "Deviation.kpiExclusionReason",
+      "Deviation.lotSize",
+      "Deviation.materialAffectedQuantity",
+      "Deviation.materialLot",
+      "Deviation.materialLotSize",
+      "Deviation.otherOrigin",
+      "Deviation.otherProcessesImpactDetails",
+      "Deviation.processEquipmentSystem",
+      "Deviation.productLot",
+      "Deviation.rawOrPackagingMaterial",
+      "Deviation.recurrenceDetails",
+      "Deviation.rootCause",
+      "Deviation.shift",
+      "Deviation.supplier",
+      "Deviation.supplierLot",
+      "Deviation.whenHappened",
+      "Deviation.whereHappened",
+      "Deviation.whoInvolved",
+      "DeviationCapaPlan[1].description",
+      "DeviationCapaPlan[1].responsible",
+      "DeviationFollowup[1].comment",
+      "DeviationFollowup[1].completedByText",
+      "DeviationFollowup[1].evidenceReference",
+      "DeviationFollowup[1].followupType",
+      "DeviationImmediateAction[1].description",
+      "DeviationImmediateAction[1].executedBy",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes"
+    ],
+    "replacedTemplateText": [
+      "TABLA OFICIAL!B2#efc350ed12018b23"
+    ],
+    "positions": {
+      "Deviation.closedAt": [
+        "TABLA OFICIAL!F6"
+      ],
+      "Deviation.issueDate": [
+        "TABLA OFICIAL!B6"
+      ],
+      "Deviation.materialProcessAffected": [
+        "TABLA OFICIAL!C6"
+      ],
+      "Deviation.whatHappened": [
+        "TABLA OFICIAL!D6"
+      ],
+      "DeviationCapaPlan[1].businessCapaCode": [
+        "TABLA OFICIAL!E6"
+      ]
+    }
+  },
+  "CA_III": {
+    "notPrinted": [
+      "Capa.cancellationReason",
+      "Capa.createdByText",
+      "Capa.effectivenessCriteria",
+      "Capa.effectivenessEvidence",
+      "Capa.impactAssessment",
+      "Capa.internalObservations",
+      "Capa.kpiExclusionReason",
+      "Capa.originType",
+      "CapaFollowup[1].completedByText",
+      "CapaFollowup[1].description",
+      "CapaFollowup[1].evidenceReference",
+      "CapaFollowup[1].observations",
+      "CapaFollowup[1].reason",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes"
+    ],
+    "replacedTemplateText": [
+      "Tabla 2, fila 8, casilla 1#b5bc09022af70427"
+    ],
+    "positions": {
+      "Capa.actionFollowupObservations": [
+        "Tabla 2, fila 5, casilla 1"
+      ],
+      "Capa.applicableTo": [
+        "Tabla 1, fila 11, casilla 1"
+      ],
+      "Capa.conclusion": [
+        "Tabla 2, fila 13, casilla 1"
+      ],
+      "Capa.defectDescription": [
+        "Tabla 1, fila 13, casilla 1"
+      ],
+      "Capa.effectiveClosedAt": [
+        "Tabla 2, fila 16, casilla 2"
+      ],
+      "Capa.effectivenessAssessment": [
+        "Tabla 2, fila 11, casilla 1"
+      ],
+      "Capa.nextFollowupDate": [
+        "Tabla 2, fila 14, casilla 2"
+      ],
+      "Capa.openedAt": [
+        "Tabla 1, fila 3, casilla 4",
+        "Tabla 1, fila 4, casilla 4"
+      ],
+      "Capa.operationalClosedAt": [
+        "Tabla 2, fila 15, casilla 2"
+      ],
+      "Capa.operationalStatusDescription": [
+        "Tabla 2, fila 8, casilla 1"
+      ],
+      "Capa.originCode": [
+        "Tabla 1, fila 9, casilla 2"
+      ],
+      "Capa.rootCause": [
+        "Tabla 1, fila 15, casilla 1"
+      ],
+      "CapaPlannedAction[1].description": [
+        "Tabla 1, fila 18, casilla 1"
+      ],
+      "CapaPlannedAction[1].impact": [
+        "Tabla 1, fila 18, casilla 4"
+      ],
+      "CapaPlannedAction[1].plannedExecutionDate": [
+        "Tabla 1, fila 18, casilla 3"
+      ],
+      "CapaPlannedAction[1].responsible": [
+        "Tabla 1, fila 18, casilla 2"
+      ],
+      "tabla.Capa.actionFollowupObservations": [
+        "Tabla 2, fila 5, casilla 1"
+      ],
+      "tabla.Capa.conclusion": [
+        "Tabla 2, fila 13, casilla 1"
+      ],
+      "tabla.Capa.defectDescription": [
+        "Tabla 1, fila 13, casilla 1"
+      ],
+      "tabla.Capa.effectivenessAssessment": [
+        "Tabla 2, fila 11, casilla 1"
+      ],
+      "tabla.Capa.operationalStatusDescription": [
+        "Tabla 2, fila 8, casilla 1"
+      ],
+      "tabla.Capa.rootCause": [
+        "Tabla 1, fila 15, casilla 1"
+      ]
+    }
+  },
+  "CA_IV": {
+    "notPrinted": [
+      "Capa.actionFollowupObservations",
+      "Capa.applicableTo",
+      "Capa.cancellationReason",
+      "Capa.conclusion",
+      "Capa.createdByText",
+      "Capa.defectDescription",
+      "Capa.effectivenessAssessment",
+      "Capa.effectivenessCriteria",
+      "Capa.effectivenessEvidence",
+      "Capa.impactAssessment",
+      "Capa.internalObservations",
+      "Capa.kpiExclusionReason",
+      "Capa.operationalStatusDescription",
+      "Capa.rootCause",
+      "CapaFollowup[1].completedByText",
+      "CapaFollowup[1].description",
+      "CapaFollowup[1].evidenceReference",
+      "CapaFollowup[1].observations",
+      "CapaFollowup[1].reason",
+      "CapaPlannedAction[1].impact",
+      "CapaPlannedAction[1].responsible",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes"
+    ],
+    "replacedTemplateText": [
+      "ANEXO 2026 IMPRIMIR!A2#8b55497d1ac49d5c"
+    ],
+    "positions": {
+      "Capa.effectiveClosedAt": [
+        "ANEXO 2026 IMPRIMIR!F5"
+      ],
+      "Capa.openedAt": [
+        "ANEXO 2026 IMPRIMIR!D5"
+      ],
+      "Capa.operationalClosedAt": [
+        "ANEXO 2026 IMPRIMIR!E5"
+      ],
+      "Capa.originCode": [
+        "ANEXO 2026 IMPRIMIR!B5"
+      ],
+      "Capa.originType": [
+        "ANEXO 2026 IMPRIMIR!B5"
+      ],
+      "CapaPlannedAction[1].description": [
+        "ANEXO 2026 IMPRIMIR!C5"
+      ]
+    }
+  },
+  "CC_III": {
+    "notPrinted": [
+      "ChangeControl.additionalAnalysisDetails",
+      "ChangeControl.additionalValidationDetails",
+      "ChangeControl.approvalNames",
+      "ChangeControl.authorityDetails",
+      "ChangeControl.clientNotificationDetails",
+      "ChangeControl.closureConclusion",
+      "ChangeControl.committeeDetails",
+      "ChangeControl.dictamenObservations",
+      "ChangeControl.evaluation",
+      "ChangeControl.followupResponsible",
+      "ChangeControl.internalObservations",
+      "ChangeControl.kpiExclusionReason",
+      "ChangeControl.otherImplicationDetails",
+      "ChangeControl.pqrPeriod",
+      "ChangeControl.pqrProducts",
+      "ChangeControlFollowup.approvalByText",
+      "ChangeControlFollowup.conclusion",
+      "ChangeControlFollowup.effectivenessObservations",
+      "ChangeControlFollowup.observations",
+      "ChangeControlFollowup.remainOpenReason",
+      "ChangeControlFollowup.responsible",
+      "ChangeControlFollowup[1].approvalByText",
+      "ChangeControlFollowup[1].conclusion",
+      "ChangeControlFollowup[1].effectivenessObservations",
+      "ChangeControlFollowup[1].observations",
+      "ChangeControlFollowup[1].remainOpenReason",
+      "ChangeControlFollowup[1].responsible",
+      "ChangeControlTask.description",
+      "ChangeControlTask.responsible",
+      "ChangeControlTaskState[1].evidenceComment",
+      "ChangeControlTask[1].description",
+      "ChangeControlTask[1].responsible",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 2, casilla 2#91c6206754045e95",
+      "Tabla 1, fila 2, casilla 4#214d69efea8aa670",
+      "Tabla 1, fila 3, casilla 2#79b84f15d85b70c0"
+    ],
+    "positions": {
+      "ChangeControl.description": [
+        "Tabla 1, fila 8, casilla 1"
+      ],
+      "ChangeControl.justification": [
+        "Tabla 1, fila 10, casilla 1"
+      ],
+      "ChangeControl.otherScope": [
+        "Tabla 1, fila 3, casilla 2"
+      ],
+      "ChangeControl.providedDocuments": [
+        "Tabla 1, fila 12, casilla 1"
+      ],
+      "ChangeControl.requestDate": [
+        "Tabla 1, fila 2, casilla 4"
+      ],
+      "ChangeControl.requestDecisionDate": [
+        "Tabla 1, fila 16, casilla 1"
+      ],
+      "ChangeControl.requestDecisionResponsible": [
+        "Tabla 1, fila 15, casilla 2",
+        "Tabla 1, fila 16, casilla 1"
+      ],
+      "ChangeControl.requestDecisionRole": [
+        "Tabla 1, fila 15, casilla 2",
+        "Tabla 1, fila 16, casilla 1"
+      ],
+      "ChangeControl.requesterName": [
+        "Tabla 1, fila 6, casilla 1"
+      ],
+      "ChangeControl.requesterPosition": [
+        "Tabla 1, fila 6, casilla 1"
+      ],
+      "tabla.ChangeControl.description": [
+        "Tabla 1, fila 8, casilla 1"
+      ],
+      "tabla.ChangeControl.justification": [
+        "Tabla 1, fila 10, casilla 1"
+      ],
+      "tabla.ChangeControl.providedDocuments": [
+        "Tabla 1, fila 12, casilla 1"
+      ]
+    }
+  },
+  "CC_IV": {
+    "notPrinted": [
+      "ChangeControl.closureConclusion",
+      "ChangeControl.description",
+      "ChangeControl.internalObservations",
+      "ChangeControl.justification",
+      "ChangeControl.kpiExclusionReason",
+      "ChangeControl.providedDocuments",
+      "ChangeControl.requestDecisionResponsible",
+      "ChangeControl.requestDecisionRole",
+      "ChangeControl.requesterName",
+      "ChangeControl.requesterPosition",
+      "ChangeControlFollowup.approvalByText",
+      "ChangeControlFollowup.conclusion",
+      "ChangeControlFollowup.effectivenessObservations",
+      "ChangeControlFollowup.observations",
+      "ChangeControlFollowup.remainOpenReason",
+      "ChangeControlFollowup.responsible",
+      "ChangeControlFollowup[1].approvalByText",
+      "ChangeControlFollowup[1].conclusion",
+      "ChangeControlFollowup[1].effectivenessObservations",
+      "ChangeControlFollowup[1].observations",
+      "ChangeControlFollowup[1].remainOpenReason",
+      "ChangeControlFollowup[1].responsible",
+      "ChangeControlTask.description",
+      "ChangeControlTask.responsible",
+      "ChangeControlTaskState[1].evidenceComment",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 2, casilla 2#91c6206754045e95",
+      "Tabla 1, fila 9, casilla 1#ab52b27e673019a0"
+    ],
+    "positions": {
+      "ChangeControl.additionalAnalysisDetails": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "ChangeControl.additionalValidationDetails": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "ChangeControl.approvalNames": [
+        "Tabla 2, fila 8, casilla 1"
+      ],
+      "ChangeControl.authorityDetails": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "ChangeControl.clientNotificationDetails": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "ChangeControl.committeeDetails": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "ChangeControl.dictamenDate": [
+        "Tabla 2, fila 4, casilla 4",
+        "Tabla 2, fila 8, casilla 1"
+      ],
+      "ChangeControl.dictamenObservations": [
+        "Tabla 2, fila 6, casilla 2"
+      ],
+      "ChangeControl.evaluation": [
+        "Tabla 1, fila 6, casilla 1"
+      ],
+      "ChangeControl.followupResponsible": [
+        "Tabla 2, fila 5, casilla 2"
+      ],
+      "ChangeControl.otherImplicationDetails": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "ChangeControl.otherScope": [
+        "Tabla 1, fila 3, casilla 2"
+      ],
+      "ChangeControl.plannedImplementationDate": [
+        "Tabla 1, fila 7, casilla 4"
+      ],
+      "ChangeControl.pqrPeriod": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "ChangeControl.pqrProducts": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "ChangeControl.requestDate": [
+        "Tabla 1, fila 2, casilla 4"
+      ],
+      "ChangeControlTask[1].description": [
+        "Tabla 1, fila 9, casilla 1"
+      ],
+      "ChangeControlTask[1].plannedDate": [
+        "Tabla 1, fila 9, casilla 1"
+      ],
+      "ChangeControlTask[1].responsible": [
+        "Tabla 1, fila 9, casilla 1"
+      ],
+      "tabla.ChangeControl.dictamenObservations": [
+        "Tabla 2, fila 6, casilla 2"
+      ],
+      "tabla.ChangeControl.evaluation": [
+        "Tabla 1, fila 6, casilla 1"
+      ]
+    }
+  },
+  "CC_V": {
+    "notPrinted": [
+      "ChangeControl.additionalAnalysisDetails",
+      "ChangeControl.additionalValidationDetails",
+      "ChangeControl.approvalNames",
+      "ChangeControl.authorityDetails",
+      "ChangeControl.clientNotificationDetails",
+      "ChangeControl.closureConclusion",
+      "ChangeControl.committeeDetails",
+      "ChangeControl.description",
+      "ChangeControl.dictamenObservations",
+      "ChangeControl.evaluation",
+      "ChangeControl.followupResponsible",
+      "ChangeControl.internalObservations",
+      "ChangeControl.justification",
+      "ChangeControl.kpiExclusionReason",
+      "ChangeControl.otherImplicationDetails",
+      "ChangeControl.otherScope",
+      "ChangeControl.pqrPeriod",
+      "ChangeControl.pqrProducts",
+      "ChangeControl.providedDocuments",
+      "ChangeControl.requestDecisionResponsible",
+      "ChangeControl.requestDecisionRole",
+      "ChangeControl.requesterName",
+      "ChangeControl.requesterPosition",
+      "ChangeControlFollowup.approvalByText",
+      "ChangeControlFollowup.conclusion",
+      "ChangeControlFollowup.effectivenessObservations",
+      "ChangeControlFollowup.observations",
+      "ChangeControlFollowup.remainOpenReason",
+      "ChangeControlFollowup.responsible",
+      "ChangeControlFollowup[1].observations",
+      "ChangeControlTask.description",
+      "ChangeControlTask.responsible",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 2, casilla 2#91c6206754045e95",
+      "Tabla 1, fila 3, casilla 4#871d1bc1fb5e3695",
+      "Tabla 1, fila 6, casilla 1#b7683c919b83f559"
+    ],
+    "positions": {
+      "ChangeControlFollowup[1].approvalByText": [
+        "Tabla 2, fila 12, casilla 1"
+      ],
+      "ChangeControlFollowup[1].conclusion": [
+        "Tabla 2, fila 11, casilla 2"
+      ],
+      "ChangeControlFollowup[1].effectivenessObservations": [
+        "Tabla 2, fila 6, casilla 2"
+      ],
+      "ChangeControlFollowup[1].executionDate": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "ChangeControlFollowup[1].followupDate": [
+        "Tabla 1, fila 2, casilla 4",
+        "Tabla 1, fila 3, casilla 4",
+        "Tabla 2, fila 12, casilla 1"
+      ],
+      "ChangeControlFollowup[1].nextFollowupDate": [
+        "Tabla 2, fila 8, casilla 5"
+      ],
+      "ChangeControlFollowup[1].remainOpenReason": [
+        "Tabla 2, fila 10, casilla 2"
+      ],
+      "ChangeControlFollowup[1].responsible": [
+        "Tabla 1, fila 4, casilla 1"
+      ],
+      "ChangeControlTask[1].description": [
+        "Tabla 1, fila 6, casilla 1"
+      ],
+      "ChangeControlTask[1].plannedDate": [
+        "Tabla 1, fila 6, casilla 1"
+      ],
+      "ChangeControlTask[1].responsible": [
+        "Tabla 1, fila 6, casilla 1"
+      ],
+      "ChangeControlTaskState[1].actualDate": [
+        "Tabla 1, fila 6, casilla 1"
+      ],
+      "ChangeControlTaskState[1].evidenceComment": [
+        "Tabla 1, fila 6, casilla 1"
+      ]
+    }
+  },
+  "CC_VII": {
+    "notPrinted": [
+      "ChangeControl.additionalAnalysisDetails",
+      "ChangeControl.additionalValidationDetails",
+      "ChangeControl.approvalNames",
+      "ChangeControl.authorityDetails",
+      "ChangeControl.clientNotificationDetails",
+      "ChangeControl.closureConclusion",
+      "ChangeControl.committeeDetails",
+      "ChangeControl.dictamenObservations",
+      "ChangeControl.evaluation",
+      "ChangeControl.followupResponsible",
+      "ChangeControl.internalObservations",
+      "ChangeControl.justification",
+      "ChangeControl.kpiExclusionReason",
+      "ChangeControl.otherImplicationDetails",
+      "ChangeControl.otherScope",
+      "ChangeControl.pqrPeriod",
+      "ChangeControl.pqrProducts",
+      "ChangeControl.providedDocuments",
+      "ChangeControl.requestDecisionResponsible",
+      "ChangeControl.requestDecisionRole",
+      "ChangeControl.requesterName",
+      "ChangeControl.requesterPosition",
+      "ChangeControlFollowup.approvalByText",
+      "ChangeControlFollowup.conclusion",
+      "ChangeControlFollowup.effectivenessObservations",
+      "ChangeControlFollowup.observations",
+      "ChangeControlFollowup.remainOpenReason",
+      "ChangeControlFollowup.responsible",
+      "ChangeControlFollowup[1].approvalByText",
+      "ChangeControlFollowup[1].conclusion",
+      "ChangeControlFollowup[1].effectivenessObservations",
+      "ChangeControlFollowup[1].observations",
+      "ChangeControlFollowup[1].remainOpenReason",
+      "ChangeControlFollowup[1].responsible",
+      "ChangeControlTask.description",
+      "ChangeControlTask.responsible",
+      "ChangeControlTaskState[1].evidenceComment",
+      "ChangeControlTask[1].description",
+      "ChangeControlTask[1].responsible",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "ANEXO VII 2026 IMPRIMIR!B2#a8ebb4823a612623",
+      "Libro#28e6c58d2248d75d"
+    ],
+    "positions": {
+      "ChangeControl.description": [
+        "ANEXO VII 2026 IMPRIMIR!D5"
+      ],
+      "ChangeControl.dictamenDate": [
+        "ANEXO VII 2026 IMPRIMIR!F5"
+      ],
+      "ChangeControl.effectiveClosedAt": [
+        "ANEXO VII 2026 IMPRIMIR!I5"
+      ],
+      "ChangeControl.executionDate": [
+        "ANEXO VII 2026 IMPRIMIR!H5"
+      ],
+      "ChangeControl.requestDate": [
+        "ANEXO VII 2026 IMPRIMIR!E5"
+      ],
+      "ChangeControlTask[1].plannedDate": [
+        "ANEXO VII 2026 IMPRIMIR!G5"
+      ]
+    }
+  },
+  "RC_III": {
+    "notPrinted": [
+      "Complaint.affectedScope",
+      "Complaint.createdByText",
+      "Complaint.creditActionDetails",
+      "Complaint.detectedBy",
+      "Complaint.externalCommunication",
+      "Complaint.immediateActionDetails",
+      "Complaint.internalObservations",
+      "Complaint.kpiExclusionReason",
+      "Complaint.otherResolutionDetails",
+      "Complaint.purchaseDeliveryReference",
+      "Complaint.recallActionDetails",
+      "Complaint.replacementActionDetails",
+      "Complaint.responseMedium",
+      "ComplaintFollowup[1].comment",
+      "ComplaintFollowup[1].completedByText",
+      "ComplaintFollowup[1].evidenceReference",
+      "ComplaintFollowup[1].followupType",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 2, casilla 2#cba1348a8565c827",
+      "Tabla 2, fila 17, casilla 2#2bdb43453445f85b",
+      "Tabla 2, fila 18, casilla 2#67d118ce694598ff",
+      "Tabla 3, fila 3, casilla 1#7ab0ff1d53543ca2",
+      "Tabla 4, fila 11, casilla 1#38ea7dbb9314dd72",
+      "Tabla 5, fila 2, casilla 1#8cedfd86ec5c5809"
+    ],
+    "positions": {
+      "Complaint.affectedObjectOther": [
+        "Tabla 2, fila 8, casilla 2"
+      ],
+      "Complaint.approvalNames": [
+        "Tabla 3, fila 3, casilla 1"
+      ],
+      "Complaint.attachedDocumentation": [
+        "Tabla 2, fila 16, casilla 2"
+      ],
+      "Complaint.categoryOther": [
+        "Tabla 2, fila 13, casilla 1"
+      ],
+      "Complaint.closeActionReferences": [
+        "Tabla 4, fila 11, casilla 1"
+      ],
+      "Complaint.closeApprovalNames": [
+        "Tabla 5, fila 2, casilla 1"
+      ],
+      "Complaint.closeConclusion": [
+        "Tabla 4, fila 13, casilla 1"
+      ],
+      "Complaint.closedAt": [
+        "Tabla 4, fila 14, casilla 4"
+      ],
+      "Complaint.communicationDate": [
+        "Tabla 2, fila 58, casilla 2"
+      ],
+      "Complaint.communicationMedium": [
+        "Tabla 2, fila 58, casilla 2"
+      ],
+      "Complaint.communicationParties": [
+        "Tabla 2, fila 58, casilla 4"
+      ],
+      "Complaint.communicationSummary": [
+        "Tabla 2, fila 60, casilla 1"
+      ],
+      "Complaint.conclusion": [
+        "Tabla 2, fila 64, casilla 1"
+      ],
+      "Complaint.contact": [
+        "Tabla 2, fila 6, casilla 2"
+      ],
+      "Complaint.containmentOther": [
+        "Tabla 2, fila 27, casilla 1"
+      ],
+      "Complaint.description": [
+        "Tabla 2, fila 14, casilla 1"
+      ],
+      "Complaint.detectionDate": [
+        "Tabla 2, fila 2, casilla 2"
+      ],
+      "Complaint.effectivenessAssessment": [
+        "Tabla 4, fila 9, casilla 1"
+      ],
+      "Complaint.emittedBy": [
+        "Tabla 2, fila 17, casilla 2"
+      ],
+      "Complaint.expiryReanalysis": [
+        "Tabla 2, fila 11, casilla 4"
+      ],
+      "Complaint.impactAssessment": [
+        "Tabla 2, fila 32, casilla 1"
+      ],
+      "Complaint.investigation": [
+        "Tabla 2, fila 32, casilla 1"
+      ],
+      "Complaint.lotReference": [
+        "Tabla 2, fila 9, casilla 4"
+      ],
+      "Complaint.nextFollowupDate": [
+        "Tabla 4, fila 15, casilla 2"
+      ],
+      "Complaint.openedAt": [
+        "Tabla 1, fila 2, casilla 4"
+      ],
+      "Complaint.otroLote.cantidad": [
+        "Tabla 2, fila 10, casilla 4"
+      ],
+      "Complaint.otroLote.lote": [
+        "Tabla 2, fila 9, casilla 4"
+      ],
+      "Complaint.otroLote.nombre": [
+        "Tabla 2, fila 9, casilla 2"
+      ],
+      "Complaint.partyName": [
+        "Tabla 2, fila 5, casilla 2"
+      ],
+      "Complaint.qaValidatedBy": [
+        "Tabla 2, fila 18, casilla 2"
+      ],
+      "Complaint.quantity": [
+        "Tabla 2, fila 10, casilla 4"
+      ],
+      "Complaint.receptionDate": [
+        "Tabla 2, fila 2, casilla 4"
+      ],
+      "Complaint.recurrenceReference": [
+        "Tabla 2, fila 15, casilla 4"
+      ],
+      "Complaint.reference": [
+        "Tabla 2, fila 9, casilla 2"
+      ],
+      "Complaint.regulatoryJustification": [
+        "Tabla 2, fila 48, casilla 2"
+      ],
+      "Complaint.resolutionLines": [
+        "Tabla 2, fila 51, casilla 1"
+      ],
+      "Complaint.responseSummary": [
+        "Tabla 4, fila 5, casilla 1"
+      ],
+      "Complaint.riskJustification": [
+        "Tabla 2, fila 29, casilla 1"
+      ],
+      "Complaint.rootCause": [
+        "Tabla 2, fila 36, casilla 1"
+      ],
+      "Complaint.scopeOther": [
+        "Tabla 2, fila 7, casilla 2"
+      ],
+      "Complaint.sourceOther": [
+        "Tabla 2, fila 5, casilla 2"
+      ],
+      "ComplaintDerivedAction[1].description": [
+        "Tabla 2, fila 56, casilla 2"
+      ],
+      "ComplaintDerivedAction[1].plannedExecutionDate": [
+        "Tabla 2, fila 56, casilla 4"
+      ],
+      "ComplaintDerivedAction[1].responsible": [
+        "Tabla 2, fila 56, casilla 3"
+      ],
+      "tabla.Complaint.attachedDocumentation": [
+        "Tabla 2, fila 16, casilla 2"
+      ],
+      "tabla.Complaint.closeConclusion": [
+        "Tabla 4, fila 13, casilla 1"
+      ],
+      "tabla.Complaint.communicationSummary": [
+        "Tabla 2, fila 60, casilla 1"
+      ],
+      "tabla.Complaint.conclusion": [
+        "Tabla 2, fila 64, casilla 1"
+      ],
+      "tabla.Complaint.description": [
+        "Tabla 2, fila 14, casilla 1"
+      ],
+      "tabla.Complaint.effectivenessAssessment": [
+        "Tabla 4, fila 9, casilla 1"
+      ],
+      "tabla.Complaint.impactAssessment": [
+        "Tabla 2, fila 32, casilla 1"
+      ],
+      "tabla.Complaint.investigation": [
+        "Tabla 2, fila 32, casilla 1"
+      ],
+      "tabla.Complaint.regulatoryJustification": [
+        "Tabla 2, fila 48, casilla 2"
+      ],
+      "tabla.Complaint.resolutionLines": [
+        "Tabla 2, fila 51, casilla 1"
+      ],
+      "tabla.Complaint.responseSummary": [
+        "Tabla 4, fila 5, casilla 1"
+      ],
+      "tabla.Complaint.riskJustification": [
+        "Tabla 2, fila 29, casilla 1"
+      ],
+      "tabla.Complaint.rootCause": [
+        "Tabla 2, fila 36, casilla 1"
+      ]
+    }
+  },
+  "RC_IV": {
+    "notPrinted": [
+      "Complaint.affectedObjectOther",
+      "Complaint.affectedScope",
+      "Complaint.attachedDocumentation",
+      "Complaint.categoryOther",
+      "Complaint.closeActionReferences",
+      "Complaint.closeApprovalNames",
+      "Complaint.communicationMedium",
+      "Complaint.communicationParties",
+      "Complaint.conclusion",
+      "Complaint.containmentOther",
+      "Complaint.createdByText",
+      "Complaint.creditActionDetails",
+      "Complaint.detectedBy",
+      "Complaint.effectivenessAssessment",
+      "Complaint.expiryReanalysis",
+      "Complaint.externalCommunication",
+      "Complaint.immediateActionDetails",
+      "Complaint.internalObservations",
+      "Complaint.kpiExclusionReason",
+      "Complaint.otherResolutionDetails",
+      "Complaint.qaValidatedBy",
+      "Complaint.quantity",
+      "Complaint.recallActionDetails",
+      "Complaint.recurrenceReference",
+      "Complaint.regulatoryJustification",
+      "Complaint.replacementActionDetails",
+      "Complaint.responseMedium",
+      "Complaint.riskJustification",
+      "Complaint.rootCause",
+      "Complaint.scopeOther",
+      "Complaint.sourceOther",
+      "ComplaintDerivedAction[1].description",
+      "ComplaintDerivedAction[1].responsible",
+      "ComplaintFollowup[1].comment",
+      "ComplaintFollowup[1].completedByText",
+      "ComplaintFollowup[1].evidenceReference",
+      "ComplaintFollowup[1].followupType",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 2, casilla 2#cba1348a8565c827",
+      "Tabla 4, fila 3, casilla 1#4a13223e9e5fc532",
+      "Tabla 4, fila 5, casilla 1#bf21526dbe4c2ad6"
+    ],
+    "positions": {
+      "Complaint.approvalNames": [
+        "Tabla 4, fila 5, casilla 1"
+      ],
+      "Complaint.closeConclusion": [
+        "Tabla 3, fila 8, casilla 1"
+      ],
+      "Complaint.communicationSummary": [
+        "Tabla 3, fila 6, casilla 1"
+      ],
+      "Complaint.contact": [
+        "Tabla 2, fila 1, casilla 4"
+      ],
+      "Complaint.description": [
+        "Tabla 3, fila 2, casilla 1"
+      ],
+      "Complaint.emittedBy": [
+        "Tabla 4, fila 3, casilla 1"
+      ],
+      "Complaint.impactAssessment": [
+        "Tabla 3, fila 4, casilla 1"
+      ],
+      "Complaint.investigation": [
+        "Tabla 3, fila 4, casilla 1"
+      ],
+      "Complaint.lotReference": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "Complaint.openedAt": [
+        "Tabla 1, fila 2, casilla 4"
+      ],
+      "Complaint.otroLote.lote": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "Complaint.otroLote.nombre": [
+        "Tabla 2, fila 2, casilla 2"
+      ],
+      "Complaint.partyName": [
+        "Tabla 2, fila 1, casilla 2"
+      ],
+      "Complaint.purchaseDeliveryReference": [
+        "Tabla 2, fila 3, casilla 4"
+      ],
+      "Complaint.reference": [
+        "Tabla 2, fila 2, casilla 2"
+      ],
+      "Complaint.resolutionLines": [
+        "Tabla 3, fila 6, casilla 1"
+      ],
+      "Complaint.responseSummary": [
+        "Tabla 3, fila 6, casilla 1"
+      ]
+    }
+  },
+  "RC_V": {
+    "notPrinted": [
+      "Complaint.affectedObjectOther",
+      "Complaint.affectedScope",
+      "Complaint.approvalNames",
+      "Complaint.attachedDocumentation",
+      "Complaint.categoryOther",
+      "Complaint.closeActionReferences",
+      "Complaint.closeApprovalNames",
+      "Complaint.closeConclusion",
+      "Complaint.communicationMedium",
+      "Complaint.communicationParties",
+      "Complaint.communicationSummary",
+      "Complaint.conclusion",
+      "Complaint.contact",
+      "Complaint.containmentOther",
+      "Complaint.createdByText",
+      "Complaint.creditActionDetails",
+      "Complaint.description",
+      "Complaint.detectedBy",
+      "Complaint.effectivenessAssessment",
+      "Complaint.emittedBy",
+      "Complaint.expiryReanalysis",
+      "Complaint.externalCommunication",
+      "Complaint.immediateActionDetails",
+      "Complaint.impactAssessment",
+      "Complaint.investigation",
+      "Complaint.kpiExclusionReason",
+      "Complaint.otherResolutionDetails",
+      "Complaint.purchaseDeliveryReference",
+      "Complaint.qaValidatedBy",
+      "Complaint.quantity",
+      "Complaint.recallActionDetails",
+      "Complaint.recurrenceReference",
+      "Complaint.regulatoryJustification",
+      "Complaint.replacementActionDetails",
+      "Complaint.resolutionLines",
+      "Complaint.responseMedium",
+      "Complaint.responseSummary",
+      "Complaint.riskJustification",
+      "Complaint.rootCause",
+      "Complaint.scopeOther",
+      "Complaint.sourceOther",
+      "ComplaintDerivedAction[1].description",
+      "ComplaintDerivedAction[1].responsible",
+      "ComplaintFollowup[1].completedByText",
+      "ComplaintFollowup[1].evidenceReference",
+      "ComplaintFollowup[1].followupType",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes"
+    ],
+    "replacedTemplateText": [
+      "AÑO!B2#16d245807637327f",
+      "Libro#28e6c58d2248d75d"
+    ],
+    "positions": {
+      "Complaint.closedAt": [
+        "AÑO!J5"
+      ],
+      "Complaint.internalObservations": [
+        "AÑO!K5"
+      ],
+      "Complaint.lotReference": [
+        "AÑO!G5"
+      ],
+      "Complaint.openedAt": [
+        "AÑO!D5"
+      ],
+      "Complaint.otroLote.lote": [
+        "AÑO!G5"
+      ],
+      "Complaint.otroLote.nombre": [
+        "AÑO!F5"
+      ],
+      "Complaint.partyName": [
+        "AÑO!E5"
+      ],
+      "Complaint.reference": [
+        "AÑO!F5"
+      ],
+      "ComplaintFollowup[1].comment": [
+        "AÑO!K5"
+      ]
+    }
+  },
+  "DE_III": {
+    "notPrinted": [
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes",
+      "ReturnFollowup[1].comment",
+      "ReturnFollowup[1].completedByText",
+      "ReturnFollowup[1].evidenceReference",
+      "ReturnProduct[1].grossWeight",
+      "ReturnProduct[1].netWeight",
+      "ReturnProduct[1].otherProductType",
+      "ReturnProduct[1].receivedBy",
+      "ReturnProduct[1].receptionObservations",
+      "ReturnProduct[1].verifiedBy",
+      "ReturnRecord.createdByText",
+      "ReturnRecord.customerDeclarationObservations",
+      "ReturnRecord.customerDeclarationSignatoryName",
+      "ReturnRecord.customerDeclarationSignatoryRole",
+      "ReturnRecord.destructionCertificate",
+      "ReturnRecord.destructionManagedBy",
+      "ReturnRecord.internalObservations",
+      "ReturnRecord.kpiExclusionReason"
+    ],
+    "replacedTemplateText": [
+      "Tabla 2, fila 1, casilla 2#e1136d0fe87fac41"
+    ],
+    "positions": {
+      "ReturnProduct[1].expiryReanalysis": [
+        "Tabla 4, fila 2, casilla 4"
+      ],
+      "ReturnProduct[1].format": [
+        "Tabla 4, fila 2, casilla 2"
+      ],
+      "ReturnProduct[1].lot": [
+        "Tabla 4, fila 2, casilla 3"
+      ],
+      "ReturnProduct[1].productNameCode": [
+        "Tabla 4, fila 2, casilla 1"
+      ],
+      "ReturnProduct[1].quantity": [
+        "Tabla 4, fila 2, casilla 5"
+      ],
+      "ReturnProduct[1].unit": [
+        "Tabla 4, fila 2, casilla 5"
+      ],
+      "ReturnRecord.address": [
+        "Tabla 2, fila 4, casilla 2"
+      ],
+      "ReturnRecord.ambientPeriodRiskJustification": [
+        "Tabla 8, fila 2, casilla 2"
+      ],
+      "ReturnRecord.attachedDocumentation": [
+        "Tabla 5, fila 1, casilla 1"
+      ],
+      "ReturnRecord.communicationDate": [
+        "Tabla 2, fila 1, casilla 4"
+      ],
+      "ReturnRecord.conservationConditions": [
+        "Tabla 3, fila 2, casilla 2"
+      ],
+      "ReturnRecord.country": [
+        "Tabla 2, fila 3, casilla 4"
+      ],
+      "ReturnRecord.customerEntity": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "ReturnRecord.decisionDate": [
+        "Tabla 8, fila 2, casilla 2"
+      ],
+      "ReturnRecord.decisionObservations": [
+        "Tabla 8, fila 2, casilla 2"
+      ],
+      "ReturnRecord.deliveryNote": [
+        "Tabla 3, fila 2, casilla 4"
+      ],
+      "ReturnRecord.finalDestination": [
+        "Tabla 8, fila 2, casilla 2"
+      ],
+      "ReturnRecord.otherReturnType": [
+        "Tabla 2, fila 2, casilla 4"
+      ],
+      "ReturnRecord.qaApprovalName": [
+        "Tabla 9, fila 2, casilla 1"
+      ],
+      "ReturnRecord.reasonObservations": [
+        "Tabla 5, fila 1, casilla 1"
+      ],
+      "ReturnRecord.receivedAt": [
+        "Tabla 2, fila 2, casilla 2"
+      ],
+      "ReturnRecord.relatedDocument": [
+        "Tabla 2, fila 5, casilla 2"
+      ],
+      "ReturnRecord.technicalApprovalName": [
+        "Tabla 9, fila 2, casilla 2"
+      ],
+      "tabla.ReturnRecord.ambientPeriodRiskJustification": [
+        "Tabla 8, fila 2, casilla 2"
+      ],
+      "tabla.ReturnRecord.attachedDocumentation": [
+        "Tabla 5, fila 1, casilla 1"
+      ],
+      "tabla.ReturnRecord.decisionObservations": [
+        "Tabla 8, fila 2, casilla 2"
+      ],
+      "tabla.ReturnRecord.finalDestination": [
+        "Tabla 8, fila 2, casilla 2"
+      ],
+      "tabla.ReturnRecord.reasonObservations": [
+        "Tabla 5, fila 1, casilla 1"
+      ]
+    }
+  },
+  "DE_IV": {
+    "notPrinted": [
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes",
+      "ReturnFollowup[1].comment",
+      "ReturnFollowup[1].completedByText",
+      "ReturnFollowup[1].evidenceReference",
+      "ReturnProduct[1].expiryReanalysis",
+      "ReturnProduct[1].format",
+      "ReturnProduct[1].otherProductType",
+      "ReturnRecord.address",
+      "ReturnRecord.ambientPeriodRiskJustification",
+      "ReturnRecord.attachedDocumentation",
+      "ReturnRecord.conservationConditions",
+      "ReturnRecord.createdByText",
+      "ReturnRecord.customerDeclarationObservations",
+      "ReturnRecord.customerDeclarationSignatoryName",
+      "ReturnRecord.customerDeclarationSignatoryRole",
+      "ReturnRecord.decisionObservations",
+      "ReturnRecord.deliveryNote",
+      "ReturnRecord.destructionCertificate",
+      "ReturnRecord.destructionManagedBy",
+      "ReturnRecord.finalDestination",
+      "ReturnRecord.internalObservations",
+      "ReturnRecord.kpiExclusionReason",
+      "ReturnRecord.otherReturnType",
+      "ReturnRecord.qaApprovalName",
+      "ReturnRecord.reasonObservations",
+      "ReturnRecord.relatedDocument",
+      "ReturnRecord.technicalApprovalName"
+    ],
+    "replacedTemplateText": [],
+    "positions": {
+      "ReturnProduct[1].grossWeight": [
+        "Tabla 1, fila 5, casilla 1"
+      ],
+      "ReturnProduct[1].lot": [
+        "Tabla 1, fila 3, casilla 1"
+      ],
+      "ReturnProduct[1].netWeight": [
+        "Tabla 1, fila 5, casilla 1"
+      ],
+      "ReturnProduct[1].productNameCode": [
+        "Tabla 1, fila 3, casilla 1"
+      ],
+      "ReturnProduct[1].quantity": [
+        "Tabla 1, fila 5, casilla 1"
+      ],
+      "ReturnProduct[1].receivedBy": [
+        "Tabla 1, fila 7, casilla 1"
+      ],
+      "ReturnProduct[1].receivedByDate": [
+        "Tabla 1, fila 7, casilla 1"
+      ],
+      "ReturnProduct[1].receptionObservations": [
+        "Tabla 1, fila 6, casilla 1"
+      ],
+      "ReturnProduct[1].unit": [
+        "Tabla 1, fila 5, casilla 1"
+      ],
+      "ReturnProduct[1].verifiedBy": [
+        "Tabla 1, fila 7, casilla 2"
+      ],
+      "ReturnProduct[1].verifiedByDate": [
+        "Tabla 1, fila 7, casilla 2"
+      ],
+      "ReturnRecord.country": [
+        "Tabla 1, fila 4, casilla 1"
+      ],
+      "ReturnRecord.customerEntity": [
+        "Tabla 1, fila 4, casilla 1"
+      ],
+      "ReturnRecord.receivedAt": [
+        "Tabla 1, fila 2, casilla 1"
+      ]
+    }
+  },
+  "DE_V": {
+    "notPrinted": [
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes",
+      "ReturnFollowup[1].comment",
+      "ReturnFollowup[1].completedByText",
+      "ReturnFollowup[1].evidenceReference",
+      "ReturnProduct[1].expiryReanalysis",
+      "ReturnProduct[1].format",
+      "ReturnProduct[1].grossWeight",
+      "ReturnProduct[1].netWeight",
+      "ReturnProduct[1].otherProductType",
+      "ReturnProduct[1].quantity",
+      "ReturnProduct[1].receivedBy",
+      "ReturnProduct[1].receptionObservations",
+      "ReturnProduct[1].unit",
+      "ReturnProduct[1].verifiedBy",
+      "ReturnRecord.address",
+      "ReturnRecord.ambientPeriodRiskJustification",
+      "ReturnRecord.attachedDocumentation",
+      "ReturnRecord.country",
+      "ReturnRecord.createdByText",
+      "ReturnRecord.decisionObservations",
+      "ReturnRecord.deliveryNote",
+      "ReturnRecord.destructionCertificate",
+      "ReturnRecord.destructionManagedBy",
+      "ReturnRecord.finalDestination",
+      "ReturnRecord.internalObservations",
+      "ReturnRecord.kpiExclusionReason",
+      "ReturnRecord.otherReturnType",
+      "ReturnRecord.reasonObservations",
+      "ReturnRecord.relatedDocument"
+    ],
+    "replacedTemplateText": [
+      "Tabla 3, fila 1, casilla 1#8c239e10141c107e"
+    ],
+    "positions": {
+      "ReturnProduct[1].lot": [
+        "Tabla 2, fila 3, casilla 4"
+      ],
+      "ReturnProduct[1].productNameCode": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "ReturnRecord.communicationDate": [
+        "Tabla 2, fila 2, casilla 2"
+      ],
+      "ReturnRecord.conservationConditions": [
+        "Tabla 2, fila 4, casilla 2"
+      ],
+      "ReturnRecord.customerDeclarationObservations": [
+        "Tabla 4, fila 1, casilla 1"
+      ],
+      "ReturnRecord.customerDeclarationSignatoryName": [
+        "Tabla 3, fila 1, casilla 1",
+        "Tabla 5, fila 1, casilla 2"
+      ],
+      "ReturnRecord.customerDeclarationSignatoryRole": [
+        "Tabla 5, fila 1, casilla 2"
+      ],
+      "ReturnRecord.customerDeclarationSignedAt": [
+        "Tabla 5, fila 1, casilla 2"
+      ],
+      "ReturnRecord.customerEntity": [
+        "Tabla 2, fila 1, casilla 2"
+      ],
+      "ReturnRecord.qaApprovalName": [
+        "Tabla 6, fila 1, casilla 2"
+      ],
+      "ReturnRecord.technicalApprovalName": [
+        "Tabla 6, fila 2, casilla 2"
+      ],
+      "tabla.ReturnRecord.customerDeclarationObservations": [
+        "Tabla 4, fila 1, casilla 1"
+      ]
+    }
+  },
+  "DE_VI": {
+    "notPrinted": [
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason",
+      "QmsRelation[1].createdByText",
+      "QmsRelation[1].notes",
+      "ReturnFollowup[1].completedByText",
+      "ReturnFollowup[1].evidenceReference",
+      "ReturnProduct[1].grossWeight",
+      "ReturnProduct[1].netWeight",
+      "ReturnProduct[1].otherProductType",
+      "ReturnProduct[1].receivedBy",
+      "ReturnProduct[1].receptionObservations",
+      "ReturnProduct[1].verifiedBy",
+      "ReturnRecord.address",
+      "ReturnRecord.ambientPeriodRiskJustification",
+      "ReturnRecord.attachedDocumentation",
+      "ReturnRecord.conservationConditions",
+      "ReturnRecord.createdByText",
+      "ReturnRecord.customerDeclarationObservations",
+      "ReturnRecord.customerDeclarationSignatoryName",
+      "ReturnRecord.customerDeclarationSignatoryRole",
+      "ReturnRecord.decisionObservations",
+      "ReturnRecord.deliveryNote",
+      "ReturnRecord.kpiExclusionReason",
+      "ReturnRecord.otherReturnType",
+      "ReturnRecord.qaApprovalName",
+      "ReturnRecord.reasonObservations",
+      "ReturnRecord.technicalApprovalName"
+    ],
+    "replacedTemplateText": [
+      "\"AÑO\"!A3#087f43aff29a24a2"
+    ],
+    "positions": {
+      "ReturnFollowup[1].comment": [
+        "\"AÑO\"!M5"
+      ],
+      "ReturnFollowup[1].followupDate": [
+        "\"AÑO\"!M5"
+      ],
+      "ReturnProduct[1].expiryReanalysis": [
+        "\"AÑO\"!I5"
+      ],
+      "ReturnProduct[1].format": [
+        "\"AÑO\"!F5"
+      ],
+      "ReturnProduct[1].lot": [
+        "\"AÑO\"!G5"
+      ],
+      "ReturnProduct[1].productNameCode": [
+        "\"AÑO\"!E5"
+      ],
+      "ReturnProduct[1].quantity": [
+        "\"AÑO\"!H5"
+      ],
+      "ReturnProduct[1].unit": [
+        "\"AÑO\"!H5"
+      ],
+      "ReturnRecord.communicationDate": [
+        "\"AÑO\"!B5"
+      ],
+      "ReturnRecord.country": [
+        "\"AÑO\"!J5"
+      ],
+      "ReturnRecord.customerEntity": [
+        "\"AÑO\"!D5"
+      ],
+      "ReturnRecord.destructionCertificate": [
+        "\"AÑO\"!L5"
+      ],
+      "ReturnRecord.destructionManagedBy": [
+        "\"AÑO\"!K5"
+      ],
+      "ReturnRecord.finalDestination": [
+        "\"AÑO\"!M5"
+      ],
+      "ReturnRecord.internalObservations": [
+        "\"AÑO\"!M5"
+      ],
+      "ReturnRecord.relatedDocument": [
+        "\"AÑO\"!C5"
+      ]
+    }
+  },
+  "OO_III": {
+    "notPrinted": [
+      "OosRecord.createdByText",
+      "OosRecord.internalObservations",
+      "OosRecord.phaseIIAffectedDepartments",
+      "OosRecord.phaseIIConclusion",
+      "OosRecord.phaseIIDestroyQuantity",
+      "OosRecord.phaseIIIssuedBy",
+      "OosRecord.phaseIIProductionReview",
+      "OosRecord.phaseIIResampling",
+      "OosRecord.phaseIIRetesting",
+      "OosRecord.phaseIIReturnQuantity",
+      "OosRecord.phaseIIVerdictOther",
+      "OosRecord.phaseIIVerdictQuantity",
+      "OosRecord.phaseIVerdictOther",
+      "OosRecord.supplier",
+      "OosRecord.supplierLot"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 12, casilla 2#795cd70c60a2e080",
+      "Tabla 1, fila 12, casilla 3#6639becf69ecdf1b",
+      "Tabla 1, fila 12, casilla 5#4285c729ef6fc150",
+      "Tabla 1, fila 12, casilla 6#afb544ddad3d997b",
+      "Tabla 1, fila 15, casilla 1#911fa2a6c933ce48",
+      "Tabla 2, fila 25, casilla 1#72648964bf6a4658",
+      "Tabla 3, fila 14, casilla 3#16399dd55bd4ab2c",
+      "Tabla 3, fila 15, casilla 3#cf129ea7570f360e",
+      "Tabla 3, fila 18, casilla 1#48289bb770d6e197"
+    ],
+    "positions": {
+      "eval.analystDialogue": [
+        "Tabla 2, fila 6, casilla 3"
+      ],
+      "eval.analystTraining": [
+        "Tabla 2, fila 4, casilla 3"
+      ],
+      "eval.calculationsCorrect": [
+        "Tabla 2, fila 8, casilla 3"
+      ],
+      "eval.equipmentCalibrated": [
+        "Tabla 2, fila 15, casilla 3"
+      ],
+      "eval.equipmentOperation": [
+        "Tabla 2, fila 13, casilla 3"
+      ],
+      "eval.equipmentProgram": [
+        "Tabla 2, fila 16, casilla 3"
+      ],
+      "eval.equipmentVerified": [
+        "Tabla 2, fila 14, casilla 3"
+      ],
+      "eval.methodCorrect": [
+        "Tabla 2, fila 5, casilla 3"
+      ],
+      "eval.microEnvironmentWater": [
+        "Tabla 2, fila 22, casilla 3"
+      ],
+      "eval.microGrowthPromotion": [
+        "Tabla 2, fila 23, casilla 3"
+      ],
+      "eval.microNegativeControl": [
+        "Tabla 2, fila 24, casilla 3"
+      ],
+      "eval.rawDataCorrect": [
+        "Tabla 2, fila 7, casilla 3"
+      ],
+      "eval.reagentsCorrect": [
+        "Tabla 2, fila 17, casilla 3"
+      ],
+      "eval.reagentsExpiry": [
+        "Tabla 2, fila 19, casilla 3"
+      ],
+      "eval.reagentsPreparation": [
+        "Tabla 2, fila 18, casilla 3"
+      ],
+      "eval.reagentsQuantity": [
+        "Tabla 2, fila 20, casilla 3"
+      ],
+      "eval.reagentsStorage": [
+        "Tabla 2, fila 21, casilla 3"
+      ],
+      "eval.sampleQuantityCorrect": [
+        "Tabla 2, fila 12, casilla 3"
+      ],
+      "eval.sampleStorageCorrect": [
+        "Tabla 2, fila 10, casilla 3"
+      ],
+      "eval.sampleUsedCorrect": [
+        "Tabla 2, fila 11, casilla 3"
+      ],
+      "eval.samplingCorrect": [
+        "Tabla 2, fila 9, casilla 3"
+      ],
+      "OosRecord.affectedQuantity": [
+        "Tabla 1, fila 6, casilla 4"
+      ],
+      "OosRecord.batchSize": [
+        "Tabla 1, fila 5, casilla 4"
+      ],
+      "OosRecord.detectedBy": [
+        "Tabla 1, fila 12, casilla 5"
+      ],
+      "OosRecord.detectionDescription": [
+        "Tabla 1, fila 14, casilla 1"
+      ],
+      "OosRecord.issueDate": [
+        "Tabla 1, fila 2, casilla 2"
+      ],
+      "OosRecord.lotNumber": [
+        "Tabla 1, fila 4, casilla 4"
+      ],
+      "OosRecord.materialName": [
+        "Tabla 1, fila 4, casilla 2"
+      ],
+      "OosRecord.oosDate": [
+        "Tabla 1, fila 12, casilla 2"
+      ],
+      "OosRecord.oosTime": [
+        "Tabla 1, fila 12, casilla 3"
+      ],
+      "OosRecord.phaseIApprovedAt": [
+        "Tabla 3, fila 15, casilla 3"
+      ],
+      "OosRecord.phaseIApprovedBy": [
+        "Tabla 3, fila 15, casilla 1"
+      ],
+      "OosRecord.phaseIConclusion": [
+        "Tabla 3, fila 5, casilla 1"
+      ],
+      "OosRecord.phaseIDestroyQuantity": [
+        "Tabla 3, fila 11, casilla 4"
+      ],
+      "OosRecord.phaseIInvestigation": [
+        "Tabla 3, fila 3, casilla 1"
+      ],
+      "OosRecord.phaseIIssuedAt": [
+        "Tabla 3, fila 14, casilla 3"
+      ],
+      "OosRecord.phaseIIssuedBy": [
+        "Tabla 3, fila 14, casilla 1"
+      ],
+      "OosRecord.phaseIReturnQuantity": [
+        "Tabla 3, fila 12, casilla 4"
+      ],
+      "OosRecord.phaseIVerdictQuantity": [
+        "Tabla 3, fila 13, casilla 4"
+      ],
+      "OosRecord.process": [
+        "Tabla 1, fila 11, casilla 2"
+      ],
+      "OosRecord.shift": [
+        "Tabla 1, fila 12, casilla 6"
+      ],
+      "tabla.OosRecord.detectionDescription": [
+        "Tabla 1, fila 14, casilla 1"
+      ],
+      "tabla.OosRecord.phaseIConclusion": [
+        "Tabla 3, fila 5, casilla 1"
+      ],
+      "tabla.OosRecord.phaseIInvestigation": [
+        "Tabla 3, fila 3, casilla 1"
+      ]
+    }
+  },
+  "OO_IV": {
+    "notPrinted": [
+      "OosRecord.affectedQuantity",
+      "OosRecord.batchSize",
+      "OosRecord.createdByText",
+      "OosRecord.detectedBy",
+      "OosRecord.detectionDescription",
+      "OosRecord.internalObservations",
+      "OosRecord.lotNumber",
+      "OosRecord.materialName",
+      "OosRecord.oosTime",
+      "OosRecord.phaseIApprovedBy",
+      "OosRecord.phaseIConclusion",
+      "OosRecord.phaseIDestroyQuantity",
+      "OosRecord.phaseIInvestigation",
+      "OosRecord.phaseIIssuedBy",
+      "OosRecord.phaseIReturnQuantity",
+      "OosRecord.phaseIVerdictOther",
+      "OosRecord.phaseIVerdictQuantity",
+      "OosRecord.process",
+      "OosRecord.shift",
+      "OosRecord.supplier",
+      "OosRecord.supplierLot",
+      "eval.analystDialogue",
+      "eval.analystTraining",
+      "eval.calculationsCorrect",
+      "eval.equipmentCalibrated",
+      "eval.equipmentOperation",
+      "eval.equipmentProgram",
+      "eval.equipmentVerified",
+      "eval.methodCorrect",
+      "eval.microEnvironmentWater",
+      "eval.microGrowthPromotion",
+      "eval.microNegativeControl",
+      "eval.rawDataCorrect",
+      "eval.reagentsCorrect",
+      "eval.reagentsExpiry",
+      "eval.reagentsPreparation",
+      "eval.reagentsQuantity",
+      "eval.reagentsStorage",
+      "eval.sampleQuantityCorrect",
+      "eval.sampleStorageCorrect",
+      "eval.sampleUsedCorrect",
+      "eval.samplingCorrect"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 9, casilla 1#890644804bde4a05",
+      "Tabla 2, fila 9, casilla 3#4268daf3c0d031e5",
+      "Tabla 2, fila 13, casilla 1#cb7e5a7261d72865"
+    ],
+    "positions": {
+      "OosRecord.phaseIIAffectedDepartments": [
+        "Tabla 2, fila 10, casilla 1"
+      ],
+      "OosRecord.phaseIIConclusion": [
+        "Tabla 2, fila 3, casilla 1"
+      ],
+      "OosRecord.phaseIIDestroyQuantity": [
+        "Tabla 2, fila 6, casilla 4"
+      ],
+      "OosRecord.phaseIIIssuedAt": [
+        "Tabla 2, fila 9, casilla 3"
+      ],
+      "OosRecord.phaseIIIssueDate": [
+        "Tabla 1, fila 2, casilla 2"
+      ],
+      "OosRecord.phaseIIIssuedBy": [
+        "Tabla 2, fila 9, casilla 1"
+      ],
+      "OosRecord.phaseIIProductionReview": [
+        "Tabla 1, fila 4, casilla 1"
+      ],
+      "OosRecord.phaseIIResampling": [
+        "Tabla 1, fila 8, casilla 1"
+      ],
+      "OosRecord.phaseIIRetesting": [
+        "Tabla 1, fila 6, casilla 1"
+      ],
+      "OosRecord.phaseIIReturnQuantity": [
+        "Tabla 2, fila 7, casilla 4"
+      ],
+      "OosRecord.phaseIIVerdictOther": [
+        "Tabla 2, fila 6, casilla 6"
+      ],
+      "OosRecord.phaseIIVerdictQuantity": [
+        "Tabla 2, fila 6, casilla 6"
+      ],
+      "tabla.OosRecord.phaseIIAffectedDepartments": [
+        "Tabla 2, fila 10, casilla 1"
+      ],
+      "tabla.OosRecord.phaseIIConclusion": [
+        "Tabla 2, fila 3, casilla 1"
+      ],
+      "tabla.OosRecord.phaseIIProductionReview": [
+        "Tabla 1, fila 4, casilla 1"
+      ],
+      "tabla.OosRecord.phaseIIResampling": [
+        "Tabla 1, fila 8, casilla 1"
+      ],
+      "tabla.OosRecord.phaseIIRetesting": [
+        "Tabla 1, fila 6, casilla 1"
+      ]
+    }
+  },
+  "OO_VI": {
+    "notPrinted": [
+      "OosRecord.affectedQuantity",
+      "OosRecord.batchSize",
+      "OosRecord.createdByText",
+      "OosRecord.detectedBy",
+      "OosRecord.internalObservations",
+      "OosRecord.oosTime",
+      "OosRecord.phaseIApprovedBy",
+      "OosRecord.phaseIConclusion",
+      "OosRecord.phaseIDestroyQuantity",
+      "OosRecord.phaseIIAffectedDepartments",
+      "OosRecord.phaseIIConclusion",
+      "OosRecord.phaseIIDestroyQuantity",
+      "OosRecord.phaseIIIssuedBy",
+      "OosRecord.phaseIIProductionReview",
+      "OosRecord.phaseIIResampling",
+      "OosRecord.phaseIIRetesting",
+      "OosRecord.phaseIIReturnQuantity",
+      "OosRecord.phaseIIVerdictOther",
+      "OosRecord.phaseIIVerdictQuantity",
+      "OosRecord.phaseIInvestigation",
+      "OosRecord.phaseIIssuedBy",
+      "OosRecord.phaseIReturnQuantity",
+      "OosRecord.phaseIVerdictOther",
+      "OosRecord.phaseIVerdictQuantity",
+      "OosRecord.process",
+      "OosRecord.shift",
+      "OosRecord.supplier",
+      "OosRecord.supplierLot",
+      "eval.analystDialogue",
+      "eval.analystTraining",
+      "eval.calculationsCorrect",
+      "eval.equipmentCalibrated",
+      "eval.equipmentOperation",
+      "eval.equipmentProgram",
+      "eval.equipmentVerified",
+      "eval.methodCorrect",
+      "eval.microEnvironmentWater",
+      "eval.microGrowthPromotion",
+      "eval.microNegativeControl",
+      "eval.rawDataCorrect",
+      "eval.reagentsCorrect",
+      "eval.reagentsExpiry",
+      "eval.reagentsPreparation",
+      "eval.reagentsQuantity",
+      "eval.reagentsStorage",
+      "eval.sampleQuantityCorrect",
+      "eval.sampleStorageCorrect",
+      "eval.sampleUsedCorrect",
+      "eval.samplingCorrect"
+    ],
+    "replacedTemplateText": [],
+    "positions": {
+      "OosRecord.closedAt": [
+        "Tabla 1, fila 5, casilla 6"
+      ],
+      "OosRecord.detectionDescription": [
+        "Tabla 1, fila 5, casilla 4"
+      ],
+      "OosRecord.issueDate": [
+        "Tabla 1, fila 5, casilla 2"
+      ],
+      "OosRecord.lotNumber": [
+        "Tabla 1, fila 5, casilla 3"
+      ],
+      "OosRecord.materialName": [
+        "Tabla 1, fila 5, casilla 3"
+      ]
+    }
+  },
+  "AU_INT": {
+    "notPrinted": [
+      "Audit.activityDuration",
+      "Audit.auditedContact",
+      "Audit.auditedEntityAddress",
+      "Audit.auditedEntityName",
+      "Audit.auditingEntityName",
+      "Audit.closureEvidence",
+      "Audit.codingDepartmentCodeSnapshot",
+      "Audit.codingDepartmentNameSnapshot",
+      "Audit.createdByText",
+      "Audit.entityCode",
+      "Audit.externalReference",
+      "Audit.internalObservations",
+      "Audit.outsidePlanReason",
+      "Audit.planIntroduction",
+      "Audit.referenceText",
+      "Audit.reportDistribution",
+      "Audit.supplierAssessment",
+      "Audit.supplierExceptionBy",
+      "Audit.supplierExceptionReason",
+      "Audit.supplierType",
+      "Audit.updatedByText",
+      "AuditFindingAction[1].createdByText",
+      "AuditFindingAction[1].description",
+      "AuditFindingAction[1].evidence",
+      "AuditFindingAction[1].evidenceReference",
+      "AuditFindingAction[1].responsible",
+      "AuditFindingAction[1].retiredByText",
+      "AuditFindingAction[1].retirementReason",
+      "AuditFindingAction[1].updatedByText",
+      "AuditFindingAction[1].verificationComment",
+      "AuditFindingAction[1].verifiedBy",
+      "AuditFinding[1].createdByText",
+      "AuditFinding[1].evidence",
+      "AuditFinding[1].evidenceReference",
+      "AuditFinding[1].retiredByText",
+      "AuditFinding[1].retirementReason",
+      "AuditFinding[1].updatedByText",
+      "AuditFinding[1].verificationComment",
+      "AuditFinding[2].createdByText",
+      "AuditFinding[2].evidence",
+      "AuditFinding[2].evidenceReference",
+      "AuditFinding[2].retiredByText",
+      "AuditFinding[2].retirementReason",
+      "AuditFinding[2].updatedByText",
+      "AuditFinding[2].verificationComment",
+      "AuditFollowup[1].completedByText",
+      "AuditFollowup[1].createdByText",
+      "AuditFollowup[1].description",
+      "AuditFollowup[1].evidenceReference",
+      "AuditFollowup[1].updatedByText",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "Texto fuera de tablas#675cc4f14ac86d15"
+    ],
+    "positions": {
+      "Audit.performedDate": [
+        "Tabla 2, fila 1, casilla 4"
+      ],
+      "Audit.preparedBy": [
+        "Tabla 3, fila 2, casilla 1"
+      ],
+      "Audit.preparedPosition": [
+        "Tabla 3, fila 2, casilla 1"
+      ],
+      "Audit.receivedBy": [
+        "Tabla 3, fila 2, casilla 3"
+      ],
+      "Audit.receivedPosition": [
+        "Tabla 3, fila 2, casilla 3"
+      ],
+      "Audit.reportDate": [
+        "Tabla 2, fila 2, casilla 4"
+      ],
+      "Audit.reviewedBy": [
+        "Tabla 3, fila 2, casilla 2"
+      ],
+      "Audit.reviewedPosition": [
+        "Tabla 3, fila 2, casilla 2"
+      ],
+      "Audit.scope": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "Audit.title": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "AuditFinding[1].description": [
+        "Tabla 5, fila 7, casilla 2"
+      ],
+      "AuditFinding[1].reference": [
+        "Tabla 5, fila 7, casilla 1"
+      ],
+      "AuditParticipant[1].displayName": [
+        "Tabla 2, fila 10, casilla 1"
+      ],
+      "AuditParticipant[1].organization": [
+        "Tabla 2, fila 10, casilla 2"
+      ],
+      "AuditParticipant[1].position": [
+        "Tabla 2, fila 10, casilla 2"
+      ],
+      "AuditParticipant[2].displayName": [
+        "Tabla 2, fila 11, casilla 1 (fila añadida)"
+      ],
+      "AuditParticipant[2].organization": [
+        "Tabla 2, fila 11, casilla 2 (fila añadida)"
+      ],
+      "AuditParticipant[2].position": [
+        "Tabla 2, fila 11, casilla 2 (fila añadida)"
+      ],
+      "AuditParticipant[3].displayName": [
+        "Tabla 2, fila 7, casilla 1"
+      ],
+      "AuditParticipant[3].organization": [
+        "Tabla 2, fila 7, casilla 2"
+      ],
+      "AuditParticipant[3].position": [
+        "Tabla 2, fila 7, casilla 2"
+      ]
+    }
+  },
+  "AU_EXT": {
+    "notPrinted": [
+      "Audit.activityDuration",
+      "Audit.auditingEntityName",
+      "Audit.closureEvidence",
+      "Audit.codingDepartmentCodeSnapshot",
+      "Audit.codingDepartmentNameSnapshot",
+      "Audit.createdByText",
+      "Audit.entityCode",
+      "Audit.externalReference",
+      "Audit.internalObservations",
+      "Audit.outsidePlanReason",
+      "Audit.planIntroduction",
+      "Audit.referenceText",
+      "Audit.reportDistribution",
+      "Audit.supplierAssessment",
+      "Audit.supplierExceptionBy",
+      "Audit.supplierExceptionReason",
+      "Audit.updatedByText",
+      "AuditFindingAction[1].createdByText",
+      "AuditFindingAction[1].description",
+      "AuditFindingAction[1].evidence",
+      "AuditFindingAction[1].evidenceReference",
+      "AuditFindingAction[1].responsible",
+      "AuditFindingAction[1].retiredByText",
+      "AuditFindingAction[1].retirementReason",
+      "AuditFindingAction[1].updatedByText",
+      "AuditFindingAction[1].verificationComment",
+      "AuditFindingAction[1].verifiedBy",
+      "AuditFinding[1].createdByText",
+      "AuditFinding[1].evidence",
+      "AuditFinding[1].evidenceReference",
+      "AuditFinding[1].retiredByText",
+      "AuditFinding[1].retirementReason",
+      "AuditFinding[1].updatedByText",
+      "AuditFinding[1].verificationComment",
+      "AuditFinding[2].createdByText",
+      "AuditFinding[2].evidence",
+      "AuditFinding[2].evidenceReference",
+      "AuditFinding[2].retiredByText",
+      "AuditFinding[2].retirementReason",
+      "AuditFinding[2].updatedByText",
+      "AuditFinding[2].verificationComment",
+      "AuditFollowup[1].completedByText",
+      "AuditFollowup[1].createdByText",
+      "AuditFollowup[1].description",
+      "AuditFollowup[1].evidenceReference",
+      "AuditFollowup[1].updatedByText",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "Texto fuera de tablas#675cc4f14ac86d15"
+    ],
+    "positions": {
+      "Audit.auditedContact": [
+        "Tabla 2, fila 5, casilla 2"
+      ],
+      "Audit.auditedEntityAddress": [
+        "Tabla 2, fila 4, casilla 2"
+      ],
+      "Audit.auditedEntityName": [
+        "Tabla 2, fila 1, casilla 2"
+      ],
+      "Audit.performedDate": [
+        "Tabla 2, fila 1, casilla 4"
+      ],
+      "Audit.preparedBy": [
+        "Tabla 3, fila 2, casilla 1"
+      ],
+      "Audit.preparedPosition": [
+        "Tabla 3, fila 2, casilla 1"
+      ],
+      "Audit.receivedBy": [
+        "Tabla 3, fila 2, casilla 3"
+      ],
+      "Audit.receivedPosition": [
+        "Tabla 3, fila 2, casilla 3"
+      ],
+      "Audit.reportDate": [
+        "Tabla 2, fila 2, casilla 4"
+      ],
+      "Audit.reviewedBy": [
+        "Tabla 3, fila 2, casilla 2"
+      ],
+      "Audit.reviewedPosition": [
+        "Tabla 3, fila 2, casilla 2"
+      ],
+      "Audit.scope": [
+        "Tabla 2, fila 6, casilla 2"
+      ],
+      "Audit.supplierType": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "Audit.title": [
+        "Tabla 2, fila 6, casilla 2"
+      ],
+      "AuditFinding[1].description": [
+        "Tabla 5, fila 7, casilla 2"
+      ],
+      "AuditFinding[1].reference": [
+        "Tabla 5, fila 7, casilla 1"
+      ],
+      "AuditParticipant[1].displayName": [
+        "Tabla 2, fila 13, casilla 1"
+      ],
+      "AuditParticipant[1].organization": [
+        "Tabla 2, fila 13, casilla 2"
+      ],
+      "AuditParticipant[1].position": [
+        "Tabla 2, fila 13, casilla 2"
+      ],
+      "AuditParticipant[2].displayName": [
+        "Tabla 2, fila 14, casilla 1 (fila añadida)"
+      ],
+      "AuditParticipant[2].organization": [
+        "Tabla 2, fila 14, casilla 2 (fila añadida)"
+      ],
+      "AuditParticipant[2].position": [
+        "Tabla 2, fila 14, casilla 2 (fila añadida)"
+      ],
+      "AuditParticipant[3].displayName": [
+        "Tabla 2, fila 10, casilla 1"
+      ],
+      "AuditParticipant[3].organization": [
+        "Tabla 2, fila 10, casilla 2"
+      ],
+      "AuditParticipant[3].position": [
+        "Tabla 2, fila 10, casilla 2"
+      ]
+    }
+  },
+  "AU_CAPA": {
+    "notPrinted": [
+      "Audit.activityDuration",
+      "Audit.auditedContact",
+      "Audit.auditedEntityAddress",
+      "Audit.closureEvidence",
+      "Audit.codingDepartmentCodeSnapshot",
+      "Audit.codingDepartmentNameSnapshot",
+      "Audit.conclusion",
+      "Audit.createdByText",
+      "Audit.entityCode",
+      "Audit.externalReference",
+      "Audit.internalObservations",
+      "Audit.outsidePlanReason",
+      "Audit.planIntroduction",
+      "Audit.previousAuditBackground",
+      "Audit.programme",
+      "Audit.receivedBy",
+      "Audit.receivedPosition",
+      "Audit.reportDistribution",
+      "Audit.scope",
+      "Audit.supplierAssessment",
+      "Audit.supplierExceptionBy",
+      "Audit.supplierExceptionReason",
+      "Audit.supplierType",
+      "Audit.updatedByText",
+      "AuditFindingAction[1].createdByText",
+      "AuditFindingAction[1].retiredByText",
+      "AuditFindingAction[1].retirementReason",
+      "AuditFindingAction[1].updatedByText",
+      "AuditFindingAction[1].verifiedBy",
+      "AuditFinding[1].createdByText",
+      "AuditFinding[1].criterionReference",
+      "AuditFinding[1].objectiveEvidence",
+      "AuditFinding[1].retiredByText",
+      "AuditFinding[1].retirementReason",
+      "AuditFinding[1].updatedByText",
+      "AuditFinding[2].createdByText",
+      "AuditFinding[2].criterionReference",
+      "AuditFinding[2].objectiveEvidence",
+      "AuditFinding[2].retiredByText",
+      "AuditFinding[2].retirementReason",
+      "AuditFinding[2].updatedByText",
+      "AuditFollowup[1].completedByText",
+      "AuditFollowup[1].createdByText",
+      "AuditFollowup[1].description",
+      "AuditFollowup[1].evidenceReference",
+      "AuditFollowup[1].updatedByText",
+      "AuditParticipant[1].displayName",
+      "AuditParticipant[1].organization",
+      "AuditParticipant[1].position",
+      "AuditParticipant[2].displayName",
+      "AuditParticipant[2].organization",
+      "AuditParticipant[2].position",
+      "AuditParticipant[3].displayName",
+      "AuditParticipant[3].organization",
+      "AuditParticipant[3].position",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "CAPA Unificado!C5#885a79a67e9d6752",
+      "CAPA Unificado!A11#e126c98a76b01cae",
+      "CAPA Unificado!A12#82c9677912fded52",
+      "CAPA Unificado!A22#0670446b7a133ed9",
+      "CAPA Unificado!A23#b3f6565ee10a151e",
+      "CAPA Unificado!A24#55a4ec83a475018c",
+      "CAPA Unificado!A25#5e4e0e65467214fe",
+      "CAPA Unificado!A26#8bbc4210ed435b91",
+      "CAPA Unificado, fila 18 de la plantilla#fc3ada428ec35e49",
+      "CAPA Unificado, fila 19 de la plantilla#a22d2b3845608508",
+      "CAPA Unificado, fila 20 de la plantilla#2873c6fee9faf356",
+      "CAPA Unificado, fila 22 de la plantilla#50e6bd5374393772",
+      "CAPA Unificado, fila 23 de la plantilla#3aab97e49f30f2d6",
+      "CAPA Unificado, fila 24 de la plantilla#61eaa44b6861e16c",
+      "CAPA Unificado, fila 25 de la plantilla#c08f39f3f5b41cbb",
+      "CAPA Unificado, fila 26 de la plantilla#b0c015cd58e4fbb0"
+    ],
+    "positions": {
+      "Audit.auditedEntityName": [
+        "CAPA Unificado!C6"
+      ],
+      "Audit.auditingEntityName": [
+        "CAPA Unificado!C7"
+      ],
+      "Audit.capaPlanDate": [
+        "CAPA Unificado!I7"
+      ],
+      "Audit.performedDate": [
+        "CAPA Unificado!I5"
+      ],
+      "Audit.preparedBy": [
+        "CAPA Unificado!A24"
+      ],
+      "Audit.preparedPosition": [
+        "CAPA Unificado!A25"
+      ],
+      "Audit.referenceText": [
+        "CAPA Unificado!F7"
+      ],
+      "Audit.reportDate": [
+        "CAPA Unificado!I6"
+      ],
+      "Audit.reviewedBy": [
+        "CAPA Unificado!F24"
+      ],
+      "Audit.reviewedPosition": [
+        "CAPA Unificado!F25"
+      ],
+      "Audit.title": [
+        "CAPA Unificado!F6"
+      ],
+      "AuditFinding[1].description": [
+        "CAPA Unificado!C11"
+      ],
+      "AuditFinding[1].evidence": [
+        "CAPA Unificado!K11"
+      ],
+      "AuditFinding[1].evidenceReference": [
+        "CAPA Unificado!K11"
+      ],
+      "AuditFinding[1].reference": [
+        "CAPA Unificado!A11"
+      ],
+      "AuditFinding[1].treatment": [
+        "CAPA Unificado!F11"
+      ],
+      "AuditFinding[1].verificationComment": [
+        "CAPA Unificado!K11"
+      ],
+      "AuditFinding[2].closedAt": [
+        "CAPA Unificado!J12"
+      ],
+      "AuditFinding[2].description": [
+        "CAPA Unificado!C12"
+      ],
+      "AuditFinding[2].evidence": [
+        "CAPA Unificado!K12"
+      ],
+      "AuditFinding[2].evidenceReference": [
+        "CAPA Unificado!K12"
+      ],
+      "AuditFinding[2].reference": [
+        "CAPA Unificado!A12"
+      ],
+      "AuditFinding[2].treatment": [
+        "CAPA Unificado!F12"
+      ],
+      "AuditFinding[2].verificationComment": [
+        "CAPA Unificado!K12"
+      ],
+      "AuditFindingAction[1].closedAt": [
+        "CAPA Unificado!J11"
+      ],
+      "AuditFindingAction[1].description": [
+        "CAPA Unificado!F11"
+      ],
+      "AuditFindingAction[1].evidence": [
+        "CAPA Unificado!K11"
+      ],
+      "AuditFindingAction[1].evidenceReference": [
+        "CAPA Unificado!K11"
+      ],
+      "AuditFindingAction[1].responsible": [
+        "CAPA Unificado!G11"
+      ],
+      "AuditFindingAction[1].targetDate": [
+        "CAPA Unificado!H11"
+      ],
+      "AuditFindingAction[1].verificationComment": [
+        "CAPA Unificado!K11"
+      ]
+    }
+  },
+  "AU_PLAN": {
+    "notPrinted": [
+      "Audit.auditedContact",
+      "Audit.auditingEntityName",
+      "Audit.closureEvidence",
+      "Audit.codingDepartmentCodeSnapshot",
+      "Audit.codingDepartmentNameSnapshot",
+      "Audit.conclusion",
+      "Audit.createdByText",
+      "Audit.entityCode",
+      "Audit.externalReference",
+      "Audit.internalObservations",
+      "Audit.outsidePlanReason",
+      "Audit.preparedBy",
+      "Audit.preparedPosition",
+      "Audit.previousAuditBackground",
+      "Audit.receivedBy",
+      "Audit.receivedPosition",
+      "Audit.referenceText",
+      "Audit.reviewedBy",
+      "Audit.reviewedPosition",
+      "Audit.supplierAssessment",
+      "Audit.supplierExceptionBy",
+      "Audit.supplierExceptionReason",
+      "Audit.supplierType",
+      "Audit.title",
+      "Audit.updatedByText",
+      "AuditFindingAction[1].createdByText",
+      "AuditFindingAction[1].description",
+      "AuditFindingAction[1].evidence",
+      "AuditFindingAction[1].evidenceReference",
+      "AuditFindingAction[1].responsible",
+      "AuditFindingAction[1].retiredByText",
+      "AuditFindingAction[1].retirementReason",
+      "AuditFindingAction[1].updatedByText",
+      "AuditFindingAction[1].verificationComment",
+      "AuditFindingAction[1].verifiedBy",
+      "AuditFinding[1].createdByText",
+      "AuditFinding[1].criterionReference",
+      "AuditFinding[1].description",
+      "AuditFinding[1].evidence",
+      "AuditFinding[1].evidenceReference",
+      "AuditFinding[1].objectiveEvidence",
+      "AuditFinding[1].reference",
+      "AuditFinding[1].retiredByText",
+      "AuditFinding[1].retirementReason",
+      "AuditFinding[1].treatment",
+      "AuditFinding[1].updatedByText",
+      "AuditFinding[1].verificationComment",
+      "AuditFinding[2].createdByText",
+      "AuditFinding[2].criterionReference",
+      "AuditFinding[2].description",
+      "AuditFinding[2].evidence",
+      "AuditFinding[2].evidenceReference",
+      "AuditFinding[2].objectiveEvidence",
+      "AuditFinding[2].reference",
+      "AuditFinding[2].retiredByText",
+      "AuditFinding[2].retirementReason",
+      "AuditFinding[2].treatment",
+      "AuditFinding[2].updatedByText",
+      "AuditFinding[2].verificationComment",
+      "AuditFollowup[1].completedByText",
+      "AuditFollowup[1].createdByText",
+      "AuditFollowup[1].description",
+      "AuditFollowup[1].evidenceReference",
+      "AuditFollowup[1].updatedByText",
+      "AuditParticipant[1].organization",
+      "AuditParticipant[1].position",
+      "AuditParticipant[2].organization",
+      "AuditParticipant[2].position",
+      "AuditParticipant[3].organization",
+      "AuditParticipant[3].position",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 2, casilla 1#b0e62d6ecfeeb618",
+      "Tabla 1, fila 3#c2f2d6c265883648",
+      "Tabla 1, fila 4#9868999dffa83096",
+      "Tabla 1, fila 5#ab3937ba9aaf7c12",
+      "Tabla 1, fila 6#2ee5aac9dd6fc988",
+      "Tabla 1, fila 7#ec14c661317d4ba1",
+      "Tabla 1, fila 8#33789a0f36ec0e20",
+      "Texto fuera de tablas#ec5b1cda12427df9"
+    ],
+    "positions": {
+      "Audit.programme": [
+        "Tabla 1, fila 2, casilla 2"
+      ]
+    }
+  },
+  "AU_PMAI": {
+    "notPrinted": [
+      "prog.title",
+      "prog1.area",
+      "prog1.modality",
+      "prog1.productService",
+      "prog1.scope",
+      "prog1.subject",
+      "prog2.area",
+      "prog2.modality",
+      "prog2.productService",
+      "prog2.scope",
+      "prog2.subject"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 2, casilla 2#321d34a9ec0f5ccc",
+      "Tabla 1, fila 2, casilla 3#cbc976ef45ec1ad3",
+      "Tabla 1, fila 3, casilla 2#103479a3883399cf",
+      "Tabla 1, fila 3, casilla 3#b81a452876493bc8",
+      "Tabla 1, fila 4#5115fc0710ae4870",
+      "Tabla 1, fila 5#2889c699906849d8",
+      "Tabla 1, fila 6#0c3d4f0dad3e1fef",
+      "Tabla 1, fila 7#b6bc18f650850a2c",
+      "Tabla 1, fila 8#f4b5c1332ada8d84",
+      "Tabla 1, fila 9#a42cbc0491fd3d70",
+      "Tabla 1, fila 10#e1ed7a6178ffab81",
+      "Tabla 1, fila 11#f33a8da1acccee96",
+      "Tabla 1, fila 12#a0862eaab9a4ab2f"
+    ],
+    "positions": {
+      "prog.qualityApproverName": [
+        "Tabla 2, fila 3, casilla 1"
+      ],
+      "prog.technicalApproverName": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "prog1.auditors": [
+        "Tabla 1, fila 2, casilla 4"
+      ],
+      "prog1.notes": [
+        "Tabla 1, fila 2, casilla 7"
+      ],
+      "prog1.partial": [
+        "Tabla 1, fila 2, casilla 6"
+      ],
+      "prog1.performed": [
+        "Tabla 1, fila 2, casilla 5"
+      ],
+      "prog1.planned": [
+        "Tabla 1, fila 2, casilla 3"
+      ],
+      "prog1.target": [
+        "Tabla 1, fila 2, casilla 2"
+      ],
+      "prog2.auditors": [
+        "Tabla 1, fila 3, casilla 4"
+      ],
+      "prog2.notes": [
+        "Tabla 1, fila 3, casilla 7"
+      ],
+      "prog2.partial": [
+        "Tabla 1, fila 3, casilla 6"
+      ],
+      "prog2.performed": [
+        "Tabla 1, fila 3, casilla 5"
+      ],
+      "prog2.planned": [
+        "Tabla 1, fila 3, casilla 3"
+      ],
+      "prog2.target": [
+        "Tabla 1, fila 3, casilla 2"
+      ]
+    }
+  },
+  "AU_PMAE": {
+    "notPrinted": [
+      "prog.technicalApproverName",
+      "prog.title",
+      "prog1.subject",
+      "prog2.subject"
+    ],
+    "replacedTemplateText": [
+      "Tabla 2, fila 5#01e9dd28e66bbff7",
+      "Tabla 2, fila 6#08001328c2201f91",
+      "Tabla 2, fila 7#4168077e3752b6a0",
+      "Tabla 2, fila 8#05e77bf47f133f72",
+      "Tabla 2, fila 9#59487d2c5c74dac8",
+      "Tabla 2, fila 10#e71a14aeefa7943d",
+      "Tabla 2, fila 11#dc0d04bf36380552"
+    ],
+    "positions": {
+      "prog.qualityApproverName": [
+        "Tabla 3, fila 2, casilla 1"
+      ],
+      "prog1.area": [
+        "Tabla 2, fila 2, casilla 1"
+      ],
+      "prog1.auditors": [
+        "Tabla 2, fila 3, casilla 3"
+      ],
+      "prog1.modality": [
+        "Tabla 2, fila 3, casilla 5"
+      ],
+      "prog1.notes": [
+        "Tabla 2, fila 3, casilla 5"
+      ],
+      "prog1.partial": [
+        "Tabla 2, fila 3, casilla 5"
+      ],
+      "prog1.performed": [
+        "Tabla 2, fila 3, casilla 4"
+      ],
+      "prog1.planned": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "prog1.productService": [
+        "Tabla 2, fila 3, casilla 1"
+      ],
+      "prog1.scope": [
+        "Tabla 2, fila 3, casilla 1"
+      ],
+      "prog1.target": [
+        "Tabla 2, fila 3, casilla 1"
+      ],
+      "prog2.area": [
+        "Tabla 2, fila 4, casilla 1 (fila añadida)"
+      ],
+      "prog2.auditors": [
+        "Tabla 2, fila 5, casilla 3"
+      ],
+      "prog2.modality": [
+        "Tabla 2, fila 5, casilla 5"
+      ],
+      "prog2.notes": [
+        "Tabla 2, fila 5, casilla 5"
+      ],
+      "prog2.partial": [
+        "Tabla 2, fila 5, casilla 5"
+      ],
+      "prog2.performed": [
+        "Tabla 2, fila 5, casilla 4"
+      ],
+      "prog2.planned": [
+        "Tabla 2, fila 5, casilla 2"
+      ],
+      "prog2.productService": [
+        "Tabla 2, fila 5, casilla 1"
+      ],
+      "prog2.scope": [
+        "Tabla 2, fila 5, casilla 1"
+      ],
+      "prog2.target": [
+        "Tabla 2, fila 5, casilla 1"
+      ]
+    }
+  }
+}

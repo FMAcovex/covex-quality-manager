@@ -203,5 +203,15 @@ describe("Devoluciones: tablas de los textos en su casilla (D-127)", () => {
     const v = getZipEntryText(readZip(await generateReturnAnnexV(record)), "word/document.xml");
     expect(inSameCell(v, "Declaración ficticia", "Tabla 3. Unidades")).toBe(true);
   });
+
+  it("la tabla de la justificación del plazo excepcional sale solo con su texto (D-128)", async () => {
+    const withAmbient = { ...record, textTables: { ambientPeriodRiskJustification: [table("Plazo")] } } as unknown as ReturnDocumentRecord;
+    templates.current = syntheticDocx(grid(9, {}));
+    const without = getZipEntryText(readZip(await generateReturnAnnexIII(withAmbient)), "word/document.xml");
+    expect(without).not.toContain("Plazo");
+    const justified = { ...withAmbient, extraData: { r4b: { ambientPeriodRiskJustification: "Justificación ficticia" } } } as unknown as ReturnDocumentRecord;
+    const withText = getZipEntryText(readZip(await generateReturnAnnexIII(justified)), "word/document.xml");
+    expect(inSameCell(withText, "Justificación ficticia", "Tabla 1. Plazo")).toBe(true);
+  });
 });
 
