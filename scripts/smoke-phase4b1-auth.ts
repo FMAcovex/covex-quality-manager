@@ -71,6 +71,25 @@ async function main() {
     let actor = "";
     await asUser(manager, () => authorizedAction(actions[i], args(entities[0].id), async values => { actor = String((values[2] as FormData).get("actor")); })); assert.equal(actor, manager.name);
     form.set("status", "CLOSED"); await blocked(manager, entities[0].id); form.delete("status");
+    if (accessModule !== "AUDIT" && accessModule !== "PNT") {
+      // Como la página de edición (4B1): sin permiso de cierre no se guarda un expediente cerrado, ni reabriéndolo ni dejándolo cerrado.
+      const statusField = accessModule === "CHANGE_CONTROL" ? "finalStatus" : "status";
+      const model = { DEVIATION: "deviation", CAPA: "capa", CHANGE_CONTROL: "changeControl", COMPLAINT: "complaint", RETURN: "returnRecord" }[accessModule as "DEVIATION"];
+      type Writable = { update(args: object): Promise<Record<string, unknown>>; findUniqueOrThrow(args: object): Promise<Record<string, unknown>> };
+      const delegate = (prisma as unknown as Record<string, Writable>)[model];
+      const original = String((await delegate.findUniqueOrThrow({ where: { id: entities[0].id } }))[statusField]);
+      const setStored = (value: string) => delegate.update({ where: { id: entities[0].id }, data: { [statusField]: value } });
+      await setStored("CLOSED");
+      form.set(statusField, "CLOSED"); await blocked(manager, entities[0].id);
+      form.set(statusField, "OPEN"); await blocked(manager, entities[0].id);
+      form.delete(statusField); await blocked(manager, entities[0].id);
+      // Con permiso de cierre (QA) sí se guarda.
+      form.set(statusField, "CLOSED");
+      let saved = false;
+      await asUser(user, () => authorizedAction(actions[i], args(entities[0].id), async () => { saved = true; }));
+      assert(saved, "Con CLOSE se guarda un expediente cerrado " + accessModule);
+      form.delete(statusField); await setStored(original);
+    }
     const assigned = entities[1].qmsRecordId ?? entities[1].id;
     await prisma.authRecordAssignment.upsert({ where: { userId_module_recordId: { userId: manager.id, module: accessModule, recordId: assigned } }, create: { userId: manager.id, module: accessModule, recordId: assigned }, update: {} });
     await asUser(manager, () => authorizedAction(actions[i], args(entities[1].id), async () => undefined));

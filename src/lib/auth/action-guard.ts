@@ -4,6 +4,7 @@ import inventory from "./operation-inventory.json";
 import { AccessError, currentIdentity, identityContext, type AccessModule, type AccessPermission } from "./context";
 import { assertPermission } from "./policy";
 import { qmsScope, resourceScope, reviewScope } from "./resources";
+import { recordStatusPermissions, recordStatusSource, recordStatusTarget } from "./close-permission";
 import { requireCsrf, requireUser } from "./session";
 import { qmsRecordModuleKeys, qmsRecordTypes } from "@/modules/registry";
 
@@ -34,6 +35,12 @@ async function configurationModule(entry: typeof inventory.actions[number], args
   const createsModuleResource = ["createCatalogAction", "registerTemplateVersionAction"].includes(entry.name);
   return createsModuleResource && raw && (qmsRecordModuleKeys as readonly string[]).includes(String(raw)) ? String(raw) as AccessModule : "SYSTEM";
 }
+/** Estado guardado del expediente que edita la acción (null si no existe). */
+async function currentRecordStatus(model: string, field: string, id: string) {
+  type Lookup = { findUnique(args: object): Promise<Record<string, unknown> | null> };
+  const row = await (prisma as unknown as Record<string, Lookup>)[model].findUnique({ where: { id }, select: { [field]: true } });
+  return row ? String(row[field]) : null;
+}
 async function authorizeAndRun<T>(name: string, args: unknown[], run: (authenticated: unknown[]) => Promise<T>): Promise<T> {
   const entry = inventory.actions.find(a => a.name === name); if (!entry) throw new AccessError(403);
   const user = await requireUser(), form = args.find(a => a instanceof FormData) as FormData | undefined;
@@ -60,9 +67,18 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
   }
   assertPermission(user, accessModule, permission, scope);
   if (entry.module === "SYSTEM" && form?.get("module") && form.get("module") !== accessModule) assertPermission(user, String(form.get("module")) as AccessModule, "MANAGE_CONFIGURATION");
+  // Edición de un expediente: lo mismo que su página de edición (4B1). Cerrarlo exige CLOSE, y guardar uno ya
+  // cerrado (lo reabra o no) también; uno cancelado exige ANNUL. Sin base de datos (modo unitario) se desconoce
+  // el estado guardado y solo cuenta el de destino.
+  const statusSource = recordStatusSource(name);
+  if (statusSource) {
+    const id = entry.resourceArg >= 0 ? args[entry.resourceArg] : null;
+    const currentStatus = !unit && id ? await currentRecordStatus(statusSource.model, statusSource.field, String(id)) : null;
+    for (const required of recordStatusPermissions(recordStatusTarget(name, form) ?? null, currentStatus)) assertPermission(user, accessModule, required, scope);
+  }
   // Reclamaciones envía el estado de destino en `saveStatus` (prevalece sobre `status`).
-  if (form?.get("status") === "CLOSED" || form?.get("saveStatus") === "CLOSED" || form?.get("treatmentStatus") === "CLOSED") assertPermission(user, accessModule, "CLOSE", scope);
-  if (form?.get("finalStatus") === "CLOSED" || form?.get("closeChange") === "true") assertPermission(user, accessModule, "CLOSE", scope);
+  if (form?.get("status") === "CLOSED" || form?.get("saveStatus") === "CLOSED" || form?.get("treatmentStatus") === "CLOSED" || form?.get("finalStatus") === "CLOSED") assertPermission(user, accessModule, "CLOSE", scope);
+  if (form?.get("closeChange") === "true") assertPermission(user, accessModule, "CLOSE", scope);
   if ([form?.get("status"), form?.get("administrativeStatus")].some(value => value === "ANNULLED" || value === "CANCELLED")) assertPermission(user, accessModule, "ANNUL", scope);
   if (form?.get("departmentId") && scope.id) assertPermission(user, accessModule, permission, { id: scope.id, departmentIds: [String(form.get("departmentId"))] });
   if (accessModule === "AUDIT" && form) {
