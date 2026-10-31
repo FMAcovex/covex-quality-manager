@@ -193,6 +193,18 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Versiones, novedades y procedimiento de actualización (2026-10-31, D-131):**
+- **Qué cambia:**
+  - La aplicación pasa a la versión 0.2.0. El número sigue `MAYOR.MENOR.CORRECCIÓN`, y cualquier cambio en la base de datos sube al menos el MENOR.
+  - Al pie de cada página se ve la versión instalada, con un enlace a «Novedades» (`/novedades`). Las notas están en `src/lib/release/release-notes.ts`.
+  - `pnpm release:check` comprueba la versión, las notas y las migraciones nuevas desde la última etiqueta `vX.Y.Z`, y muestra el resumen para IT.
+  - Procedimiento para IT y Calidad, con preproducción: [PROCEDIMIENTO_ACTUALIZACION.md](PROCEDIMIENTO_ACTUALIZACION.md).
+- **Pendiente:**
+  - etiquetar la primera entrega (`v0.2.0`) cuando se instale;
+  - que IT prepare la preproducción;
+  - que QA defina el control de cambios de sistemas informatizados.
+- **Comprobado:** pruebas unitarias de las reglas de versión (y de que la versión del repositorio tiene sus notas), `pnpm release:check` contra un commit anterior (lista las 5 migraciones nuevas) y la página en la aplicación compilada.
+
 **Probar una plantilla con un expediente antes de activarla (2026-10-31, D-129 y D-130):**
 - **Qué cambia:**
   - En Configuración → Versiones, cada versión de plantilla con archivo tiene un botón **Probar**. Genera el anexo con esa versión, aunque esté inactiva, y el expediente indicado o el último modificado del módulo, con los mismos datos que la descarga desde la ficha; en los listados y programas, un año. El archivo se llama `PRUEBA_…` y no se guarda nada en el expediente.

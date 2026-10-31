@@ -1693,6 +1693,7 @@
   "pages": [
     "src/app/audit-trail/page.tsx",
     "src/app/calendar/page.tsx",
+    "src/app/novedades/page.tsx",
     "src/app/audits/[id]/edit/page.tsx",
     "src/app/audits/[id]/page.tsx",
     "src/app/audits/new/page.tsx",

@@ -21,7 +21,7 @@ const modules = [
   { label: "Configuración", href: "/settings", enabled: true, match: "/settings" },
 ];
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, version }: { children: ReactNode; version?: string }) {
   const pathname = usePathname();
   const canReadSettings = useCanAct("READ", "SYSTEM");
   // Entrega 1 (D-117): antes de entrar no se ofrecen módulos ni búsqueda.
@@ -81,6 +81,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>}
       </header>
       <main className="page-shell">{children}</main>
+      {/* D-131: versión instalada y sus novedades, discretas al pie. */}
+      {signIn || !version ? null : <footer className="app-footer">
+        COVEX Quality Manager · versión {version} · <Link href="/novedades">Novedades</Link>
+      </footer>}
     </div>
   );
 }

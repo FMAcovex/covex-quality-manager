@@ -1,6 +1,6 @@
 {
   "name": "covex-quality-manager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "pnpm@11.19.0",
   "scripts": {
@@ -54,6 +54,7 @@
     "db:smoke": "tsx scripts/smoke-db.ts",
     "templates:install": "tsx scripts/install-templates.ts",
     "annexes:verify": "node --conditions=react-server --import tsx scripts/verify-annexes.ts",
+    "release:check": "tsx scripts/release-check.ts",
     "import:deviations": "tsx scripts/import-historical-deviations.ts",
     "import:smoke": "tsx scripts/smoke-import.ts",
     "indicators:smoke": "tsx scripts/smoke-indicators.ts",
