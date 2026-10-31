@@ -34,8 +34,36 @@ const ordinal = (index: number) => `${index + 1}.ª tabla`;
 const filled = (cells: string[]) => cells.some((cell) => cell !== "");
 
 /**
- * Lee del formulario las tablas de los campos que las admiten. Recorta las celdas, quita filas y tablas
- * vacías y comprueba título y límites; los errores van al campo («1.ª tabla: …»). Sin tablas, null.
+ * Comprueba una lista de tablas ya leída (de un campo o de un elemento de una lista): recorta las celdas,
+ * quita filas y tablas vacías y comprueba título y límites. Los problemas van como «1.ª tabla: …».
+ */
+export function validateTableList(raw: unknown): { tables: TextTable[]; problems: string[] } {
+  if (raw === undefined || raw === null || raw === "") return { tables: [], problems: [] };
+  const parsed = z.array(tableShape).max(50).safeParse(raw);
+  if (!parsed.success) return { tables: [], problems: ["Las tablas no tienen un formato válido."] };
+  const problems: string[] = [];
+  const tables: TextTable[] = [];
+  parsed.data.forEach((table, index) => {
+    const title = clean(table.title);
+    const columns = table.columns.map(clean);
+    const rows = table.rows.map((row) => row.map(clean)).filter(filled);
+    const hasData = filled(columns) || rows.length > 0;
+    if (!title && !hasData) return;
+    if (!title) problems.push(`${ordinal(index)}: falta el título.`);
+    else if (!hasData) problems.push(`${ordinal(index)}: no tiene datos.`);
+    if (title.length > MAX_TABLE_TITLE) problems.push(`${ordinal(index)}: el título admite ${MAX_TABLE_TITLE} caracteres.`);
+    if (columns.length > MAX_TABLE_COLUMNS) problems.push(`${ordinal(index)}: como máximo ${MAX_TABLE_COLUMNS} columnas.`);
+    if (rows.length > MAX_TABLE_ROWS) problems.push(`${ordinal(index)}: como máximo ${MAX_TABLE_ROWS} filas.`);
+    if ([columns, ...rows].some((row) => row.some((cell) => cell.length > MAX_TABLE_CELL))) problems.push(`${ordinal(index)}: cada celda admite ${MAX_TABLE_CELL} caracteres.`);
+    tables.push({ title, columns, rows });
+  });
+  if (tables.length > MAX_TABLES_PER_FIELD) problems.push(`Como máximo ${MAX_TABLES_PER_FIELD} tablas por apartado.`);
+  return { tables: problems.length ? [] : tables, problems };
+}
+
+/**
+ * Lee del formulario las tablas de los campos que las admiten (ver `validateTableList`); los errores van al
+ * campo («1.ª tabla: …»). Sin tablas, null.
  */
 export function parseTextTables(formData: FormData, fields: readonly string[]) {
   const value: Record<string, TextTable[]> = {};
@@ -47,31 +75,15 @@ export function parseTextTables(formData: FormData, fields: readonly string[]) {
       issues[field] = ["Las tablas de este apartado son demasiado grandes."];
       continue;
     }
-    let parsed: z.infer<typeof tableShape>[];
+    let json: unknown;
     try {
-      parsed = z.array(tableShape).max(50).parse(JSON.parse(raw));
+      json = JSON.parse(raw);
     } catch {
-      // Dato enviado por el cliente que no es JSON o no tiene forma de tabla: es un error de validación del campo.
+      // Dato enviado por el cliente que no es JSON: es un error de validación del campo.
       issues[field] = ["Las tablas no tienen un formato válido."];
       continue;
     }
-    const problems: string[] = [];
-    const tables: TextTable[] = [];
-    parsed.forEach((table, index) => {
-      const title = clean(table.title);
-      const columns = table.columns.map(clean);
-      const rows = table.rows.map((row) => row.map(clean)).filter(filled);
-      const hasData = filled(columns) || rows.length > 0;
-      if (!title && !hasData) return;
-      if (!title) problems.push(`${ordinal(index)}: falta el título.`);
-      else if (!hasData) problems.push(`${ordinal(index)}: no tiene datos.`);
-      if (title.length > MAX_TABLE_TITLE) problems.push(`${ordinal(index)}: el título admite ${MAX_TABLE_TITLE} caracteres.`);
-      if (columns.length > MAX_TABLE_COLUMNS) problems.push(`${ordinal(index)}: como máximo ${MAX_TABLE_COLUMNS} columnas.`);
-      if (rows.length > MAX_TABLE_ROWS) problems.push(`${ordinal(index)}: como máximo ${MAX_TABLE_ROWS} filas.`);
-      if ([columns, ...rows].some((row) => row.some((cell) => cell.length > MAX_TABLE_CELL))) problems.push(`${ordinal(index)}: cada celda admite ${MAX_TABLE_CELL} caracteres.`);
-      tables.push({ title, columns, rows });
-    });
-    if (tables.length > MAX_TABLES_PER_FIELD) problems.push(`Como máximo ${MAX_TABLES_PER_FIELD} tablas por apartado.`);
+    const { tables, problems } = validateTableList(json);
     if (problems.length) issues[field] = problems;
     else if (tables.length) value[field] = tables;
   }

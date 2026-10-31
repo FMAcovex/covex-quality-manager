@@ -94,11 +94,12 @@ const PLANNED_ACTIONS_ROW = { table: 0, row: 17 };
 const ACTION_FOLLOWUPS_ROW = { table: 1, row: 2 };
 
 /**
- * D-127: las tablas de cada texto, al final de la casilla de su apartado. Va después de rellenar el resto,
- * así que las casillas bajo una fila copiada bajan tantas filas como copias extra.
+ * D-127: las tablas de cada texto, al final de la casilla de su apartado (las de cada seguimiento de la acción,
+ * en la descripción de su fila). Va después de rellenar el resto, así que las casillas bajo una fila copiada
+ * bajan tantas filas como copias extra.
  */
 export function fillCapaTextTables(xml: string, record: Pick<CapaAnnexRecord, "textTables" | "plannedActions" | "actionFollowups">) {
-  return insertWordCellTables(xml, capaAnnexTablePlacements(storedTextTables(record.textTables), [
+  return insertWordCellTables(xml, capaAnnexTablePlacements(storedTextTables(record.textTables), record.actionFollowups.length, [
     { ...PLANNED_ACTIONS_ROW, count: record.plannedActions.length },
     { ...ACTION_FOLLOWUPS_ROW, count: record.actionFollowups.length },
   ]));

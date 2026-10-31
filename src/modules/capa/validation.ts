@@ -2,14 +2,13 @@ import { rootCauseCategoriesFrom } from "@/lib/qms/root-cause-categories";
 import { z } from "zod";
 import { rowUserIdSchema } from "@/lib/qms/responsible-user";
 import type {
-  CapaActionFollowupInput,
   CapaOriginInput,
   CapaPlannedActionInput,
   CapaSaveIntent,
 } from "@/modules/capa/types";
 import { cleanText } from "@/lib/forms/bullets";
-import { parseTextTables, tableSummaryErrors } from "@/lib/forms/text-tables";
-import { CAPA_TABLE_FIELD_LABELS, CAPA_TABLE_FIELDS } from "./text-tables";
+import { parseTextTables, tableSummaryErrors, validateTableList, type TextTable } from "@/lib/forms/text-tables";
+import { CAPA_TABLE_FIELD_LABELS, CAPA_TABLE_FIELDS, actionFollowupTablesKey } from "./text-tables";
 
 const actionType = z.enum(["CORRECTIVE", "PREVENTIVE"]);
 const status = z.enum(["DRAFT", "OPEN", "CLOSED", "CANCELLED"]);
@@ -29,6 +28,8 @@ const plannedActionRowSchema = plannedActionSchema.extend({ description: z.strin
 const actionFollowupSchema = z.object({
   followupDate: z.string().trim(),
   description: z.string().trim(),
+  // D-127: tablas de la descripción; se comprueban aparte (validateTableList) y se guardan en Capa.textTables.
+  tables: z.unknown().optional(),
 });
 const originSchema = z.object({
   id: z.string().trim().min(1),
@@ -88,7 +89,7 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
   const effectivenessStatus = enumValue(effectiveness, text(formData, "effectivenessStatus")) ?? "PENDING";
   const plannedActionRows = parseArray(text(formData, "plannedActionsJson"), plannedActionRowSchema);
   const plannedActions: CapaPlannedActionInput[] = plannedActionRows.filter((row) => row.description);
-  const actionFollowups = parseArray<CapaActionFollowupInput>(text(formData, "actionFollowupsJson"), actionFollowupSchema);
+  const actionFollowups = parseArray(text(formData, "actionFollowupsJson"), actionFollowupSchema);
   const nextFollowupDate = text(formData, "nextFollowupDate");
   const operationalClosedAt = text(formData, "operationalClosedAt");
   const effectiveClosedAt = text(formData, "effectiveClosedAt");
@@ -145,6 +146,15 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
     if (item.followupDate && !item.description) addIssue("actionFollowupsJson", `La descripción del seguimiento de acción ${index + 1} es obligatoria cuando se registra una fecha.`);
     if (item.description && !item.followupDate) addIssue("actionFollowupsJson", `La fecha del seguimiento de acción ${index + 1} es obligatoria cuando se registra una descripción.`);
   });
+  // D-127: tablas de cada seguimiento de la acción; los errores van al apartado con el número de la fila.
+  const followupTables: Record<string, TextTable[]> = {};
+  actionFollowups.forEach((item, index) => {
+    const { tables, problems } = validateTableList(item.tables);
+    const row = `Seguimiento de acción ${String(index + 1).padStart(2, "0")}`;
+    for (const problem of problems) addIssue("actionFollowupsJson", `${row} · ${problem}`);
+    if (tables.length && !item.description) addIssue("actionFollowupsJson", `La descripción del seguimiento de acción ${index + 1} es obligatoria cuando lleva una tabla.`);
+    if (tables.length) followupTables[actionFollowupTablesKey(index)] = tables;
+  });
   for (const [field, value, message] of [
     ["nextFollowupDate", nextFollowupDate, "La fecha de próximo seguimiento no tiene un formato válido."],
     ["operationalClosedAt", operationalClosedAt, "La fecha de cierre y ejecución no tiene un formato válido."],
@@ -188,7 +198,7 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
       impactAssessment: text(formData, "impactAssessment"),
       nextFollowupDate,
       actionFollowupObservations,
-      actionFollowups,
+      actionFollowups: actionFollowups.map(({ followupDate, description }) => ({ followupDate, description })),
       status: recordStatus,
       operationalStatusDescription,
       cancellationReason, operationalClosedAt,
@@ -198,7 +208,7 @@ export function parseCapaForm(formData: FormData, options: { allowHistoricalInco
       effectivenessEvidence: text(formData, "effectivenessEvidence"),
       effectiveClosedAt, conclusion,
       internalObservations: text(formData, "internalObservations"),
-      textTables: textTables.value,
+      textTables: Object.keys(followupTables).length ? { ...(textTables.value ?? {}), ...followupTables } : textTables.value,
       signedDocumentAvailable: text(formData, "signedDocumentAvailable") === "true" ? true : text(formData, "signedDocumentAvailable") === "false" ? false : null,
       dataQualityStatus: enumValue(dataQuality, text(formData, "dataQualityStatus")) ?? "REVIEW_REQUIRED",
       plannedActions,

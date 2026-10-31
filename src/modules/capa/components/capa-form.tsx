@@ -9,6 +9,7 @@ import { InvalidFieldsSummary } from "@/components/invalid-fields-summary";
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { BulletTextField } from "@/components/bullet-textarea";
+import { TextTablesFields } from "@/components/text-tables-editor";
 
 import { submittedDefaults } from "@/lib/forms/preserved-state";
 import { ResponsibleUserPicker } from "@/components/responsible-user-select";
@@ -515,6 +516,13 @@ export function CapaForm({
                   />
                 </label>
               </div>
+              <TextTablesFields
+                fieldLabel={`Seguimiento de acción ${String(index + 1).padStart(2, "0")}`}
+                tables={item.tables ?? []}
+                setTables={(change) =>
+                  setActionFollowups((current) => current.map((row, i) => (i === index ? { ...row, tables: change(row.tables ?? []) } : row)))
+                }
+              />
             </div>
           ))}
           <div>

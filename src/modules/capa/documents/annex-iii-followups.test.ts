@@ -162,7 +162,7 @@ describe("Anexo III CAPA por QmsRecordVersion", () => {
       actionFollowupObservations: "Observación general",
       plannedActions: [1, 2, 3].map((n) => ({ description: `Acción ${n}`, responsible: "QA", plannedExecutionDate: null, impact: null })),
       actionFollowups: [1, 2, 3].map((n) => ({ followupDate: new Date("2097-01-10"), description: `Seguimiento ${n}` })),
-      textTables: { rootCause: [table("Causas")], actionFollowupObservations: [table("Revisiones")], conclusion: [table("Cierre")] },
+      textTables: { rootCause: [table("Causas")], "actionFollowups.1": [table("Pruebas")], actionFollowupObservations: [table("Revisiones")], conclusion: [table("Cierre")] },
       annexIIITemplateVersion: { versionCode: "05" },
     } as never);
     const xml = getZipEntryText(readZip(doc), "word/document.xml");
@@ -171,8 +171,11 @@ describe("Anexo III CAPA por QmsRecordVersion", () => {
       return from > 0 && to > from && !xml.slice(from, to).includes("</w:tc>");
     };
     expect(inSameCell("Causa ficticia", "Tabla 1. Causas")).toBe(true);
-    expect(inSameCell("Observación general", "Tabla 2. Revisiones")).toBe(true);
-    expect(inSameCell("Acción implantada", "Tabla 3. Cierre")).toBe(true);
+    // La tabla de un seguimiento de la acción va en la descripción de su fila copiada y numera en su orden.
+    expect(inSameCell("Seguimiento 2", "Tabla 2. Pruebas")).toBe(true);
+    expect(xml.indexOf("Tabla 2. Pruebas")).toBeLessThan(xml.indexOf("Seguimiento 3"));
+    expect(inSameCell("Observación general", "Tabla 3. Revisiones")).toBe(true);
+    expect(inSameCell("Acción implantada", "Tabla 4. Cierre")).toBe(true);
   });
 });
 

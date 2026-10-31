@@ -22,7 +22,7 @@ describe("CAPA y Controles de cambios · las tablas de una versión llegan a su 
   it("de la foto guardada (JSON) al registro del anexo y a su casilla", () => {
     const capaSnapshot = JSON.parse(JSON.stringify(serializeCapaVersion({ ...capa, textTables: tables } as never)));
     const capaRecord = capaSnapshotToAnnexRecord(capaSnapshot) as { textTables?: unknown };
-    expect(capaAnnexTablePlacements(storedTextTables(capaRecord.textTables)).map(({ table, row, cell }) => [table, row, cell])).toEqual([[0, 14, 0]]);
+    expect(capaAnnexTablePlacements(storedTextTables(capaRecord.textTables), 0).map(({ table, row, cell }) => [table, row, cell])).toEqual([[0, 14, 0]]);
     const evaluation = { evaluation: [{ title: "Riesgos", columns: ["Riesgo"], rows: [["Bajo"]] }] };
     const changeSnapshot = JSON.parse(JSON.stringify(serializeChangeControlVersion({ ...change, textTables: evaluation } as never)));
     const changeRecord = changeControlSnapshotToRecord(changeSnapshot) as { textTables?: unknown };

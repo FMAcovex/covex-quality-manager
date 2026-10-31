@@ -12,6 +12,7 @@ import {
   parseTextTables,
   storedTextTables,
   textTablesInputName,
+  validateTableList,
 } from "./text-tables";
 
 const fields = ["investigation", "rootCause"] as const;
@@ -154,3 +155,12 @@ describe("utilidades comunes de los módulos", () => {
   });
 });
 
+
+describe("validateTableList (tablas de un elemento de una lista, D-127)", () => {
+  it("valida igual que un campo: recorta, quita vacías, exige título y rechaza lo que no es una tabla", () => {
+    expect(validateTableList([{ title: " T ", columns: ["a"], rows: [[" b "], [""]] }, { title: "", columns: [""], rows: [[""]] }])).toEqual({ tables: [{ title: "T", columns: ["a"], rows: [["b"]] }], problems: [] });
+    expect(validateTableList([{ title: "", columns: ["a"], rows: [["b"]] }]).problems).toEqual(["1.ª tabla: falta el título."]);
+    expect(validateTableList("no")).toEqual({ tables: [], problems: ["Las tablas no tienen un formato válido."] });
+    expect(validateTableList(undefined)).toEqual({ tables: [], problems: [] });
+  });
+});

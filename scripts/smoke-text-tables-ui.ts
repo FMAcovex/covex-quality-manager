@@ -117,6 +117,24 @@ async function main() {
     assert.equal(await tableHistory(capa.qmsRecordId), 0, "CAPA: guardar sin tocar la tabla no anota cambios");
     await resave(`/capa/${capa.id}/edit`, /\/capa\/[0-9a-f-]{36}(\?|$)/, () => qa.locator("fieldset.text-table-editor").getByLabel(/^Fila 1, columna 2 · /).fill("No conforme"));
     assert.equal(await tableHistory(capa.qmsRecordId), 1, "CAPA: el cambio de la tabla queda en el historial");
+    // CAPA: tabla en una fila de «Seguimiento de la acción»; se numera tras la causa raíz y sale bajo la fila en la ficha.
+    await resave(`/capa/${capa.id}/edit`, /\/capa\/[0-9a-f-]{36}(\?|$)/, async () => {
+      await qa.getByRole("button", { name: "+ Añadir seguimiento" }).click();
+      const card = qa.locator(".capa-action-card", { hasText: "Seguimiento de acción 01" });
+      await card.locator('input[type="date"]').fill("2026-10-15");
+      await card.locator("textarea").first().fill("Revisión de lotes");
+      await addTable("Seguimiento de acción 01", "Lotes revisados");
+    });
+    const withFollowup = await prisma.capa.findUniqueOrThrow({ where: { id: capa.id } });
+    assert.deepEqual(withFollowup.textTables, { rootCause: [{ title: "Causas evaluadas", columns: ["Elemento", "Resultado"], rows: [["Uno", "No conforme"]] }], "actionFollowups.0": expected("Lotes revisados") });
+    await go(`/capa/${capa.id}?tab=action-followups`);
+    await qa.locator(".text-table-view", { hasText: "Tabla 2. Lotes revisados" }).waitFor();
+    // Al editar vuelve a su fila y se conserva al guardar otro cambio.
+    await resave(`/capa/${capa.id}/edit`, /\/capa\/[0-9a-f-]{36}(\?|$)/, async () => {
+      assert.equal(await qa.locator("fieldset.text-table-editor", { hasText: "1.ª tabla de «Seguimiento de acción 01»" }).getByLabel("Título *").inputValue(), "Lotes revisados");
+      await qa.locator('textarea[name="defectDescription"]').fill(`${marker} defecto CAPA`);
+    });
+    assert.deepEqual((await prisma.capa.findUniqueOrThrow({ where: { id: capa.id } })).textTables, withFollowup.textTables);
 
     // Control de cambios: tabla en «Evaluación del cambio» (Anexo IV), en la ficha del dictamen.
     await go("/changes/new");

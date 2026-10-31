@@ -8,6 +8,7 @@ import { updateCapaAction } from "@/modules/capa/actions";
 import { CapaForm } from "@/modules/capa/components/capa-form";
 import { getCapaDetail, getCapaLookups, getCapaOriginRecords } from "@/modules/capa/queries";
 import { storedTextTables } from "@/lib/forms/text-tables";
+import { actionFollowupTablesKey } from "@/modules/capa/text-tables";
 
 export const dynamic = "force-dynamic";
 
@@ -54,9 +55,10 @@ async function EditCapaPageAuthenticatedContent({ params, searchParams }: { para
     nextFollowupDate: undefined,
     actionFollowupObservations: capa.actionFollowupObservations ?? undefined,
     operationalStatusDescription: capa.operationalStatusDescription ?? undefined,
-    actionFollowups: capa.actionFollowups.map((item) => ({
+    actionFollowups: capa.actionFollowups.map((item, index) => ({
       followupDate: item.followupDate?.toISOString().slice(0,10) ?? "",
       description: item.description ?? "",
+      tables: storedTextTables(capa.textTables)[actionFollowupTablesKey(index)] ?? [],
     })),
     status: capa.status,
     cancellationReason: capa.cancellationReason ?? undefined,
