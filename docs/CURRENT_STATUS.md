@@ -193,6 +193,14 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Los códigos anulados se pueden reutilizar (2026-11-06, D-133):**
+- **Qué cambia:** al anular un expediente, su código queda libre para otro expediente del mismo módulo.
+  - La comprobación de duplicados y la sugerencia del siguiente correlativo solo cuentan los códigos de expedientes activos.
+  - Si el último código de la serie está anulado, la sugerencia vuelve a ofrecerlo; uno intermedio se puede escribir a mano.
+  - Sustituye lo que dicen las entradas antiguas de este documento sobre impedir la reutilización histórica.
+- **Sin cambios:** el anulado conserva su código y se sigue viendo como Anulado; la reactivación no se permite si el código ya lo usa otro expediente activo.
+- **Comprobado:** pruebas de `business-code-reuse.test.ts`, que fallaban antes del cambio.
+
 **Verificación de los anexos: casillas marcadas, cabeceras y pies (2026-10-31, D-132):**
 - **Qué cambia:**
   - `pnpm annexes:verify` comprueba también qué casillas ☒ se marcan, que cada control de casilla de Word muestra su estado y el texto de las cabeceras y los pies.

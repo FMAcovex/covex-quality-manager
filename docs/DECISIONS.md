@@ -264,7 +264,7 @@ Reglas:
 - la anulación exige motivo y usuario;
 - se conservan UUID, datos del módulo, versiones, documentos, relaciones e historial;
 - el código visible original se conserva en `annulledBusinessCode`;
-- `businessCode` se libera al anular para permitir reutilizar la codificación;
+- `businessCode` se libera al anular: la codificación queda disponible y puede asignarse a otro expediente del mismo módulo, escribiéndola o aceptando la sugerencia (D-133);
 - solo puede existir un expediente activo por módulo y codificación;
 - los listados muestran por defecto únicamente expedientes activos y ofrecen filtro Activos / Anulados / Todos;
 - exportaciones e indicadores excluyen anulados por defecto;
@@ -295,7 +295,7 @@ Reglas:
 - al abrir un borrador sin código, la aplicación asigna el siguiente correlativo disponible;
 - la confirmación del código se realiza dentro de la misma transacción que guarda/abre el expediente;
 - un bloqueo transaccional PostgreSQL serializa la asignación por departamento y año para evitar duplicados concurrentes;
-- la validación considera tanto `businessCode` como `annulledBusinessCode`, evitando reutilizar una codificación histórica anulada;
+- la validación solo considera los códigos de expedientes activos (`businessCode`, incluidos los borradores con código); una codificación anulada se puede reutilizar (D-133, sustituye la regla anterior que la reservaba);
 - una vez abierta la desviación, el código queda fijado y no se modifica en ediciones o versiones posteriores;
 - la lógica se centraliza en `src/lib/qms/business-code.ts` para futura reutilización controlada.
 
@@ -346,7 +346,7 @@ Reglas:
 - la interfaz propone el siguiente correlativo disponible según los datos identificativos del módulo;
 - el usuario puede aceptar la sugerencia, introducir manualmente otro código válido o dejar el campo vacío para que el servidor asigne el siguiente correlativo al guardar;
 - la asignación definitiva se realiza dentro de la transacción con bloqueo PostgreSQL por serie/año;
-- se consideran tanto `businessCode` como `annulledBusinessCode`, por lo que una codificación histórica anulada no se reutiliza;
+- solo se consideran los códigos de expedientes activos; una codificación anulada se puede reutilizar (D-133, sustituye la regla anterior que la reservaba);
 - después de crear el expediente, la codificación queda fijada y se muestra como solo lectura en edición;
 - los expedientes históricos conservan su codificación aunque no responda al patrón actual;
 - formatos aplicados en V1:
@@ -1535,3 +1535,17 @@ Amplía D-128 a lo que quedaba fuera, a petición del responsable de Calidad.
   - Los generadores que escriben las casillas como texto (Reclamaciones, Devoluciones y Controles de cambios) alinean ahora el estado de cada control con su símbolo antes de guardar (`syncCheckboxControlStates`).
 - **Opciones dudosas.** Si el estilo de la plantilla no deja claro si la opción va delante o detrás de la casilla, el informe enseña las dos. Las claves de lo previsto usan la fila y la opción de la plantilla, no los datos del anexo.
 - Sin cambios en los datos, los permisos ni la interfaz. La verificación no sustituye a la validación GMP.
+
+## D-133 — Los códigos anulados se pueden reutilizar (2026-11-06)
+
+Decisión del responsable de Calidad. Corrige la contradicción entre D-043, que liberaba el código al anular, y D-045/D-049, que lo seguían reservando.
+
+- **Al anular un expediente, su código queda libre.** Se puede asignar a otro expediente del mismo módulo, escribiéndolo a mano o aceptando la sugerencia.
+- **Duplicados:** solo cuenta el código de otro expediente activo del mismo módulo (abierto, cerrado o en borrador con código).
+- **Sugerencia del siguiente correlativo:** el siguiente al mayor código activo de la serie y el año.
+  - Si el último código de la serie está anulado, la sugerencia vuelve a ofrecerlo.
+  - Un número anulado intermedio no se sugiere, pero se puede escribir.
+- **El expediente anulado conserva su código** en `annulledBusinessCode` y se sigue mostrando, con estado Anulado, en búsquedas, relaciones e historial. Si el código se reutiliza, la búsqueda por ese código devuelve los dos expedientes.
+- **Reactivación:** sin cambios. Recupera el código original solo si ningún expediente activo lo usa; si se ha reutilizado, la aplicación no deja reactivar.
+- No afecta a los códigos de catálogo (D-036), que siguen sin reutilizarse con otro significado.
+- Implementación: `src/lib/qms/business-code.ts` (todas las series de codificación controlada), con pruebas en `src/lib/qms/business-code-reuse.test.ts`.
