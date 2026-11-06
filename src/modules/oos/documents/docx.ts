@@ -7,6 +7,7 @@ import { oosAnnexTablePlacements } from "@/modules/oos/text-tables";
 import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import { qmsRecordTypeLabel } from "@/lib/qms/record-links";
 import { formatOosDate, oosEvaluationKeys, oosInvestigationResultLabels, readOosEvaluation } from "@/modules/oos/domain";
+import { documentRecordCode } from "@/lib/qms/document-code";
 
 // D-088, OOS-3: fills the Anexo III, IV and VI tables of PNT GC-10/014/04 without
 // redesigning them. Table/row/cell positions are those of the controlled template.
@@ -170,7 +171,7 @@ export function oosInvestigationSummary(record: Pick<OosDocumentRecord, "status"
   const state = record.investigationResult
     ? oosInvestigationResultLabels[record.investigationResult]
     : record.status === "OPEN" ? `En curso · Fase ${record.phaseIDisposition === "FULL_SCALE" ? "II" : "I"}` : "";
-  const related = record.qmsRecord.sourceRelations.map(({ targetRecord }) => `${qmsRecordTypeLabel(targetRecord.recordType)} ${targetRecord.businessCode ?? targetRecord.annulledBusinessCode ?? ""}`.trim());
+  const related = record.qmsRecord.sourceRelations.map(({ targetRecord }) => `${qmsRecordTypeLabel(targetRecord.recordType)} ${documentRecordCode(targetRecord) ?? ""}`.trim());
   return [state, ...related].filter(Boolean).join("\n");
 }
 

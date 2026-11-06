@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { syntheticAuditReport, syntheticAuditPlan, syntheticAuditCapaPlan } from "../../../../scripts/audits-r3c-fixtures";
-import { generateAuditReport, generateAuditExternalPlan, generateAuditCapaPlan } from "./generators";
+import { generateAuditReport, generateAuditExternalPlan, generateAuditCapaPlan, auditCapaPlanRows } from "./generators";
 import { readZip, getZipEntryText, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import type { AuditReportSnapshot } from "../report-service";
 // Generator contract fixture; production snapshots are exercised in PostgreSQL.
@@ -71,4 +71,9 @@ describe('Generadores de Auditorías sobre plantilla',()=>{
   expect(()=>generateAuditReport(writeZip(entries),current,0)).toThrow(/requiere un código/);
  });
 
+ it('D-133: marca como anulado un expediente vinculado cuyo código ya puede tener otro',()=>{
+  const s=snapshot();const link=(businessCode:string|null,annulledBusinessCode:string|null)=>({isActive:true,qmsRelation:{isActive:true,targetRecord:{businessCode,annulledBusinessCode,isActive:businessCode!==null}}});
+  s.audit.findings=[{id:'uuid',reference:'OBS 01',findingType:'FINDING',criticality:'MAJOR',isActive:true,description:'Ficticio',treatmentStatus:'OPEN',actions:[],relations:[link(null,'AC/GC-00/005/2026'),link('D/GC-00/001/2026',null)]} as unknown as typeof s.audit.findings[number]];
+  expect(auditCapaPlanRows(s)[0][4]).toBe('AC/GC-00/005/2026 (anulado); D/GC-00/001/2026');
+ });
 });

@@ -198,8 +198,10 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - La comprobación de duplicados y la sugerencia del siguiente correlativo solo cuentan los códigos de expedientes activos.
   - Si el último código de la serie está anulado, la sugerencia vuelve a ofrecerlo; uno intermedio se puede escribir a mano.
   - Sustituye lo que dicen las entradas antiguas de este documento sobre impedir la reutilización histórica.
-- **Sin cambios:** el anulado conserva su código y se sigue viendo como Anulado; la reactivación no se permite si el código ya lo usa otro expediente activo.
-- **Comprobado:** pruebas de `business-code-reuse.test.ts`, que fallaban antes del cambio.
+  - Incluye Auditorías: al anular, la ficha ya no dice que el código queda reservado.
+- **Anexos:** un expediente relacionado anulado sale como «código (anulado)» en el CAPA plan de Auditorías, en el resumen de OOS y en los vinculados de Reclamaciones.
+- **Sin cambios:** el anulado conserva su código y se sigue viendo como Anulado; la reactivación no se permite si el código ya lo usa otro expediente activo, tampoco si lo toma en el mismo momento (antes daba error interno).
+- **Comprobado:** pruebas unitarias que fallaban antes del cambio y smokes de PostgreSQL `d3`, `d5-3`, `oos` y `audits-r3a` actualizados y ejecutados.
 
 **Verificación de los anexos: casillas marcadas, cabeceras y pies (2026-10-31, D-132):**
 - **Qué cambia:**
@@ -1272,7 +1274,7 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - si el borrador se guarda con código, dicho código queda reservado;
 - al abrir sin código, la aplicación asigna automáticamente el siguiente disponible;
 - la numeración es segura frente a concurrencia mediante bloqueo transaccional PostgreSQL;
-- se comprueban códigos activos y anulados para impedir reutilización histórica;
+- se comprueban códigos activos y anulados para impedir reutilización histórica (superado por D-133: los anulados se pueden reutilizar);
 - una vez abierta la desviación, el código queda fijado;
 - se mantienen pruebas unitarias y smoke PostgreSQL concurrente integrado en CI.
 
@@ -1352,7 +1354,7 @@ Estado: **IMPLEMENTADO EN RAMA; PENDIENTE DE VALIDACIÓN**.
 - añade sugerencia dinámica en altas de CAPA, Control de Cambio, Reclamación y Devolución;
 - permite aceptar sugerencia, introducir un código manual válido o dejarlo vacío para asignación automática al guardar;
 - asignación definitiva protegida por bloqueo transaccional PostgreSQL;
-- evita duplicados incluyendo codificaciones históricas anuladas;
+- evita duplicados incluyendo codificaciones históricas anuladas (superado por D-133: los anulados se pueden reutilizar);
 - la codificación queda bloqueada en edición;
 - los códigos históricos existentes no se reformatean;
 - smoke PostgreSQL `d5-3:smoke` incorporado a CI.

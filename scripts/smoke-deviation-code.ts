@@ -61,13 +61,14 @@ async function main() {
     ),
   );
 
-  assert.deepEqual([...created].sort(), [codes[2], codes[3]]);
+  // D-133: el 002 anulado era el último de la serie y vuelve a asignarse.
+  assert.deepEqual([...created].sort(), [codes[1], codes[2]]);
   assert.equal(new Set(created).size, 2);
 
   const next = await prisma.$transaction((tx) =>
     allocateDeviationBusinessCode(tx, departmentCode, year),
   );
-  assert.equal(next, "D/GC-00/005/2097");
+  assert.equal(next, codes[3]);
 
   console.log("Deviation automatic code smoke test passed.");
 }

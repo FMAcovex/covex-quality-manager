@@ -4,6 +4,7 @@ import {
   assignOperationalBusinessCode,
   suggestOperationalBusinessCode,
 } from "../src/lib/qms/business-code";
+import { changeAdministrativeStatus } from "../src/lib/qms/administrative-status";
 
 const prisma = new PrismaClient();
 
@@ -57,7 +58,8 @@ async function main() {
       departmentCode: "GC-00",
       actionType: "CORRECTIVE",
     });
-    assert.equal(capaSuggestion, "AC/GC-00/002/2097");
+    // D-133: el código anulado queda libre y, al ser el último, se vuelve a sugerir.
+    assert.equal(capaSuggestion, "AC/GC-00/001/2097");
 
     const capa2 = await createWithAssignedCode({
       recordType: QmsRecordType.CAPA,
@@ -67,7 +69,25 @@ async function main() {
       requestedCode: capaSuggestion,
     });
     createdIds.push(capa2.record.id);
-    assert.equal(capa2.code, "AC/GC-00/002/2097");
+    assert.equal(capa2.code, "AC/GC-00/001/2097");
+
+    // La CAPA anulada no se puede reactivar: su código lo tiene ya otra.
+    await assert.rejects(
+      () => changeAdministrativeStatus(capa1.record.id, "REACTIVATE", "Prueba de reactivación", "Smoke D5.3"),
+      /reutilizada/,
+    );
+
+    // Un anulado intermedio no se sugiere, pero se puede escribir a mano.
+    const capaContext = { recordType: QmsRecordType.CAPA, year, departmentCode: "GC-00", actionType: "CORRECTIVE" as const };
+    const capa3 = await createWithAssignedCode(capaContext);
+    const capa4 = await createWithAssignedCode(capaContext);
+    createdIds.push(capa3.record.id, capa4.record.id);
+    assert.deepEqual([capa3.code, capa4.code], ["AC/GC-00/002/2097", "AC/GC-00/003/2097"]);
+    await prisma.qmsRecord.update({ where: { id: capa3.record.id }, data: { annulledBusinessCode: capa3.code, businessCode: null, isActive: false } });
+    assert.equal(await suggestOperationalBusinessCode(prisma, capaContext), "AC/GC-00/004/2097");
+    const capa5 = await createWithAssignedCode({ ...capaContext, requestedCode: "AC/GC-00/002/2097" });
+    createdIds.push(capa5.record.id);
+    assert.equal(capa5.code, "AC/GC-00/002/2097");
 
     const change = await createWithAssignedCode({
       recordType: QmsRecordType.CHANGE_CONTROL,
@@ -110,7 +130,7 @@ async function main() {
           actionType: "CORRECTIVE",
           requestedCode: "AC/GC-00/001/2097",
         }),
-      /ya ha sido utilizada/,
+      /ya la tiene otro expediente/,
     );
 
     await assert.rejects(

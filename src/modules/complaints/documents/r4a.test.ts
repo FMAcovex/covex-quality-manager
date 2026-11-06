@@ -22,9 +22,13 @@ describe("R4A · documentos por snapshot",()=>{
   const xml=getZipEntryText(readZip(await generateComplaintAnnexIV(record())),"word/document.xml");
   expect(xml).toContain("Descripción histórica V01");expect(xml).toContain("V01");expect(xml).toContain("CIERRE HISTÓRICO");expect(xml).toContain("TEST 2/0/0");
  });
- it("conserva el código reservado al documentar un expediente anulado",()=>{
+ it("conserva el código histórico al documentar un expediente anulado",()=>{
   const source={...record(),qmsRecord:{businessCode:null,annulledBusinessCode:"R/C/001/2026",year:2026}} as unknown as Parameters<typeof serializeComplaintVersion>[0];
   expect(serializeComplaintVersion(source).businessCode).toBe("R/C/001/2026");
+ });
+ it("D-133: marca como anulado un expediente vinculado cuyo código ya puede tener otro",()=>{
+  const source={...record(),qmsRecord:{businessCode:"R/C/001/2026",year:2026,sourceRelations:[{id:"r1",targetRecordId:"t1",relationType:"GENERATES",targetRecord:{recordType:"CAPA",businessCode:null,annulledBusinessCode:"AC/GC-00/005/2026"}},{id:"r2",targetRecordId:"t2",relationType:"GENERATES",targetRecord:{recordType:"RETURN",businessCode:"DEV/LG-30/001/2026",annulledBusinessCode:null}}]}} as unknown as Parameters<typeof serializeComplaintVersion>[0];
+  expect(serializeComplaintVersion(source).complaint.relations.map(x=>x.businessCode)).toEqual(["AC/GC-00/005/2026 (anulado)","DEV/LG-30/001/2026"]);
  });
  it("resuelve el UUID de plantilla III de reclamaciones",()=>{expect(recordVersionTemplateId("COMPLAINT",{complaint:{annexIIITemplateVersionId:"uuid-iii"}})).toBe("uuid-iii");});
  it("D-127: con varias acciones vinculadas (filas copiadas), cada tabla va en la casilla de su apartado",async()=>{

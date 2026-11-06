@@ -264,7 +264,7 @@ Reglas:
 - la anulación exige motivo y usuario;
 - se conservan UUID, datos del módulo, versiones, documentos, relaciones e historial;
 - el código visible original se conserva en `annulledBusinessCode`;
-- `businessCode` se libera al anular: la codificación queda disponible y puede asignarse a otro expediente del mismo módulo, escribiéndola o aceptando la sugerencia (D-133);
+- `businessCode` se libera al anular: la codificación queda disponible y puede asignarse a otro expediente del mismo módulo, escribiéndola, aceptando la sugerencia o por la asignación automática al guardar sin código (D-133);
 - solo puede existir un expediente activo por módulo y codificación;
 - los listados muestran por defecto únicamente expedientes activos y ofrecen filtro Activos / Anulados / Todos;
 - exportaciones e indicadores excluyen anulados por defecto;
@@ -548,7 +548,7 @@ Un único módulo Audit/QmsRecord AUDIT. INTERNAL/EXTERNAL con cinco escenarios;
 
 AI/departamento/YY/AAAA: correlativo 01–99 por área y año. Área de codificación explícita entre áreas auditadas; autoselección cuando solo hay una. AE/códigoEntidad/YY/AAAA para proveedor: código manual normalizado a mayúsculas, nunca derivado del nombre; correlativo por entidad/año. Año inicial: fecha prevista, después apertura, después realizada. Código y año quedan fijos al abrir aunque se reprograme. Serie/dimensión y escenario operativos inmutables para evitar incoherencia con el código. Borrador permite corregirlos.
 
-Cliente/autoridad: businessCode null, UUID QMS y externalReference opcional; no se inventa serie. API administrativa permite reactivar AUDIT sin código para esos escenarios y borradores, conservando controles previos de los demás módulos. La UI de Auditorías indica reserva de código anulado.
+Cliente/autoridad: businessCode null, UUID QMS y externalReference opcional; no se inventa serie. API administrativa permite reactivar AUDIT sin código para esos escenarios y borradores, conservando controles previos de los demás módulos. Al anular, el código queda disponible para otro expediente, como en el resto de módulos (D-133; sustituye la reserva del código anulado).
 
 Participantes textuales UUID sin maestro global; al abrir al menos un auditor y exactamente un jefe si son varios. Áreas/participantes retirados se inactivan; pertenencia de UUID se valida en servidor. Demo sigue DEMO- como los otros módulos y permanece DRAFT; su apertura sustituye el código demo por una codificación normativa.
 
@@ -1542,10 +1542,13 @@ Decisión del responsable de Calidad. Corrige la contradicción entre D-043, que
 
 - **Al anular un expediente, su código queda libre.** Se puede asignar a otro expediente del mismo módulo, escribiéndolo a mano o aceptando la sugerencia.
 - **Duplicados:** solo cuenta el código de otro expediente activo del mismo módulo (abierto, cerrado o en borrador con código).
-- **Sugerencia del siguiente correlativo:** el siguiente al mayor código activo de la serie y el año.
+- **Sugerencia del siguiente correlativo**, también la que se asigna automáticamente al guardar o abrir sin código: el siguiente al mayor código activo de la serie y el año.
   - Si el último código de la serie está anulado, la sugerencia vuelve a ofrecerlo.
   - Un número anulado intermedio no se sugiere, pero se puede escribir.
+- **Afecta a todas las series**, también Auditorías (sustituye en D-064 la reserva del código anulado).
 - **El expediente anulado conserva su código** en `annulledBusinessCode` y se sigue mostrando, con estado Anulado, en búsquedas, relaciones e historial. Si el código se reutiliza, la búsqueda por ese código devuelve los dos expedientes.
-- **Reactivación:** sin cambios. Recupera el código original solo si ningún expediente activo lo usa; si se ha reutilizado, la aplicación no deja reactivar.
+- **Anexos:** un expediente relacionado que está anulado se imprime con su código seguido de «(anulado)», para no confundirlo con el expediente activo que pueda tener ahora ese código. Aplica al CAPA plan de Auditorías, al resumen de expedientes derivados de OOS y a los expedientes vinculados de Reclamaciones; el anexo de CAPA ya omitía los orígenes anulados.
+- **Textos libres:** los campos que guardan un código como texto (por ejemplo, el código de CAPA escrito en una propuesta de Desviación o el código de origen de una CAPA) no se resuelven a un expediente. Tras una reutilización pueden referirse a cualquiera de los dos; el vínculo entre expedientes, que va por UUID, es el que vale.
+- **Reactivación:** recupera el código original solo si ningún expediente activo lo usa; si se ha reutilizado, la aplicación no deja reactivar. Si otro expediente toma el código en el mismo momento, la reactivación responde con ese mismo aviso, no con un error interno.
 - No afecta a los códigos de catálogo (D-036), que siguen sin reutilizarse con otro significado.
-- Implementación: `src/lib/qms/business-code.ts` (todas las series de codificación controlada), con pruebas en `src/lib/qms/business-code-reuse.test.ts`.
+- Implementación: `src/lib/qms/business-code.ts` (todas las series de codificación controlada) y `src/lib/qms/document-code.ts` (marca en los anexos). Pruebas en `business-code-reuse.test.ts`, `administrative-status.test.ts`, los generadores de Auditorías, OOS y Reclamaciones, y los smokes de PostgreSQL `d3`, `d5-3`, `oos` y `audits-r3a`.
