@@ -1,6 +1,8 @@
 import { Prisma, QmsRecordType } from "@prisma/client";
 
 type Tx = Prisma.TransactionClient;
+// D-133: al anular un expediente su código queda libre. Las sugerencias y la comprobación de
+// duplicados solo cuentan los códigos de expedientes activos (también los borradores con código).
 type QmsRecordReader = Pick<Tx, "qmsRecord">;
 
 export class DeviationBusinessCodeError extends Error {
@@ -56,15 +58,11 @@ async function usedDeviationCodes(
   return db.qmsRecord.findMany({
     where: {
       recordType: QmsRecordType.DEVIATION,
-      OR: [
-        { businessCode: { startsWith: prefix } },
-        { annulledBusinessCode: { startsWith: prefix } },
-      ],
+      businessCode: { startsWith: prefix },
     },
     select: {
       id: true,
       businessCode: true,
-      annulledBusinessCode: true,
     },
   });
 }
@@ -76,10 +74,8 @@ function nextSequenceFromRecords(
 ) {
   let maxSequence = 0;
   for (const record of records) {
-    for (const candidate of [record.businessCode, record.annulledBusinessCode]) {
-      const sequence = extractDeviationSequence(candidate, departmentCode, year);
-      if (sequence && sequence > maxSequence) maxSequence = sequence;
-    }
+    const sequence = extractDeviationSequence(record.businessCode, departmentCode, year);
+    if (sequence && sequence > maxSequence) maxSequence = sequence;
   }
   return maxSequence + 1;
 }
@@ -140,17 +136,14 @@ export async function assignDeviationBusinessCode(
       where: {
         recordType: QmsRecordType.DEVIATION,
         ...(excludeQmsRecordId ? { id: { not: excludeQmsRecordId } } : {}),
-        OR: [
-          { businessCode: normalizedRequested },
-          { annulledBusinessCode: normalizedRequested },
-        ],
+        businessCode: normalizedRequested,
       },
       select: { id: true },
     });
     if (duplicate) {
       throw new DeviationBusinessCodeError(
         "ALREADY_USED",
-        "Esa codificación ya ha sido utilizada por otra desviación, incluida la numeración histórica anulada.",
+        "Esa codificación ya la tiene otra desviación (abierta, cerrada o en borrador).",
       );
     }
     return normalizedRequested;
@@ -325,15 +318,11 @@ async function usedOperationalBusinessCodes(
   return db.qmsRecord.findMany({
     where: {
       recordType: context.recordType,
-      OR: [
-        { businessCode: { startsWith: prefix } },
-        { annulledBusinessCode: { startsWith: prefix } },
-      ],
+      businessCode: { startsWith: prefix },
     },
     select: {
       id: true,
       businessCode: true,
-      annulledBusinessCode: true,
     },
   });
 }
@@ -345,10 +334,8 @@ export async function suggestOperationalBusinessCode(
   const records = await usedOperationalBusinessCodes(db, context);
   let maxSequence = 0;
   for (const record of records) {
-    for (const candidate of [record.businessCode, record.annulledBusinessCode]) {
-      const sequence = extractOperationalBusinessCodeSequence(candidate, context);
-      if (sequence && sequence > maxSequence) maxSequence = sequence;
-    }
+    const sequence = extractOperationalBusinessCodeSequence(record.businessCode, context);
+    if (sequence && sequence > maxSequence) maxSequence = sequence;
   }
   const nextSequence = maxSequence + 1;
   if (nextSequence > (context.recordType === "AUDIT" ? 99 : 999)) {
@@ -392,17 +379,14 @@ export async function assignOperationalBusinessCode(
       where: {
         recordType: input.recordType,
         ...(input.excludeQmsRecordId ? { id: { not: input.excludeQmsRecordId } } : {}),
-        OR: [
-          { businessCode: requestedCode },
-          { annulledBusinessCode: requestedCode },
-        ],
+        businessCode: requestedCode,
       },
       select: { id: true },
     });
     if (duplicate) {
       throw new OperationalBusinessCodeError(
         "ALREADY_USED",
-        "Esa codificación ya ha sido utilizada por otro expediente, incluida la numeración histórica anulada.",
+        "Esa codificación ya la tiene otro expediente (abierto, cerrado o en borrador).",
       );
     }
     return requestedCode;

@@ -64,6 +64,14 @@ describe("Anexos OOS del PNT GC-10/014/04", () => {
   it("resume investigación y expedientes derivados sin inventar resultado en borrador", () => {
     expect(oosInvestigationSummary({ ...record, status: "DRAFT", investigationResult: null, qmsRecord: { businessCode: null, sourceRelations: [] } })).toBe("");
   });
+
+  it("D-133: marca como anulado un expediente derivado cuyo código ya puede tener otro", () => {
+    const summary = oosInvestigationSummary({ ...record, status: "DRAFT", investigationResult: null, qmsRecord: { businessCode: null, sourceRelations: [
+      { targetRecord: { recordType: "CAPA", businessCode: null, annulledBusinessCode: "AC/GC-00/005/2026" } },
+      { targetRecord: { recordType: "DEVIATION", businessCode: "D/GC-00/001/2026", annulledBusinessCode: null } },
+    ] } });
+    expect(summary).toBe("CAPA AC/GC-00/005/2026 (anulado)\nDesviación D/GC-00/001/2026");
+  });
 });
 
 describe("derivación de los anexos desde el PNT", () => {

@@ -260,7 +260,7 @@ Las reglas configuran preaviso y severidad. Hito 9 no envía notificaciones.
 
 ## Auditorías · alta y apertura R3A
 
-Guardar Borrador admite campos funcionales vacíos. Abrir exige tipo/escenario compatible, objeto, alcance, fecha prevista si no está realizada, áreas y área de codificación para internas, entidad y código entidad para proveedor y al menos un auditor. Con varios auditores se exige exactamente un jefe. Planificación puede preceder a realización. Ediciones conservan UUID de hijos; retirar desactiva, no elimina. No se vuelve a Borrador tras apertura. Cierre definitivo queda reservado a R3B/R3C. Historial operativo registra cambios reales. Anulación conserva expediente y código histórico reservado; AUDIT sin código se puede reactivar.
+Guardar Borrador admite campos funcionales vacíos. Abrir exige tipo/escenario compatible, objeto, alcance, fecha prevista si no está realizada, áreas y área de codificación para internas, entidad y código entidad para proveedor y al menos un auditor. Con varios auditores se exige exactamente un jefe. Planificación puede preceder a realización. Ediciones conservan UUID de hijos; retirar desactiva, no elimina. No se vuelve a Borrador tras apertura. Cierre definitivo queda reservado a R3B/R3C. Historial operativo registra cambios reales. Anulación conserva el expediente y su código histórico, que queda disponible para otro expediente (D-133); AUDIT sin código se puede reactivar.
 
 ## Auditorías R3B — tratamiento y seguimiento
 

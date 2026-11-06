@@ -1,4 +1,5 @@
 import { HistorySource, Prisma, RecordVersionKind } from "@prisma/client";
+import { documentRecordCode } from "@/lib/qms/document-code";
 
 type Tx = Prisma.TransactionClient;
 
@@ -443,7 +444,7 @@ export function serializeComplaintVersion(
       annexIIITemplateVersionId: record.annexIIITemplateVersionId ?? null, annexIIITemplateVersionCode: record.annexIIITemplateVersion?.versionCode ?? null,
       annexIVTemplateVersionId: record.annexIVTemplateVersionId ?? null, annexIVTemplateVersionCode: record.annexIVTemplateVersion?.versionCode ?? null,
       annexVTemplateVersionId: record.annexVTemplateVersionId ?? null, annexVTemplateVersionCode: record.annexVTemplateVersion?.versionCode ?? null,
-      relations: (record.qmsRecord.sourceRelations ?? []).map(x=>({id:x.id,targetRecordId:x.targetRecordId,recordType:x.targetRecord.recordType,businessCode:x.targetRecord.businessCode??x.targetRecord.annulledBusinessCode??null,relationType:x.relationType})),
+      relations: (record.qmsRecord.sourceRelations ?? []).map(x=>({id:x.id,targetRecordId:x.targetRecordId,recordType:x.targetRecord.recordType,businessCode:documentRecordCode(x.targetRecord),relationType:x.relationType})),
       capaPlans: record.capaPlans.map(x=>({id:x.id,actionType:x.actionType,description:x.description,plannedExecutionDate:iso(x.plannedExecutionDate),responsible:x.responsible??null,responsibleUserId:x.responsibleUserId??null,businessCapaCode:x.businessCapaCode??null,linkedCapaRecordId:x.linkedCapaRecordId??null,linkedCapaBusinessCode:x.linkedCapaRecord?.businessCode??null,proposalStatus:x.proposalStatus})),
       derivedActions: record.derivedActions.map(x=>({id:x.id,actionType:x.actionType,businessCode:x.businessCode??null,description:x.description??null,responsible:x.responsible??null,responsibleUserId:x.responsibleUserId??null,plannedExecutionDate:iso(x.plannedExecutionDate),sortOrder:x.sortOrder})),
       followups: record.followups.map(x=>({id:x.id,followupDate:iso(x.followupDate),completedByText:x.completedByText,followupType:x.followupType??null,comment:x.comment,nextFollowupDate:iso(x.nextFollowupDate),evidenceReference:x.evidenceReference??null}))

@@ -37,11 +37,12 @@ async function nextCode(type: QmsRecordType, prefix: string, year: number, digit
   const key = `${type}|${prefix}|${year}`;
   if (!used.has(key)) {
     const rows = await prisma.qmsRecord.findMany({
-      where: { recordType: type, OR: [{ businessCode: { startsWith: prefix } }, { annulledBusinessCode: { startsWith: prefix } }] },
-      select: { businessCode: true, annulledBusinessCode: true },
+      // D-133: como la aplicación, solo cuentan los códigos activos.
+      where: { recordType: type, businessCode: { startsWith: prefix } },
+      select: { businessCode: true },
     });
     const pattern = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}(\\d+)/${year}$`);
-    const max = Math.max(0, ...rows.flatMap((r) => [r.businessCode, r.annulledBusinessCode]).map((c) => Number(pattern.exec(c ?? "")?.[1] ?? 0)));
+    const max = Math.max(0, ...rows.map((r) => r.businessCode).map((c) => Number(pattern.exec(c ?? "")?.[1] ?? 0)));
     used.set(key, max);
   }
   const next = used.get(key)! + 1;

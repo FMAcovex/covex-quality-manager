@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 export class AdministrativeStatusError extends Error {
   constructor(message: string, public readonly status: number) { super(message); }
 }
+const REUSED_CODE = "No se puede reactivar: la codificación original ya ha sido reutilizada por otro expediente activo.";
 export async function changeAdministrativeStatus(id: string, action: "ANNUL" | "REACTIVATE", reason: string, actor: string) {
   if (reason.trim().length < 3 || !actor.trim()) throw new AdministrativeStatusError("Motivo y actor son obligatorios.", 400);
   return prisma.$transaction(async tx => {
@@ -19,8 +20,14 @@ export async function changeAdministrativeStatus(id: string, action: "ANNUL" | "
     const code = record.annulledBusinessCode;
     const codeOptionalAudit = record.audit && (record.audit.status === "DRAFT" || record.audit.scenario === "CLIENT" || record.audit.scenario === "AUTHORITY");
     if (!code && !codeOptionalAudit) throw new AdministrativeStatusError("El expediente anulado no conserva una codificación histórica válida.", 409);
-    if (code && await tx.qmsRecord.findFirst({ where: { id: { not: id }, recordType: record.recordType, businessCode: code, isActive: true }, select: { id: true } })) throw new AdministrativeStatusError("No se puede reactivar: la codificación original ya ha sido reutilizada por otro expediente activo.", 409);
-    await tx.qmsRecord.update({ where: { id }, data: { businessCode: code, annulledBusinessCode: null, isActive: true, annulledAt: null, annulledByText: null, annulledReason: null } });
+    if (code && await tx.qmsRecord.findFirst({ where: { id: { not: id }, recordType: record.recordType, businessCode: code, isActive: true }, select: { id: true } })) throw new AdministrativeStatusError(REUSED_CODE, 409);
+    try {
+      await tx.qmsRecord.update({ where: { id }, data: { businessCode: code, annulledBusinessCode: null, isActive: true, annulledAt: null, annulledByText: null, annulledReason: null } });
+    } catch (error) {
+      // D-133: otro expediente ha tomado el código liberado a la vez; el índice único lo impide.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new AdministrativeStatusError(REUSED_CODE, 409);
+      throw error;
+    }
     await tx.changeHistory.create({ data: { qmsRecordId: id, changedByText: actor, fieldPath: "__administrative_status__", oldValue: { isActive: false, annulledBusinessCode: code }, newValue: { isActive: true, businessCode: code }, reason, source: "UI" } });
     return "ACTIVE";
   });

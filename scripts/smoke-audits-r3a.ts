@@ -39,7 +39,11 @@ async function main() {
   assert.equal((await getAuditList({q:marker})).total,0);
   assert.equal((await getAuditList({q:marker,administrative:"ANNULLED"})).total,1);
   const next = await suggestOperationalBusinessCode(prisma,{recordType:"AUDIT",auditType:"INTERNAL",auditScenario:"INTERNAL_COVEX",departmentCode:department.code,year:2097});
-  assert.notEqual(next,originalCode);
+  // D-133: el código anulado queda libre; si era el último activo de la serie, se vuelve a sugerir.
+  const sequence = (code: string | null) => Number(/^AI\/GC-00\/(\d{2})\/2097$/.exec(code ?? "")?.[1] ?? 0);
+  const activeMax = Math.max(0, ...(await prisma.qmsRecord.findMany({where:{recordType:"AUDIT",businessCode:{startsWith:"AI/GC-00/"}},select:{businessCode:true}})).map(r=>sequence(r.businessCode)));
+  assert.equal(sequence(next), activeMax + 1);
+  if (sequence(originalCode) > activeMax) assert.equal(next, originalCode);
   await changeAdministrativeStatus(audit.qmsRecordId,"REACTIVATE","Reactivación smoke","Smoke R3A");
   const internal = {...auditDefaults(audit),expectedUpdatedAt:"",title:`Concurrencia ${marker}`,plannedDate:"2097-11-11",performedDate:"",businessCode:"",participants:[{displayName:"Auditor",role:"AUDITOR",sortOrder:0}]};
   const parallel = await Promise.all([create(internal),create(internal)]);

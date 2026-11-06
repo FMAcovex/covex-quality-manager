@@ -4,6 +4,7 @@ import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { auditDate, auditScenarioLabels } from "../domain";
 import { findingTypeLabels, criticalityLabels, actionStatusLabels } from "../finding-domain";
 import type { AuditReportSnapshot } from "../report-service";
+import { documentRecordCode } from "@/lib/qms/document-code";
 
 function styledParagraph(source: string, text: string) {
   const pr = source.match(/<w:pPr[\s\S]*?<\/w:pPr>/)?.[0] ?? "";
@@ -154,7 +155,7 @@ export function generateAuditExternalPlan(template: Buffer, s: AuditReportSnapsh
 export function auditCapaPlanRows(s: AuditReportSnapshot) {
   return s.audit.findings.filter(f=>f.isActive).map(f=>{
     const actions=f.actions.filter(a=>a.isActive);
-    const codes=f.relations.filter(r=>r.isActive&&r.qmsRelation.isActive).map(r=>r.qmsRelation.targetRecord.businessCode ?? r.qmsRelation.targetRecord.annulledBusinessCode).filter(Boolean);
+    const codes=f.relations.filter(r=>r.isActive&&r.qmsRelation.isActive).map(r=>documentRecordCode(r.qmsRelation.targetRecord)).filter(Boolean);
     return [f.reference,findingTypeLabels[f.findingType],f.description,criticalityLabels[f.criticality],codes.join("; "),[f.treatment,...actions.map(a=>a.description)].filter(Boolean).join("\n"),actions.map(a=>a.responsible).filter(Boolean).join("\n"),actions.map(a=>a.targetDate ? auditDate(a.targetDate):"").join("\n"),actions.length ? actions.map(a=>actionStatusLabels[a.status]).join("\n") : actionStatusLabels[f.treatmentStatus],actions.length ? actions.map(a=>a.closedAt?auditDate(a.closedAt):"").join("\n") : f.closedAt?auditDate(f.closedAt):"",[f.evidence,f.evidenceReference,f.verificationComment,...actions.flatMap(a=>[a.evidence,a.evidenceReference,a.verificationComment])].filter(Boolean).join("\n")];
   });
 }

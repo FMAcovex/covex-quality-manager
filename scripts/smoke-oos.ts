@@ -32,14 +32,14 @@ async function main() {
       ...[1, 2, 3].map((n) => `OOS/MD/00${n}/${year}`),
     ]);
 
-    // Un código anulado sigue reservado y no se reutiliza.
+    // D-133: un código anulado queda libre; MD/003 era el último de su serie y se vuelve a asignar.
     const md3 = created.find((record) => record.businessCode === `OOS/MD/003/${year}`)!;
     await prisma.qmsRecord.update({ where: { id: md3.id }, data: { isActive: false, businessCode: null, annulledBusinessCode: `OOS/MD/003/${year}`, annulledAt: new Date(), annulledReason: "Prueba de reserva" } });
     const md4 = await open("MD", { phaseIDisposition: "FULL_SCALE" });
     ids.push(md4.id);
-    assert.equal(md4.businessCode, `OOS/MD/004/${year}`);
+    assert.equal(md4.businessCode, `OOS/MD/003/${year}`);
 
-    // Un código pedido a mano debe ser de su área y año, y no estar usado.
+    // Un código pedido a mano debe ser de su área y año, y no tenerlo otro OOS activo (MD/003 lo tiene ya md4).
     await assert.rejects(prisma.$transaction((tx) => assignOperationalBusinessCode(tx, { recordType: QmsRecordType.OOS, year, oosArea: "API", requestedCode: `OOS/MD/009/${year}` })), OperationalBusinessCodeError);
     await assert.rejects(prisma.$transaction((tx) => assignOperationalBusinessCode(tx, { recordType: QmsRecordType.OOS, year, oosArea: "MD", requestedCode: `OOS/MD/003/${year}` })), OperationalBusinessCodeError);
     assert.equal(await prisma.$transaction((tx) => assignOperationalBusinessCode(tx, { recordType: QmsRecordType.OOS, year, oosArea: "API", requestedCode: `OOS/API/020/${year}` })), `OOS/API/020/${year}`);
@@ -69,7 +69,7 @@ async function main() {
     assert.deepEqual(related.rows[0].qmsRecord.sourceRelations.map((relation) => relation.targetRecord.recordType).sort(), ["CAPA", "DEVIATION"]);
     assert.deepEqual((await getOosOrigins(capa.id)).map((relation) => relation.sourceRecord.businessCode), [md4.businessCode]);
     assert.deepEqual((await getOosOrigins(deviation.id)).map((relation) => relation.sourceRecord.oosRecord?.materialName), [marker]);
-    console.log("OOS PG OK: 9 aperturas concurrentes con correlativos API y MD independientes, código anulado reservado, códigos pedidos validados por área y filtros de listado (área, fase, estado, resultado y anulados), relaciones OOS → CAPA/Desviación, búsqueda por código relacionado y OOS de origen activos.");
+    console.log("OOS PG OK: 9 aperturas concurrentes con correlativos API y MD independientes, código anulado reutilizado (D-133), códigos pedidos validados por área y filtros de listado (área, fase, estado, resultado y anulados), relaciones OOS → CAPA/Desviación, búsqueda por código relacionado y OOS de origen activos.");
   } finally {
     await prisma.qmsRelation.deleteMany({ where: { sourceRecordId: { in: ids } } });
     await prisma.qmsRecord.deleteMany({ where: { id: { in: targets } } });
