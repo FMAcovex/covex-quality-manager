@@ -2453,13 +2453,18 @@
   },
   "AU_PMAI": {
     "notPrinted": [
+      "prog.preparedByName",
       "prog.title",
       "prog1.area",
+      "prog1.code",
+      "prog1.comments",
       "prog1.modality",
       "prog1.productService",
       "prog1.scope",
       "prog1.subject",
       "prog2.area",
+      "prog2.code",
+      "prog2.comments",
       "prog2.modality",
       "prog2.productService",
       "prog2.scope",
@@ -2528,9 +2533,14 @@
   },
   "AU_PMAE": {
     "notPrinted": [
+      "prog.preparedByName",
       "prog.technicalApproverName",
       "prog.title",
+      "prog1.code",
+      "prog1.comments",
       "prog1.subject",
+      "prog2.code",
+      "prog2.comments",
       "prog2.subject"
     ],
     "replacedTemplateText": [
@@ -2973,6 +2983,169 @@
     "positions": {
       "Audit.programme": [
         "Tabla 1, fila 2, casilla 2"
+      ]
+    },
+    "checked": []
+  },
+  "AU_PMAI@GC-00-033-04-ANEXO-V": {
+    "notPrinted": [
+      "prog.technicalApproverName",
+      "prog.title",
+      "prog1.area",
+      "prog1.modality",
+      "prog1.notes",
+      "prog1.productService",
+      "prog1.subject",
+      "prog2.area",
+      "prog2.modality",
+      "prog2.notes",
+      "prog2.productService",
+      "prog2.subject"
+    ],
+    "replacedTemplateText": [
+      "Tabla 3, fila 5#a5d61f812d020228",
+      "Tabla 3, fila 6#13deda2eebdbd4c6",
+      "Tabla 3, fila 7#6bb8f87348d01218",
+      "Texto fuera de tablas#94e4ef81002c1e80"
+    ],
+    "positions": {
+      "prog.preparedByName": [
+        "Tabla 4, fila 2, casilla 2"
+      ],
+      "prog.qualityApproverName": [
+        "Tabla 4, fila 3, casilla 2"
+      ],
+      "prog1.auditors": [
+        "Tabla 3, fila 3, casilla 4"
+      ],
+      "prog1.code": [
+        "Tabla 3, fila 3, casilla 5"
+      ],
+      "prog1.comments": [
+        "Tabla 3, fila 3, casilla 8"
+      ],
+      "prog1.partial": [
+        "Tabla 3, fila 3, casilla 7"
+      ],
+      "prog1.performed": [
+        "Tabla 3, fila 3, casilla 6"
+      ],
+      "prog1.planned": [
+        "Tabla 3, fila 3, casilla 3"
+      ],
+      "prog1.scope": [
+        "Tabla 3, fila 3, casilla 2"
+      ],
+      "prog1.target": [
+        "Tabla 3, fila 3, casilla 2"
+      ],
+      "prog2.auditors": [
+        "Tabla 3, fila 4, casilla 4"
+      ],
+      "prog2.code": [
+        "Tabla 3, fila 4, casilla 5"
+      ],
+      "prog2.comments": [
+        "Tabla 3, fila 4, casilla 8"
+      ],
+      "prog2.partial": [
+        "Tabla 3, fila 4, casilla 7"
+      ],
+      "prog2.performed": [
+        "Tabla 3, fila 4, casilla 6"
+      ],
+      "prog2.planned": [
+        "Tabla 3, fila 4, casilla 3"
+      ],
+      "prog2.scope": [
+        "Tabla 3, fila 4, casilla 2"
+      ],
+      "prog2.target": [
+        "Tabla 3, fila 4, casilla 2"
+      ]
+    },
+    "checked": []
+  },
+  "AU_PMAE@GC-00-034-05-ANEXO-V": {
+    "notPrinted": [
+      "prog.technicalApproverName",
+      "prog.title",
+      "prog1.modality",
+      "prog1.notes",
+      "prog1.subject",
+      "prog2.modality",
+      "prog2.notes",
+      "prog2.subject"
+    ],
+    "replacedTemplateText": [
+      "Texto fuera de tablas#60a4d8a9dbab96e5"
+    ],
+    "positions": {
+      "prog.preparedByName": [
+        "Tabla 4, fila 2, casilla 2"
+      ],
+      "prog.qualityApproverName": [
+        "Tabla 4, fila 3, casilla 2"
+      ],
+      "prog1.area": [
+        "Tabla 3, fila 3, casilla 1"
+      ],
+      "prog1.auditors": [
+        "Tabla 3, fila 4, casilla 4"
+      ],
+      "prog1.code": [
+        "Tabla 3, fila 4, casilla 5"
+      ],
+      "prog1.comments": [
+        "Tabla 3, fila 4, casilla 8"
+      ],
+      "prog1.partial": [
+        "Tabla 3, fila 4, casilla 7"
+      ],
+      "prog1.performed": [
+        "Tabla 3, fila 4, casilla 6"
+      ],
+      "prog1.planned": [
+        "Tabla 3, fila 4, casilla 3"
+      ],
+      "prog1.productService": [
+        "Tabla 3, fila 4, casilla 2"
+      ],
+      "prog1.scope": [
+        "Tabla 3, fila 4, casilla 2"
+      ],
+      "prog1.target": [
+        "Tabla 3, fila 4, casilla 2"
+      ],
+      "prog2.area": [
+        "Tabla 3, fila 5, casilla 1"
+      ],
+      "prog2.auditors": [
+        "Tabla 3, fila 6, casilla 4"
+      ],
+      "prog2.code": [
+        "Tabla 3, fila 6, casilla 5"
+      ],
+      "prog2.comments": [
+        "Tabla 3, fila 6, casilla 8"
+      ],
+      "prog2.partial": [
+        "Tabla 3, fila 6, casilla 7"
+      ],
+      "prog2.performed": [
+        "Tabla 3, fila 6, casilla 6"
+      ],
+      "prog2.planned": [
+        "Tabla 3, fila 6, casilla 3"
+      ],
+      "prog2.productService": [
+        "Tabla 3, fila 6, casilla 2"
+      ],
+      "prog2.scope": [
+        "Tabla 3, fila 6, casilla 2"
+      ],
+      "prog2.target": [
+        "Tabla 3, fila 6, casilla 2"
       ]
     },
     "checked": []

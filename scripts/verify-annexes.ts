@@ -41,7 +41,8 @@ import { fillOosAnnexIII, fillOosAnnexIV, fillOosAnnexVI, type OosDocumentRecord
 import { oosEvaluationKeys } from "../src/modules/oos/domain";
 import { OOS_TABLE_FIELDS } from "../src/modules/oos/text-tables";
 import { generateAuditCapaPlan, generateAuditExternalPlan, generateAuditReport } from "../src/modules/audits/documents/generators";
-import { extractExternalProgramme, generateAnnualProgramme } from "../src/modules/audits/annual-programme/generator";
+import { extractExternalProgramme, generateAnnualProgramme, isAnnexVProgramme } from "../src/modules/audits/annual-programme/generator";
+import { programmeReference, programmeTemplateFormat } from "../src/modules/audits/annual-programme/domain";
 import { auditReportInclude, snapshotAudit } from "../src/modules/audits/report-service";
 
 // D-128: verificación de los anexos con las plantillas reales, repetible antes de cada actualización.
@@ -235,14 +236,15 @@ async function generateAll() {
   await add("AU_EXT.docx", "audit", "AUDIT", "AUDIT_EXTERNAL_REPORT", ({ data }) => generateAuditReport(data, external, 1));
   await add("AU_CAPA.xlsx", "audit", "AUDIT", "AUDIT_CAPA_PLAN", ({ data }) => generateAuditCapaPlan(data, external, 1));
   await add("AU_PLAN.docx", "audit", "AUDIT", "AUDIT_EXTERNAL_PLAN", ({ data }) => generateAuditExternalPlan(data, external));
-  const programmeRow = (i: number) => ({ entryId: `e${i}`, auditId: null, subject: `⟦prog${i}.subject⟧`, target: `⟦prog${i}.target⟧`, area: `⟦prog${i}.area⟧`, productService: `⟦prog${i}.productService⟧`, scope: `⟦prog${i}.scope⟧`, modality: `⟦prog${i}.modality⟧`, planned: `⟦prog${i}.planned⟧`, auditors: `⟦prog${i}.auditors⟧`, performed: `⟦prog${i}.performed⟧`, partial: `⟦prog${i}.partial⟧`, notes: `⟦prog${i}.notes⟧`, auditStatus: null, auditActive: null });
-  bag("programme").push(...[1, 2].flatMap((i) => ["subject", "target", "area", "productService", "scope", "modality", "planned", "auditors", "performed", "partial", "notes"].map((key) => `prog${i}.${key}`)), "prog.title", "prog.technicalApproverName", "prog.qualityApproverName");
+  const programmeRow = (i: number) => ({ entryId: `e${i}`, auditId: null, subject: `⟦prog${i}.subject⟧`, target: `⟦prog${i}.target⟧`, area: `⟦prog${i}.area⟧`, productService: `⟦prog${i}.productService⟧`, scope: `⟦prog${i}.scope⟧`, modality: `⟦prog${i}.modality⟧`, planned: `⟦prog${i}.planned⟧`, auditors: `⟦prog${i}.auditors⟧`, performed: `⟦prog${i}.performed⟧`, partial: `⟦prog${i}.partial⟧`, notes: `⟦prog${i}.notes⟧`, code: `⟦prog${i}.code⟧`, comments: `⟦prog${i}.comments⟧`, cancelled: false, auditStatus: null, auditActive: null });
+  bag("programme").push(...[1, 2].flatMap((i) => ["subject", "target", "area", "productService", "scope", "modality", "planned", "auditors", "performed", "partial", "notes", "code", "comments"].map((key) => `prog${i}.${key}`)), "prog.title", "prog.preparedByName", "prog.technicalApproverName", "prog.qualityApproverName");
   for (const [auditType, documentType, name] of [["INTERNAL", "AUDIT_ANNUAL_INTERNAL_PROGRAMME", "AU_PMAI.docx"], ["EXTERNAL", "AUDIT_ANNUAL_EXTERNAL_PROGRAMME", "AU_PMAE.docx"]] as const) {
-    await add(name, "programme", "AUDIT", documentType, ({ data }) => generateAnnualProgramme(data, {
-      schemaVersion: 1, planId: "p", year: 2031, auditType, title: "⟦prog.title⟧",
-      reference: auditType === "INTERNAL" ? "Anexo/PMAI/V04/01-2023" : "ANEXO I del PMAE/V05/06-2026",
+    // D-135: el Anexo V (GC-00/033/04 y GC-00/034/05) y la plantilla anterior del Plan Maestro, según la versión verificada.
+    await add(name, "programme", "AUDIT", documentType, ({ data, versionCode }) => generateAnnualProgramme(data, {
+      schemaVersion: 2, planId: "p", year: 2031, auditType, format: programmeTemplateFormat(versionCode), title: "⟦prog.title⟧",
+      reference: programmeReference(auditType, versionCode), preparedByName: "⟦prog.preparedByName⟧",
       technicalApproverName: "⟦prog.technicalApproverName⟧", qualityApproverName: "⟦prog.qualityApproverName⟧", rows: [programmeRow(1), programmeRow(2)], warnings: [],
-    } as never));
+    }, 3));
   }
 }
 
@@ -251,7 +253,7 @@ function compare(annex: Annex): AnnexComparison {
   if (annex.kind === "xlsx") return compareExcelAnnex(annex.template, annex.output, decode);
   const templateXml = getZipEntryText(readZip(annex.template), "word/document.xml");
   // La parte de la plantilla que rellena el generador (recortada del PNT o del plan maestro si procede).
-  const view = annex.documentType === "AUDIT_ANNUAL_EXTERNAL_PROGRAMME" ? extractExternalProgramme(templateXml)
+  const view = annex.documentType === "AUDIT_ANNUAL_EXTERNAL_PROGRAMME" && !isAnnexVProgramme(templateXml) ? extractExternalProgramme(templateXml)
     : annex.documentType ? annexGeneratorXml(annex.documentType, annex.versionCode ?? "", templateXml) : templateXml;
   const outputEntries = readZip(annex.output);
   const result = compareWordAnnex(view, getZipEntryText(outputEntries, "word/document.xml"), decode);

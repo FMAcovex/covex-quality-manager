@@ -6,6 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAnnualPlan } from "@/modules/audits/plans";
 import { getAuditDepartments } from "@/modules/audits/queries";
+import { auditDisplayStatus, auditDisplayStatusLabels } from "@/modules/audits/domain";
 import { RetirePlanEntryForm } from "@/modules/audits/plan-forms";
 import { PlanEntryForm } from "@/modules/audits/plan-entry-form";
 export const dynamic="force-dynamic";
@@ -21,7 +22,7 @@ async function PlanDetailPageAuthenticatedContent({params}:{params:Promise<{id:s
  return <section className="workspace"><div className="page-heading"><div><Link href="/audits/plans">← Planes anuales</Link><p className="eyebrow">Plan {intern?"interno":"externo"} · {plan.year}</p><h1>{plan.title}</h1><p>{plan.entries.filter(e=>e.isActive).length} auditorías previstas · {plan.entries.filter(e=>e.isActive&&e.audit).length} con expediente</p></div><Link className="button" href="/audits">Ver auditorías</Link></div>
  <section className="card"><h2>Incorporar auditoría prevista</h2><PermissionGate permission="EDIT"><PlanEntryForm planId={id} internal={intern} departments={departmentOptions} defaults={{}}/></PermissionGate></section>
  <section className="card"><h2>Auditorías del plan</h2><div className="audit-work-panel">{plan.entries.map(e=><article key={e.id} className="audit-action-card"><h3>{e.subject} {!e.isActive?"· Retirada":null}</h3><p>{e.targetName||e.department?.name||"Sin entidad indicada"} · {e.plannedPeriodText||format(e.plannedDate)||"Fecha por determinar"}</p>
- {e.audit?<p><Link href={`/audits/${e.audit.id}`}>Expediente: {e.audit.qmsRecord.businessCode||"Sin código"}</Link> · {e.audit.status==="CLOSED"?"Cerrada":e.audit.status==="OPEN"?"Abierta":"Borrador"}</p>:e.isActive?<PermissionGate permission="EDIT"><PermissionGate permission="CREATE" module="AUDIT"><Link className="button small" href={`/audits/new?planEntryId=${e.id}`}>Crear expediente para esta entrada</Link></PermissionGate></PermissionGate>:null}
+ {e.audit?<p><Link href={`/audits/${e.audit.id}`}>Expediente: {e.audit.qmsRecord.businessCode||"Sin código"}</Link> · {auditDisplayStatusLabels[auditDisplayStatus(e.audit)]}</p>:e.isActive?<PermissionGate permission="EDIT"><PermissionGate permission="CREATE" module="AUDIT"><Link className="button small" href={`/audits/new?planEntryId=${e.id}`}>Crear expediente para esta entrada</Link></PermissionGate></PermissionGate>:null}
  {e.isActive?<PermissionGate permission="EDIT"><details className="audit-editor"><summary>Editar planificación</summary><PermissionGate permission="EDIT"><PlanEntryForm planId={id} entryId={e.id} internal={intern} departments={departmentOptions} defaults={entryDefaults(e)}/></PermissionGate></details></PermissionGate>:null}
  {e.isActive&&!e.audit?<PermissionGate permission="EDIT"><details className="audit-editor"><summary>Retirar de la planificación</summary><PermissionGate permission="EDIT"><RetirePlanEntryForm planId={id} entryId={e.id}/></PermissionGate></details></PermissionGate>:null}
  </article>)}</div>{!plan.entries.length?<p>Sin entradas planificadas.</p>:null}</section>

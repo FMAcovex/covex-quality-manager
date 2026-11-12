@@ -9,16 +9,16 @@ const value = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
 const message = (e: unknown) => e instanceof ZodError ? e.issues.map(i => i.message).join(" ") : e instanceof Error ? e.message : "No se pudo completar la operación.";
 async function saveProgrammeApproversActionAuthenticatedContent(planId: string, state: ProgrammeActionState, fd: FormData): Promise<ProgrammeActionState> {
   try {
-    await saveProgrammeApprovers(planId, Object.fromEntries(["technicalApproverName", "qualityApproverName", "actor", "reason"].map(k => [k, value(fd, k)])));
+    await saveProgrammeApprovers(planId, Object.fromEntries(["preparedByName", "technicalApproverName", "qualityApproverName", "actor", "reason"].filter(k => fd.has(k)).map(k => [k, value(fd, k)])));
     revalidatePath(`/audits/plans/${planId}`);
-    return { success: "Datos de aprobación guardados. La firma y la fecha se cumplimentan en Word." };
+    return { success: "Firmantes guardados. La firma y la fecha se cumplimentan en Word." };
   } catch (e) { return preserveFormState(state, fd, { error: message(e) }); }
 }
 async function issueAnnualProgrammeActionAuthenticatedContent(planId: string, state: ProgrammeActionState, fd: FormData): Promise<ProgrammeActionState> {
   try {
     const version = await issueAnnualProgramme(planId, Object.fromEntries(["actor", "reason", "requestId", "expectedFingerprint"].map(k => [k, value(fd, k)])));
     revalidatePath(`/audits/plans/${planId}`);
-    return { success: `Emisión ${String(version.sequenceNumber).padStart(2, "0")} conservada. Descárgala desde el histórico.` };
+    return { success: `Versión ${String(version.sequenceNumber).padStart(2, "0")} emitida y conservada. Descárgala desde el histórico.` };
   } catch (e) { return preserveFormState(state, fd, { error: message(e) }); }
 }
 

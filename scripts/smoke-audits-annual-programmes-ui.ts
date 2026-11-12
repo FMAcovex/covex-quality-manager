@@ -5,7 +5,7 @@ import { assertCorporateActor, chromium } from "./auth-fixtures/browser";
 import { type Page } from "playwright";
 import { prisma } from "../src/lib/db";
 import { createAnnualPlan, addPlanEntry } from "../src/modules/audits/plans";
-import { syntheticAnnualProgramme } from "./audits-annual-programme-fixtures";
+import { syntheticAnnexVProgramme } from "./audits-annual-programme-fixtures";
 import { programmeDocumentTypes } from "../src/modules/audits/annual-programme/domain";
 const base = process.env.ANNUAL_UI_BASE_URL;
 async function submit(page: Page, name: string) {
@@ -23,23 +23,31 @@ async function main() {
   try {
     for (const internal of [true, false]) {
       const type = internal ? "INTERNAL" : "EXTERNAL", suffix = randomUUID().slice(0, 8), actor = "QA navegador ficticio";
+      // D-135 (R6): Anexo V ficticio; se desactiva al terminar para no quedar vigente en otras ejecuciones.
+      let templateId: string | null = null;
       if (process.env.ANNUAL_OFFICIAL_TEMPLATES !== "1") {
-        const b = syntheticAnnualProgramme(internal);
-        await prisma.templateVersion.create({ data: { module: "AUDIT", documentType: programmeDocumentTypes[type], versionCode: `UI-${suffix}`, effectiveFrom: new Date("2026-10-09"), checksum: createHash("sha256").update(b).digest("hex"), fileData: new Uint8Array(b), fileSize: b.length } });
+        const b = syntheticAnnexVProgramme(internal);
+        const used = new Set((await prisma.templateVersion.findMany({ where: { module: "AUDIT", documentType: programmeDocumentTypes[type] }, select: { versionCode: true } })).map(t => t.versionCode));
+        const versionCode = Array.from({ length: 90 }, (_, i) => `GC-${10 + i}-0${internal ? 33 : 34}-05-ANEXO-V`).find(c => !used.has(c))!;
+        templateId = (await prisma.templateVersion.create({ data: { module: "AUDIT", documentType: programmeDocumentTypes[type], versionCode, effectiveFrom: new Date("2026-10-11"), checksum: createHash("sha256").update(b).digest("hex"), fileData: new Uint8Array(b), fileSize: b.length } })).id;
       }
+      try {
       const occupied = await prisma.auditAnnualPlan.findMany({ where: { auditType: type }, select: { year: true } });
       const year = Array.from({ length: 101 }, (_, i) => 2100 - i).find(y => !occupied.some(p => p.year === y))!;
       const plan = await createAnnualPlan({ year, auditType: type, title: `Programa UI ${suffix}`, notes: "Ficticio", actor });
       const { entry } = await addPlanEntry(plan.id, { subject: "Objeto UI ficticio", targetName: "Entidad UI ficticia", departmentId: "", plannedDate: "", notes: "", actor, reason: "" });
       await page.goto(`${base}/audits/plans/${plan.id}`, { waitUntil: "domcontentloaded" });
-      await page.getByRole("button", { name: "Emitir Programa Anual en Word" }).waitFor({ state: "visible" });
-      assert(await page.getByRole("button", { name: "Emitir Programa Anual en Word" }).isDisabled());
-      await page.getByText("Datos de aprobación del programa", { exact: true }).click();
-      const approval = page.locator('form').filter({ has: page.getByRole("button", { name: "Guardar datos de aprobación" }) });
-      if (internal) await approval.locator('[name="technicalApproverName"]').fill("Técnico QA ficticio");
+      const first = "Emitir versión 00 del programa", next = "Nueva versión 01 del programa";
+      await page.getByRole("button", { name: first }).waitFor({ state: "visible" });
+      assert(await page.getByRole("button", { name: first }).isDisabled());
+      await page.getByText("Firmantes del programa", { exact: true }).click();
+      const approval = page.locator('form').filter({ has: page.getByRole("button", { name: "Guardar firmantes del programa" }) });
+      // El Anexo V solo lleva «Elaborado por» y «Aprobado por»: no se pide el aprobador técnico.
+      assert.equal(await approval.locator('[name="technicalApproverName"]').count(), 0);
+      await approval.locator('[name="preparedByName"]').fill("Técnica QA ficticia");
       await approval.locator('[name="qualityApproverName"]').fill("Calidad QA ficticia");
       await assertCorporateActor(approval.locator('[name="actor"]')); await approval.locator('[name="reason"]').fill("Preparación QA");
-      await submit(page, "Guardar datos de aprobación");
+      await submit(page, "Guardar firmantes del programa");
       await page.getByRole("status").filter({ hasText: "guardados" }).waitFor({ state: "visible" });
       await page.getByText("Editar planificación", { exact: true }).click();
       const edit = page.locator('form').filter({ has: page.getByRole("button", { name: "Guardar cambios", exact: true }) });
@@ -50,10 +58,10 @@ async function main() {
       await page.getByRole("button", { name: "Guardar cambios", exact: true }).click(); assert([200, 303].includes((await post).status()));
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.getByText("Primer trimestre", { exact: true }).first().waitFor({ state: "visible" });
-      const issue = page.locator('form').filter({ has: page.getByRole("button", { name: "Emitir Programa Anual en Word" }) });
-      assert(!(await page.getByRole("button", { name: "Emitir Programa Anual en Word" }).isDisabled()));
+      const issue = page.locator('form').filter({ has: page.getByRole("button", { name: first }) });
+      assert(!(await page.getByRole("button", { name: first }).isDisabled()));
       await assertCorporateActor(issue.locator('[name="actor"]'));
-      await submit(page, "Emitir Programa Anual en Word");
+      await submit(page, first);
       await page.getByRole("link", { name: /Descargar .*R00.docx/ }).waitFor();
       const version = await prisma.auditAnnualProgrammeVersion.findFirstOrThrow({ where: { planId: plan.id, sequenceNumber: 0 }, omit: { fileData: false } });
       const url: string = `${base}/api/audits/plans/${plan.id}/programmes/${version.id}`;
@@ -61,31 +69,34 @@ async function main() {
       assert.equal((await page.request.get(`${base}/api/audits/plans/${randomUUID()}/programmes/${version.id}`)).status(), 404);
       assert.equal(await prisma.auditAnnualProgrammeVersion.count({ where: { planId: plan.id } }), 1);
       // Submit a real stale browser preview; the action must return an inline error without issuing.
-      await assertCorporateActor(issue.locator('[name="actor"]')); await issue.locator('[name="reason"]').fill("Vista obsoleta QA");
+      const stale = page.locator('form').filter({ has: page.getByRole("button", { name: next }) });
+      await assertCorporateActor(stale.locator('[name="actor"]')); await stale.locator('[name="reason"]').fill("Vista obsoleta QA");
       await prisma.auditPlanEntry.update({ where: { id: entry.id }, data: { notes: "Cambio posterior QA" } });
-      await submit(page, "Emitir Programa Anual en Word");
+      await submit(page, next);
       await page.getByRole("alert").filter({ hasText: "cambiado" }).waitFor({ state: "visible" });
       assert.equal(await prisma.auditAnnualProgrammeVersion.count({ where: { planId: plan.id } }), 1);
       // Verify the updated server preview after reload instead of waiting for all
       // background network activity to become idle.
       await page.reload({ waitUntil: "domcontentloaded" });
-      await page.getByText(
-        "El contenido o la plantilla han cambiado desde la última emisión. El archivo histórico se conserva.",
-        { exact: true },
-      ).waitFor({ state: "visible", timeout: 30000 });
-      const subsequent = page.locator('form').filter({ has: page.getByRole("button", { name: "Emitir Programa Anual en Word" }) });
+      // D-135: antes de la nueva versión se ve qué cambia respecto a la anterior.
+      await page.getByText("Cambios respecto a la versión 00:", { exact: true }).waitFor({ state: "visible", timeout: 30000 });
+      assert(await page.getByText("Entidad UI ficticia: comentarios", { exact: false }).first().isVisible());
+      const subsequent = page.locator('form').filter({ has: page.getByRole("button", { name: next }) });
       assert.equal(await subsequent.locator('[name="reason"]').getAttribute("required"), "");
       await assertCorporateActor(subsequent.locator('[name="actor"]')); await subsequent.locator('[name="reason"]').fill("Cambio documentado QA");
-      await submit(page, "Emitir Programa Anual en Word");
+      await submit(page, next);
       await page.getByRole("link", { name: /Descargar .*R01.docx/ }).waitFor();
       assert.deepEqual(await (await page.request.get(url)).body(), Buffer.from(version.fileData));
       for (const width of [1440, 768, 390]) {
         await page.setViewportSize({ width, height: 950 });
-        assert(await page.getByRole("heading", { name: "Programa Anual · emisión documental" }).isVisible());
+        assert(await page.getByRole("heading", { name: "Programa Anual · versiones" }).isVisible());
         if (process.env.ANNUAL_UI_CAPTURE_DIR) { await mkdir(process.env.ANNUAL_UI_CAPTURE_DIR, { recursive: true }); await page.screenshot({ path: `${process.env.ANNUAL_UI_CAPTURE_DIR}/${type}-${width}.png`, fullPage: true }); }
       }
       await page.getByRole("link", { name: "← Planes anuales" }).click(); await page.waitForURL(/\/audits\/plans$/);
-      console.log(`OK UI ${type}: datos, bloqueos, emisión, vista obsoleta, motivo, descargas históricas, 1440/768/390 y retorno.`);
+      console.log(`OK UI ${type}: firmantes del Anexo V, bloqueos, versión 00, vista obsoleta, cambios, nueva versión con motivo, descargas históricas, 1440/768/390 y retorno.`);
+      } finally {
+        if (templateId) await prisma.templateVersion.update({ where: { id: templateId }, data: { isActive: false } });
+      }
     }
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }

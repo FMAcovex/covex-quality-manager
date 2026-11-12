@@ -10,24 +10,29 @@ import { issueAnnualProgrammeAction, saveProgrammeApproversAction } from "./acti
 function Result({ state }: { state: ProgrammeActionState }) {
   return state.error ? <p role="alert">{state.error}</p> : state.success ? <p role="status">{state.success}</p> : null;
 }
-export function ProgrammeApproversForm({ planId, internal, technical, quality }: { planId: string; internal: boolean; technical: string; quality: string }) {
+/**
+ * D-135 (R6): el Anexo V lleva «Elaborado por» (Garantía de Calidad) y «Aprobado por» (Dirección de Garantía de Calidad).
+ * El aprobador técnico solo se pide con la plantilla anterior del programa interno (PMAI).
+ */
+export function ProgrammeApproversForm({ planId, internal, legacy, prepared, technical, quality }: { planId: string; internal: boolean; legacy: boolean; prepared: string; technical: string; quality: string }) {
   const [state, action, pending] = useActionState<ProgrammeActionState, FormData>(saveProgrammeApproversAction.bind(null, planId), {});
-  const values = submittedDefaults<Record<string, string | string[]>>({ technicalApproverName: technical, qualityApproverName: quality, reason: "" }, state.submittedValues);
+  const values = submittedDefaults<Record<string, string | string[]>>({ preparedByName: prepared, technicalApproverName: technical, qualityApproverName: quality, reason: "" }, state.submittedValues);
   return <form key={state.formRevision ?? 0} action={action} className="audit-child-form"><CsrfField />
-    {internal ? <label className="field"><span>Nombre · Dirección Técnica</span><input name="technicalApproverName" defaultValue={String(values.technicalApproverName ?? "")} maxLength={250}/></label> : <input type="hidden" name="technicalApproverName" value=""/>}
-    <label className="field"><span>Nombre · Dirección Garantía de Calidad</span><input name="qualityApproverName" defaultValue={String(values.qualityApproverName ?? "")} maxLength={250}/></label>
+    <label className="field"><span>Elaborado por · Garantía de Calidad</span><input name="preparedByName" defaultValue={String(values.preparedByName ?? "")} maxLength={250}/></label>
+    {internal && legacy ? <label className="field"><span>Nombre · Dirección Técnica (plantilla anterior)</span><input name="technicalApproverName" defaultValue={String(values.technicalApproverName ?? "")} maxLength={250}/></label> : null}
+    <label className="field"><span>Aprobado por · Dirección de Garantía de Calidad</span><input name="qualityApproverName" defaultValue={String(values.qualityApproverName ?? "")} maxLength={250}/></label>
     <label className="field"><span>Responsable de los datos</span><ActorField name="actor" required maxLength={200}/></label>
-    <label className="field full"><span>Motivo de actualización de aprobadores</span><input name="reason" defaultValue={String(values.reason ?? "")} required maxLength={20000}/></label>
-    <div className="full"><Result state={state}/><button className="button" disabled={pending}>Guardar datos de aprobación</button></div>
+    <label className="field full"><span>Motivo de actualización de firmantes</span><input name="reason" defaultValue={String(values.reason ?? "")} required maxLength={20000}/></label>
+    <div className="full"><Result state={state}/><button className="button" disabled={pending}>Guardar firmantes del programa</button></div>
   </form>;
 }
-export function ProgrammeIssueForm({ planId, fingerprint, requestId, blocked, subsequent }: { planId: string; fingerprint: string; requestId: string; blocked: boolean; subsequent: boolean }) {
+export function ProgrammeIssueForm({ planId, fingerprint, requestId, blocked, subsequent, nextVersion }: { planId: string; fingerprint: string; requestId: string; blocked: boolean; subsequent: boolean; nextVersion: string }) {
   const [state, action, pending] = useActionState<ProgrammeActionState, FormData>(issueAnnualProgrammeAction.bind(null, planId), {});
   const values = submittedDefaults<Record<string, string | string[]>>({ reason: "" }, state.submittedValues);
   return <form key={state.formRevision ?? 0} action={action} className="audit-child-form"><CsrfField />
     <input type="hidden" name="expectedFingerprint" value={fingerprint}/><input type="hidden" name="requestId" value={requestId}/>
     <label className="field"><span>Responsable de emisión</span><ActorField name="actor" required maxLength={200}/></label>
-    <label className="field full"><span>Motivo de emisión{subsequent ? " (obligatorio)" : " (opcional en la inicial)"}</span><textarea name="reason" defaultValue={String(values.reason ?? "")} required={subsequent} maxLength={20000}/></label>
-    <div className="full"><Result state={state}/><button className="button primary" disabled={blocked || pending}>Emitir Programa Anual en Word</button></div>
+    <label className="field full"><span>{subsequent ? "Motivo de la nueva versión (obligatorio)" : "Motivo de emisión (opcional en la versión 00)"}</span><textarea name="reason" defaultValue={String(values.reason ?? "")} required={subsequent} maxLength={20000}/></label>
+    <div className="full"><Result state={state}/><button className="button primary" disabled={blocked || pending}>{subsequent ? `Nueva versión ${nextVersion} del programa` : `Emitir versión ${nextVersion} del programa`}</button></div>
   </form>;
 }

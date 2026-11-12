@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { auditInputSchema } from "./validation";
-import { allowedFindingTypes, auditStatusBadgeClass, auditSituation, compatibleAuditScenario, auditScenarioLabels, auditRoleLabels, auditCodeYear, receivedAuditScenario } from "./domain";
+import { allowedFindingTypes, auditStatusBadgeClass, auditDisplayStatus, auditDisplayStatusLabels, auditSituation, compatibleAuditScenario, auditScenarioLabels, auditRoleLabels, auditCodeYear, receivedAuditScenario } from "./domain";
 import { auditListWhere } from "./queries";
 import { buildOperationalBusinessCode, extractOperationalBusinessCodeSequence, operationalBusinessCodePrefix } from "@/lib/qms/business-code";
 
@@ -39,7 +39,7 @@ describe("Auditorías R3A", () => {
   it("deriva situación y año de referencia", () => {
     expect(auditSituation({status:"OPEN",performedDate:null})).toBe("Planificada");
     expect(auditSituation({status:"OPEN",performedDate:"2026-10-07"})).toBe("Realizada · informe pendiente");
-    expect(auditSituation({status:"CLOSED",performedDate:null})).toBe("Cerrada");
+    expect(auditSituation({status:"CLOSED",performedDate:null})).toBe("Cierre definitivo");
     expect(auditCodeYear({plannedDate:"2027-01-02",openedAt:"2026-10-07",performedDate:""})).toBe(2027);
   });
   it("no presenta un plan de tratamiento como cierre parcial antes de emitir el informe", () => {
@@ -49,7 +49,10 @@ describe("Auditorías R3A", () => {
     const audit = {status:"OPEN" as const,performedDate:"2026-10-07",reportIssued:true};
     expect(auditSituation(audit)).toBe("Informe emitido");
     expect(auditSituation({...audit,followups:[{}]})).toBe("En seguimiento");
-    expect(auditSituation({...audit,scenario:"SUPPLIER",reportSentAt:"2026-10-08"})).toBe("Cierre parcial");
+    // D-135 (R6): el envío del informe ya no marca el cierre parcial; sí el CAPA plan 00 en todos los tipos.
+    expect(auditSituation({...audit,scenario:"SUPPLIER",reportSentAt:"2026-10-08"})).toBe("Informe emitido");
+    expect(auditSituation({...audit,scenario:"SUPPLIER",capaPlanEstablishedAt:"2026-10-09"})).toBe("Cierre parcial");
+    expect(auditSituation({...audit,reportIssued:false,scenario:"CLIENT",capaPlanEstablishedAt:"2026-10-09"})).toBe("Cierre parcial");
     expect(auditSituation({...audit,scenario:"INTERNAL_COVEX",capaPlanEstablishedAt:"2026-10-08"})).toBe("Cierre parcial");
     // D-110: la versión 00 puede establecerse antes de emitir el informe.
     expect(auditSituation({...audit,reportIssued:false,scenario:"INTERNAL_COVEX",capaPlanEstablishedAt:"2026-10-08"})).toBe("Cierre parcial");
@@ -81,6 +84,10 @@ describe("Auditorías R3A", () => {
     expect(auditInputSchema.safeParse({...valid,planningStatus:"PLANNED",planEntryId:"00000000-0000-4000-8000-000000000011",outsidePlanReason:"No corresponde"}).success).toBe(false);
     expect(JSON.stringify(auditListWhere({planning:"OUT_OF_PLAN"}))).toContain("OUT_OF_PLAN");
     expect(JSON.stringify(auditListWhere({planId:"123"}))).toContain("planId");
+    // D-135 (R6): «Abierta» excluye las de cierre parcial y «Cierre parcial» es abierta con CAPA plan 00.
+    expect(auditListWhere({status:["PARTIAL"]}).AND).toContainEqual({OR:[{status:"OPEN",capaPlanEstablishedAt:{not:null}}]});
+    expect(auditListWhere({status:["OPEN","CLOSED"]}).AND).toContainEqual({OR:[{status:"OPEN",capaPlanEstablishedAt:null},{status:"CLOSED"}]});
+    expect(JSON.stringify(auditListWhere({situation:"partial"}))).not.toContain("reportSentAt");
   });
   it("R4A conserva el contacto externo como texto optativo sin alterar clasificación anual", () => {
     const input = auditInputSchema.parse({...valid,auditedContact:"Contacto ficticio · correo@example.com · 900 000 000",planningStatus:"UNCLASSIFIED"});
@@ -98,6 +105,7 @@ describe("auditStatusBadgeClass", () => {
   it("colorea el estado como en Desviaciones", () => {
     expect(auditStatusBadgeClass("DRAFT")).toBe("neutral");
     expect(auditStatusBadgeClass("OPEN")).toBe("open");
+    expect(auditStatusBadgeClass("PARTIAL")).toBe("open");
     expect(auditStatusBadgeClass("CLOSED")).toBe("closed");
   });
 });
@@ -108,7 +116,7 @@ describe("Cliente e inspección (D-110, R5D)", () => {
     expect(auditSituation({...audit,performedDate:null})).toBe("Planificada");
     expect(auditSituation({...audit,status:"DRAFT"})).toBe("Borrador");
     expect(auditSituation({...audit,scenario:"AUTHORITY",findings:[{isActive:true,treatment:"",treatmentStatus:"OPEN",actions:[{isActive:true,status:"OPEN"}]}]})).toBe("En seguimiento");
-    expect(auditSituation({...audit,status:"CLOSED"})).toBe("Cerrada");
+    expect(auditSituation({...audit,status:"CLOSED"})).toBe("Cierre definitivo");
   });
   it("identifica los escenarios con informe recibido", () => {
     expect(["CLIENT", "AUTHORITY"].every(s => receivedAuditScenario(s as never))).toBe(true);
@@ -119,5 +127,14 @@ describe("Cliente e inspección (D-110, R5D)", () => {
     expect(allowedFindingTypes("AUTHORITY")).toEqual(["AUTHORITY_OBSERVATION", "RECOMMENDATION"]);
     expect(allowedFindingTypes("SUPPLIER")).toEqual(["FINDING", "RECOMMENDATION"]);
     expect(allowedFindingTypes(null)).toEqual(["FINDING", "RECOMMENDATION"]);
+  });
+});
+describe("Estados mostrados (D-135, R6)", () => {
+  it("Borrador, Abierta, Cierre parcial con el CAPA plan 00 y Cierre definitivo", () => {
+    expect(auditDisplayStatus({status:"DRAFT",capaPlanEstablishedAt:"2026-10-08"})).toBe("DRAFT");
+    expect(auditDisplayStatus({status:"OPEN",capaPlanEstablishedAt:null})).toBe("OPEN");
+    expect(auditDisplayStatus({status:"OPEN",capaPlanEstablishedAt:"2026-10-08"})).toBe("PARTIAL");
+    expect(auditDisplayStatus({status:"CLOSED",capaPlanEstablishedAt:"2026-10-08"})).toBe("CLOSED");
+    expect(Object.values(auditDisplayStatusLabels)).toEqual(["Borrador","Abierta","Cierre parcial","Cierre definitivo"]);
   });
 });

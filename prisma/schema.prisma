@@ -1705,6 +1705,8 @@ model Audit {
 
 model AuditAnnualPlan {
   auditCursors          AuditAggregateCursor[]
+  /// D-135 (R6): «Elaborado por» del Programa Anual (Anexo V). El aprobador técnico solo lo usa la plantilla PMAI anterior.
+  preparedByName        String?
   technicalApproverName String?
   qualityApproverName   String?
   programmeVersions     AuditAnnualProgrammeVersion[]

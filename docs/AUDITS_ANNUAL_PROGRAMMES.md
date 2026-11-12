@@ -1,5 +1,14 @@
 # Emisión documental de programas anuales
 
+> **D-135 (R6, 2026-11-13):** desde los PNT GC-00/033/04 y GC-00/034/05 el programa anual es su **Anexo V**, no un anexo del Plan Maestro. Con las plantillas «GC-00-033-04-ANEXO-V» y «GC-00-034-05-ANEXO-V» se genera el formato nuevo:
+> - Año y Versión. La versión es la secuencia de emisión 00, 01…, con «Nueva versión» manual y la lista de cambios respecto a la anterior.
+> - Columnas: Nº, «Área / Entidad y alcance», fecha prevista, equipo auditor, código de auditoría, fecha de auditoría, fecha de cierre parcial y comentarios.
+> - La fecha de cierre parcial es la del CAPA plan 00 en todos los tipos de auditoría; en externas ya no es el envío del informe.
+> - Comentarios: aplazada, adelantada o cancelada con su motivo, modalidad prevista en externas y observaciones.
+> - Firmas: Elaborado por (`preparedByName`) y Aprobado por (Dirección de Garantía de Calidad).
+>
+> Lo que sigue describe la emisión con las plantillas anteriores del Plan Maestro, que se conserva para los programas emitidos con ellas.
+
 ## Alcance
 
 Complemento de los planes anuales de PR #117, sobre main después de PR #122. No cambia el ciclo de vida, cierre, clasificación, edición o versiones de las auditorías individuales. Emite un Word editable del programa anual, nunca una revisión/reedición del Plan Maestro. No implementa aprobación electrónica, PDF firmado ni integración SharePoint.
