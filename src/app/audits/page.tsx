@@ -7,7 +7,7 @@ import { ReviewListFilter, ReviewListIndicator } from "@/components/review/revie
 import Link from "next/link";
 import { listAnnualPlans } from "@/modules/audits/plans";
 import { getAuditList, type AuditListFilters } from "@/modules/audits/queries";
-import { auditStatusBadgeClass, auditTypeLabels, auditScenarioLabels, auditDisplayStatus, auditDisplayStatusLabels, auditModalityLabels, auditQualityLabels, auditDate, auditSituation, receivedAuditScenario } from "@/modules/audits/domain";
+import { auditStatusBadgeClass, auditTypeLabels, auditScenarioLabels, auditDisplayStatus, auditDisplayStatusLabels, auditModalityLabels, auditQualityLabels, auditDate, auditDirectionLabels, auditSituation, receivedAuditScenario } from "@/modules/audits/domain";
 import { criticalityLabels, isTerminalAction } from "@/modules/audits/finding-domain";
 import { auditColumns } from "@/modules/audits/column-config";
 import { ColumnSelector } from "@/components/column-selector";
@@ -31,13 +31,14 @@ const choiceFilters = [
   ["report", "Informe", [{ value: "pending", label: "Pendiente" }, { value: "issued", label: "Emitido" }]],
   ["signedPdf", "PDF firmado", [{ value: "yes", label: "Con PDF" }, { value: "no", label: "Sin PDF" }]],
   ["situation", "Situación", [{ value: "followup", label: "En seguimiento" }, { value: "partial", label: "Cierre parcial" }, { value: "closed", label: "Cierre definitivo" }]],
+  ["direction", "Sentido", Object.entries(auditDirectionLabels).map(([value, label]) => ({ value, label }))],
 ] as const;
 const isoDate = (value: string) => value.split("-").reverse().join("/");
 async function AuditsPageAuthenticatedContent({ searchParams }: { searchParams: Promise<Record<string,string|string[]|undefined>> }) {
   const query = await searchParams;
   const filters: AuditListFilters = {};
   for (const key of ["year","type","scenario","department","status","modality","quality","criticality"] as const) filters[key] = queryList(query[key]);
-  for (const key of ["q","administrative","plannedFrom","plannedTo","performedFrom","performedTo","page","findings","pendingActions","relatedDeviation","relatedCapa","nextReviewFrom","nextReviewTo","review","assigned","report","signedPdf","situation","planning","planId"] as const) filters[key] = firstQueryValue(query[key]);
+  for (const key of ["q","administrative","plannedFrom","plannedTo","performedFrom","performedTo","page","findings","pendingActions","relatedDeviation","relatedCapa","nextReviewFrom","nextReviewTo","review","assigned","report","signedPdf","situation","planning","planId","direction"] as const) filters[key] = firstQueryValue(query[key]);
   const savedViews = await listSavedViews("/audits");
   const [{rows,departments,years,total,page,pages,errors},annualPlans] = await Promise.all([getAuditList(filters),listAnnualPlans()]);
   const listParams = new URLSearchParams();

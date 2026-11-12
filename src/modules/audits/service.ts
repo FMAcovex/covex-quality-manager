@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { assignOperationalBusinessCode } from "@/lib/qms/business-code";
 import { auditInputSchema, type AuditInput } from "./validation";
-import { auditCodeYear, hasAuditBusinessSeries } from "./domain";
+import { auditCodeYear, hasAuditBusinessSeries, receivedAuditScenario } from "./domain";
 import { auditClosureStatusError, auditDraftReturnMessage, auditReturnsToDraft } from "./lifecycle";
 
 export class AuditValidationError extends Error {
@@ -31,9 +31,15 @@ export async function saveAudit(raw: unknown, id?: string) {
       for (const field of ["auditType", "scenario", "codingDepartmentId", "entityCode"] as const) {
         if ((before[field] ?? "") !== v[field]) throw new AuditValidationError({ [field]: "La identificación y serie quedan fijadas al abrir la auditoría." });
       }
-      if (v.businessCode !== (before.qmsRecord.businessCode ?? "")) throw new AuditValidationError({ businessCode: "El código operativo no se puede modificar." });
+      // D-137: el código de una serie (internas y a proveedor) queda fijado; el libre de cliente e inspección se puede corregir.
+      if (hasAuditBusinessSeries(v.scenario || null) && v.businessCode !== (before.qmsRecord.businessCode ?? "")) throw new AuditValidationError({ businessCode: "El código operativo no se puede modificar." });
     }
     let selectedPlan: {id:string;year:number;auditType:import("@prisma/client").AuditType;plannedDate:Date|null;isActive:boolean;audit:{id:string}|null}|null=null;
+    // D-137 (GC-00/034/05 §3): las auditorías e inspecciones recibidas no forman parte del programa anual.
+    // Las ya clasificadas así antes de esta regla se conservan mientras no cambien de entrada.
+    // Solo se conserva si ya era recibida y estaba abierta o cerrada: un borrador no la mete en el plan cambiando de escenario.
+    if (receivedAuditScenario(v.scenario || null) && v.planningStatus === "PLANNED" && !(before && before.status !== "DRAFT" && receivedAuditScenario(before.scenario) && before.planningStatus === "PLANNED" && before.planEntryId === v.planEntryId))
+      throw new AuditValidationError({ planningStatus: "Las auditorías de cliente e inspecciones no forman parte del programa anual (GC-00/034/05 §3)." });
     if(v.planningStatus === "PLANNED"){
       const entry=await tx.auditPlanEntry.findUnique({where:{id:v.planEntryId},include:{plan:true,audit:{select:{id:true}}}});
       if(!entry||!entry.isActive)throw new AuditValidationError({planEntryId:"La entrada del plan anual no está disponible."});
@@ -54,14 +60,32 @@ export async function saveAudit(raw: unknown, id?: string) {
     const coding = v.auditType === "INTERNAL" ? departments.find(d => d.id === v.codingDepartmentId) : undefined;
     const year = before && before.status !== "DRAFT" ? before.qmsRecord.year : auditCodeYear(v);
     const series = hasAuditBusinessSeries(v.scenario || null);
-    if (!series && v.businessCode) throw new AuditValidationError({ businessCode: "Cliente e inspección utilizan referencia externa y UUID QMS, sin código oficial generado." });
     if (v.auditType !== "INTERNAL" && v.codingDepartmentId) throw new AuditValidationError({ codingDepartmentId: "El departamento de codificación solo aplica a internas; corrige el valor conservado." });
     let businessCode = before?.qmsRecord.businessCode ?? null;
-    if ((!before || before.status === "DRAFT") && series && (v.status === "OPEN" || v.businessCode)) {
+    if (!series && !receivedAuditScenario(v.scenario || null) && v.businessCode) throw new AuditValidationError({ businessCode: "Elige el escenario de la auditoría antes de indicar el código." });
+    if (receivedAuditScenario(v.scenario || null)) {
+      // D-137 (R6): cliente e inspección no tienen serie; su código es libre (el del informe del cliente o el del
+      // expediente abierto por la agencia), opcional y único entre las auditorías.
+      // Espacios internos unificados: «INSP  031» e «INSP 031» se verían iguales.
+      businessCode = v.businessCode.replace(/\s+/g, " ") || null;
+      if (businessCode && /[\p{Cc}\p{Cf}]/u.test(businessCode)) throw new AuditValidationError({ businessCode: "El código no admite caracteres de control ni invisibles." });
+      if (businessCode && /^(AI|AE)\//i.test(businessCode)) throw new AuditValidationError({ businessCode: "Ese formato está reservado a las series de COVEX (AI/… y AE/…)." });
+      const previous = before?.qmsRecord.businessCode ?? null;
+      if (before && before.status !== "DRAFT" && previous && businessCode !== previous && !v.changeReason.trim()) throw new AuditValidationError({ changeReason: "Indica el motivo de la corrección del código." });
+      if (businessCode && businessCode !== (before?.qmsRecord.businessCode ?? null)) {
+        const other = await tx.qmsRecord.findFirst({ where: { recordType: "AUDIT", businessCode, ...(before ? { NOT: { id: before.qmsRecordId } } : {}) }, select: { id: true } });
+        if (other) throw new AuditValidationError({ businessCode: "Ese código ya lo usa otra auditoría." });
+      }
+    } else if ((!before || before.status === "DRAFT") && (v.status === "OPEN" || v.businessCode)) {
       if (!year) throw new AuditValidationError({ plannedDate: "Indica una fecha para calcular el año del código." });
       businessCode = await assignOperationalBusinessCode(tx, { recordType: "AUDIT", auditType: v.auditType || null, auditScenario: v.scenario || null, departmentCode: coding?.code, entityCode: v.entityCode, year, requestedCode: v.businessCode, excludeQmsRecordId: before?.qmsRecordId });
     } else if (!before || before.status === "DRAFT") businessCode = null;
-    const qmsRecord = before ? await tx.qmsRecord.update({ where: { id: before.qmsRecordId }, data: { businessCode, year } }) : await tx.qmsRecord.create({ data: { recordType: "AUDIT", businessCode, year } });
+    // Dos guardados a la vez con el mismo código: la restricción única de la base decide; se avisa en el campo.
+    const qmsRecord = await (before ? tx.qmsRecord.update({ where: { id: before.qmsRecordId }, data: { businessCode, year } }) : tx.qmsRecord.create({ data: { recordType: "AUDIT", businessCode, year } }))
+      .catch((error: unknown) => {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new AuditValidationError({ businessCode: "Ese código ya lo usa otra auditoría." });
+        throw error;
+      });
     const openedAt = date(v.openedAt) ?? (v.status === "OPEN" ? (before?.openedAt ?? new Date(new Date().toISOString().slice(0, 10))) : null);
     const data = {
       auditType: v.auditType || null, scenario: v.scenario || null, status: v.status,
@@ -99,7 +123,7 @@ export async function saveAudit(raw: unknown, id?: string) {
       const planRows=changedPlans.length?await tx.auditPlanEntry.findMany({where:{id:{in:changedPlans}},select:{planId:true}}):[];
       for(const planId of [...new Set(planRows.map(x=>x.planId))])await tx.auditPlanChange.create({data:{planId,event:"AUDIT_CLASSIFICATION",actor:v.actor,reason:v.changeReason||"Asignación inicial de auditoría",oldValue:json({auditId:before?.id??null,planningStatus:before?.planningStatus??null,planEntryId:before?.planEntryId??null}),newValue:json({auditId:audit.id,planningStatus:v.planningStatus,planEntryId:selectedPlan?.id??null})}});
     }
-    if ((before?.qmsRecord.businessCode ?? null) !== businessCode) await event("businessCode", before?.qmsRecord.businessCode ?? null, businessCode, "Asignación de codificación");
+    if ((before?.qmsRecord.businessCode ?? null) !== businessCode) await event("businessCode", before?.qmsRecord.businessCode ?? null, businessCode, v.changeReason || (before?.qmsRecord.businessCode ? "Corrección de código" : "Asignación de codificación"));
     for (const child of ["departments", "participants"] as const) {
       const project = (rows: typeof after[typeof child]) => rows.filter(r => r.isActive).map(r => {
         return Object.fromEntries(Object.entries(r).filter(([key]) => !["createdAt", "updatedAt"].includes(key)));
@@ -120,7 +144,8 @@ export function auditDefaults(audit: Awaited<ReturnType<typeof saveAudit>>): Aud
     auditedEntityName: audit.auditedEntityName ?? "", auditedEntityAddress: audit.auditedEntityAddress ?? "", auditingEntityName: audit.auditingEntityName ?? "", auditedContact: audit.auditedContact ?? "", entityCode: audit.entityCode ?? "",
     codingDepartmentId: audit.codingDepartmentId ?? "", departmentIds: audit.departments.filter(d => d.isActive).map(d => d.departmentId),
     participants: audit.participants.filter(p => p.isActive).sort((a,b) => a.sortOrder - b.sortOrder).map(p => ({ id: p.id, displayName: p.displayName, position: p.position ?? "", organization: p.organization ?? "", role: p.role, sortOrder: p.sortOrder })),
-    businessCode: audit.status === "DRAFT" && audit.qmsRecord.businessCode?.startsWith("DEMO-") ? "" : audit.qmsRecord.businessCode ?? "", plannedDate: day(audit.plannedDate), performedDate: day(audit.performedDate), openedAt: day(audit.openedAt), modality: audit.modality ?? "",
+    // Los marcadores «DEMO-» de los borradores de serie no son códigos; el código libre de una recibida sí.
+    businessCode: audit.status === "DRAFT" && !receivedAuditScenario(audit.scenario) && audit.qmsRecord.businessCode?.startsWith("DEMO-") ? "" : audit.qmsRecord.businessCode ?? "", plannedDate: day(audit.plannedDate), performedDate: day(audit.performedDate), openedAt: day(audit.openedAt), modality: audit.modality ?? "",
     internalObservations: audit.internalObservations ?? "", dataQualityStatus: audit.dataQualityStatus, actor: "Usuario demo", changeReason: "", expectedUpdatedAt: audit.updatedAt.toISOString(),
   };
 }

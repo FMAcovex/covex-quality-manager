@@ -7,14 +7,14 @@ import { currentIdentity } from "@/lib/auth/context";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { pendingActionStatuses } from "./finding-domain";
 import { nextReviewRange } from "./list-date-filters";
-import { auditTypeLabels, auditScenarioLabels, auditDisplayStatusLabels, auditModalityLabels, auditQualityLabels, type AuditDisplayStatus } from "./domain";
+import { auditDirectionScenarios, auditTypeLabels, auditScenarioLabels, auditDisplayStatusLabels, auditModalityLabels, auditQualityLabels, type AuditDisplayStatus } from "./domain";
 
 export type AuditListFilters = {
   review?: string; report?: string;
   /** «Asignadas a mí» (D-102): `assignedUserId` lo pone la consulta con el usuario de la sesión. */
   assigned?: string; assignedUserId?: string | null; signedPdf?: string; situation?: string;
   findings?: string; criticality?: string[]; pendingActions?: string; relatedDeviation?: string; relatedCapa?: string; nextReviewFrom?: string; nextReviewTo?: string;
-  planning?: string; planId?: string;
+  planning?: string; planId?: string; direction?: string;
   q?: string; administrative?: string; year?: string[]; type?: string[]; scenario?: string[]; department?: string[]; status?: string[]; modality?: string[]; quality?: string[];
   plannedFrom?: string; plannedTo?: string; performedFrom?: string; performedTo?: string; page?: string;
 };
@@ -22,6 +22,7 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
   const and: Prisma.AuditWhereInput[] = [];
   if(filters.planning==="PLANNED"||filters.planning==="OUT_OF_PLAN"||filters.planning==="UNCLASSIFIED")and.push({planningStatus:filters.planning});
   if(filters.planId)and.push({planEntry:{planId:filters.planId}});
+  if(filters.direction==="covex"||filters.direction==="received")and.push({scenario:{in:[...auditDirectionScenarios[filters.direction]]}});
   if (filters.administrative === "ANNULLED") and.push({ qmsRecord: { isActive: false } });
   else if (filters.administrative !== "ALL") and.push({ qmsRecord: { isActive: true } });
   const review = reviewListWhere(filters.review); if (review) and.push({qmsRecord:review});

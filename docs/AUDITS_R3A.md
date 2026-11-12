@@ -19,7 +19,7 @@ Internas: AI/área/YY/año, dos dígitos, máximo 99, serie por área/año. Prov
 
 Año inicial desde prevista, apertura o realizada, en ese orden. Código/año estables después de apertura. Interna con múltiples áreas requiere referencia explícita; no se puede retirar el área de codificación de un expediente operativo. Tipo/escenario y dimensión de serie se fijan al abrir.
 
-Cliente/autoridad: sin serie normativa; UUID QMS y referencia externa separada. La ausencia de código no impide abrir ni anular/reactivar esos escenarios.
+Cliente/autoridad: sin serie normativa; UUID QMS y referencia externa separada. *(D-137: código libre opcional, sin serie.)* La ausencia de código no impide abrir ni anular/reactivar esos escenarios.
 
 ## Identidades y datos históricos
 

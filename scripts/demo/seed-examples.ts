@@ -51,13 +51,13 @@ async function nextCode(type: QmsRecordType, prefix: string, year: number, digit
 }
 
 /** Registro común del expediente; un borrador no lleva código. */
-async function record(type: QmsRecordType, opened: Date, code: string | null, annul?: { reason: string; at: Date }) {
-  const row = await prisma.qmsRecord.create({
+async function record(type: QmsRecordType, opened: Date, code: string | null, annul?: { reason: string; at: Date }, db: Pick<Prisma.TransactionClient, "qmsRecord" | "changeHistory"> = prisma) {
+  const row = await db.qmsRecord.create({
     data: annul
       ? { recordType: type, year: yearOf(opened), businessCode: null, annulledBusinessCode: code, isActive: false, annulledAt: annul.at, annulledByText: ACTOR, annulledReason: annul.reason }
       : { recordType: type, year: yearOf(opened), businessCode: code },
   });
-  await prisma.changeHistory.create({ data: { qmsRecordId: row.id, changedAt: opened, changedByText: ACTOR, fieldPath: "__created__", reason: "Ejemplo de la demo", source: "SYSTEM" } });
+  await db.changeHistory.create({ data: { qmsRecordId: row.id, changedAt: opened, changedByText: ACTOR, fieldPath: "__created__", reason: "Ejemplo de la demo", source: "SYSTEM" } });
   return row;
 }
 
@@ -225,14 +225,42 @@ async function complaintsAndReturns() {
 }
 
 // ───────────────────────────── Auditorías ─────────────────────────────
+/** Solo las internas se codifican por área, y por una de las auditadas (como exige el formulario). */
+const codingOf = (type: "INTERNAL" | "EXTERNAL", code: string) => type === "INTERNAL"
+  ? { codingDepartmentId: departments[code].id, codingDepartmentCodeSnapshot: code, codingDepartmentNameSnapshot: departments[code].name }
+  : { codingDepartmentId: null, codingDepartmentCodeSnapshot: null, codingDepartmentNameSnapshot: null };
+
+/**
+ * Revisión de D-137: en una demo cargada antes, los ejemplos no se podían guardar desde el formulario (externas con área de
+ * codificación, internas codificadas por un área no auditada, cliente sin alcance ni código). Se corrigen sin tocar los códigos.
+ */
+async function repairAuditExamples() {
+  const audits = await prisma.audit.findMany({ where: { internalObservations: { startsWith: MARK } }, include: { departments: { where: { isActive: true } }, qmsRecord: true } });
+  let fixed = 0;
+  for (const a of audits) {
+    const data: Prisma.AuditUncheckedUpdateInput = {};
+    if (a.auditType === "EXTERNAL" && a.codingDepartmentId) Object.assign(data, codingOf("EXTERNAL", ""));
+    if (a.scenario === "CLIENT" && !a.scope) data.scope = "Fabricación y liberación de los lotes del cliente.";
+    if (a.auditType === "INTERNAL" && a.codingDepartmentId && !a.departments.some(d => d.departmentId === a.codingDepartmentId)) {
+      await prisma.auditDepartment.create({ data: { auditId: a.id, departmentId: a.codingDepartmentId, departmentCodeSnapshot: a.codingDepartmentCodeSnapshot ?? "", departmentNameSnapshot: a.codingDepartmentNameSnapshot ?? "" } });
+      fixed++;
+    }
+    if (Object.keys(data).length) { await prisma.audit.update({ where: { id: a.id }, data }); fixed++; }
+    if (a.scenario === "CLIENT" && a.status !== "DRAFT" && !a.qmsRecord.businessCode && !(await prisma.qmsRecord.findFirst({ where: { recordType: "AUDIT", businessCode: "AUD-LCF-2026-07" }, select: { id: true } }))) {
+      await prisma.qmsRecord.update({ where: { id: a.qmsRecordId }, data: { businessCode: "AUD-LCF-2026-07" } }); fixed++;
+    }
+  }
+  if (fixed) console.log(`Ejemplos de Auditorías corregidos para poder editarlos: ${fixed} cambios.`);
+}
 async function audits() {
   const out: Record<string, { id: string; code: string | null }> = {};
-  const audit = async (o: { key: string; opened: Date; type: "INTERNAL" | "EXTERNAL"; scenario: "INTERNAL_COVEX" | "SUPPLIER" | "CLIENT"; entityCode?: string; draft?: boolean; audited: string[]; data: Omit<Prisma.AuditUncheckedCreateInput, "qmsRecordId">; findings?: { reference: string; findingType: "FINDING" | "RECOMMENDATION"; criticality: "CRITICAL" | "MAJOR" | "MINOR" | "NA"; description: string; treatmentStatus?: "OPEN" | "IN_PROGRESS" | "PENDING_VERIFICATION" | "CLOSED"; closedAt?: Date; actions?: Omit<Prisma.AuditFindingActionUncheckedCreateInput, "findingId" | "createdByText">[] }[] }) => {
-    const code = o.draft || o.scenario === "CLIENT" ? null
-      : o.type === "INTERNAL" ? await nextCode("AUDIT", "AI/GC-00/", yearOf(o.opened), 2)
+  const audit = async (o: { key: string; opened: Date; type: "INTERNAL" | "EXTERNAL"; scenario: "INTERNAL_COVEX" | "SUPPLIER" | "CLIENT" | "AUTHORITY"; entityCode?: string; freeCode?: string; draft?: boolean; audited: string[]; data: Omit<Prisma.AuditUncheckedCreateInput, "qmsRecordId">; findings?: { reference: string; findingType: "FINDING" | "RECOMMENDATION"; criticality: "CRITICAL" | "MAJOR" | "MINOR" | "NA"; description: string; treatmentStatus?: "OPEN" | "IN_PROGRESS" | "PENDING_VERIFICATION" | "CLOSED"; closedAt?: Date; actions?: Omit<Prisma.AuditFindingActionUncheckedCreateInput, "findingId" | "createdByText">[] }[] }) => {
+    // D-137: cliente e inspección llevan un código libre (el de su informe o expediente), no una serie.
+    const code = o.draft ? null : o.scenario === "CLIENT" || o.scenario === "AUTHORITY" ? o.freeCode ?? null
+      : o.type === "INTERNAL" ? await nextCode("AUDIT", `AI/${o.audited[0]}/`, yearOf(o.opened), 2)
       : await nextCode("AUDIT", `AE/${o.entityCode}/`, yearOf(o.opened), 2);
     const r = await record("AUDIT", o.opened, code);
-    const a = await prisma.audit.create({ data: { qmsRecordId: r.id, auditType: o.type, scenario: o.scenario, entityCode: o.entityCode, codingDepartmentId: departments["GC-00"].id, codingDepartmentCodeSnapshot: "GC-00", codingDepartmentNameSnapshot: departments["GC-00"].name, openedAt: o.opened, createdByText: ACTOR, internalObservations: MARK, ...o.data } });
+    const a = await prisma.audit.create({ data: { qmsRecordId: r.id, auditType: o.type, scenario: o.scenario, entityCode: o.entityCode, ...codingOf(o.type, o.audited[0]), openedAt: o.opened, createdByText: ACTOR, internalObservations: MARK, ...o.data } });
     for (const code of o.audited) { const d = departments[code]; await prisma.auditDepartment.create({ data: { auditId: a.id, departmentId: d.id, departmentCodeSnapshot: d.code, departmentNameSnapshot: d.name } }); }
     await prisma.auditParticipant.createMany({ data: [{ auditId: a.id, displayName: "Auditora jefe (ficticia)", position: "Garantía de Calidad", role: "LEAD_AUDITOR", sortOrder: 0 }, { auditId: a.id, displayName: "Auditor (ficticio)", position: "Dirección Técnica", role: "AUDITOR", sortOrder: 10 }, { auditId: a.id, displayName: "Responsable del área auditada (ficticio)", role: "AUDITEE", sortOrder: 20 }] });
     for (const [i, f] of (o.findings ?? []).entries()) {
@@ -255,7 +283,7 @@ async function audits() {
     { reference: "OBS 01", findingType: "FINDING", criticality: "MAJOR", description: "No hay control de cambios de los artes finales de impresión.", treatmentStatus: "PENDING_VERIFICATION", actions: [{ description: "El proveedor implanta un procedimiento de control de cambios de artes finales.", responsible: "Proveedor (seguimiento: Garantía de Calidad)", responsibleUserId: QA, targetDate: day(10), status: "PENDING_VERIFICATION", evidence: "Procedimiento recibido del proveedor (ficticio)." }] },
   ] });
   await audit({ key: "proveedor2025", opened: day(-330), type: "EXTERNAL", scenario: "SUPPLIER", entityCode: "PROV-API", audited: ["GC-00"], data: { status: "CLOSED", title: "Auditoría al proveedor de principios activos", auditedEntityName: "Proveedor Ficticio de Principios Activos S.A.", supplierType: "Principio activo", modality: "REMOTE", ...SUPPLIER_PLAN.api, plannedDate: day(-330), performedDate: day(-329), reportDate: day(-320), reportSentAt: day(-319), responseRequired: false, closedAt: day(-300), conclusion: "Proveedor aprobado sin observaciones.", dataQualityStatus: "COMPLETE" } });
-  await audit({ key: "cliente", opened: day(-90), type: "EXTERNAL", scenario: "CLIENT", audited: ["PM-10", "GC-00"], data: { status: "CLOSED", title: "Auditoría recibida de cliente", externalReference: "Auditoría de Laboratorios Cliente Ficticio 2026", auditingEntityName: "Laboratorios Cliente Ficticio", modality: "ONSITE", plannedDate: day(-90), performedDate: day(-89), reportDate: day(-80), closedAt: day(-50), conclusion: "Sin observaciones críticas; una recomendación aceptada.", dataQualityStatus: "COMPLETE" }, findings: [
+  await audit({ key: "cliente", opened: day(-90), type: "EXTERNAL", scenario: "CLIENT", freeCode: "AUD-LCF-2026-07", audited: ["PM-10", "GC-00"], data: { status: "CLOSED", title: "Auditoría recibida de cliente", scope: "Fabricación y liberación de los lotes del cliente.", externalReference: "Auditoría de Laboratorios Cliente Ficticio 2026", auditingEntityName: "Laboratorios Cliente Ficticio", modality: "ONSITE", plannedDate: day(-90), performedDate: day(-89), reportDate: day(-80), closedAt: day(-50), conclusion: "Sin observaciones críticas; una recomendación aceptada.", dataQualityStatus: "COMPLETE" }, findings: [
     { reference: "Rk 01", findingType: "RECOMMENDATION", criticality: "NA", description: "Mejorar la señalización de las zonas de cuarentena.", treatmentStatus: "CLOSED", closedAt: day(-50) },
   ] });
   return out;
@@ -403,17 +431,69 @@ async function changeFollowupVersions() {
   if (changes.length) console.log(`Versiones de seguimiento añadidas en ${changes.length} controles de cambios de la demo.`);
 }
 
+/**
+ * D-137 (R6): ejemplos con los PNT GC-00/033/04 y GC-00/034/05.
+ * - Una inspección con el código de su expediente (libre) y una observación con acción. Se abrió antes del 15/11/2026, así
+ *   que usa las plantillas vigentes en su fecha de apertura (D-134).
+ * - Una auditoría interna con un hallazgo atribuido a una desviación con su CAPA, para ver el plan CAPA del Anexo IV con las
+ *   plantillas nuevas. Rigen desde el 15/11/2026: antes de esa fecha no se crea (no se fechan auditorías en el futuro) y se
+ *   añade al volver a cargar la demo a partir de ese día.
+ * Cada ejemplo se crea entero o no se crea (transacción) y solo una vez.
+ */
+const R6_START = new Date(Date.UTC(2026, 10, 15));
+async function r6Examples() {
+  const existing = await prisma.audit.findMany({ where: { internalObservations: { startsWith: `${MARK} R6` } }, select: { scenario: true } });
+  const base = { createdByText: ACTOR, internalObservations: `${MARK} R6`, dataQualityStatus: "COMPLETE" as const };
+  const pm10 = { departmentId: departments["PM-10"].id, departmentCodeSnapshot: "PM-10", departmentNameSnapshot: departments["PM-10"].name };
+  const added: string[] = [];
+  if (!existing.some(e => e.scenario === "AUTHORITY")) await prisma.$transaction(async tx => {
+    const opened = day(-12), r = await record("AUDIT", opened, "INSP-AS-2026-031", undefined, tx);
+    const a = await tx.audit.create({ data: { ...base, ...codingOf("EXTERNAL", ""), qmsRecordId: r.id, auditType: "EXTERNAL", scenario: "AUTHORITY", planningStatus: "OUT_OF_PLAN", outsidePlanReason: "Inspección recibida (GC-00/034/05 §3).", status: "OPEN", title: "Inspección de normas de correcta fabricación", scope: "Fabricación de formas sólidas y sistema de calidad.", auditingEntityName: "Autoridad sanitaria (ficticia)", externalReference: "Acta de inspección (ficticia)", modality: "ONSITE", plannedDate: opened, performedDate: day(-10), reportDate: day(-8), openedAt: opened } });
+    await tx.auditDepartment.create({ data: { auditId: a.id, ...pm10 } });
+    await tx.auditParticipant.createMany({ data: [{ auditId: a.id, displayName: "Inspectora jefe (ficticia)", position: "Autoridad sanitaria (ficticia)", role: "LEAD_AUDITOR", sortOrder: 0 }, { auditId: a.id, displayName: "Responsable de área (ficticio)", position: "Producción", role: "AUDITEE", sortOrder: 1 }] });
+    const f = await tx.auditFinding.create({ data: { auditId: a.id, reference: "OBS 01", findingType: "AUTHORITY_OBSERVATION", criticality: "MAJOR", description: "Registros de limpieza de equipos sin verificación del supervisor.", rootCause: "Formato de registro sin casilla de verificación (ficticio).", createdByText: ACTOR, sortOrder: 0 } });
+    await tx.auditFindingAction.create({ data: { findingId: f.id, description: "Añadir la verificación del supervisor al formato de limpieza.", responsible: "Producción", targetDate: day(20), createdByText: ACTOR } });
+    added.push("inspección con código libre");
+  });
+  if (!existing.some(e => e.scenario === "INTERNAL_COVEX") && today >= R6_START) {
+    const deviation = await prisma.qmsRecord.findFirst({ where: { recordType: "DEVIATION", isActive: true, deviation: { internalObservations: MARK }, sourceRelations: { some: { isActive: true, targetRecord: { recordType: "CAPA" } } } }, select: { id: true } });
+    // Realizada hace unos días, pero nunca antes de la entrada en vigor de los PNT nuevos.
+    const opened = new Date(Math.max(R6_START.getTime(), day(-3).getTime()));
+    const code = await nextCode("AUDIT", "AI/PM-10/", yearOf(opened), 2);
+    await prisma.$transaction(async tx => {
+      const r = await record("AUDIT", opened, code, undefined, tx);
+      const a = await tx.audit.create({ data: { ...base, ...codingOf("INTERNAL", "PM-10"), qmsRecordId: r.id, auditType: "INTERNAL", scenario: "INTERNAL_COVEX", status: "OPEN", title: "Auditoría interna del área de fabricación (PNT GC-00/033/04)", scope: "Limpieza de equipos y control de pesada.", referenceText: "EU GMP Parte I, capítulos 3 y 5", modality: "ONSITE", plannedDate: opened, performedDate: opened, openedAt: opened, reportDate: opened,
+        signatories: [{ document: "CAPA_PLAN", role: "PREPARED", name: "Técnica de Garantía de Calidad (ficticia)", position: "Garantía de Calidad" }, { document: "CAPA_PLAN", role: "REVIEWED", name: "Responsable de Producción (ficticio)", position: "Producción" }, { document: "CAPA_PLAN", role: "APPROVED", name: "Dirección de Garantía de Calidad (ficticia)", position: "Dirección GC" }] } });
+      await tx.auditDepartment.create({ data: { auditId: a.id, ...pm10 } });
+      await tx.auditParticipant.createMany({ data: [{ auditId: a.id, displayName: "Auditora jefe (ficticia)", position: "Garantía de Calidad", role: "LEAD_AUDITOR", sortOrder: 0 }, { auditId: a.id, displayName: "Responsable de área (ficticio)", position: "Producción", role: "AUDITEE", sortOrder: 1 }] });
+      const obs1 = await tx.auditFinding.create({ data: { auditId: a.id, reference: "OBS 01", findingType: "FINDING", criticality: "MAJOR", description: "Desviaciones de peso repetidas sin análisis de tendencia.", criterionReference: "Procedimiento de control de pesada (ficticio)", objectiveEvidence: "Tres desviaciones de peso en el último trimestre.", treatment: "Se analiza dentro de la desviación abierta.", createdByText: ACTOR, sortOrder: 0 } });
+      const obs2 = await tx.auditFinding.create({ data: { auditId: a.id, reference: "OBS 02", findingType: "FINDING", criticality: "MINOR", description: "Etiqueta de estado de limpieza ilegible en un equipo.", rootCause: "Etiqueta deteriorada por el uso (ficticio).", evidenceReference: "Foto del equipo (ficticia)", createdByText: ACTOR, sortOrder: 10 } });
+      await tx.auditFindingAction.create({ data: { findingId: obs2.id, description: "Sustituir la etiqueta y revisar el resto de equipos.", responsible: "Producción", targetDate: day(15), createdByText: ACTOR } });
+      await tx.auditFinding.create({ data: { auditId: a.id, reference: "Rk 01", findingType: "RECOMMENDATION", criticality: "NA", description: "Valorar etiquetas plastificadas.", createdByText: ACTOR, sortOrder: 20 } });
+      if (deviation) {
+        const relation = await createQmsRelation(tx, { sourceRecordId: r.id, targetRecordId: deviation.id, createdByText: ACTOR, notes: "Relación de los ejemplos de la demo." });
+        await tx.auditFindingRelation.create({ data: { findingId: obs1.id, qmsRelationId: relation.id, createdByText: ACTOR } });
+      }
+    });
+    added.push("interna con plan CAPA del Anexo IV");
+  }
+  if (added.length) console.log(`Ejemplos R6 de Auditorías añadidos: ${added.join(" e ")}.`);
+  if (!existing.some(e => e.scenario === "INTERNAL_COVEX") && today < R6_START) console.log("La auditoría interna de ejemplo con los PNT nuevos se añadirá al volver a cargar la demo a partir del 15/11/2026.");
+}
+
 async function main() {
   if (!localDemoEnvironment() || process.env.ALLOW_DEMO_DATA !== "true") throw new Error("Solo para la demo (APP_ENV=demo, base covex_demo, ALLOW_DEMO_DATA=true).");
+  departments = Object.fromEntries((await prisma.department.findMany({ select: { id: true, code: true, name: true } })).map((d) => [d.code, d]));
   if (await prisma.deviation.findFirst({ where: { internalObservations: MARK }, select: { id: true } })) {
     console.log("Los ejemplos de la demo ya están cargados.");
     await changeFollowupVersions();
     await supplierAuditPlans();
     await pntAssignments();
     await changeModels();
+    await repairAuditExamples();
+    await r6Examples();
     return;
   }
-  departments = Object.fromEntries((await prisma.department.findMany({ select: { id: true, code: true, name: true } })).map((d) => [d.code, d]));
   if (!(await prisma.authUser.findUnique({ where: { id: QA } }))) throw new Error("Faltan los usuarios de la demo: ejecuta pnpm demo:users antes.");
 
   const dev = await deviations();
@@ -446,6 +526,7 @@ async function main() {
   relate(o.confirmado, capa.tendencia);
   for (const [sourceRecordId, targetRecordId] of relations) await createQmsRelation(prisma, { sourceRecordId, targetRecordId, createdByText: ACTOR, notes: "Relación de los ejemplos de la demo." });
   await changeFollowupVersions();
+  await r6Examples();
 
   const counts = await prisma.qmsRecord.groupBy({ by: ["recordType"], _count: true, where: { history: { some: { reason: "Ejemplo de la demo" } } } });
   console.log(`Ejemplos de la demo cargados: ${counts.map((c) => `${c.recordType} ${c._count}`).join(" · ")} · PNT ${await prisma.controlledDocument.count({ where: { observations: MARK } })} · relaciones ${relations.length}.`);

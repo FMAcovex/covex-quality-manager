@@ -88,6 +88,10 @@ describe("Auditorías R3A", () => {
     expect(auditListWhere({status:["PARTIAL"]}).AND).toContainEqual({OR:[{status:"OPEN",capaPlanEstablishedAt:{not:null}}]});
     expect(auditListWhere({status:["OPEN","CLOSED"]}).AND).toContainEqual({OR:[{status:"OPEN",capaPlanEstablishedAt:null},{status:"CLOSED"}]});
     expect(JSON.stringify(auditListWhere({situation:"partial"}))).not.toContain("reportSentAt");
+    // D-137: realizadas por COVEX (internas y a proveedor) o recibidas (cliente e inspección).
+    expect(auditListWhere({direction:"covex"}).AND).toContainEqual({scenario:{in:["INTERNAL_COVEX","INTERNAL_CONTRACTED","SUPPLIER"]}});
+    expect(auditListWhere({direction:"received"}).AND).toContainEqual({scenario:{in:["CLIENT","AUTHORITY"]}});
+    expect(JSON.stringify(auditListWhere({direction:"otra"}))).not.toContain("CLIENT");
   });
   it("R4A conserva el contacto externo como texto optativo sin alterar clasificación anual", () => {
     const input = auditInputSchema.parse({...valid,auditedContact:"Contacto ficticio · correo@example.com · 900 000 000",planningStatus:"UNCLASSIFIED"});
@@ -96,7 +100,14 @@ describe("Auditorías R3A", () => {
     expect(auditInputSchema.safeParse({...valid,auditedContact:""}).success).toBe(true);
   });
   it("presenta escenarios y roles en español", () => {
-    expect(auditScenarioLabels.INTERNAL_CONTRACTED).toBe("Interna · auditor externo contratado");
+    // D-137 (R6): el sentido de cada auditoría se lee en el rótulo.
+    expect(auditScenarioLabels).toEqual({
+      INTERNAL_COVEX: "Interna · personal COVEX",
+      INTERNAL_CONTRACTED: "Interna subcontratada · auditor externo",
+      SUPPLIER: "Externa · COVEX → proveedor/tercero",
+      CLIENT: "Externa · cliente → COVEX",
+      AUTHORITY: "Inspección · autoridad u organismo → COVEX",
+    });
     expect(auditRoleLabels.LEAD_AUDITOR).toBe("Auditor jefe");
   });
 });

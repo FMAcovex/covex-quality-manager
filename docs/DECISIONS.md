@@ -548,7 +548,7 @@ Un único módulo Audit/QmsRecord AUDIT. INTERNAL/EXTERNAL con cinco escenarios;
 
 AI/departamento/YY/AAAA: correlativo 01–99 por área y año. Área de codificación explícita entre áreas auditadas; autoselección cuando solo hay una. AE/códigoEntidad/YY/AAAA para proveedor: código manual normalizado a mayúsculas, nunca derivado del nombre; correlativo por entidad/año. Año inicial: fecha prevista, después apertura, después realizada. Código y año quedan fijos al abrir aunque se reprograme. Serie/dimensión y escenario operativos inmutables para evitar incoherencia con el código. Borrador permite corregirlos.
 
-Cliente/autoridad: businessCode null, UUID QMS y externalReference opcional; no se inventa serie. API administrativa permite reactivar AUDIT sin código para esos escenarios y borradores, conservando controles previos de los demás módulos. Al anular, el código queda disponible para otro expediente, como en el resto de módulos (D-133; sustituye la reserva del código anulado).
+Cliente/autoridad: businessCode null, UUID QMS y externalReference opcional; no se inventa serie. *(Sustituido en parte por D-137: tienen un código libre opcional.)* API administrativa permite reactivar AUDIT sin código para esos escenarios y borradores, conservando controles previos de los demás módulos. Al anular, el código queda disponible para otro expediente, como en el resto de módulos (D-133; sustituye la reserva del código anulado).
 
 Participantes textuales UUID sin maestro global; al abrir al menos un auditor y exactamente un jefe si son varios. Áreas/participantes retirados se inactivan; pertenencia de UUID se valida en servidor. Demo sigue DEMO- como los otros módulos y permanece DRAFT; su apertura sustituye el código demo por una codificación normativa.
 
@@ -1632,4 +1632,30 @@ Tercera entrega de R6 (D-134, D-135), con la plantilla «Anexo IV del PNT GC-00/
 - El plan, documento de la auditoría, incluye datos de las desviaciones y CAPA vinculadas (códigos, causa raíz, acciones y responsables), como ya hacía el CAPA plan anterior con sus códigos. Se descarga con el permiso de Auditorías.
 - Con el permiso de seguimiento del plan se pueden cambiar sus firmantes al registrar un seguimiento; solo cambian las funciones que el formulario envía.
 - Sin cambios de permisos. La migración `20261114000100_audit_finding_root_cause` añade el campo y su política de captura B2 (contrato `B2_AUDIT_FINDING_ROOT_CAUSE`). No es validación GMP.
+
+## D-137 — Auditorías R6: externas diferenciadas, código libre de cliente e inspección y ejemplos de la demo (2026-11-12)
+
+Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsable de Calidad del 12/11/2026.
+
+- **Código libre en cliente e inspección.** Las auditorías de cliente a COVEX y las inspecciones no tienen serie.
+  - Su código es libre: el del informe del cliente o el del expediente abierto por la agencia («se codifican libremente como las inspecciones»).
+  - Es opcional y único entre las auditorías; si dos personas guardan el mismo código a la vez, la segunda recibe el aviso en el campo.
+  - Se guardan los espacios internos unificados; no admite caracteres de control ni invisibles.
+  - No puede empezar por «AI/» ni «AE/»: esos formatos son de las series de COVEX.
+  - Se puede corregir después de abrir la auditoría indicando el motivo; cada cambio queda en el historial.
+  - Las series de las internas (AI/…) y de las auditorías a proveedor (AE/…) no cambian y siguen fijas al abrir.
+- **Fuera del programa anual.** Las auditorías e inspecciones recibidas no forman parte del programa anual (GC-00/034/05 §3) y no se pueden clasificar como «Incluida en plan anual». Las que ya estaban abiertas con una entrada del plan se conservan mientras no cambien de entrada; un borrador no la mantiene al pasar a cliente o inspección.
+- **Diferenciación:**
+  - Los escenarios dicen quién audita a quién: «Externa · COVEX → proveedor/tercero», «Externa · cliente → COVEX», «Inspección · autoridad u organismo → COVEX», «Interna subcontratada · auditor externo» e «Interna · personal COVEX».
+  - Nuevo filtro «Sentido» en el listado: realizadas por COVEX (internas y a proveedor) o recibidas (cliente e inspección).
+- **Demo:**
+  - Ejemplos de una inspección con el código de su expediente y de una auditoría interna con un hallazgo atribuido a una desviación con su CAPA, para ver el plan CAPA del Anexo IV.
+  - La auditoría de cliente de ejemplo lleva un código libre.
+  - En la demo se activan las plantillas de R6 instaladas con las mismas comprobaciones que Configuración (archivo, SHA-256 y compatibilidad, D-100); la activación queda en Configuración → Historial.
+  - La inspección de ejemplo se abrió antes del 15/11/2026 y usa las plantillas vigentes en su apertura (D-134).
+  - La interna de ejemplo usa las plantillas nuevas. No se fecha en el futuro: antes del 15/11/2026 no se crea y se añade al volver a cargar la demo desde ese día.
+  - Todos los ejemplos de Auditorías se pueden guardar desde el formulario (en una demo ya cargada se corrigen al volver a cargarla).
+- **Reactivación (D-133):** una recibida anulada cuyo código ya usa otra auditoría no se reactiva hasta cambiar uno de los dos códigos, como en el resto de módulos. Se deja así a propósito.
+- **CAPA plan A4.03 anterior:** conserva los rótulos de escenario con los que se generaba.
+- Sin migraciones ni cambios de permisos. No es validación GMP.
 

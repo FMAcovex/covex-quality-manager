@@ -193,6 +193,16 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Auditorías R6 · cuarta entrega: externas diferenciadas y código libre (2026-11-12, D-137):**
+- **Qué cambia:**
+  - Código libre (el del informe del cliente o del expediente de la agencia) en auditorías de cliente e inspecciones; se puede corregir y queda en el historial.
+  - Las recibidas no entran en el programa anual (GC-00/034/05 §3).
+  - Escenarios con el sentido de la auditoría y filtro «Sentido» en el listado.
+  - Ejemplos de la demo: una inspección con código libre (abierta antes del 15/11/2026, con las plantillas de su fecha) y una interna con el plan CAPA del Anexo IV y las plantillas nuevas, que se añade al cargar la demo desde el 15/11/2026.
+- **R6 completa:** informes 04/05, plan 05, firmantes, cierre parcial, programas Anexo V, plan CAPA Anexo IV y externas diferenciadas.
+- **Revisión independiente:** sin críticos. Corregidos los seis importantes (un borrador podía entrar en el programa al pasar a cliente, carrera de dos códigos iguales, códigos con forma de serie, ejemplos de la demo que no se podían guardar, fechas de los ejemplos, activación de plantillas sin comprobar ni registrar) y los menores aplicables (motivo al corregir el código, espacios e invisibles, formulario al cambiar de escenario, rótulos de la A4.03 anterior, prefijo «DEMO-», datos ficticios y notas en D-064, R3A y R3B).
+- **Comprobado:** pruebas de rótulos, filtro y A4.03; smoke de PostgreSQL del código libre (corrección con motivo, unicidad y carrera, formatos reservados, historial) y de la regla del programa; base de demo recreada desde cero con las plantillas oficiales: activación registrada, planes CAPA con fechas coherentes y los ejemplos de Auditorías guardados sin errores desde el formulario.
+
 **Un «$» en los textos ya no daña los anexos (2026-11-12):**
 - **Qué falla:** un «$» en un texto del usuario (por ejemplo «"50$"», «$$» o «$&») se interpretaba como patrón de reemplazo de JavaScript. El Word o el Excel salía dañado (Office lo «reparaba» perdiendo contenido) o el texto cambiaba sin avisar («$$» → «$»).
 - **Dónde:**
