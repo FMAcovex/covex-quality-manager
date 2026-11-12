@@ -1,5 +1,5 @@
 import { readZip, getZipEntryText, updateZipEntry, writeZip, type ZipEntry } from "@/lib/ooxml/zip";
-import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
+import { replaceSheetData, escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
 import { loadAnnexVTemplate } from "@/modules/deviations/documents/templates";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { deadlineLabel, measuresLabel } from "@/modules/deviations/domain";
@@ -166,10 +166,8 @@ export async function generateAnnexV(year: number, rows: ExportRow[], versionCod
     return `<row r="${excelRow}" spans="1:6"${height}>${cells}</row>`;
   });
 
-  sheet = sheet.replace(
-    /<sheetData>[\s\S]*?<\/sheetData>/,
-    `<sheetData>${[...headerRows,...dataRows,...legendRows].join("")}</sheetData>`,
-  );
+  // Se corta y pega: un «$» del usuario en un reemplazo de texto se interpretaría como patrón.
+  sheet = replaceSheetData(sheet, [...headerRows,...dataRows,...legendRows].join(""));
   sheet = sheet
     .replace(/<dimension ref="[^"]+"/, '<dimension ref="A1:F71"')
     .replace('<mergeCell ref="B2:F2"/>','<mergeCell ref="B2:F2"/>');

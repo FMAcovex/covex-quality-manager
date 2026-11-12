@@ -5,7 +5,7 @@ import {
   writeZip,
   type ZipEntry,
 } from "@/lib/ooxml/zip";
-import { escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
+import { replaceSheetData, escapeXml, setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadCapaAnnexIVTemplate } from "@/modules/capa/documents/templates";
 
@@ -157,8 +157,7 @@ export function expandCapaAnnexIVSheet(
     shiftRow(trimRowToOfficialColumns(item.xml), item.number, legendStart + index),
   );
 
-  const newSheetData = `<sheetData>${[...headers, ...dataRows, ...shiftedLegend].join("")}</sheetData>`;
-  let result = sheetXml.replace(/<sheetData>[\s\S]*?<\/sheetData>/, newSheetData);
+  let result = replaceSheetData(sheetXml, [...headers, ...dataRows, ...shiftedLegend].join(""));
   result = result
     .replace(/<dimension ref="[^"]+"/, `<dimension ref="A1:F${legendStart + 2}"`)
     .replace('<mergeCell ref="M1:N1"/>', "")

@@ -306,7 +306,8 @@ function writeCapaCell(sheet: string, ref: string, value: string) {
   const cell = '<c r="' + ref + '"' + (style ? ' s="' + style + '"' : '') + '></c>';
   const insertion = next ? next.index! : original.lastIndexOf("</row>");
   const expanded = original.slice(0, insertion) + cell + original.slice(insertion);
-  return setXlsxCell(sheet.replace(original, expanded), ref, value);
+  // Reemplazo con función: la fila ya puede llevar textos del usuario con «$».
+  return setXlsxCell(sheet.replace(original, () => expanded), ref, value);
 }
 
 export function generateAuditCapaPlan(template: Buffer, s: AuditReportSnapshot, sequence: number | null) {

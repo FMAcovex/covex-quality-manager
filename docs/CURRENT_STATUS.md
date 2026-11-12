@@ -193,6 +193,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Un «$» en los textos ya no daña los anexos (2026-11-12):**
+- **Qué falla:** un «$» en un texto del usuario (por ejemplo «"50$"», «$$» o «$&») se interpretaba como patrón de reemplazo de JavaScript. El Word o el Excel salía dañado (Office lo «reparaba» perdiendo contenido) o el texto cambiaba sin avisar («$$» → «$»).
+- **Dónde:**
+  - los ayudantes comunes que añaden texto a una casilla de Word (`appendWordCellText`, `appendWordVariableCellText`, `appendWordCellTextBalanced`), usados por varios anexos;
+  - la tabla de los listados en Excel de Desviaciones (Anexo V), CAPA (Anexo IV), Reclamaciones (Anexo V) y Devoluciones (Anexo VI);
+  - el CAPA plan A4.03 de Auditorías cuando la plantilla omite una casilla vacía. El informe, el plan externo y el Anexo IV ya estaban corregidos (D-134 y D-136).
+- **Arreglo:** reemplazo con función y un ayudante común `replaceSheetData`, que corta y pega la tabla y falla si la hoja no la tiene o no la cierra.
+- **Comprobado:** pruebas que fallaban antes del arreglo (`src/lib/ooxml/dollar-patterns.test.ts`, `src/modules/annex-listings.test.ts` y el CAPA plan A4.03). Búsqueda en todo el código de reemplazos con datos del usuario: no quedan más. Con textos sin «$», los anexos salen igual que antes.
+
 **Auditorías R6 · tercera entrega: plan CAPA del Anexo IV por bloques (2026-11-12, D-136):**
 - **Qué cambia:**
   - Un bloque por hallazgo con una fila por CAPA (las vinculadas al hallazgo y las de su desviación) y por acción propia, con responsable, fecha prevista, estado y cierre.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { syntheticAuditCapaPlan, syntheticCapaPlanAnnexIV } from "../../../../scripts/audits-r3c-fixtures";
 import { generateAuditCapaPlan } from "./generators";
-import { getZipEntryText, readZip } from "@/lib/ooxml/zip";
+import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import { capaPlanBlocks, capaPlanCapaStatus, type CapaPlanLinks } from "../capa-plan-annex";
 import { capaPlanSignatoryFields, signatoriesFromForm } from "../signatories";
 import type { AuditReportSnapshot } from "../report-service";
@@ -138,3 +138,16 @@ describe("D-136 · revisión independiente", () => {
     expect([b.rows[0].status, b.rows[0].closedAt, b.rootCause]).toEqual(["Anulada", "", ""]);
   });
 });
+
+describe("CAPA plan A4.03 con «$» y una celda omitida en la plantilla", () => {
+  it("la fila no se anida en sí misma y el texto se conserva", () => {
+    const entries = readZip(syntheticAuditCapaPlan());
+    updateZipEntry(entries, "xl/worksheets/sheet1.xml", getZipEntryText(entries, "xl/worksheets/sheet1.xml").replace(/<c r="D11"[^>]*>[\s\S]*?<\/c>|<c r="D11"[^>]*\/>/, ""));
+    const s = snapshot();
+    (s.audit as unknown as { findings: unknown[] }).findings = [finding("f1", "OBS 01", { description: 'Coste "50$" por lote, A $$ B, $& y fin' })];
+    const out = sheetOf(generateAuditCapaPlan(writeZip(entries), s, 0));
+    expect(out.match(/<row\b[^>]*\br="11"/g)).toHaveLength(1);
+    expect(out).toContain("Coste &quot;50$&quot; por lote, A $$ B, $&amp; y fin");
+  });
+});
+

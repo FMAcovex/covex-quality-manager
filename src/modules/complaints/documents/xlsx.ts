@@ -1,7 +1,7 @@
 import { lotColumn, storedAdditionalLots } from "@/lib/qms/additional-lots";
 import { complaintSnapshotVersionFollowupDate } from "@/lib/qms/versioning";
 import { readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
+import { replaceSheetData, escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadComplaintPntTemplate } from "@/modules/complaints/documents/templates";
 import { DocumentType } from "@prisma/client";
@@ -82,7 +82,7 @@ export async function generateComplaintAnnexV(year:number,rows:Row[],versionCode
   return `<row r="${n}" ht="${complaintRowHeight(vals.map(value=>String(value??"")))}" customHeight="1">${"BCDEFGHIJK".split("").map((col,j)=>xmlCell(col,n,styles.get(col)??"",String(vals[j]??""))).join("")}</row>`;
  });
  const maxRow=Math.max(5,4+rows.length);
- sheet=sheet.replace(new RegExp("<sheetData>[\\s\\S]*?</sheetData>"),`<sheetData>${[...headers,...body].join("")}</sheetData>`);
+ sheet=replaceSheetData(sheet,[...headers,...body].join(""));
  sheet=sheet.replace(/<dimension ref="[^"]+"/,`<dimension ref="B1:K${maxRow}"`);
  sheet=setXlsxCell(sheet,"B2",`LISTADO DE RECLAMACIONES\n"${year}"`);
  sheet=finalizeComplaintAnnexVSheet(sheet,maxRow);
