@@ -61,8 +61,14 @@ async function readPreview(tx: Prisma.TransactionClient, planId: string) {
       };
     }),
   };
-  // Externas agrupadas por ámbito: Medicamento, API y el resto en su orden.
-  if (plan.auditType === "EXTERNAL") content.rows = orderProgrammeAreas(content.rows);
+  // Externas agrupadas por ámbito. Anexo V: Medicamento, API y el resto en su orden (Calidad, 12/11/2026);
+  // la plantilla anterior del Plan Maestro conserva su agrupación por orden de aparición.
+  if (plan.auditType === "EXTERNAL" && format === "ANNEX_V") content.rows = orderProgrammeAreas(content.rows);
+  else if (plan.auditType === "EXTERNAL") {
+    const groups = new Map<string, typeof content.rows>();
+    for (const row of content.rows) groups.set(row.area || "Sin especificar", [...(groups.get(row.area || "Sin especificar") || []), row]);
+    content.rows = [...groups.values()].flat();
+  }
   const blockers: string[] = [];
   if (!template?.checksum || !template.fileSize) blockers.push("Plantilla oficial vigente no instalada.");
   if (!content.rows.some(r => !r.cancelled)) blockers.push("El programa debe contener al menos una auditoría planificada.");

@@ -1578,7 +1578,7 @@ Calidad actualiza los PNT de auditorías internas y externas, vigentes desde el 
 - **Defecto observado en la plantilla del informe interno 04:** en el listado de observaciones, la casilla REFERENCIA de la fila de MAYOR tiene una sangría derecha mayor que la columna y el texto sale en vertical. Se comunica a Calidad para corregirlo en Word; la aplicación no cambia el formato de la plantilla.
 - Sin cambios de permisos. La migración `20261112000100_audit_signatories` añade la columna y su política de captura B2 (contrato `B2_AUDIT_SIGNATORIES`). No es validación GMP.
 
-## D-135 — Auditorías R6: estado «Cierre parcial» y programa anual como Anexo V (2026-11-13)
+## D-135 — Auditorías R6: estado «Cierre parcial» y programa anual como Anexo V (2026-11-12)
 
 Segunda entrega de R6 (D-134), con las respuestas del responsable de Calidad del 12/11/2026.
 
@@ -1593,8 +1593,8 @@ Segunda entrega de R6 (D-134), con las respuestas del responsable de Calidad del
   - Año y Versión arriba. La versión es la secuencia de emisión del programa (00, 01…): cada «Nueva versión» la emite el usuario con un botón y un motivo, y recoge los datos de ese momento. Antes de emitir se ve qué cambia respecto a la versión anterior.
   - Una fila por auditoría planificada: «Área y alcance» (internas: área y procesos o requisitos) o «Entidad y alcance» (externas: entidad, producto o servicio y alcance, agrupadas por ámbito); fecha prevista; equipo auditor; código de la auditoría; fecha de auditoría; fecha de cierre parcial; comentarios. Código y fechas solo de expedientes activos y fuera de borrador.
   - **Comentarios:** entrada aplazada o adelantada con la fecha prevista inicial y el motivo del cambio (con un período en lugar de una fecha exacta, «Reprogramada», porque no se puede saber si se aplazó); entrada cancelada con su motivo; modalidad prevista en externas; observaciones de la entrada. La fecha prevista inicial es la de la primera versión emitida que la incluía.
-  - **Ámbitos de las externas (Calidad, 13/11/2026):** cada ámbito lleva su banda en el Anexo V; primero Medicamento, después API y el resto en el orden en que aparecen. El formulario propone esos dos ámbitos.
-  - **Plantilla del programa interno corregida por Calidad (13/11/2026):** la columna pasa a «Fecha de cierre parcial». Sustituye la copia anterior si se llegó a instalar.
+  - **Ámbitos de las externas (Calidad, 12/11/2026):** cada ámbito lleva su banda en el Anexo V; primero Medicamento, después API (o sus plurales, escritos tal cual) y el resto en el orden en que aparecen. Un mismo ámbito escrito con otras mayúsculas, acentos o espacios es una sola banda, con la forma escrita la primera vez. El formulario propone esos dos ámbitos. La plantilla anterior del Plan Maestro conserva su agrupación.
+  - **Plantilla del programa interno corregida por Calidad (12/11/2026):** la columna pasa a «Fecha de cierre parcial». La versión anterior del catálogo no llegó a publicarse: se cambia su huella sin sustituir copias instaladas (D-099); una base de desarrollo o demo que la tuviera se reinstala.
   - Una entrada retirada después de publicarse en una versión sigue en el programa como cancelada; retirada antes, no aparece. Las plantillas anteriores siguen sin incluir las retiradas.
   - **Firmas:** «Elaborado por» (Garantía de Calidad, campo nuevo `AuditAnnualPlan.preparedByName`) y «Aprobado por» (Dirección de Garantía de Calidad). El aprobador de Dirección Técnica solo se pide con la plantilla anterior del programa interno y se conserva si ya estaba registrado. Firma y fecha quedan para Word.
   - La instrucción de la plantilla «Añadir o eliminar tantas filas…» no se incluye en el programa emitido: su párrafo queda vacío, para que las tablas no se junten.

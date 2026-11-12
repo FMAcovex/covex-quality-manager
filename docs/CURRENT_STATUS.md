@@ -193,11 +193,12 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
-**Auditorías R6 · segunda entrega: «Cierre parcial» y programa anual como Anexo V (2026-11-13, D-135):**
+**Auditorías R6 · segunda entrega: «Cierre parcial» y programa anual como Anexo V (2026-11-12, D-135):**
 - **Qué cambia:**
   - Estados de la auditoría: Borrador, Abierta, Cierre parcial (CAPA plan 00 establecido, con su fecha) y Cierre definitivo. En proveedor, el cierre parcial es la aceptación de su respuesta; el envío del informe ya no lo marca.
   - Programa anual en el formato del Anexo V (GC-00/033/04 y GC-00/034/05): año y versión, código, fecha de auditoría, fecha de cierre parcial y comentarios (aplazada o cancelada con motivo, modalidad).
   - «Nueva versión» manual con la lista de cambios respecto a la anterior; firmas «Elaborado por» y «Aprobado por».
+  - Externas agrupadas por ámbito, empezando por Medicamento y API; plantilla del Anexo V interno corregida por Calidad («Fecha de cierre parcial»).
 - **Pendiente en R6:** plan CAPA (Anexo IV) por bloques y diferenciación de las auditorías externas.
 - **Comprobado:** pruebas del generador con plantillas sintéticas, smoke de PostgreSQL de programas (versiones 00/01, aplazada, cancelada, código y cierre parcial) y `annexes:verify` con las plantillas oficiales: las 2 nuevas y las 24 activas, correctas.
 

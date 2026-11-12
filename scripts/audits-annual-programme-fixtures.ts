@@ -29,7 +29,7 @@ export function syntheticAnnexVProgramme(internal: boolean) {
   const header = (cells: string[]) => `<w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>${cells.map(c => tc(c)).join("")}</w:tr>`;
   const plain = (cells: string[]) => `<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="620"/></w:trPr>${cells.map(c => tc(c)).join("")}</w:tr>`;
   const band = (repeat: boolean) => `<w:tr><w:trPr><w:cantSplit/>${repeat ? "<w:tblHeader/>" : ""}</w:trPr>${tc("AMBITO_", 8)}</w:tr>`;
-  const columns = ["Nº", internal ? "Área y alcance" : "Entidad y alcance", "Fecha prevista ", "Equipo auditor", "Código de auditoría", "Fecha de auditoría", internal ? "Fecha de cierre (CAPA)" : "Fecha cierre parcial", "Comentarios"];
+  const columns = ["Nº", internal ? "Área y alcance" : "Entidad y alcance", "Fecha prevista ", "Equipo auditor", "Código de auditoría", "Fecha de auditoría", internal ? "Fecha de cierre parcial" : "Fecha cierre parcial", "Comentarios"];
   const body = internal ? [1, 2, 3].map(n => plain([String(n), "", "", "", "", "", "", ""])).join("") : band(true) + plain(Array(8).fill("")) + band(false) + plain(Array(8).fill(""));
   const main = table(`<w:tr><w:trPr><w:tblHeader/></w:trPr>${tc("PLANIFICACIÓN", 4)}${tc("EJECUCIÓN Y SEGUIMIENTO", 4)}</w:tr>` + header(columns) + body);
   const signatures = table(header(["Función", "Nombre y apellido", "Firma", "Fecha"]) + plain(["Elaborado por Garantía de Calidad", "", "", ""]) + plain(["Aprobado por Dirección de Garantía de Calidad", "", "", ""]));
