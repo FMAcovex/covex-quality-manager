@@ -195,8 +195,8 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 
 **Plan CAPA del Anexo IV: «Fecha prevista» en Arial 14 centrada (2026-11-12, D-136):**
 - **Qué falla:** en la plantilla, la columna «Fecha prevista» de las filas de datos estaba en Calibri 11 sin centrar; el resto de la fila, en Arial 14 centrada. El plan generado heredaba ese formato.
-- **Arreglo:** plantilla corregida (solo el formato de H8, H11 y H14) y huella nueva en el catálogo. Pendiente de aprobación por Calidad como versión controlada.
-- **Comprobado:** el archivo corregido se abre en LibreOffice; solo cambian la hoja y los estilos. `annexes:verify` con las plantillas reales: correcto con las activas y con la versión 04 corregida (`--version AUDIT_CAPA_PLAN=04`); en el plan generado, todas las casillas de «Fecha prevista» salen en Arial 14 centradas con formato de fecha.
+- **Arreglo:** plantilla corregida (solo el formato de H8, H11 y H14) y huella nueva en el catálogo. Pendiente de que Calidad apruebe y distribuya exactamente ese archivo, sin volver a guardarlo. Una demo con la copia anterior se crea de cero (D-136).
+- **Comprobado:** el archivo corregido se abre en LibreOffice; solo cambian la hoja y los estilos. Prueba nueva: el generador conserva en todas las filas de datos el estilo de las casillas de fecha de la plantilla. `annexes:verify` con las plantillas reales: correcto con las activas y con la versión 04 corregida (`--version AUDIT_CAPA_PLAN=04`); en el plan generado, todas las casillas de «Fecha prevista» salen en Arial 14 centradas con formato de fecha.
 
 **Auditorías R6 · cuarta entrega: externas diferenciadas y código libre (2026-11-12, D-137):**
 - **Qué cambia:**
