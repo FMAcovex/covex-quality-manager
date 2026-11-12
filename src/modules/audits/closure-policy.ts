@@ -21,7 +21,6 @@ const evidenced = (x: { evidence: string | null; evidenceReference: string | nul
  * siguen su propio ciclo y no bloquean; tampoco la verificación de cada acción.
  */
 export function auditClosureChecklist(c: ClosureContext, exception = false) {
-  const internal = c.scenario === "INTERNAL_COVEX" || c.scenario === "INTERNAL_CONTRACTED";
   const received = c.scenario === "CLIENT" || c.scenario === "AUTHORITY";
   const active = c.findings.filter(f => f.isActive), blockers: string[] = [], warnings: string[] = [];
   if (!c.isActive) blockers.push("Reactiva el expediente antes de cerrar.");
@@ -46,5 +45,7 @@ export function auditClosureChecklist(c: ClosureContext, exception = false) {
     if (c.capaPlanVersions && c.capaPlanOutdated) warnings.push("La última versión del CAPA plan no refleja el estado actual: se recomienda registrar un seguimiento final antes de cerrar.");
   }
   if (!received && !c.signedPdf) warnings.push("PDF firmado esperado no disponible; no es requisito absoluto de cierre en la aplicación.");
-  return { blockers: [...new Set(blockers)], warnings, partial: internal ? Boolean(c.capaPlanEstablishedAt) : c.scenario === "SUPPLIER" ? Boolean(c.reportSentAt) : false };
+  // D-135 (R6): el cierre parcial es el CAPA plan 00 establecido en todos los tipos (en proveedor, la
+  // aceptación de su respuesta por GC); el envío del informe ya no lo marca.
+  return { blockers: [...new Set(blockers)], warnings, partial: Boolean(c.capaPlanEstablishedAt) };
 }

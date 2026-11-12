@@ -55,9 +55,80 @@ export function extractExternalProgramme(xml: string) {
   const selected = body.slice(marker).filter(b => !b.startsWith("<w:sectPr")).map(b => b.replace(/<w:sectPr\b[^>]*>[\s\S]*?<\/w:sectPr>/g, "").replace(/<w:br\b[^>]*w:type="page"[^>]*\/>/g, ""));
   return xml.slice(0, start + 8) + selected.join("") + section + xml.slice(end);
 }
-export function generateAnnualProgramme(template: Buffer, content: ProgrammeContent) {
+/** Sustituye solo las celdas indicadas de una fila, con el formato de cada celda original. */
+function fillCells(source: string, values: Record<number, string>) {
+  let index = 0;
+  return source.replace(/<w:trHeight\b[^>]*\/>/g, height => height.replace(/w:hRule="exact"/, 'w:hRule="atLeast"'))
+    .replace(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g, c => { const i = index++; return i in values ? cell(c, values[i]) : c; });
+}
+const tableRows = (table: string) => [...table.matchAll(/<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>/g)].map(m => m[0]);
+/** D-135 (R6): plantilla del Anexo V de los PNT GC-00/033/04 y GC-00/034/05 («Área / Entidad y alcance»). */
+export function isAnnexVProgramme(xml: string) {
+  return /(?:Área|Entidad) y alcance/.test(visible(xml));
+}
+/**
+ * D-135 (R6): Anexo V. Año y versión arriba; una fila por auditoría con «Área / Entidad y alcance», fecha prevista,
+ * equipo auditor, código, fecha de auditoría, fecha de cierre parcial y comentarios; en externas, una banda AMBITO
+ * por ámbito. Firmas: nombre de quien elabora y de quien aprueba; firma y fecha quedan para Word.
+ */
+function fillAnnexV(xml: string, content: ProgrammeContent, sequence: number) {
+  const internal = content.auditType === "INTERNAL";
+  if (!visible(xml).includes(internal ? "PROGRAMA ANUAL DE AUDITORÍAS INTERNAS" : "PROGRAMA ANUAL DE AUDITORÍAS EXTERNAS")) throw Error("La plantilla del Anexo V no corresponde a este tipo de programa.");
+  let head = 0, main = 0, signatures = 0;
+  xml = xml.replace(/<w:tbl(?:\s[^>]*)?>[\s\S]*?<\/w:tbl>/g, table => {
+    const rows = tableRows(table), text = visible(table), prefix = table.slice(0, table.indexOf(rows[0]));
+    if (/^Año:/.test(text) && text.includes("Versión:")) {
+      head++;
+      if (rows.length !== 1 || [...rows[0].matchAll(/<w:tc(?:\s[^>]*)?>/g)].length !== 4) throw Error("Cabecera de año y versión no compatible.");
+      return prefix + fillCells(rows[0], { 1: markValue(String(content.year)), 3: markValue(String(sequence).padStart(2, "0")) }) + "</w:tbl>";
+    }
+    if (/(?:Área|Entidad) y alcance/.test(text)) {
+      main++;
+      const columns = (r: string) => [...r.matchAll(/<w:tc(?:\s[^>]*)?>/g)].length;
+      const isBand = (r: string) => visible(r).startsWith("AMBITO");
+      if (rows.length < 3 || columns(rows[1]) !== 8) throw Error("Tabla del programa no compatible.");
+      const style = rows.slice(2).find(r => !isBand(r) && columns(r) === 8);
+      if (!style) throw Error("Fila de programa no encontrada.");
+      const line = (r: ProgrammeContent["rows"][number], n: number) => fillCells(style, Object.fromEntries([
+        String(n), (internal ? [r.target, r.scope] : [r.target, r.productService, r.scope]).filter(Boolean).join("\n"), r.planned, r.auditors, r.code, r.performed, r.partial, r.comments,
+      ].map((v, i) => [i, markValueLines(v)])));
+      let data = "", n = 0;
+      if (internal) content.rows.forEach(r => { data += line(r, ++n); });
+      else {
+        const bands = rows.slice(2).filter(isBand);
+        if (!bands.length) throw Error("Banda de ámbito del programa externo no encontrada.");
+        // La primera banda de la plantilla repite como cabecera; las bandas generadas no.
+        const band = (bands.find(b => !b.includes("<w:tblHeader")) ?? bands[0]).replace(/<w:tblHeader\/>/g, "");
+        const groups = new Map<string, ProgrammeContent["rows"]>();
+        for (const r of content.rows) { const g = r.area || "Sin especificar"; groups.set(g, [...(groups.get(g) ?? []), r]); }
+        for (const [area, items] of groups) { data += fillCells(band, { 0: `AMBITO ${markValue(area)}` }); items.forEach(r => { data += line(r, ++n); }); }
+      }
+      return prefix + rows[0] + rows[1] + data + "</w:tbl>";
+    }
+    if (text.startsWith("Función") && text.includes("Elaborado por") && text.includes("Aprobado por")) {
+      signatures++;
+      return prefix + rows.map(r => visible(r).startsWith("Elaborado por") ? fillCells(r, { 1: markValueLines(content.preparedByName) }) : visible(r).startsWith("Aprobado por") ? fillCells(r, { 1: markValueLines(content.qualityApproverName) }) : r).join("") + "</w:tbl>";
+    }
+    return table;
+  });
+  if (head !== 1 || main !== 1 || signatures !== 1) throw Error("Tablas oficiales del Anexo V no encontradas una sola vez.");
+  // La instrucción de la plantilla para quien la cumplimenta no forma parte del programa emitido.
+  // Se vacía el párrafo (conserva su pPr y un posible salto de sección) en vez de borrarlo: dos tablas seguidas
+  // se fundirían en Word y la cabecera de la principal dejaría de repetirse.
+  return xml.replace(/<w:p(?:\s[^>]*)?>(?:(?!<w:p[\s>])[\s\S])*?<\/w:p>/g, p => visible(p).startsWith("Añadir o eliminar tantas filas") ? p.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g, "") : p);
+}
+export function generateAnnualProgramme(template: Buffer, content: ProgrammeContent, sequence = 0) {
   const entries = readZip(template, { maxExpandedBytes: 40 * 1024 * 1024, verifyIntegrity: true });
   let xml = getZipEntryText(entries, "word/document.xml");
+  // El formato (bloqueos, firmantes y referencia) se decide por la versión de la plantilla; la plantilla debe coincidir.
+  if (isAnnexVProgramme(xml) !== (content.format === "ANNEX_V")) throw Error("El formato de la plantilla del programa no coincide con su versión de catálogo.");
+  if (content.format === "ANNEX_V") {
+    updateZipEntry(entries, "word/document.xml", applyValueMarks(fillAnnexV(xml, content, sequence)));
+    sanitizeOfficeMetadata(entries);
+    return writeZip(entries);
+  }
+  // Plantillas anteriores (Plan Maestro): las entradas canceladas no se incorporan, como hasta ahora.
+  content = { ...content, rows: content.rows.filter(r => !r.cancelled) };
   const internal = content.auditType === "INTERNAL";
   if (!internal) xml = extractExternalProgramme(xml);
   let mainCount = 0, approvalCount = 0;

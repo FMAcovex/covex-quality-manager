@@ -497,6 +497,8 @@ AuditCapaPlanVersion (D-110, R5C1): versiones propias del CAPA plan.
 
 Campos mínimos Audit de informe/conclusión/programa/firmas manuales (D-134: `Audit.signatories`, lista JSON `{ document, role, name, position }` del informe y del CAPA plan; los campos de texto elaborado/revisado/recibido quedan para las plantillas anteriores), Plan externo, fechas de hechos parciales/respuestas y decisión QA/excepción proveedor. AuditFindingAction reutiliza CapaEffectivenessStatus para verificación local más verifiedAt/verifiedBy. GeneratedDocument incorpora bytes opcionales, nombre/MIME; tipos AUDIT_INTERNAL_REPORT, AUDIT_EXTERNAL_REPORT, AUDIT_CAPA_PLAN, AUDIT_EXTERNAL_PLAN y recibido/respuesta/evidencia. No se añaden modelos.
 
+Programa anual (D-135): `AuditAnnualPlan.preparedByName` («Elaborado por» del Anexo V); `technicalApproverName` solo para la plantilla PMAI anterior. El cierre parcial de la auditoría no es un estado guardado: `Audit.status = OPEN` con `capaPlanEstablishedAt`.
+
 QmsRecordVersion INITIAL/AUDIT_REVISION con snapshot completo congelado; TemplateVersion UUID/hash en snapshot y documento. RecordVersionDocument SIGNED_PDF reutilizado. ReviewThread versionId/targets persistentes sin duplicar infraestructura. Migración aditiva 20261007000300_audits_r3c sobre R3B; detalles y compatibilidad en AUDITS_R3C.md.
 
 

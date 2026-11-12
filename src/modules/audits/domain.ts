@@ -11,9 +11,18 @@ export const auditScenarioLabels = {
   AUTHORITY: "Inspección de autoridad/organismo",
 } as const;
 export const auditModalityLabels = { ONSITE: "Presencial", REMOTE: "Remota", HYBRID: "Mixta" } as const;
-export const auditStatusLabels = { DRAFT: "Borrador", OPEN: "Abierta", CLOSED: "Cerrada" } as const;
+export const auditStatusLabels = { DRAFT: "Borrador", OPEN: "Abierta", CLOSED: "Cierre definitivo" } as const;
+/**
+ * D-135 (R6): estados que se muestran. «Cierre parcial» no es un estado guardado: es una auditoría
+ * abierta con el CAPA plan 00 establecido (`capaPlanEstablishedAt`, su fecha de cierre parcial).
+ */
+export const auditDisplayStatusLabels = { DRAFT: "Borrador", OPEN: "Abierta", PARTIAL: "Cierre parcial", CLOSED: "Cierre definitivo" } as const;
+export type AuditDisplayStatus = keyof typeof auditDisplayStatusLabels;
+export function auditDisplayStatus(audit: { status: AuditStatus; capaPlanEstablishedAt?: Date | string | null }): AuditDisplayStatus {
+  return audit.status === "OPEN" && audit.capaPlanEstablishedAt ? "PARTIAL" : audit.status;
+}
 /** Color del estado en listados y cabecera, como en Desviaciones. */
-export const auditStatusBadgeClass = (status: keyof typeof auditStatusLabels) => status === "DRAFT" ? "neutral" : status === "OPEN" ? "open" : "closed";
+export const auditStatusBadgeClass = (status: AuditDisplayStatus) => status === "DRAFT" ? "neutral" : status === "OPEN" || status === "PARTIAL" ? "open" : "closed";
 export const auditRoleLabels = { LEAD_AUDITOR: "Auditor jefe", AUDITOR: "Auditor", AUDITEE: "Personal auditado / interlocutor" } as const;
 export const auditQualityLabels = { COMPLETE: "Completo", INCOMPLETE: "Incompleto", REVIEW_REQUIRED: "Requiere revisión" } as const;
 
@@ -25,9 +34,10 @@ export function hasAuditBusinessSeries(scenario: AuditScenario | null) {
   return scenario === "INTERNAL_COVEX" || scenario === "INTERNAL_CONTRACTED" || scenario === "SUPPLIER";
 }
 export function auditSituation(audit: { status: AuditStatus; performedDate: Date | string | null; findings?: (FindingState & {isActive:boolean})[]; followups?: unknown[]; reportIssued?: boolean; capaPlanEstablishedAt?: Date | string | null; reportSentAt?: Date | string | null; scenario?: AuditScenario | null }) {
-  if (audit.status === "CLOSED") return "Cerrada";
-  // D-110: el cierre parcial es el CAPA plan establecido (internas) o el informe enviado (proveedor).
-  if (audit.status !== "DRAFT" && (audit.scenario === "SUPPLIER" ? audit.reportSentAt : audit.scenario?.startsWith("INTERNAL") && audit.capaPlanEstablishedAt)) return "Cierre parcial";
+  if (audit.status === "CLOSED") return "Cierre definitivo";
+  // D-135 (R6): en todos los tipos, el cierre parcial es el CAPA plan 00 establecido (aprobado por GC; en
+  // proveedor, la aceptación de su respuesta). El envío del informe ya no lo marca.
+  if (auditDisplayStatus(audit) === "PARTIAL") return "Cierre parcial";
   // D-110 (R5D): en cliente e inspección no hay informe COVEX; la situación depende del seguimiento.
   if (receivedAuditScenario(audit.scenario)) {
     if (audit.status === "DRAFT") return "Borrador";

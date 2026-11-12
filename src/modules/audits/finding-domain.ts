@@ -24,11 +24,10 @@ export function findingSituation(finding: FindingState) {
   return "Pendiente de verificación";
 }
 export function auditFollowupSituation(audit: { status: string; performedDate: Date | string | null; findings?: (FindingState & { isActive: boolean })[]; followups?: unknown[] }) {
-  if (audit.status === "CLOSED") return "Cerrada";
+  if (audit.status === "CLOSED") return "Cierre definitivo";
   if (audit.status === "DRAFT") return "Borrador";
   const findings = audit.findings?.filter(f => f.isActive) ?? [];
-  // Partial closure describes a recorded local treatment plan, never definitive closure or effectiveness.
-  if (findings.length && findings.every(f => Boolean(f.treatment?.trim()) || f.actions.some(a => a.isActive)) && findings.some(f => f.actions.some(a => a.isActive && !isTerminalAction(a.status)))) return "Cierre parcial";
+  // D-135: el cierre parcial solo lo marca el CAPA plan 00 (auditSituation); un tratamiento local no lo es.
   if (findings.length || audit.followups?.length) return "En seguimiento";
   return audit.performedDate ? "Realizada · informe pendiente" : "Planificada";
 }

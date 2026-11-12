@@ -28,9 +28,12 @@ describe('Cierre de auditoría (D-110)',()=>{
    const c=auditClosureChecklist(context({capaPlanVersions:1,capaPlanOutdated:true,findings:[finding()]}));
    expect(c.blockers).toEqual([]);expect(c.warnings.join(' ')).toMatch(/seguimiento final/);
  });
- it('proveedor ya no exige el envío del informe; el envío sigue marcando cierre parcial',()=>{
+ it('proveedor ya no exige el envío del informe; el cierre parcial es el CAPA plan 00 (D-135)',()=>{
    expect(auditClosureChecklist(context({scenario:'SUPPLIER'})).blockers).toEqual([]);
-   expect(auditClosureChecklist(context({scenario:'SUPPLIER',reportSentAt:'2026-10-07'})).partial).toBe(true);
+   // D-135 (R6): el envío del informe ya no es cierre parcial; la aceptación de la respuesta (CAPA plan 00) sí.
+   expect(auditClosureChecklist(context({scenario:'SUPPLIER',reportSentAt:'2026-10-07'})).partial).toBe(false);
+   expect(auditClosureChecklist(context({scenario:'SUPPLIER',capaPlanEstablishedAt:'2026-10-08'})).partial).toBe(true);
+   expect(auditClosureChecklist(context({scenario:'CLIENT',capaPlanEstablishedAt:'2026-10-08'})).partial).toBe(true);
    expect(auditClosureChecklist(context({capaPlanEstablishedAt:'2026-10-07'})).partial).toBe(true);
  });
  it('admite la excepción de proveedor sin críticos y sin respuesta CAPA',()=>expect(auditClosureChecklist(context({scenario:'SUPPLIER',findings:[finding({criticality:'MINOR',treatment:null,treatmentStatus:'OPEN',actions:[action('OPEN')]})]}),true).blockers).toEqual([]));

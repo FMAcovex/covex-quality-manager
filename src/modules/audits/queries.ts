@@ -7,7 +7,7 @@ import { currentIdentity } from "@/lib/auth/context";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { pendingActionStatuses } from "./finding-domain";
 import { nextReviewRange } from "./list-date-filters";
-import { auditTypeLabels, auditScenarioLabels, auditStatusLabels, auditModalityLabels, auditQualityLabels } from "./domain";
+import { auditTypeLabels, auditScenarioLabels, auditDisplayStatusLabels, auditModalityLabels, auditQualityLabels, type AuditDisplayStatus } from "./domain";
 
 export type AuditListFilters = {
   review?: string; report?: string;
@@ -32,10 +32,14 @@ export function auditListWhere(filters: AuditListFilters): Prisma.AuditWhereInpu
   const received: ("CLIENT"|"AUTHORITY")[] = ["CLIENT", "AUTHORITY"];
   if (filters.report === "pending") and.push({qmsRecord:{versions:{none:{}}},OR:[{scenario:null},{scenario:{notIn:received}}]});
   if (filters.situation === "closed") and.push({status:"CLOSED"});
-  if (filters.situation === "partial") and.push({status:"OPEN",OR:[{scenario:{in:["INTERNAL_COVEX","INTERNAL_CONTRACTED"]},capaPlanEstablishedAt:{not:null}},{scenario:"SUPPLIER",reportSentAt:{not:null}}]});
-  if (filters.situation === "followup") and.push({status:"OPEN",AND:[{OR:[{qmsRecord:reportVersion},{scenario:{in:received}}]}],NOT:{OR:[{scenario:{in:["INTERNAL_COVEX","INTERNAL_CONTRACTED"]},capaPlanEstablishedAt:{not:null}},{scenario:"SUPPLIER",reportSentAt:{not:null}}]},OR:[{findings:{some:{isActive:true,actions:{some:{isActive:true,status:{in:pendingActionStatuses}}}}}},{followups:{some:{}}}]});
+  // D-135 (R6): cierre parcial = abierta con el CAPA plan 00 establecido, en todos los tipos.
+  if (filters.situation === "partial") and.push({status:"OPEN",capaPlanEstablishedAt:{not:null}});
+  if (filters.situation === "followup") and.push({status:"OPEN",AND:[{OR:[{qmsRecord:reportVersion},{scenario:{in:received}}]}],capaPlanEstablishedAt:null,OR:[{findings:{some:{isActive:true,actions:{some:{isActive:true,status:{in:pendingActionStatuses}}}}}},{followups:{some:{}}}]});
+  // D-135 (R6): el estado mostrado separa «Abierta» de «Cierre parcial» (abierta con CAPA plan 00).
+  const statuses = validValues(filters.status, Object.keys(auditDisplayStatusLabels)) as AuditDisplayStatus[];
+  if (statuses.length) and.push({OR:statuses.map(s => s === "PARTIAL" ? {status:"OPEN" as const,capaPlanEstablishedAt:{not:null}} : s === "OPEN" ? {status:"OPEN" as const,capaPlanEstablishedAt:null} : {status:s})});
   const years = validYears(filters.year); if (years.length) and.push({ qmsRecord: { year: { in: years } } });
-  for (const [key, values, labels] of [["auditType", filters.type, auditTypeLabels], ["scenario", filters.scenario, auditScenarioLabels], ["status", filters.status, auditStatusLabels], ["modality", filters.modality, auditModalityLabels], ["dataQualityStatus", filters.quality, auditQualityLabels]] as const) {
+  for (const [key, values, labels] of [["auditType", filters.type, auditTypeLabels], ["scenario", filters.scenario, auditScenarioLabels], ["modality", filters.modality, auditModalityLabels], ["dataQualityStatus", filters.quality, auditQualityLabels]] as const) {
     const selected = validValues(values, Object.keys(labels)); if (selected.length) and.push({ [key]: { in: selected } } as Prisma.AuditWhereInput);
   }
   if (filters.department?.length) and.push({ departments: { some: { isActive: true, departmentId: { in: filters.department } } } });

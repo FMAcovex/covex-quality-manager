@@ -54,5 +54,8 @@ describe("D1B — Contratos del dashboard", () => {
     expect(queryPage("-1")).toBe(1);
     expect(queryPage("12000")).toBe(10000);
     expect(moduleListHref("/capa", "OPEN", 2026, "abc")).toBe("/capa?year=2026&department=abc&status=OPEN");
+    // D-135: en Auditorías, «Abiertas» del panel incluye las de cierre parcial, como su recuento.
+    expect(moduleListHref("/audits", "OPEN", 2026, "")).toBe("/audits?year=2026&status=OPEN&status=PARTIAL");
+    expect(moduleListHref("/audits", "CLOSED", null, "")).toBe("/audits?status=CLOSED");
   });
 });
