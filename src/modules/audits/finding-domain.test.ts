@@ -41,12 +41,13 @@ describe("Auditorías R3B — hallazgos, plan y seguimiento", () => {
     expect(findingSituation({...f,actions:[{isActive:true,status:"PENDING_VERIFICATION"},{isActive:false,status:"OPEN"}]})).toBe("Pendiente de verificación");
     expect(findingSituation({...f,actions:[{isActive:true,status:"CLOSED"},{isActive:true,status:"NOT_APPLICABLE"}]})).toBe("Tratado");
   });
-  it("deriva cierre parcial solo con tratamiento planificado y acciones pendientes", () => {
+  it("sin informe conocido, el tratamiento local no es cierre parcial (D-135: solo el CAPA plan 00)", () => {
     const a = {status:"OPEN",performedDate:"2026-10-07",findings:[]};
     expect(auditFollowupSituation(a)).toBe("Realizada · informe pendiente");
     const f = {isActive:true,treatment:null,treatmentStatus:"OPEN" as const,actions:[]};
     expect(auditFollowupSituation({...a,findings:[f]})).toBe("En seguimiento");
-    expect(auditFollowupSituation({...a,findings:[{...f,actions:[{isActive:true,status:"OPEN"}]}]})).toBe("Cierre parcial");
+    expect(auditFollowupSituation({...a,findings:[{...f,actions:[{isActive:true,status:"OPEN"}]}]})).toBe("En seguimiento");
+    expect(auditFollowupSituation({...a,status:"CLOSED"})).toBe("Cierre definitivo");
     expect(auditFollowupSituation({...a,findings:[{...f,actions:[{isActive:true,status:"CLOSED"}]}]})).toBe("En seguimiento");
     expect(auditFollowupSituation({...a,status:"DRAFT",followups:[{}]})).toBe("Borrador");
   });

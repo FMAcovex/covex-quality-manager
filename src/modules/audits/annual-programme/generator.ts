@@ -113,12 +113,16 @@ function fillAnnexV(xml: string, content: ProgrammeContent, sequence: number) {
   });
   if (head !== 1 || main !== 1 || signatures !== 1) throw Error("Tablas oficiales del Anexo V no encontradas una sola vez.");
   // La instrucción de la plantilla para quien la cumplimenta no forma parte del programa emitido.
-  return xml.replace(/<w:p(?:\s[^>]*)?>(?:(?!<w:p[\s>])[\s\S])*?<\/w:p>/g, p => visible(p).startsWith("Añadir o eliminar tantas filas") ? "" : p);
+  // Se vacía el párrafo (conserva su pPr y un posible salto de sección) en vez de borrarlo: dos tablas seguidas
+  // se fundirían en Word y la cabecera de la principal dejaría de repetirse.
+  return xml.replace(/<w:p(?:\s[^>]*)?>(?:(?!<w:p[\s>])[\s\S])*?<\/w:p>/g, p => visible(p).startsWith("Añadir o eliminar tantas filas") ? p.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g, "") : p);
 }
 export function generateAnnualProgramme(template: Buffer, content: ProgrammeContent, sequence = 0) {
   const entries = readZip(template, { maxExpandedBytes: 40 * 1024 * 1024, verifyIntegrity: true });
   let xml = getZipEntryText(entries, "word/document.xml");
-  if (isAnnexVProgramme(xml)) {
+  // El formato (bloqueos, firmantes y referencia) se decide por la versión de la plantilla; la plantilla debe coincidir.
+  if (isAnnexVProgramme(xml) !== (content.format === "ANNEX_V")) throw Error("El formato de la plantilla del programa no coincide con su versión de catálogo.");
+  if (content.format === "ANNEX_V") {
     updateZipEntry(entries, "word/document.xml", applyValueMarks(fillAnnexV(xml, content, sequence)));
     sanitizeOfficeMetadata(entries);
     return writeZip(entries);

@@ -92,7 +92,13 @@ async function annexV(internal: boolean, suffix: string) {
     // El formulario del Anexo V no envía el aprobador técnico: se conserva el anterior.
     await saveProgrammeApprovers(plan.id, { preparedByName: "Técnica GC ficticia", qualityApproverName: "Directora GC ficticia", actor, reason: "Elaborado por" });
     assert.equal((await prisma.auditAnnualPlan.findUniqueOrThrow({ where: { id: plan.id } })).technicalApproverName, internal ? "Técnico anterior" : null);
+    // Revisión M-6: un formulario sin «Elaborado por» (por ejemplo, anterior al despliegue) no lo borra.
+    await saveProgrammeApprovers(plan.id, { qualityApproverName: "Directora GC ficticia", actor, reason: "Formulario sin elaborado" });
+    assert.equal((await prisma.auditAnnualPlan.findUniqueOrThrow({ where: { id: plan.id } })).preparedByName, "Técnica GC ficticia");
+    // Reprogramar antes de la primera versión no es aplazar: aún no se había publicado.
+    await updatePlanEntry(plan.id, b.id, { ...base, subject: "Auditoría B", targetName: "Área B ficticia", plannedDate: `${year}-05-20`, reason: "Ajuste antes de publicar" });
     preview = await getProgrammePreview(plan.id); assert.deepEqual(preview.blockers, []); assert.deepEqual(preview.changes, []);
+    assert(!/Aplazada|Reprogramada|Adelantada/.test(preview.content.rows[1].comments), preview.content.rows[1].comments);
     const v0 = await issueAnnualProgramme(plan.id, { actor, reason: "", requestId: randomUUID(), expectedFingerprint: preview.fingerprint });
     const xml0 = getZipEntryText(readZip(Buffer.from(v0.fileData)), "word/document.xml");
     assert.deepEqual(cellsOf(xml0, 1)[0], ["Año:", String(year), "Versión:", "00"]);

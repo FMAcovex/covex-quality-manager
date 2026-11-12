@@ -54,14 +54,17 @@ const dmy = /^(\d{2})\/(\d{2})\/(\d{4})$/;
 const sortable = (v: string) => { const m = v.match(dmy); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };
 /**
  * D-135 (R6): columna «Comentarios» del Anexo V. Aplazada o cancelada con su motivo, la modalidad prevista
- * en externas y las observaciones de la entrada. «Adelantada» solo cuando ambas fechas son exactas y la nueva es anterior.
+ * en externas y las observaciones de la entrada. «Aplazada» / «Adelantada» solo cuando ambas fechas son exactas;
+ * si alguna es un período, «Reprogramada».
  */
 export function programmeComments(input: { external: boolean; notes: string; modality: string; planned: string; initialPlanned?: string | null; rescheduleReason?: string | null; cancelledReason?: string | null }) {
   const lines: string[] = [];
   if (input.cancelledReason !== undefined && input.cancelledReason !== null) lines.push(`Cancelada.${input.cancelledReason ? ` Motivo: ${input.cancelledReason}` : ""}`);
   else if (input.initialPlanned && input.initialPlanned !== input.planned) {
     const before = sortable(input.initialPlanned), after = sortable(input.planned);
-    lines.push(`${before && after && after < before ? "Adelantada" : "Aplazada"} (prevista inicialmente: ${input.initialPlanned}).${input.rescheduleReason ? ` Motivo: ${input.rescheduleReason}` : ""}`);
+    // Solo se afirma aplazada o adelantada con dos fechas exactas; con un período, «Reprogramada».
+    const label = before && after ? (after < before ? "Adelantada" : "Aplazada") : "Reprogramada";
+    lines.push(`${label} (prevista inicialmente: ${input.initialPlanned}).${input.rescheduleReason ? ` Motivo: ${input.rescheduleReason}` : ""}`);
   }
   if (input.external && input.modality) lines.push(`Modalidad prevista: ${input.modality}`);
   if (input.notes) lines.push(input.notes);

@@ -42,6 +42,8 @@ describe("D-135 · Anexo V del programa anual", () => {
     expect(cells(xml, 3).map(r => r.slice(0, 2))).toEqual([["Función", "Nombre y apellido"], ["Elaborado por Garantía de Calidad", "Elaboradora ficticia"], ["Aprobado por Dirección de Garantía de Calidad", "Aprobador calidad ficticio"]]);
     expect(text(xml)).not.toContain("Añadir o eliminar tantas filas");
     expect(text(xml)).not.toContain("Aprobador técnico ficticio");
+    // Revisión I-2: la instrucción se vacía, no se borra: dos tablas seguidas se fundirían en Word.
+    expect(xml).not.toMatch(/<\/w:tbl>\s*<w:tbl>/);
   });
 
   it("externo: banda AMBITO por ámbito, entidad con producto y alcance, numeración continua", () => {
@@ -62,6 +64,10 @@ describe("D-135 · Anexo V del programa anual", () => {
     expect(getZipEntryText(out, "docProps/core.xml")).not.toContain("Autor plantilla");
   });
 
+  it("rechaza una plantilla cuyo formato no coincide con el decidido por su versión (revisión M-4)", () => {
+    expect(() => generateAnnualProgramme(syntheticAnnexVProgramme(true), syntheticProgrammeContent(true, 1, "MASTER_PLAN"), 0)).toThrow(/formato/);
+    expect(() => generateAnnualProgramme(syntheticAnnualProgramme(true), syntheticProgrammeContent(true, 1, "ANNEX_V"), 0)).toThrow(/formato/);
+  });
   it("rechaza un Anexo V de otro tipo de programa", () => {
     expect(() => generateAnnualProgramme(syntheticAnnexVProgramme(false), content(true), 0)).toThrow(/no corresponde/);
   });
@@ -79,7 +85,8 @@ describe("D-135 · comentarios y cambios del programa", () => {
     expect(programmeComments({ ...base, external: false })).toBe("Nota");
     expect(programmeComments({ ...base, initialPlanned: "15/03/2097", rescheduleReason: "Falta de personal" })).toBe("Aplazada (prevista inicialmente: 15/03/2097). Motivo: Falta de personal\nModalidad prevista: Remota\nNota");
     expect(programmeComments({ ...base, initialPlanned: "15/06/2097" })).toBe("Adelantada (prevista inicialmente: 15/06/2097).\nModalidad prevista: Remota\nNota");
-    expect(programmeComments({ ...base, initialPlanned: "Primer trimestre" })).toMatch(/^Aplazada \(prevista inicialmente: Primer trimestre\)/);
+    // Revisión I-3: si las fechas no se pueden comparar (un período), no se afirma que se haya aplazado.
+    expect(programmeComments({ ...base, initialPlanned: "Primer trimestre", rescheduleReason: "Fecha concretada" })).toBe("Reprogramada (prevista inicialmente: Primer trimestre). Motivo: Fecha concretada\nModalidad prevista: Remota\nNota");
     expect(programmeComments({ ...base, initialPlanned: "15/05/2097" })).toBe("Modalidad prevista: Remota\nNota");
     expect(programmeComments({ ...base, cancelledReason: "Proveedor dado de baja", initialPlanned: "01/01/2097" })).toBe("Cancelada. Motivo: Proveedor dado de baja\nModalidad prevista: Remota\nNota");
     expect(programmeComments({ ...base, cancelledReason: "" })).toMatch(/^Cancelada\.\n/);

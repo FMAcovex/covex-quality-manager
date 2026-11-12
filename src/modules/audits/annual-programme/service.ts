@@ -34,7 +34,8 @@ async function readPreview(tx: Prisma.TransactionClient, planId: string) {
   const warnings: string[] = [];
   const planned = (e: (typeof plan.entries)[number]) => !e.audit || e.audit.planningStatus === "PLANNED";
   // Una entrada retirada después de publicarse sigue en el programa como cancelada, con su motivo.
-  const entries = plan.entries.filter(e => planned(e) && (e.isActive || initialPlanned.has(e.id)));
+  // Las plantillas anteriores del Plan Maestro no incorporan las canceladas: tampoco la vista previa.
+  const entries = plan.entries.filter(e => planned(e) && (e.isActive || (format === "ANNEX_V" && initialPlanned.has(e.id))));
   const excluded = plan.entries.length - entries.length;
   if (excluded) warnings.push(`${excluded} entradas retiradas antes de publicarse o con expediente no clasificado como planificado quedan excluidas.`);
   const content: ProgrammeContent = {
@@ -89,7 +90,8 @@ export async function saveProgrammeApprovers(planId: string, input: unknown) {
     // D-135: el Anexo V solo lleva «Elaborado por» y «Aprobado por»; el aprobador técnico es de la plantilla PMAI anterior
     // y se conserva si el formulario no lo envía.
     const technical = before.auditType !== "INTERNAL" ? null : input && typeof input === "object" && "technicalApproverName" in input ? v.technicalApproverName || null : before.technicalApproverName;
-    const names = { preparedByName: v.preparedByName || null, technicalApproverName: technical, qualityApproverName: v.qualityApproverName || null };
+    const prepared = input && typeof input === "object" && "preparedByName" in input ? v.preparedByName || null : before.preparedByName;
+    const names = { preparedByName: prepared, technicalApproverName: technical, qualityApproverName: v.qualityApproverName || null };
     await tx.auditAnnualPlan.update({ where: { id: planId }, data: { ...names, updatedByText: v.actor } });
     await tx.auditPlanChange.create({ data: { planId, event: "PROGRAMME_APPROVERS_UPDATED", actor: v.actor, reason: v.reason, oldValue: json({ preparedByName: before.preparedByName, technicalApproverName: before.technicalApproverName, qualityApproverName: before.qualityApproverName }), newValue: json(names) } });
   });

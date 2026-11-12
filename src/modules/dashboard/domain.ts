@@ -109,6 +109,8 @@ export function moduleListHref(path: string, status: DashboardState, year: numbe
   if (year) query.append("year", String(year));
   if (department) query.append("department", department);
   if (status !== "ALL") query.append("status", status);
+  // D-135: en Auditorías el listado separa «Abierta» de «Cierre parcial»; el recuento de abiertas incluye ambas.
+  if (path === "/audits" && status === "OPEN") query.append("status", "PARTIAL");
   const search = query.toString();
   return path + (search ? "?" + search : "");
 }
