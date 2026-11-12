@@ -70,6 +70,10 @@ export function signatoriesFromForm(values: Record<string, string | undefined>, 
   return { list, errors };
 }
 
+/** Las personas de las funciones enviadas sustituyen a las actuales; las demás funciones se conservan. */
+export function mergeSignatoryRoles(current: AuditSignatory[], next: AuditSignatory[], sentRoles: SignatoryRole[]) {
+  return signatoryRoles.flatMap(role => (sentRoles.includes(role) ? next : current).filter(s => s.role === role));
+}
 /** Sustituye los firmantes de un documento conservando los del otro. */
 export function replaceDocumentSignatories(current: unknown, document: SignatoryDocument, next: AuditSignatory[]) {
   return [...readSignatories(current).filter((s) => s.document !== document), ...next];

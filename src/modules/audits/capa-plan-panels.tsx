@@ -6,10 +6,10 @@ import { establishCapaPlanAction, recordCapaPlanFollowupAction } from "./capa-pl
 import { CapaPlanFollowupForm } from "./capa-plan-followup-form";
 import type { ReportAudit } from "./report-service";
 import { capaPlanSignatoryFields, readSignatories, signatoryLines } from "./signatories";
-const signerLabels: Record<string, string> = { capaPlanPreparedBy: "Elaborado por", capaPlanReviewedBy: "Revisado por", capaPlanApprovedBy: "Aprobado por" };
 import { auditDate } from "./domain";
 import { capaPlanDefaultDate, capaPlanKindLabels, capaPlanSequenceLabel, capaPlanToday } from "./capa-plan-domain";
 import type { CapaPlanVersionSummary } from "./capa-plan-service";
+const signerLabels: Record<string, string> = { capaPlanPreparedBy: "Elaborado por", capaPlanReviewedBy: "Revisado por", capaPlanApprovedBy: "Aprobado por" };
 
 const versionHref = (auditId: string, sequence: number) => `/api/audits/${auditId}/documents?capaPlanVersion=${sequence}`;
 function VersionLink({ auditId, version }: { auditId: string; version: CapaPlanVersionSummary }) {

@@ -1,3 +1,4 @@
+import { readSignatories } from "./signatories";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { canonicalAuditJson } from "@/lib/audit/canonical-json";
@@ -23,13 +24,19 @@ const actionKeys = ["description", "responsible", "targetDate", "status", "close
 export function capaPlanFingerprint(snapshot: AuditReportSnapshot) {
   const findings = snapshot.audit.findings.filter(f => f.isActive).map((f: SnapshotFinding) => ({
     ...pick(f, findingKeys),
+    // D-136: la causa raíz solo cuenta si tiene valor, para no cambiar la huella de las versiones anteriores.
+    ...(f.rootCause ? { rootCause: f.rootCause } : {}),
     actions: f.actions.filter(a => a.isActive).map(a => pick(a, actionKeys)),
     links: f.relations.filter(r => r.isActive && r.qmsRelation.isActive).map(r => ({
       code: r.qmsRelation.targetRecord.businessCode ?? r.qmsRelation.targetRecord.annulledBusinessCode ?? r.qmsRelation.targetRecord.id,
       capa: r.qmsRelation.targetRecord.capa?.status ?? null, deviation: r.qmsRelation.targetRecord.deviation?.status ?? null,
     })),
   }));
-  return createHash("sha256").update(canonicalAuditJson({ capaPlanDate: snapshot.audit.capaPlanDate ?? null, findings })).digest("hex");
+  // D-136 (revisión I4): también los vínculos (estado y eficacia de las CAPA, causa raíz de la desviación…) y los
+  // firmantes del plan, solo cuando los hay, para que el aviso de plan desactualizado los vea.
+  const capaPlan = snapshot.capaPlan && Object.values(snapshot.capaPlan).some(l => l.deviations.length || l.capas.length) ? snapshot.capaPlan : undefined;
+  const signers = readSignatories(snapshot.audit.signatories).filter(s => s.document === "CAPA_PLAN");
+  return createHash("sha256").update(canonicalAuditJson({ capaPlanDate: snapshot.audit.capaPlanDate ?? null, findings, ...(capaPlan ? { capaPlan } : {}), ...(signers.length ? { signers } : {}) })).digest("hex");
 }
 export const establishCapaPlanSchema = z.object({
   requestId: z.string().uuid("Solicitud no válida. Recarga la auditoría."),

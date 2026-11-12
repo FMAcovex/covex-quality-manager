@@ -16,7 +16,7 @@ export async function loadCapaPlanLinks(db: Db, findingIds: string[]): Promise<C
   const attributions = await db.auditFindingRelation.findMany({
     where: { findingId: { in: findingIds }, isActive: true, qmsRelation: { isActive: true } },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    select: { findingId: true, qmsRelation: { select: { targetRecord: { select: { id: true, recordType: true, businessCode: true, annulledBusinessCode: true, deviation: { select: { rootCause: true } } } } } } },
+    select: { findingId: true, qmsRelation: { select: { targetRecord: { select: { id: true, recordType: true, businessCode: true, annulledBusinessCode: true, isActive: true, deviation: { select: { rootCause: true } } } } } } },
   });
   const deviationIds = [...new Set(attributions.filter(a => a.qmsRelation.targetRecord.recordType === "DEVIATION").map(a => a.qmsRelation.targetRecord.id))];
   const deviationCapas = deviationIds.length ? await db.qmsRelation.findMany({
@@ -35,7 +35,7 @@ export async function loadCapaPlanLinks(db: Db, findingIds: string[]): Promise<C
   const capaIds = [...new Set([...attributions.filter(a => a.qmsRelation.targetRecord.recordType === "CAPA").map(a => a.qmsRelation.targetRecord.id), ...deviationCapas.flatMap(r => [r.sourceRecordId, r.targetRecordId]).filter(id => !deviationIds.includes(id))])];
   const capaRecords = capaIds.length ? await db.qmsRecord.findMany({
     where: { id: { in: capaIds } },
-    select: { id: true, businessCode: true, annulledBusinessCode: true, capa: { select: {
+    select: { id: true, businessCode: true, annulledBusinessCode: true, isActive: true, capa: { select: {
       status: true, effectivenessStatus: true, effectiveClosedAt: true, operationalClosedAt: true,
       plannedActions: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }], select: { description: true, responsible: true, plannedExecutionDate: true, responsibleUser: { select: { displayName: true } } } },
     } } },
@@ -45,6 +45,7 @@ export async function loadCapaPlanLinks(db: Db, findingIds: string[]): Promise<C
     if (!r.capa) continue;
     const dates = r.capa.plannedActions.map(a => iso(a.plannedExecutionDate)).filter((d): d is string => Boolean(d)).sort();
     capas.set(r.id, {
+      recordId: r.id, active: r.isActive,
       code: documentRecordCode(r) ?? "Sin código", status: r.capa.status, effectivenessStatus: r.capa.effectivenessStatus,
       responsible: [...new Set(r.capa.plannedActions.map(a => a.responsible?.trim() || a.responsibleUser?.displayName || "").filter(Boolean))],
       // La CAPA se completa con su última acción planificada.
@@ -55,10 +56,11 @@ export async function loadCapaPlanLinks(db: Db, findingIds: string[]): Promise<C
   }
   for (const a of attributions) {
     const target = a.qmsRelation.targetRecord, link = links[a.findingId];
-    const add = (id: string) => { const c = capas.get(id); if (c && !link.capas.some(x => x.code === c.code)) link.capas.push(c); };
+    // Sin duplicar por expediente (no por código: dos borradores pueden no tenerlo).
+    const add = (id: string) => { const c = capas.get(id); if (c && !link.capas.some(x => x.recordId === c.recordId)) link.capas.push(c); };
     if (target.recordType === "DEVIATION") {
       const code = documentRecordCode(target) ?? "Sin código";
-      if (!link.deviations.some(d => d.code === code)) link.deviations.push({ code, rootCause: target.deviation?.rootCause ?? null });
+      if (!link.deviations.some(d => d.recordId === target.id)) link.deviations.push({ recordId: target.id, code, rootCause: target.deviation?.rootCause ?? null, active: target.isActive });
       for (const id of capasOfDeviation.get(target.id) ?? []) add(id);
     } else if (target.recordType === "CAPA") add(target.id);
   }

@@ -1621,10 +1621,15 @@ Tercera entrega de R6 (D-134, D-135), con la plantilla «Anexo IV del PNT GC-00/
   - Abierta: CAPA abierta o en curso.
   - Pendiente: cerrada a falta de verificar la eficacia.
   - Cerrada: cerrada y eficaz, o sin eficacia aplicable.
-  - Una cancelada sale como «Cerrada (cancelada)» y una no eficaz como «Cerrada (no eficaz)». Las acciones propias usan la misma lista; las no aplicables salen como «No aplica».
+  - Una cancelada sale como «Cerrada (cancelada)» y una no eficaz como «Cerrada (no eficaz)». Una CAPA anulada sale como «Anulada», sin fecha de cierre; una desviación anulada no pide «Pendiente de investigación».
+  - Las acciones propias usan la misma lista; una pendiente de verificación sale como «Pendiente» y una que no procede, como «No procede».
   - Sin cierre, la fecha de cierre sale como «Pendiente».
+  - **Pendiente de confirmar con Calidad** (no lo fija el PNT): «Cerrada (no eficaz)», «Anulada», que la fecha prevista de una CAPA sea la de su última acción planificada y que una CAPA a falta de eficacia lleve el cierre como «Pendiente».
 - **Firmas:** elaborador, revisores y aprobadores del plan, con varias personas por función (`Audit.signatories`, documento CAPA_PLAN). Se registran al establecer la versión 00 y en cada seguimiento, y se guardan con la versión. Al no ajustar el texto la casilla de firmas de la plantilla, van en una sola línea, separadas por función.
 - **Cada versión congela sus vínculos** (desviaciones y CAPA de cada hallazgo) en su foto. Las fotos anteriores no los tienen y generan los bloques con los datos del hallazgo.
-- Las fechas se escriben como fechas de Excel, porque así las define la plantilla.
+- Las fechas de la tabla se escriben como fechas de Excel, porque así las define la plantilla; las de la cabecera, como texto dd/mm/aaaa.
+- El plan muestra la causa raíz de la desviación tal como esté registrada, también mientras la desviación sigue abierta: puede ser todavía provisional. Lo valida quien revisa y aprueba el plan.
+- El plan, documento de la auditoría, incluye datos de las desviaciones y CAPA vinculadas (códigos, causa raíz, acciones y responsables), como ya hacía el CAPA plan anterior con sus códigos. Se descarga con el permiso de Auditorías.
+- Con el permiso de seguimiento del plan se pueden cambiar sus firmantes al registrar un seguimiento; solo cambian las funciones que el formulario envía.
 - Sin cambios de permisos. La migración `20261114000100_audit_finding_root_cause` añade el campo y su política de captura B2 (contrato `B2_AUDIT_FINDING_ROOT_CAUSE`). No es validación GMP.
 

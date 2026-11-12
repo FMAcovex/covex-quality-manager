@@ -13,7 +13,7 @@ import { auditReportInclude, auditReportEvent, lockReportAudit, snapshotAudit } 
 import { generateAuditCapaPlan } from "./documents/generators";
 import { auditTemplateInForce, auditTemplateReferenceDate } from "./documents/template-choice";
 import { loadCapaPlanLinks } from "./capa-plan-links";
-import { capaPlanSignatoryFields, readSignatories, replaceDocumentSignatories, signatoriesFromForm } from "./signatories";
+import { capaPlanSignatoryFields, mergeSignatoryRoles, readSignatories, replaceDocumentSignatories, signatoriesFromForm, type SignatoryRole } from "./signatories";
 import { CapaPlanStaleError, capaPlanToday, capaPlanFileName, capaPlanFingerprint, capaPlanFollowupSchema, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
 import { withBytes } from "@/lib/db-binary-omit";
 
@@ -66,17 +66,20 @@ export async function issueCapaPlanVersion(tx: Tx, auditId: string, input: CapaP
 function capaPlanSignatoriesInput(raw: unknown) {
   const values = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
   if (!Object.keys(capaPlanSignatoryFields).some(k => k in values)) return null;
-  const text = Object.fromEntries(Object.keys(capaPlanSignatoryFields).map(k => [k, typeof values[k] === "string" ? values[k] as string : ""]));
-  const { list, errors } = signatoriesFromForm(text, capaPlanSignatoryFields, "CAPA_PLAN");
+  // Solo cambian las funciones que el formulario envía (revisión M4).
+  const sent = Object.fromEntries(Object.entries(capaPlanSignatoryFields).filter(([k]) => k in values)) as Record<string, SignatoryRole>;
+  const text = Object.fromEntries(Object.keys(sent).map(k => [k, typeof values[k] === "string" ? values[k] as string : ""]));
+  const { list, errors } = signatoriesFromForm(text, sent, "CAPA_PLAN");
   if (Object.keys(errors).length) throw new AuditValidationError(errors);
-  return { list, text };
+  return { list, text, roles: Object.values(sent) };
 }
 async function saveCapaPlanSignatories(tx: Tx, audit: { id: string; qmsRecordId: string; signatories: Prisma.JsonValue }, input: ReturnType<typeof capaPlanSignatoriesInput>, actor: string, reason: string) {
   if (!input) return;
   const before = readSignatories(audit.signatories).filter(s => s.document === "CAPA_PLAN");
-  if (JSON.stringify(before) === JSON.stringify(input.list)) return;
-  await tx.audit.update({ where: { id: audit.id }, data: { signatories: json(replaceDocumentSignatories(audit.signatories, "CAPA_PLAN", input.list)), updatedByText: actor } });
-  await auditReportEvent(tx, audit.qmsRecordId, actor, "audit.capaPlan.signatories", before, input.list, reason);
+  const next = mergeSignatoryRoles(before, input.list, input.roles);
+  if (JSON.stringify(before) === JSON.stringify(next)) return;
+  await tx.audit.update({ where: { id: audit.id }, data: { signatories: json(replaceDocumentSignatories(audit.signatories, "CAPA_PLAN", next)), updatedByText: actor } });
+  await auditReportEvent(tx, audit.qmsRecordId, actor, "audit.capaPlan.signatories", before, next, reason);
 }
 /** Versión 00: fija las fechas del CAPA plan y congela lo que haya, aunque esté incompleto. */
 export async function establishCapaPlan(auditId: string, raw: unknown) {
@@ -148,7 +151,8 @@ export async function recordCapaPlanFollowup(auditId: string, raw: Record<string
       if (problem) throw new Error(`${before.reference}: ${problem}`);
       updates.push({ kind: "finding", id: row.id, reference: before.reference, before: current, data });
     }
-    const signersChanged = Boolean(signers) && JSON.stringify(readSignatories(audit.signatories).filter(s => s.document === "CAPA_PLAN")) !== JSON.stringify(signers!.list);
+    const currentSigners = readSignatories(audit.signatories).filter(s => s.document === "CAPA_PLAN");
+    const signersChanged = Boolean(signers) && JSON.stringify(currentSigners) !== JSON.stringify(mergeSignatoryRoles(currentSigners, signers!.list, signers!.roles));
     if (!updates.length && !v.observations.trim() && !signersChanged) throw new Error("No hay cambios ni observaciones que registrar.");
     const typed = (u: Update) => ({ status: String(u.before.status), closedAt: (u.before.closedAt as string | null) ?? null, evidence: (u.before.evidence as string | null) ?? null });
     const after = (u: Update) => ({ status: String(u.data.status), closedAt: (u.data.closedAt as string | null) ?? null, evidence: (u.data.evidence as string | null) ?? null });

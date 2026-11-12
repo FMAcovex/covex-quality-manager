@@ -21,7 +21,11 @@ const rowsOf = (sheet: string) => [...sheet.matchAll(/<row\b[^>]*\/>|<row\b[^>]*
 function renumber(row: string, from: number, to: number) {
   return row.replace(new RegExp(`(<row\\b[^>]*\\br=")${from}(")`), `$1${to}$2`).replace(new RegExp(`(<c\\b[^>]*\\br="[A-Z]+)${from}(")`, "g"), `$1${to}$2`);
 }
-const withHeight = (row: string, height: number) => row.replace(/\s(?:ht|customHeight)="[^"]*"/g, "").replace(/^<row\b/, `<row ht="${height}" customHeight="1"`);
+/** Excel no admite filas de más de 409 pt. */
+const withHeight = (row: string, height: number) => row.replace(/\s(?:ht|customHeight)="[^"]*"/g, "").replace(/^<row\b/, `<row ht="${Math.min(409, height)}" customHeight="1"`);
+/** Sin caracteres de control (XML inválido) y sin pasar del máximo de una casilla de Excel. */
+const clean = (v: string) => v.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").slice(0, 32767);
+const put = (xml: string, ref: string, value: string | number) => setXlsxCell(xml, ref, typeof value === "string" ? clean(value) : value);
 /** Líneas que ocupa un texto en una columna de `chars` caracteres de ancho (aproximado, para la altura de fila). */
 function lines(text: string, chars: number) {
   return text ? text.split("\n").reduce((n, line) => n + Math.max(1, Math.ceil(line.length / chars)), 0) : 1;
@@ -58,7 +62,7 @@ export function generateAnnexIVCapaPlan(template: Buffer, s: AuditReportSnapshot
   let headerXml = top;
   for (const [ref, value] of Object.entries(header)) {
     if (!new RegExp(`<c\\b[^>]*\\br="${ref}"`).test(headerXml)) throw new Error(`Plan CAPA (Anexo IV): falta la casilla ${ref}.`);
-    headerXml = setXlsxCell(headerXml, ref, value);
+    headerXml = put(headerXml, ref, value);
   }
 
   const blocks: CapaPlanBlock[] = capaPlanBlocks(s.audit.findings as never, s.capaPlan);
@@ -74,11 +78,12 @@ export function generateAnnexIVCapaPlan(template: Buffer, s: AuditReportSnapshot
       let xml = renumber(data, 8, at);
       const own = Math.max(lines(r.responsible, 22), lines(r.code, 25));
       xml = withHeight(xml, Math.max(48, Math.ceil((shared * LINE) / k), own * LINE));
+      // En las filas siguientes, A–E quedan bajo la combinación: se vacían.
       const cells: Record<string, string> = i === 0
         ? { A: block.reference, B: block.criticality, C: block.description, D: block.deviations, E: block.rootCause }
-        : {};
+        : { A: "", B: "", C: "", D: "", E: "" };
       Object.assign(cells, { F: r.code, G: r.responsible, H: r.plannedDate, I: r.status, J: r.closedAt });
-      for (const [col, value] of Object.entries(cells)) xml = setXlsxCell(xml, `${col}${at}`, col === "H" || col === "J" ? excelDate(value) : value);
+      for (const [col, value] of Object.entries(cells)) xml = put(xml, `${col}${at}`, col === "H" || col === "J" ? excelDate(value) : value);
       generated.push(xml); iRefs.push(`I${at}`); at++;
     });
     bRefs.push(`B${first}`);
@@ -87,7 +92,7 @@ export function generateAnnexIVCapaPlan(template: Buffer, s: AuditReportSnapshot
     merges.push(`B${at}:G${at}`, `H${at}:J${at}`); at++;
     let valueRow = renumber(values, 10, at);
     valueRow = withHeight(valueRow, Math.max(53.25, (Math.max(lines(block.actions, 170), lines(block.evidence, 65)) + 1) * LINE));
-    valueRow = setXlsxCell(setXlsxCell(valueRow, `B${at}`, block.actions), `H${at}`, block.evidence);
+    valueRow = put(put(valueRow, `B${at}`, block.actions), `H${at}`, block.evidence);
     generated.push(valueRow);
     merges.push(`B${at}:G${at}`, `H${at}:J${at}`, `A${first}:A${at}`); at++;
   }
@@ -96,14 +101,17 @@ export function generateAnnexIVCapaPlan(template: Buffer, s: AuditReportSnapshot
     const people = signatories.filter(x => x.role === role).map(x => x.position ? `${x.name} (${x.position})` : x.name);
     return `${signatoryRoleLabels[role]}: ${people.join("; ")}`;
   }).join("     ·     ");
-  const footer = [renumber(gap, 17, at), renumber(signTitle, 18, at + 1), setXlsxCell(renumber(signs, 19, at + 2), `A${at + 2}`, signText)];
+  const footer = [renumber(gap, 17, at), renumber(signTitle, 18, at + 1), put(renumber(signs, 19, at + 2), `A${at + 2}`, signText)];
   const last = at + 2;
   merges.push(`A${at + 1}:J${at + 1}`, `A${at + 2}:J${at + 2}`);
-  sheet = sheet.replace(/<sheetData>[\s\S]*<\/sheetData>/, `<sheetData>${headerXml}${generated.join("")}${footer.join("")}</sheetData>`);
+  // Se corta y pega en vez de usar replace con texto: un «$» del usuario se interpretaría como patrón.
+  const dataStart = sheet.indexOf("<sheetData>"), dataEnd = sheet.lastIndexOf("</sheetData>");
+  if (dataStart < 0 || dataEnd < 0) throw new Error("Plan CAPA (Anexo IV): falta la tabla de la hoja.");
+  sheet = sheet.slice(0, dataStart) + `<sheetData>${headerXml}${generated.join("")}${footer.join("")}` + sheet.slice(dataEnd);
   // Combinaciones de la cabecera (filas 1–7) más las generadas.
   const kept = [...sheet.matchAll(/<mergeCell\b[^>]*\bref="([A-Z]+)(\d+):([A-Z]+)(\d+)"[^>]*\/>/g)].filter(m => Number(m[4]) < 8).map(m => m[1] + m[2] + ":" + m[3] + m[4]);
   const all = [...kept, ...merges];
-  sheet = sheet.replace(/<mergeCells\b[^>]*>[\s\S]*?<\/mergeCells>/, `<mergeCells count="${all.length}">${all.map(r => `<mergeCell ref="${r}"/>`).join("")}</mergeCells>`);
+  sheet = sheet.replace(/<mergeCells\b[^>]*>[\s\S]*?<\/mergeCells>/, () => `<mergeCells count="${all.length}">${all.map(r => `<mergeCell ref="${r}"/>`).join("")}</mergeCells>`);
   // Listas desplegables de «Tipo / criticidad» y «Estado» en las filas generadas.
   sheet = sheet.replace(/(<dataValidation\b[^>]*\bsqref=")([^"]*)("[^>]*>\s*<formula1>"Crítica,Mayor,Menor,Recomendación"<\/formula1>)/, `$1${bRefs.join(" ")}$3`)
     .replace(/(<dataValidation\b[^>]*\bsqref=")([^"]*)("[^>]*>\s*<formula1>"Abierta,Pendiente,Cerrada"<\/formula1>)/, `$1${iRefs.join(" ")}$3`);

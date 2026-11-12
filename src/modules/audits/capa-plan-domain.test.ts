@@ -82,3 +82,17 @@ describe("Puntos menores R5C (seguimiento y fechas)", () => {
     expect(capaPlanToday(new Date("2026-10-19T10:00:00.000Z"))).toBe("2026-10-19");
   });
 });
+
+describe("D-136 · huella del plan CAPA", () => {
+  it("revisión I4: cambia con los vínculos y firmantes del plan; las fotos anteriores conservan su huella", async () => {
+    const { capaPlanFingerprint } = await import("./capa-plan-domain");
+    const base = { schemaVersion: 1, templates: [], audit: { capaPlanDate: null, signatories: [], findings: [{ isActive: true, reference: "OBS 01", findingType: "FINDING", criticality: "MAJOR", description: "d", treatment: null, treatmentStatus: "OPEN", closedAt: null, evidence: null, evidenceReference: null, verificationComment: null, actions: [], relations: [] }] } } as never;
+    const withNullRoot = JSON.parse(JSON.stringify(base)); withNullRoot.audit.findings[0].rootCause = null;
+    expect(capaPlanFingerprint(withNullRoot)).toBe(capaPlanFingerprint(base));
+    const link = (effectivenessStatus: string) => ({ ...JSON.parse(JSON.stringify(base)), capaPlan: { f1: { deviations: [], capas: [{ code: "AC/1", status: "CLOSED", effectivenessStatus, responsible: [], plannedDate: null, closedAt: null, actions: [] }] } } });
+    expect(capaPlanFingerprint(link("PENDING"))).not.toBe(capaPlanFingerprint(link("CONFORMING")));
+    const signed = JSON.parse(JSON.stringify(base)); signed.audit.signatories = [{ document: "CAPA_PLAN", role: "APPROVED", name: "Aprueba", position: "" }];
+    expect(capaPlanFingerprint(signed)).not.toBe(capaPlanFingerprint(base));
+  });
+});
+

@@ -1,4 +1,5 @@
 import type { CapaPlanLinks } from "./capa-plan-annex";
+import { loadCapaPlanLinks } from "./capa-plan-links";
 import { Prisma, DocumentType } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -104,7 +105,7 @@ export async function auditClosureContext(tx: Tx, a: ReportAudit): Promise<Closu
   const capaPlan = await tx.auditCapaPlanVersion.findMany({ where: { auditId: a.id }, orderBy: { sequenceNumber: "desc" }, take: 1, select: { contentFingerprint: true } });
   const capaPlanVersions = await tx.auditCapaPlanVersion.count({ where: { auditId: a.id } });
   // D-110: aviso si la última versión del CAPA plan no refleja hallazgos, acciones y vínculos actuales.
-  const capaPlanOutdated = Boolean(capaPlan[0]) && capaPlan[0].contentFingerprint !== capaPlanFingerprint(snapshotAudit(a, []));
+  const capaPlanOutdated = Boolean(capaPlan[0]) && capaPlan[0].contentFingerprint !== capaPlanFingerprint(snapshotAudit(a, [], await loadCapaPlanLinks(tx, a.findings.map(f => f.id))));
   return { ...a, supplierResponseReceivedAt: a.supplierResponseReceivedAt ?? a.qmsRecord.generatedDocuments.find(d => d.documentType === "AUDIT_RESPONSE")?.generatedAt ?? null, isActive: a.qmsRecord.isActive, reportIssued: versions.length > 0, primaryDocument: a.qmsRecord.generatedDocuments.some(d => d.documentType === "AUDIT_RECEIVED"), signedPdf: Boolean(versions[0]?.documents.some(d => d.kind === "SIGNED_PDF")), capaPlanVersions, capaPlanOutdated };
 }
 export async function closeAudit(id: string, raw: unknown) {

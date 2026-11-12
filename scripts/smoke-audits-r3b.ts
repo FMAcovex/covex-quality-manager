@@ -71,15 +71,18 @@ async function main() {
   // D-136 (R6): vínculos del plan CAPA. Desviación del hallazgo con su causa raíz, CAPA atribuida y CAPA de la desviación.
   {const q=await prisma.qmsRecord.create({data:{recordType:"CAPA",businessCode:`${marker}-CAPA-DEV`}}); records.push(q.id);
    const c=await prisma.capa.create({data:{qmsRecordId:q.id,status:"CLOSED",effectivenessStatus:"PENDING",operationalClosedAt:new Date("2096-11-20"),defectDescription:"Ficticio",actionType:"PREVENTIVE"}});
-   await prisma.capaPlannedAction.createMany({data:[{capaId:c.id,description:"Acción vía desviación",responsible:"RRA",plannedExecutionDate:new Date("2096-11-10"),sortOrder:0},{capaId:c.id,description:"Segunda acción",responsible:"JFV",plannedExecutionDate:new Date("2096-11-15"),sortOrder:1}]});
+   await prisma.capaPlannedAction.createMany({data:[{capaId:c.id,description:"Acción vía desviación",responsible:"Resp. Ficticio B",plannedExecutionDate:new Date("2096-11-10"),sortOrder:0},{capaId:c.id,description:"Segunda acción",responsible:"Resp. Ficticio C",plannedExecutionDate:new Date("2096-11-15"),sortOrder:1}]});
    await prisma.$transaction(tx=>createQmsRelation(tx,{sourceRecordId:deviation.id,targetRecordId:q.id}));
    await prisma.deviation.update({where:{qmsRecordId:deviation.id},data:{rootCause:"Causa raíz ficticia"}});
    const links=await loadCapaPlanLinks(prisma,[obs.id,rk.id]);
-   assert.deepEqual(links[obs.id].deviations,[{code:`${marker}-DEVIATION-OPEN`,rootCause:"Causa raíz ficticia"}]);
+   assert.deepEqual(links[obs.id].deviations.map(d=>[d.code,d.rootCause,d.active]),[[`${marker}-DEVIATION-OPEN`,"Causa raíz ficticia",true]]);
    assert.deepEqual(links[obs.id].capas.map(x=>x.code).sort(),[`${marker}-CAPA-DEV`,`${marker}-CAPA-OPEN`].sort());
    const viaDeviation=links[obs.id].capas.find(x=>x.code===`${marker}-CAPA-DEV`)!;
-   assert.deepEqual([viaDeviation.responsible,viaDeviation.plannedDate,viaDeviation.closedAt,viaDeviation.actions],[["RRA","JFV"],"2096-11-15","2096-11-20",["Acción vía desviación","Segunda acción"]]);
-   assert.deepEqual([links[rk.id].deviations,links[rk.id].capas.map(x=>x.code)],[[],[`${marker}-CAPA-OPEN`]]);}
+   assert.deepEqual([viaDeviation.responsible,viaDeviation.plannedDate,viaDeviation.closedAt,viaDeviation.actions],[["Resp. Ficticio B","Resp. Ficticio C"],"2096-11-15","2096-11-20",["Acción vía desviación","Segunda acción"]]);
+   assert.deepEqual([links[rk.id].deviations.length,links[rk.id].capas.map(x=>x.code)],[0,[`${marker}-CAPA-OPEN`]]);
+   // Revisión I3: dos CAPA en borrador sin código vinculadas al mismo hallazgo salen las dos.
+   for(let i=0;i<2;i++){const q=await prisma.qmsRecord.create({data:{recordType:"CAPA"}});records.push(q.id);await prisma.capa.create({data:{qmsRecordId:q.id,status:"DRAFT",defectDescription:"Ficticio",actionType:"CORRECTIVE"}});await linkAuditFinding(audit.id,rk.id,q.id,actor);}
+   assert.deepEqual((await loadCapaPlanLinks(prisma,[rk.id]))[rk.id].capas.map(x=>x.code),[`${marker}-CAPA-OPEN`,"Sin código","Sin código"]);}
   await assert.rejects(linkAuditFinding(audit.id,obs.id,capa.id,actor),/ya está/);
   await assert.rejects(linkAuditFinding(audit.id,foreign.id,capa.id,actor),/pertenece/);
   // R5B1 (D-110): un borrador de CAPA se puede atribuir; se retira para no alterar el resto del recorrido.

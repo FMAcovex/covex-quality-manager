@@ -8,10 +8,12 @@ import type { AuditScenario } from "@prisma/client";
 
 /** Una CAPA vinculada al hallazgo directamente o a través de su desviación. */
 export type CapaPlanCapa = {
+  /** Id del expediente (para no confundir dos CAPA sin código) y si está activo (no anulado). */
+  recordId?: string; active?: boolean;
   code: string; status: string; effectivenessStatus: string;
   responsible: string[]; plannedDate: string | null; closedAt: string | null; actions: string[];
 };
-export type CapaPlanFindingLinks = { deviations: { code: string; rootCause: string | null }[]; capas: CapaPlanCapa[] };
+export type CapaPlanFindingLinks = { deviations: { recordId?: string; code: string; rootCause: string | null; active?: boolean }[]; capas: CapaPlanCapa[] };
 /** Vínculos de cada hallazgo, por su id. Se congelan en la foto de cada versión del plan CAPA. */
 export type CapaPlanLinks = Record<string, CapaPlanFindingLinks>;
 
@@ -42,7 +44,9 @@ export function capaPlanCriticality(f: { findingType: string; criticality: strin
  * abierta o en curso; cerrada a falta de verificar la eficacia; cerrada y eficaz (o sin eficacia aplicable).
  * Una cancelada sale como «Cerrada (cancelada)» y una no eficaz como «Cerrada (no eficaz)».
  */
-export function capaPlanCapaStatus(c: { status: string; effectivenessStatus: string }) {
+export function capaPlanCapaStatus(c: { status: string; effectivenessStatus: string; active?: boolean }) {
+  // Una CAPA anulada (administrativamente) no es abierta ni cerrada.
+  if (c.active === false) return "Anulada";
   if (c.status === "CANCELLED") return "Cerrada (cancelada)";
   if (c.status !== "CLOSED") return "Abierta";
   if (c.effectivenessStatus === "PENDING") return "Pendiente";
@@ -51,10 +55,10 @@ export function capaPlanCapaStatus(c: { status: string; effectivenessStatus: str
 }
 /** Estado de una acción propia de la auditoría con la misma lista. */
 export function capaPlanActionStatus(status: string) {
-  return ({ OPEN: "Abierta", IN_PROGRESS: "Abierta", PENDING_VERIFICATION: "Pendiente", CLOSED: "Cerrada", NOT_APPLICABLE: "No aplica" } as Record<string, string>)[status] ?? status;
+  return ({ OPEN: "Abierta", IN_PROGRESS: "Abierta", PENDING_VERIFICATION: "Pendiente", CLOSED: "Cerrada", NOT_APPLICABLE: "No procede" } as Record<string, string>)[status] ?? status;
 }
 const dmy = (v: string | null | undefined) => v ? v.slice(0, 10).split("-").reverse().join("/") : "";
-const terminal = (s: string) => s.startsWith("Cerrada") || s === "No aplica";
+const terminal = (s: string) => s.startsWith("Cerrada") || s === "No procede";
 
 /**
  * Un bloque por hallazgo activo. Filas de datos: una por CAPA (código, responsables, fecha prevista, estado y
@@ -67,10 +71,11 @@ export function capaPlanBlocks(findings: Finding[], links: CapaPlanLinks | undef
     const link = links?.[f.id] ?? { deviations: [], capas: [] };
     const actions = f.actions.filter(a => a.isActive);
     const rootCause = link.deviations.length
-      ? link.deviations.map(d => d.rootCause?.trim() || `Pendiente de investigación (${d.code})`).join("\n")
+      // Una desviación anulada no pide investigación.
+      ? link.deviations.map(d => d.rootCause?.trim() || (d.active === false ? "" : `Pendiente de investigación (${d.code})`)).filter(Boolean).join("\n")
       : f.rootCause?.trim() ?? "";
     const rows: CapaPlanRow[] = [
-      ...link.capas.map(c => { const status = capaPlanCapaStatus(c); return { code: c.code, responsible: c.responsible.join("\n"), plannedDate: dmy(c.plannedDate), status, closedAt: terminal(status) ? dmy(c.closedAt) : "Pendiente" }; }),
+      ...link.capas.map(c => { const status = capaPlanCapaStatus(c); return { code: c.code, responsible: c.responsible.join("\n"), plannedDate: dmy(c.plannedDate), status, closedAt: status === "Anulada" ? "" : terminal(status) ? dmy(c.closedAt) : "Pendiente" }; }),
       ...actions.map(a => { const status = capaPlanActionStatus(a.status); return { code: "", responsible: a.responsible ?? "", plannedDate: dmy(a.targetDate), status, closedAt: terminal(status) ? dmy(a.closedAt) : "Pendiente" }; }),
     ];
     if (!rows.length) { const status = capaPlanActionStatus(f.treatmentStatus); rows.push({ code: "", responsible: "", plannedDate: "", status, closedAt: terminal(status) ? dmy(f.closedAt) : "Pendiente" }); }
