@@ -79,6 +79,16 @@ describe("D-136 · Anexo IV en Excel", () => {
     expect(cell(sheet, "B12")).toContain("Justificación libre");
     expect(cell(sheet, "H12")).toBe("REG-1");
   });
+  it("las casillas de fecha de todas las filas de datos conservan el formato de la fila de la plantilla (H8 y J8)", () => {
+    // El formato de «Fecha prevista» se corrige en la plantilla (12/11/2026): el generador no debe poner un estilo propio.
+    const entries = readZip(syntheticCapaPlanAnnexIV());
+    const template = getZipEntryText(entries, "xl/worksheets/sheet1.xml").replace(/<c r="H8"([^>]*?)\bs="\d+"/, '<c r="H8"$1s="41"').replace(/<c r="J8"([^>]*?)\bs="\d+"/, '<c r="J8"$1s="42"');
+    updateZipEntry(entries, "xl/worksheets/sheet1.xml", template);
+    const out = sheetOf(generateAuditCapaPlan(writeZip(entries), snapshot(links), 1));
+    const style = (ref: string) => out.match(new RegExp(`<c r="${ref}"[^>]*?\\bs="(\\d+)"`))?.[1];
+    expect(["H8", "H9", "H10", "H13", "H16", "H19"].map(style)).toEqual(["41", "41", "41", "41", "41", "41"]);
+    expect(["J8", "J9", "J10", "J13", "J16", "J19"].map(style)).toEqual(["42", "42", "42", "42", "42", "42"]);
+  });
   it("un bloque por hallazgo activo, firmas desplazadas y listas desplegables en las filas nuevas", () => {
     // OBS 01: 3+2 filas (8–12); OBS 02: 13–15; OBS 03: 16–18; Rk 01: 19–21; separación 22, FIRMAS 23, firmas 24.
     expect(["A13", "A16", "A19"].map(r => cell(sheet, r))).toEqual(["OBS 02", "OBS 03", "Rk 01"]);
