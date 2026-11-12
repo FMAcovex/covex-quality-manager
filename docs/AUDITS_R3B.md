@@ -18,7 +18,7 @@ Situación de la auditoría: DRAFT → Borrador; CLOSED técnico → Cerrada; pl
 
 ## Relaciones y atribución
 
-Matriz ampliada exclusivamente con AUDIT GENERATES DEVIATION/CAPA. No existen filas inversas de creación. Los selectores de origen CAPA admiten Auditoría creando únicamente la dirección canónica. Solo se vinculan expedientes existentes, operativos y activos; el buscador compartido selecciona UUID, permite atribuir un destino ya vinculado a otro hallazgo y excluye los atribuidos al hallazgo actual. Cliente/autoridad sin código se buscan desde CAPA por objeto/referencia; su etiqueta no se convierte en código QMS.
+Matriz ampliada exclusivamente con AUDIT GENERATES DEVIATION/CAPA. No existen filas inversas de creación. Los selectores de origen CAPA admiten Auditoría creando únicamente la dirección canónica. Solo se vinculan expedientes existentes, operativos y activos; el buscador compartido selecciona UUID, permite atribuir un destino ya vinculado a otro hallazgo y excluye los atribuidos al hallazgo actual. Cliente/autoridad sin código (D-137: el código libre es opcional) se buscan desde CAPA por objeto/referencia; su etiqueta no se convierte en código QMS.
 
 Una QmsRelation por par; varias AuditFindingRelation únicas por findingId/qmsRelationId. Retirar atribución exige actor/motivo y conserva QmsRelation. Desvincular globalmente exige solicitud explícita y ausencia de atribuciones activas, incluidas las de hallazgos retirados. Retirar hallazgo no retira sus relaciones ni seguimientos. Revincular reactiva los mismos UUID. Los controles se aplican también en el servicio transversal y la sincronización de orígenes CAPA.
 

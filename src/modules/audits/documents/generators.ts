@@ -1,7 +1,13 @@
 import { readZip, getZipEntryText, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import { applyValueMarks, escapeXml, markValue, markValueLines, transformWordCell, setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
-import { auditDate, auditScenarioLabels } from "../domain";
+import type { AuditScenario } from "@prisma/client";
+import { auditDate } from "../domain";
+/** Rótulos de escenario de la A4.03 anterior a GC-00/033/04, como se generaba entonces (revisión de D-137). */
+const a4_03ScenarioLabels: Record<AuditScenario, string> = {
+  INTERNAL_COVEX: "Interna · personal COVEX", INTERNAL_CONTRACTED: "Interna · auditor externo contratado",
+  SUPPLIER: "COVEX a proveedor/tercero", CLIENT: "Cliente a COVEX", AUTHORITY: "Inspección de autoridad/organismo",
+};
 import { findingTypeLabels, criticalityLabels, actionStatusLabels } from "../finding-domain";
 import type { AuditReportSnapshot } from "../report-service";
 import { documentRecordCode } from "@/lib/qms/document-code";
@@ -318,7 +324,7 @@ export function generateAuditCapaPlan(template: Buffer, s: AuditReportSnapshot, 
   // Normalize empty cells before using the shared setter: a self-closing cell
   // must not consume the following labelled cell as its closing block.
   let sheet=getZipEntryText(entries,"xl/worksheets/sheet1.xml").replace(/<c\b([^>]*?)\/>/g,'<c$1></c>');
-  const values: Record<string,string> = { C5:a.qmsRecord.businessCode ?? a.externalReference ?? "", F5:a.scenario?auditScenarioLabels[a.scenario]:"", I5:a.performedDate?auditDate(a.performedDate):"", C6:a.auditedEntityName ?? a.departments.filter(d=>d.isActive).map(d=>d.departmentNameSnapshot).join("; "), F6:a.title ?? "", I6:a.reportDate?auditDate(a.reportDate):"", C7:a.auditingEntityName ?? "", F7:a.referenceText ?? a.externalReference ?? "", I7:a.capaPlanDate?auditDate(a.capaPlanDate):"", K7:sequence===null?"Estado actual":String(sequence).padStart(2,"0") };
+  const values: Record<string,string> = { C5:a.qmsRecord.businessCode ?? a.externalReference ?? "", F5:a.scenario?a4_03ScenarioLabels[a.scenario]:"", I5:a.performedDate?auditDate(a.performedDate):"", C6:a.auditedEntityName ?? a.departments.filter(d=>d.isActive).map(d=>d.departmentNameSnapshot).join("; "), F6:a.title ?? "", I6:a.reportDate?auditDate(a.reportDate):"", C7:a.auditingEntityName ?? "", F7:a.referenceText ?? a.externalReference ?? "", I7:a.capaPlanDate?auditDate(a.capaPlanDate):"", K7:sequence===null?"Estado actual":String(sequence).padStart(2,"0") };
   for(const [ref,value] of Object.entries(values)) sheet=writeCapaCell(sheet,ref,value);
   const rows=auditCapaPlanRows(s), count=Math.max(10,rows.length), delta=count-10;
   const pattern=/<row\b[^>]*\br="11"[^>]*>[\s\S]*?<\/row>/, templateRow=sheet.match(pattern)?.[0];

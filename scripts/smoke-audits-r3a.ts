@@ -7,6 +7,7 @@ import { changeAdministrativeStatus } from "../src/lib/qms/administrative-status
 import { suggestOperationalBusinessCode } from "../src/lib/qms/business-code";
 import { qmsRecordHref } from "../src/lib/qms/record-links";
 import { seedAuditDemo } from "../src/modules/audits/seed-demo";
+import { addPlanEntry, createAnnualPlan } from "../src/modules/audits/plans";
 
 if (process.env.APP_ENV !== "test") throw new Error("Ejecuta este smoke exclusivamente con APP_ENV=test en una BD aislada.");
 const marker = `R3A-${randomUUID()}`, records: string[] = [];
@@ -59,18 +60,47 @@ async function main() {
     await changeAdministrativeStatus(received.qmsRecordId,"ANNUL","Anulación sin código","Smoke");
     await changeAdministrativeStatus(received.qmsRecordId,"REACTIVATE","Reactivar sin código","Smoke");
     // D-137 (R6): código libre, el del informe del cliente o el expediente de la agencia; editable y en el historial.
-    const freeCode=`${scenario==="CLIENT"?"CLI":"AEMPS"} ${marker}/2097`;
+    const freeCode=`${scenario==="CLIENT"?"CLI":"AGENCIA"} ${marker}/2097`;
     const coded=await saveAudit({...auditDefaults(received),businessCode:`  ${freeCode}  `},received.id);
     assert.equal(coded.qmsRecord.businessCode,freeCode);
+    // Revisión m3: corregir un código ya asignado exige motivo.
+    await assert.rejects(saveAudit({...auditDefaults(coded),businessCode:`${freeCode}-B`},received.id),/motivo/);
     const recoded=await saveAudit({...auditDefaults(coded),businessCode:`${freeCode}-B`,changeReason:"Código corregido"},received.id);
     assert.equal(recoded.qmsRecord.businessCode,`${freeCode}-B`);
     assert(await prisma.changeHistory.count({where:{qmsRecordId:received.qmsRecordId,fieldPath:"businessCode"}})>=2);
     const twin=await create({...supplier,scenario,entityCode:"",externalReference:`REF2-${marker}`,businessCode:""});
     await assert.rejects(saveAudit({...auditDefaults(twin),businessCode:`${freeCode}-B`},twin.id),/ya lo usa otra auditoría/);
     await assert.rejects(saveAudit({...auditDefaults(twin),businessCode:"Código\u0007raro"},twin.id),/caracteres/);
+    // Revisión m4: espacios internos unificados y sin caracteres de formato invisibles.
+    assert.equal((await saveAudit({...auditDefaults(twin),businessCode:`ESP  ${marker}   ${scenario}`},twin.id)).qmsRecord.businessCode,`ESP ${marker} ${scenario}`);
+    await assert.rejects(saveAudit({...auditDefaults(await prisma.audit.findUniqueOrThrow({where:{id:twin.id},include:{qmsRecord:true,departments:true,participants:true}})),businessCode:"INV\u200BISIBLE",changeReason:"Prueba"},twin.id),/caracteres/);
+    // Revisión m7: un código libre que empieza por «DEMO-» no se pierde al editar el borrador.
+    const demoDraft=await create({...supplier,scenario,status:"DRAFT",entityCode:"",externalReference:`DEMO-${marker}`,businessCode:`DEMO-${marker}-${scenario}`});
+    assert.equal(auditDefaults(demoDraft).businessCode,`DEMO-${marker}-${scenario}`);
+    // Revisión I-3: los formatos de las series de COVEX quedan reservados.
+    await assert.rejects(saveAudit({...auditDefaults(recoded),businessCode:`AI/GC-00/99/2097`,changeReason:"Prueba"},received.id),/reservado/);
+    // Revisión I-2: dos guardados a la vez con el mismo código: uno se guarda y el otro recibe el aviso en el campo.
+    const [p1,p2]=await Promise.all([create({...supplier,scenario,entityCode:"",externalReference:`P1-${marker}`,businessCode:""}),create({...supplier,scenario,entityCode:"",externalReference:`P2-${marker}`,businessCode:""})]);
+    const race=await Promise.allSettled([saveAudit({...auditDefaults(p1),businessCode:`RACE ${marker} ${scenario}`},p1.id),saveAudit({...auditDefaults(p2),businessCode:`RACE ${marker} ${scenario}`},p2.id)]);
+    assert.equal(race.filter(r=>r.status==="fulfilled").length,1);
+    const lost=race.find(r=>r.status==="rejected") as PromiseRejectedResult;
+    assert.match(String(lost.reason?.message),/ya lo usa otra auditoría/);assert.equal((lost.reason as {fields?:Record<string,string>}).fields?.businessCode,"Ese código ya lo usa otra auditoría.");
     // GC-00/034/05 §3: las auditorías e inspecciones recibidas no forman parte del programa anual.
-    await assert.rejects(saveAudit({...auditDefaults(twin),planningStatus:"PLANNED",planEntryId:randomUUID()},twin.id),/programa anual/);
+    await assert.rejects(saveAudit({...auditDefaults(await prisma.audit.findUniqueOrThrow({where:{id:twin.id},include:{qmsRecord:true,departments:true,participants:true}})),planningStatus:"PLANNED",planEntryId:randomUUID()},twin.id),/programa anual/);
   }
+  // Revisión I-1: un borrador incluido en el plan como proveedor no conserva la entrada al pasar a cliente.
+  {const occupied=await prisma.auditAnnualPlan.findMany({where:{auditType:"EXTERNAL"},select:{year:true}});
+   const year=Array.from({length:101},(_,i)=>2100-i).find(y=>!occupied.some(p=>p.year===y))!;
+   const plan=await createAnnualPlan({year,auditType:"EXTERNAL",title:`Plan ${marker}`,notes:"",actor:"Smoke"});
+   const {entry}=await addPlanEntry(plan.id,{subject:"Entrada ficticia",targetName:"Entidad",departmentId:"",plannedDate:"",notes:"",actor:"Smoke",reason:""});
+   const planned=await create({...supplier,status:"DRAFT",entityCode:"",title:`Plan ${marker}`,planningStatus:"PLANNED",planEntryId:entry.id});
+   await assert.rejects(saveAudit({...auditDefaults(planned),scenario:"CLIENT",changeReason:"Era de cliente"},planned.id),/programa anual/);
+   // Una recibida abierta que ya estaba en el plan (antes de D-137) se conserva al editarla.
+   const legacy=await create({...supplier,scenario:"CLIENT",entityCode:"",externalReference:`LEG-${marker}`,businessCode:""});
+   const {entry:legacyEntry}=await addPlanEntry(plan.id,{subject:"Entrada histórica",targetName:"Cliente",departmentId:"",plannedDate:"",notes:"",actor:"Smoke",reason:""});
+   await prisma.audit.update({where:{id:legacy.id},data:{planningStatus:"PLANNED",planEntryId:legacyEntry.id}});
+   const kept=await saveAudit({...auditDefaults(await prisma.audit.findUniqueOrThrow({where:{id:legacy.id},include:{qmsRecord:true,departments:true,participants:true}})),title:"Edición conservando el plan"},legacy.id);
+   assert.equal(kept.planEntryId,legacyEntry.id);}
   const draft = await create({actor:"Smoke",title:`Identidad ${marker}`,departmentIds:[department.id],participants:[{displayName:"Persistente",role:"AUDITOR",sortOrder:0}]});
   const removed = await saveAudit({...auditDefaults(draft),departmentIds:[],participants:[]},draft.id);
   const restored = await saveAudit({...auditDefaults(removed),departmentIds:[department.id],participants:auditDefaults(draft).participants},draft.id);
@@ -95,5 +125,8 @@ main().finally(async()=>{
   const audits = await prisma.audit.findMany({where:{qmsRecordId:{in:records}},select:{id:true}}), ids=audits.map(a=>a.id);
   await prisma.auditFollowup.deleteMany({where:{auditId:{in:ids}}}); await prisma.auditFindingAction.deleteMany({where:{finding:{auditId:{in:ids}}}}); await prisma.auditFindingRelation.deleteMany({where:{finding:{auditId:{in:ids}}}}); await prisma.auditFinding.deleteMany({where:{auditId:{in:ids}}});
   await prisma.auditParticipant.deleteMany({where:{auditId:{in:ids}}}); await prisma.auditDepartment.deleteMany({where:{auditId:{in:ids}}});
-  await prisma.changeHistory.deleteMany({where:{qmsRecordId:{in:records}}}); await prisma.audit.deleteMany({where:{id:{in:ids}}}); await prisma.qmsRecord.deleteMany({where:{id:{in:records}}}); await prisma.$disconnect();
+  await prisma.changeHistory.deleteMany({where:{qmsRecordId:{in:records}}}); await prisma.audit.deleteMany({where:{id:{in:ids}}}); await prisma.qmsRecord.deleteMany({where:{id:{in:records}}});
+  // El plan de la prueba del programa anual (revisión I-1) no deja el año ocupado para otras pruebas.
+  const plans=(await prisma.auditAnnualPlan.findMany({where:{title:{startsWith:"Plan R3A-"}},select:{id:true}})).map(p=>p.id);
+  await prisma.auditPlanChange.deleteMany({where:{planId:{in:plans}}}); await prisma.auditPlanEntry.deleteMany({where:{planId:{in:plans}}}); await prisma.auditAnnualPlan.deleteMany({where:{id:{in:plans}}}); await prisma.$disconnect();
 }).catch(error=>{console.error(error);process.exitCode=1;});
