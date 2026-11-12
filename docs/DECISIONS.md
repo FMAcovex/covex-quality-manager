@@ -1632,6 +1632,10 @@ Tercera entrega de R6 (D-134, D-135), con la plantilla «Anexo IV del PNT GC-00/
 - El plan, documento de la auditoría, incluye datos de las desviaciones y CAPA vinculadas (códigos, causa raíz, acciones y responsables), como ya hacía el CAPA plan anterior con sus códigos. Se descarga con el permiso de Auditorías.
 - Con el permiso de seguimiento del plan se pueden cambiar sus firmantes al registrar un seguimiento; solo cambian las funciones que el formulario envía.
 - Sin cambios de permisos. La migración `20261114000100_audit_finding_root_cause` añade el campo y su política de captura B2 (contrato `B2_AUDIT_FINDING_ROOT_CAUSE`). No es validación GMP.
+- **Plantilla corregida (12/11/2026, a petición de Calidad):** en la plantilla del Anexo IV, la columna «Fecha prevista» de las filas de datos (H8, H11, H14) estaba en Calibri 11 sin centrar, a diferencia del resto de la fila. Se corrige solo ese formato (Arial 14, centrada, formato de fecha); el resto del archivo no cambia.
+  - La aplicación copia el formato de la fila de la plantilla, así que la corrección se hace en la plantilla y no en el generador.
+  - Huella nueva en el catálogo (`0de356b9…`; antes `3df05178…`). Igual que con el Anexo V interno, la versión 04 aún no se ha publicado ni ha entrado en vigor: se cambia la huella sin sustituir copias instaladas (D-099). Una base de desarrollo o demo que tuviera la anterior se reinstala.
+  - Calidad debe aprobar el archivo corregido como versión controlada.
 
 ## D-137 — Auditorías R6: externas diferenciadas, código libre de cliente e inspección y ejemplos de la demo (2026-11-12)
 
