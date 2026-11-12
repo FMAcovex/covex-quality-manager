@@ -40,7 +40,7 @@ it("captures original report issuance/closure and retained document generation w
   const opened=await settled(()=>asUser(qa,()=>saveAuditAction(null,{error:null},form({...operationalValues("AUDIT",department.id),title,performedDate:"2026-10-10",_covexAuditRequestId:randomUUID()}))));
   expect(opened).toHaveProperty("error",null);
   const audit=await inspector.audit.findFirstOrThrow({where:{title}});
-  expect(await asUser(qa,()=>saveAuditReportAction(audit.id,{error:null},form({reportDate:"2026-10-11",conclusion:"Synthetic supported audit conclusion",preparedBy:"External nominal preparer",reviewedBy:"External nominal reviewer",_covexAuditRequestId:randomUUID()})))).toHaveProperty("error",null);
+  expect(await asUser(qa,()=>saveAuditReportAction(audit.id,{error:null},form({reportDate:"2026-10-11",conclusion:"Synthetic supported audit conclusion",reportPreparedBy:"External nominal preparer",reportReviewedBy:"External nominal reviewer",_covexAuditRequestId:randomUUID()})))).toHaveProperty("error",null);
   const issueId=randomUUID();
   await expect(asUser(reader,()=>issueAuditReportAction(audit.id,{error:null},form({_covexAuditRequestId:issueId})))).rejects.toMatchObject({status:403});
   const issued=await asUser(qa,()=>issueAuditReportAction(audit.id,{error:null},form({_covexAuditRequestId:issueId})));expect(issued.error).toBeNull();

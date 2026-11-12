@@ -31,6 +31,7 @@ const REVIEWED_BINARY_CONSUMERS = [
   "src/modules/audits/annual-programme/service.ts",
   "src/modules/audits/capa-plan-service.ts",
   "src/modules/audits/documents/service.ts",
+  "src/modules/audits/documents/template-choice.ts",
   "src/modules/audits/report-service.ts",
   "src/modules/configuration/admin-actions.ts",
   "src/modules/configuration/template-assets.ts",

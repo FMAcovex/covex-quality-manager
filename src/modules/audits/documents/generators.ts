@@ -5,6 +5,7 @@ import { auditDate, auditScenarioLabels } from "../domain";
 import { findingTypeLabels, criticalityLabels, actionStatusLabels } from "../finding-domain";
 import type { AuditReportSnapshot } from "../report-service";
 import { documentRecordCode } from "@/lib/qms/document-code";
+import { reportSignatories, signatoryRoleLabels, type SignatoryRole } from "../signatories";
 
 function styledParagraph(source: string, text: string) {
   const pr = source.match(/<w:pPr[\s\S]*?<\/w:pPr>/)?.[0] ?? "";
@@ -31,15 +32,24 @@ function cloneRows(xml: string, table: number, row: number, values: string[][], 
   });
 }
 const plain = (p: string) => [...p.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map(m => m[1]).join("").replace(/\s+/g, " ").trim();
-function section(xml: string, heading: string, text: string) {
+function section(xml: string, heading: string, text: string, styleSource?: string) {
   let found = false, filled = false;
   const result = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, p => {
     if (!found && plain(p) === heading) { found = true; return p; }
-    if (found && !filled && !plain(p) && !p.includes("<w:drawing")) { filled = true; return styledParagraph(p, markValueLines(text)); }
+    if (found && !filled && !plain(p) && !p.includes("<w:drawing")) { filled = true; return styledParagraph(styleSource ?? p, markValueLines(text)); }
     return p;
   });
   if (!filled) throw new Error(`Sección controlada no encontrada: ${heading}`);
   return result;
+}
+/** Párrafo vacío que sigue a un título en la plantilla: modelo de formato del texto de ese apartado. */
+function emptyParagraphAfter(xml: string, heading: string) {
+  let found = false;
+  for (const m of xml.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)) {
+    if (!found) { found = plain(m[0]) === heading; continue; }
+    return plain(m[0]) ? undefined : m[0];
+  }
+  return undefined;
 }
 function bodyBlocks(body: string) {
   const out: string[] = []; let depth = 0, start = 0;
@@ -101,12 +111,68 @@ function fillExternalReportFooters(entries: ReturnType<typeof readZip>, code: st
   if (!filled) throw new Error("La plantilla externa no contiene el código editable esperado en los pies de página.");
 }
 
+function nthTable(xml: string, index: number) {
+  return [...xml.matchAll(/<w:tbl(?:\s[^>]*)?>[\s\S]*?<\/w:tbl>/g)][index]?.[0] ?? null;
+}
+function tableRows(table: string) { return [...table.matchAll(/<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>/g)].map(m => m[0]); }
+function rowCells(row: string) { return [...row.matchAll(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g)].map(m => m[0]); }
+/** D-134 (R6): los informes 04/05 tienen un cuadro de firmas por filas «Función | Nombre | Puesto | Fecha | Firma». */
+export function isR6AuditReport(xml: string) {
+  const table = nthTable(xml, 2);
+  const header = table ? tableRows(table)[0] : null;
+  return !!header && plain(rowCells(header)[0] ?? "") === "Función";
+}
+/**
+ * Una fila por persona y función. La fila «Revisado y aprobado por» de la plantilla se usa para
+ * revisores («Revisado por») y aprobadores («Aprobado por»), que el PNT pide por separado.
+ */
+function fillSignatureRows(xml: string, signatories: ReturnType<typeof reportSignatories>) {
+  let ti = 0;
+  return xml.replace(/<w:tbl(?:\s[^>]*)?>[\s\S]*?<\/w:tbl>/g, table => {
+    if (ti++ !== 2) return table;
+    const rows = tableRows(table);
+    if (rows.length < 4) throw new Error("El cuadro de firmas de la plantilla no tiene las filas esperadas.");
+    const groups: [string, SignatoryRole, string | null][] = [[rows[1], "PREPARED", null], [rows[2], "REVIEWED", signatoryRoleLabels.REVIEWED], [rows[2], "APPROVED", signatoryRoleLabels.APPROVED], [rows[3], "RECEIVED", null]];
+    const built = groups.flatMap(([row, role, label]) => {
+      const people = signatories.filter(p => p.role === role);
+      return (people.length ? people : [{ name: "", position: "" }]).map(person => {
+        let ci = 0;
+        return row.replace(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g, cell => {
+          const index = ci++;
+          if (index === 0) return label ? cellText(cell, label) : cell;
+          if (index === 1) return cellText(cell, markValueLines(person.name));
+          if (index === 2) return cellText(cell, markValueLines(person.position));
+          return cell;
+        });
+      });
+    });
+    const head = table.slice(0, table.indexOf(rows[0])), tail = table.slice(table.lastIndexOf(rows[rows.length - 1]) + rows[rows.length - 1].length);
+    return head + rows[0] + built.join("") + tail;
+  });
+}
+/** «OBS XX – Requisito de referencia / Evidencia objetiva / Deficiencia detectada» por cada observación. */
+function fillFindingDetails(xml: string, findings: AuditReportSnapshot["audit"]["findings"]) {
+  const paragraphs = [...xml.matchAll(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g)].map(m => m[0]);
+  const find = (prefix: string) => paragraphs.find(p => plain(p).startsWith(prefix));
+  const obs = find("OBS XX"), evidence = find("Evidencia objetiva:"), deficiency = find("Deficiencia detectada:"), example = find("Ejemplo");
+  if (!obs || !evidence || !deficiency) throw new Error("Sección controlada no encontrada: OBS XX – Requisito de referencia");
+  // Las líneas de ejemplo de la plantilla van en cursiva; el contenido real, no.
+  const upright = (p: string) => p.replace(/<w:i\/>|<w:iCs\/>|<w:i w:val="(?:true|1|on)"\/>/g, "");
+  const detail = findings.map(f => [
+    styledParagraph(upright(obs), `${markValue(f.reference)} – Requisito de referencia: ${f.criterionReference ? markValue(f.criterionReference.replace(/\r?\n/g, " ")) : ""}`),
+    styledParagraph(upright(evidence), `Evidencia objetiva: ${f.objectiveEvidence ? markValue(f.objectiveEvidence.replace(/\r?\n/g, " ")) : ""}`),
+    styledParagraph(upright(deficiency), `Deficiencia detectada: ${markValue(f.description.replace(/\r?\n/g, " "))}`),
+    styledParagraph(deficiency, ""),
+  ].join("")).join("");
+  return xml.replace(obs, detail || styledParagraph(obs, "")).replace(evidence, "").replace(deficiency, "").replace(example ?? "\u0000", "");
+}
 export function generateAuditReport(template: Buffer, s: AuditReportSnapshot, sequence: number) {
   const a = s.audit, supplier = a.scenario === "SUPPLIER";
   if (a.scenario === "CLIENT" || a.scenario === "AUTHORITY") throw new Error("El documento primario de cliente/autoridad es recibido, no un informe COVEX artificial.");
   const entries = readZip(template); let xml = getZipEntryText(entries, "word/document.xml");
   if (!xml.includes(supplier ? "EXTERNA" : "INTERNA")) throw new Error("La plantilla no corresponde al escenario.");
   const dates = [a.performedDate, a.reportDate].map(d => d ? auditDate(d) : "");
+  if (isR6AuditReport(xml)) return generateR6AuditReport(entries, xml, s, sequence, dates);
   xml = fill(xml, 1, 0, 1, supplier ? a.auditedEntityName ?? "" : a.departments.filter(d => d.isActive).map(d => `${d.departmentCodeSnapshot} · ${d.departmentNameSnapshot}`).join("; "));
   xml = fill(xml, 1, 0, 3, dates[0]); xml = fill(xml, 1, 1, 1, a.qmsRecord.businessCode ?? a.externalReference ?? "");
   xml = fill(xml, 1, 1, 3, dates[1]); xml = fill(xml, 1, 1, 5, String(sequence).padStart(2, "0"));
@@ -130,11 +196,54 @@ export function generateAuditReport(template: Buffer, s: AuditReportSnapshot, se
   }
   updateZipEntry(entries, "word/document.xml", applyValueMarks(xml)); sanitizeOfficeMetadata(entries); return writeZip(entries);
 }
+/** D-134 (R6): informes 04 (interno, GC-00/033/04) y 05 (externo, GC-00/034/05). */
+function generateR6AuditReport(entries: ReturnType<typeof readZip>, source: string, s: AuditReportSnapshot, sequence: number, dates: string[]) {
+  const a = s.audit, supplier = a.scenario === "SUPPLIER";
+  let xml = source;
+  const bodyStyle = emptyParagraphAfter(source, "CONCLUSIÓN");
+  const departments = a.departments.filter(d => d.isActive).map(d => `${d.departmentCodeSnapshot} · ${d.departmentNameSnapshot}`).join("; ");
+  if (supplier) {
+    xml = fill(xml, 1, 0, 1, a.auditedEntityName ?? ""); xml = fill(xml, 1, 0, 3, dates[0]);
+    xml = fill(xml, 1, 1, 1, a.qmsRecord.businessCode ?? a.externalReference ?? ""); xml = fill(xml, 1, 1, 3, dates[1]); xml = fill(xml, 1, 1, 5, String(sequence).padStart(2, "0"));
+    xml = fill(xml, 1, 2, 1, a.supplierType ?? ""); xml = fill(xml, 1, 3, 1, a.auditedEntityAddress ?? ""); xml = fill(xml, 1, 4, 1, a.auditedContact ?? "");
+    xml = fill(xml, 1, 5, 1, [a.title, a.scope].filter(Boolean).join("\n"));
+  } else {
+    xml = fill(xml, 1, 0, 1, departments);
+    xml = fill(xml, 1, 1, 1, a.qmsRecord.businessCode ?? a.externalReference ?? ""); xml = fill(xml, 1, 1, 3, String(sequence).padStart(2, "0"));
+    xml = fill(xml, 1, 2, 1, dates[0]); xml = fill(xml, 1, 2, 3, dates[1]);
+    xml = fill(xml, 1, 3, 1, [a.title, a.scope].filter(Boolean).join("\n"));
+    // Sin normativa registrada se conserva la indicación de la plantilla.
+    if (a.referenceText?.trim()) xml = fill(xml, 1, 4, 1, a.referenceText);
+  }
+  const team = (auditee: boolean) => a.participants.filter(p => p.isActive && (auditee ? p.role === "AUDITEE" : p.role !== "AUDITEE")).map(p => [p.displayName, [p.position, p.organization].filter(Boolean).join(" · ")]);
+  xml = cloneRows(xml, 1, supplier ? 12 : 11, team(false)); xml = cloneRows(xml, 1, supplier ? 9 : 8, team(true));
+  xml = fillSignatureRows(xml, reportSignatories(a));
+  const findings = a.findings.filter(f => f.isActive), observations = findings.filter(f => f.findingType !== "RECOMMENDATION");
+  for (const [row, criticality] of [[6,"MINOR"],[4,"MAJOR"],[2,"CRITICAL"]] as const) xml = cloneRows(xml, 4, row, observations.filter(f => f.criticality === criticality).map(f => supplier ? [f.reference, f.description] : [f.reference, f.description, f.criterionReference ?? ""]));
+  // Cada recomendación en la línea «RkXX:» de la plantilla, con su viñeta; sin recomendaciones, la línea desaparece.
+  const recommendations = findings.filter(f => f.findingType === "RECOMMENDATION").map(f => `${markValue(f.reference)}: ${markValue(f.description.replace(/\r?\n/g, " "))}`);
+  let rkFound = false;
+  xml = xml.replace(/<w:p(?:\s[^>]*)?>[\s\S]*?<\/w:p>/g, p => /^Rk\s*XX\s*:/.test(plain(p)) ? (rkFound = true, recommendations.length ? styledParagraph(p, recommendations.join("\n")) : "") : p);
+  if (!rkFound) throw new Error("Sección controlada no encontrada: RkXX");
+  xml = fillFindingDetails(xml, observations);
+  xml = section(xml, "ANTECEDENTES DE AUDITORÍAS ANTERIORES", a.previousAuditBackground ?? "");
+  xml = section(xml, "CONCLUSIÓN", a.conclusion ?? "");
+  // El párrafo que sigue al título del Anexo I hereda su formato de título; el programa va con el formato del texto.
+  xml = section(xml, "ANEXO I: PROGRAMA DE AUDITORÍA", a.programme ?? "", bodyStyle);
+  if (supplier) {
+    const auditCode = a.qmsRecord.businessCode ?? a.externalReference;
+    if (!auditCode) throw new Error("El informe externo requiere un código de auditoría para completar el pie de página.");
+    fillExternalReportFooters(entries, auditCode);
+  }
+  updateZipEntry(entries, "word/document.xml", applyValueMarks(xml)); sanitizeOfficeMetadata(entries); return writeZip(entries);
+}
 /** Anexo IV «Plan de Auditoría» recortado del PNT de auditorías externas (también para D-100). */
 export function auditExternalPlanXml(xml: string) {
   const bodyStart = xml.indexOf("<w:body>") + 8, bodyEnd = xml.lastIndexOf("</w:body>");
   const body = xml.slice(bodyStart, bodyEnd), blocks = bodyBlocks(body);
   const start = blocks.findIndex(p => /^Anexo IV:\s*Plan de Auditoría/.test(plain(p)));
+  // D-134 (R6): desde la 05 el anexo se entrega suelto y empieza por «Anexo IV del PNT…».
+  if (start < 0 && /^Anexo IV del PNT/.test(plain(blocks.find(b => plain(b)) ?? ""))) return xml;
   if (start < 0) throw new Error("El PNT no contiene el Anexo IV controlado esperado.");
   return xml.slice(0, bodyStart) + blocks.slice(start).join("") + xml.slice(bodyEnd);
 }

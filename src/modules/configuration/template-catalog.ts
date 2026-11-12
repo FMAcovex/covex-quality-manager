@@ -78,6 +78,11 @@ export const templateCatalog: CatalogTemplate[] = [
   { module: "AUDIT", documentType: "AUDIT_EXTERNAL_REPORT", versionCode: "04", label: "Auditorías · Informe externo", fileName: "A3. INFORME AUDITORIA_V04.docx", effectiveFrom: "2026-06-08", sources: file("ed09292702a08c73a26a42d019e81c1d7d74ac63264b278dd6d6fa6e2acbc40d") },
   // El generador extrae el Anexo IV del PNT completo de auditorías externas.
   { module: "AUDIT", documentType: "AUDIT_EXTERNAL_PLAN", versionCode: "04", label: "Auditorías · Plan externo (PNT fuente)", fileName: "GC-00.034.04 Auditorías externas.docx", effectiveFrom: "2026-06-08", sources: file("1c73fa4fbe06b42a797000ce0a95ccee034261a230ddc7602920ace17bcae6af") },
+  // D-134 (R6): PNT GC-00/033/04 y GC-00/034/05, vigentes desde el 15/11/2026. Se instalan los anexos sueltos
+  // que entregó Calidad; las auditorías abiertas antes de esa fecha conservan las versiones anteriores.
+  { module: "AUDIT", documentType: "AUDIT_INTERNAL_REPORT", versionCode: "04", label: "Auditorías · Informe interno", fileName: "A3_04 INFORME AUDITORIA INTERNA.docx", effectiveFrom: "2026-11-15", sources: file("133111598a73eda149dc49fdebdfa2c4d9d9f68d311907adbad8abbd17c68949") },
+  { module: "AUDIT", documentType: "AUDIT_EXTERNAL_REPORT", versionCode: "05", label: "Auditorías · Informe externo", fileName: "A3. INFORME AUDITORIA_V05.docx", effectiveFrom: "2026-11-15", sources: file("caced8199c6717124ce723e9bba567b5297902b0f2a0442f50c85dc6d9bf06c4") },
+  { module: "AUDIT", documentType: "AUDIT_EXTERNAL_PLAN", versionCode: "05", label: "Auditorías · Plan de auditoría externa", fileName: "A4_PLAN AUDIT.docx", effectiveFrom: "2026-11-15", sources: file("b3db55f090e0b802e1e18590e9b6a29f24976a9c777a2c1deb6f91be13ffb96f") },
   // D-106: el programa interno se instala desde el .docx guardado en Word por Calidad, no desde el
   // .doc original (sha fa1296da…), que necesitaba LibreOffice. Sustituye una conversión anterior.
   { module: "AUDIT", documentType: "AUDIT_ANNUAL_INTERNAL_PROGRAMME", versionCode: "PMAI-V04-01-2023-GENERAL", label: "Auditorías · Programa anual interno (PMAI V04)", fileName: "PMAI-V04-01-2023-GENERAL.docx", effectiveFrom: "2023-01-01", sources: [{ kind: "office-normalized", sha256: "8dc8c00c04dd2138f1352a903dc18727a48909ab9f7c898eb8c36bb5d53fdea9" }], replacesDocConversion: true },

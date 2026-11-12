@@ -193,6 +193,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Auditorías R6 · primera entrega: informes 04/05, plan de auditoría 05 y firmantes (2026-11-12, D-134):**
+- **Qué cambia:**
+  - Catálogo con el informe interno 04, el informe externo 05 y el plan de auditoría 05 de los PNT GC-00/033/04 y GC-00/034/05 (vigentes desde el 15/11/2026).
+  - Cada auditoría usa la plantilla vigente cuando se abrió: las abiertas antes conservan las anteriores.
+  - Firmantes del informe con varias personas por función (elaborado, revisado, aprobado y recibido); el cuadro de firmas lleva una fila por persona.
+  - Detalle de cada observación por requisito de referencia, evidencia objetiva y deficiencia detectada.
+- **Pendiente en R6:** plan CAPA (Anexo IV) por bloques, programas anuales (Anexo V), estado «Cierre parcial» y diferenciación de las auditorías externas.
+- **Comprobado:** pruebas de los generadores con plantillas sintéticas, de la elección de plantilla y del contrato B2; `annexes:verify` con las plantillas oficiales: las 3 nuevas y las 24 actuales, correctas.
+
 **Los códigos anulados se pueden reutilizar (2026-11-06, D-133):**
 - **Qué cambia:** al anular un expediente, su código queda libre para otro expediente del mismo módulo.
   - La comprobación de duplicados y la sugerencia del siguiente correlativo solo cuentan los códigos de expedientes activos.

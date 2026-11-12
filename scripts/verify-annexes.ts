@@ -323,8 +323,12 @@ async function main() {
     }
     for (const field of Object.keys(positions)) positions[field].sort();
     const checkedKeys = result.checked.map((item) => item.key);
-    newExpected[base] = { notPrinted, replacedTemplateText: result.alteredKeys, positions: Object.fromEntries(Object.entries(positions).sort(([a], [b]) => a.localeCompare(b))), checked: checkedKeys };
-    const known = expected[base] ?? { notPrinted: [], replacedTemplateText: [], positions: {}, checked: [] };
+    // D-134: lo previsto de una versión concreta («AU_INT@04») convive con el de la anterior; se usa al verificar esa
+    // versión (activa o pedida con --version) y se escribe ahí cuando ya existe o la versión se pidió expresamente.
+    const versioned = `${base}@${annex.versionCode ?? ""}`;
+    const key = expected[versioned] || (annex.documentType && versionOverrides.has(annex.documentType)) ? versioned : base;
+    newExpected[key] = { notPrinted, replacedTemplateText: result.alteredKeys, positions: Object.fromEntries(Object.entries(positions).sort(([a], [b]) => a.localeCompare(b))), checked: checkedKeys };
+    const known = expected[key] ?? { notPrinted: [], replacedTemplateText: [], positions: {}, checked: [] };
     // Qué casillas se marcan: una que se marca sin estar prevista, o una prevista que ya no se marca, es un fallo.
     const allowedChecked = new Set(known.checked ?? []);
     const unexpectedChecked = writeExpected ? [] : result.checked.filter((item) => !allowedChecked.has(item.key));

@@ -8,6 +8,9 @@ import { capaPlanFingerprint } from "./capa-plan-domain";
 import { receivedAuditScenario } from "./domain";
 import { auditAlreadyClosed } from "./lifecycle";
 import { withBytes } from "@/lib/db-binary-omit";
+import { legacySignerFields, replaceDocumentSignatories, reportSignatoriesFromForm } from "./signatories";
+import { auditTemplateInForce } from "./documents/template-choice";
+const legacySignerKeys = ["preparedBy", "preparedPosition", "reviewedBy", "reviewedPosition", "receivedBy", "receivedPosition"] as const;
 
 type Tx = Prisma.TransactionClient;
 export const auditReportInclude = {
@@ -51,9 +54,13 @@ export async function saveAuditReport(id: string, raw: unknown) {
     if (v.reportSentAt && !versions) throw new Error("Emite el informe antes de registrar su envío.");
     // D-110 (R5D): cliente e inspección no tienen informe COVEX; solo se guardan la respuesta y las observaciones internas.
     const received = receivedAuditScenario(a.scenario);
-    const keys = received ? (["responseSentAt", "internalObservations", "responseRequired"] as const) : ([...reportTextFields, ...reportDateFields, "responseRequired"] as const);
+    const keys = received ? (["responseSentAt", "internalObservations", "responseRequired"] as const) : ([...reportTextFields, ...reportDateFields, "responseRequired", "signatories", ...legacySignerKeys] as const);
+    // D-134 (R6): firmantes del informe; los campos anteriores guardan la primera persona de cada función para las plantillas previas.
+    const signers = received ? null : reportSignatoriesFromForm(v);
+    if (signers && Object.keys(signers.errors).length) throw new AuditValidationError(signers.errors);
     const data = received ? { responseSentAt: day(v.responseSentAt), internalObservations: v.internalObservations || null, responseRequired: v.responseRequired, updatedByText: v.actor }
-      : { ...Object.fromEntries(reportTextFields.map(k => [k, v[k] || null])), ...Object.fromEntries(reportDateFields.map(k => [k, day(v[k])])), responseRequired: v.responseRequired, updatedByText: v.actor };
+      : { ...Object.fromEntries(reportTextFields.map(k => [k, v[k] || null])), ...Object.fromEntries(reportDateFields.map(k => [k, day(v[k])])), responseRequired: v.responseRequired, updatedByText: v.actor,
+          signatories: json(replaceDocumentSignatories(a.signatories, "REPORT", signers!.list)), ...Object.fromEntries(Object.entries(legacySignerFields(signers!.list)).map(([k, value]) => [k, value || null])) };
     const after = await tx.audit.update({ where: { id }, data });
     for (const k of keys) if (JSON.stringify(a[k]) !== JSON.stringify(after[k])) await auditReportEvent(tx, a.qmsRecordId, v.actor, `audit.${k}`, a[k], after[k], "Edición del informe / hechos de seguimiento y cierre; sin nueva versión automática");
     return after;
@@ -78,8 +85,8 @@ export async function issueAuditReport(id: string, raw: unknown) {
     if (last && !v.reason.trim()) throw new Error("La revisión 01+ exige motivo obligatorio.");
     // D-110: el CAPA plan tiene versiones propias (AuditCapaPlanVersion); el informe ya no fija su A4.03.
     const types: DocumentType[] = [a.scenario === "SUPPLIER" ? DocumentType.AUDIT_EXTERNAL_REPORT : DocumentType.AUDIT_INTERNAL_REPORT, ...(a.scenario === "SUPPLIER" ? [DocumentType.AUDIT_EXTERNAL_PLAN] : [])];
-    const templates = await tx.templateVersion.findMany({ where: { module: "AUDIT", documentType: { in: types }, isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }], omit: withBytes });
-    const selected = types.map(type => templates.find(t => t.documentType === type));
+    // D-134 (R6): la plantilla vigente al abrir la auditoría; las abiertas antes de una revisión conservan la suya.
+    const selected = await Promise.all(types.map(type => auditTemplateInForce(tx, type, a.openedAt)));
     if (selected.some(t => !t || (!t.fileData && !t.filePath) || !t.checksum)) throw new Error("Instala/revisa las plantillas controladas de este escenario antes de emitir.");
     const snapshot = snapshotAudit(a, selected.map(t => ({ id: t!.id, documentType: t!.documentType, versionCode: t!.versionCode, checksum: t!.checksum })));
     const version = await tx.qmsRecordVersion.create({ data: { qmsRecordId: a.qmsRecordId, sequenceNumber: (last?.sequenceNumber ?? -1) + 1, kind: last ? "AUDIT_REVISION" : "INITIAL", snapshot: json(snapshot), reason: v.reason || "Informe inicial", createdByText: v.actor, frozenAt: new Date() } });
