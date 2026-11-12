@@ -1,3 +1,4 @@
+import type { CapaPlanLinks } from "./capa-plan-annex";
 import { Prisma, DocumentType } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -27,7 +28,11 @@ export const auditReportInclude = {
 } satisfies Prisma.AuditInclude;
 export type ReportAudit = Prisma.AuditGetPayload<{ include: typeof auditReportInclude }>;
 type Serialized<T> = T extends Date ? string : T extends (infer U)[] ? Serialized<U>[] : T extends object ? { [K in keyof T]: Serialized<T[K]> } : T;
-export type AuditReportSnapshot = { schemaVersion: 1; audit: Serialized<ReportAudit>; templates: { id: string; documentType: DocumentType; versionCode: string; checksum: string | null }[] };
+export type AuditReportSnapshot = {
+  schemaVersion: 1; audit: Serialized<ReportAudit>; templates: { id: string; documentType: DocumentType; versionCode: string; checksum: string | null }[];
+  /** D-136 (R6): desviaciones y CAPA de cada hallazgo para el plan CAPA del Anexo IV; las fotos anteriores no lo tienen. */
+  capaPlan?: CapaPlanLinks;
+};
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
 const day = (s: string) => s ? new Date(`${s}T00:00:00.000Z`) : null;
 export async function lockReportAudit(tx: Tx, id: string) {
@@ -66,8 +71,8 @@ export async function saveAuditReport(id: string, raw: unknown) {
     return after;
   });
 }
-export function snapshotAudit(a: ReportAudit, templates: AuditReportSnapshot['templates']): AuditReportSnapshot {
-  return JSON.parse(JSON.stringify({ schemaVersion: 1, audit: a, templates }));
+export function snapshotAudit(a: ReportAudit, templates: AuditReportSnapshot['templates'], capaPlan?: CapaPlanLinks): AuditReportSnapshot {
+  return JSON.parse(JSON.stringify({ schemaVersion: 1, audit: a, templates, ...(capaPlan ? { capaPlan } : {}) }));
 }
 export function readAuditSnapshot(value: Prisma.JsonValue): AuditReportSnapshot {
   const s = value as unknown as AuditReportSnapshot;

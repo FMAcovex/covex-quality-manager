@@ -1962,6 +1962,7 @@
       "AuditFinding[1].evidenceReference",
       "AuditFinding[1].retiredByText",
       "AuditFinding[1].retirementReason",
+      "AuditFinding[1].rootCause",
       "AuditFinding[1].updatedByText",
       "AuditFinding[1].verificationComment",
       "AuditFinding[2].createdByText",
@@ -1969,6 +1970,7 @@
       "AuditFinding[2].evidenceReference",
       "AuditFinding[2].retiredByText",
       "AuditFinding[2].retirementReason",
+      "AuditFinding[2].rootCause",
       "AuditFinding[2].updatedByText",
       "AuditFinding[2].verificationComment",
       "AuditFollowup[1].completedByText",
@@ -2083,6 +2085,7 @@
       "AuditFinding[1].evidenceReference",
       "AuditFinding[1].retiredByText",
       "AuditFinding[1].retirementReason",
+      "AuditFinding[1].rootCause",
       "AuditFinding[1].updatedByText",
       "AuditFinding[1].verificationComment",
       "AuditFinding[2].createdByText",
@@ -2090,6 +2093,7 @@
       "AuditFinding[2].evidenceReference",
       "AuditFinding[2].retiredByText",
       "AuditFinding[2].retirementReason",
+      "AuditFinding[2].rootCause",
       "AuditFinding[2].updatedByText",
       "AuditFinding[2].verificationComment",
       "AuditFollowup[1].completedByText",
@@ -2220,12 +2224,14 @@
       "AuditFinding[1].objectiveEvidence",
       "AuditFinding[1].retiredByText",
       "AuditFinding[1].retirementReason",
+      "AuditFinding[1].rootCause",
       "AuditFinding[1].updatedByText",
       "AuditFinding[2].createdByText",
       "AuditFinding[2].criterionReference",
       "AuditFinding[2].objectiveEvidence",
       "AuditFinding[2].retiredByText",
       "AuditFinding[2].retirementReason",
+      "AuditFinding[2].rootCause",
       "AuditFinding[2].updatedByText",
       "AuditFollowup[1].completedByText",
       "AuditFollowup[1].createdByText",
@@ -2405,6 +2411,7 @@
       "AuditFinding[1].reference",
       "AuditFinding[1].retiredByText",
       "AuditFinding[1].retirementReason",
+      "AuditFinding[1].rootCause",
       "AuditFinding[1].treatment",
       "AuditFinding[1].updatedByText",
       "AuditFinding[1].verificationComment",
@@ -2417,6 +2424,7 @@
       "AuditFinding[2].reference",
       "AuditFinding[2].retiredByText",
       "AuditFinding[2].retirementReason",
+      "AuditFinding[2].rootCause",
       "AuditFinding[2].treatment",
       "AuditFinding[2].updatedByText",
       "AuditFinding[2].verificationComment",
@@ -2656,6 +2664,7 @@
       "AuditFinding[1].evidenceReference",
       "AuditFinding[1].retiredByText",
       "AuditFinding[1].retirementReason",
+      "AuditFinding[1].rootCause",
       "AuditFinding[1].treatment",
       "AuditFinding[1].updatedByText",
       "AuditFinding[1].verificationComment",
@@ -2666,6 +2675,7 @@
       "AuditFinding[2].objectiveEvidence",
       "AuditFinding[2].retiredByText",
       "AuditFinding[2].retirementReason",
+      "AuditFinding[2].rootCause",
       "AuditFinding[2].treatment",
       "AuditFinding[2].updatedByText",
       "AuditFinding[2].verificationComment",
@@ -2789,6 +2799,7 @@
       "AuditFinding[1].evidenceReference",
       "AuditFinding[1].retiredByText",
       "AuditFinding[1].retirementReason",
+      "AuditFinding[1].rootCause",
       "AuditFinding[1].treatment",
       "AuditFinding[1].updatedByText",
       "AuditFinding[1].verificationComment",
@@ -2799,6 +2810,7 @@
       "AuditFinding[2].objectiveEvidence",
       "AuditFinding[2].retiredByText",
       "AuditFinding[2].retirementReason",
+      "AuditFinding[2].rootCause",
       "AuditFinding[2].treatment",
       "AuditFinding[2].updatedByText",
       "AuditFinding[2].verificationComment",
@@ -2941,6 +2953,7 @@
       "AuditFinding[1].reference",
       "AuditFinding[1].retiredByText",
       "AuditFinding[1].retirementReason",
+      "AuditFinding[1].rootCause",
       "AuditFinding[1].treatment",
       "AuditFinding[1].updatedByText",
       "AuditFinding[1].verificationComment",
@@ -2953,6 +2966,7 @@
       "AuditFinding[2].reference",
       "AuditFinding[2].retiredByText",
       "AuditFinding[2].retirementReason",
+      "AuditFinding[2].rootCause",
       "AuditFinding[2].treatment",
       "AuditFinding[2].updatedByText",
       "AuditFinding[2].verificationComment",
@@ -3146,6 +3160,146 @@
       ],
       "prog2.target": [
         "Tabla 3, fila 6, casilla 2"
+      ]
+    },
+    "checked": []
+  },
+  "AU_CAPA@04": {
+    "notPrinted": [
+      "Audit.activityDuration",
+      "Audit.auditedContact",
+      "Audit.auditedEntityAddress",
+      "Audit.closureEvidence",
+      "Audit.codingDepartmentCodeSnapshot",
+      "Audit.codingDepartmentNameSnapshot",
+      "Audit.conclusion",
+      "Audit.createdByText",
+      "Audit.entityCode",
+      "Audit.externalReference",
+      "Audit.internalObservations",
+      "Audit.outsidePlanReason",
+      "Audit.planIntroduction",
+      "Audit.preparedBy",
+      "Audit.preparedPosition",
+      "Audit.previousAuditBackground",
+      "Audit.programme",
+      "Audit.receivedBy",
+      "Audit.receivedPosition",
+      "Audit.referenceText",
+      "Audit.reportDistribution",
+      "Audit.reviewedBy",
+      "Audit.reviewedPosition",
+      "Audit.scope",
+      "Audit.supplierAssessment",
+      "Audit.supplierExceptionBy",
+      "Audit.supplierExceptionReason",
+      "Audit.supplierType",
+      "Audit.title",
+      "Audit.updatedByText",
+      "AuditFindingAction[1].createdByText",
+      "AuditFindingAction[1].retiredByText",
+      "AuditFindingAction[1].retirementReason",
+      "AuditFindingAction[1].updatedByText",
+      "AuditFindingAction[1].verificationComment",
+      "AuditFindingAction[1].verifiedBy",
+      "AuditFinding[1].createdByText",
+      "AuditFinding[1].criterionReference",
+      "AuditFinding[1].objectiveEvidence",
+      "AuditFinding[1].retiredByText",
+      "AuditFinding[1].retirementReason",
+      "AuditFinding[1].updatedByText",
+      "AuditFinding[1].verificationComment",
+      "AuditFinding[2].createdByText",
+      "AuditFinding[2].criterionReference",
+      "AuditFinding[2].objectiveEvidence",
+      "AuditFinding[2].retiredByText",
+      "AuditFinding[2].retirementReason",
+      "AuditFinding[2].updatedByText",
+      "AuditFinding[2].verificationComment",
+      "AuditFollowup[1].completedByText",
+      "AuditFollowup[1].createdByText",
+      "AuditFollowup[1].description",
+      "AuditFollowup[1].evidenceReference",
+      "AuditFollowup[1].updatedByText",
+      "AuditParticipant[1].displayName",
+      "AuditParticipant[1].organization",
+      "AuditParticipant[1].position",
+      "AuditParticipant[2].displayName",
+      "AuditParticipant[2].organization",
+      "AuditParticipant[2].position",
+      "AuditParticipant[3].displayName",
+      "AuditParticipant[3].organization",
+      "AuditParticipant[3].position",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "AIV 00!B13#0d4bb5dbac36f3b2",
+      "AIV 00!H13#a2e2a2a3af56ecb0"
+    ],
+    "positions": {
+      "Audit.auditedEntityName": [
+        "AIV 00!C4"
+      ],
+      "Audit.auditingEntityName": [
+        "AIV 00!E5"
+      ],
+      "Audit.performedDate": [
+        "AIV 00!H4"
+      ],
+      "Audit.reportDate": [
+        "AIV 00!H5"
+      ],
+      "AuditFinding[1].description": [
+        "AIV 00!C8"
+      ],
+      "AuditFinding[1].evidence": [
+        "AIV 00!H10"
+      ],
+      "AuditFinding[1].evidenceReference": [
+        "AIV 00!H10"
+      ],
+      "AuditFinding[1].reference": [
+        "AIV 00!A8"
+      ],
+      "AuditFinding[1].rootCause": [
+        "AIV 00!E8"
+      ],
+      "AuditFinding[1].treatment": [
+        "AIV 00!B10"
+      ],
+      "AuditFinding[2].description": [
+        "AIV 00!C11"
+      ],
+      "AuditFinding[2].evidence": [
+        "AIV 00!H13"
+      ],
+      "AuditFinding[2].evidenceReference": [
+        "AIV 00!H13"
+      ],
+      "AuditFinding[2].reference": [
+        "AIV 00!A11"
+      ],
+      "AuditFinding[2].rootCause": [
+        "AIV 00!E11"
+      ],
+      "AuditFinding[2].treatment": [
+        "AIV 00!B13"
+      ],
+      "AuditFindingAction[1].description": [
+        "AIV 00!B10"
+      ],
+      "AuditFindingAction[1].evidence": [
+        "AIV 00!H10"
+      ],
+      "AuditFindingAction[1].evidenceReference": [
+        "AIV 00!H10"
+      ],
+      "AuditFindingAction[1].responsible": [
+        "AIV 00!G8"
+      ],
+      "AuditFindingAction[1].targetDate": [
+        "AIV 00!H8"
       ]
     },
     "checked": []

@@ -24,6 +24,7 @@ export const releaseNotes: readonly ReleaseNote[] = [
       "Auditorías: informes de los PNT GC-00/033/04 y GC-00/034/05 y plan de auditoría 05, con varias personas por función en las firmas (elaborado, revisado, aprobado y recibido). Las auditorías abiertas antes del 15/11/2026 siguen con sus plantillas.",
       "Auditorías: estado «Cierre parcial» al establecer el CAPA plan 00 (en proveedor, al aceptar su respuesta), con su fecha; «Cerrada» pasa a «Cierre definitivo». En el filtro de estado, «Abierta» ya no incluye las de cierre parcial: revisa las vistas guardadas que filtren por «Abierta».",
       "Programa anual de auditorías como Anexo V de los PNT GC-00/033/04 y GC-00/034/05: año y versión, código y fechas de cada auditoría, comentarios de aplazadas o canceladas con su motivo, ámbitos de las externas empezando por Medicamento y API, y «Nueva versión» con la lista de cambios.",
+      "Auditorías: plan CAPA del Anexo IV con un bloque por hallazgo, una fila por cada CAPA de su desviación o vinculada (responsable, fecha, estado y cierre), causa raíz de la desviación y firmantes del plan (elabora, revisa y aprueba).",
       "Al anular un expediente, su código queda libre y se puede asignar a otro expediente del mismo módulo. Si era el último de la serie, la aplicación lo vuelve a proponer.",
     ],
     fixes: [

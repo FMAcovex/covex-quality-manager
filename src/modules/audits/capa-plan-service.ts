@@ -11,6 +11,9 @@ import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { AuditValidationError } from "./service";
 import { auditReportInclude, auditReportEvent, lockReportAudit, snapshotAudit } from "./report-service";
 import { generateAuditCapaPlan } from "./documents/generators";
+import { auditTemplateInForce, auditTemplateReferenceDate } from "./documents/template-choice";
+import { loadCapaPlanLinks } from "./capa-plan-links";
+import { capaPlanSignatoryFields, readSignatories, replaceDocumentSignatories, signatoriesFromForm } from "./signatories";
 import { CapaPlanStaleError, capaPlanToday, capaPlanFileName, capaPlanFingerprint, capaPlanFollowupSchema, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
 import { withBytes } from "@/lib/db-binary-omit";
 
@@ -29,18 +32,23 @@ export async function replayedCapaPlanVersion(tx: Tx, auditId: string, requestId
   return previous;
 }
 /**
- * Emite la siguiente versión del CAPA plan con su foto y su A4.03 congelado.
+ * Emite la siguiente versión del CAPA plan con su foto y su plantilla congelada (A4.03 o Anexo IV).
  * Quien llama ya tiene la auditoría bloqueada (lockReportAudit) y ha aplicado sus cambios.
  */
 export async function issueCapaPlanVersion(tx: Tx, auditId: string, input: CapaPlanVersionInput) {
   const audit = await tx.audit.findUniqueOrThrow({ where: { id: auditId }, include: auditReportInclude });
-  const template = await tx.templateVersion.findFirst({ where: { module: "AUDIT", documentType: "AUDIT_CAPA_PLAN", isActive: true }, orderBy: [{ effectiveFrom: "desc" }, { id: "asc" }], omit: withBytes });
-  if (!template?.checksum || (!template.fileData && !template.filePath)) throw new TemplateAssetError("Plantilla A4.03 del CAPA plan no instalada. Instálala en Configuración → Instalar plantillas.");
+  // D-136 (R6): la versión 00 usa la plantilla vigente al abrir la auditoría (D-134); los seguimientos, la de su 00,
+  // para no cambiar de formato a mitad del plan.
+  const established = await tx.auditCapaPlanVersion.findFirst({ where: { auditId }, orderBy: { sequenceNumber: "asc" }, select: { templateVersionId: true } });
+  const template = established
+    ? await tx.templateVersion.findUnique({ where: { id: established.templateVersionId }, omit: withBytes })
+    : await auditTemplateInForce(tx, "AUDIT_CAPA_PLAN", auditTemplateReferenceDate(audit));
+  if (!template?.checksum || (!template.fileData && !template.filePath)) throw new TemplateAssetError("Plantilla del CAPA plan no instalada. Instálala en Configuración → Instalar plantillas.");
   const source = template.fileData ? Buffer.from(template.fileData) : await readFile(path.resolve(process.cwd(), template.filePath!));
-  if (digest(source) !== template.checksum) throw new TemplateAssetError("La plantilla A4.03 no coincide con su checksum registrado.");
+  if (digest(source) !== template.checksum) throw new TemplateAssetError("La plantilla del CAPA plan no coincide con su checksum registrado.");
   const last = await tx.auditCapaPlanVersion.findFirst({ where: { auditId }, orderBy: { sequenceNumber: "desc" }, select: { sequenceNumber: true } });
   const sequence = last ? last.sequenceNumber + 1 : 0;
-  const snapshot = snapshotAudit(audit, [{ id: template.id, documentType: template.documentType, versionCode: template.versionCode, checksum: template.checksum }]);
+  const snapshot = snapshotAudit(audit, [{ id: template.id, documentType: template.documentType, versionCode: template.versionCode, checksum: template.checksum }], await loadCapaPlanLinks(tx, audit.findings.map(f => f.id)));
   const bytes = generateAuditCapaPlan(source, snapshot, sequence);
   const version = await tx.auditCapaPlanVersion.create({ data: {
     auditId, sequenceNumber: sequence, kind: input.kind, followupDate: input.followupDate ?? null, observations: input.observations || null, nextReviewDate: input.nextReviewDate ?? null,
@@ -51,11 +59,31 @@ export async function issueCapaPlanVersion(tx: Tx, auditId: string, input: CapaP
   await auditReportEvent(tx, audit.qmsRecordId, input.actor, "audit.capaPlan.version", null, { id: version.id, sequenceNumber: sequence, kind: version.kind, checksum: version.checksum }, input.reason);
   return version;
 }
+/**
+ * D-136 (R6): firmantes del plan CAPA enviados con el formulario (una persona por línea, «Nombre | Puesto»).
+ * Un formulario sin estos campos no los cambia. Se guardan con la versión que se emite.
+ */
+function capaPlanSignatoriesInput(raw: unknown) {
+  const values = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+  if (!Object.keys(capaPlanSignatoryFields).some(k => k in values)) return null;
+  const text = Object.fromEntries(Object.keys(capaPlanSignatoryFields).map(k => [k, typeof values[k] === "string" ? values[k] as string : ""]));
+  const { list, errors } = signatoriesFromForm(text, capaPlanSignatoryFields, "CAPA_PLAN");
+  if (Object.keys(errors).length) throw new AuditValidationError(errors);
+  return { list, text };
+}
+async function saveCapaPlanSignatories(tx: Tx, audit: { id: string; qmsRecordId: string; signatories: Prisma.JsonValue }, input: ReturnType<typeof capaPlanSignatoriesInput>, actor: string, reason: string) {
+  if (!input) return;
+  const before = readSignatories(audit.signatories).filter(s => s.document === "CAPA_PLAN");
+  if (JSON.stringify(before) === JSON.stringify(input.list)) return;
+  await tx.audit.update({ where: { id: audit.id }, data: { signatories: json(replaceDocumentSignatories(audit.signatories, "CAPA_PLAN", input.list)), updatedByText: actor } });
+  await auditReportEvent(tx, audit.qmsRecordId, actor, "audit.capaPlan.signatories", before, input.list, reason);
+}
 /** Versión 00: fija las fechas del CAPA plan y congela lo que haya, aunque esté incompleto. */
 export async function establishCapaPlan(auditId: string, raw: unknown) {
   const parsed = establishCapaPlanSchema.safeParse(raw);
   if (!parsed.success) throw new AuditValidationError(Object.fromEntries(parsed.error.issues.map(i => [String(i.path[0]), i.message])));
-  const v = parsed.data, requestHash = capaPlanRequestHash({ kind: "ESTABLISHED", capaPlanDate: v.capaPlanDate });
+  const signers = capaPlanSignatoriesInput(raw);
+  const v = parsed.data, requestHash = capaPlanRequestHash({ kind: "ESTABLISHED", capaPlanDate: v.capaPlanDate, ...(signers ? { signatories: signers.text } : {}) });
   return prisma.$transaction(async tx => {
     const audit = await lockReportAudit(tx, auditId);
     const replayed = await replayedCapaPlanVersion(tx, auditId, v.requestId, requestHash);
@@ -67,6 +95,7 @@ export async function establishCapaPlan(auditId: string, raw: unknown) {
     const after = await tx.audit.update({ where: { id: auditId }, data: { capaPlanDate: day(v.capaPlanDate), capaPlanEstablishedAt: audit.capaPlanEstablishedAt ?? today, updatedByText: v.actor } });
     const reason = `Establecimiento del CAPA plan (versión ${capaPlanSequenceLabel(0)})`;
     for (const key of ["capaPlanDate", "capaPlanEstablishedAt"] as const) if (audit[key]?.getTime() !== after[key]?.getTime()) await auditReportEvent(tx, audit.qmsRecordId, v.actor, `audit.${key}`, audit[key], after[key], reason);
+    await saveCapaPlanSignatories(tx, after, signers, v.actor, reason);
     return issueCapaPlanVersion(tx, auditId, { kind: "ESTABLISHED", requestId: v.requestId, requestHash, actor: v.actor, reason });
   }, { timeout: 20000 });
 }
@@ -76,13 +105,14 @@ const changeKeys = (before: Record<string, unknown>, after: Record<string, unkno
 /**
  * R5C2: seguimiento del CAPA plan. En una transacción actualiza las acciones y los
  * hallazgos sin acciones que cambian (con las validaciones de cierre de siempre) y
- * emite la versión siguiente con su foto y su A4.03.
+ * emite la versión siguiente con su foto y su plantilla.
  */
 export async function recordCapaPlanFollowup(auditId: string, raw: Record<string, string>) {
   const form = parseCapaPlanFollowupForm(raw);
   const parsed = capaPlanFollowupSchema.safeParse(form);
   if (!parsed.success) throw new AuditValidationError(Object.fromEntries(parsed.error.issues.map(i => [String(i.path[0]), i.message])));
-  const v = parsed.data, { actor: _actor, ...hashed } = form, requestHash = capaPlanRequestHash({ kind: "FOLLOWUP", ...hashed });
+  const signers = capaPlanSignatoriesInput(raw);
+  const v = parsed.data, { actor: _actor, ...hashed } = form, requestHash = capaPlanRequestHash({ kind: "FOLLOWUP", ...hashed, ...(signers ? { signatories: signers.text } : {}) });
   void _actor;
   return prisma.$transaction(async tx => {
     const audit = await lockReportAudit(tx, auditId);
@@ -118,7 +148,8 @@ export async function recordCapaPlanFollowup(auditId: string, raw: Record<string
       if (problem) throw new Error(`${before.reference}: ${problem}`);
       updates.push({ kind: "finding", id: row.id, reference: before.reference, before: current, data });
     }
-    if (!updates.length && !v.observations.trim()) throw new Error("No hay cambios ni observaciones que registrar.");
+    const signersChanged = Boolean(signers) && JSON.stringify(readSignatories(audit.signatories).filter(s => s.document === "CAPA_PLAN")) !== JSON.stringify(signers!.list);
+    if (!updates.length && !v.observations.trim() && !signersChanged) throw new Error("No hay cambios ni observaciones que registrar.");
     const typed = (u: Update) => ({ status: String(u.before.status), closedAt: (u.before.closedAt as string | null) ?? null, evidence: (u.before.evidence as string | null) ?? null });
     const after = (u: Update) => ({ status: String(u.data.status), closedAt: (u.data.closedAt as string | null) ?? null, evidence: (u.data.evidence as string | null) ?? null });
     if (updates.some(u => isCriticalRowChange(typed(u), after(u))) && !v.changeReason.trim()) throw new Error("Indica el motivo: el seguimiento cierra, da por no aplicable, reabre, cambia una fecha de cierre o corrige una evidencia ya registrada.");
@@ -137,6 +168,7 @@ export async function recordCapaPlanFollowup(auditId: string, raw: Record<string
         await tx.changeHistory.create({ data: { qmsRecordId: audit.qmsRecordId, changedByText: v.actor, fieldPath: `audit.findings.${row.id}`, oldValue: json(u.before), newValue: json(u.data), reason, source: "UI" } });
       }
     }
+    await saveCapaPlanSignatories(tx, audit, signers, v.actor, reason);
     return issueCapaPlanVersion(tx, auditId, { kind: "FOLLOWUP", requestId: v.requestId, requestHash, actor: v.actor, reason, followupDate: day(v.followupDate), observations: v.observations.trim() || null, nextReviewDate: day(v.nextReviewDate) });
   }, { timeout: 20000 });
 }

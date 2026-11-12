@@ -5,6 +5,8 @@ import { AuditReportForm } from "./report-form";
 import { establishCapaPlanAction, recordCapaPlanFollowupAction } from "./capa-plan-actions";
 import { CapaPlanFollowupForm } from "./capa-plan-followup-form";
 import type { ReportAudit } from "./report-service";
+import { capaPlanSignatoryFields, readSignatories, signatoryLines } from "./signatories";
+const signerLabels: Record<string, string> = { capaPlanPreparedBy: "Elaborado por", capaPlanReviewedBy: "Revisado por", capaPlanApprovedBy: "Aprobado por" };
 import { auditDate } from "./domain";
 import { capaPlanDefaultDate, capaPlanKindLabels, capaPlanSequenceLabel, capaPlanToday } from "./capa-plan-domain";
 import type { CapaPlanVersionSummary } from "./capa-plan-service";
@@ -25,13 +27,16 @@ function followupRows(audit: ReportAudit) {
 }
 export function AuditCapaPlanCard({ audit, versions }: { audit: ReportAudit; versions: CapaPlanVersionSummary[] }) {
   const auditId = audit.id, status = audit.status, active = audit.qmsRecord.isActive, capaPlanDate = audit.capaPlanDate;
+  // D-136: firmantes del plan CAPA, con los valores actuales.
+  const people = readSignatories(audit.signatories);
+  const signers = Object.fromEntries(Object.entries(capaPlanSignatoryFields).map(([name, role]) => [name, signatoryLines(people, "CAPA_PLAN", role)]));
   const current = versions[0];
-  return <section className="card audit-panel-intro"><div className="audit-panel-heading"><div><h2>CAPA plan</h2><p className="muted-note">Versiones propias 00, 01…, independientes del informe. Cada versión congela hallazgos, acciones y vínculos con su A4.03.</p></div></div>
+  return <section className="card audit-panel-intro"><div className="audit-panel-heading"><div><h2>CAPA plan</h2><p className="muted-note">Versiones propias 00, 01…, independientes del informe. Cada versión congela hallazgos, acciones, CAPA vinculadas y firmantes con su plantilla (Anexo IV desde el GC-00/033/04; A4.03 en las anteriores).</p></div></div>
     {audit.capaPlanEstablishedAt ? <p><strong>Cierre parcial:</strong> {auditDate(audit.capaPlanEstablishedAt)}</p> : null}
     {current ? <><p>Versión vigente {capaPlanSequenceLabel(current.sequenceNumber)} · {capaPlanKindLabels[current.kind]} · {auditDate(current.generatedAt)} · {current.generatedBy}{current.nextReviewDate ? ` · Próxima revisión ${auditDate(current.nextReviewDate)}` : ""}</p><div className="heading-actions"><VersionLink auditId={auditId} version={current}/></div>
-      {active && status !== "DRAFT" ? <PermissionGate permission="FOLLOWUP"><details className="audit-editor"><summary>Registrar seguimiento del CAPA plan</summary><CapaPlanFollowupForm action={recordCapaPlanFollowupAction.bind(null, auditId)} {...followupRows(audit)} followupDate={capaPlanToday()} requestId={randomUUID()}/></details></PermissionGate> : null}</>
+      {active && status !== "DRAFT" ? <PermissionGate permission="FOLLOWUP"><details className="audit-editor"><summary>Registrar seguimiento del CAPA plan</summary><CapaPlanFollowupForm action={recordCapaPlanFollowupAction.bind(null, auditId)} {...followupRows(audit)} signatories={signers} followupDate={capaPlanToday()} requestId={randomUUID()}/></details></PermissionGate> : null}</>
       : <><p className="muted-note">CAPA plan sin establecer. Al establecerlo se congela como versión 00 lo registrado hasta ahora, aunque esté incompleto, y la auditoría pasa a Cierre parcial con la fecha de hoy.{audit.scenario === "SUPPLIER" ? " En auditorías a proveedor, establécelo cuando Garantía de Calidad acepte la respuesta o el plan CAPA del proveedor." : ""}</p>
-        {!active ? null : status === "DRAFT" ? <p className="muted-note">Abre la auditoría para establecer el CAPA plan.</p> : status === "OPEN" ? <PermissionGate permission="EDIT"><AuditReportForm action={establishCapaPlanAction.bind(null, auditId)} label={audit.scenario === "SUPPLIER" ? "Aceptar la respuesta del proveedor y establecer el CAPA plan (versión 00)" : "Establecer CAPA plan (versión 00)"} fields={[{ name: "capaPlanDate", label: "Fecha del CAPA plan", type: "date", value: capaPlanDefaultDate(capaPlanDate, capaPlanToday()), required: true }, { name: "actor", label: "Responsable", value: currentActor(), required: true }, { name: "requestId", label: "", type: "hidden", value: randomUUID() }]}/></PermissionGate> : null}</>}
+        {!active ? null : status === "DRAFT" ? <p className="muted-note">Abre la auditoría para establecer el CAPA plan.</p> : status === "OPEN" ? <PermissionGate permission="EDIT"><AuditReportForm action={establishCapaPlanAction.bind(null, auditId)} label={audit.scenario === "SUPPLIER" ? "Aceptar la respuesta del proveedor y establecer el CAPA plan (versión 00)" : "Establecer CAPA plan (versión 00)"} fields={[{ name: "capaPlanDate", label: "Fecha del CAPA plan", type: "date", value: capaPlanDefaultDate(capaPlanDate, capaPlanToday()), required: true }, ...(Object.entries(signers).map(([name, value]) => ({ name, label: `${signerLabels[name]} · una persona por línea: Nombre | Puesto`, type: "textarea" as const, value }))), { name: "actor", label: "Responsable", value: currentActor(), required: true }, { name: "requestId", label: "", type: "hidden", value: randomUUID() }]}/></PermissionGate> : null}</>}
   </section>;
 }
 /** Secuencia «CAPA plan» de la pestaña Versiones. */

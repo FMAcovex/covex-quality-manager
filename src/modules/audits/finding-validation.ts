@@ -12,7 +12,7 @@ function closureCheck(v: { status: string; closedAt: string; evidence: string; e
   }
 }
 export const findingInputSchema = z.object({
-  ...control, findingType: z.enum(["FINDING", "RECOMMENDATION", "CLIENT_OBSERVATION", "AUTHORITY_OBSERVATION"]), criticality: z.enum(["CRITICAL", "MAJOR", "MINOR", "NA"]).default("NA"), description: z.string().trim().min(1, "Describe el hallazgo.").max(20000), criterionReference: text, objectiveEvidence: text, treatment: text, treatmentStatus: status.default("OPEN"), ...treatmentFields, sortOrder: z.coerce.number().int().min(0).max(100000).default(0),
+  ...control, findingType: z.enum(["FINDING", "RECOMMENDATION", "CLIENT_OBSERVATION", "AUTHORITY_OBSERVATION"]), criticality: z.enum(["CRITICAL", "MAJOR", "MINOR", "NA"]).default("NA"), description: z.string().trim().min(1, "Describe el hallazgo.").max(20000), criterionReference: text, objectiveEvidence: text, rootCause: text, treatment: text, treatmentStatus: status.default("OPEN"), ...treatmentFields, sortOrder: z.coerce.number().int().min(0).max(100000).default(0),
 }).superRefine((v, ctx) => {
   closureCheck({ ...v, status: v.treatmentStatus }, ctx);
   if ((v.treatmentStatus === "CLOSED" || v.treatmentStatus === "NOT_APPLICABLE") && !v.treatment) ctx.addIssue({ code: "custom", path: ["treatment"], message: "Indica el tratamiento o justificación." });

@@ -10,6 +10,7 @@ import { createQmsRelation, syncOperationalOriginRelations } from "../src/lib/qm
 import { changeAdministrativeStatus } from "../src/lib/qms/administrative-status";
 import { serializeCapaVersion, ensureInitialVersion, startNextVersion, snapshotJson } from "../src/lib/qms/versioning";
 import { seedAuditDemo } from "../src/modules/audits/seed-demo";
+import { loadCapaPlanLinks } from "../src/modules/audits/capa-plan-links";
 if (process.env.APP_ENV !== "test") throw new Error("Usar APP_ENV=test y una BD aislada.");
 const marker = `R3B-${randomUUID()}`, actor = "Smoke R3B", records:string[]=[];
 export async function cleanupAuditR3bFixtures(recordIds:string[]) {
@@ -67,6 +68,18 @@ async function main() {
   await linkAuditFinding(audit.id,obs.id,deviation.id,actor);
   const attr1=await linkAuditFinding(audit.id,obs.id,capa.id,actor), attr2=await linkAuditFinding(audit.id,rk.id,capa.id,actor);
   assert.equal(attr1.qmsRelationId,attr2.qmsRelationId); assert.equal(await prisma.qmsRelation.count({where:{sourceRecordId:audit.qmsRecordId,targetRecordId:capa.id}}),1);
+  // D-136 (R6): vínculos del plan CAPA. Desviación del hallazgo con su causa raíz, CAPA atribuida y CAPA de la desviación.
+  {const q=await prisma.qmsRecord.create({data:{recordType:"CAPA",businessCode:`${marker}-CAPA-DEV`}}); records.push(q.id);
+   const c=await prisma.capa.create({data:{qmsRecordId:q.id,status:"CLOSED",effectivenessStatus:"PENDING",operationalClosedAt:new Date("2096-11-20"),defectDescription:"Ficticio",actionType:"PREVENTIVE"}});
+   await prisma.capaPlannedAction.createMany({data:[{capaId:c.id,description:"Acción vía desviación",responsible:"RRA",plannedExecutionDate:new Date("2096-11-10"),sortOrder:0},{capaId:c.id,description:"Segunda acción",responsible:"JFV",plannedExecutionDate:new Date("2096-11-15"),sortOrder:1}]});
+   await prisma.$transaction(tx=>createQmsRelation(tx,{sourceRecordId:deviation.id,targetRecordId:q.id}));
+   await prisma.deviation.update({where:{qmsRecordId:deviation.id},data:{rootCause:"Causa raíz ficticia"}});
+   const links=await loadCapaPlanLinks(prisma,[obs.id,rk.id]);
+   assert.deepEqual(links[obs.id].deviations,[{code:`${marker}-DEVIATION-OPEN`,rootCause:"Causa raíz ficticia"}]);
+   assert.deepEqual(links[obs.id].capas.map(x=>x.code).sort(),[`${marker}-CAPA-DEV`,`${marker}-CAPA-OPEN`].sort());
+   const viaDeviation=links[obs.id].capas.find(x=>x.code===`${marker}-CAPA-DEV`)!;
+   assert.deepEqual([viaDeviation.responsible,viaDeviation.plannedDate,viaDeviation.closedAt,viaDeviation.actions],[["RRA","JFV"],"2096-11-15","2096-11-20",["Acción vía desviación","Segunda acción"]]);
+   assert.deepEqual([links[rk.id].deviations,links[rk.id].capas.map(x=>x.code)],[[],[`${marker}-CAPA-OPEN`]]);}
   await assert.rejects(linkAuditFinding(audit.id,obs.id,capa.id,actor),/ya está/);
   await assert.rejects(linkAuditFinding(audit.id,foreign.id,capa.id,actor),/pertenece/);
   // R5B1 (D-110): un borrador de CAPA se puede atribuir; se retira para no alterar el resto del recorrido.

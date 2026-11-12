@@ -6,6 +6,7 @@ import { findingTypeLabels, criticalityLabels, actionStatusLabels } from "../fin
 import type { AuditReportSnapshot } from "../report-service";
 import { documentRecordCode } from "@/lib/qms/document-code";
 import { reportSignatories, signatoryRoleLabels, type SignatoryRole } from "../signatories";
+import { generateAnnexIVCapaPlan, isAnnexIVCapaPlan } from "./capa-plan-annex-iv";
 
 function styledParagraph(source: string, text: string) {
   const pr = source.match(/<w:pPr[\s\S]*?<\/w:pPr>/)?.[0] ?? "";
@@ -309,6 +310,9 @@ function writeCapaCell(sheet: string, ref: string, value: string) {
 }
 
 export function generateAuditCapaPlan(template: Buffer, s: AuditReportSnapshot, sequence: number | null) {
+  // D-136 (R6): la plantilla del Anexo IV (GC-00/033/04) tiene su propio generador; la A4.03 sigue con este.
+  { const probe=readZip(template); const shared=probe.some(e=>e.name==="xl/sharedStrings.xml")?getZipEntryText(probe,"xl/sharedStrings.xml"):"";
+    if (isAnnexIVCapaPlan(getZipEntryText(probe,"xl/worksheets/sheet1.xml"),shared)) return generateAnnexIVCapaPlan(template,s,sequence); }
   const entries=readZip(template), a=s.audit;
   // Normalize empty cells before using the shared setter: a self-closing cell
   // must not consume the following labelled cell as its closing block.

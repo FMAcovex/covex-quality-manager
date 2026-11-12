@@ -10,7 +10,7 @@ export type CapaPlanFollowupActionRow = { id: string; reference: string; descrip
 export type CapaPlanFollowupFindingRow = { id: string; reference: string; description: string; treatment: string; treatmentStatus: string; closedAt: string; evidenceReference: string; evidence: string; updatedAt: string };
 const statusOptions = Object.entries(actionStatusLabels);
 /** R5C2: seguimiento del CAPA plan. Todas las acciones activas y los hallazgos sin acciones en una tabla editable. */
-export function CapaPlanFollowupForm({ action, actions, findings, followupDate, requestId }: { action: (s: AuditReportActionState, fd: FormData) => Promise<AuditReportActionState>; actions: CapaPlanFollowupActionRow[]; findings: CapaPlanFollowupFindingRow[]; followupDate: string; requestId: string }) {
+export function CapaPlanFollowupForm({ action, actions, findings, followupDate, requestId, signatories = {} }: { action: (s: AuditReportActionState, fd: FormData) => Promise<AuditReportActionState>; actions: CapaPlanFollowupActionRow[]; findings: CapaPlanFollowupFindingRow[]; signatories?: Record<string, string>; followupDate: string; requestId: string }) {
   const [state, submit, pending] = useActionState(action, { error: null } as AuditReportActionState);
   useEffect(() => { if (state.savedHref) window.location.assign(new URL(auditWithReturnTo(state.savedHref, new URL(window.location.href).searchParams.get("returnTo")), window.location.href).href); }, [state.savedHref]);
   const value = (name: string, fallback: string) => state.values?.[name] ?? fallback;
@@ -34,9 +34,11 @@ export function CapaPlanFollowupForm({ action, actions, findings, followupDate, 
     </tbody></table></div> : null}
     <label className="field"><span>Fecha del seguimiento</span><input type="date" name="followupDate" required defaultValue={value("followupDate", followupDate)}/></label>
     <label className="field"><span>Próxima revisión (opcional)</span><input type="date" name="nextReviewDate" defaultValue={value("nextReviewDate", "")}/></label>
+    {/* D-136: firmantes del plan CAPA (Anexo IV); una persona por línea, «Nombre | Puesto». */}
+    {([["capaPlanPreparedBy", "Elaborado por"], ["capaPlanReviewedBy", "Revisado por"], ["capaPlanApprovedBy", "Aprobado por"]] as const).map(([name, label]) => <label key={name} className="field full"><span>{label} · una persona por línea: Nombre | Puesto</span><textarea name={name} defaultValue={value(name, signatories[name] ?? "")}/></label>)}
     <label className="field full"><span>Observaciones del seguimiento</span><textarea name="observations" defaultValue={value("observations", "")}/></label>
     <label className="field full"><span>Motivo (obligatorio al cerrar, dar por no aplicable, reabrir, cambiar una fecha de cierre o corregir una evidencia ya registrada)</span><textarea name="changeReason" defaultValue={value("changeReason", "")}/></label>
     <label className="field"><span>Responsable</span><ActorField name="actor" required/></label>
-    <div className="full"><button className="button primary" disabled={pending}>{pending ? "Guardando…" : "Registrar seguimiento"}</button><p className="muted-note">Se emite la versión siguiente del CAPA plan con su A4.03. Sin cambios ni observaciones no se registra nada.</p></div>
+    <div className="full"><button className="button primary" disabled={pending}>{pending ? "Guardando…" : "Registrar seguimiento"}</button><p className="muted-note">Se emite la versión siguiente del CAPA plan con la plantilla de su versión 00. Sin cambios ni observaciones no se registra nada.</p></div>
   </form>;
 }
