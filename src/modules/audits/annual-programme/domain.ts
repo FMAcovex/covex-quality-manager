@@ -95,3 +95,20 @@ export function programmeChanges(previous: Partial<ProgrammeContent> | null | un
   }
   return out;
 }
+const plain = (v: string) => v.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+/** Prioridad del ámbito externo: Medicamento, después API; el resto, en el orden en que aparece. */
+function areaPriority(area: string) {
+  const a = plain(area);
+  return a.startsWith("medicament") ? 0 : a === "api" || a.startsWith("api ") || a.startsWith("api(") ? 1 : 2;
+}
+/**
+ * Calidad (13/11/2026): el programa externo se agrupa por ámbito empezando por Medicamento y API, los principales.
+ * Las entradas de un mismo ámbito quedan juntas, en su orden; los demás ámbitos siguen en el orden de aparición.
+ */
+export function orderProgrammeAreas<T extends { area: string }>(rows: T[]): T[] {
+  const key = (r: T) => r.area || "Sin especificar";
+  const first = new Map<string, number>();
+  rows.forEach((r, i) => { if (!first.has(key(r))) first.set(key(r), i); });
+  return rows.map((r, i) => ({ r, i })).sort((a, b) =>
+    areaPriority(key(a.r)) - areaPriority(key(b.r)) || first.get(key(a.r))! - first.get(key(b.r))! || a.i - b.i).map(x => x.r);
+}

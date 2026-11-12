@@ -88,7 +88,9 @@ export const templateCatalog: CatalogTemplate[] = [
   { module: "AUDIT", documentType: "AUDIT_ANNUAL_INTERNAL_PROGRAMME", versionCode: "PMAI-V04-01-2023-GENERAL", label: "Auditorías · Programa anual interno (PMAI V04)", fileName: "PMAI-V04-01-2023-GENERAL.docx", effectiveFrom: "2023-01-01", sources: [{ kind: "office-normalized", sha256: "8dc8c00c04dd2138f1352a903dc18727a48909ab9f7c898eb8c36bb5d53fdea9" }], replacesDocConversion: true },
   { module: "AUDIT", documentType: "AUDIT_ANNUAL_EXTERNAL_PROGRAMME", versionCode: "PMAE-V05-06-2026-ANEXO-I", label: "Auditorías · Programa anual externo (PMAE V05)", fileName: "PMAE-V05-06-2026-ANEXO-I.docx", effectiveFrom: "2026-06-01", sources: [{ kind: "office-normalized", sha256: "e55c7b2623604c45aa7282c6601479189a56395cbfa05fc421742a7e9db98cda" }] },
   // D-135 (R6): el programa anual pasa a ser el Anexo V de los PNT GC-00/033/04 y GC-00/034/05 (anexos sueltos de Calidad).
-  { module: "AUDIT", documentType: "AUDIT_ANNUAL_INTERNAL_PROGRAMME", versionCode: "GC-00-033-04-ANEXO-V", label: "Auditorías · Programa anual interno (Anexo V)", fileName: "A5_04 PROGRAMA ANUAL AUDIT.docx", effectiveFrom: "2026-11-15", sources: file("985a5f0eb65f77e3b7557da94f705670151f90f7f153128e3d79cb6521f7f292") },
+  { module: "AUDIT", documentType: "AUDIT_ANNUAL_INTERNAL_PROGRAMME", versionCode: "GC-00-033-04-ANEXO-V", label: "Auditorías · Programa anual interno (Anexo V)", fileName: "A5_04 PROGRAMA ANUAL AUDIT.docx", effectiveFrom: "2026-11-15", sources: file("f3aebc5faf46287f22186c9e334bb74645338f1218f84844d04e946c16b03b4d"),
+    // Calidad (13/11/2026) corrige el rótulo «Fecha de cierre (CAPA)» → «Fecha de cierre parcial»; sustituye la copia anterior si se instaló.
+    supersededChecksums: ["985a5f0eb65f77e3b7557da94f705670151f90f7f153128e3d79cb6521f7f292"] },
   { module: "AUDIT", documentType: "AUDIT_ANNUAL_EXTERNAL_PROGRAMME", versionCode: "GC-00-034-05-ANEXO-V", label: "Auditorías · Programa anual externo (Anexo V)", fileName: "A5 PROGRAMA ANUAL AUDIT EXT.docx", effectiveFrom: "2026-11-15", sources: file("6d478d76ba971de8e702be4609e243bb89650ac247a67635e3b0ca5299316f3c") },
 ];
 

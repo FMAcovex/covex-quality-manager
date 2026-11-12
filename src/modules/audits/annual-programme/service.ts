@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { generateAnnualProgramme } from "./generator";
-import { issueProgrammeSchema, modalityText, programmeApproversSchema, programmeChanges, programmeComments, programmeDocumentTypes, programmeDownloadName, programmeFingerprint, programmeReference, programmeTemplateFormat, type ProgrammeContent } from "./domain";
+import { issueProgrammeSchema, modalityText, programmeApproversSchema, orderProgrammeAreas, programmeChanges, programmeComments, programmeDocumentTypes, programmeDownloadName, programmeFingerprint, programmeReference, programmeTemplateFormat, type ProgrammeContent } from "./domain";
 import { withBytes } from "@/lib/db-binary-omit";
 
 const digest = (b: Buffer | string) => createHash("sha256").update(b).digest("hex");
@@ -61,11 +61,8 @@ async function readPreview(tx: Prisma.TransactionClient, planId: string) {
       };
     }),
   };
-  if (plan.auditType === "EXTERNAL") {
-    const groups = new Map<string, typeof content.rows>();
-    for (const row of content.rows) groups.set(row.area || "Sin especificar", [...(groups.get(row.area || "Sin especificar") || []), row]);
-    content.rows = [...groups.values()].flat();
-  }
+  // Externas agrupadas por ámbito: Medicamento, API y el resto en su orden.
+  if (plan.auditType === "EXTERNAL") content.rows = orderProgrammeAreas(content.rows);
   const blockers: string[] = [];
   if (!template?.checksum || !template.fileSize) blockers.push("Plantilla oficial vigente no instalada.");
   if (!content.rows.some(r => !r.cancelled)) blockers.push("El programa debe contener al menos una auditoría planificada.");
