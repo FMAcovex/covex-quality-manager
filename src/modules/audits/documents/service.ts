@@ -16,7 +16,7 @@ import { auditDocumentBlocker } from "./availability";
 import { listCapaPlanVersions } from "../capa-plan-service";
 import { receivedAuditScenario } from "../domain";
 import { withBytes } from "@/lib/db-binary-omit";
-import { auditTemplateInForce } from "./template-choice";
+import { auditTemplateInForce, auditTemplateReferenceDate } from "./template-choice";
 const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -44,7 +44,7 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
     const pinned = snapshot.templates.find(t => t.documentType === type);
     // D-110 (R5C2): las versiones del informe nuevas no fijan A4.03; el CAPA plan tiene versiones propias.
     if (version && type === "AUDIT_CAPA_PLAN" && !pinned) throw new Error("El CAPA plan tiene versiones propias: descárgalo en Versiones → CAPA plan.");
-    const template = version ? pinned ? await tx.templateVersion.findUnique({ where: { id: pinned.id }, omit: withBytes }) : null : await auditTemplateInForce(tx, type, a.openedAt);
+    const template = version ? pinned ? await tx.templateVersion.findUnique({ where: { id: pinned.id }, omit: withBytes }) : null : await auditTemplateInForce(tx, type, auditTemplateReferenceDate(a));
     if (!template || template.module !== "AUDIT" || template.documentType !== type || !template.checksum) throw new TemplateAssetError("Plantilla controlada no disponible para este documento/versión.");
     const bytes = template.fileData ? Buffer.from(template.fileData) : template.filePath ? await readFile(path.resolve(process.cwd(), template.filePath)) : null;
     if (!bytes || digest(bytes) !== template.checksum || (pinned && pinned.checksum !== template.checksum)) throw new TemplateAssetError("El binario no coincide con la plantilla congelada; no se regenera con una revisión diferente.");

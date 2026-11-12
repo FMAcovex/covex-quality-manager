@@ -146,8 +146,9 @@ function fillSignatureRows(xml: string, signatories: ReturnType<typeof reportSig
         });
       });
     });
+    // Las filas que la plantilla tenga después de las cuatro previstas se conservan.
     const head = table.slice(0, table.indexOf(rows[0])), tail = table.slice(table.lastIndexOf(rows[rows.length - 1]) + rows[rows.length - 1].length);
-    return head + rows[0] + built.join("") + tail;
+    return head + rows[0] + built.join("") + rows.slice(4).join("") + tail;
   });
 }
 /** «OBS XX – Requisito de referencia / Evidencia objetiva / Deficiencia detectada» por cada observación. */
@@ -158,13 +159,15 @@ function fillFindingDetails(xml: string, findings: AuditReportSnapshot["audit"][
   if (!obs || !evidence || !deficiency) throw new Error("Sección controlada no encontrada: OBS XX – Requisito de referencia");
   // Las líneas de ejemplo de la plantilla van en cursiva; el contenido real, no.
   const upright = (p: string) => p.replace(/<w:i\/>|<w:iCs\/>|<w:i w:val="(?:true|1|on)"\/>/g, "");
+  // Cada línea del texto en su propio párrafo, con el rótulo en la primera.
   const detail = findings.map(f => [
-    styledParagraph(upright(obs), `${markValue(f.reference)} – Requisito de referencia: ${f.criterionReference ? markValue(f.criterionReference.replace(/\r?\n/g, " ")) : ""}`),
-    styledParagraph(upright(evidence), `Evidencia objetiva: ${f.objectiveEvidence ? markValue(f.objectiveEvidence.replace(/\r?\n/g, " ")) : ""}`),
-    styledParagraph(upright(deficiency), `Deficiencia detectada: ${markValue(f.description.replace(/\r?\n/g, " "))}`),
+    styledParagraph(upright(obs), `${markValue(f.reference)} – Requisito de referencia: ${f.criterionReference ? markValueLines(f.criterionReference) : ""}`),
+    styledParagraph(upright(evidence), `Evidencia objetiva: ${f.objectiveEvidence ? markValueLines(f.objectiveEvidence) : ""}`),
+    styledParagraph(upright(deficiency), `Deficiencia detectada: ${markValueLines(f.description)}`),
     styledParagraph(deficiency, ""),
   ].join("")).join("");
-  return xml.replace(obs, detail || styledParagraph(obs, "")).replace(evidence, "").replace(deficiency, "").replace(example ?? "\u0000", "");
+  // Reemplazos con función: «$&», «$'»… del texto del usuario no son patrones de sustitución.
+  return xml.replace(obs, () => detail || styledParagraph(obs, "")).replace(evidence, () => "").replace(deficiency, () => "").replace(example ?? "\u0000", () => "");
 }
 export function generateAuditReport(template: Buffer, s: AuditReportSnapshot, sequence: number) {
   const a = s.audit, supplier = a.scenario === "SUPPLIER";

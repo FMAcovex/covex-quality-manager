@@ -70,7 +70,7 @@ También se avisa de una fila o una casilla de la plantilla que falta, de una ho
 
 - **Fallo real:** se corrige el generador y se vuelve a ejecutar.
 - **Cambio intencionado de una plantilla o de un generador:** se revisa el informe y se regenera la lista con `--write-expected`. Solo se reescriben los anexos generados; lo previsto para los demás se conserva. No se puede dar por bueno un anexo que no se genera, una tabla fuera de su casilla ni un control de casilla incoherente. Hay que revisar el diff de `scripts/verify-annexes-expected.json` antes de versionarlo, porque cada línea nueva es un texto de plantilla, un campo o una casilla marcada que se da por buena.
-- **Revisión nueva de una plantilla (D-134):** lo previsto se guarda por versión («AU_INT@04») cuando se verifica con `--version` o cuando ya existe esa clave. Así conviven lo previsto de la versión anterior, que siguen usando los expedientes abiertos antes de su vigencia, y lo de la nueva.
+- **Revisión nueva de una plantilla (D-134):** lo previsto se guarda por versión («AU_INT@04») cuando se verifica con `--version` o cuando ya existe esa clave. Así conviven lo previsto de la versión anterior, que siguen usando los expedientes abiertos antes de su vigencia, y lo de la nueva. Por defecto solo se verifica la versión activa: mientras convivan dos, la otra se verifica con `--version`.
 
 ## Límites
 - Qué opción se marca se comprueba con los valores del expediente de demostración, uno por campo. La primera vez se revisa a mano (el informe pone los valores al lado) y después se fija en la lista de lo previsto. Otras combinaciones de valores las cubren las pruebas automáticas de cada generador.

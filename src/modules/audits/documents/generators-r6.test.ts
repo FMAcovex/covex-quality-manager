@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { syntheticAuditReport, syntheticAuditReportR6, syntheticAuditPlanR6 } from "../../../../scripts/audits-r3c-fixtures";
 import { generateAuditReport, generateAuditExternalPlan } from "./generators";
-import { getZipEntryText, readZip } from "@/lib/ooxml/zip";
+import { getZipEntryText, readZip, updateZipEntry, writeZip } from "@/lib/ooxml/zip";
 import type { AuditReportSnapshot } from "../report-service";
 
 // D-134 (R6): informes 04 (interno) y 05 (externo) y plan de auditoría 05. Datos ficticios.
@@ -113,4 +113,41 @@ describe("D-134 · informes de auditoría 04/05", () => {
     expect(body).toContain("Revisión");
     expect(body).not.toContain("XX:XX");
   });
+
+  it("textos con «$&», «$'», «$`» y «$$» salen tal cual y el XML sigue bien formado", () => {
+    const s = snapshot(false, signatories);
+    const tricky = "Coste 5 US$&EUR, $' y $` y precio $$ doble <&>";
+    (s.audit.findings[0] as { description: string }).description = tricky;
+    const xml = docXml(generateAuditReport(syntheticAuditReportR6(), s, 0));
+    expect(xml.match(/<w:document[\s>]/g)).toHaveLength(1);
+    expect(xml).not.toContain("<?xml version=\"1.0\"?><w:document");
+    expect(text(xml).replace(/&apos;/g, "'").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")).toContain(`Deficiencia detectada: ${tricky}`);
+  });
+
+  it("sin observaciones ni recomendaciones: sin líneas de ejemplo ni la línea «RkXX»", () => {
+    const s = snapshot(false, signatories);
+    s.audit.findings = [];
+    const body = text(docXml(generateAuditReport(syntheticAuditReportR6(), s, 0)));
+    expect(body).not.toMatch(/OBS XX|RkXX|Evidencia objetiva|Ejemplo/);
+    expect(body).toContain("HALLAZGOS DE LA AUDITORÍA");
+  });
+
+  it("los saltos de línea del requisito, la evidencia y la deficiencia se conservan", () => {
+    const s = snapshot(false, signatories);
+    Object.assign(s.audit.findings[0], { objectiveEvidence: "Registro A\nRegistro B" });
+    const xml = docXml(generateAuditReport(syntheticAuditReportR6(), s, 0));
+    const paragraphs = [...xml.matchAll(/<w:p>[\s\S]*?<\/w:p>/g)].map(m => text(m[0]));
+    expect(paragraphs).toContain("Evidencia objetiva: Registro A");
+    expect(paragraphs).toContain("Registro B");
+  });
+
+  it("conserva las filas del cuadro de firmas que haya después de las cuatro previstas", () => {
+    const template = Buffer.from(syntheticAuditReportR6());
+    const entries = readZip(template);
+    const document = getZipEntryText(entries, "word/document.xml").replace("Recibido por Responsable/s del área auditada</w:t></w:r></w:p></w:tc>", "Recibido por Responsable/s del área auditada</w:t></w:r></w:p></w:tc>").replace(/(<w:tbl>(?:(?!<w:tbl>)[\s\S])*?Recibido por[\s\S]*?<\/w:tr>)(<\/w:tbl>)/, "$1<w:tr><w:tc><w:p><w:r><w:t>Fila adicional</w:t></w:r></w:p></w:tc></w:tr>$2");
+    updateZipEntry(entries, "word/document.xml", document);
+    const rows = cells(docXml(generateAuditReport(writeZip(entries), snapshot(false, signatories), 0)), 2);
+    expect(rows.at(-1)?.[0]).toBe("Fila adicional");
+  });
 });
+

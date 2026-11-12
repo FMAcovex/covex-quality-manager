@@ -21,10 +21,10 @@ const signatorySchema = z.object({
 });
 export const signatoriesSchema = z.array(signatorySchema).max(signatoryDocuments.length * signatoryRoles.length * MAX_SIGNATORIES_PER_ROLE);
 
-/** Lista guardada; un valor que no es una lista válida se trata como vacío para no romper documentos. */
+/** Lista guardada; una entrada no válida se ignora sin perder las demás, para no romper documentos. */
 export function readSignatories(value: unknown): AuditSignatory[] {
-  const parsed = signatoriesSchema.safeParse(value);
-  return parsed.success ? parsed.data : [];
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => { const parsed = signatorySchema.safeParse(item); return parsed.success ? [parsed.data] : []; });
 }
 
 type LegacySigners = { preparedBy?: string | null; preparedPosition?: string | null; reviewedBy?: string | null; reviewedPosition?: string | null; receivedBy?: string | null; receivedPosition?: string | null };
@@ -69,13 +69,19 @@ export function replaceDocumentSignatories(current: unknown, document: Signatory
   return [...readSignatories(current).filter((s) => s.document !== document), ...next];
 }
 
-/** Los campos de texto anteriores (primera persona de cada función) para las plantillas previas a D-134. */
+/**
+ * Los campos de texto anteriores para las plantillas previas a D-134, que tienen una casilla por función:
+ * todas las personas, separadas por «; », para no perder firmantes. Revisores y aprobadores comparten la
+ * casilla «Revisado por»; un puesto sin rellenar se indica con «—» para que los puestos sigan a sus nombres.
+ */
 export function legacySignerFields(list: AuditSignatory[]) {
-  const first = (role: SignatoryRole) => list.find((s) => s.document === "REPORT" && s.role === role);
-  const reviewer = first("REVIEWED") ?? first("APPROVED");
+  const people = (...roles: SignatoryRole[]) => roles.flatMap((role) => list.filter((s) => s.document === "REPORT" && s.role === role));
+  const names = (p: AuditSignatory[]) => p.map((s) => s.name).join("; ");
+  const positions = (p: AuditSignatory[]) => (p.some((s) => s.position) ? p.map((s) => s.position || "—").join("; ") : "");
+  const prepared = people("PREPARED"), reviewed = people("REVIEWED", "APPROVED"), received = people("RECEIVED");
   return {
-    preparedBy: first("PREPARED")?.name ?? "", preparedPosition: first("PREPARED")?.position ?? "",
-    reviewedBy: reviewer?.name ?? "", reviewedPosition: reviewer?.position ?? "",
-    receivedBy: first("RECEIVED")?.name ?? "", receivedPosition: first("RECEIVED")?.position ?? "",
+    preparedBy: names(prepared), preparedPosition: positions(prepared),
+    reviewedBy: names(reviewed), reviewedPosition: positions(reviewed),
+    receivedBy: names(received), receivedPosition: positions(received),
   };
 }

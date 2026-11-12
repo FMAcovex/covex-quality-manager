@@ -9,7 +9,7 @@ import { receivedAuditScenario } from "./domain";
 import { auditAlreadyClosed } from "./lifecycle";
 import { withBytes } from "@/lib/db-binary-omit";
 import { legacySignerFields, replaceDocumentSignatories, reportSignatoriesFromForm } from "./signatories";
-import { auditTemplateInForce } from "./documents/template-choice";
+import { auditTemplateInForce, auditTemplateReferenceDate } from "./documents/template-choice";
 const legacySignerKeys = ["preparedBy", "preparedPosition", "reviewedBy", "reviewedPosition", "receivedBy", "receivedPosition"] as const;
 
 type Tx = Prisma.TransactionClient;
@@ -86,7 +86,7 @@ export async function issueAuditReport(id: string, raw: unknown) {
     // D-110: el CAPA plan tiene versiones propias (AuditCapaPlanVersion); el informe ya no fija su A4.03.
     const types: DocumentType[] = [a.scenario === "SUPPLIER" ? DocumentType.AUDIT_EXTERNAL_REPORT : DocumentType.AUDIT_INTERNAL_REPORT, ...(a.scenario === "SUPPLIER" ? [DocumentType.AUDIT_EXTERNAL_PLAN] : [])];
     // D-134 (R6): la plantilla vigente al abrir la auditoría; las abiertas antes de una revisión conservan la suya.
-    const selected = await Promise.all(types.map(type => auditTemplateInForce(tx, type, a.openedAt)));
+    const selected = await Promise.all(types.map(type => auditTemplateInForce(tx, type, auditTemplateReferenceDate(a))));
     if (selected.some(t => !t || (!t.fileData && !t.filePath) || !t.checksum)) throw new Error("Instala/revisa las plantillas controladas de este escenario antes de emitir.");
     const snapshot = snapshotAudit(a, selected.map(t => ({ id: t!.id, documentType: t!.documentType, versionCode: t!.versionCode, checksum: t!.checksum })));
     const version = await tx.qmsRecordVersion.create({ data: { qmsRecordId: a.qmsRecordId, sequenceNumber: (last?.sequenceNumber ?? -1) + 1, kind: last ? "AUDIT_REVISION" : "INITIAL", snapshot: json(snapshot), reason: v.reason || "Informe inicial", createdByText: v.actor, frozenAt: new Date() } });

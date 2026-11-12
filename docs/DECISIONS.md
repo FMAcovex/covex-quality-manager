@@ -1560,18 +1560,21 @@ Calidad actualiza los PNT de auditorías internas y externas, vigentes desde el 
 - **Plantillas:** las que entrega Calidad como anexos sueltos, no las incluidas en el texto del PNT.
   - Informe interno 04 (Anexo III del GC-00/033/04) e informe externo 05 (Anexo III del GC-00/034/05).
   - Plan de auditoría 05 (Anexo IV del GC-00/034/05): se instala suelto; ya no se recorta del PNT.
-- **Qué plantilla usa cada auditoría:** la vigente cuando se abrió. Una auditoría abierta antes de que entre en vigor la plantilla activa conserva la anterior; las nuevas y los borradores usan la activa. Una versión instalada pero no activada no se usa nunca. Se aplica al emitir el informe y a los documentos generados con los datos actuales.
+- **Qué plantilla usa cada auditoría:** la vigente cuando se abrió. Una auditoría abierta antes de que entre en vigor la plantilla activa conserva la anterior; las nuevas y los borradores usan la activa. Se aplica al emitir el informe y a los documentos generados con los datos actuales.
+  - Una versión instalada pero nunca activada no se usa: de las anteriores solo cuentan las sustituidas, que al activarse la siguiente reciben fin de vigencia.
+  - Un expediente abierto o cerrado sin fecha de apertura (histórico) se toma por su fecha de alta.
 - **Informes 04 y 05:**
   - cabecera del interno con «Normativa y criterios de auditoría» (`referenceText`); sin normativa registrada se conserva la indicación de la plantilla;
   - listado de observaciones por criticidad; en el interno con la columna REFERENCIA (requisito de referencia);
   - recomendaciones en la línea «RkXX:» de la plantilla, con su viñeta;
   - por cada observación, «OBS XX – Requisito de referencia», «Evidencia objetiva» y «Deficiencia detectada»;
   - antecedentes, conclusión y programa (Anexo I) en el nuevo orden.
-- **Firmantes:** cada función admite varias personas (`Audit.signatories`): Elaborado por, Revisado por, Aprobado por y Recibido por. El cuadro de firmas del informe lleva una fila por persona; la fila «Revisado y aprobado por» de la plantilla se usa para revisores («Revisado por») y aprobadores («Aprobado por»), que el PNT pide por separado. Fecha y firma quedan en blanco para firmar a mano.
+- **Firmantes:** cada función admite varias personas (`Audit.signatories`): Elaborado por, Revisado por, Aprobado por y Recibido por. El cuadro de firmas del informe lleva una fila por persona. Fecha y firma quedan en blanco para firmar a mano.
+  - **Decisión del responsable de Calidad (12/11/2026):** en el cuadro de firmas se incluyen por separado «Revisado por» y «Aprobado por». La fila «Revisado y aprobado por» de la plantilla se usa para las dos funciones, con su rótulo. Si una misma persona revisa y aprueba, se indica en las dos; sin aprobador, la fila «Aprobado por» sale en blanco para firmar a mano.
   - En el formulario del informe, una persona por línea: «Nombre | Puesto».
-  - Los expedientes anteriores siguen mostrando sus campos elaborado/revisado/recibido hasta que se guarde la lista. Al guardarla, esos campos conservan la primera persona de cada función para las plantillas anteriores.
+  - Los expedientes anteriores siguen mostrando sus campos elaborado/revisado/recibido hasta que se guarde la lista. Al guardarla, esos campos reciben a todas las personas de cada función, separadas por «; » (revisores y aprobadores juntos en «Revisado por»), porque las plantillas anteriores tienen una sola casilla por función.
   - La lista también admite los firmantes del CAPA plan, que se usarán con su nuevo anexo.
-- **Verificación de anexos:** lo previsto se guarda por versión («AU_INT@04») para que convivan las versiones. Las tres plantillas nuevas y las 24 actuales salen correctas con las plantillas oficiales.
+- **Verificación de anexos:** lo previsto se guarda por versión («AU_INT@04») para que convivan las versiones. Por defecto se verifica la versión activa; las demás, con `--version`. Las tres plantillas nuevas y las 24 actuales salen correctas con las plantillas oficiales.
 - **Defecto observado en la plantilla del informe interno 04:** en el listado de observaciones, la casilla REFERENCIA de la fila de MAYOR tiene una sangría derecha mayor que la columna y el texto sale en vertical. Se comunica a Calidad para corregirlo en Word; la aplicación no cambia el formato de la plantilla.
 - Sin cambios de permisos. La migración `20261112000100_audit_signatories` añade la columna y su política de captura B2 (contrato `B2_AUDIT_SIGNATORIES`). No es validación GMP.
 
