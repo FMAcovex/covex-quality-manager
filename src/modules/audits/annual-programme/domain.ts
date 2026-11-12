@@ -95,3 +95,21 @@ export function programmeChanges(previous: Partial<ProgrammeContent> | null | un
   }
   return out;
 }
+/** Clave de un ámbito: sin acentos, sin distinguir mayúsculas y con los espacios unificados. */
+const areaKey = (v: string) => (v || "Sin especificar").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+/** Prioridad del ámbito externo: Medicamento, después API (y sus plurales); el resto, en el orden en que aparece. */
+function areaPriority(key: string) {
+  return key === "medicamento" || key === "medicamentos" ? 0 : key === "api" || key === "apis" ? 1 : 2;
+}
+/**
+ * Calidad (12/11/2026): el programa externo se agrupa por ámbito empezando por Medicamento y API, los principales.
+ * Un mismo ámbito escrito de otra forma (mayúsculas, acentos, espacios) es una sola banda, con la forma escrita
+ * la primera vez. Las entradas de un ámbito quedan juntas, en su orden; los demás ámbitos, en el orden de aparición.
+ */
+export function orderProgrammeAreas<T extends { area: string }>(rows: T[]): T[] {
+  const first = new Map<string, { index: number; area: string }>();
+  rows.forEach((r, i) => { const k = areaKey(r.area); if (!first.has(k)) first.set(k, { index: i, area: r.area }); });
+  return rows.map((r, i) => ({ r, i, k: areaKey(r.area) })).sort((a, b) =>
+    areaPriority(a.k) - areaPriority(b.k) || first.get(a.k)!.index - first.get(b.k)!.index || a.i - b.i)
+    .map(({ r, k }) => (r.area === first.get(k)!.area ? r : { ...r, area: first.get(k)!.area }));
+}

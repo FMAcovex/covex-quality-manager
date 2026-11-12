@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { generateAnnualProgramme } from "./generator";
-import { issueProgrammeSchema, modalityText, programmeApproversSchema, programmeChanges, programmeComments, programmeDocumentTypes, programmeDownloadName, programmeFingerprint, programmeReference, programmeTemplateFormat, type ProgrammeContent } from "./domain";
+import { issueProgrammeSchema, modalityText, programmeApproversSchema, orderProgrammeAreas, programmeChanges, programmeComments, programmeDocumentTypes, programmeDownloadName, programmeFingerprint, programmeReference, programmeTemplateFormat, type ProgrammeContent } from "./domain";
 import { withBytes } from "@/lib/db-binary-omit";
 
 const digest = (b: Buffer | string) => createHash("sha256").update(b).digest("hex");
@@ -61,7 +61,10 @@ async function readPreview(tx: Prisma.TransactionClient, planId: string) {
       };
     }),
   };
-  if (plan.auditType === "EXTERNAL") {
+  // Externas agrupadas por ámbito. Anexo V: Medicamento, API y el resto en su orden (Calidad, 12/11/2026);
+  // la plantilla anterior del Plan Maestro conserva su agrupación por orden de aparición.
+  if (plan.auditType === "EXTERNAL" && format === "ANNEX_V") content.rows = orderProgrammeAreas(content.rows);
+  else if (plan.auditType === "EXTERNAL") {
     const groups = new Map<string, typeof content.rows>();
     for (const row of content.rows) groups.set(row.area || "Sin especificar", [...(groups.get(row.area || "Sin especificar") || []), row]);
     content.rows = [...groups.values()].flat();

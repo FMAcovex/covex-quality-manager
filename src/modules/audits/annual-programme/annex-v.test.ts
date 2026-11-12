@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { syntheticAnnexVProgramme, syntheticAnnualProgramme, syntheticProgrammeContent } from "../../../../scripts/audits-annual-programme-fixtures";
 import { generateAnnualProgramme, isAnnexVProgramme } from "./generator";
 import { getZipEntryText, readZip } from "@/lib/ooxml/zip";
-import { programmeChanges, programmeComments, programmeReference, programmeTemplateFormat } from "./domain";
+import { orderProgrammeAreas, programmeChanges, programmeComments, programmeReference, programmeTemplateFormat } from "./domain";
 
 // D-135 (R6): Programa Anual de Auditorías como Anexo V de los PNT GC-00/033/04 y GC-00/034/05. Datos ficticios.
 const docXml = (bytes: Buffer) => getZipEntryText(readZip(bytes), "word/document.xml");
@@ -108,5 +108,26 @@ describe("D-135 · comentarios y cambios del programa", () => {
     // Las emisiones anteriores a D-135 no tienen código ni comentarios: no se inventan cambios de comentarios vacíos.
     const legacy = { rows: [{ ...before.rows[0], code: undefined, comments: undefined }] } as never;
     expect(programmeChanges(legacy, { ...before, rows: [before.rows[0]] }).some(c => /código|comentarios/.test(c))).toBe(false);
+  });
+});
+
+describe("D-135 · orden de los ámbitos del programa externo", () => {
+  it("Medicamento primero, después API y el resto en su orden; las entradas de un ámbito quedan juntas", () => {
+    const rows = ["Servicios", "API", "medicamentos", "", "APIs", "Medicamento", "Excipientes"].map((area, i) => ({ id: i, area }));
+    expect(orderProgrammeAreas(rows).map(r => r.id)).toEqual([2, 5, 1, 4, 0, 3, 6]);
+  });
+  it("revisión I-2: solo Medicamento y API exactos (y sus plurales) van delante", () => {
+    const rows = ["Medicamentos veterinarios", "Apicultura", "Principios activos (API)", "API", "Medicamento"].map((area, i) => ({ id: i, area }));
+    expect(orderProgrammeAreas(rows).map(r => r.id)).toEqual([4, 3, 0, 1, 2]);
+  });
+  it("revisión I-1: el mismo ámbito escrito de otra forma es una sola banda, con su primera forma", () => {
+    const rows = ["MEDICAMENTO", "Servicios", "Medicamento", " medicaménto ", "api", "API"].map((area, i) => ({ id: i, area }));
+    expect(orderProgrammeAreas(rows).map(r => [r.id, r.area])).toEqual([[0, "MEDICAMENTO"], [2, "MEDICAMENTO"], [3, "MEDICAMENTO"], [4, "api"], [5, "api"], [1, "Servicios"]]);
+  });
+  it("el Word sigue el mismo orden que la vista previa", () => {
+    const c = content(false);
+    c.rows = orderProgrammeAreas([{ ...c.rows[0], area: "Servicios" }, { ...c.rows[1], area: "API" }, { ...c.rows[2], area: "api" }]);
+    const rows = cells(docXml(generateAnnualProgramme(syntheticAnnexVProgramme(false), c, 0)), 2);
+    expect(rows.filter(r => r.length === 1 && r[0].startsWith("AMBITO")).map(r => r[0])).toEqual(["AMBITO API", "AMBITO Servicios"]);
   });
 });
