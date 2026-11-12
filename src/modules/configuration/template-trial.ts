@@ -32,6 +32,7 @@ import { getReturnExportRows } from "@/modules/returns/documents/export-data";
 import { fillOosAnnexIII, fillOosAnnexIV, fillOosAnnexVI } from "@/modules/oos/documents/docx";
 import { getOosAnnexVIRecords, getOosDetail } from "@/modules/oos/queries";
 import { generateAuditCapaPlan, generateAuditExternalPlan, generateAuditReport } from "@/modules/audits/documents/generators";
+import { loadCapaPlanLinks } from "@/modules/audits/capa-plan-links";
 import { generateAnnualProgramme } from "@/modules/audits/annual-programme/generator";
 import { getProgrammePreview } from "@/modules/audits/annual-programme/service";
 import { auditReportInclude, snapshotAudit } from "@/modules/audits/report-service";
@@ -226,7 +227,7 @@ export async function generateTemplateTrial(templateId: string, rawReference: st
       const { id, code } = await record("AUDIT", Object.keys(where).length ? where as Record<string, unknown> : undefined, documentType === "AUDIT_CAPA_PLAN" ? undefined : `Este documento se prueba con una auditoría ${documentType === "AUDIT_INTERNAL_REPORT" ? "interna" : "de proveedor"} fuera de borrador, y no hay ninguna (o la indicada no lo es).`);
       const audit = required(await prisma.audit.findUnique({ where: { id }, include: auditReportInclude }));
       const sequence = (await prisma.qmsRecordVersion.findFirst({ where: { qmsRecordId: audit.qmsRecordId }, orderBy: { sequenceNumber: "desc" }, select: { sequenceNumber: true } }))?.sequenceNumber ?? 0;
-      const snapshot = snapshotAudit(audit, []);
+      const snapshot = snapshotAudit(audit, [], documentType === "AUDIT_CAPA_PLAN" ? await loadCapaPlanLinks(prisma, audit.findings.map(f => f.id)) : undefined);
       try {
         if (documentType === "AUDIT_CAPA_PLAN") return excel(generateAuditCapaPlan(bytes, snapshot, null), code);
         if (documentType === "AUDIT_EXTERNAL_PLAN") return word(generateAuditExternalPlan(bytes, snapshot), code);

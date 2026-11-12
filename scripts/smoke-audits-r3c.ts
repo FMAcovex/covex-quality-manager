@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { DocumentType } from "@prisma/client";
 import { prisma } from "../src/lib/db";
 import { saveAudit, auditDefaults } from "../src/modules/audits/service";
@@ -15,7 +15,7 @@ import { getAuditList } from "../src/modules/audits/queries";
 import { createValidatedReviewThread, acceptValidatedReviewThread, resolveValidatedReviewThread, replyToValidatedReviewThread } from "../src/lib/qms/review/mutation-service";
 import { auditFindingReviewTarget, auditActionReviewTarget, auditReviewTargets } from "../src/lib/qms/review/targets/audits";
 import { getZipEntryText, readZip } from "../src/lib/ooxml/zip";
-import { installSyntheticAuditTemplates, cleanupAuditR3cFixtures } from "./audits-r3c-fixtures";
+import { installSyntheticAuditTemplates, cleanupAuditR3cFixtures, syntheticCapaPlanAnnexIV } from "./audits-r3c-fixtures";
 if(process.env.APP_ENV!=='test')throw new Error('APP_ENV=test y BD aislada obligatorios.');
 const actor='Smoke R3C ficticio', marker=`R3C-${randomUUID()}`, records:string[]=[], templates:string[]=[];
 async function create(scenario:'INTERNAL_COVEX'|'SUPPLIER'|'CLIENT'|'AUTHORITY'='INTERNAL_COVEX'){
@@ -24,6 +24,7 @@ async function create(scenario:'INTERNAL_COVEX'|'SUPPLIER'|'CLIENT'|'AUTHORITY'=
  await saveAuditReport(a.id,{actor,reportDate:'2096-10-08',conclusion:'Conclusión inicial congelada',programme:'09:00 | Revisión documental',planIntroduction:'Introducción ficticia',activityDuration:'09:00–12:00',reportPreparedBy:actor});return a;
 }
 const pdf=()=>new File(['%PDF-1.7\n% Ficticio para pruebas\n'],'firmado-ficticio.pdf',{type:'application/pdf'});
+import { readSignatories } from "../src/modules/audits/signatories";
 async function main(){
  if(process.env.R3C_OFFICIAL_TEMPLATES!=='1')templates.push(...await installSyntheticAuditTemplates());
  const a=await create(), other=await create();
@@ -57,7 +58,12 @@ async function main(){
  const fu=await create(),fuObs=await saveAuditFinding(fu.id,{actor,findingType:'FINDING',criticality:'MINOR',description:'OBS de seguimiento R5C2'}),fuAction=await saveAuditFindingAction(fu.id,fuObs.id,{actor,description:'Acción de seguimiento R5C2',status:'OPEN'});
  const fuRk=await saveAuditFinding(fu.id,{actor,findingType:'RECOMMENDATION',description:'Rk sin acciones R5C2'});
  await assert.rejects(recordCapaPlanFollowup(fu.id,{actor,requestId:randomUUID(),followupDate:'2096-10-09'}),/versión 00/);
- await establishCapaPlan(fu.id,{actor,requestId:randomUUID(),capaPlanDate:'2096-10-08'});
+ // D-136 (R6): firmantes del plan CAPA al establecer la versión 00 y en un seguimiento.
+ await assert.rejects(establishCapaPlan(fu.id,{actor,requestId:randomUUID(),capaPlanDate:'2096-10-08',capaPlanPreparedBy:' | Sin nombre'}),(e:unknown)=>e instanceof Error&&'fields' in e);
+ await establishCapaPlan(fu.id,{actor,requestId:randomUUID(),capaPlanDate:'2096-10-08',capaPlanPreparedBy:'Elaboradora ficticia | Técnica GC',capaPlanReviewedBy:'Revisor ficticio\nRevisora ficticia | DT',capaPlanApprovedBy:'Aprobadora ficticia | Dirección GC'});
+ {const people=readSignatories((await prisma.audit.findUniqueOrThrow({where:{id:fu.id}})).signatories).filter(x=>x.document==='CAPA_PLAN');
+  assert.deepEqual(people.map(x=>[x.role,x.name]),[['PREPARED','Elaboradora ficticia'],['REVIEWED','Revisor ficticio'],['REVIEWED','Revisora ficticia'],['APPROVED','Aprobadora ficticia']]);
+  assert(await prisma.changeHistory.count({where:{qmsRecordId:fu.qmsRecordId,fieldPath:'audit.capaPlan.signatories'}}));}
  const followupForm=async(extra:Record<string,string>)=>{const act=await prisma.auditFindingAction.findUniqueOrThrow({where:{id:fuAction.id}}),rk=await prisma.auditFinding.findUniqueOrThrow({where:{id:fuRk.id}});return {actor,requestId:randomUUID(),followupDate:'2096-10-09',nextReviewDate:'',observations:'',changeReason:'',
   [`a.${act.id}.status`]:act.status,[`a.${act.id}.closedAt`]:act.closedAt?.toISOString().slice(0,10)??'',[`a.${act.id}.targetDate`]:act.targetDate?.toISOString().slice(0,10)??'',[`a.${act.id}.evidenceReference`]:act.evidenceReference??'',[`a.${act.id}.evidence`]:act.evidence??'',[`a.${act.id}.updatedAt`]:act.updatedAt.toISOString(),
   [`f.${rk.id}.treatmentStatus`]:rk.treatmentStatus,[`f.${rk.id}.treatment`]:rk.treatment??'',[`f.${rk.id}.closedAt`]:'',[`f.${rk.id}.evidenceReference`]:rk.evidenceReference??'',[`f.${rk.id}.evidence`]:rk.evidence??'',[`f.${rk.id}.updatedAt`]:rk.updatedAt.toISOString(),...extra};};
@@ -77,6 +83,19 @@ async function main(){
  const untouched=await followupForm({observations:'Solo observación, sin cambios'});untouched[`a.${fuAction.id}.updatedAt`]=new Date(0).toISOString();
  const fu02=await recordCapaPlanFollowup(fu.id,untouched);assert.equal(fu02.sequenceNumber,2);
  assert.equal(await prisma.auditCapaPlanVersion.count({where:{auditId:fu.id}}),3);
+ // D-136 (revisión I5 y M4): un seguimiento sigue con la plantilla de su versión 00 aunque se active otra, y puede
+ // cambiar solo una función de firmantes sin tocar las demás.
+ {const v0=await prisma.auditCapaPlanVersion.findUniqueOrThrow({where:{auditId_sequenceNumber:{auditId:fu.id,sequenceNumber:0}}});
+  const previous=await prisma.templateVersion.findMany({where:{module:'AUDIT',documentType:'AUDIT_CAPA_PLAN',isActive:true},select:{id:true}});
+  const bytes=syntheticCapaPlanAnnexIV();
+  const other=await prisma.templateVersion.create({data:{module:'AUDIT',documentType:'AUDIT_CAPA_PLAN',versionCode:`R6-${randomUUID().slice(0,8)}`,effectiveFrom:new Date('2026-01-01'),fileName:'anexo-iv-ficticio.xlsx',fileData:new Uint8Array(bytes),fileSize:bytes.length,checksum:createHash('sha256').update(bytes).digest('hex')}});
+  await prisma.templateVersion.updateMany({where:{id:{in:previous.map(t=>t.id)}},data:{isActive:false}});
+  try{
+   const fu03=await recordCapaPlanFollowup(fu.id,await followupForm({capaPlanApprovedBy:'Otra aprobadora ficticia | Dirección GC'}));
+   assert.equal(fu03.templateVersionId,v0.templateVersionId);assert.notEqual(fu03.templateVersionId,other.id);
+   const people=readSignatories((await prisma.audit.findUniqueOrThrow({where:{id:fu.id}})).signatories).filter(x=>x.document==='CAPA_PLAN');
+   assert.deepEqual(people.map(x=>[x.role,x.name]),[['PREPARED','Elaboradora ficticia'],['REVIEWED','Revisor ficticio'],['REVIEWED','Revisora ficticia'],['APPROVED','Otra aprobadora ficticia']]);
+  }finally{await prisma.templateVersion.update({where:{id:other.id},data:{isActive:false}});await prisma.templateVersion.updateMany({where:{id:{in:previous.map(t=>t.id)}},data:{isActive:true}});}}
  const v00=await issueAuditReport(a.id,{actor});assert.equal(v00.sequenceNumber,0);assert(v00.frozenAt);
  const before=JSON.stringify(v00.snapshot), s00=readAuditSnapshot(v00.snapshot);assert.equal(s00.audit.findings.length,2);
  const comment=async(t:ReturnType<typeof auditFindingReviewTarget>)=>createValidatedReviewThread({qmsRecordId:a.qmsRecordId,recordVersionId:v00.id,...t,fieldLabelSnapshot:t.label,valueSnapshot:t.valueSnapshot,createdByText:actor,initialMessage:'Observación histórica de pruebas'});

@@ -1600,3 +1600,36 @@ Segunda entrega de R6 (D-134), con las respuestas del responsable de Calidad del
   - La instrucción de la plantilla «Añadir o eliminar tantas filas…» no se incluye en el programa emitido: su párrafo queda vacío, para que las tablas no se junten.
 - Sin cambios de permisos. La migración `20261113000100_audit_programme_preparer` añade el campo y su política de captura B2 (contrato `B2_AUDIT_PROGRAMME_PREPARER`). No es validación GMP.
 
+## D-136 — Auditorías R6: plan CAPA del Anexo IV por bloques (2026-11-12)
+
+Tercera entrega de R6 (D-134, D-135), con la plantilla «Anexo IV del PNT GC-00/033/04» y el ejemplo de Calidad. Vale para auditorías internas, de cliente, a proveedor e inspecciones.
+
+- **Plantilla:** el Anexo IV suelto de Calidad (versión de catálogo «04», vigente desde el 15/11/2026). La versión 00 del plan usa la plantilla vigente al abrir la auditoría (D-134); los seguimientos siguen con la de su versión 00, para no cambiar el formato a mitad del plan. La A4.03 anterior conserva su generador.
+- **Cabecera:**
+  - área, proceso o actividad auditada (departamentos, o la entidad auditada en las externas);
+  - código de la auditoría, fecha de auditoría y fecha del informe;
+  - versión del plan;
+  - tipo, con la lista de la plantilla: Interna, Subcontratada, Externa (proveedor), de Cliente o Inspección;
+  - entidad auditora (COVEX en las propias, salvo que se indique otra).
+- **Un bloque por hallazgo o recomendación activa:**
+  - Una fila de datos por CAPA, con código, responsable(s), fecha prevista (la última de sus acciones planificadas), estado y fecha de cierre. Las columnas del hallazgo (Nº, tipo/criticidad, descripción, código de desviación y causa raíz) quedan combinadas en vertical, como en el ejemplo de Calidad.
+  - Las CAPA salen de las vinculadas al hallazgo y de las relacionadas con sus desviaciones; solo cuentan las relaciones activas, y un expediente anulado sale como «código (anulado)».
+  - Las acciones propias de la auditoría siguen, como filas sin código CAPA.
+  - Debajo, «Acciones / Justificación / Observaciones» (las acciones de cada CAPA, «código: descripción», las acciones propias y el texto libre del hallazgo) y «Evidencias» (referencias y evidencias del hallazgo y de sus acciones).
+- **Causa raíz:** la de la desviación. Si aún no la tiene, «Pendiente de investigación (código)». Sin desviación, el campo nuevo del hallazgo `AuditFinding.rootCause`.
+- **Estado (lista de la plantilla):**
+  - Abierta: CAPA abierta o en curso.
+  - Pendiente: cerrada a falta de verificar la eficacia.
+  - Cerrada: cerrada y eficaz, o sin eficacia aplicable.
+  - Una cancelada sale como «Cerrada (cancelada)» y una no eficaz como «Cerrada (no eficaz)». Una CAPA anulada sale como «Anulada», sin fecha de cierre; una desviación anulada no pide «Pendiente de investigación».
+  - Las acciones propias usan la misma lista; una pendiente de verificación sale como «Pendiente» y una que no procede, como «No procede».
+  - Sin cierre, la fecha de cierre sale como «Pendiente».
+  - **Confirmado por el responsable de Calidad (12/11/2026)**, aunque no lo fija el PNT: «Cerrada (no eficaz)», «Anulada», que la fecha prevista de una CAPA sea la de su última acción planificada y que una CAPA a falta de eficacia lleve el cierre como «Pendiente».
+- **Firmas:** elaborador, revisores y aprobadores del plan, con varias personas por función (`Audit.signatories`, documento CAPA_PLAN). Se registran al establecer la versión 00 y en cada seguimiento, y se guardan con la versión. Al no ajustar el texto la casilla de firmas de la plantilla, van en una sola línea, separadas por función.
+- **Cada versión congela sus vínculos** (desviaciones y CAPA de cada hallazgo) en su foto. Las fotos anteriores no los tienen y generan los bloques con los datos del hallazgo.
+- Las fechas de la tabla se escriben como fechas de Excel, porque así las define la plantilla; las de la cabecera, como texto dd/mm/aaaa.
+- El plan muestra la causa raíz de la desviación tal como esté registrada, también mientras la desviación sigue abierta: puede ser todavía provisional. Lo valida quien revisa y aprueba el plan (confirmado por Calidad el 12/11/2026).
+- El plan, documento de la auditoría, incluye datos de las desviaciones y CAPA vinculadas (códigos, causa raíz, acciones y responsables), como ya hacía el CAPA plan anterior con sus códigos. Se descarga con el permiso de Auditorías.
+- Con el permiso de seguimiento del plan se pueden cambiar sus firmantes al registrar un seguimiento; solo cambian las funciones que el formulario envía.
+- Sin cambios de permisos. La migración `20261114000100_audit_finding_root_cause` añade el campo y su política de captura B2 (contrato `B2_AUDIT_FINDING_ROOT_CAUSE`). No es validación GMP.
+

@@ -82,6 +82,8 @@ export const templateCatalog: CatalogTemplate[] = [
   // que entregó Calidad; las auditorías abiertas antes de esa fecha conservan las versiones anteriores.
   { module: "AUDIT", documentType: "AUDIT_INTERNAL_REPORT", versionCode: "04", label: "Auditorías · Informe interno", fileName: "A3_04 INFORME AUDITORIA INTERNA.docx", effectiveFrom: "2026-11-15", sources: file("133111598a73eda149dc49fdebdfa2c4d9d9f68d311907adbad8abbd17c68949") },
   { module: "AUDIT", documentType: "AUDIT_EXTERNAL_REPORT", versionCode: "05", label: "Auditorías · Informe externo", fileName: "A3. INFORME AUDITORIA_V05.docx", effectiveFrom: "2026-11-15", sources: file("caced8199c6717124ce723e9bba567b5297902b0f2a0442f50c85dc6d9bf06c4") },
+  // D-136 (R6): plan CAPA del Anexo IV del GC-00/033/04 (internas, a proveedor, de cliente e inspecciones).
+  { module: "AUDIT", documentType: "AUDIT_CAPA_PLAN", versionCode: "04", label: "Auditorías · Plan CAPA (Anexo IV)", fileName: "Anexo IV CAPA Auditorias 04.xlsx", effectiveFrom: "2026-11-15", sources: file("3df05178ff0f43b9435646337e82ad794776a76c53a6086a89dfedf37f973373") },
   { module: "AUDIT", documentType: "AUDIT_EXTERNAL_PLAN", versionCode: "05", label: "Auditorías · Plan de auditoría externa", fileName: "A4_PLAN AUDIT.docx", effectiveFrom: "2026-11-15", sources: file("b3db55f090e0b802e1e18590e9b6a29f24976a9c777a2c1deb6f91be13ffb96f") },
   // D-106: el programa interno se instala desde el .docx guardado en Word por Calidad, no desde el
   // .doc original (sha fa1296da…), que necesitaba LibreOffice. Sustituye una conversión anterior.

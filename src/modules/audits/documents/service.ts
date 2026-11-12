@@ -11,6 +11,7 @@ import { validateSignedPdfMetadata, safeSignedPdfFileName } from "@/lib/qms/sign
 import { TemplateAssetError } from "@/modules/configuration/template-assets";
 import { auditReportInclude, lockReportAudit, auditReportEvent, readAuditSnapshot, snapshotAudit } from "../report-service";
 import { generateAuditReport, generateAuditCapaPlan, generateAuditExternalPlan } from "./generators";
+import { loadCapaPlanLinks } from "../capa-plan-links";
 import { validateAuditAttachment } from "./attachment-validation";
 import { auditDocumentBlocker } from "./availability";
 import { listCapaPlanVersions } from "../capa-plan-service";
@@ -31,7 +32,8 @@ export async function generateAuditDocument(auditId: string, type: DocumentType,
     if (blocker) throw new Error(blocker);
     const version = sequence === null ? null : await tx.qmsRecordVersion.findUnique({ where: { qmsRecordId_sequenceNumber: { qmsRecordId: a.qmsRecordId, sequenceNumber: sequence } } });
     if (sequence !== null && !version) throw new Error("La versión no existe en este expediente.");
-    const snapshot = version ? readAuditSnapshot(version.snapshot) : snapshotAudit(a, []);
+    // D-136: el plan CAPA con datos actuales lleva las desviaciones y CAPA de cada hallazgo.
+    const snapshot = version ? readAuditSnapshot(version.snapshot) : snapshotAudit(a, [], type === "AUDIT_CAPA_PLAN" ? await loadCapaPlanLinks(tx, a.findings.map(f => f.id)) : undefined);
     const scenario = snapshot.audit.scenario;
     if ((type === "AUDIT_INTERNAL_REPORT" && !scenario?.startsWith("INTERNAL")) || ((type === "AUDIT_EXTERNAL_REPORT" || type === "AUDIT_EXTERNAL_PLAN") && scenario !== "SUPPLIER")) throw new Error("El documento no aplica al escenario de esta versión.");
     // Retained signed PDFs share the report's documentType and version. They

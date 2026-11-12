@@ -34,3 +34,16 @@ describe("D-134 · firmantes de la auditoría", () => {
     expect(reportSignatories({ signatories: [], preparedBy: "Ana", preparedPosition: "Técnica", reviewedBy: "Rosa", reviewedPosition: null, receivedBy: null, receivedPosition: null }).map(s => `${s.role}:${s.name}`)).toEqual(["PREPARED:Ana", "REVIEWED:Rosa"]);
   });
 });
+
+describe("D-136 · firmantes del plan CAPA por función", () => {
+  it("revisión M4: una función que el formulario no envía conserva sus personas", async () => {
+    const { mergeSignatoryRoles } = await import("./signatories");
+    const current = [
+      { document: "CAPA_PLAN" as const, role: "PREPARED" as const, name: "Elabora", position: "" },
+      { document: "CAPA_PLAN" as const, role: "APPROVED" as const, name: "Aprueba", position: "" },
+    ];
+    const next = [{ document: "CAPA_PLAN" as const, role: "REVIEWED" as const, name: "Revisa", position: "" }];
+    expect(mergeSignatoryRoles(current, next, ["REVIEWED"]).map(s => s.name)).toEqual(["Elabora", "Revisa", "Aprueba"]);
+  });
+});
+

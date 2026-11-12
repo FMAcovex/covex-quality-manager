@@ -50,12 +50,18 @@ export function signatoryLines(list: AuditSignatory[], document: SignatoryDocume
   return list.filter((s) => s.document === document && s.role === role).map((s) => (s.position ? `${s.name} | ${s.position}` : s.name)).join("\n");
 }
 
+/** D-136 (R6): firmantes del plan CAPA (Anexo IV): elaborador, revisores y aprobadores. */
+export const capaPlanSignatoryFields = { capaPlanPreparedBy: "PREPARED", capaPlanReviewedBy: "REVIEWED", capaPlanApprovedBy: "APPROVED" } as const satisfies Record<string, SignatoryRole>;
+
 /** Errores por campo del formulario, o la lista completa de firmantes del documento. */
 export function reportSignatoriesFromForm(values: Record<keyof typeof reportSignatoryFields, string>) {
+  return signatoriesFromForm(values, reportSignatoryFields, "REPORT");
+}
+export function signatoriesFromForm(values: Record<string, string | undefined>, fields: Record<string, SignatoryRole>, document: SignatoryDocument) {
   const errors: Record<string, string> = {};
   const list: AuditSignatory[] = [];
-  for (const [field, role] of Object.entries(reportSignatoryFields) as [keyof typeof reportSignatoryFields, SignatoryRole][]) {
-    const people = parseSignatoryLines(values[field] ?? "", "REPORT", role);
+  for (const [field, role] of Object.entries(fields)) {
+    const people = parseSignatoryLines(values[field] ?? "", document, role);
     if (people.length > MAX_SIGNATORIES_PER_ROLE) errors[field] = `Como máximo ${MAX_SIGNATORIES_PER_ROLE} personas.`;
     else if (people.some((p) => !p.name)) errors[field] = "Cada línea necesita un nombre: «Nombre | Puesto».";
     else if (people.some((p) => p.name.length > 200 || p.position.length > 200)) errors[field] = "Nombre y puesto admiten 200 caracteres cada uno.";
@@ -64,6 +70,10 @@ export function reportSignatoriesFromForm(values: Record<keyof typeof reportSign
   return { list, errors };
 }
 
+/** Las personas de las funciones enviadas sustituyen a las actuales; las demás funciones se conservan. */
+export function mergeSignatoryRoles(current: AuditSignatory[], next: AuditSignatory[], sentRoles: SignatoryRole[]) {
+  return signatoryRoles.flatMap(role => (sentRoles.includes(role) ? next : current).filter(s => s.role === role));
+}
 /** Sustituye los firmantes de un documento conservando los del otro. */
 export function replaceDocumentSignatories(current: unknown, document: SignatoryDocument, next: AuditSignatory[]) {
   return [...readSignatories(current).filter((s) => s.document !== document), ...next];

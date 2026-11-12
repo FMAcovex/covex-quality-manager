@@ -1835,6 +1835,8 @@ model AuditFinding {
   description         String                  @db.Text
   criterionReference  String?                 @db.Text
   objectiveEvidence   String?                 @db.Text
+  /// D-136 (R6): causa raíz para el plan CAPA solo cuando el hallazgo no tiene desviación.
+  rootCause           String?                 @db.Text
   treatment           String?                 @db.Text
   treatmentStatus     AuditActionStatus       @default(OPEN)
   closedAt            DateTime?               @db.Date
