@@ -1,6 +1,6 @@
 import { DocumentType } from "@prisma/client";
 import { readZip,updateZipEntry,writeZip } from "@/lib/ooxml/zip";
-import { escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
+import { replaceSheetData, escapeXml,setXlsxCell } from "@/lib/ooxml/xml";
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { loadReturnPntTemplate } from "@/modules/returns/documents/templates";
 import { generateSimpleXlsx } from "@/lib/ooxml/simple-xlsx";
@@ -64,7 +64,7 @@ export async function generateReturnAnnexVI(year:number,rows:Row[],versionCode="
   return `<row r="${n}" ht="${returnRowHeight(vals.map(value=>String(value??"")))}" customHeight="1">${"ABCDEFGHIJKLM".split("").map((col,j)=>xmlCell(col,n,styles.get(col)??"",String(vals[j]??""))).join("")}</row>`;
  });
  const maxRow=Math.max(5,4+flat.length);
- sheet=sheet.replace(new RegExp("<sheetData>[\\s\\S]*?</sheetData>"),`<sheetData>${[...headers,...body].join("")}</sheetData>`);
+ sheet=replaceSheetData(sheet,[...headers,...body].join(""));
  sheet=sheet.replace(/<dimension ref="[^"]+"/,`<dimension ref="A1:M${maxRow}"`);
  sheet=setXlsxCell(sheet,"A3",String(year));
  sheet=finalizeReturnAnnexVISheet(sheet);

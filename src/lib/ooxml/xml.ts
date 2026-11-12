@@ -195,7 +195,8 @@ export function appendWordVariableCellText(
   if (!text) return documentXml;
   return transformWordCell(documentXml, table, row, cell, (xml) => {
     assertVariableCell(xml);
-    return xml.replace("</w:tc>", `${variableParagraphXml(text)}</w:tc>`);
+    // Reemplazo con función: un «$» del texto no se interpreta como patrón.
+    return xml.replace("</w:tc>", () => `${variableParagraphXml(text)}</w:tc>`);
   });
 }
 
@@ -303,8 +304,19 @@ export function replaceWordRowWithVariableCopies(
 
 export function appendWordCellText(documentXml: string, table: number, row: number, cell: number, text: string) {
   return transformWordCell(documentXml, table, row, cell, (xml) =>
-    xml.replace("</w:tc>", `${paragraphXml(text)}</w:tc>`),
+    xml.replace("</w:tc>", () => `${paragraphXml(text)}</w:tc>`),
   );
+}
+
+/**
+ * Sustituye la tabla de una hoja de Excel por la generada. Se corta y pega, sin String.replace con texto:
+ * un «$» en los datos del usuario se interpretaría como patrón ($&, $', $`, $$).
+ */
+export function replaceSheetData(sheetXml: string, rowsXml: string) {
+  const start = sheetXml.search(/<sheetData\b[^>]*>|<sheetData\/>/), end = sheetXml.indexOf("</sheetData>");
+  if (start < 0) throw new Error("XLSX: falta la tabla de la hoja.");
+  const after = end < 0 ? sheetXml.indexOf(">", start) + 1 : end + "</sheetData>".length;
+  return sheetXml.slice(0, start) + `<sheetData>${rowsXml}</sheetData>` + sheetXml.slice(after);
 }
 
 export function setXlsxCell(sheetXml: string, ref: string, value: string | number | null) {
@@ -490,7 +502,7 @@ export function appendWordCellTextBalanced(
     const cell = cells[cellIndex];
     if (!cell) throw new Error(`Direct Word cell not found: ${cellIndex}`);
     const addition = paragraphXmlWithColor(text, color);
-    const updatedCell = cell.xml.replace("</w:tc>", `${addition}</w:tc>`);
+    const updatedCell = cell.xml.replace("</w:tc>", () => `${addition}</w:tc>`);
     const updatedRow = row.xml.slice(0, cell.start) + updatedCell + row.xml.slice(cell.end);
     return tableXml.slice(0, row.start) + updatedRow + tableXml.slice(row.end);
   });

@@ -193,6 +193,12 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Un «$» en los textos ya no daña los anexos (2026-11-12):**
+- **Qué falla:** un «$» en un texto del usuario (por ejemplo «"50$"», «$$» o «$&») se interpretaba como patrón de reemplazo de JavaScript. El Word o el Excel salía dañado (Office lo «reparaba» perdiendo contenido) o el texto cambiaba sin avisar («$$» → «$»).
+- **Dónde:** los ayudantes comunes que añaden texto a una casilla de Word (`appendWordCellText`, `appendWordVariableCellText`, `appendWordCellTextBalanced`, usados por varios anexos) y la tabla de los listados en Excel de CAPA (Anexo IV), Reclamaciones (Anexo V) y Devoluciones (Anexo VI).
+- **Arreglo:** reemplazo con función y un ayudante común `replaceSheetData` que corta y pega la tabla. Los informes y planes de Auditorías ya lo hacían (D-134, D-136).
+- **Comprobado:** pruebas que fallaban antes del arreglo (`src/lib/ooxml/dollar-patterns.test.ts`). No cambia nada más del contenido de los anexos.
+
 **Auditorías R6 · tercera entrega: plan CAPA del Anexo IV por bloques (2026-11-12, D-136):**
 - **Qué cambia:**
   - Un bloque por hallazgo con una fila por CAPA (las vinculadas al hallazgo y las de su desviación) y por acción propia, con responsable, fecha prevista, estado y cierre.
