@@ -313,9 +313,16 @@ export function appendWordCellText(documentXml: string, table: number, row: numb
  * un «$» en los datos del usuario se interpretaría como patrón ($&, $', $`, $$).
  */
 export function replaceSheetData(sheetXml: string, rowsXml: string) {
-  const start = sheetXml.search(/<sheetData\b[^>]*>|<sheetData\/>/), end = sheetXml.indexOf("</sheetData>");
-  if (start < 0) throw new Error("XLSX: falta la tabla de la hoja.");
-  const after = end < 0 ? sheetXml.indexOf(">", start) + 1 : end + "</sheetData>".length;
+  const open = /<sheetData\b[^>]*>/.exec(sheetXml);
+  if (!open) throw new Error("XLSX: falta la tabla de la hoja.");
+  const start = open.index, openEnd = start + open[0].length;
+  // Una tabla autocerrada no tiene cierre; si no, el cierre se busca desde la apertura y es obligatorio.
+  let after = openEnd;
+  if (!open[0].endsWith("/>")) {
+    const end = sheetXml.indexOf("</sheetData>", openEnd);
+    if (end < 0) throw new Error("XLSX: la tabla de la hoja no tiene cierre.");
+    after = end + "</sheetData>".length;
+  }
   return sheetXml.slice(0, start) + `<sheetData>${rowsXml}</sheetData>` + sheetXml.slice(after);
 }
 

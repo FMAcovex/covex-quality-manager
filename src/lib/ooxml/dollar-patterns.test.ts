@@ -29,6 +29,19 @@ describe("Patrones «$» en los textos de los anexos", () => {
     expect(unescape(out.match(/<t>([\s\S]*?)<\/t>/)![1])).toBe(TRICKY);
   });
 
+  it.each([
+    ["con atributos", '<worksheet><sheetData foo="1"><row r="1"/></sheetData><x/></worksheet>', '<worksheet><sheetData><row r="9"/></sheetData><x/></worksheet>'],
+    ["autocerrada", '<worksheet><sheetData/><pageMargins/></worksheet>', '<worksheet><sheetData><row r="9"/></sheetData><pageMargins/></worksheet>'],
+    ["autocerrada con cierre más adelante", '<worksheet><sheetData/><extLst><sheetData>z</sheetData></extLst></worksheet>', '<worksheet><sheetData><row r="9"/></sheetData><extLst><sheetData>z</sheetData></extLst></worksheet>'],
+    ["dos tablas: solo la primera", '<worksheet><sheetData><row r="1"/></sheetData><sheetData><row r="2"/></sheetData></worksheet>', '<worksheet><sheetData><row r="9"/></sheetData><sheetData><row r="2"/></sheetData></worksheet>'],
+  ])("replaceSheetData, tabla %s", (_name, sheet, expected) => {
+    expect(replaceSheetData(sheet, '<row r="9"/>')).toBe(expected);
+  });
+  it("replaceSheetData rechaza una tabla sin cierre o una hoja sin tabla", () => {
+    expect(() => replaceSheetData('<worksheet><sheetData><row r="1"/><pageMargins/></worksheet>', "")).toThrow();
+    expect(() => replaceSheetData("<worksheet/>", "")).toThrow();
+  });
+
   it("listado de CAPA (Anexo IV): una descripción con «$» no corrompe la hoja", () => {
     const rows = [1, 2, 3, 4].map(n => `<row r="${n}" spans="1:14"><c r="A${n}" s="1"></c></row>`).join("");
     const template = `<worksheet><dimension ref="A1:N15"/><sheetData>${rows}<row r="5" spans="1:14">${"ABCDEF".split("").map(c => `<c r="${c}5" s="8"></c>`).join("")}</row><row r="15" spans="1:14"><c r="A15" s="3"></c></row></sheetData><mergeCells count="3"><mergeCell ref="M1:N1"/></mergeCells><pageSetup orientation="portrait"/></worksheet>`;
