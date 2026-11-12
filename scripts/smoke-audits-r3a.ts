@@ -58,6 +58,18 @@ async function main() {
     assert.equal(received.qmsRecord.businessCode,null);
     await changeAdministrativeStatus(received.qmsRecordId,"ANNUL","Anulación sin código","Smoke");
     await changeAdministrativeStatus(received.qmsRecordId,"REACTIVATE","Reactivar sin código","Smoke");
+    // D-137 (R6): código libre, el del informe del cliente o el expediente de la agencia; editable y en el historial.
+    const freeCode=`${scenario==="CLIENT"?"CLI":"AEMPS"} ${marker}/2097`;
+    const coded=await saveAudit({...auditDefaults(received),businessCode:`  ${freeCode}  `},received.id);
+    assert.equal(coded.qmsRecord.businessCode,freeCode);
+    const recoded=await saveAudit({...auditDefaults(coded),businessCode:`${freeCode}-B`,changeReason:"Código corregido"},received.id);
+    assert.equal(recoded.qmsRecord.businessCode,`${freeCode}-B`);
+    assert(await prisma.changeHistory.count({where:{qmsRecordId:received.qmsRecordId,fieldPath:"businessCode"}})>=2);
+    const twin=await create({...supplier,scenario,entityCode:"",externalReference:`REF2-${marker}`,businessCode:""});
+    await assert.rejects(saveAudit({...auditDefaults(twin),businessCode:`${freeCode}-B`},twin.id),/ya lo usa otra auditoría/);
+    await assert.rejects(saveAudit({...auditDefaults(twin),businessCode:"Código\u0007raro"},twin.id),/caracteres/);
+    // GC-00/034/05 §3: las auditorías e inspecciones recibidas no forman parte del programa anual.
+    await assert.rejects(saveAudit({...auditDefaults(twin),planningStatus:"PLANNED",planEntryId:randomUUID()},twin.id),/programa anual/);
   }
   const draft = await create({actor:"Smoke",title:`Identidad ${marker}`,departmentIds:[department.id],participants:[{displayName:"Persistente",role:"AUDITOR",sortOrder:0}]});
   const removed = await saveAudit({...auditDefaults(draft),departmentIds:[],participants:[]},draft.id);

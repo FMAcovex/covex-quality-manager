@@ -1633,3 +1633,24 @@ Tercera entrega de R6 (D-134, D-135), con la plantilla «Anexo IV del PNT GC-00/
 - Con el permiso de seguimiento del plan se pueden cambiar sus firmantes al registrar un seguimiento; solo cambian las funciones que el formulario envía.
 - Sin cambios de permisos. La migración `20261114000100_audit_finding_root_cause` añade el campo y su política de captura B2 (contrato `B2_AUDIT_FINDING_ROOT_CAUSE`). No es validación GMP.
 
+## D-137 — Auditorías R6: externas diferenciadas, código libre de cliente e inspección y ejemplos de la demo (2026-11-12)
+
+Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsable de Calidad del 12/11/2026.
+
+- **Código libre en cliente e inspección.** Las auditorías de cliente a COVEX y las inspecciones no tienen serie.
+  - Su código es libre: el del informe del cliente o el del expediente abierto por la agencia («se codifican libremente como las inspecciones»).
+  - Es opcional y único entre las auditorías.
+  - No admite caracteres de control.
+  - Se puede corregir después de abrir la auditoría; cada cambio queda en el historial.
+  - Las series de las internas (AI/…) y de las auditorías a proveedor (AE/…) no cambian y siguen fijas al abrir.
+- **Fuera del programa anual.** Las auditorías e inspecciones recibidas no forman parte del programa anual (GC-00/034/05 §3) y no se pueden clasificar como «Incluida en plan anual». Las que ya lo estaban se conservan mientras no cambien de entrada.
+- **Diferenciación:**
+  - Los escenarios dicen quién audita a quién: «Externa · COVEX → proveedor/tercero», «Externa · cliente → COVEX», «Inspección · autoridad u organismo → COVEX», «Interna subcontratada · auditor externo» e «Interna · personal COVEX».
+  - Nuevo filtro «Sentido» en el listado: realizadas por COVEX (internas y a proveedor) o recibidas (cliente e inspección).
+- **Demo:**
+  - Ejemplos de una inspección con el código de su expediente y de una auditoría interna con un hallazgo atribuido a una desviación con su CAPA, para ver el plan CAPA del Anexo IV.
+  - La auditoría de cliente de ejemplo lleva un código libre.
+  - En la demo se activan las plantillas de R6 instaladas, como haría Calidad.
+  - La interna de ejemplo se abre el 15/11/2026, o hoy si ya ha pasado, para usar las plantillas nuevas. Las abiertas antes siguen con las anteriores (D-134).
+- Sin migraciones ni cambios de permisos. No es validación GMP.
+

@@ -193,6 +193,15 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Auditorías R6 · cuarta entrega: externas diferenciadas y código libre (2026-11-12, D-137):**
+- **Qué cambia:**
+  - Código libre (el del informe del cliente o del expediente de la agencia) en auditorías de cliente e inspecciones; se puede corregir y queda en el historial.
+  - Las recibidas no entran en el programa anual (GC-00/034/05 §3).
+  - Escenarios con el sentido de la auditoría y filtro «Sentido» en el listado.
+  - Ejemplos de la demo con las plantillas nuevas: inspección con código libre e interna con plan CAPA del Anexo IV.
+- **R6 completa:** informes 04/05, plan 05, firmantes, cierre parcial, programas Anexo V, plan CAPA Anexo IV y externas diferenciadas.
+- **Comprobado:** pruebas de rótulos y filtro, smoke de PostgreSQL del código libre (corrección, unicidad, historial) y de la regla del programa, y los ejemplos de la demo cargados en una base de demo con las plantillas oficiales.
+
 **Un «$» en los textos ya no daña los anexos (2026-11-12):**
 - **Qué falla:** un «$» en un texto del usuario (por ejemplo «"50$"», «$$» o «$&») se interpretaba como patrón de reemplazo de JavaScript. El Word o el Excel salía dañado (Office lo «reparaba» perdiendo contenido) o el texto cambiaba sin avisar («$$» → «$»).
 - **Dónde:**

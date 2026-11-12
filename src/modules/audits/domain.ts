@@ -3,13 +3,17 @@ import type { FindingState } from "./finding-domain";
 import type { AuditFindingType, AuditScenario, AuditStatus, AuditType } from "@prisma/client";
 
 export const auditTypeLabels = { INTERNAL: "Interna", EXTERNAL: "Externa" } as const;
+/** D-137 (R6): el rótulo indica quién audita a quién (GC-00/034/05 §3). */
 export const auditScenarioLabels = {
   INTERNAL_COVEX: "Interna · personal COVEX",
-  INTERNAL_CONTRACTED: "Interna · auditor externo contratado",
-  SUPPLIER: "COVEX a proveedor/tercero",
-  CLIENT: "Cliente a COVEX",
-  AUTHORITY: "Inspección de autoridad/organismo",
+  INTERNAL_CONTRACTED: "Interna subcontratada · auditor externo",
+  SUPPLIER: "Externa · COVEX → proveedor/tercero",
+  CLIENT: "Externa · cliente → COVEX",
+  AUTHORITY: "Inspección · autoridad u organismo → COVEX",
 } as const;
+/** Sentido: las que realiza COVEX (internas y a proveedor) y las que recibe (cliente e inspección). */
+export const auditDirectionLabels = { covex: "Realizadas por COVEX", received: "Recibidas por COVEX" } as const;
+export const auditDirectionScenarios = { covex: ["INTERNAL_COVEX", "INTERNAL_CONTRACTED", "SUPPLIER"], received: ["CLIENT", "AUTHORITY"] } as const;
 export const auditModalityLabels = { ONSITE: "Presencial", REMOTE: "Remota", HYBRID: "Mixta" } as const;
 export const auditStatusLabels = { DRAFT: "Borrador", OPEN: "Abierta", CLOSED: "Cierre definitivo" } as const;
 /**

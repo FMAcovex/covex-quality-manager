@@ -17,10 +17,36 @@ const today = new Date();
 const day = (n: number) => new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + n)).toISOString().slice(0, 10);
 const iso = (d: Date | null) => d ? d.toISOString().slice(0, 10) : "";
 
+/**
+ * D-137 (R6): en la demo se activan las plantillas de Auditorías de los PNT GC-00/033/04 y GC-00/034/05 si están
+ * instaladas, como haría Calidad en Configuración → Versiones. Las auditorías abiertas antes del 15/11/2026 siguen con las
+ * anteriores (D-134); los ejemplos R6 se abren desde esa fecha.
+ */
+const R6_TEMPLATES: Record<string, string> = {
+  AUDIT_INTERNAL_REPORT: "04", AUDIT_EXTERNAL_REPORT: "05", AUDIT_EXTERNAL_PLAN: "05", AUDIT_CAPA_PLAN: "04",
+  AUDIT_ANNUAL_INTERNAL_PROGRAMME: "GC-00-033-04-ANEXO-V", AUDIT_ANNUAL_EXTERNAL_PROGRAMME: "GC-00-034-05-ANEXO-V",
+};
+async function activateR6Templates() {
+  let activated = 0;
+  for (const [documentType, versionCode] of Object.entries(R6_TEMPLATES)) {
+    const target = await prisma.templateVersion.findFirst({ where: { module: "AUDIT", documentType: documentType as never, versionCode, isActive: false, checksum: { not: null } }, select: { id: true, effectiveFrom: true } });
+    if (!target) continue;
+    await prisma.$transaction(async tx => {
+      const active = await tx.templateVersion.findMany({ where: { module: "AUDIT", documentType: documentType as never, isActive: true }, select: { id: true, effectiveFrom: true } });
+      if (active.some(t => t.effectiveFrom >= target.effectiveFrom)) return;
+      for (const old of active) await tx.templateVersion.update({ where: { id: old.id }, data: { isActive: false, effectiveTo: new Date(target.effectiveFrom.getTime() - 86400000) } });
+      await tx.templateVersion.update({ where: { id: target.id }, data: { isActive: true, effectiveTo: null } });
+      activated++;
+    });
+  }
+  if (activated) console.log(`Plantillas de Auditorías R6 activadas en la demo: ${activated}.`);
+}
+
 async function main() {
   if (!localDemoEnvironment() || process.env.ALLOW_DEMO_DATA !== "true") throw new Error("Solo para la demo (APP_ENV=demo, base covex_demo, ALLOW_DEMO_DATA=true).");
+  await activateR6Templates();
   const audits = await prisma.audit.findMany({
-    where: { internalObservations: { startsWith: MARK_PREFIX }, status: "OPEN", scenario: { in: ["INTERNAL_COVEX", "SUPPLIER"] }, capaPlanVersions: { none: {} } },
+    where: { internalObservations: { startsWith: MARK_PREFIX }, status: "OPEN", scenario: { in: ["INTERNAL_COVEX", "SUPPLIER", "AUTHORITY"] }, capaPlanVersions: { none: {} } },
     include: { findings: { where: { isActive: true }, include: { actions: { where: { isActive: true } } } } },
   });
   if (!audits.length) { console.log("CAPA plan de los ejemplos: nada que añadir."); return; }
