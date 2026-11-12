@@ -1643,6 +1643,8 @@ model Audit {
   reviewedPosition             String?
   receivedBy                   String?
   receivedPosition             String?
+  /// D-134: firmantes del informe y del CAPA plan ({ document, role, name, position }[]).
+  signatories                  Json                    @default("[]")
   capaPlanDate                 DateTime?              @db.Date
   capaPlanEstablishedAt        DateTime?              @db.Date
   reportSentAt                 DateTime?              @db.Date

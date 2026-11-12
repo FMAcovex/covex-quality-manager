@@ -21,12 +21,19 @@ const actor='Smoke R3C ficticio', marker=`R3C-${randomUUID()}`, records:string[]
 async function create(scenario:'INTERNAL_COVEX'|'SUPPLIER'|'CLIENT'|'AUTHORITY'='INTERNAL_COVEX'){
  const d=await prisma.department.findUniqueOrThrow({where:{code:'GC-00'}});
  const a=await saveAudit({actor,status:'OPEN',auditType:scenario==='INTERNAL_COVEX'?'INTERNAL':'EXTERNAL',scenario,title:marker,scope:'Alcance ficticio',plannedDate:'2096-10-07',performedDate:'2096-10-07',codingDepartmentId:scenario==='INTERNAL_COVEX'?d.id:'',departmentIds:scenario==='INTERNAL_COVEX'?[d.id]:[],entityCode:scenario==='SUPPLIER'?'TEST-R3C':'',auditedEntityName:'Entidad ficticia',externalReference:scenario==='CLIENT'||scenario==='AUTHORITY'?`${marker}-externa`:'',participants:[{role:'AUDITOR',displayName:actor,sortOrder:0}]});records.push(a.qmsRecordId);
- await saveAuditReport(a.id,{actor,reportDate:'2096-10-08',conclusion:'Conclusión inicial congelada',programme:'09:00 | Revisión documental',planIntroduction:'Introducción ficticia',activityDuration:'09:00–12:00',preparedBy:actor});return a;
+ await saveAuditReport(a.id,{actor,reportDate:'2096-10-08',conclusion:'Conclusión inicial congelada',programme:'09:00 | Revisión documental',planIntroduction:'Introducción ficticia',activityDuration:'09:00–12:00',reportPreparedBy:actor});return a;
 }
 const pdf=()=>new File(['%PDF-1.7\n% Ficticio para pruebas\n'],'firmado-ficticio.pdf',{type:'application/pdf'});
 async function main(){
  if(process.env.R3C_OFFICIAL_TEMPLATES!=='1')templates.push(...await installSyntheticAuditTemplates());
  const a=await create(), other=await create();
+ // D-134: varios firmantes por función; los campos anteriores guardan a todos, para las plantillas previas.
+ await saveAuditReport(a.id,{actor,reportDate:'2096-10-08',conclusion:'Conclusión inicial congelada',programme:'09:00 | Revisión documental',reportPreparedBy:`${actor} | Técnico GC`,reportReviewedBy:'Revisora ficticia | Directora Técnica\nRevisor ficticio | Responsable MA',reportApprovedBy:'Aprobadora ficticia | Directora GC'});
+ const signed=await prisma.audit.findUniqueOrThrow({where:{id:a.id}});
+ assert.deepEqual((signed.signatories as {role:string;name:string}[]).map(s=>`${s.role}:${s.name}`),[`PREPARED:${actor}`,'REVIEWED:Revisora ficticia','REVIEWED:Revisor ficticio','APPROVED:Aprobadora ficticia']);
+ assert.equal(signed.preparedBy,actor);assert.equal(signed.reviewedBy,'Revisora ficticia; Revisor ficticio; Aprobadora ficticia');assert.equal(signed.receivedBy,null);
+ assert(await prisma.changeHistory.count({where:{qmsRecordId:a.qmsRecordId,fieldPath:'audit.signatories'}}),'El cambio de firmantes queda en el historial operativo.');
+ await assert.rejects(saveAuditReport(a.id,{actor,reportApprovedBy:' | Sin nombre'}),'Una línea sin nombre se rechaza.');
  const obs=await saveAuditFinding(a.id,{actor,findingType:'FINDING',criticality:'MAJOR',description:'OBS histórica inicial',treatment:'Acción local aplicable'});
  const rk=await saveAuditFinding(a.id,{actor,findingType:'RECOMMENDATION',description:'Rk histórica',treatment:'Mejora no aplicable justificada',treatmentStatus:'NOT_APPLICABLE',evidence:'Justificación documentada'});
  const action=await saveAuditFindingAction(a.id,obs.id,{actor,description:'Acción inicial histórica',status:'OPEN'});

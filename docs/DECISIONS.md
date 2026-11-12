@@ -1552,3 +1552,29 @@ Decisión del responsable de Calidad. Corrige la contradicción entre D-043, que
 - **Reactivación:** recupera el código original solo si ningún expediente activo lo usa; si se ha reutilizado, la aplicación no deja reactivar. Si otro expediente toma el código en el mismo momento, la reactivación responde con ese mismo aviso, no con un error interno.
 - No afecta a los códigos de catálogo (D-036), que siguen sin reutilizarse con otro significado.
 - Implementación: `src/lib/qms/business-code.ts` (todas las series de codificación controlada) y `src/lib/qms/document-code.ts` (marca en los anexos). Pruebas en `business-code-reuse.test.ts`, `administrative-status.test.ts`, los generadores de Auditorías, OOS y Reclamaciones, y los smokes de PostgreSQL `d3`, `d5-3`, `oos` y `audits-r3a`.
+
+## D-134 — Auditorías R6: PNT GC-00/033/04 y GC-00/034/05 (2026-11-12)
+
+Calidad actualiza los PNT de auditorías internas y externas, vigentes desde el 15/11/2026. Se aprovecha el módulo existente; esta decisión cubre la primera entrega (informes, plan de auditoría y firmantes). El plan CAPA (Anexo IV), los programas anuales (Anexo V), el estado «Cierre parcial» y la diferenciación de las auditorías externas se añaden en entregas posteriores de R6.
+
+- **Plantillas:** las que entrega Calidad como anexos sueltos, no las incluidas en el texto del PNT.
+  - Informe interno 04 (Anexo III del GC-00/033/04) e informe externo 05 (Anexo III del GC-00/034/05).
+  - Plan de auditoría 05 (Anexo IV del GC-00/034/05): se instala suelto; ya no se recorta del PNT.
+- **Qué plantilla usa cada auditoría:** la vigente cuando se abrió. Una auditoría abierta antes de que entre en vigor la plantilla activa conserva la anterior; las nuevas y los borradores usan la activa. Se aplica al emitir el informe y a los documentos generados con los datos actuales.
+  - Una versión instalada pero nunca activada no se usa: de las anteriores solo cuentan las sustituidas, que al activarse la siguiente reciben fin de vigencia.
+  - Un expediente abierto o cerrado sin fecha de apertura (histórico) se toma por su fecha de alta.
+- **Informes 04 y 05:**
+  - cabecera del interno con «Normativa y criterios de auditoría» (`referenceText`); sin normativa registrada se conserva la indicación de la plantilla;
+  - listado de observaciones por criticidad; en el interno con la columna REFERENCIA (requisito de referencia);
+  - recomendaciones en la línea «RkXX:» de la plantilla, con su viñeta;
+  - por cada observación, «OBS XX – Requisito de referencia», «Evidencia objetiva» y «Deficiencia detectada»;
+  - antecedentes, conclusión y programa (Anexo I) en el nuevo orden.
+- **Firmantes:** cada función admite varias personas (`Audit.signatories`): Elaborado por, Revisado por, Aprobado por y Recibido por. El cuadro de firmas del informe lleva una fila por persona. Fecha y firma quedan en blanco para firmar a mano.
+  - **Decisión del responsable de Calidad (12/11/2026):** en el cuadro de firmas se incluyen por separado «Revisado por» y «Aprobado por». La fila «Revisado y aprobado por» de la plantilla se usa para las dos funciones, con su rótulo. Si una misma persona revisa y aprueba, se indica en las dos; sin aprobador, la fila «Aprobado por» sale en blanco para firmar a mano.
+  - En el formulario del informe, una persona por línea: «Nombre | Puesto».
+  - Los expedientes anteriores siguen mostrando sus campos elaborado/revisado/recibido hasta que se guarde la lista. Al guardarla, esos campos reciben a todas las personas de cada función, separadas por «; » (revisores y aprobadores juntos en «Revisado por»), porque las plantillas anteriores tienen una sola casilla por función.
+  - La lista también admite los firmantes del CAPA plan, que se usarán con su nuevo anexo.
+- **Verificación de anexos:** lo previsto se guarda por versión («AU_INT@04») para que convivan las versiones. Por defecto se verifica la versión activa; las demás, con `--version`. Las tres plantillas nuevas y las 24 actuales salen correctas con las plantillas oficiales.
+- **Defecto observado en la plantilla del informe interno 04:** en el listado de observaciones, la casilla REFERENCIA de la fila de MAYOR tiene una sangría derecha mayor que la columna y el texto sale en vertical. Se comunica a Calidad para corregirlo en Word; la aplicación no cambia el formato de la plantilla.
+- Sin cambios de permisos. La migración `20261112000100_audit_signatories` añade la columna y su política de captura B2 (contrato `B2_AUDIT_SIGNATORIES`). No es validación GMP.
+

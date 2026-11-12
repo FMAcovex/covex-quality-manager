@@ -2608,5 +2608,373 @@
       ]
     },
     "checked": []
+  },
+  "AU_INT@04": {
+    "notPrinted": [
+      "Audit.activityDuration",
+      "Audit.auditedContact",
+      "Audit.auditedEntityAddress",
+      "Audit.auditedEntityName",
+      "Audit.auditingEntityName",
+      "Audit.closureEvidence",
+      "Audit.codingDepartmentCodeSnapshot",
+      "Audit.codingDepartmentNameSnapshot",
+      "Audit.createdByText",
+      "Audit.entityCode",
+      "Audit.externalReference",
+      "Audit.internalObservations",
+      "Audit.outsidePlanReason",
+      "Audit.planIntroduction",
+      "Audit.reportDistribution",
+      "Audit.supplierAssessment",
+      "Audit.supplierExceptionBy",
+      "Audit.supplierExceptionReason",
+      "Audit.supplierType",
+      "Audit.updatedByText",
+      "AuditFindingAction[1].createdByText",
+      "AuditFindingAction[1].description",
+      "AuditFindingAction[1].evidence",
+      "AuditFindingAction[1].evidenceReference",
+      "AuditFindingAction[1].responsible",
+      "AuditFindingAction[1].retiredByText",
+      "AuditFindingAction[1].retirementReason",
+      "AuditFindingAction[1].updatedByText",
+      "AuditFindingAction[1].verificationComment",
+      "AuditFindingAction[1].verifiedBy",
+      "AuditFinding[1].createdByText",
+      "AuditFinding[1].evidence",
+      "AuditFinding[1].evidenceReference",
+      "AuditFinding[1].retiredByText",
+      "AuditFinding[1].retirementReason",
+      "AuditFinding[1].treatment",
+      "AuditFinding[1].updatedByText",
+      "AuditFinding[1].verificationComment",
+      "AuditFinding[2].createdByText",
+      "AuditFinding[2].criterionReference",
+      "AuditFinding[2].evidence",
+      "AuditFinding[2].evidenceReference",
+      "AuditFinding[2].objectiveEvidence",
+      "AuditFinding[2].retiredByText",
+      "AuditFinding[2].retirementReason",
+      "AuditFinding[2].treatment",
+      "AuditFinding[2].updatedByText",
+      "AuditFinding[2].verificationComment",
+      "AuditFollowup[1].completedByText",
+      "AuditFollowup[1].createdByText",
+      "AuditFollowup[1].description",
+      "AuditFollowup[1].evidenceReference",
+      "AuditFollowup[1].updatedByText",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "Tabla 2, fila 5, casilla 2#20d989781a867eb6",
+      "Tabla 3, fila 3, casilla 1#a2fc2f8dffa16c5d",
+      "Texto fuera de tablas#0e916c6b8d7965c8"
+    ],
+    "positions": {
+      "Audit.performedDate": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "Audit.preparedBy": [
+        "Tabla 3, fila 2, casilla 2"
+      ],
+      "Audit.preparedPosition": [
+        "Tabla 3, fila 2, casilla 3"
+      ],
+      "Audit.receivedBy": [
+        "Tabla 3, fila 5, casilla 2"
+      ],
+      "Audit.receivedPosition": [
+        "Tabla 3, fila 5, casilla 3"
+      ],
+      "Audit.referenceText": [
+        "Tabla 2, fila 5, casilla 2"
+      ],
+      "Audit.reportDate": [
+        "Tabla 2, fila 3, casilla 4"
+      ],
+      "Audit.reviewedBy": [
+        "Tabla 3, fila 3, casilla 2"
+      ],
+      "Audit.reviewedPosition": [
+        "Tabla 3, fila 3, casilla 3"
+      ],
+      "Audit.scope": [
+        "Tabla 2, fila 4, casilla 2"
+      ],
+      "Audit.title": [
+        "Tabla 2, fila 4, casilla 2"
+      ],
+      "AuditFinding[1].criterionReference": [
+        "Tabla 5, fila 7, casilla 3"
+      ],
+      "AuditFinding[1].description": [
+        "Tabla 5, fila 7, casilla 2"
+      ],
+      "AuditFinding[1].reference": [
+        "Tabla 5, fila 7, casilla 1"
+      ],
+      "AuditParticipant[1].displayName": [
+        "Tabla 2, fila 12, casilla 1"
+      ],
+      "AuditParticipant[1].organization": [
+        "Tabla 2, fila 12, casilla 2"
+      ],
+      "AuditParticipant[1].position": [
+        "Tabla 2, fila 12, casilla 2"
+      ],
+      "AuditParticipant[2].displayName": [
+        "Tabla 2, fila 13, casilla 1 (fila añadida)"
+      ],
+      "AuditParticipant[2].organization": [
+        "Tabla 2, fila 13, casilla 2 (fila añadida)"
+      ],
+      "AuditParticipant[2].position": [
+        "Tabla 2, fila 13, casilla 2 (fila añadida)"
+      ],
+      "AuditParticipant[3].displayName": [
+        "Tabla 2, fila 9, casilla 1"
+      ],
+      "AuditParticipant[3].organization": [
+        "Tabla 2, fila 9, casilla 2"
+      ],
+      "AuditParticipant[3].position": [
+        "Tabla 2, fila 9, casilla 2"
+      ]
+    },
+    "checked": []
+  },
+  "AU_EXT@05": {
+    "notPrinted": [
+      "Audit.activityDuration",
+      "Audit.auditingEntityName",
+      "Audit.closureEvidence",
+      "Audit.codingDepartmentCodeSnapshot",
+      "Audit.codingDepartmentNameSnapshot",
+      "Audit.createdByText",
+      "Audit.entityCode",
+      "Audit.externalReference",
+      "Audit.internalObservations",
+      "Audit.outsidePlanReason",
+      "Audit.planIntroduction",
+      "Audit.referenceText",
+      "Audit.reportDistribution",
+      "Audit.supplierAssessment",
+      "Audit.supplierExceptionBy",
+      "Audit.supplierExceptionReason",
+      "Audit.updatedByText",
+      "AuditFindingAction[1].createdByText",
+      "AuditFindingAction[1].description",
+      "AuditFindingAction[1].evidence",
+      "AuditFindingAction[1].evidenceReference",
+      "AuditFindingAction[1].responsible",
+      "AuditFindingAction[1].retiredByText",
+      "AuditFindingAction[1].retirementReason",
+      "AuditFindingAction[1].updatedByText",
+      "AuditFindingAction[1].verificationComment",
+      "AuditFindingAction[1].verifiedBy",
+      "AuditFinding[1].createdByText",
+      "AuditFinding[1].evidence",
+      "AuditFinding[1].evidenceReference",
+      "AuditFinding[1].retiredByText",
+      "AuditFinding[1].retirementReason",
+      "AuditFinding[1].treatment",
+      "AuditFinding[1].updatedByText",
+      "AuditFinding[1].verificationComment",
+      "AuditFinding[2].createdByText",
+      "AuditFinding[2].criterionReference",
+      "AuditFinding[2].evidence",
+      "AuditFinding[2].evidenceReference",
+      "AuditFinding[2].objectiveEvidence",
+      "AuditFinding[2].retiredByText",
+      "AuditFinding[2].retirementReason",
+      "AuditFinding[2].treatment",
+      "AuditFinding[2].updatedByText",
+      "AuditFinding[2].verificationComment",
+      "AuditFollowup[1].completedByText",
+      "AuditFollowup[1].createdByText",
+      "AuditFollowup[1].description",
+      "AuditFollowup[1].evidenceReference",
+      "AuditFollowup[1].updatedByText",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "Tabla 3, fila 3, casilla 1#a2fc2f8dffa16c5d",
+      "Texto fuera de tablas#0e916c6b8d7965c8",
+      "Pie (footer1.xml)#f197f102c6a6b504",
+      "Pie (footer2.xml)#94eb15b9ed8c735d"
+    ],
+    "positions": {
+      "Audit.auditedContact": [
+        "Tabla 2, fila 5, casilla 2"
+      ],
+      "Audit.auditedEntityAddress": [
+        "Tabla 2, fila 4, casilla 2"
+      ],
+      "Audit.auditedEntityName": [
+        "Tabla 2, fila 1, casilla 2"
+      ],
+      "Audit.performedDate": [
+        "Tabla 2, fila 1, casilla 4"
+      ],
+      "Audit.preparedBy": [
+        "Tabla 3, fila 2, casilla 2"
+      ],
+      "Audit.preparedPosition": [
+        "Tabla 3, fila 2, casilla 3"
+      ],
+      "Audit.receivedBy": [
+        "Tabla 3, fila 5, casilla 2"
+      ],
+      "Audit.receivedPosition": [
+        "Tabla 3, fila 5, casilla 3"
+      ],
+      "Audit.reportDate": [
+        "Tabla 2, fila 2, casilla 4"
+      ],
+      "Audit.reviewedBy": [
+        "Tabla 3, fila 3, casilla 2"
+      ],
+      "Audit.reviewedPosition": [
+        "Tabla 3, fila 3, casilla 3"
+      ],
+      "Audit.scope": [
+        "Tabla 2, fila 6, casilla 2"
+      ],
+      "Audit.supplierType": [
+        "Tabla 2, fila 3, casilla 2"
+      ],
+      "Audit.title": [
+        "Tabla 2, fila 6, casilla 2"
+      ],
+      "AuditFinding[1].description": [
+        "Tabla 5, fila 7, casilla 2"
+      ],
+      "AuditFinding[1].reference": [
+        "Tabla 5, fila 7, casilla 1"
+      ],
+      "AuditParticipant[1].displayName": [
+        "Tabla 2, fila 13, casilla 1"
+      ],
+      "AuditParticipant[1].organization": [
+        "Tabla 2, fila 13, casilla 2"
+      ],
+      "AuditParticipant[1].position": [
+        "Tabla 2, fila 13, casilla 2"
+      ],
+      "AuditParticipant[2].displayName": [
+        "Tabla 2, fila 14, casilla 1 (fila añadida)"
+      ],
+      "AuditParticipant[2].organization": [
+        "Tabla 2, fila 14, casilla 2 (fila añadida)"
+      ],
+      "AuditParticipant[2].position": [
+        "Tabla 2, fila 14, casilla 2 (fila añadida)"
+      ],
+      "AuditParticipant[3].displayName": [
+        "Tabla 2, fila 10, casilla 1"
+      ],
+      "AuditParticipant[3].organization": [
+        "Tabla 2, fila 10, casilla 2"
+      ],
+      "AuditParticipant[3].position": [
+        "Tabla 2, fila 10, casilla 2"
+      ]
+    },
+    "checked": []
+  },
+  "AU_PLAN@05": {
+    "notPrinted": [
+      "Audit.auditedContact",
+      "Audit.auditingEntityName",
+      "Audit.closureEvidence",
+      "Audit.codingDepartmentCodeSnapshot",
+      "Audit.codingDepartmentNameSnapshot",
+      "Audit.conclusion",
+      "Audit.createdByText",
+      "Audit.entityCode",
+      "Audit.externalReference",
+      "Audit.internalObservations",
+      "Audit.outsidePlanReason",
+      "Audit.preparedBy",
+      "Audit.preparedPosition",
+      "Audit.previousAuditBackground",
+      "Audit.receivedBy",
+      "Audit.receivedPosition",
+      "Audit.referenceText",
+      "Audit.reviewedBy",
+      "Audit.reviewedPosition",
+      "Audit.supplierAssessment",
+      "Audit.supplierExceptionBy",
+      "Audit.supplierExceptionReason",
+      "Audit.supplierType",
+      "Audit.title",
+      "Audit.updatedByText",
+      "AuditFindingAction[1].createdByText",
+      "AuditFindingAction[1].description",
+      "AuditFindingAction[1].evidence",
+      "AuditFindingAction[1].evidenceReference",
+      "AuditFindingAction[1].responsible",
+      "AuditFindingAction[1].retiredByText",
+      "AuditFindingAction[1].retirementReason",
+      "AuditFindingAction[1].updatedByText",
+      "AuditFindingAction[1].verificationComment",
+      "AuditFindingAction[1].verifiedBy",
+      "AuditFinding[1].createdByText",
+      "AuditFinding[1].criterionReference",
+      "AuditFinding[1].description",
+      "AuditFinding[1].evidence",
+      "AuditFinding[1].evidenceReference",
+      "AuditFinding[1].objectiveEvidence",
+      "AuditFinding[1].reference",
+      "AuditFinding[1].retiredByText",
+      "AuditFinding[1].retirementReason",
+      "AuditFinding[1].treatment",
+      "AuditFinding[1].updatedByText",
+      "AuditFinding[1].verificationComment",
+      "AuditFinding[2].createdByText",
+      "AuditFinding[2].criterionReference",
+      "AuditFinding[2].description",
+      "AuditFinding[2].evidence",
+      "AuditFinding[2].evidenceReference",
+      "AuditFinding[2].objectiveEvidence",
+      "AuditFinding[2].reference",
+      "AuditFinding[2].retiredByText",
+      "AuditFinding[2].retirementReason",
+      "AuditFinding[2].treatment",
+      "AuditFinding[2].updatedByText",
+      "AuditFinding[2].verificationComment",
+      "AuditFollowup[1].completedByText",
+      "AuditFollowup[1].createdByText",
+      "AuditFollowup[1].description",
+      "AuditFollowup[1].evidenceReference",
+      "AuditFollowup[1].updatedByText",
+      "AuditParticipant[1].organization",
+      "AuditParticipant[1].position",
+      "AuditParticipant[2].organization",
+      "AuditParticipant[2].position",
+      "AuditParticipant[3].organization",
+      "AuditParticipant[3].position",
+      "QmsRecord.annulledByText",
+      "QmsRecord.annulledReason"
+    ],
+    "replacedTemplateText": [
+      "Tabla 1, fila 2, casilla 1#b0e62d6ecfeeb618",
+      "Tabla 1, fila 3#c2f2d6c265883648",
+      "Tabla 1, fila 4#9868999dffa83096",
+      "Tabla 1, fila 5#ab3937ba9aaf7c12",
+      "Tabla 1, fila 6#2ee5aac9dd6fc988",
+      "Tabla 1, fila 7#ec14c661317d4ba1",
+      "Tabla 1, fila 8#33789a0f36ec0e20",
+      "Texto fuera de tablas#ec5b1cda12427df9"
+    ],
+    "positions": {
+      "Audit.programme": [
+        "Tabla 1, fila 2, casilla 2"
+      ]
+    },
+    "checked": []
   }
 }
