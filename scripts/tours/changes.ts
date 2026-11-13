@@ -9,7 +9,6 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import type { Locator } from "playwright";
 import { prisma } from "../../src/lib/db";
-import { isActiveTemplateAssetReady, templateAssetReady } from "../../src/modules/configuration/template-readiness";
 import { finishTour, ooxmlText, startTour, waitForSaved, type Tour } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
@@ -166,31 +165,19 @@ async function main() {
     // 5 · Documentos generados desde el expediente.
     await tour.step("5 · Los documentos salen del expediente: <b>Anexos III, IV y V</b> y listado", async () => {
       await tour.go(`/changes/${opened.id}?tab=documents`);
-      const templates = await prisma.changeControl.findUniqueOrThrow({ where: { id: opened.id }, select: {
-        annexIIITemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
-        annexIVTemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
-        annexVTemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
-      } });
-      const ready = async (assigned: { fileName: string | null; filePath: string | null; checksum: string | null } | null, type: "CHANGE_ANNEX_III" | "CHANGE_ANNEX_IV" | "CHANGE_ANNEX_V") =>
-        assigned ? templateAssetReady(assigned) : isActiveTemplateAssetReady("CHANGE_CONTROL", type);
       const annexes = [
-        ["Generar Anexo III", "CHANGE_ANNEX_III", templates.annexIIITemplateVersion, [opened.code, marker]],
-        ["Generar Anexo IV", "CHANGE_ANNEX_IV", templates.annexIVTemplateVersion, [opened.code, actions[0]]],
+        ["Generar Anexo III", "Anexo III", [opened.code, marker]],
+        ["Generar Anexo IV", "Anexo IV", [opened.code, actions[0]]],
         // Anexo V del seguimiento vigente (el 02, el del cierre).
-        ["Generar Anexo V", "CHANGE_ANNEX_V", templates.annexVTemplateVersion, [opened.code, "PNT de pesada revisado"]],
+        ["Generar Anexo V", "Anexo V", [opened.code, "PNT de pesada revisado"]],
       ] as const;
-      for (const [label, type, assigned, expected] of annexes) {
-        const link = page.locator("main a", { hasText: label }).first();
-        if (await ready(assigned, type)) {
-          const file = await tour.download(link);
-          const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
-          for (const value of expected) assert.ok(text.includes(value), `${label.replace("Generar ", "")} contiene «${value}»`);
-          if (type === "CHANGE_ANNEX_IV") await tour.showDocument(file.name, file.bytes, `<b>Anexo IV</b> de ${opened.code}: dictamen y plan de ejecución`);
-        } else {
-          await tour.click(link);
-          await page.getByText("Plantilla oficial no disponible").first().waitFor();
-          await tour.go(`/changes/${opened.id}?tab=documents`);
-        }
+      for (const [label, annex, expected] of annexes) {
+        // TPL1: sin plantilla instalada (CI), la ficha no ofrece el anexo y explica qué falta.
+        const file = await tour.downloadOrMissing(page.locator("main a", { hasText: label }).first(), annex);
+        if (!file) continue;
+        const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
+        for (const value of expected) assert.ok(text.includes(value), `${annex} contiene «${value}»`);
+        if (annex === "Anexo IV") await tour.showDocument(file.name, file.bytes, `<b>Anexo IV</b> de ${opened.code}: dictamen y plan de ejecución`);
       }
       await tour.go(`/changes?q=${encodeURIComponent(opened.code)}`);
       await page.locator("tr", { hasText: opened.code }).first().waitFor();

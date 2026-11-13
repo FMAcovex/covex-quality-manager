@@ -104,5 +104,12 @@ export async function getAuditReportView(id: string) {
   const {auditClosureContext}=await import('../report-service');
   const closure=await prisma.$transaction(tx=>auditClosureContext(tx,audit));
   const capaPlanVersions=await listCapaPlanVersions(id);
-  return {audit,versions,closure,capaPlanVersions};
+  // TPL1: los documentos de trabajo solo se ofrecen si hay plantilla instalada para la fecha del expediente.
+  const reference=auditTemplateReferenceDate(audit);
+  const [capaPlanTemplate,externalPlanTemplate]=await prisma.$transaction(tx=>Promise.all([
+    auditTemplateInForce(tx,DocumentType.AUDIT_CAPA_PLAN,reference),
+    auditTemplateInForce(tx,DocumentType.AUDIT_EXTERNAL_PLAN,reference),
+  ]));
+  const templateReady={AUDIT_CAPA_PLAN:Boolean(capaPlanTemplate),AUDIT_EXTERNAL_PLAN:Boolean(externalPlanTemplate)};
+  return {audit,versions,closure,capaPlanVersions,templateReady};
 }

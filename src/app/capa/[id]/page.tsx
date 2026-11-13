@@ -29,6 +29,7 @@ import {
 import { getCapaDetail } from "@/modules/capa/queries";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { recordAnnexTemplate } from "@/modules/configuration/template-readiness";
+import { TemplateMissingNote } from "@/components/template-missing-note";
 import { DEFAULT_CAPA_ANNEX_III_VERSION } from "@/modules/capa/documents/templates";
 import { capaSnapshotVersionFollowupDate, recordVersionSummary } from "@/lib/qms/versioning";
 import { qmsRecordHref, qmsRecordTypeLabel, qmsRecordDisplayCode } from "@/lib/qms/record-links";
@@ -106,9 +107,9 @@ async function CapaDetailPageAuthenticatedContent({
   if (!capa) notFound();
 
   const currentVersion = capa.qmsRecord.versions.at(-1) ?? null;
-  const annexTemplate = activeTab === "documents"
-    ? await recordAnnexTemplate(QmsRecordType.CAPA, DocumentType.CAPA_ANNEX_III, capa.annexIIITemplateVersion, DEFAULT_CAPA_ANNEX_III_VERSION)
-    : null;
+  // TPL1: la plantilla que usará la generación; solo se ofrece generar o descargar si tiene su archivo instalado.
+  const annexTemplate = await recordAnnexTemplate(QmsRecordType.CAPA, DocumentType.CAPA_ANNEX_III, capa.annexIIITemplateVersion, DEFAULT_CAPA_ANNEX_III_VERSION);
+  const annexReady = Boolean(annexTemplate?.ready);
 
   const hasCode = Boolean(capa.qmsRecord.businessCode ?? capa.qmsRecord.annulledBusinessCode);
   const reviewMode = review === "1";
@@ -259,7 +260,7 @@ async function CapaDetailPageAuthenticatedContent({
       />}
         actions={<>
           <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, activeTab, reviewMode), "/capa", returnTo)} /></PermissionGate>
-          {capa.status !== "DRAFT" ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate> : null}
+          {capa.status === "DRAFT" ? null : annexReady ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate> : <TemplateMissingNote annex="Anexo III" />}
           <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/capa/${id}/edit?tab=${activeTab}`, "/capa", returnTo)}>Editar / seguimiento</Link></PermissionGate>
         </>}
       />
@@ -596,8 +597,8 @@ async function CapaDetailPageAuthenticatedContent({
               <h3>Anexo III · Informe CAPA</h3>
               <p>Plantilla oficial y versión Word cumplimentada del informe/seguimiento CAPA.</p>
               <div className="document-actions">
-                {annexTemplate ? <PermissionGate permission="DOWNLOAD" module="CAPA"><a className="button" href={`/api/settings/templates/${annexTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
-                {capa.status === "DRAFT" ? <span className="muted-note">Disponible al abrir la CAPA.</span> : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>}
+                {annexTemplate && annexReady ? <PermissionGate permission="DOWNLOAD" module="CAPA"><a className="button" href={`/api/settings/templates/${annexTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <TemplateMissingNote annex="Anexo III" />}
+                {!annexReady ? null : capa.status === "DRAFT" ? <span className="muted-note">Disponible al abrir la CAPA.</span> : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/capa/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>}
               </div>
             </div>
             <div className="document-block">

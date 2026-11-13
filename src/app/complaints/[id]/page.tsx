@@ -51,6 +51,9 @@ import { activeReviewCount,reviewModeHref,reviewTabHref,reviewVersionLabel } fro
 import { reviewTargetWithValue } from "@/lib/qms/review/targets/catalog";
 import { complaintCapaPlanReviewTarget,complaintReviewTargets } from "@/lib/qms/review/targets/complaints";
 import { administrativeTodayDate } from "@/lib/qms/administrative-date";
+import { DocumentType, QmsRecordType } from "@prisma/client";
+import { recordAnnexTemplate } from "@/modules/configuration/template-readiness";
+import { TemplateMissingNote } from "@/components/template-missing-note";
 
 export const dynamic="force-dynamic";
 const tabs=[
@@ -85,6 +88,11 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
  const situation=complaintOperationalSituation(r);
  const followupState=complaintFollowupState(r);
  const currentVersion=r.qmsRecord.versions.at(-1)??null;
+ // TPL1: plantilla que usará cada generación (como en las rutas); solo se ofrece si tiene su archivo instalado.
+ const [annexIIITemplate,annexIVTemplate]=await Promise.all([
+  recordAnnexTemplate(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_III,r.annexIIITemplateVersion,"03"),
+  recordAnnexTemplate(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_IV,r.annexIVTemplateVersion,r.annexIIITemplateVersion?.versionCode??"03"),
+ ]);
  const currentSignedDocument=currentVersion?.documents.find(document=>document.kind==="SIGNED_PDF")??null;
  const signedVersionCount=r.qmsRecord.versions.filter(version=>version.documents.some(document=>document.kind==="SIGNED_PDF")).length;
  const derived=r.qmsRecord.sourceRelations.filter(x=>x.relationType==="GENERATES"&&(x.targetRecord.recordType==="CAPA"||x.targetRecord.recordType==="RETURN")).map(x=>x.targetRecord);
@@ -281,8 +289,8 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
    <div className="info-item"><dt>PDF firmados</dt><dd>{signedVersionCount} de {r.qmsRecord.versions.length} versiones</dd></div>
    <div className="info-item"><dt>PDF firmado versión vigente</dt><dd>{currentVersion?`${versionLabel(currentVersion.sequenceNumber)} · ${currentSignedDocument?"Disponible":"No cargado"}`:"Sin versión"}</dd></div>
   </dl><p className="muted-note">La carga, descarga y sustitución de PDF firmado se gestiona por versión en la pestaña Versiones.</p><div className="document-grid">
-   <div className="document-block"><h3>Anexo III · Informe de reclamación</h3><p>Plantilla oficial revisión {r.annexIIITemplateVersion?.versionCode??"sin asignar"}; documento cumplimentado desde la versión vigente.</p><div className="document-actions">{r.annexIIITemplateVersion?.id?<PermissionGate permission="DOWNLOAD" module="COMPLAINT"><a className="button" href={`/api/settings/templates/${r.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate>:<span className="muted-note">Plantilla pendiente de cargar.</span>}<PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/complaints/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate></div></div>
-   <div className="document-block"><h3>Anexo IV · Informe de respuesta</h3><p>Opcional cuando se requiere una respuesta formal al cliente. No es requisito universal de cierre. Las descargas históricas se realizan por versión.</p><div className="document-actions">{r.annexIVTemplateVersion?.id?<PermissionGate permission="DOWNLOAD" module="COMPLAINT"><a className="button" href={`/api/settings/templates/${r.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate>:null}<PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/complaints/${id}/annex-iv`}>Generar informe de respuesta</a></PermissionGate></div></div>
+   <div className="document-block"><h3>Anexo III · Informe de reclamación</h3><p>Plantilla oficial revisión {r.annexIIITemplateVersion?.versionCode??"sin asignar"}; documento cumplimentado desde la versión vigente.</p><div className="document-actions">{annexIIITemplate?.ready?<><PermissionGate permission="DOWNLOAD" module="COMPLAINT"><a className="button" href={`/api/settings/templates/${annexIIITemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate><PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/complaints/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate></>:<TemplateMissingNote annex="Anexo III"/>}</div></div>
+   <div className="document-block"><h3>Anexo IV · Informe de respuesta</h3><p>Opcional cuando se requiere una respuesta formal al cliente. No es requisito universal de cierre. Las descargas históricas se realizan por versión.</p><div className="document-actions">{annexIVTemplate?.ready?<><PermissionGate permission="DOWNLOAD" module="COMPLAINT"><a className="button" href={`/api/settings/templates/${annexIVTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate><PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/complaints/${id}/annex-iv`}>Generar informe de respuesta</a></PermissionGate></>:<TemplateMissingNote annex="Anexo IV"/>}</div></div>
    <div className="document-block"><h3>Anexo V · Listado de reclamaciones</h3><p>Listado oficial anual validado. Se genera desde la pantalla principal.</p><Link className="button" href="/complaints">Ir al listado y descargar Anexo V</Link></div>
   </div>
   {r.qmsRecord.generatedDocuments.length?<><h3>Generaciones registradas</h3><div className="timeline">{r.qmsRecord.generatedDocuments.map(x=>{const generatedVersion=r.qmsRecord.versions.find(v=>v.id===x.recordVersionId);return <div className="timeline-item document-generation-item" key={x.id}><strong className="document-generation-type">{x.documentType}{generatedVersion?` · ${versionLabel(generatedVersion.sequenceNumber)}`:""}</strong><small className="muted-note document-generation-meta">Generado {formatDate(x.generatedAt)} · {x.generatedByText??"Usuario no informado"}</small></div>})}</div></>:null}

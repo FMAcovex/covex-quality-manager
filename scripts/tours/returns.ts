@@ -8,7 +8,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/lib/db";
-import { isActiveTemplateAssetReady, templateAssetReady } from "../../src/modules/configuration/template-readiness";
 import { finishTour, ooxmlText, startTour, waitForSaved, type Tour } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
@@ -114,24 +113,16 @@ async function main() {
     // 3 · Documentos: Anexo III (formulario), Anexo IV (hoja del producto) y listado filtrado.
     await tour.step("3 · Los documentos salen del expediente: <b>Anexos III y IV</b> y listado", async () => {
       await tour.go(`/returns/${opened.id}?tab=documents`);
-      const templates = await prisma.returnRecord.findUniqueOrThrow({ where: { id: opened.id }, select: {
-        annexIIITemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
-        annexIVTemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
-      } });
-      for (const [link, type, assigned, expected] of [
-        [page.locator("main a", { hasText: "Generar Anexo III" }).first(), "RETURN_ANNEX_III", templates.annexIIITemplateVersion, [opened.code, lot]],
-        [page.locator(`main a[href*="/annex-iv?product=${opened.productId}"]`).first(), "RETURN_ANNEX_IV", templates.annexIVTemplateVersion, [opened.code, lot]],
+      for (const [link, annex, expected] of [
+        [page.locator("main a", { hasText: "Generar Anexo III" }).first(), "Anexo III", [opened.code, lot]],
+        [page.locator(`main a[href*="/annex-iv?product=${opened.productId}"]`).first(), "Anexo IV", [opened.code, lot]],
       ] as const) {
-        if (assigned ? templateAssetReady(assigned) : await isActiveTemplateAssetReady("RETURN", type)) {
-          const file = await tour.download(link);
-          const text = documentText(file.bytes);
-          for (const value of expected) assert.ok(text.includes(value), `${type} contiene «${value}»`);
-          if (type === "RETURN_ANNEX_III") await tour.showDocument(file.name, file.bytes, `<b>Anexo III</b> de ${opened.code}: formulario de devolución`);
-        } else {
-          await tour.click(link);
-          await page.getByText("Plantilla oficial no disponible").first().waitFor();
-          await tour.go(`/returns/${opened.id}?tab=documents`);
-        }
+        // TPL1: sin plantilla instalada (CI), la ficha no ofrece el anexo y explica qué falta.
+        const file = await tour.downloadOrMissing(link, annex);
+        if (!file) continue;
+        const text = documentText(file.bytes);
+        for (const value of expected) assert.ok(text.includes(value), `${annex} contiene «${value}»`);
+        if (annex === "Anexo III") await tour.showDocument(file.name, file.bytes, `<b>Anexo III</b> de ${opened.code}: formulario de devolución`);
       }
       await tour.go(`/returns?q=${encodeURIComponent(opened.code)}`);
       await page.locator("tr", { hasText: opened.code }).first().waitFor();

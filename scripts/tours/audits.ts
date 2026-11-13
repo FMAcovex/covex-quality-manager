@@ -123,7 +123,8 @@ async function main() {
     await tour.step("4 · El <b>plan CAPA</b> (Anexo IV) agrupa las dos observaciones en un solo bloque", async () => {
       await tour.go(`/audits/${audit.id}?tab=findings`);
       const link = page.locator("a", { hasText: "Descargar CAPA Plan (estado actual)" }).first();
-      const file = await tour.downloadOrUnavailable(link);
+      // TPL1: sin plantilla instalada (CI), la ficha no ofrece el CAPA Plan y explica qué falta.
+      const file = await tour.downloadOrMissing(link, "CAPA Plan");
       if (file) {
         // Un bloque es una fila con su «Nº» en la columna A: tiene que haber una sola, con OBS 01 y OBS 02, y la
         // desviación en su columna D.
@@ -132,9 +133,6 @@ async function main() {
         assert.ok(blocks[0].A.includes("OBS 01") && blocks[0].A.includes("OBS 02"), "el bloque reúne OBS 01 y OBS 02");
         assert.equal(blocks[0].D, deviation.code, "con la desviación vinculada");
         await tour.showDocument(file.name, file.bytes, "Resultado: <b>OBS 01 y OBS 02 en un solo bloque</b>, con la desviación una sola vez");
-      } else {
-        // Sin plantilla instalada (CI), la aplicación explica qué falta.
-        await page.getByText("Plantilla oficial no disponible").first().waitFor();
       }
     });
     await tour.go(`/audits/${audit.id}?tab=findings`);

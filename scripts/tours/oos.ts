@@ -8,7 +8,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/lib/db";
-import { templateAssetReady } from "../../src/modules/configuration/template-readiness";
 import { finishTour, ooxmlText, startTour, waitForSaved, type Tour } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
@@ -23,13 +22,6 @@ const EVALUATION = [
   "reagentsCorrect", "reagentsPreparation", "reagentsExpiry", "reagentsQuantity", "reagentsStorage",
   "microEnvironmentWater", "microGrowthPromotion", "microNegativeControl",
 ];
-
-/** Plantilla que usará la ruta: la vigente en la fecha de emisión del OOS (loadOosTemplate). */
-async function oosTemplateReady(documentType: "OOS_ANNEX_III" | "OOS_ANNEX_IV" | "OOS_ANNEX_VI", on: Date) {
-  const candidates = await prisma.templateVersion.findMany({ where: { module: "OOS", documentType }, orderBy: { effectiveFrom: "asc" }, select: { fileName: true, filePath: true, checksum: true, effectiveFrom: true } });
-  const selected = candidates.filter((item) => item.effectiveFrom <= on).at(-1) ?? candidates[0];
-  return selected ? templateAssetReady(selected) : false;
-}
 
 async function main() {
   const tour = await startTour("Recorrido OOS");
@@ -137,23 +129,16 @@ async function main() {
     // 5 · Documentos: Anexo III (Fase I), Anexo IV (Fase II) y listado anual (Anexo VI).
     await tour.step("5 · Los documentos salen del expediente: <b>Anexos III y IV</b> y listado anual", async () => {
       await tour.go(`/oos/${opened.id}?tab=documents`);
-      const issued = new Date(today);
-      for (const [label, type, expected] of [
-        ["Generar Anexo III", "OOS_ANNEX_III", [opened.code, `L-${marker}`]],
-        ["Generar Anexo IV", "OOS_ANNEX_IV", [opened.code, "Resultado fuera de especificación confirmado"]],
+      for (const [label, annex, expected] of [
+        ["Generar Anexo III", "Anexo III", [opened.code, `L-${marker}`]],
+        ["Generar Anexo IV", "Anexo IV", [opened.code, "Resultado fuera de especificación confirmado"]],
       ] as const) {
-        const link = page.locator("main a", { hasText: label }).first();
-        if (await oosTemplateReady(type, issued)) {
-          const file = await tour.download(link);
-          const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
-          for (const value of expected) assert.ok(text.includes(value), `${label.replace("Generar ", "")} contiene «${value}»`);
-          if (type === "OOS_ANNEX_IV") await tour.showDocument(file.name, file.bytes, `<b>Anexo IV</b> de ${opened.code}: investigación a gran escala`);
-        } else {
-          // Sin plantilla instalada (CI), generar el anexo explica qué falta y cómo instalarla.
-          await tour.click(link);
-          await page.getByText("Plantilla oficial no disponible").first().waitFor();
-          await tour.go(`/oos/${opened.id}?tab=documents`);
-        }
+        // TPL1: sin plantilla instalada (CI), la ficha no ofrece el anexo y explica qué falta.
+        const file = await tour.downloadOrMissing(page.locator("main a", { hasText: label }).first(), annex);
+        if (!file) continue;
+        const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
+        for (const value of expected) assert.ok(text.includes(value), `${annex} contiene «${value}»`);
+        if (annex === "Anexo IV") await tour.showDocument(file.name, file.bytes, `<b>Anexo IV</b> de ${opened.code}: investigación a gran escala`);
       }
       await tour.go(`/oos?q=${encodeURIComponent(opened.code)}`);
       await page.locator("tr", { hasText: opened.code }).first().waitFor();

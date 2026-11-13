@@ -31,6 +31,7 @@ import { deadlineLabel, deviationProvenanceLabel, formatDate, measuresLabel, tri
 import { getDeviationDetail } from "@/modules/deviations/queries";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { recordAnnexTemplate } from "@/modules/configuration/template-readiness";
+import { TemplateMissingNote } from "@/components/template-missing-note";
 import { DEFAULT_DEVIATION_ANNEX_III_VERSION } from "@/modules/deviations/documents/templates";
 import { recordVersionSummary, versionLabel } from "@/lib/qms/versioning";
 import { qmsRecordHref } from "@/lib/qms/record-links";
@@ -152,9 +153,9 @@ async function DeviationDetailPageAuthenticatedContent({
   const code = qmsRecordDisplayCode(deviation.qmsRecord, "Sin codificación");
   const hasCode = Boolean(deviation.qmsRecord.businessCode ?? deviation.qmsRecord.annulledBusinessCode);
   const currentVersion = deviation.qmsRecord.versions.at(-1) ?? null;
-  const annexTemplate = activeTab === "documents"
-    ? await recordAnnexTemplate(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_III, deviation.anexoIIITemplateVersion, DEFAULT_DEVIATION_ANNEX_III_VERSION)
-    : null;
+  // TPL1: la plantilla que usará la generación; solo se ofrece generar o descargar si tiene su archivo instalado.
+  const annexTemplate = await recordAnnexTemplate(QmsRecordType.DEVIATION, DocumentType.DEVIATION_ANNEX_III, deviation.anexoIIITemplateVersion, DEFAULT_DEVIATION_ANNEX_III_VERSION);
+  const annexReady = Boolean(annexTemplate?.ready);
   const currentSignedDocument = currentVersion?.documents.find((document) => document.kind === "SIGNED_PDF") ?? null;
   const reviewMode = review === "1";
   const basePath = `/deviations/${id}`;
@@ -324,7 +325,7 @@ async function DeviationDetailPageAuthenticatedContent({
           <PermissionGate permission="REVIEW"><ReviewModeToggle active={reviewMode} href={qmsWithReturnTo(reviewModeHref(basePath, linkTab, reviewMode), "/deviations", returnTo)} /></PermissionGate>
           {deviation.status === "DRAFT"
             ? <span className="muted-note">El Anexo III estará disponible al abrir la desviación.</span>
-            : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate>}
+            : annexReady ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III</a></PermissionGate> : <TemplateMissingNote annex="Anexo III" />}
           <PermissionGate permission="EDIT" form><Link className="button primary" href={qmsWithReturnTo(`/deviations/${id}/edit?tab=${linkTab}`, "/deviations", returnTo)}>{deviation.status === "DRAFT" ? "Editar borrador" : "Editar / seguimiento"}</Link></PermissionGate>
         </>}
       />
@@ -754,8 +755,8 @@ async function DeviationDetailPageAuthenticatedContent({
               <h3>Anexo III · Informe de desviación</h3>
               <p>Plantilla oficial asociada al expediente y documento Word cumplimentado con los datos vigentes.</p>
               <div className="document-actions">
-                {annexTemplate ? <PermissionGate permission="DOWNLOAD" module="DEVIATION"><a className="button" href={`/api/settings/templates/${annexTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla oficial pendiente de cargar.</span>}
-                {deviation.status === "DRAFT" ? <span className="muted-note">Disponible al abrir la desviación.</span> : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>}
+                {annexTemplate && annexReady ? <PermissionGate permission="DOWNLOAD" module="DEVIATION"><a className="button" href={`/api/settings/templates/${annexTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <TemplateMissingNote annex="Anexo III" />}
+                {!annexReady ? null : deviation.status === "DRAFT" ? <span className="muted-note">Disponible al abrir la desviación.</span> : <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={`/api/deviations/${id}/annex-iii`}>Generar Anexo III cumplimentado</a></PermissionGate>}
               </div>
             </div>
             <div className="document-block">

@@ -58,7 +58,7 @@ Aunque fallen también el cierre del navegador o la limpieza, se informa el erro
 ## Añadir un recorrido
 
 1. Crear `scripts/tours/<módulo>.ts` con `startTour()` de `scripts/tours/lib.ts`.
-2. Dividirlo en pasos con `tour.step("rótulo", …)`. Para los documentos oficiales, `tour.downloadOrUnavailable(enlace)` devuelve el archivo o `null` si la aplicación muestra «Plantilla oficial no disponible», sin adivinar qué plantilla usará la ruta. Cada paso:
+2. Dividirlo en pasos con `tour.step("rótulo", …)`. Para los anexos que ofrece una ficha, `tour.downloadOrMissing(enlace, "Anexo III")` descarga el archivo o, si la ficha indica «Anexo III: plantilla oficial no instalada» (TPL1), comprueba que no ofrece el enlace y devuelve `null`. En la demo, esa nota es un fallo. Para otros documentos, `tour.downloadOrUnavailable(enlace)` devuelve el archivo o `null` si la aplicación muestra «Plantilla oficial no disponible». Cada paso:
    - usa `tour.click`, `tour.fill`, `tour.select` y `tour.download`, que en modo vídeo mueven el cursor y escriben a ritmo de lectura;
    - termina comprobando en la base de datos o en el documento lo que el usuario acaba de hacer.
 3. Marcar los textos con una marca única. La limpieza del modo prueba borra por esa marca, también si el recorrido falla a medias.

@@ -193,6 +193,32 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Anexos ofrecidos solo con su plantilla instalada (2026-11-14, TPL1):**
+- **Problema:** la ficha ofrecía generar un anexo aunque la plantilla que usaría la generación no tuviera archivo, y al pulsar salía «Plantilla oficial no disponible».
+  - Desviaciones y CAPA comprobaban la plantilla por defecto, pero no la asignada al expediente.
+  - Controles de cambios, Reclamaciones y Devoluciones no comprobaban nada.
+  - OOS comprobaba la plantilla activa, no la vigente en la fecha de emisión, que es la que usa la generación.
+  - Auditorías ofrecía el CAPA Plan y el plan externo del estado actual sin comprobar la plantilla.
+- **Arreglo:** la ficha calcula la misma plantilla que la ruta de generación y solo ofrece «Descargar plantilla oficial» y «Generar…» si tiene su archivo instalado.
+  - Para los seis módulos, la plantilla asignada al expediente o, si no tiene, la versión por defecto del generador. Lo hace `recordAnnexTemplate()`, que ahora devuelve `ready`.
+  - En OOS, la vigente en la fecha de emisión (`oosTemplateReady()`, con la misma selección que `loadOosTemplate`).
+  - En Auditorías, la vigente para el expediente (`auditTemplateInForce`).
+  - Si falta, la ficha muestra «Anexo III: plantilla oficial no instalada. Revisar plantillas» (`TemplateMissingNote`), con enlace a Configuración → Versiones.
+- **Dónde:**
+  - Desviaciones y CAPA (Anexo III): cabecera y pestaña Documentos.
+  - Controles de cambios (Anexos III, IV y V), Reclamaciones (Anexos III y IV) y Devoluciones (Anexos III, IV y V): pestaña Documentos.
+  - OOS (Anexos III y IV): cabecera y pestaña Documentos.
+  - Auditorías: CAPA Plan y plan externo del estado actual, en Documentos y en Hallazgos.
+- **Fuera de alcance:**
+  - Las descargas por versión («Descargar Anexo III 01»), que usan la plantilla guardada con cada versión.
+  - Los listados anuales (Anexos V, VI y VII), que ya comprobaban su plantilla en el listado.
+- **Pruebas** (fallaban antes del arreglo):
+  - `template-readiness.test.ts`: plantilla asignada con y sin archivo, la de por defecto, y ninguna;
+  - `oos/documents/templates.test.ts`: plantilla de la fecha de emisión frente a la activa.
+- **Recorridos:**
+  - `tour.downloadOrMissing(enlace, anexo)` sustituye a «pulsar y esperar la página de error» en las fichas.
+  - Los ocho pasan contra la compilación con la base de pruebas, donde 20 de las 26 plantillas registradas no tienen archivo.
+
 **Fechas de hoy en hora de Madrid (2026-11-13, FEC1, D-139):**
 - **Problema:** varias fechas de «hoy» se calculaban con el día UTC del servidor (o con `CURRENT_DATE` de PostgreSQL). Entre las 00:00 y las 01:00/02:00 de Madrid (el 1 de enero, del año anterior) ocurría lo siguiente:
   - los formularios nuevos proponían la fecha del día anterior;
@@ -357,7 +383,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Revisión independiente:**
   - *Importante, corregido:* un error al cerrar o al limpiar ocultaba el error del paso que había fallado. Ahora se ejecutan siempre el cierre, la limpieza y la desconexión, y se informa el error del paso con los demás añadidos.
   - *Menores, corregidos:* la limpieza también encuentra la CAPA vinculada o con la marca en el defecto; el Anexo III se decide con la plantilla asignada al expediente, como la ruta; se retira `TOUR_BASE_URL`; el aviso de borrador no aparece como error; la disposición coincide con su comentario; prueba de que solo se ejecuta en la base aislada o en la demo.
-  - El fallo de la plantilla queda en el backlog (TPL1).
+  - El fallo de la plantilla queda en el backlog (TPL1; corregido el 2026-11-14).
 - Procedimiento en [TOURS.md](TOURS.md).
 
 **Auditorías: orden de los hallazgos (2026-11-13):**
@@ -727,7 +753,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Expediente:** cabecera, pestañas y estado en color como en Desviaciones; el historial está en Cronología, con las etiquetas de hallazgos, acciones y seguimientos y los valores anterior y nuevo de cada cambio.
 - **Listado:** estado en color, aviso de control de dato y enlaces como en los demás listados.
 - **Documentos:** documentos de trabajo, documentos por versión, recibidos y conservados en una sola pestaña.
-- **CAPA plan:** el del estado actual se descarga también en borrador y desde Hallazgos. Sin plantilla, sale la página «Plantilla oficial no disponible»; cualquier otro error, una página legible en lugar de JSON.
+- **CAPA plan:** el del estado actual se descarga también en borrador y desde Hallazgos. Sin plantilla, sale la página «Plantilla oficial no disponible» (desde TPL1, la ficha ya no lo ofrece y explica qué falta); cualquier otro error, una página legible en lugar de JSON.
 - **Planes y programas anuales:** el alta del plan, las auditorías previstas, la retirada, los aprobadores y la emisión conservan lo escrito ante un error.
 - **Comprobado** con las 5 pruebas de navegador de Auditorías sobre una base de pruebas nueva, entre ellas una que fuerza errores y comprueba que no se pierde lo escrito, y con un recorrido en la demo, con y sin plantillas instaladas.
 - **Pendiente:** R5B–R5D (`docs/AUDITS_R5.md`).

@@ -7,7 +7,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/lib/db";
-import { isActiveTemplateAssetReady, templateAssetReady } from "../../src/modules/configuration/template-readiness";
 import { finishTour, ooxmlText, startTour } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
@@ -129,16 +128,12 @@ async function main() {
     await tour.step(`4 · Los documentos salen del expediente: <b>Anexo III</b> y listado`, async () => {
       await tour.go(`/capa/${opened.id}`);
       const annexIII = page.locator("main a", { hasText: "Generar Anexo III" }).first();
-      const assigned = (await prisma.capa.findUniqueOrThrow({ where: { id: opened.id }, select: { annexIIITemplateVersion: { select: { fileName: true, filePath: true, checksum: true } } } })).annexIIITemplateVersion;
-      if (assigned ? templateAssetReady(assigned) : await isActiveTemplateAssetReady("CAPA", "CAPA_ANNEX_III")) {
-        const file = await tour.download(annexIII);
+      // TPL1: sin plantilla instalada (CI), la ficha no ofrece el anexo y explica qué falta.
+      const file = await tour.downloadOrMissing(annexIII, "Anexo III");
+      if (file) {
         const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
         for (const expected of [opened.code, marker, origin.code]) assert.ok(text.includes(expected), `el Anexo III contiene «${expected}»`);
         await tour.showDocument(file.name, file.bytes, `<b>Anexo III</b> de ${opened.code}, cumplimentado sobre la plantilla oficial`);
-      } else {
-        // Sin plantilla instalada (CI), generar el anexo explica qué falta y cómo instalarla.
-        await tour.click(annexIII);
-        await page.getByText("Plantilla oficial no disponible").first().waitFor();
       }
       await tour.go(`/capa?q=${encodeURIComponent(opened.code)}`);
       await page.locator("tr", { hasText: opened.code }).first().waitFor();

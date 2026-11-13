@@ -60,6 +60,9 @@ import {
 } from "@/lib/qms/review/targets/returns";
 
 import {contextFromExtraData} from "@/modules/returns/rules";
+import { DocumentType, QmsRecordType } from "@prisma/client";
+import { recordAnnexTemplate } from "@/modules/configuration/template-readiness";
+import { TemplateMissingNote } from "@/components/template-missing-note";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +105,12 @@ async function ReturnDetailPageAuthenticatedContent({
   const primaryComplaintOrigin =
     complaintOrigins.length === 1 ? complaintOrigins[0] : null;
   const currentTechnicalVersion = r.qmsRecord.versions.at(-1) ?? null;
+  // TPL1: plantilla que usará cada generación (como en las rutas); solo se ofrece si tiene su archivo instalado.
+  const [annexIIITemplate, annexIVTemplate, annexVTemplate] = await Promise.all([
+    recordAnnexTemplate(QmsRecordType.RETURN, DocumentType.RETURN_ANNEX_III, r.annexIIITemplateVersion, "03"),
+    recordAnnexTemplate(QmsRecordType.RETURN, DocumentType.RETURN_ANNEX_IV, r.annexIVTemplateVersion, "03"),
+    recordAnnexTemplate(QmsRecordType.RETURN, DocumentType.RETURN_ANNEX_V, r.annexVTemplateVersion, "03"),
+  ]);
   const signedAnnexIII =
     currentTechnicalVersion?.documents.find(
       (item) => item.kind === "RETURN_ANNEX_III_SIGNED",
@@ -753,24 +762,20 @@ async function ReturnDetailPageAuthenticatedContent({
                     adjunta aquí la copia PDF correspondiente al expediente.
                   </p>
                   <div className="document-actions">
-                    {r.annexIIITemplateVersion?.id ? (
+                    {annexIIITemplate?.ready ? (<>
                       <PermissionGate permission="DOWNLOAD" module="RETURN"><a
                         className="button"
-                        href={`/api/settings/templates/${r.annexIIITemplateVersion.id}/download`}
+                        href={`/api/settings/templates/${annexIIITemplate.id}/download`}
                       >
                         Descargar plantilla oficial
                       </a></PermissionGate>
-                    ) : (
-                      <span className="muted-note">
-                        Plantilla pendiente de cargar.
-                      </span>
-                    )}
-                    <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a
-                      className="button primary"
-                      href={`/api/returns/${id}/annex-iii`}
-                    >
-                      Generar Anexo III cumplimentado
-                    </a></PermissionGate>
+                      <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a
+                        className="button primary"
+                        href={`/api/returns/${id}/annex-iii`}
+                      >
+                        Generar Anexo III cumplimentado
+                      </a></PermissionGate>
+                    </>) : <TemplateMissingNote annex="Anexo III" />}
                     {signedAnnexIII ? (
                       <PermissionGate permission="DOWNLOAD"><a
                         className="button"
@@ -816,20 +821,20 @@ async function ReturnDetailPageAuthenticatedContent({
                     cliente se archiva aquí como documento firmado.
                   </p>
                   <div className="document-actions">
-                    {r.annexVTemplateVersion?.id ? (
+                    {annexVTemplate?.ready ? (<>
                       <PermissionGate permission="DOWNLOAD" module="RETURN"><a
                         className="button"
-                        href={`/api/settings/templates/${r.annexVTemplateVersion.id}/download`}
+                        href={`/api/settings/templates/${annexVTemplate.id}/download`}
                       >
                         Descargar plantilla oficial
                       </a></PermissionGate>
-                    ) : null}
-                    <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a
-                      className="button primary"
-                      href={`/api/returns/${id}/annex-v`}
-                    >
-                      Generar Anexo V
-                    </a></PermissionGate>
+                      <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a
+                        className="button primary"
+                        href={`/api/returns/${id}/annex-v`}
+                      >
+                        Generar Anexo V
+                      </a></PermissionGate>
+                    </>) : <TemplateMissingNote annex="Anexo V" />}
                     {signedAnnexV ? (
                       <PermissionGate permission="DOWNLOAD"><a
                         className="button"
@@ -868,15 +873,15 @@ async function ReturnDetailPageAuthenticatedContent({
                   <h3>Anexo IV · Hoja de devolución</h3>
                   <p>Se genera una hoja vertical por producto/lote registrado.</p>
                   <div className="document-actions">
-                    {r.annexIVTemplateVersion?.id ? (
+                    {annexIVTemplate?.ready ? (
                       <PermissionGate permission="DOWNLOAD" module="RETURN"><a
                         className="button"
-                        href={`/api/settings/templates/${r.annexIVTemplateVersion.id}/download`}
+                        href={`/api/settings/templates/${annexIVTemplate.id}/download`}
                       >
                         Descargar plantilla oficial
                       </a></PermissionGate>
-                    ) : null}
-                    {r.products.map((product) => (
+                    ) : <TemplateMissingNote annex="Anexo IV" />}
+                    {!annexIVTemplate?.ready ? null : r.products.map((product) => (
                       <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]} key={product.id}><a
                         key={product.id}
                         className="button small primary"

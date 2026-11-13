@@ -8,7 +8,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/lib/db";
-import { isActiveTemplateAssetReady, templateAssetReady } from "../../src/modules/configuration/template-readiness";
 import { finishTour, ooxmlText, startTour, waitForSaved, type Tour } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
@@ -180,25 +179,16 @@ async function main() {
     // 5 · Documentos: Anexo III (informe) y IV (respuesta) y listado filtrado.
     await tour.step("5 · Los documentos salen del expediente: <b>Anexos III y IV</b> y listado", async () => {
       await tour.go(`/complaints/${opened.id}?tab=documents`);
-      const templates = await prisma.complaint.findUniqueOrThrow({ where: { id: opened.id }, select: {
-        annexIIITemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
-        annexIVTemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
-      } });
-      for (const [label, type, assigned, expected] of [
-        ["Generar Anexo III", "COMPLAINT_ANNEX_III", templates.annexIIITemplateVersion, [opened.code, `L-${marker}`]],
-        ["Generar informe de respuesta", "COMPLAINT_ANNEX_IV", templates.annexIVTemplateVersion, [opened.code, "Reclamación resuelta y respondida"]],
+      for (const [label, annex, expected] of [
+        ["Generar Anexo III", "Anexo III", [opened.code, `L-${marker}`]],
+        ["Generar informe de respuesta", "Anexo IV", [opened.code, "Reclamación resuelta y respondida"]],
       ] as const) {
-        const link = page.locator("main a", { hasText: label }).first();
-        if (assigned ? templateAssetReady(assigned) : await isActiveTemplateAssetReady("COMPLAINT", type)) {
-          const file = await tour.download(link);
-          const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
-          for (const value of expected) assert.ok(text.includes(value), `${label} contiene «${value}»`);
-          if (type === "COMPLAINT_ANNEX_III") await tour.showDocument(file.name, file.bytes, `<b>Anexo III</b> de ${opened.code}: informe de la reclamación`);
-        } else {
-          await tour.click(link);
-          await page.getByText("Plantilla oficial no disponible").first().waitFor();
-          await tour.go(`/complaints/${opened.id}?tab=documents`);
-        }
+        // TPL1: sin plantilla instalada (CI), la ficha no ofrece el anexo y explica qué falta.
+        const file = await tour.downloadOrMissing(page.locator("main a", { hasText: label }).first(), annex);
+        if (!file) continue;
+        const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
+        for (const value of expected) assert.ok(text.includes(value), `${label} contiene «${value}»`);
+        if (annex === "Anexo III") await tour.showDocument(file.name, file.bytes, `<b>Anexo III</b> de ${opened.code}: informe de la reclamación`);
       }
       await tour.go(`/complaints?q=${encodeURIComponent(opened.code)}`);
       await page.locator("tr", { hasText: opened.code }).first().waitFor();

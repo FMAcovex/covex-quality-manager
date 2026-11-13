@@ -37,6 +37,12 @@ export type Tour = {
    * plantillas están instaladas, un null es un fallo. Si la aplicación muestra otro error, falla con su texto.
    */
   downloadOrUnavailable(trigger: Locator): Promise<{ name: string; bytes: Buffer } | null>;
+  /**
+   * TPL1: la ficha solo ofrece generar un anexo si su plantilla está instalada; si no, muestra «<anexo>: plantilla
+   * oficial no instalada». Descarga con el enlace o, si la ficha muestra esa nota, comprueba que no ofrece el enlace
+   * y devuelve null. En la demo, donde las plantillas están instaladas, la nota es un fallo.
+   */
+  downloadOrMissing(trigger: Locator, annex: string): Promise<{ name: string; bytes: Buffer } | null>;
   /** Solo en vídeo: muestra la primera página del documento (necesita LibreOffice). */
   showDocument(name: string, bytes: Buffer, caption: string): Promise<void>;
   close(): Promise<void>;
@@ -209,6 +215,21 @@ export async function startTour(name: string): Promise<Tour> {
       const late = await downloaded;
       if (late) return late;
       throw new Error(`Ni se descargó el documento ni la aplicación indicó por qué.${downloadError ? ` ${(downloadError as Error).message}` : ""}`);
+    },
+    async downloadOrMissing(trigger, annex) {
+      const note = page.getByTestId("template-missing").filter({ hasText: `${annex}: plantilla oficial no instalada` }).first();
+      const shown = await Promise.race([
+        trigger.waitFor({ timeout: 30000 }).then(() => "link" as const, () => null),
+        note.waitFor({ timeout: 30000 }).then(() => "note" as const, () => null),
+      ]);
+      if (shown === "link") return this.download(trigger);
+      if (shown === "note") {
+        if (demo) throw new Error(`En la demo las plantillas están instaladas, pero la ficha indica que falta la de «${annex}».`);
+        if (await trigger.count()) throw new Error(`La ficha ofrece «${annex}» y a la vez indica que falta su plantilla.`);
+        await moveTo(note); await pause(600);
+        return null;
+      }
+      throw new Error(`La ficha no ofrece «${annex}» ni explica que falte su plantilla.`);
     },
     async showDocument(fileName, bytes, text) {
       if (!videoDir) return;

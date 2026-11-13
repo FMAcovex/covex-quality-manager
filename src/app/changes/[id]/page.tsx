@@ -62,6 +62,9 @@ import { SignedVersionDocumentForm } from "@/components/signed-version-document-
 import { uploadChangeControlSignedPdfAction } from "@/modules/change-control/signed-document-actions";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
 import { administrativeTodayDate } from "@/lib/qms/administrative-date";
+import { DocumentType, QmsRecordType } from "@prisma/client";
+import { recordAnnexTemplate } from "@/modules/configuration/template-readiness";
+import { TemplateMissingNote } from "@/components/template-missing-note";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +94,12 @@ async function ChangeControlDetailPageAuthenticatedContent({
   const nextFollowupDate = nextFollowupDateFromHistory(record.followups);
   const requirements = changeRequirementRows(record);
   const documentUrls = changeControlDocumentUrls(id);
+  // TPL1: plantilla que usará cada generación; solo se ofrece generar o descargar si tiene su archivo instalado.
+  const [annexIIITemplate, annexIVTemplate, annexVTemplate] = await Promise.all([
+    recordAnnexTemplate(QmsRecordType.CHANGE_CONTROL, DocumentType.CHANGE_ANNEX_III, record.annexIIITemplateVersion, "03"),
+    recordAnnexTemplate(QmsRecordType.CHANGE_CONTROL, DocumentType.CHANGE_ANNEX_IV, record.annexIVTemplateVersion, "03"),
+    recordAnnexTemplate(QmsRecordType.CHANGE_CONTROL, DocumentType.CHANGE_ANNEX_V, record.annexVTemplateVersion, "03"),
+  ]);
   const department = [record.departmentCodeSnapshot, record.departmentNameSnapshot]
     .filter(Boolean)
     .join(" · ") || "—";
@@ -541,24 +550,28 @@ async function ChangeControlDetailPageAuthenticatedContent({
               <div className="change-document-heading"><h3>Anexo III · Solicitud</h3><span className="badge neutral">{record.annexIIITemplateVersion?.versionCode ?? "Sin plantilla"}</span></div>
               <p>Plantilla oficial y solicitud cumplimentada del Control de Cambio.</p>
               <div className="document-actions">
-                {record.annexIIITemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="CHANGE_CONTROL"><a className="button" href={`/api/settings/templates/${record.annexIIITemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
-                <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={documentUrls.annexIII}>Generar Anexo III</a></PermissionGate>
+                {annexIIITemplate?.ready ? <>
+                  <PermissionGate permission="DOWNLOAD" module="CHANGE_CONTROL"><a className="button" href={`/api/settings/templates/${annexIIITemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate>
+                  <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={documentUrls.annexIII}>Generar Anexo III</a></PermissionGate>
+                </> : <TemplateMissingNote annex="Anexo III" />}
               </div>
             </div>
             <div className="document-block">
               <div className="change-document-heading"><h3>Anexo IV · Dictamen</h3><span className="badge neutral">{record.annexIVTemplateVersion?.versionCode ?? "Sin plantilla"}</span></div>
               <p>Plantilla oficial y Dictamen cumplimentado.</p>
               <div className="document-actions">
-                {record.annexIVTemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="CHANGE_CONTROL"><a className="button" href={`/api/settings/templates/${record.annexIVTemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <span className="muted-note">Plantilla pendiente de cargar.</span>}
-                <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={documentUrls.annexIV}>Generar Anexo IV</a></PermissionGate>
+                {annexIVTemplate?.ready ? <>
+                  <PermissionGate permission="DOWNLOAD" module="CHANGE_CONTROL"><a className="button" href={`/api/settings/templates/${annexIVTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate>
+                  <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={documentUrls.annexIV}>Generar Anexo IV</a></PermissionGate>
+                </> : <TemplateMissingNote annex="Anexo IV" />}
               </div>
             </div>
             <div className="document-block">
               <div className="change-document-heading"><h3>Anexo V · Seguimiento</h3><span className="badge neutral">{record.annexVTemplateVersion?.versionCode ?? "Sin plantilla"}</span></div>
               <p>Cada seguimiento se genera con su versión histórica correspondiente.</p>
               <div className="document-actions">
-                {record.annexVTemplateVersion?.id ? <PermissionGate permission="DOWNLOAD" module="CHANGE_CONTROL"><a className="button" href={`/api/settings/templates/${record.annexVTemplateVersion.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : null}
-                {currentVersion ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={changeControlVersionDocumentUrls(id, currentVersion.sequenceNumber).annexV}>Generar Anexo V · {versionLabel(currentVersion.sequenceNumber)}</a></PermissionGate> : <span className="badge neutral">Disponible tras Seguimiento 00</span>}
+                {annexVTemplate?.ready ? <PermissionGate permission="DOWNLOAD" module="CHANGE_CONTROL"><a className="button" href={`/api/settings/templates/${annexVTemplate.id}/download`}>Descargar plantilla oficial</a></PermissionGate> : <TemplateMissingNote annex="Anexo V" />}
+                {annexVTemplate?.ready && currentVersion ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button primary" href={changeControlVersionDocumentUrls(id, currentVersion.sequenceNumber).annexV}>Generar Anexo V · {versionLabel(currentVersion.sequenceNumber)}</a></PermissionGate> : annexVTemplate?.ready ? <span className="badge neutral">Disponible tras Seguimiento 00</span> : null}
               </div>
             </div>
             <div className="document-block">
