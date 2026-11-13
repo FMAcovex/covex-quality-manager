@@ -34,6 +34,8 @@ const REVIEWED_BINARY_CONSUMERS = [
   "src/modules/audits/documents/template-choice.ts",
   "src/modules/audits/report-service.ts",
   "src/modules/configuration/admin-actions.ts",
+  // TPL1: solo filtra por la presencia del archivo (`fileData: { not: null }`); no lee bytes.
+  "src/modules/configuration/template-asset-ready.ts",
   "src/modules/configuration/template-assets.ts",
   "src/modules/configuration/template-install-service.ts",
   "src/modules/controlled-documents/documents/service.ts",

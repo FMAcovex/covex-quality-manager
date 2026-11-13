@@ -17,7 +17,7 @@ import { auditDocumentBlocker } from "./availability";
 import { listCapaPlanVersions } from "../capa-plan-service";
 import { receivedAuditScenario } from "../domain";
 import { withBytes } from "@/lib/db-binary-omit";
-import { auditTemplateInForce, auditTemplateReferenceDate } from "./template-choice";
+import { auditTemplateCandidateInForce, auditTemplateInForce, auditTemplateReferenceDate } from "./template-choice";
 const digest = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
 const types: DocumentType[] = [DocumentType.AUDIT_INTERNAL_REPORT, DocumentType.AUDIT_EXTERNAL_REPORT, DocumentType.AUDIT_CAPA_PLAN, DocumentType.AUDIT_EXTERNAL_PLAN];
 const json = (v: unknown) => JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -106,10 +106,10 @@ export async function getAuditReportView(id: string) {
   const capaPlanVersions=await listCapaPlanVersions(id);
   // TPL1: los documentos de trabajo solo se ofrecen si hay plantilla instalada para la fecha del expediente.
   const reference=auditTemplateReferenceDate(audit);
-  const [capaPlanTemplate,externalPlanTemplate]=await prisma.$transaction(tx=>Promise.all([
-    auditTemplateInForce(tx,DocumentType.AUDIT_CAPA_PLAN,reference),
-    auditTemplateInForce(tx,DocumentType.AUDIT_EXTERNAL_PLAN,reference),
-  ]));
+  const [capaPlanTemplate,externalPlanTemplate]=await Promise.all([
+    auditTemplateCandidateInForce(prisma,DocumentType.AUDIT_CAPA_PLAN,reference),
+    audit.scenario==='SUPPLIER'?auditTemplateCandidateInForce(prisma,DocumentType.AUDIT_EXTERNAL_PLAN,reference):null,
+  ]);
   const templateReady={AUDIT_CAPA_PLAN:Boolean(capaPlanTemplate),AUDIT_EXTERNAL_PLAN:Boolean(externalPlanTemplate)};
   return {audit,versions,closure,capaPlanVersions,templateReady};
 }

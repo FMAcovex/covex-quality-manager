@@ -54,6 +54,7 @@ import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { recordAnnexTemplate } from "@/modules/configuration/template-readiness";
 import { TemplateMissingNote } from "@/components/template-missing-note";
+import { complaintAnnexIVDefaultVersion } from "@/modules/complaints/documents/template-version";
 
 export const dynamic="force-dynamic";
 const tabs=[
@@ -91,7 +92,7 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
  // TPL1: plantilla que usará cada generación (como en las rutas); solo se ofrece si tiene su archivo instalado.
  const [annexIIITemplate,annexIVTemplate]=await Promise.all([
   recordAnnexTemplate(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_III,r.annexIIITemplateVersion,"03"),
-  recordAnnexTemplate(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_IV,r.annexIVTemplateVersion,r.annexIIITemplateVersion?.versionCode??"03"),
+  recordAnnexTemplate(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_IV,r.annexIVTemplateVersion,complaintAnnexIVDefaultVersion(r)),
  ]);
  const currentSignedDocument=currentVersion?.documents.find(document=>document.kind==="SIGNED_PDF")??null;
  const signedVersionCount=r.qmsRecord.versions.filter(version=>version.documents.some(document=>document.kind==="SIGNED_PDF")).length;

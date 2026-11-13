@@ -113,12 +113,12 @@ async function main() {
     // 3 · Documentos: Anexo III (formulario), Anexo IV (hoja del producto) y listado filtrado.
     await tour.step("3 · Los documentos salen del expediente: <b>Anexos III y IV</b> y listado", async () => {
       await tour.go(`/returns/${opened.id}?tab=documents`);
-      for (const [link, annex, expected] of [
-        [page.locator("main a", { hasText: "Generar Anexo III" }).first(), "Anexo III", [opened.code, lot]],
-        [page.locator(`main a[href*="/annex-iv?product=${opened.productId}"]`).first(), "Anexo IV", [opened.code, lot]],
+      for (const [link, annex, generationPath, expected] of [
+        [page.locator("main a", { hasText: "Generar Anexo III" }).first(), "Anexo III", `/api/returns/${opened.id}/annex-iii`, [opened.code, lot]],
+        [page.locator(`main a[href*="/annex-iv?product=${opened.productId}"]`).first(), "Anexo IV", `/api/returns/${opened.id}/annex-iv?product=${opened.productId}`, [opened.code, lot]],
       ] as const) {
         // TPL1: sin plantilla instalada (CI), la ficha no ofrece el anexo y explica qué falta.
-        const file = await tour.downloadOrMissing(link, annex);
+        const file = await tour.downloadOrMissing(link, annex, generationPath);
         if (!file) continue;
         const text = documentText(file.bytes);
         for (const value of expected) assert.ok(text.includes(value), `${annex} contiene «${value}»`);

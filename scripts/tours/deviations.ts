@@ -170,7 +170,7 @@ async function main() {
       const annexIII = page.locator("main a", { hasText: "Generar Anexo III" }).first();
       // TPL1: con la plantilla instalada se genera y se comprueba el contenido; sin ella (CI: el repositorio no
       // lleva las plantillas reales), la ficha no ofrece el anexo y explica qué falta.
-      const file = await tour.downloadOrMissing(annexIII, "Anexo III");
+      const file = await tour.downloadOrMissing(annexIII, "Anexo III", `/api/deviations/${opened.id}/annex-iii`);
       if (file) {
         const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
         for (const expected of [code, marker, "Prensa rotativa P-02"]) assert.ok(text.includes(expected), `el Anexo III contiene «${expected}»`);

@@ -1,7 +1,7 @@
 import "server-only";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { templateAssetReady } from "./template-asset-ready";
+import { installedTemplateWhere, templateAssetReady } from "./template-asset-ready";
 
 export { templateAssetReady };
 
@@ -74,15 +74,24 @@ export async function recordAnnexTemplate(
   assigned: { id: string; versionCode: string } | null | undefined,
   defaultVersionCode: string,
 ) {
-  const select = { id: true, versionCode: true, fileName: true, filePath: true, checksum: true } as const;
+  const select = { id: true, versionCode: true } as const;
   const template = assigned
     ? await prisma.templateVersion.findUnique({ where: { id: assigned.id }, select })
     : await prisma.templateVersion.findUnique({
       where: { module_documentType_versionCode: { module, documentType, versionCode: defaultVersionCode } }, select,
     });
   if (!template) return null;
-  return { id: template.id, versionCode: template.versionCode, assigned: Boolean(assigned), ready: templateAssetReady(template) };
+  return { id: template.id, versionCode: template.versionCode, assigned: Boolean(assigned), ready: await templateFileInstalled(template.id) };
 }
+
+/**
+ * Criterio del cargador (`loadStoredTemplateAsset`) y del instalador: archivo guardado o ruta, y huella registrada.
+ * Se comprueba con un filtro, sin leer los bytes (D-112). Un archivo dañado sigue dando el aviso al generar.
+ */
+export async function templateFileInstalled(id: string) {
+  return (await prisma.templateVersion.count({ where: installedTemplateWhere(id) })) > 0;
+}
+
 
 export async function isActiveTemplateAssetReady(
   module: QmsRecordType,

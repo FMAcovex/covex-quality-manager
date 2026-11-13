@@ -84,10 +84,10 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
   // TPL1: la misma plantilla que usará la generación (la vigente en la fecha de emisión), no la activa.
   const [annexIIIReady, annexIVReady] = await Promise.all([oosTemplateReady("OOS_ANNEX_III", record.issueDate), oosTemplateReady("OOS_ANNEX_IV", record.issueDate)]);
   const textTables = numberTextTables(storedTextTables(record.textTables), OOS_TABLE_FIELDS);
-  // D-103: sin la plantilla instalada, el botón se muestra desactivado con el motivo, en vez de dar error al pulsarlo.
+  // D-103, TPL1: sin la plantilla que usará la generación, la cabecera explica qué falta en vez de ofrecer el anexo.
   const annexButton = (ready: boolean, annex: "iii" | "iv", label: string) => ready
     ? <a className="button" href={`/api/oos/${id}/annex-${annex}`}>{label}</a>
-    : <span className="template-missing-inline"><button className="button" type="button" disabled>{label}</button><span className="template-missing-note">Plantilla oficial pendiente de cargar (PNT GC-10/014/04).</span></span>;
+    : <TemplateMissingNote annex={label} />;
 
   const phase = oosPhase(record.phaseIDisposition);
   const tabs = [

@@ -124,7 +124,7 @@ async function main() {
       await tour.go(`/audits/${audit.id}?tab=findings`);
       const link = page.locator("a", { hasText: "Descargar CAPA Plan (estado actual)" }).first();
       // TPL1: sin plantilla instalada (CI), la ficha no ofrece el CAPA Plan y explica qué falta.
-      const file = await tour.downloadOrMissing(link, "CAPA Plan");
+      const file = await tour.downloadOrMissing(link, "CAPA Plan", `/api/audits/${audit.id}/documents?type=AUDIT_CAPA_PLAN`);
       if (file) {
         // Un bloque es una fila con su «Nº» en la columna A: tiene que haber una sola, con OBS 01 y OBS 02, y la
         // desviación en su columna D.

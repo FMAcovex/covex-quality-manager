@@ -193,31 +193,54 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
-**Anexos ofrecidos solo con su plantilla instalada (2026-11-14, TPL1):**
+**Anexos ofrecidos solo con su plantilla instalada (2026-11-13, TPL1):**
 - **Problema:** la ficha ofrecía generar un anexo aunque la plantilla que usaría la generación no tuviera archivo, y al pulsar salía «Plantilla oficial no disponible».
   - Desviaciones y CAPA comprobaban la plantilla por defecto, pero no la asignada al expediente.
   - Controles de cambios, Reclamaciones y Devoluciones no comprobaban nada.
   - OOS comprobaba la plantilla activa, no la vigente en la fecha de emisión, que es la que usa la generación.
   - Auditorías ofrecía el CAPA Plan y el plan externo del estado actual sin comprobar la plantilla.
 - **Arreglo:** la ficha calcula la misma plantilla que la ruta de generación y solo ofrece «Descargar plantilla oficial» y «Generar…» si tiene su archivo instalado.
-  - Para los seis módulos, la plantilla asignada al expediente o, si no tiene, la versión por defecto del generador. Lo hace `recordAnnexTemplate()`, que ahora devuelve `ready`.
-  - En OOS, la vigente en la fecha de emisión (`oosTemplateReady()`, con la misma selección que `loadOosTemplate`).
-  - En Auditorías, la vigente para el expediente (`auditTemplateInForce`).
-  - Si falta, la ficha muestra «Anexo III: plantilla oficial no instalada. Revisar plantillas» (`TemplateMissingNote`), con enlace a Configuración → Versiones.
+  - En Desviaciones, CAPA, Controles de cambios, Reclamaciones y Devoluciones, la plantilla asignada al expediente o, si no tiene, la versión por defecto del generador. Lo hace `recordAnnexTemplate()`, que ahora devuelve `ready`. En Reclamaciones, el Anexo IV sin asignar usa la versión del Anexo III, con la misma función que la generación (`complaintAnnexIVDefaultVersion`).
+  - En OOS, la vigente en la fecha de emisión (`oosTemplateReady()`). Usa la misma consulta de candidatas que `loadOosTemplate`, ahora con orden estable.
+  - En Auditorías, la vigente para el expediente (`auditTemplateCandidateInForce`), sin leer el archivo (D-112).
+  - **Criterio de «instalada»:** el del cargador y el instalador, es decir, archivo guardado o ruta, y huella registrada. Se comprueba con un filtro, sin leer los bytes. Un archivo dañado (huella distinta) sigue dando el aviso al generar.
+  - Si falta, la ficha muestra «Anexo III: plantilla oficial no instalada. Revisar plantillas» (`TemplateMissingNote`), con enlace a Configuración → Versiones. Solo lo ve quien tiene permiso de descarga; a los demás no se les ofrecía nada.
 - **Dónde:**
   - Desviaciones y CAPA (Anexo III): cabecera y pestaña Documentos.
   - Controles de cambios (Anexos III, IV y V), Reclamaciones (Anexos III y IV) y Devoluciones (Anexos III, IV y V): pestaña Documentos.
   - OOS (Anexos III y IV): cabecera y pestaña Documentos.
-  - Auditorías: CAPA Plan y plan externo del estado actual, en Documentos y en Hallazgos.
+  - Auditorías: el CAPA Plan del estado actual en Documentos y en Hallazgos, y el plan externo en Documentos.
 - **Fuera de alcance:**
-  - Las descargas por versión («Descargar Anexo III 01»), que usan la plantilla guardada con cada versión.
-  - Los listados anuales (Anexos V, VI y VII), que ya comprobaban su plantilla en el listado.
-- **Pruebas** (fallaban antes del arreglo):
-  - `template-readiness.test.ts`: plantilla asignada con y sin archivo, la de por defecto, y ninguna;
-  - `oos/documents/templates.test.ts`: plantilla de la fecha de emisión frente a la activa.
-- **Recorridos:**
-  - `tour.downloadOrMissing(enlace, anexo)` sustituye a «pulsar y esperar la página de error» en las fichas.
-  - Los ocho pasan contra la compilación con la base de pruebas, donde 20 de las 26 plantillas registradas no tienen archivo.
+  - Las descargas por versión («Descargar Anexo III 01», «Anexo V · NN»…) siguen ofreciéndose aunque falte la plantilla. Queda en el backlog (TPL2).
+  - Los listados anuales (Anexos V, VI y VII) ya comprobaban su plantilla en el listado.
+  - La ruta genera sin versión desde la última, con la plantilla guardada en ella, y la ficha usa la asignada al expediente. Hoy coinciden, porque la asignación solo se escribe al crear el expediente.
+- **Pruebas:** fallaban antes del arreglo.
+  - `template-readiness.test.ts`:
+    - plantilla asignada con y sin archivo;
+    - la de por defecto del mismo módulo y tipo;
+    - el criterio del cargador: nombre sin archivo no cuenta, archivo sin nombre sí;
+    - sin bytes;
+    - ninguna plantilla.
+  - `oos/documents/templates.test.ts`: plantilla de la fecha de emisión frente a una activa más reciente, con el orden estable.
+  - `audits/documents/template-choice.test.ts`: elección sin pedir los bytes.
+  - `complaints/documents/template-version.test.ts`: versión por defecto del Anexo IV.
+- **Recorridos:** `tour.downloadOrMissing(enlace, anexo, ruta)` sustituye a «pulsar y esperar la página de error».
+  - Si la ficha dice que falta la plantilla, el recorrido comprueba que no ofrece el enlace y que la ruta de generación responde de verdad «Plantilla oficial no disponible». Así detecta también una ficha que oculte un anexo generable.
+  - Los ocho pasan contra la compilación, con la base de pruebas local (26 plantillas registradas, 6 con archivo).
+- **Revisión independiente:** sin hallazgos críticos.
+  - *Importantes, corregidos:*
+    - la ficha de Auditorías leía el archivo de dos plantillas en cada visita;
+    - los recorridos ya no detectaban una ficha que ocultase un anexo generable.
+  - *Menores, corregidos:*
+    - criterio de «instalada» igual al del cargador;
+    - orden estable en OOS;
+    - nota solo para quien puede descargar;
+    - dato obligatorio en Hallazgos;
+    - cabecera de OOS con la nota común;
+    - carrera de esperas en la librería;
+    - pruebas del módulo y del tipo, del Anexo IV de Reclamaciones y de la plantilla activa en OOS;
+    - documentación.
+  - *Fuera de alcance:* las descargas por versión (TPL2), y la plantilla de la versión frente a la asignada (explicado arriba).
 
 **Fechas de hoy en hora de Madrid (2026-11-13, FEC1, D-139):**
 - **Problema:** varias fechas de «hoy» se calculaban con el día UTC del servidor (o con `CURRENT_DATE` de PostgreSQL). Entre las 00:00 y las 01:00/02:00 de Madrid (el 1 de enero, del año anterior) ocurría lo siguiente:
@@ -383,7 +406,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Revisión independiente:**
   - *Importante, corregido:* un error al cerrar o al limpiar ocultaba el error del paso que había fallado. Ahora se ejecutan siempre el cierre, la limpieza y la desconexión, y se informa el error del paso con los demás añadidos.
   - *Menores, corregidos:* la limpieza también encuentra la CAPA vinculada o con la marca en el defecto; el Anexo III se decide con la plantilla asignada al expediente, como la ruta; se retira `TOUR_BASE_URL`; el aviso de borrador no aparece como error; la disposición coincide con su comentario; prueba de que solo se ejecuta en la base aislada o en la demo.
-  - El fallo de la plantilla queda en el backlog (TPL1; corregido el 2026-11-14).
+  - El fallo de la plantilla queda en el backlog (TPL1; corregido el 2026-11-13).
 - Procedimiento en [TOURS.md](TOURS.md).
 
 **Auditorías: orden de los hallazgos (2026-11-13):**

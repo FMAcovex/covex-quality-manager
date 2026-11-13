@@ -7,6 +7,7 @@ import { complaintAnnexTablePlacements } from "@/modules/complaints/text-tables"
 import { sanitizeOfficeMetadata } from "@/lib/ooxml/metadata";
 import { annexGeneratorView, annexGeneratorXml } from "@/modules/configuration/annex-generator-views";
 import { loadComplaintPntTemplate } from "@/modules/complaints/documents/templates";
+import { complaintAnnexIVDefaultVersion } from "./template-version";
 
 type Capa={actionType:string;description:string;plannedExecutionDate:Date|null;responsible:string|null;businessCapaCode?:string|null};
 type Derived={actionType:string;businessCode:string|null;description:string|null;responsible:string|null;plannedExecutionDate:Date|null};
@@ -187,7 +188,7 @@ export async function generateComplaintAnnexIII(r:ComplaintDocumentRecord){
 
 export async function generateComplaintAnnexIV(r:ComplaintDocumentRecord){
  r=withAdditionalLots(r);
- const version=r.annexIVTemplateVersion?.versionCode??r.annexIIITemplateVersion?.versionCode??"03";
+ const version=r.annexIVTemplateVersion?.versionCode??complaintAnnexIVDefaultVersion(r);
  if(version==="03"){
   const entries=readZip(await loadComplaintPntTemplate(version,DocumentType.COMPLAINT_ANNEX_IV));
   let xml=getZipEntryText(entries,"word/document.xml");

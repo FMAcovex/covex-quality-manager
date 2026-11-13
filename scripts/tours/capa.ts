@@ -129,7 +129,7 @@ async function main() {
       await tour.go(`/capa/${opened.id}`);
       const annexIII = page.locator("main a", { hasText: "Generar Anexo III" }).first();
       // TPL1: sin plantilla instalada (CI), la ficha no ofrece el anexo y explica qué falta.
-      const file = await tour.downloadOrMissing(annexIII, "Anexo III");
+      const file = await tour.downloadOrMissing(annexIII, "Anexo III", `/api/capa/${opened.id}/annex-iii`);
       if (file) {
         const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
         for (const expected of [opened.code, marker, origin.code]) assert.ok(text.includes(expected), `el Anexo III contiene «${expected}»`);

@@ -26,3 +26,16 @@ describe("D-134 · plantilla vigente al abrir la auditoría", () => {
     expect(chooseTemplateInForce([v03, { ...v04, isActive: false }], new Date("2026-12-01"))).toBeNull();
   });
 });
+
+describe("TPL1 · ¿hay plantilla para el expediente? sin leer su archivo (D-112)", () => {
+  it("elige la candidata sin pedir los bytes", async () => {
+    const { auditTemplateCandidateInForce } = await import("./template-choice");
+    const calls: string[] = [];
+    const db = { templateVersion: {
+      findMany: async (args: { select?: Record<string, boolean> }) => { calls.push(`findMany:${Object.keys(args.select ?? {}).sort().join(",")}`); return [v03, v04]; },
+      findUnique: async () => { calls.push("findUnique"); return null; },
+    } };
+    expect((await auditTemplateCandidateInForce(db as never, "AUDIT_CAPA_PLAN", new Date("2026-10-01")))?.id).toBe("v03");
+    expect(calls).toEqual(["findMany:createdAt,effectiveFrom,effectiveTo,id,isActive"]);
+  });
+});

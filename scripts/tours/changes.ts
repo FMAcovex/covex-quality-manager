@@ -166,14 +166,14 @@ async function main() {
     await tour.step("5 · Los documentos salen del expediente: <b>Anexos III, IV y V</b> y listado", async () => {
       await tour.go(`/changes/${opened.id}?tab=documents`);
       const annexes = [
-        ["Generar Anexo III", "Anexo III", [opened.code, marker]],
-        ["Generar Anexo IV", "Anexo IV", [opened.code, actions[0]]],
+        ["Generar Anexo III", "Anexo III", "annex-iii", [opened.code, marker]],
+        ["Generar Anexo IV", "Anexo IV", "annex-iv", [opened.code, actions[0]]],
         // Anexo V del seguimiento vigente (el 02, el del cierre).
-        ["Generar Anexo V", "Anexo V", [opened.code, "PNT de pesada revisado"]],
+        ["Generar Anexo V", "Anexo V", "annex-v", [opened.code, "PNT de pesada revisado"]],
       ] as const;
-      for (const [label, annex, expected] of annexes) {
+      for (const [label, annex, route, expected] of annexes) {
         // TPL1: sin plantilla instalada (CI), la ficha no ofrece el anexo y explica qué falta.
-        const file = await tour.downloadOrMissing(page.locator("main a", { hasText: label }).first(), annex);
+        const file = await tour.downloadOrMissing(page.locator("main a", { hasText: label }).first(), annex, `/api/changes/${opened.id}/${route}`);
         if (!file) continue;
         const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
         for (const value of expected) assert.ok(text.includes(value), `${annex} contiene «${value}»`);

@@ -2,7 +2,7 @@ import { DocumentType, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { loadStoredTemplateAsset, TemplateAssetError, templateInstallHint } from "@/modules/configuration/template-assets";
 import { oosAnnexRanges } from "@/modules/oos/documents/derive";
-import { templateAssetReady } from "@/modules/configuration/template-asset-ready";
+import { installedTemplateWhere } from "@/modules/configuration/template-asset-ready";
 
 // D-088, OOS-3: the annexes are taken from the PNT GC-10/014/04 itself, with the
 // annex header corrected by Calidad from 03 to 04 (catálogo de plantillas, D-099).
@@ -17,14 +17,19 @@ export function pickOosTemplate<T extends { effectiveFrom: Date }>(candidates: T
   return inForce ?? candidates[0];
 }
 
-/** TPL1: si la plantilla que usará la generación de este OOS tiene su archivo instalado. */
-export async function oosTemplateReady(documentType: OosAnnexType, issueDate: Date | null) {
-  const candidates = await prisma.templateVersion.findMany({
+/** Candidatas en orden estable (fecha de vigencia y de alta): la ficha y la generación eligen la misma. */
+function oosTemplateCandidates(documentType: OosAnnexType) {
+  return prisma.templateVersion.findMany({
     where: { module: QmsRecordType.OOS, documentType: DocumentType[documentType] },
-    select: { effectiveFrom: true, fileName: true, filePath: true, checksum: true },
-    orderBy: { effectiveFrom: "asc" },
+    select: { id: true, versionCode: true, effectiveFrom: true },
+    orderBy: [{ effectiveFrom: "asc" }, { createdAt: "asc" }, { id: "asc" }],
   });
-  return templateAssetReady(pickOosTemplate(candidates, issueDate));
+}
+
+/** TPL1: si la plantilla que usará la generación de este OOS tiene su archivo instalado (sin leer los bytes). */
+export async function oosTemplateReady(documentType: OosAnnexType, issueDate: Date | null) {
+  const selected = pickOosTemplate(await oosTemplateCandidates(documentType), issueDate);
+  return selected ? (await prisma.templateVersion.count({ where: installedTemplateWhere(selected.id) })) > 0 : false;
 }
 
 /**
@@ -32,12 +37,7 @@ export async function oosTemplateReady(documentType: OosAnnexType, issueDate: Da
  * was created under after a new revision is installed (AGENTS.md).
  */
 export async function loadOosTemplate(documentType: OosAnnexType, issueDate: Date | null) {
-  const candidates = await prisma.templateVersion.findMany({
-    where: { module: QmsRecordType.OOS, documentType: DocumentType[documentType] },
-    select: { id: true, versionCode: true, effectiveFrom: true },
-    orderBy: { effectiveFrom: "asc" },
-  });
-  const selected = pickOosTemplate(candidates, issueDate);
+  const selected = pickOosTemplate(await oosTemplateCandidates(documentType), issueDate);
   const buffer = selected ? await loadStoredTemplateAsset(QmsRecordType.OOS, DocumentType[documentType], selected.versionCode) : null;
   if (!selected || !buffer) {
     throw new OosTemplateUnavailableError(`Plantilla ${oosAnnexRanges[documentType].fileName} no instalada. ${templateInstallHint}`);

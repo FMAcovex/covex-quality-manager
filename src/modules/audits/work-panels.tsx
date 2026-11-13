@@ -28,7 +28,7 @@ export function liveRecordState(record: { isActive: boolean; capa?: {status:stri
   return record.capa ? `${states[record.capa.status]} · Eficacia: ${effectiveness[record.capa.effectivenessStatus]}` : record.deviation ? states[record.deviation.status] : "—";
 }
 /** Pestaña Hallazgos (R5B1): una ficha por hallazgo y un único elemento en edición, indicado en la dirección. */
-export function AuditFindingsPanel({work, showRetired, users = [], edit = null, returnTo, capaPlanTemplateReady = true}: {work:Work;showRetired:boolean;users?:AppUserOption[];edit?:FindingEdit;returnTo?:string;capaPlanTemplateReady?:boolean}) {
+export function AuditFindingsPanel({work, showRetired, users = [], edit = null, returnTo, capaPlanTemplateReady}: {work:Work;showRetired:boolean;users?:AppUserOption[];edit?:FindingEdit;returnTo?:string;capaPlanTemplateReady:boolean}) {
   const editable = work.qmsRecord.isActive;
   const activeFindings = work.findings.filter(f => f.isActive);
   const openFindings = activeFindings.filter(f=>findingSituation(f)!=="Tratado");

@@ -18,14 +18,22 @@ export function chooseTemplateInForce<T extends Candidate>(candidates: T[], open
   return older.at(-1) ?? active;
 }
 
-/** La plantilla elegida, con sus bytes; las candidatas se comparan sin leerlos (BE1-A). */
-export async function auditTemplateInForce(tx: Prisma.TransactionClient, documentType: DocumentType, openedAt: Date | null | undefined) {
-  const candidates = await tx.templateVersion.findMany({
+/**
+ * Plantilla instalada (con archivo y huella) que usará el expediente, sin leer su archivo. La ficha la usa para
+ * decidir si ofrece el documento (TPL1) sin cargar los bytes en cada visita (D-112).
+ */
+export async function auditTemplateCandidateInForce(db: Pick<Prisma.TransactionClient, "templateVersion">, documentType: DocumentType, openedAt: Date | null | undefined) {
+  const candidates = await db.templateVersion.findMany({
     where: { module: "AUDIT", documentType, checksum: { not: null }, OR: [{ fileData: { not: null } }, { filePath: { not: null } }] },
     orderBy: [{ effectiveFrom: "asc" }, { createdAt: "asc" }],
     select: { id: true, isActive: true, effectiveFrom: true, effectiveTo: true, createdAt: true },
   });
-  const chosen = chooseTemplateInForce(candidates, openedAt);
+  return chooseTemplateInForce(candidates, openedAt);
+}
+
+/** La plantilla elegida, con sus bytes; las candidatas se comparan sin leerlos (BE1-A). */
+export async function auditTemplateInForce(tx: Prisma.TransactionClient, documentType: DocumentType, openedAt: Date | null | undefined) {
+  const chosen = await auditTemplateCandidateInForce(tx, documentType, openedAt);
   return chosen ? tx.templateVersion.findUnique({ where: { id: chosen.id }, omit: withBytes }) : null;
 }
 
