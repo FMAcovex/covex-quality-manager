@@ -71,12 +71,36 @@ export function ooxmlText(bytes: Buffer, parts: RegExp) {
     .join(" ").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/\s+/g, " ");
 }
 
+/** Dónde puede ejecutarse un recorrido: la base aislada de pruebas o la demo local; en cualquier otro sitio, error. */
+export function tourEnvironment(env: Record<string, string | undefined> = process.env): "test" | "demo" {
+  if (localDemoEnvironment(env)) return "demo";
+  if (isolatedTestEnvironment(env)) return "test";
+  throw new Error("Los recorridos solo se ejecutan en la base aislada de pruebas o en la demo local.");
+}
+
+/**
+ * Cierra el recorrido: ejecuta todos los pasos de cierre (navegador, limpieza, desconexión) aunque
+ * alguno falle. Si un paso del recorrido ya había fallado, se relanza ese error, con los del cierre
+ * añadidos, para no perder el paso, la página y los mensajes en pantalla.
+ */
+export async function finishTour(stepError: unknown, closers: (() => Promise<unknown>)[]) {
+  const closing: Error[] = [];
+  for (const close of closers) {
+    try { await close(); } catch (error) { closing.push(error instanceof Error ? error : new Error(String(error))); }
+  }
+  if (stepError) {
+    const primary = stepError instanceof Error ? stepError : new Error(String(stepError));
+    if (closing.length) primary.message += "\nAdemás, al cerrar el recorrido:\n- " + closing.map((e) => e.message).join("\n- ");
+    throw primary;
+  }
+  if (closing.length) throw closing[0];
+}
+
 export async function startTour(name: string): Promise<Tour> {
-  const demo = localDemoEnvironment();
-  if (!demo && !isolatedTestEnvironment()) throw new Error("Los recorridos solo se ejecutan en la base aislada de pruebas o en la demo local.");
+  const demo = tourEnvironment() === "demo";
   const videoDir = process.env.TOUR_VIDEO_DIR ? path.resolve(process.env.TOUR_VIDEO_DIR) : null;
   const record = Boolean(videoDir);
-  const base = (process.env.TOUR_BASE_URL ?? authConfiguration().origin).replace(/\/$/, "");
+  const base = authConfiguration().origin.replace(/\/$/, "");
   if (videoDir) fs.mkdirSync(videoDir, { recursive: true });
   const spanish = { ...process.env, LANG: "es_ES.UTF-8", LANGUAGE: "es_ES:es", LC_ALL: "es_ES.UTF-8" };
   const browser: Browser = await chromium.launch({ args: ["--lang=es-ES"], env: spanish });
@@ -110,7 +134,7 @@ export async function startTour(name: string): Promise<Tour> {
       try { return await run(); }
       catch (error) {
         // Lo que el usuario vería en pantalla: mensajes de error del formulario y la dirección.
-        const shown = await page.locator('.field-error, [role="alert"], .form-errors, .error-summary').allInnerTexts().catch(() => []);
+        const shown = await page.locator('.field-error, [role="alert"], .form-errors:not(.draft-notice), .error-summary').allInnerTexts().catch(() => []);
         const visible = [...new Set(shown.map((t) => t.trim()).filter(Boolean))].slice(0, 12);
         const shot = process.env.TOUR_FAILURE_DIR ? path.join(process.env.TOUR_FAILURE_DIR, `${name.replace(/\W+/g, "-")}-paso-${stepNumber}.png`) : null;
         if (shot) { fs.mkdirSync(path.dirname(shot), { recursive: true }); await page.screenshot({ path: shot, fullPage: true }).catch(() => undefined); }

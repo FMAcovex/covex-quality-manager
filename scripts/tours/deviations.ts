@@ -7,8 +7,8 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/lib/db";
-import { isActiveTemplateAssetReady } from "../../src/modules/configuration/template-readiness";
-import { ooxmlText, startTour } from "./lib";
+import { isActiveTemplateAssetReady, templateAssetReady } from "../../src/modules/configuration/template-readiness";
+import { finishTour, ooxmlText, startTour } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
 
@@ -17,6 +17,7 @@ async function main() {
   const { page } = tour;
   // La marca identifica lo creado por el recorrido; en la demo se ve como un texto más.
   const marker = tour.demo ? `REC-${randomUUID().slice(0, 4).toUpperCase()}` : `TOUR-DEV-${randomUUID().slice(0, 8)}`;
+  let failure: unknown = null;
   try {
     const department = await prisma.department.findFirst({ where: { isActive: true, code: "PM-10" } })
       ?? await prisma.department.findFirstOrThrow({ where: { isActive: true }, orderBy: { code: "asc" } });
@@ -106,7 +107,7 @@ async function main() {
     // 5 · Conclusión y apertura: la desviación recibe su código.
     const opened = await tour.step("5 · Se completa y se <b>abre la desviación</b>: recibe su código", async () => {
       await tour.fill(page.locator('textarea[name="conclusion"]'), "Desviación menor con causa raíz confirmada; se abre CAPA correctiva.");
-      await tour.select(page.locator('select[name="disposition"]'), { index: 1 });
+      await tour.select(page.locator('select[name="disposition"]'), "Rechazado – Destruir");
       await tour.fill(page.locator('input[name="dispositionQuantity"]'), "120 comprimidos");
       await tour.select(page.locator('select[name="clientNotification"]'), "NA");
       await tour.fill(page.locator('textarea[name="dispositionComments"]'), "Comprimidos fuera de límite destruidos según procedimiento.");
@@ -120,7 +121,7 @@ async function main() {
       assert.deepEqual(row.rootCauseCategories, ["MACHINE"]);
       assert.ok(row.investigationMethods.includes("ISHIKAWA"));
       assert.equal(row.classification, "MINOR");
-      assert.ok(!row.whatHappened?.includes(rootCause), "la descripción no mezcla la causa raíz");
+      assert.equal(row.whatHappened, what, "la descripción del evento no cambia al completar investigación y causa raíz");
       assert.deepEqual(row.capaPlans.map((p) => [p.actionType, p.description, p.linkedCapaRecordId]), [["CORRECTIVE", capaAction, null]]);
       await page.getByText(row.qmsRecord.businessCode ?? "").first().waitFor();
       await tour.pause(1500);
@@ -168,7 +169,9 @@ async function main() {
       await tour.go(`/deviations/${opened.id}`);
       await page.locator("main a", { hasText: capaCode }).first().waitFor();
       const annexIII = page.locator("main a", { hasText: "Generar Anexo III" }).first();
-      if (await isActiveTemplateAssetReady("DEVIATION", "DEVIATION_ANNEX_III")) {
+      // Misma plantilla que usa la ruta: la asignada al expediente o, si no tiene, la activa.
+      const assigned = (await prisma.deviation.findUniqueOrThrow({ where: { id: opened.id }, select: { anexoIIITemplateVersion: { select: { fileName: true, filePath: true, checksum: true } } } })).anexoIIITemplateVersion;
+      if (assigned ? templateAssetReady(assigned) : await isActiveTemplateAssetReady("DEVIATION", "DEVIATION_ANNEX_III")) {
         const file = await tour.download(annexIII);
         const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
         for (const expected of [code, marker, "Prensa rotativa P-02"]) assert.ok(text.includes(expected), `el Anexo III contiene «${expected}»`);
@@ -193,19 +196,26 @@ async function main() {
     await tour.caption(`Recorrido completado: <b>${code}</b> registrada, investigada y con su CAPA <b>${capaCode}</b>`);
     await tour.pause(3000);
     console.log(`Recorrido de Desviaciones correcto: ${code} → ${capaCode}`);
-  } finally {
-    await tour.close().finally(async () => {
-      if (!tour.demo) await cleanup(marker);
-      await prisma.$disconnect();
-    });
+  } catch (error) {
+    failure = error;
   }
+  // Cierre, limpieza y desconexión se ejecutan siempre; si un paso falló, su error es el que se informa.
+  await finishTour(failure, [
+    () => tour.close(),
+    async () => { if (!tour.demo) await cleanup(marker); },
+    () => prisma.$disconnect(),
+  ]);
 }
 
 /** Solo en la base aislada de pruebas: borra lo creado con la marca, también si el recorrido falló a medias. */
 async function cleanup(marker: string) {
-  const deviations = await prisma.deviation.findMany({ where: { whatHappened: { contains: marker } }, select: { qmsRecordId: true } });
-  const capas = await prisma.capa.findMany({ where: { rootCause: { contains: marker } }, select: { qmsRecordId: true } });
-  const ids = [...deviations, ...capas].map((row) => row.qmsRecordId);
+  const deviations = await prisma.deviation.findMany({ where: { whatHappened: { contains: marker } }, select: { qmsRecordId: true, capaPlans: { select: { linkedCapaRecordId: true } } } });
+  const capas = await prisma.capa.findMany({ where: { OR: [{ rootCause: { contains: marker } }, { defectDescription: { contains: marker } }] }, select: { qmsRecordId: true } });
+  const ids = [...new Set([
+    ...deviations.map((row) => row.qmsRecordId),
+    ...deviations.flatMap((row) => row.capaPlans.map((plan) => plan.linkedCapaRecordId)).filter((id): id is string => Boolean(id)),
+    ...capas.map((row) => row.qmsRecordId),
+  ])];
   if (!ids.length) return;
   await prisma.qmsRelation.deleteMany({ where: { OR: [{ sourceRecordId: { in: ids } }, { targetRecordId: { in: ids } }] } });
   await prisma.changeHistory.deleteMany({ where: { qmsRecordId: { in: ids } } });
