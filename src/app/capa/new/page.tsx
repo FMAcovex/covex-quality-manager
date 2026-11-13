@@ -1,3 +1,4 @@
+import { administrativeToday } from "@/lib/qms/administrative-date";
 import { FormWithIndex } from "@/components/form-with-index";
 import { PermissionGate } from "@/components/permissions";
 import { currentActor } from "@/lib/auth/presentation";
@@ -36,7 +37,7 @@ async function NewCapaPageAuthenticatedContent({
     ? {
         actionType: deviationPlan.actionType,
         departmentId: deviationPlan.deviation.departmentId ?? undefined,
-        openedAt: new Date().toISOString().slice(0, 10),
+        openedAt: administrativeToday(),
         originType: "Desviación",
         originCode: deviationPlan.deviation.qmsRecord.businessCode ?? undefined,
         origins: deviationPlan.deviation.qmsRecord.businessCode ? [{
@@ -62,7 +63,7 @@ async function NewCapaPageAuthenticatedContent({
       ? {
           actionType: complaintPlan.actionType,
           departmentId: complaintPlan.complaint.departmentId ?? undefined,
-          openedAt: new Date().toISOString().slice(0, 10),
+          openedAt: administrativeToday(),
           originType: "Reclamación",
           originCode: complaintPlan.complaint.qmsRecord.businessCode ?? undefined,
           origins: complaintPlan.complaint.qmsRecord.businessCode ? [{
@@ -88,7 +89,7 @@ async function NewCapaPageAuthenticatedContent({
         ? {
             actionType: "CORRECTIVE" as const,
             departmentId: complaint.departmentId ?? undefined,
-            openedAt: new Date().toISOString().slice(0, 10),
+            openedAt: administrativeToday(),
             originType: "Reclamación",
             originCode: complaint.qmsRecord.businessCode ?? undefined,
             origins: complaint.qmsRecord.businessCode ? [{
@@ -108,7 +109,7 @@ async function NewCapaPageAuthenticatedContent({
               // R5B2: CAPA abierta desde un hallazgo de auditoría.
               actionType: "CORRECTIVE" as const,
               departmentId: auditFinding.departmentId ?? undefined,
-              openedAt: new Date().toISOString().slice(0, 10),
+              openedAt: administrativeToday(),
               originType: "Auditoría",
               originCode: auditFinding.auditRecord.businessCode ?? undefined,
               origins: [{ id: auditFinding.auditRecord.id, recordType: "AUDIT" as const, businessCode: auditFinding.auditRecord.businessCode ?? "", year: auditFinding.auditRecord.year }],
@@ -116,7 +117,7 @@ async function NewCapaPageAuthenticatedContent({
               createdByText: currentActor(),
             }
           : {
-          openedAt: new Date().toISOString().slice(0, 10),
+          openedAt: administrativeToday(),
           createdByText: currentActor(),
         };
   const users = await appUserOptions([deviationPlan?.responsibleUserId, complaintPlan?.responsibleUserId]);

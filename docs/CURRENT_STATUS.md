@@ -193,6 +193,34 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Fechas de hoy en hora de Madrid (2026-11-13, FEC1):**
+- **Problema:** varias fechas de «hoy» se calculaban con el día UTC del servidor. Entre las 00:00 y las 01:00/02:00 de Madrid (el 1 de enero, del año anterior) ocurría lo siguiente:
+  - los formularios nuevos proponían la fecha del día anterior;
+  - el registro manual de estado de PNT rechazaba como futura la vigencia de hoy;
+  - el filtro «Vigencia iniciada» dejaba fuera lo vigente desde hoy;
+  - los vencimientos del panel y del calendario se adelantaban un día.
+- **Arreglo:** una función común, `administrativeToday()` / `administrativeTodayDate()` en `src/lib/qms/administrative-date.ts`, toma el día del calendario de Madrid sea cual sea la zona del servidor. Las fechas se siguen guardando como hasta ahora (medianoche UTC del día).
+- **Dónde se aplica:**
+  - Fechas propuestas al crear expedientes de CAPA, Controles de cambios, OOS, Reclamaciones y Devoluciones.
+  - Fecha de apertura por defecto de Auditorías.
+  - Selección de la plantilla del programa anual de Auditorías.
+  - Fecha del plan CAPA de Auditorías, que ya usaba Madrid y ahora llama a la función común.
+  - PNT:
+    - registro manual de estado;
+    - decisiones del ciclo de vida;
+    - alta de revisiones existentes;
+    - filtros «Vigencia iniciada» y «Revisión vencida»;
+    - «Asignadas a mí»;
+    - vista previa del índice.
+  - Seguimientos vencidos del listado de Reclamaciones.
+  - Panel de inicio, calendario y avisos de Configuración.
+- **Fuera de alcance:** las series mensuales de Indicadores siguen usando el instante actual. Solo afecta a la última o primera hora de un mes y no da por buena ni rechaza ninguna fecha.
+- **Pruebas:** tres pruebas nuevas, que fallaban antes del arreglo:
+  - la función común, en invierno, en verano y en Nochevieja, con el servidor en UTC y en otra zona;
+  - el filtro «Vigencia iniciada» de PNT a las 23:30 UTC;
+  - los seguimientos vencidos de Reclamaciones.
+- **Recorrido de PNT:** ya no necesita esquivar el fallo. Se retira `serverSafeDay` y la vigencia es hoy en Madrid.
+
 **Recorridos por módulo: PNT y Auditorías (2026-11-13, D-138):**
 - **PNT** (`pnpm tour:pnt`), en 5 pasos:
   1. Nuevo PNT con su revisión 00 en borrador.

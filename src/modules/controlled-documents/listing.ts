@@ -1,3 +1,4 @@
+import { administrativeToday } from "@/lib/qms/administrative-date";
 import { Prisma } from "@prisma/client";
 import { pntCandidatesSql, sortPntCandidates, type PntCandidate } from "./listing-selection";
 import { prisma } from "@/lib/db";
@@ -66,7 +67,7 @@ const masterSelect = {
 export async function queryPntListing(f: PntListingFilters, paginate = true) {
   const options = normalizedListOptions(f);
   const errors = dateFilterErrors(f);
-  const today = iso(new Date());
+  const today = administrativeToday();
   const assigned = assignedListWhere(f.assigned, currentIdentity()?.principal.id, userId => assignedWhere.pnt(userId, new Date(today + "T00:00:00Z")));
   return prisma.$transaction(async tx => {
     // D-118: «Asignadas a mí» se resuelve con la regla compartida del panel y restringe los maestros.

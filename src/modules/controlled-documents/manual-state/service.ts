@@ -1,3 +1,4 @@
+import { administrativeToday } from "@/lib/qms/administrative-date";
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -30,7 +31,7 @@ export async function changeManualRevisionStatus(documentId: string, revisionId:
     const projection = await tx.controlledRevisionLifecycle.findUnique({ where: { revisionId } });
     if ((projection?.version || 0) !== input.expectedVersion || revision.updatedAt.toISOString() !== input.expectedUpdatedAt)
       throw new Error("El estado ha cambiado. Recargue la ficha antes de guardar.");
-    const today = new Date().toISOString().slice(0, 10);
+    const today = administrativeToday();
     validateManualChange(revision.status, input, today);
     if (master.administrativeStatus !== "ACTIVE" && input.targetStatus !== "DRAFT")
       throw new Error("Complete primero el registro maestro del PNT.");

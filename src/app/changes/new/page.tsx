@@ -1,3 +1,4 @@
+import { administrativeToday } from "@/lib/qms/administrative-date";
 import Link from "next/link";
 import { FormWithIndex } from "@/components/form-with-index";
 import { PermissionGate } from "@/components/permissions";
@@ -48,7 +49,7 @@ async function NewChangeControlPageAuthenticatedContent({ searchParams }: { sear
         fromModelVersion={model?.version}
         defaults={{
           ...(model ? changeModelDefaults(model) : {}),
-          requestDate: new Date().toISOString().slice(0, 10),
+          requestDate: administrativeToday(),
           requesterName: currentActor(),
           finalStatus: "DRAFT",
         }}

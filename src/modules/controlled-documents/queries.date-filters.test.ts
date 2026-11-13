@@ -32,3 +32,16 @@ describe("PNT: filtros por fechas de revisiones", () => {
     expect(dateFilterErrors({ effectiveFromStart: "2026-01-01" })).toEqual([]);
   });
 });
+
+describe("PNT: «vigentes» según el día de Madrid (FEC1)", () => {
+  it("a las 23:30 UTC ya cuenta como vigente lo que empieza el día siguiente en Madrid", async () => {
+    const { vi } = await import("vitest");
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-11-12T23:30:00.000Z"));
+      const text = JSON.stringify(listRevisionWhere({ validity: "current" }));
+      expect(text).toContain("2026-11-13T00:00:00.000Z");
+      expect(text).not.toContain("2026-11-12T00:00:00.000Z");
+    } finally { vi.useRealTimers(); }
+  });
+});

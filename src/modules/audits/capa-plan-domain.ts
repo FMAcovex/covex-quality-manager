@@ -1,3 +1,4 @@
+import { administrativeToday } from "@/lib/qms/administrative-date";
 import { readSignatories } from "./signatories";
 import { createHash } from "node:crypto";
 import { z } from "zod";
@@ -13,7 +14,7 @@ export const capaPlanFileName = (code: string | null, sequence: number) =>
 /** Al establecer la 00 se propone la fecha del CAPA plan ya registrada (expedientes antiguos) o la de hoy. */
 export const capaPlanDefaultDate = (existing: Date | null, today: string) => existing ? existing.toISOString().slice(0, 10) : today;
 /** Fecha de hoy en Madrid (no en UTC): entre las 00:00 y las 02:00 la fecha UTC aún es la de ayer. */
-export const capaPlanToday = (now = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+export const capaPlanToday = (now = new Date()) => administrativeToday(now);
 export const capaPlanKindLabels = { ESTABLISHED: "Establecido", FOLLOWUP: "Seguimiento" } as const;
 
 type SnapshotFinding = AuditReportSnapshot["audit"]["findings"][number];

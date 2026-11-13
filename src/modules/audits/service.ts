@@ -1,3 +1,4 @@
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { assignOperationalBusinessCode } from "@/lib/qms/business-code";
@@ -86,7 +87,7 @@ export async function saveAudit(raw: unknown, id?: string) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new AuditValidationError({ businessCode: "Ese código ya lo usa otra auditoría." });
         throw error;
       });
-    const openedAt = date(v.openedAt) ?? (v.status === "OPEN" ? (before?.openedAt ?? new Date(new Date().toISOString().slice(0, 10))) : null);
+    const openedAt = date(v.openedAt) ?? (v.status === "OPEN" ? (before?.openedAt ?? administrativeTodayDate()) : null);
     const data = {
       auditType: v.auditType || null, scenario: v.scenario || null, status: v.status,
       planningStatus:v.planningStatus,planEntryId:selectedPlan?.id??null,outsidePlanReason:v.planningStatus==="OUT_OF_PLAN"?nullable(v.outsidePlanReason):null,

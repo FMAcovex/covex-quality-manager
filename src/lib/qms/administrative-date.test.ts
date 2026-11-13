@@ -16,3 +16,18 @@ it("keeps the same administrative date on a UTC server and a Madrid client at mi
   expect(formatAdministrativeDate(timestamp)).toBe(server);
   expect(server).toBe("7/10/2026");
 });
+
+// FEC1: «hoy» para las fechas administrativas es el día natural de la planta (Madrid), no el día UTC del servidor.
+it("takes today's administrative date from the Madrid calendar, in winter and in summer", async () => {
+  const { administrativeToday, administrativeTodayDate } = await import("./administrative-date");
+  process.env.TZ = "UTC";
+  expect(administrativeToday(new Date("2026-11-12T23:30:00.000Z"))).toBe("2026-11-13");
+  expect(administrativeToday(new Date("2026-11-12T22:59:00.000Z"))).toBe("2026-11-12");
+  expect(administrativeToday(new Date("2026-07-01T22:30:00.000Z"))).toBe("2026-07-02");
+  expect(administrativeToday(new Date("2026-07-01T21:59:00.000Z"))).toBe("2026-07-01");
+  expect(administrativeToday(new Date("2026-12-31T23:15:00.000Z"))).toBe("2027-01-01");
+  // Guardada como las fechas administrativas: medianoche UTC del día de Madrid.
+  expect(administrativeTodayDate(new Date("2026-11-12T23:30:00.000Z")).toISOString()).toBe("2026-11-13T00:00:00.000Z");
+  process.env.TZ = "America/New_York";
+  expect(administrativeToday(new Date("2026-11-12T23:30:00.000Z"))).toBe("2026-11-13");
+});
