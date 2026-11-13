@@ -31,6 +31,11 @@ export type Tour = {
   check(target: Locator): Promise<void>;
   /** Descarga lo que produce el clic en el enlace y devuelve el archivo. */
   download(trigger: Locator): Promise<{ name: string; bytes: Buffer }>;
+  /**
+   * Pulsa un enlace de documento oficial y devuelve el archivo o, si la aplicación muestra «Plantilla oficial no
+   * disponible», null. Sigue lo que hace la ruta en lugar de adivinar qué plantilla usará.
+   */
+  downloadOrUnavailable(trigger: Locator): Promise<{ name: string; bytes: Buffer } | null>;
   /** Solo en vídeo: muestra la primera página del documento (necesita LibreOffice). */
   showDocument(name: string, bytes: Buffer, caption: string): Promise<void>;
   close(): Promise<void>;
@@ -177,6 +182,21 @@ export async function startTour(name: string): Promise<Tour> {
       if (!filePath) throw new Error(`La descarga «${file.suggestedFilename()}» no ha terminado: ${await file.failure()}`);
       await pause(600);
       return { name: file.suggestedFilename(), bytes: fs.readFileSync(filePath) };
+    },
+    async downloadOrUnavailable(trigger) {
+      const downloaded = page.waitForEvent("download", { timeout: 30000 }).then(async (file) => {
+        const filePath = await file.path();
+        if (!filePath) throw new Error(`La descarga «${file.suggestedFilename()}» no ha terminado: ${await file.failure()}`);
+        return { name: file.suggestedFilename(), bytes: fs.readFileSync(filePath) };
+      }, () => null);
+      await moveTo(trigger); await trigger.click();
+      const unavailable = page.getByText("Plantilla oficial no disponible").first().waitFor({ timeout: 30000 }).then(() => null, () => null);
+      const first = await Promise.race([downloaded, unavailable]);
+      if (first) { await pause(600); return first; }
+      if (await page.getByText("Plantilla oficial no disponible").first().isVisible().catch(() => false)) return null;
+      const late = await downloaded;
+      if (late) return late;
+      throw new Error("Ni se descargó el documento ni la aplicación indicó «Plantilla oficial no disponible».");
     },
     async showDocument(fileName, bytes, text) {
       if (!videoDir) return;
