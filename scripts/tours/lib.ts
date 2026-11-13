@@ -96,6 +96,23 @@ export async function finishTour(stepError: unknown, closers: (() => Promise<unk
   if (closing.length) throw closing[0];
 }
 
+/**
+ * Espera a que la base de datos refleje lo guardado. Si la pantalla muestra un error del servidor, falla en
+ * ese momento con su texto en lugar de agotar el tiempo.
+ */
+export async function waitForSaved<T>(read: () => Promise<T | null | undefined | false>, what: string,
+  options: { timeoutMs?: number; intervalMs?: number; screenError?: () => Promise<string | null> } = {}): Promise<T> {
+  const deadline = Date.now() + (options.timeoutMs ?? 15000);
+  for (;;) {
+    const value = await read();
+    if (value) return value;
+    const shown = await options.screenError?.();
+    if (shown) throw new Error(`No se ha guardado ${what}: ${shown}`);
+    if (Date.now() > deadline) throw new Error(`No se ha guardado ${what}.`);
+    await new Promise((resolve) => setTimeout(resolve, options.intervalMs ?? 250));
+  }
+}
+
 export async function startTour(name: string): Promise<Tour> {
   const demo = tourEnvironment() === "demo";
   const videoDir = process.env.TOUR_VIDEO_DIR ? path.resolve(process.env.TOUR_VIDEO_DIR) : null;
@@ -134,7 +151,7 @@ export async function startTour(name: string): Promise<Tour> {
       try { return await run(); }
       catch (error) {
         // Lo que el usuario vería en pantalla: mensajes de error del formulario y la dirección.
-        const shown = await page.locator('.field-error, [role="alert"], .form-errors:not(.draft-notice), .error-summary').allInnerTexts().catch(() => []);
+        const shown = await page.locator('.field-error, [role="alert"], .form-errors:not(.draft-notice), .error-summary, .form-feedback.error').allInnerTexts().catch(() => []);
         const visible = [...new Set(shown.map((t) => t.trim()).filter(Boolean))].slice(0, 12);
         const shot = process.env.TOUR_FAILURE_DIR ? path.join(process.env.TOUR_FAILURE_DIR, `${name.replace(/\W+/g, "-")}-paso-${stepNumber}.png`) : null;
         if (shot) { fs.mkdirSync(path.dirname(shot), { recursive: true }); await page.screenshot({ path: shot, fullPage: true }).catch(() => undefined); }
