@@ -15,6 +15,7 @@ import { OperationalRelationForm } from "@/components/operational-relation-form"
 import { ResponsibleUserNote } from "@/components/responsible-user-note";
 import type { AppUserOption } from "@/lib/qms/responsible-user";
 import { qmsRecordDisplayCode, qmsRecordHref, qmsRecordTypeLabel } from "@/lib/qms/record-links";
+import { TemplateMissingNote } from "@/components/template-missing-note";
 
 type Work = NonNullable<Awaited<ReturnType<typeof getAuditWork>>>;
 export function childDefaults(value: object) {
@@ -27,14 +28,14 @@ export function liveRecordState(record: { isActive: boolean; capa?: {status:stri
   return record.capa ? `${states[record.capa.status]} · Eficacia: ${effectiveness[record.capa.effectivenessStatus]}` : record.deviation ? states[record.deviation.status] : "—";
 }
 /** Pestaña Hallazgos (R5B1): una ficha por hallazgo y un único elemento en edición, indicado en la dirección. */
-export function AuditFindingsPanel({work, showRetired, users = [], edit = null, returnTo}: {work:Work;showRetired:boolean;users?:AppUserOption[];edit?:FindingEdit;returnTo?:string}) {
+export function AuditFindingsPanel({work, showRetired, users = [], edit = null, returnTo, capaPlanTemplateReady}: {work:Work;showRetired:boolean;users?:AppUserOption[];edit?:FindingEdit;returnTo?:string;capaPlanTemplateReady:boolean}) {
   const editable = work.qmsRecord.isActive;
   const activeFindings = work.findings.filter(f => f.isActive);
   const openFindings = activeFindings.filter(f=>findingSituation(f)!=="Tratado");
   const activeActions = activeFindings.reduce((sum,f)=>sum+f.actions.filter(a=>a.isActive).length,0);
   const href = (value: string | null, anchor?: string) => auditWithReturnTo(findingEditHref(work.id, value, anchor), returnTo);
   const cancel = (anchor: string) => <a className="button" href={href(null, anchor)}>Cancelar</a>;
-  return <div className="audit-work-panel"><div className="card audit-panel-intro"><div className="audit-panel-heading"><div><h2>Hallazgos y CAPA Plan</h2><p className="muted-note">Cada observación o recomendación conserva su referencia, tratamiento, acciones y expedientes vinculados.</p></div><div className="heading-actions">{editable ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={capaPlanCurrentHref(work.id)}>Descargar CAPA Plan (estado actual)</a></PermissionGate> : null}<a className="button" href={`/audits/${work.id}?tab=findings${showRetired ? "" : "&retired=1"}`}>{showRetired ? "Ocultar retirados" : "Mostrar retirados"}</a></div></div><div className="audit-summary-stats" aria-label="Resumen de hallazgos"><div><strong>{activeFindings.length}</strong><span>Hallazgos activos</span></div><div><strong>{openFindings.length}</strong><span>Pendientes de tratamiento</span></div><div><strong>{activeActions}</strong><span>Acciones registradas</span></div></div><p className="muted-note">Las acciones locales pertenecen al CAPA Plan; las Desviaciones y CAPA, también en borrador, se vinculan a cada hallazgo.</p>
+  return <div className="audit-work-panel"><div className="card audit-panel-intro"><div className="audit-panel-heading"><div><h2>Hallazgos y CAPA Plan</h2><p className="muted-note">Cada observación o recomendación conserva su referencia, tratamiento, acciones y expedientes vinculados.</p></div><div className="heading-actions">{!editable ? null : capaPlanTemplateReady ? <PermissionGate permission={["GENERATE_DOCUMENT","DOWNLOAD"]}><a className="button" href={capaPlanCurrentHref(work.id)}>Descargar CAPA Plan (estado actual)</a></PermissionGate> : <TemplateMissingNote annex="CAPA Plan" />}<a className="button" href={`/audits/${work.id}?tab=findings${showRetired ? "" : "&retired=1"}`}>{showRetired ? "Ocultar retirados" : "Mostrar retirados"}</a></div></div><div className="audit-summary-stats" aria-label="Resumen de hallazgos"><div><strong>{activeFindings.length}</strong><span>Hallazgos activos</span></div><div><strong>{openFindings.length}</strong><span>Pendientes de tratamiento</span></div><div><strong>{activeActions}</strong><span>Acciones registradas</span></div></div><p className="muted-note">Las acciones locales pertenecen al CAPA Plan; las Desviaciones y CAPA, también en borrador, se vinculan a cada hallazgo.</p>
     {editable ? <PermissionGate permission="EDIT">{edit?.kind === "new-finding" ? <div className="audit-inline-editor" id="audit-new-finding"><h3>Nuevo hallazgo / recomendación</h3><AuditChildForm kind="finding" findingTypes={allowedFindingTypes(work.scenario)} action={saveAuditChildAction.bind(null, work.id, "finding", undefined, undefined)} buttonLabel="Guardar hallazgo"/>{cancel("audit-new-finding")}</div> : <a className="button primary" href={href("new-finding", "audit-new-finding")}>+ Añadir hallazgo / recomendación</a>}</PermissionGate> : null}</div>
     {work.findings.filter(f => showRetired || f.isActive).map(f => {
       const live = editable && f.isActive, anchor = auditAnchor("finding", f.id);

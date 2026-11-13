@@ -37,6 +37,14 @@ export type Tour = {
    * plantillas están instaladas, un null es un fallo. Si la aplicación muestra otro error, falla con su texto.
    */
   downloadOrUnavailable(trigger: Locator): Promise<{ name: string; bytes: Buffer } | null>;
+  /**
+   * TPL1: la ficha solo ofrece generar un anexo si su plantilla está instalada; si no, muestra «<anexo>: plantilla
+   * oficial no instalada». Descarga con el enlace o, si la ficha muestra esa nota, comprueba que no ofrece el enlace
+   * y que la ruta de generación (`generationPath`) responde de verdad «Plantilla oficial no disponible», y devuelve
+   * null: así se detecta también una ficha que oculte un anexo que sí se puede generar. En la demo, donde las
+   * plantillas están instaladas, la nota es un fallo.
+   */
+  downloadOrMissing(trigger: Locator, annex: string, generationPath: string): Promise<{ name: string; bytes: Buffer } | null>;
   /** Solo en vídeo: muestra la primera página del documento (necesita LibreOffice). */
   showDocument(name: string, bytes: Buffer, caption: string): Promise<void>;
   close(): Promise<void>;
@@ -209,6 +217,26 @@ export async function startTour(name: string): Promise<Tour> {
       const late = await downloaded;
       if (late) return late;
       throw new Error(`Ni se descargó el documento ni la aplicación indicó por qué.${downloadError ? ` ${(downloadError as Error).message}` : ""}`);
+    },
+    async downloadOrMissing(trigger, annex, generationPath) {
+      const note = page.getByTestId("template-missing").filter({ hasText: `${annex}: plantilla oficial no instalada` }).first();
+      // Solo cuenta lo que aparece: una espera agotada no gana la carrera (Promise.any).
+      const shown = await Promise.any([
+        trigger.waitFor({ timeout: 30000 }).then(() => "link" as const),
+        note.waitFor({ timeout: 30000 }).then(() => "note" as const),
+      ]).catch(() => null);
+      if (shown === "link") return this.download(trigger);
+      if (shown === "note") {
+        if (demo) throw new Error(`En la demo las plantillas están instaladas, pero la ficha indica que falta la de «${annex}».`);
+        if (await trigger.count()) throw new Error(`La ficha ofrece «${annex}» y a la vez indica que falta su plantilla.`);
+        const response = await page.request.get(new URL(generationPath, base).toString());
+        const body = await response.text();
+        if (response.status() !== 503 || !body.includes("Plantilla oficial no disponible"))
+          throw new Error(`La ficha dice que falta la plantilla de «${annex}», pero ${generationPath} responde ${response.status()}: no debería ocultarse.`);
+        await moveTo(note); await pause(600);
+        return null;
+      }
+      throw new Error(`La ficha no ofrece «${annex}» ni explica que falte su plantilla.`);
     },
     async showDocument(fileName, bytes, text) {
       if (!videoDir) return;

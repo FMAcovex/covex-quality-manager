@@ -7,7 +7,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/lib/db";
-import { isActiveTemplateAssetReady, templateAssetReady } from "../../src/modules/configuration/template-readiness";
 import { finishTour, ooxmlText, startTour } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
@@ -169,19 +168,13 @@ async function main() {
       await tour.go(`/deviations/${opened.id}`);
       await page.locator("main a", { hasText: capaCode }).first().waitFor();
       const annexIII = page.locator("main a", { hasText: "Generar Anexo III" }).first();
-      // Misma plantilla que usa la ruta: la asignada al expediente o, si no tiene, la activa.
-      const assigned = (await prisma.deviation.findUniqueOrThrow({ where: { id: opened.id }, select: { anexoIIITemplateVersion: { select: { fileName: true, filePath: true, checksum: true } } } })).anexoIIITemplateVersion;
-      if (assigned ? templateAssetReady(assigned) : await isActiveTemplateAssetReady("DEVIATION", "DEVIATION_ANNEX_III")) {
-        const file = await tour.download(annexIII);
+      // TPL1: con la plantilla instalada se genera y se comprueba el contenido; sin ella (CI: el repositorio no
+      // lleva las plantillas reales), la ficha no ofrece el anexo y explica qué falta.
+      const file = await tour.downloadOrMissing(annexIII, "Anexo III", `/api/deviations/${opened.id}/annex-iii`);
+      if (file) {
         const text = ooxmlText(file.bytes, /^word\/document\.xml$/);
         for (const expected of [code, marker, "Prensa rotativa P-02"]) assert.ok(text.includes(expected), `el Anexo III contiene «${expected}»`);
         await tour.showDocument(file.name, file.bytes, `<b>Anexo III</b> de ${code}, cumplimentado sobre la plantilla oficial`);
-      } else {
-        // Sin plantilla instalada (CI: el repositorio no lleva las plantillas reales), generar el anexo
-        // explica qué falta y cómo instalarla en lugar de fallar sin más.
-        await tour.click(annexIII);
-        await page.getByText("Plantilla oficial no disponible").first().waitFor();
-        await page.getByText("Instálala en Configuración").first().waitFor();
       }
       await tour.go(`/deviations?q=${encodeURIComponent(code)}`);
       await page.locator("tr", { hasText: code }).first().waitFor();

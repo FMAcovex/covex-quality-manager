@@ -1,6 +1,9 @@
 import "server-only";
 import { DocumentType, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { installedTemplateWhere, templateAssetReady } from "./template-asset-ready";
+
+export { templateAssetReady };
 
 export type TemplateAssetSummary = {
   module: QmsRecordType;
@@ -36,14 +39,6 @@ export const requiredControlledTemplates = [
   { module: QmsRecordType.OOS, documentType: DocumentType.OOS_ANNEX_VI, versionCode: "04", label: "OOS · Anexo VI (del PNT GC-10/014/04)" },
 ] as const;
 
-export function templateAssetReady(template: {
-  fileName?: string | null;
-  filePath?: string | null;
-  checksum?: string | null;
-} | null | undefined) {
-  return Boolean((template?.fileName || template?.filePath) && template?.checksum);
-}
-
 export function evaluateRequiredTemplateReadiness(templates: TemplateAssetSummary[]) {
   const items = requiredControlledTemplates.map((required) => {
     const template = templates.find(
@@ -68,9 +63,10 @@ export function evaluateRequiredTemplateReadiness(templates: TemplateAssetSummar
 }
 
 /**
- * Plantilla con la que se generará el anexo de un expediente: la asignada al crearlo o, si no
- * tiene ninguna (expedientes anteriores a la instalación de plantillas), la versión que usa el
- * generador por defecto, siempre que esté instalada.
+ * Plantilla con la que se generará el anexo de un expediente, como en las rutas de generación: la asignada al
+ * crearlo o, si no tiene ninguna (expedientes anteriores a la instalación de plantillas), la versión por defecto
+ * del generador. `ready` indica si tiene su archivo instalado (TPL1): la ficha solo ofrece descargar o generar
+ * con `ready`. Null si no hay ninguna plantilla registrada.
  */
 export async function recordAnnexTemplate(
   module: QmsRecordType,
@@ -78,13 +74,24 @@ export async function recordAnnexTemplate(
   assigned: { id: string; versionCode: string } | null | undefined,
   defaultVersionCode: string,
 ) {
-  if (assigned) return { id: assigned.id, versionCode: assigned.versionCode, assigned: true };
-  const template = await prisma.templateVersion.findUnique({
-    where: { module_documentType_versionCode: { module, documentType, versionCode: defaultVersionCode } },
-    select: { id: true, versionCode: true, fileName: true, filePath: true, checksum: true },
-  });
-  return template && templateAssetReady(template) ? { id: template.id, versionCode: template.versionCode, assigned: false } : null;
+  const select = { id: true, versionCode: true } as const;
+  const template = assigned
+    ? await prisma.templateVersion.findUnique({ where: { id: assigned.id }, select })
+    : await prisma.templateVersion.findUnique({
+      where: { module_documentType_versionCode: { module, documentType, versionCode: defaultVersionCode } }, select,
+    });
+  if (!template) return null;
+  return { id: template.id, versionCode: template.versionCode, assigned: Boolean(assigned), ready: await templateFileInstalled(template.id) };
 }
+
+/**
+ * Criterio del cargador (`loadStoredTemplateAsset`) y del instalador: archivo guardado o ruta, y huella registrada.
+ * Se comprueba con un filtro, sin leer los bytes (D-112). Un archivo dañado sigue dando el aviso al generar.
+ */
+export async function templateFileInstalled(id: string) {
+  return (await prisma.templateVersion.count({ where: installedTemplateWhere(id) })) > 0;
+}
+
 
 export async function isActiveTemplateAssetReady(
   module: QmsRecordType,

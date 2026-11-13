@@ -42,7 +42,8 @@ import {
   readOosEvaluation,
 } from "@/modules/oos/domain";
 import { getOosDetail } from "@/modules/oos/queries";
-import { isActiveTemplateAssetReady } from "@/modules/configuration/template-readiness";
+import { oosTemplateReady } from "@/modules/oos/documents/templates";
+import { TemplateMissingNote } from "@/components/template-missing-note";
 import { uploadOosSignedPdfAction } from "@/modules/oos/signed-document-actions";
 import { oosSignedAnnexes, type OosSignedAnnex } from "@/modules/oos/signed-documents";
 
@@ -78,13 +79,15 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
 }) {
   const { id } = await params;
   const { tab: rawTab, returnTo, auditPage, review, thread } = await searchParams;
-  const [record, annexIIIReady, annexIVReady] = await Promise.all([getOosDetail(id), isActiveTemplateAssetReady("OOS", "OOS_ANNEX_III"), isActiveTemplateAssetReady("OOS", "OOS_ANNEX_IV")]);
+  const record = await getOosDetail(id);
   if (!record) notFound();
+  // TPL1: la misma plantilla que usará la generación (la vigente en la fecha de emisión), no la activa.
+  const [annexIIIReady, annexIVReady] = await Promise.all([oosTemplateReady("OOS_ANNEX_III", record.issueDate), oosTemplateReady("OOS_ANNEX_IV", record.issueDate)]);
   const textTables = numberTextTables(storedTextTables(record.textTables), OOS_TABLE_FIELDS);
-  // D-103: sin la plantilla instalada, el botón se muestra desactivado con el motivo, en vez de dar error al pulsarlo.
+  // D-103, TPL1: sin la plantilla que usará la generación, la cabecera explica qué falta en vez de ofrecer el anexo.
   const annexButton = (ready: boolean, annex: "iii" | "iv", label: string) => ready
     ? <a className="button" href={`/api/oos/${id}/annex-${annex}`}>{label}</a>
-    : <span className="template-missing-inline"><button className="button" type="button" disabled>{label}</button><span className="template-missing-note">Plantilla oficial pendiente de cargar (PNT GC-10/014/04).</span></span>;
+    : <TemplateMissingNote annex={label} />;
 
   const phase = oosPhase(record.phaseIDisposition);
   const tabs = [
@@ -282,7 +285,7 @@ async function OosDetailPageAuthenticatedContent({ params, searchParams }: {
             <h3>{config.label} · {annex === "annex-iii" ? "Fase I: investigación en el laboratorio" : "Fase II: investigación a gran escala"}</h3>
             <p>Genera el Word cumplimentado. Cuando esté firmado a mano, adjunta aquí el PDF escaneado.</p>
             <div className="document-actions">
-              {record.qmsRecord.isActive ? <PermissionGate permission={["GENERATE_DOCUMENT", "DOWNLOAD"]}><a className="button primary" href={`/api/oos/${id}/${annex}`}>Generar {config.label} cumplimentado</a></PermissionGate> : null}
+              {!record.qmsRecord.isActive ? null : (annex === "annex-iii" ? annexIIIReady : annexIVReady) ? <PermissionGate permission={["GENERATE_DOCUMENT", "DOWNLOAD"]}><a className="button primary" href={`/api/oos/${id}/${annex}`}>Generar {config.label} cumplimentado</a></PermissionGate> : <TemplateMissingNote annex={config.label} />}
               {signed ? <PermissionGate permission="DOWNLOAD"><a className="button" href={`/api/oos/${id}/signed-pdf/${annex}`}>Descargar PDF firmado</a><PreviewLink className="button" href={`/api/oos/${id}/signed-pdf/${annex}`} mimeType="application/pdf" /></PermissionGate> : null}
             </div>
             <div className="return-signed-document">
