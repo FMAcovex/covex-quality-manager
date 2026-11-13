@@ -15,6 +15,7 @@ Fuera de esos dos entornos el recorrido se niega a ejecutarse. Solo escribe a tr
 |---|---|---|
 | `tour:deviations` | Desviaciones | Alta en borrador → investigación con Ishikawa → clasificación e impacto → CAPA propuesta → apertura → CAPA desde la propuesta → Anexo III y listado |
 | `tour:capa` | CAPA | Alta desde su desviación de origen con la acción propuesta → seguimiento 01 → eficacia conforme y cierre → Anexo III y listado |
+| `tour:changes` | Controles de cambios | Solicitud (Anexo III) en borrador → dictamen (Anexo IV) con plan de ejecución, aprobado y abierto → seguimiento 01 con el cambio abierto → seguimiento 02 con eficacia aceptable y cierre → Anexos III y IV y listado |
 
 ## Ejecutarlo
 

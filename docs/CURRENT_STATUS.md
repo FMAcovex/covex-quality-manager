@@ -193,6 +193,19 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Recorridos por módulo: Controles de cambios (2026-11-13, D-138):**
+- **Qué hace:** `pnpm tour:changes` usa la aplicación como un usuario, en 5 pasos:
+  1. Solicitud (Anexo III) en borrador, aceptada para evaluarla.
+  2. Dictamen (Anexo IV) con evaluación, implicaciones y plan de ejecución de dos acciones; aprobado, el cambio se abre con su código.
+  3. Seguimiento 01 con una acción completada; el cambio sigue abierto con motivo y próxima fecha.
+  4. Seguimiento 02 con todo ejecutado, eficacia aceptable y cierre con conclusión y aprobación.
+  5. Anexos III y IV y listado filtrado.
+- **Comprobaciones:**
+  - en la base de datos: estado, alcance, decisión, código, dictamen, clasificación, control del dato, acciones del plan, estado de cada acción en cada seguimiento, ejecución, eficacia, fecha de cierre y conclusión;
+  - en los documentos: el Anexo III contiene el código y la descripción; el Anexo IV, el código y el plan; el listado filtrado contiene el cambio y no otro.
+- **Fichas de partida:** solo en la base de pruebas, otro control de cambios mínimo con la marca, para comprobar el filtro del listado. Se borra al terminar.
+- **CI:** obligatorio en el grupo `browser-qms` (unos 16 s). El mismo guion graba el vídeo del recorrido en la demo.
+
 **Recorridos por módulo: CAPA (2026-11-13, D-138):**
 - **Qué hace:** `pnpm tour:capa` usa la aplicación como un usuario, en 4 pasos:
   1. Alta desde su desviación de origen con defecto, causa raíz, categoría 6M y acción propuesta; al guardarla abierta recibe su código AC/….
