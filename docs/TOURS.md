@@ -14,6 +14,7 @@ Fuera de esos dos entornos el recorrido se niega a ejecutarse. Solo escribe a tr
 | Script | Módulo | Pasos |
 |---|---|---|
 | `tour:deviations` | Desviaciones | Alta en borrador → investigación con Ishikawa → clasificación e impacto → CAPA propuesta → apertura → CAPA desde la propuesta → Anexo III y listado |
+| `tour:capa` | CAPA | Alta desde su desviación de origen con la acción propuesta → seguimiento 01 → eficacia conforme y cierre → Anexo III y listado |
 
 ## Ejecutarlo
 

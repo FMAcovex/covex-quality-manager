@@ -71,6 +71,7 @@
       "deviation-tools:ui:smoke",
       "deviation-figures:ui:smoke",
       "tour:deviations",
+      "tour:capa",
       "text-bullets:ui:smoke",
       "text-tables:ui:smoke",
       "be1b:smoke",

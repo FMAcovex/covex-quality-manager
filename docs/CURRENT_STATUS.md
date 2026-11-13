@@ -193,6 +193,16 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Recorridos por módulo: CAPA (2026-11-13, D-138):**
+- **Qué hace:** `pnpm tour:capa` usa la aplicación como un usuario, en 4 pasos:
+  1. Alta desde su desviación de origen con defecto, causa raíz, categoría 6M y acción propuesta; al guardarla abierta recibe su código AC/….
+  2. Seguimiento 01 con el avance de la acción, fecha y motivo.
+  3. Eficacia conforme y cierre.
+  4. Anexo III y listado filtrado.
+- **Comprobaciones:** cada paso en la base de datos (estado, código, causa raíz, acción propuesta, relación con la desviación de origen, seguimientos 00 y 01, eficacia y fecha de cierre) y en los documentos descargados.
+- **Origen:** en la demo, una desviación abierta de los ejemplos. En la base de pruebas, una desviación mínima con la marca del recorrido, que se borra al terminar.
+- **CI:** obligatorio en el grupo `browser-qms` (unos 10 s). El mismo guion graba el vídeo del recorrido en la demo.
+
 **Recorridos por módulo: Desviaciones (2026-11-13, D-138):**
 - **Qué hace:** `pnpm tour:deviations` usa la aplicación como un usuario, en 7 pasos:
   1. Alta en borrador con la acción inmediata.
