@@ -73,6 +73,7 @@
       "tour:deviations",
       "tour:capa",
       "tour:changes",
+      "tour:oos",
       "text-bullets:ui:smoke",
       "text-tables:ui:smoke",
       "be1b:smoke",

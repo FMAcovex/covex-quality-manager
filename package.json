@@ -117,6 +117,7 @@
     "tour:deviations": "node --conditions=react-server --import tsx scripts/tours/deviations.ts",
     "tour:capa": "node --conditions=react-server --import tsx scripts/tours/capa.ts",
     "tour:changes": "node --conditions=react-server --import tsx scripts/tours/changes.ts",
+    "tour:oos": "node --conditions=react-server --import tsx scripts/tours/oos.ts",
     "deviation-figures:ui:smoke": "tsx scripts/smoke-deviation-figures-ui.ts",
     "text-bullets:ui:smoke": "tsx scripts/smoke-text-bullets-ui.ts",
     "text-tables:ui:smoke": "tsx scripts/smoke-text-tables-ui.ts",

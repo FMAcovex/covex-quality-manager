@@ -193,6 +193,26 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Recorridos por módulo: OOS (2026-11-13, D-138):**
+- **Qué hace:** `pnpm tour:oos` usa la aplicación como un usuario, en 5 pasos:
+  1. Alta del OOS (área MD, producto, lote y detección); al guardarlo abierto recibe su código OOS/MD/….
+  2. Fase I: los 21 parámetros de la evaluación y la investigación en el laboratorio; sin error de laboratorio, pasa a investigación a gran escala.
+  3. Vínculo con la CAPA que lo trata desde la pestaña «Relaciones».
+  4. Fase II: revisión de la producción, repetición, remuestreo y conclusión; resultado confirmado, dictamen, categoría 6M y cierre.
+  5. Anexos III y IV y Anexo VI anual.
+- **Comprobaciones:**
+  - en la base de datos: estado, área, código, lote, los 21 parámetros, disposición de la Fase I, vínculo con la CAPA, resultado, dictamen, categoría, fecha de cierre y que la detección no cambia;
+  - en los documentos, con las plantillas instaladas: el Anexo III contiene el código y el lote; el Anexo IV, el código y la conclusión; el Anexo VI del año, el código. Sin plantillas (CI) se comprueba que la aplicación explica qué falta y que el Anexo VI aparece bloqueado.
+- **Fichas de partida:** solo en la base de pruebas, una CAPA mínima con la marca para vincularla. Se borra al terminar. En la demo usa una CAPA abierta de los ejemplos.
+- **CI:** obligatorio en el grupo `browser-qms` (unos 15 s en local). El mismo guion graba el vídeo del recorrido en la demo.
+- **Revisión independiente:** sin hallazgos críticos ni importantes; selectores, parámetros de la Fase I, búsqueda de la CAPA, cierre, fechas, numeración y limpieza comprobados contra el código.
+  - *Menores, corregidos:*
+    - la investigación ficticia no presenta como confirmada una causa que los datos no explicaban;
+    - el Anexo VI se comprueba según lo que ofrece la página;
+    - el vínculo con la CAPA informa del rechazo del servidor;
+    - en la demo se aceptan CAPA sin causa raíz.
+  - *Sin cambio:* cuando una plantilla está registrada pero su archivo no se puede leer, el recorrido agota la espera de la descarga en lugar de leer el aviso. Solo puede pasar en la demo y es el caso TPL1 del backlog.
+
 **Recorridos por módulo: Controles de cambios (2026-11-13, D-138):**
 - **Qué hace:** `pnpm tour:changes` usa la aplicación como un usuario, en 5 pasos:
   1. Solicitud (Anexo III) en borrador, aceptada para evaluarla.
