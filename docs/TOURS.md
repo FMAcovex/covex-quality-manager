@@ -4,12 +4,12 @@ Un recorrido es un guion que usa la aplicación como lo haría una persona: entr
 
 | Modo | Para qué | Entorno | Qué deja |
 |---|---|---|---|
-| Prueba (por defecto) | Detectar que un cambio rompe el circuito del módulo | Base aislada de pruebas (`APP_ENV=test`), como en CI | Nada: borra lo que crea |
+| Prueba (por defecto) | Detectar que un cambio rompe el circuito del módulo | Base aislada de pruebas (`APP_ENV=test`), como en CI | Nada: borra lo que crea (salvo PNT, ver abajo) |
 | Vídeo (`TOUR_VIDEO_DIR`) | Formación y comunicar cambios | Demo local (`APP_ENV=demo`) | Los expedientes en la demo y el vídeo `.mp4` (o `.webm` sin ffmpeg) |
 
-Fuera de esos dos entornos el recorrido se niega a ejecutarse. Solo escribe a través de la interfaz, como un usuario. Hay dos excepciones, ambas solo en modo prueba: los expedientes mínimos de partida que un recorrido necesita y no le corresponde crear (por ejemplo, la desviación de origen del recorrido de CAPA), que llevan la marca del recorrido; y la limpieza, que borra por esa marca. En la demo no escribe fuera de la interfaz: usa los ejemplos de la demo y, si faltan, se detiene pidiendo cargarlos.
+Fuera de esos dos entornos el recorrido se niega a ejecutarse. Solo escribe a través de la interfaz, como un usuario. Hay dos excepciones, ambas solo en modo prueba: los expedientes mínimos de partida que un recorrido necesita y no le corresponde crear (por ejemplo, la desviación de origen del recorrido de CAPA), que llevan la marca del recorrido; y la limpieza, que borra por esa marca. En la demo no escribe fuera de la interfaz: usa los ejemplos de la demo y, si faltan, se detiene pidiendo cargarlos. Por eso `scripts/tours/` queda fuera del inventario de escritores del audit trail, como los smokes.
 
-Excepción, PNT: las decisiones registradas sobre una revisión de PNT son inmutables por diseño y la base de datos rechaza borrarlas. Por eso `tour:pnt` no borra lo que crea: deja su PNT, con un código libre de la serie 900 del departamento y la marca en el título, igual que las pruebas de PNT existentes (serie 800). En CI la base se descarta al acabar el trabajo, y el recorrido va al final del grupo `pnt`. Por eso `scripts/tours/` queda fuera del inventario de escritores del audit trail, como los smokes. Usa solo datos ficticios. No es evidencia de validación GMP.
+Excepción, PNT: las decisiones registradas sobre una revisión de PNT son inmutables por diseño y la base de datos rechaza borrarlas. Por eso `tour:pnt` no borra lo que crea: deja su PNT, con un código libre de la serie 900 del departamento y la marca en el título, igual que las pruebas de PNT existentes, que también dejan los suyos (P2A en GC-00/900–989, P2B en las series 700 y 800). En CI la base se descarta al acabar el trabajo. El recorrido va al final de las pruebas de navegador del grupo `pnt`; después solo se repiten P2A, P2B y P2C con acceso por proxy, que eligen sus propias fichas. Usa solo datos ficticios. No es evidencia de validación GMP.
 
 ## Recorridos disponibles
 

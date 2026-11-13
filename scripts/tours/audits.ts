@@ -18,15 +18,20 @@ const today = madridDay();
 // abiertas desde el 15/11/2026 (D-134/D-136); antes de esa fecha, el recorrido abre la inspección el 16/11/2026.
 const opened = today >= "2026-11-15" ? today : "2026-11-16";
 
-/** Filas de bloque del plan CAPA: las que tienen texto en la columna «Nº» (A) con una referencia OBS/NC/REC. */
+/**
+ * Filas de bloque del plan CAPA: las que tienen en la columna «Nº» (A) una referencia de hallazgo (NC, OBS o Rk). El
+ * generador escribe cada bloque en la primera fila de su rango, con textos en línea (inlineStr).
+ */
 function planBlocks(bytes: Buffer) {
   const sheet = getZipEntryText(readZip(bytes), "xl/worksheets/sheet1.xml");
+  const decode = (text: string) => text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
   const rows = new Map<string, Record<string, string>>();
-  for (const [, column, row, body] of sheet.matchAll(/<c r="([A-Z]+)(\d+)"[^>]*t="inlineStr"[^>]*>([\s\S]*?)<\/c>/g)) {
-    const text = body.replace(/<[^>]+>/g, "").trim();
-    rows.set(row, { ...(rows.get(row) ?? {}), [column]: text });
+  for (const [, attributes, body] of sheet.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
+    const ref = /\br="([A-Z]+)(\d+)"/.exec(attributes);
+    if (!ref || !/\bt="inlineStr"/.test(attributes)) continue;
+    rows.set(ref[2], { ...(rows.get(ref[2]) ?? {}), [ref[1]]: decode(body.replace(/<[^>]+>/g, "")).trim() });
   }
-  return [...rows.values()].filter((cells) => /\b(OBS|NC|REC)\s*\d+/.test(cells.A ?? "")) as { A: string; D?: string }[];
+  return [...rows.values()].filter((cells) => /\b(OBS|NC|Rk)\s*\d+/.test(cells.A ?? "")) as { A: string; D?: string }[];
 }
 
 async function main() {
@@ -89,6 +94,9 @@ async function main() {
         await tour.fill(page.locator('textarea[name="description"]'), text);
         await tour.click(page.getByRole("button", { name: "Guardar hallazgo" }));
         await waitForSaved(() => prisma.auditFinding.findFirst({ where: { auditId: audit.id, description: text } }), "la observación");
+        // Tras guardar, la aplicación vuelve a la lista de hallazgos: se espera a que cierre el editor.
+        await page.waitForURL((url) => !new URL(url).searchParams.has("edit"));
+        await page.waitForLoadState("networkidle");
         await tour.pause(600);
       }
       const rows = await prisma.auditFinding.findMany({ where: { auditId: audit.id }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });

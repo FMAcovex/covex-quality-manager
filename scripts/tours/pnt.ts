@@ -8,11 +8,11 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/lib/db";
-import { finishTour, ooxmlText, startTour, waitForSaved } from "./lib";
+import { finishTour, ooxmlText, serverSafeDay, startTour, waitForSaved } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
-// Una sola fecha «de hoy» para rellenar y comprobar, aunque el recorrido cruce la medianoche.
-const today = madridDay();
+// El servidor rechaza una vigencia futura y calcula «hoy» en UTC: la vigencia usa la fecha que aceptan los dos.
+const effectiveDay = serverSafeDay();
 // PDF mínimo ficticio para la revisión (el recorrido no usa documentos reales).
 const PDF = Buffer.from("%PDF-1.4\n% Documento ficticio del recorrido de PNT\n%%EOF");
 
@@ -27,7 +27,8 @@ async function main() {
     // Código libre en la serie 900–999 del departamento, para no chocar con los PNT de ejemplo ni con otras pruebas.
     let baseCode = "";
     for (let n = 900; n < 1000 && !baseCode; n++) if (!await prisma.controlledDocument.findUnique({ where: { baseCode: `${department.code}/${n}` } })) baseCode = `${department.code}/${n}`;
-    assert.ok(baseCode, "hay un código libre para el PNT del recorrido");
+    assert.ok(baseCode, `no queda ningún código libre ${department.code}/900–999 para el PNT del recorrido: vuelve a crear la base de pruebas o la demo`);
+    const assignedToMe = `/controlled-documents?assigned=me&q=${encodeURIComponent(baseCode)}`;
     const title = `Limpieza y verificación de la prensa rotativa (ficticio ${marker})`;
     const findDocument = () => prisma.controlledDocument.findFirst({ where: { baseCode }, include: { revisions: { include: { documents: true } } } });
     const session = await (await page.request.get(`${tour.base}/api/auth/session`)).json() as { name?: string };
@@ -79,9 +80,14 @@ async function main() {
       assert.equal(revision.preparationResponsibleUserId, myOption);
       assert.equal(revision.reviewResponsible, "Responsable de Producción (ficticio)");
       assert.equal(revision.approvalResponsible, "Dirección Técnica (ficticio)");
-      // En la biblioteca, «Asignadas a mí» lo muestra mientras la revisión está en elaboración.
-      await tour.go(`/controlled-documents?assigned=me&q=${encodeURIComponent(baseCode)}`);
+      // En la biblioteca, «Asignadas a mí» lo muestra mientras la revisión está en elaboración, y la tarea aparece en
+      // «Mis tareas» del panel de inicio.
+      await tour.go(assignedToMe);
       await page.locator("main a", { hasText: baseCode }).first().waitFor();
+      await tour.go("/");
+      const myTasks = page.locator("section", { has: page.locator("#dashboard-my-tasks-title") }).first();
+      await myTasks.getByText(baseCode).first().waitFor();
+      await myTasks.scrollIntoViewIfNeeded();
       await tour.caption("La elaboración aparece en <b>Asignadas a mí</b> y en <b>Mis tareas</b>");
       await tour.pause(2000);
     });
@@ -96,7 +102,8 @@ async function main() {
       await tour.click(form.getByRole("button", { name: "Añadir documento" }));
       const documents = await waitForSaved(async () => { const r = await prisma.controlledRevisionDocument.findMany({ where: { revisionId } }); return r.length ? r : null; }, "el documento de la revisión");
       assert.deepEqual(documents.map((d) => [d.kind, d.originalName]), [["DOCUMENT_PDF", `${baseCode.replace("/", "-")}-00.pdf`]]);
-      await page.reload(); await page.waitForLoadState("networkidle");
+      // La ficha muestra el documento incorporado.
+      await page.locator("a", { hasText: `${baseCode.replace("/", "-")}-00.pdf` }).first().waitFor();
       await tour.pause(1500);
     });
 
@@ -104,14 +111,19 @@ async function main() {
     await tour.step("4 · Aprobado fuera de la aplicación, se registra <b>Vigente</b> con sus fechas", async () => {
       await tour.go(`/controlled-documents/${id}?tab=information`);
       await tour.select(page.getByLabel("Estado de la revisión 00"), "IN_FORCE");
-      await tour.fill(page.getByLabel("Fecha de vigencia real"), today);
+      await tour.fill(page.getByLabel("Fecha de vigencia real"), effectiveDay);
       await tour.fill(page.getByLabel("Próxima revisión (si consta)"), madridDay(3 * 365));
       await tour.fill(page.getByPlaceholder("Identifique la evidencia externa que acredita este estado"), "Revisión 00 aprobada y firmada en papel por Dirección Técnica (ficticio).");
       await tour.click(page.getByRole("button", { name: "Guardar estado manual" }));
       const revision = await waitForSaved(async () => { const r = await prisma.controlledDocumentRevision.findUnique({ where: { id: revisionId }, include: { lifecycle: true } }); return r?.status === "IN_FORCE" ? r : null; }, "el estado Vigente");
       const effective = (revision.lifecycle?.effectiveFrom ?? revision.effectiveFrom)?.toISOString().slice(0, 10);
-      assert.equal(effective, today, "vigente desde hoy");
-      await page.reload(); await page.waitForLoadState("networkidle");
+      assert.equal(effective, effectiveDay, "vigente desde hoy");
+      await page.locator(".pnt-manual-revision").getByText("Vigente").first().waitFor();
+      // Ya vigente, la elaboración deja de ser una tarea: «Asignadas a mí» no lo muestra.
+      await tour.go(assignedToMe);
+      await page.locator(".pnt-empty").waitFor();
+      assert.equal(await page.locator("main a", { hasText: baseCode }).count(), 0, "una revisión vigente no queda en «Asignadas a mí»");
+      await tour.go(`/controlled-documents/${id}?tab=information`);
       await tour.pause(1500);
     });
 
