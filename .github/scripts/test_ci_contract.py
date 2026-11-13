@@ -71,7 +71,8 @@ class Contract(unittest.TestCase):
     def test_inventory_does_not_drop_any_existing_smoke(self):
         scripts = json.loads((ROOT / "package.json").read_text())["scripts"]
         listed = {command for suite in groups.values() for command in suite["db"] + suite.get("security", []) + suite["ui"] + [x[0] for x in suite.get("auth", [])]}
-        required = {name for name in scripts if name.endswith(":smoke")}
+        # Los recorridos por módulo (D-138) también son pruebas obligatorias de CI.
+        required = {name for name in scripts if name.endswith(":smoke") or name.startswith("tour:")}
         self.assertEqual(required - listed, set())
         self.assertEqual(listed - set(scripts), set())
 

@@ -70,6 +70,7 @@
       "change-models:ui:smoke",
       "deviation-tools:ui:smoke",
       "deviation-figures:ui:smoke",
+      "tour:deviations",
       "text-bullets:ui:smoke",
       "text-tables:ui:smoke",
       "be1b:smoke",
