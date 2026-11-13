@@ -199,10 +199,10 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   2. Dictamen (Anexo IV) con evaluación, implicaciones y plan de ejecución de dos acciones; aprobado, el cambio se abre con su código.
   3. Seguimiento 01 con una acción completada; el cambio sigue abierto con motivo y próxima fecha.
   4. Seguimiento 02 con todo ejecutado, eficacia aceptable y cierre con conclusión y aprobación.
-  5. Anexos III y IV y listado filtrado.
+  5. Anexos III, IV y V (seguimiento vigente) y listado filtrado.
 - **Comprobaciones:**
   - en la base de datos: estado, alcance, decisión, código, dictamen, clasificación, control del dato, acciones del plan, estado de cada acción en cada seguimiento, ejecución, eficacia, fecha de cierre y conclusión;
-  - en los documentos: el Anexo III contiene el código y la descripción; el Anexo IV, el código y el plan; el listado filtrado contiene el cambio y no otro.
+  - en los documentos: el Anexo III contiene el código y la descripción; el Anexo IV, el código y el plan; el Anexo V, el código y la evidencia del seguimiento; el listado filtrado contiene el cambio y no otro.
 - **Fichas de partida:** solo en la base de pruebas, otro control de cambios mínimo con la marca, para comprobar el filtro del listado. Se borra al terminar.
 - **CI:** obligatorio en el grupo `browser-qms` (unos 16 s). El mismo guion graba el vídeo del recorrido en la demo.
 

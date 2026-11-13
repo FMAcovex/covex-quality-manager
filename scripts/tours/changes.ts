@@ -174,12 +174,15 @@ async function main() {
       const templates = await prisma.changeControl.findUniqueOrThrow({ where: { id: opened.id }, select: {
         annexIIITemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
         annexIVTemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
+        annexVTemplateVersion: { select: { fileName: true, filePath: true, checksum: true } },
       } });
-      const ready = async (assigned: { fileName: string | null; filePath: string | null; checksum: string | null } | null, type: "CHANGE_ANNEX_III" | "CHANGE_ANNEX_IV") =>
+      const ready = async (assigned: { fileName: string | null; filePath: string | null; checksum: string | null } | null, type: "CHANGE_ANNEX_III" | "CHANGE_ANNEX_IV" | "CHANGE_ANNEX_V") =>
         assigned ? templateAssetReady(assigned) : isActiveTemplateAssetReady("CHANGE_CONTROL", type);
       const annexes = [
         ["Generar Anexo III", "CHANGE_ANNEX_III", templates.annexIIITemplateVersion, [opened.code, marker]],
         ["Generar Anexo IV", "CHANGE_ANNEX_IV", templates.annexIVTemplateVersion, [opened.code, actions[0]]],
+        // Anexo V del seguimiento vigente (el 02, el del cierre).
+        ["Generar Anexo V", "CHANGE_ANNEX_V", templates.annexVTemplateVersion, [opened.code, "PNT de pesada revisado"]],
       ] as const;
       for (const [label, type, assigned, expected] of annexes) {
         const link = page.locator("main a", { hasText: label }).first();
