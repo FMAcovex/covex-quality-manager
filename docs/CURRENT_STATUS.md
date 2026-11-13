@@ -202,9 +202,14 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   5. Anexos III, IV y V (seguimiento vigente) y listado filtrado.
 - **Comprobaciones:**
   - en la base de datos: estado, alcance, decisión, código, dictamen, clasificación, control del dato, acciones del plan, estado de cada acción en cada seguimiento, ejecución, eficacia, fecha de cierre y conclusión;
-  - en los documentos: el Anexo III contiene el código y la descripción; el Anexo IV, el código y el plan; el Anexo V, el código y la evidencia del seguimiento; el listado filtrado contiene el cambio y no otro.
-- **Fichas de partida:** solo en la base de pruebas, otro control de cambios mínimo con la marca, para comprobar el filtro del listado. Se borra al terminar.
+  - en los documentos: el Anexo III contiene el código y la marca del recorrido incluida en la descripción; el Anexo IV, el código y el plan; el Anexo V, el código y la evidencia del seguimiento; el listado filtrado contiene el cambio y no otro.
+- **Fichas de partida:** solo en la base de pruebas, otro control de cambios mínimo con la marca, creado antes de empezar, para comprobar el filtro del listado. Se borra al terminar.
 - **CI:** obligatorio en el grupo `browser-qms` (unos 16 s). El mismo guion graba el vídeo del recorrido en la demo.
+- **Revisión independiente:**
+  - *Importantes, corregidos:*
+    - la ficha de control se creaba después de descargar el listado, y en CI la comprobación del filtro no probaba nada; ahora se crea antes de empezar;
+    - si el servidor rechazaba un seguimiento, el recorrido agotaba la espera sin decir por qué; `waitForSaved` (en `lib.ts`, con pruebas que fallaban antes) falla en cuanto la pantalla muestra el error, con su texto, y el diagnóstico recoge `.form-feedback.error`.
+  - *Menores, corregidos:* enlace «Editar / seguimiento» con su texto completo; rótulo del paso 5 con el Anexo V; comprobación de las dos acciones completadas por acción; sin código muerto.
 
 **Recorridos por módulo: CAPA (2026-11-13, D-138):**
 - **Qué hace:** `pnpm tour:capa` usa la aplicación como un usuario, en 4 pasos:

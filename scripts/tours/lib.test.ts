@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { finishTour, tourEnvironment } from "./lib";
+import { finishTour, tourEnvironment, waitForSaved } from "./lib";
 
 const test = { APP_ENV: "test", AUTH_SYNTHETIC_IDENTITY: "1", DATABASE_URL: "postgresql://u:p@localhost:5432/covex_phase4b1_test_x" };
 const demo = { APP_ENV: "demo", AUTH_PROVIDER: "demo", AUTH_ORIGIN: "http://localhost:3000", DATABASE_URL: "postgresql://u:p@localhost:5432/covex_demo" };
@@ -37,5 +37,23 @@ describe("finishTour", () => {
   it("sin paso fallido, el primer error del cierre hace fallar el recorrido", async () => {
     await expect(finishTour(null, [async () => { throw new Error("Errores de JavaScript"); }, async () => undefined])).rejects.toThrow("Errores de JavaScript");
     await expect(finishTour(null, [async () => undefined])).resolves.toBeUndefined();
+  });
+});
+
+describe("waitForSaved", () => {
+  it("devuelve lo guardado en cuanto aparece", async () => {
+    let calls = 0;
+    await expect(waitForSaved(async () => (++calls >= 3 ? "guardado" : null), "el seguimiento", { intervalMs: 1 })).resolves.toBe("guardado");
+  });
+
+  it("si la pantalla muestra un error del servidor, falla enseguida con ese mensaje", async () => {
+    const started = Date.now();
+    await expect(waitForSaved(async () => null, "el seguimiento 01", { intervalMs: 1, timeoutMs: 5000, screenError: async () => "No se puede marcar Ejecutado mientras existan acciones pendientes." }))
+      .rejects.toThrow("No se ha guardado el seguimiento 01: No se puede marcar Ejecutado mientras existan acciones pendientes.");
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it("sin error en pantalla, agota el tiempo y dice qué no se guardó", async () => {
+    await expect(waitForSaved(async () => null, "el cierre", { intervalMs: 1, timeoutMs: 20 })).rejects.toThrow("No se ha guardado el cierre.");
   });
 });

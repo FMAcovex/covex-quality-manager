@@ -10,22 +10,11 @@ import { randomUUID } from "node:crypto";
 import type { Locator } from "playwright";
 import { prisma } from "../../src/lib/db";
 import { isActiveTemplateAssetReady, templateAssetReady } from "../../src/modules/configuration/template-readiness";
-import { finishTour, ooxmlText, startTour, type Tour } from "./lib";
+import { finishTour, ooxmlText, startTour, waitForSaved, type Tour } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
 // Una sola fecha «de hoy» para rellenar y comprobar, aunque el recorrido cruce la medianoche.
 const today = madridDay();
-
-/** Espera a que la base de datos refleje lo guardado (las acciones de seguimiento no cambian de página). */
-async function until<T>(read: () => Promise<T | null | undefined | false>, what: string, ms = 15000): Promise<T> {
-  const deadline = Date.now() + ms;
-  for (;;) {
-    const value = await read();
-    if (value) return value;
-    if (Date.now() > deadline) throw new Error(`No se ha guardado: ${what}.`);
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-}
 
 async function main() {
   const tour = await startTour("Recorrido Controles de cambios");
@@ -40,10 +29,12 @@ async function main() {
       "Cualificar la nueva balanza (IQ/OQ) y registrarla en el inventario de equipos.",
       "Actualizar el PNT de pesada con el nuevo modelo y formar al personal.",
     ];
+    // Otro control de cambios que el listado filtrado no debe incluir: existe antes de descargarlo.
+    const other = await otherChangeCode(tour, marker, department);
     const findChange = () => prisma.changeControl.findFirst({ where: { description }, include: { qmsRecord: true, tasks: { orderBy: { sortOrder: "asc" } } } });
 
     // 1 · Solicitud: qué se cambia, por qué y quién lo pide; se acepta para evaluarla.
-    const draft = await tour.step("1 · <b>Solicitud de cambio</b> (Anexo III): qué, por qué y quién lo pide", async () => {
+    await tour.step("1 · <b>Solicitud de cambio</b> (Anexo III): qué, por qué y quién lo pide", async () => {
       await tour.go("/changes");
       await tour.click(page.locator("main a", { hasText: "+ Nuevo Control de Cambio" }).first());
       await page.waitForURL(/\/changes\/new/);
@@ -62,17 +53,16 @@ async function main() {
       await tour.fill(page.locator('input[name="requestDecisionDate"]'), today);
       await tour.click(page.getByRole("button", { name: "Guardar borrador" }));
       await page.waitForURL(/\/changes\/[0-9a-f-]{36}(\?|$)/);
-      const change = await until(findChange, "la solicitud en borrador");
+      const change = await waitForSaved(findChange, "la solicitud en borrador");
       assert.equal(change.finalStatus, "DRAFT", "se guarda como borrador");
       assert.deepEqual([...change.scope].sort(), ["DOCUMENTATION", "EQUIPMENT"]);
       assert.equal(change.requestDecision, "ACCEPTED");
       await tour.pause(1200);
-      return change;
     });
 
     // 2 · Dictamen: evaluación, implicaciones y plan de ejecución; aprobado, el cambio se abre con su código.
     const opened = await tour.step("2 · <b>Dictamen</b> (Anexo IV): evaluación, implicaciones y <b>plan de ejecución</b>", async () => {
-      await tour.click(page.locator("main a", { hasText: "Editar" }).first());
+      await tour.click(page.locator("main a", { hasText: "Editar / seguimiento" }).first());
       await page.waitForURL(/\/edit/);
       await tour.fill(page.locator('textarea[name="evaluation"]'), "Cambio de equipo equivalente con mejora de la integridad de datos. Requiere cualificación y actualizar el PNT de pesada.");
       await tour.select(page.locator('select[name="classification"]'), "MINOR");
@@ -100,7 +90,7 @@ async function main() {
       await tour.select(page.locator('select[name="dataQualityStatus"]'), "COMPLETE");
       await tour.click(page.getByRole("button", { name: /^Guardar/ }));
       await page.waitForURL(/\/changes\/[0-9a-f-]{36}(\?|$)/);
-      const change = await until(async () => { const row = await findChange(); return row?.finalStatus === "OPEN" ? row : null; }, "el cambio abierto");
+      const change = await waitForSaved(async () => { const row = await findChange(); return row?.finalStatus === "OPEN" ? row : null; }, "el cambio abierto");
       assert.ok(change.qmsRecord.businessCode, "el cambio recibe su código");
       assert.equal(change.dictamenResult, "APPROVED");
       assert.equal(change.classification, "MINOR");
@@ -110,9 +100,13 @@ async function main() {
       await tour.pause(1500);
       return { id: change.id, qmsRecordId: change.qmsRecordId, code: change.qmsRecord.businessCode ?? "", taskIds: change.tasks.map((t) => t.id) };
     });
-    void draft;
 
     const followupForm = page.locator("#new-followup");
+    // El formulario de seguimiento muestra el rechazo del servidor en .form-feedback.error.
+    const followupError = async () => {
+      const box = page.locator(".form-feedback.error").first();
+      return (await box.isVisible().catch(() => false)) ? (await box.innerText()).trim() : null;
+    };
     const taskRow = (index: number) => followupForm.locator(".followup-task-table tbody tr").nth(index);
     const completeTask = async (index: number, evidence: string) => {
       const row = taskRow(index);
@@ -135,7 +129,7 @@ async function main() {
       await tour.fill(followupForm.locator('input[name="nextFollowupDate"]'), madridDay(25));
       await tour.fill(followupForm.locator('textarea[name="remainOpenReason"]'), "Pendiente actualizar el PNT de pesada y la formación.");
       await tour.click(followupForm.getByRole("button", { name: "Guardar seguimiento" }));
-      const followup = await until(() => prisma.changeControlFollowup.findFirst({ where: { changeControlId: opened.id, sequenceNumber: 1 }, include: { taskStates: true } }), "el seguimiento 01");
+      const followup = await waitForSaved(() => prisma.changeControlFollowup.findFirst({ where: { changeControlId: opened.id, sequenceNumber: 1 }, include: { taskStates: true } }), "el seguimiento 01", { screenError: followupError });
       assert.equal(followup.closeChange, false);
       const states = new Map(followup.taskStates.map((s) => [s.taskId, s.status]));
       assert.deepEqual(opened.taskIds.map((id) => states.get(id)), ["COMPLETED", "PENDING"]);
@@ -157,13 +151,14 @@ async function main() {
       await tour.fill(followupForm.locator('textarea[name="conclusion"]'), "Cambio implantado y eficaz. Se cierra.");
       await tour.fill(followupForm.locator('input[name="approvalByText"]'), "Dirección Técnica (ficticio)");
       await tour.click(followupForm.getByRole("button", { name: "Guardar seguimiento" }));
-      const change = await until(async () => { const row = await prisma.changeControl.findUniqueOrThrow({ where: { id: opened.id } }); return row.finalStatus === "CLOSED" ? row : null; }, "el cierre del cambio");
+      const change = await waitForSaved(async () => { const row = await prisma.changeControl.findUniqueOrThrow({ where: { id: opened.id } }); return row.finalStatus === "CLOSED" ? row : null; }, "el cierre del cambio", { screenError: followupError });
       assert.equal(change.effectiveClosedAt?.toISOString().slice(0, 10), today);
       assert.equal(change.closureConclusion, "Cambio implantado y eficaz. Se cierra.");
       const followup = await prisma.changeControlFollowup.findFirstOrThrow({ where: { changeControlId: opened.id, sequenceNumber: 2 }, include: { taskStates: true } });
       assert.equal(followup.executionStatus, "EXECUTED");
       assert.equal(followup.effectivenessStatus, "ACCEPTABLE");
-      assert.ok(followup.taskStates.every((s) => s.status === "COMPLETED"), "todas las acciones completadas");
+      const states = new Map(followup.taskStates.map((state) => [state.taskId, state.status]));
+      assert.deepEqual(opened.taskIds.map((id) => states.get(id)), ["COMPLETED", "COMPLETED"], "todas las acciones completadas");
       await page.reload(); await page.waitForLoadState("networkidle");
       await tour.pause(1500);
     });
@@ -203,7 +198,6 @@ async function main() {
       const list = await tour.download(page.locator("a", { hasText: "Listado simple · filtros actuales" }).first());
       const listText = ooxmlText(list.bytes, /^xl\/(sharedStrings|worksheets\/sheet\d+)\.xml$/);
       assert.ok(listText.includes(opened.code), "el listado filtrado contiene el cambio");
-      const other = await otherChangeCode(tour, marker, department, opened.qmsRecordId);
       assert.ok(!listText.includes(other), `el listado filtrado por ${opened.code} no incluye otros cambios (${other})`);
       await page.keyboard.press("Escape");
       await tour.caption(`El listado filtrado se descarga en Excel con <b>${opened.code}</b>`);
@@ -226,9 +220,9 @@ async function main() {
  * Código de otro control de cambios que no debe salir en el listado filtrado. En la demo, uno de los ejemplos; en
  * la base de pruebas, una ficha mínima con la marca que se borra al terminar.
  */
-async function otherChangeCode(tour: Tour, marker: string, department: { id: string; code: string; name: string }, excludeQmsRecordId: string) {
+async function otherChangeCode(tour: Tour, marker: string, department: { id: string; code: string; name: string }) {
   if (tour.demo) {
-    const row = await prisma.changeControl.findFirst({ where: { finalStatus: { not: "DRAFT" }, qmsRecord: { isActive: true, businessCode: { not: null }, NOT: { id: excludeQmsRecordId } } }, include: { qmsRecord: true } });
+    const row = await prisma.changeControl.findFirst({ where: { finalStatus: { not: "DRAFT" }, qmsRecord: { isActive: true, businessCode: { not: null } }, NOT: { description: { contains: "(ficticio REC-" } } }, include: { qmsRecord: true } });
     if (!row?.qmsRecord.businessCode) throw new Error("La demo no tiene ningún control de cambios de ejemplo: carga los ejemplos de la demo antes de grabar el recorrido.");
     return row.qmsRecord.businessCode;
   }
