@@ -81,7 +81,7 @@ async function CapaPageAuthenticatedContent({
 
   const exportParams = new URLSearchParams();
   Object.entries(filters).forEach(([key,value]) => {
-    if(key !== "q" && key !== "followup" && key !== "page") appendFilterValues(exportParams,key,value);
+    if(key !== "followup" && key !== "page") appendFilterValues(exportParams,key,value);
   });
 
 

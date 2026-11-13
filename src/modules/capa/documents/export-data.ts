@@ -2,8 +2,10 @@ import "server-only";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
+import { capaTextSearchWhere } from "@/modules/capa/queries";
 
 export type CapaExportFilters = {
+  q?: string;
   administrative?: string;
   year?: string[];
   department?: string[];
@@ -18,6 +20,8 @@ export async function getCapaExportRows(filters: CapaExportFilters) {
   if (filters.administrative === "ANNULLED") and.push({ qmsRecord: { isActive: false } });
   else if (filters.administrative !== "ALL") and.push({ qmsRecord: { isActive: true } });
   and.push({ status: { not: "DRAFT" } });
+  // Misma búsqueda de texto que el listado («Listado simple · filtros actuales», D-054).
+  const q = filters.q?.trim(); if (q) and.push(capaTextSearchWhere(q));
   const years = validYears(filters.year); if (years.length) and.push({ qmsRecord: { year: { in: years } } });
   if (filters.department?.length) and.push({ departmentId: { in: filters.department } });
   const types = validValues(filters.type, ["CORRECTIVE","PREVENTIVE"] as const); if (types.length) and.push({ actionType: { in: types as ("CORRECTIVE"|"PREVENTIVE")[] } });

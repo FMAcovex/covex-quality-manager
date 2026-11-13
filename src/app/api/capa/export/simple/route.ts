@@ -7,6 +7,7 @@ export const runtime="nodejs";
 async function GETAuthenticatedContent(request:Request) {
   const url=new URL(request.url);
   const filters={
+    q:url.searchParams.get("q")??undefined,
     administrative:url.searchParams.get("administrative")??undefined,
     year:url.searchParams.getAll("year"),
     department:url.searchParams.getAll("department"),
