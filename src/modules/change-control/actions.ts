@@ -41,6 +41,7 @@ import { followupFinalStatus } from "@/modules/change-control/lifecycle";
 import { orderedTextTables } from "@/lib/forms/text-tables";
 import { CHANGE_CONTROL_TABLE_FIELDS } from "./text-tables";
 import { scalarSnapshot, storedScalarSnapshot } from "./history-snapshot";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 /** Usuarios responsables del formulario principal (D-101). */
 function changeUserIds(v: ReturnType<typeof parseChangeControlForm>["values"]) {
@@ -166,7 +167,7 @@ async function createChangeControlActionAuthenticatedContent(
       return preserveFormState(previous, formData, { error: "El departamento seleccionado no existe." });
     }
 
-    const referenceDate = toDate(v.requestDate) ?? new Date();
+    const referenceDate = toDate(v.requestDate) ?? administrativeTodayDate();
     const [formVersion, annexIII, annexIV, annexV] = await Promise.all([
       getApplicableFormVersion(QmsRecordType.CHANGE_CONTROL, referenceDate),
       getApplicableTemplateVersion(QmsRecordType.CHANGE_CONTROL, "CHANGE_ANNEX_III", referenceDate),

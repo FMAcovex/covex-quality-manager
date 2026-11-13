@@ -9,6 +9,7 @@ import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { qmsListPagination } from "@/lib/qms/list-pagination";
 import { listRecordWithRelations } from "@/lib/qms/list-projections";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 export type CapaListFilters = {
   assigned?: string;
@@ -67,7 +68,8 @@ export async function getCapaList(filters: CapaListFilters) {
     }
   }
 
-  const now = new Date();
+  // FEC1: «hoy» de los seguimientos es el día de Madrid.
+  const now = administrativeTodayDate();
   if (filters.followup === "due") and.push({ nextFollowupDate: { lte: now } });
   if (filters.followup === "scheduled") and.push({ nextFollowupDate: { gt: now } });
   if (filters.followup === "none") and.push({ nextFollowupDate: null });

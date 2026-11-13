@@ -1684,3 +1684,18 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
 - **Documentos.** Con la plantilla oficial instalada, el recorrido comprueba el contenido del documento generado. Sin ella (CI: el repositorio público no lleva plantillas reales) comprueba que la aplicación explica qué falta. El contenido de los anexos con plantillas reales sigue cubierto por `annexes:verify` (D-131).
 - **Límites.** Solo datos ficticios. Solo cubre los caminos escritos en el guion. No sustituye a las pruebas por módulo ni a la revisión humana, y no es evidencia de validación GMP.
 - Procedimiento en [TOURS.md](TOURS.md).
+
+## D-139 — «Hoy» administrativo: el día natural de Madrid (2026-11-13)
+
+- **Regla.** Cuando la aplicación necesita «hoy» para una fecha administrativa, usa el día natural de la planta (Europe/Madrid), sea cual sea la zona horaria del servidor o del navegador:
+  - fechas propuestas;
+  - límites de «no futura»;
+  - vencimientos y seguimientos;
+  - filtros por vigencia;
+  - elección de la versión de formulario o plantilla.
+- **Almacenamiento.** Las fechas sin hora se siguen guardando como medianoche UTC de ese día. El «hoy» se representa igual (`administrativeTodayDate()`), así que las comparaciones con fechas guardadas no cambian de forma.
+- **Implementación única.** `administrativeToday()` / `administrativeTodayDate()` en `src/lib/qms/administrative-date.ts`. No se calcula «hoy» con `toISOString()`, `setHours`/`setUTCHours` ni `CURRENT_DATE` de PostgreSQL.
+- **Fuera de la regla:**
+  - instantes con hora: audit trail, historial, `createdAt` y `updatedAt`, que siguen en UTC y se muestran en hora de Madrid (D-117);
+  - series mensuales y antigüedad de Indicadores, que no aceptan ni rechazan fechas y quedan pendientes.
+- Motivo: backlog FEC1, encontrado por los recorridos (D-138). Entre las 00:00 y las 01:00/02:00 de Madrid, la aplicación proponía la fecha del día anterior y rechazaba como futura la del día.

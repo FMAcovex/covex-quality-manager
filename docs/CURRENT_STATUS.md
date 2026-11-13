@@ -193,33 +193,52 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
-**Fechas de hoy en hora de Madrid (2026-11-13, FEC1):**
-- **Problema:** varias fechas de «hoy» se calculaban con el día UTC del servidor. Entre las 00:00 y las 01:00/02:00 de Madrid (el 1 de enero, del año anterior) ocurría lo siguiente:
+**Fechas de hoy en hora de Madrid (2026-11-13, FEC1, D-139):**
+- **Problema:** varias fechas de «hoy» se calculaban con el día UTC del servidor (o con `CURRENT_DATE` de PostgreSQL). Entre las 00:00 y las 01:00/02:00 de Madrid (el 1 de enero, del año anterior) ocurría lo siguiente:
   - los formularios nuevos proponían la fecha del día anterior;
   - el registro manual de estado de PNT rechazaba como futura la vigencia de hoy;
   - el filtro «Vigencia iniciada» dejaba fuera lo vigente desde hoy;
-  - los vencimientos del panel y del calendario se adelantaban un día.
-- **Arreglo:** una función común, `administrativeToday()` / `administrativeTodayDate()` en `src/lib/qms/administrative-date.ts`, toma el día del calendario de Madrid sea cual sea la zona del servidor. Las fechas se siguen guardando como hasta ahora (medianoche UTC del día).
+  - los seguimientos y vencimientos de listados, fichas, panel y calendario se desplazaban un día.
+- **Arreglo:** una función común, `administrativeToday()` / `administrativeTodayDate()` en `src/lib/qms/administrative-date.ts`, toma el día del calendario de Madrid sea cual sea la zona del servidor. Las fechas se siguen guardando como hasta ahora (medianoche UTC del día). La regla queda en D-139.
 - **Dónde se aplica:**
   - Fechas propuestas al crear expedientes de CAPA, Controles de cambios, OOS, Reclamaciones y Devoluciones.
-  - Fecha de apertura por defecto de Auditorías.
-  - Selección de la plantilla del programa anual de Auditorías.
-  - Fecha del plan CAPA de Auditorías, que ya usaba Madrid y ahora llama a la función común.
+  - Fecha con la que se elige la versión de formulario y plantilla cuando el expediente no tiene fecha (Desviaciones, CAPA, Controles de cambios, Reclamaciones y Devoluciones).
+  - Auditorías:
+    - fecha de apertura por defecto;
+    - año propuesto del plan anual;
+    - plantilla del programa anual;
+    - fecha del plan CAPA, que ya usaba Madrid y ahora llama a la función común.
   - PNT:
     - registro manual de estado;
     - decisiones del ciclo de vida;
     - alta de revisiones existentes;
-    - filtros «Vigencia iniciada» y «Revisión vencida»;
-    - «Asignadas a mí»;
+    - listado y exportación: «Vigencia iniciada», «Revisión vencida» y «Asignadas a mí»;
+    - color de «Próxima revisión»;
     - vista previa del índice.
-  - Seguimientos vencidos del listado de Reclamaciones.
+  - Seguimientos, en filtros, contadores y distintivos:
+    - CAPA;
+    - Desviaciones;
+    - Controles de cambios;
+    - Reclamaciones, también en la fila y en la ficha;
+    - Devoluciones, que ya no usa `CURRENT_DATE`.
+  - Color de los plazos en las fichas de CAPA, Controles de cambios y Reclamaciones.
   - Panel de inicio, calendario y avisos de Configuración.
-- **Fuera de alcance:** las series mensuales de Indicadores siguen usando el instante actual. Solo afecta a la última o primera hora de un mes y no da por buena ni rechaza ninguna fecha.
-- **Pruebas:** tres pruebas nuevas, que fallaban antes del arreglo:
-  - la función común, en invierno, en verano y en Nochevieja, con el servidor en UTC y en otra zona;
-  - el filtro «Vigencia iniciada» de PNT a las 23:30 UTC;
-  - los seguimientos vencidos de Reclamaciones.
-- **Recorrido de PNT:** ya no necesita esquivar el fallo. Se retira `serverSafeDay` y la vigencia es hoy en Madrid.
+- **Fuera de alcance:** en Indicadores, las series mensuales y la antigüedad de pendientes siguen usando el instante actual. Solo afecta a la primera hora de un día o de un mes y no da por buena ni rechaza ninguna fecha.
+- **Pruebas:** todas fallaban con el código anterior.
+  - La función común: en invierno, en verano y en Nochevieja, y con el reloj por defecto.
+  - PNT (`madrid-today.test.ts`):
+    - alta de revisión existente vigente desde hoy;
+    - registro manual de estado, que no rechaza como futura la vigencia de hoy;
+    - listado de la pantalla y exportación con el día de Madrid.
+  - Filtros y contadores de seguimientos de los cinco módulos y distintivo de Reclamaciones (`followup-today.test.ts`), todo a las 23:30 UTC.
+  - Las decisiones del ciclo de vida de PNT usan la misma función, pero no tienen prueba propia del día: su flujo exige preparar decisiones previas y lo cubre la regresión de PNT.
+- **Recorridos de PNT y Devoluciones:** pasan contra la compilación. El de PNT ya no esquiva el fallo: se retira `serverSafeDay` y la vigencia es hoy en Madrid. Los scripts de humo P2B también usan la función común.
+- **Revisión independiente:** sin hallazgos críticos. Se corrigieron los importantes:
+  - el contador y el distintivo de Reclamaciones contradecían al filtro;
+  - los filtros y contadores de seguimientos del resto de módulos seguían en UTC;
+  - la prueba de PNT no cubría el listado que usa la pantalla;
+  - la documentación daba FEC1 por terminado antes de tiempo.
+  También se corrigieron los menores: versión de plantilla, colores de plazos, año del plan, orden de importación, scripts de humo y la entrada D-139. Las series de Indicadores se dejan fuera, como se explica arriba.
 
 **Recorridos por módulo: PNT y Auditorías (2026-11-13, D-138):**
 - **PNT** (`pnpm tour:pnt`), en 5 pasos:
@@ -239,7 +258,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **CI:** `tour:pnt` al final del grupo `pnt` (unos 12 s) y `tour:audits` en `browser-audits` (unos 13 s). Con estos, los ocho módulos tienen su recorrido.
 - **Revisión independiente:** sin hallazgos críticos.
   - *Importantes, corregidos:*
-    - PNT fallaba cada noche entre las 22/23 h y las 24 h UTC: el servidor calcula «hoy» en UTC y rechaza la vigencia de Madrid como futura. La vigencia usa ahora `serverSafeDay` (la menor de las dos fechas, con pruebas que fallaban antes). La incoherencia de la aplicación se añade a FEC1.
+    - PNT fallaba cada noche entre las 22/23 h y las 24 h UTC: el servidor calcula «hoy» en UTC y rechaza la vigencia de Madrid como futura. La vigencia usa ahora `serverSafeDay` (la menor de las dos fechas, con pruebas que fallaban antes; retirado en FEC1, que corrige la aplicación). La incoherencia de la aplicación se añade a FEC1.
     - Auditorías podía pulsar el vínculo antes de que la página volviera a la lista tras guardar el hallazgo; ahora espera a que se cierre el editor.
     - «Asignadas a mí» se comprobaba con la búsqueda por código, que lo encontraba de todos modos. Ahora también comprueba que, ya vigente, deja de aparecer, y comprueba «Mis tareas» en el panel de inicio.
   - *Menores, corregidos:*

@@ -34,6 +34,7 @@ import { keepsOperationalStatus } from "@/modules/lifecycle";
 import { formText } from "@/lib/forms/bullets";
 import { orderedTextTables } from "@/lib/forms/text-tables";
 import { COMPLAINT_TABLE_FIELDS } from "@/modules/complaints/text-tables";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
@@ -111,7 +112,7 @@ async function createComplaintActionAuthenticatedContent(previous:ComplaintFormS
  try{
   const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
   if(v.status!=="DRAFT"&&!department)return preserveFormState(previous,fd,{error:"El departamento no existe."});
-  const ref=d(v.openedAt)??new Date();
+  const ref=d(v.openedAt)??administrativeTodayDate();
   const [form,iii,iv,vlist]=await Promise.all([
    getApplicableFormVersion(QmsRecordType.COMPLAINT,ref),
    getApplicableTemplateVersion(QmsRecordType.COMPLAINT,"COMPLAINT_ANNEX_III",ref),

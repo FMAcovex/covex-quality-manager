@@ -57,6 +57,7 @@ import {
 import { keepsOperationalStatus } from "@/modules/lifecycle";
 import { orderedTextTables, storedTextTables } from "@/lib/forms/text-tables";
 import { capaTableFields, capaTableFieldsFor } from "./text-tables";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -150,7 +151,7 @@ async function createCapaActionAuthenticatedContent(
       return preserveFormState(previous, formData, { error: "No se puede guardar la CAPA.", fieldErrors: ["El departamento seleccionado no existe."], fieldIssues: { departmentId: ["El departamento seleccionado no existe."] } });
     }
 
-    const referenceDate = toDate(v.openedAt) ?? new Date();
+    const referenceDate = toDate(v.openedAt) ?? administrativeTodayDate();
     const [formVersion, templateVersion] = await Promise.all([
       getApplicableFormVersion(QmsRecordType.CAPA, referenceDate),
       getApplicableTemplateVersion(QmsRecordType.CAPA, "CAPA_ANNEX_III", referenceDate),

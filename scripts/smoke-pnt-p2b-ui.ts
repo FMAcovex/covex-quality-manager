@@ -3,8 +3,9 @@ import { randomUUID } from "node:crypto";
 import { chromium, authenticateContext, anonymousPage } from "./auth-fixtures/browser";
 import { fixtureLogin, fixtureRequest } from "./auth-fixtures/http";
 import { prisma } from "../src/lib/db";
+import { administrativeToday } from "../src/lib/qms/administrative-date";
 const base = process.env.P2B_UI_BASE_URL || "http://127.0.0.1:3000";
-const today = new Date().toISOString().slice(0, 10), due = `${Number(today.slice(0, 4)) + 1}${today.slice(4)}`;
+const today = administrativeToday(), due = `${Number(today.slice(0, 4)) + 1}${today.slice(4)}`;
 const pdf = Buffer.from("%PDF-1.4\nSynthetic P2B browser document\n%%EOF");
 async function main() {
   if (process.env.APP_ENV !== "test") throw new Error("APP_ENV=test requerido.");

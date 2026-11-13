@@ -31,3 +31,14 @@ it("takes today's administrative date from the Madrid calendar, in winter and in
   process.env.TZ = "America/New_York";
   expect(administrativeToday(new Date("2026-11-12T23:30:00.000Z"))).toBe("2026-11-13");
 });
+
+it("uses the current instant by default", async () => {
+  const { vi } = await import("vitest");
+  const { administrativeToday, administrativeTodayDate } = await import("./administrative-date");
+  vi.useFakeTimers({ toFake: ["Date"] });
+  try {
+    vi.setSystemTime(new Date("2026-11-12T23:30:00.000Z"));
+    expect(administrativeToday()).toBe("2026-11-13");
+    expect(administrativeTodayDate().toISOString()).toBe("2026-11-13T00:00:00.000Z");
+  } finally { vi.useRealTimers(); }
+});

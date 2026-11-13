@@ -61,6 +61,7 @@ import { dueTone } from "@/lib/qms/key-facts";
 import { SignedVersionDocumentForm } from "@/components/signed-version-document-form";
 import { uploadChangeControlSignedPdfAction } from "@/modules/change-control/signed-document-actions";
 import { qmsRecordDisplayCode } from "@/lib/qms/record-links";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 export const dynamic = "force-dynamic";
 
@@ -245,7 +246,7 @@ async function ChangeControlDetailPageAuthenticatedContent({
         <RecordKeyFacts facts={[
           { label: "Estado", value: functionalStatusLabel(record), badgeClass: functionalStatusTone(record), anchorId: reviewTarget.infoStatus.anchorId, marker: <ReviewMarker target={reviewTarget.infoStatus} /> },
           { label: "Solicitud", value: formatDate(record.requestDate), anchorId: reviewTarget.infoRequestDate.anchorId, marker: <ReviewMarker target={reviewTarget.infoRequestDate} /> },
-          { label: "Implantación prevista", value: formatDate(record.plannedImplementationDate), tone: dueTone(record.plannedImplementationDate, new Date(), record.finalStatus === "CLOSED" || record.executionStatus === "EXECUTED"), anchorId: reviewTarget.infoPlannedDate.anchorId, marker: <ReviewMarker target={reviewTarget.infoPlannedDate} /> },
+          { label: "Implantación prevista", value: formatDate(record.plannedImplementationDate), tone: dueTone(record.plannedImplementationDate, administrativeTodayDate(), record.finalStatus === "CLOSED" || record.executionStatus === "EXECUTED"), anchorId: reviewTarget.infoPlannedDate.anchorId, marker: <ReviewMarker target={reviewTarget.infoPlannedDate} /> },
           { label: "Dictamen", value: formatDate(record.dictamenDate) },
           { label: "Responsable del seguimiento", value: record.followupResponsible },
           { label: "Cierre", value: formatDate(record.operationalClosedAt) },

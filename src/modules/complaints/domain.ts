@@ -1,3 +1,4 @@
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 export function formatDate(value: Date | string | null | undefined) {
   if (!value) return "—";
   const date = value instanceof Date ? value : new Date(value);
@@ -85,7 +86,8 @@ export function complaintFollowupState(record: {
   if (record.status !== "OPEN") return "NONE" as const;
   if (!record.nextFollowupDate) return "MISSING" as const;
   const due = record.nextFollowupDate instanceof Date ? record.nextFollowupDate : new Date(record.nextFollowupDate);
-  return due.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  // FEC1: vencido si es anterior al día de hoy en Madrid.
+  return due.getTime() < administrativeTodayDate(now).getTime()
     ? "OVERDUE" as const
     : "PENDING" as const;
 }

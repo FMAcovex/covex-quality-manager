@@ -10,6 +10,7 @@ import { idsWithAdditionalLot } from "@/lib/qms/additional-lots-search";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { qmsListPagination } from "@/lib/qms/list-pagination";
 import { listRecordWithRelations, listAdministrativeSql } from "@/lib/qms/list-projections";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 export type DeviationListFilters = {
   assigned?: string;
@@ -116,7 +117,7 @@ export async function getDeviationList(filters: DeviationListFilters) {
   const counterWhere: Prisma.DeviationWhereInput = { qmsRecord: { isActive: true } };
 
   const pagination = qmsListPagination(await prisma.deviation.count({ where }), filters.page);
-  const now = new Date();
+  const now = administrativeTodayDate(); // FEC1: día de Madrid
   const [rows, departments, yearRows, provenanceRows, total, drafts, open, overdue, followupDue] =
     await Promise.all([
       prisma.deviation.findMany({

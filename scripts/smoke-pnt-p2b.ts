@@ -9,8 +9,9 @@ import { incorporateDocument, downloadDocument } from "../src/modules/controlled
 import { createBatch, getBatch, decide, prepare, confirm } from "../src/modules/controlled-documents/import/service";
 import { headings, syntheticWorkbook } from "../src/modules/controlled-documents/preview/synthetic-workbook";
 import type { PreviewRow } from "../src/modules/controlled-documents/preview/types";
+import { administrativeToday } from "../src/lib/qms/administrative-date";
 const p: LifecyclePrincipal = { name: "P2B registrador sintético", source: "TEST_DEMO", canWrite: true, capabilities: [...lifecyclePermissions] };
-const today = new Date().toISOString().slice(0, 10);
+const today = administrativeToday();
 const offset = (days: number) => { const d = new Date(`${today}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const due = offset(365);
 const bytes = Buffer.from("%PDF-1.4\nP2B synthetic controlled document\n%%EOF");

@@ -34,6 +34,7 @@ import { contextFromExtraData,validReturnDate } from "./rules";
 import { isReturnDepartmentCode } from "@/modules/returns/departments";
 import { ensureInitialVersion,serializeReturnVersion,snapshotJson } from "@/lib/qms/versioning";
 import { keepsOperationalStatus } from "@/modules/lifecycle";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
 
@@ -91,7 +92,7 @@ async function createReturnActionAuthenticatedContent(previous:ReturnFormState,f
  try{
   const department=v.departmentId?await prisma.department.findUnique({where:{id:v.departmentId}}):null;
   if((department&&!isReturnDepartmentCode(department.code))||(v.status!=="DRAFT"&&!department))return preserveFormState(previous,fd,{error:"El área seleccionada no es válida para Devoluciones.",fieldErrors:["La codificación de Devoluciones está restringida a LG-00, LG-10, LG-20, LG-30 y LG-40."]});
-  const ref=d(v.communicationDate)??new Date();
+  const ref=d(v.communicationDate)??administrativeTodayDate();
   const [form,iii,iv,vdecl,vi]=await Promise.all([
    getApplicableFormVersion(QmsRecordType.RETURN,ref),getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_III",ref),
    getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_IV",ref),getApplicableTemplateVersion(QmsRecordType.RETURN,"RETURN_ANNEX_V",ref),

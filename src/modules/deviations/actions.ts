@@ -41,6 +41,7 @@ import {
 } from "@/lib/qms/versioning";
 import { keepsOperationalStatus } from "@/modules/lifecycle";
 import { formText } from "@/lib/forms/bullets";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 function toDate(value: string | null) {
   return value ? new Date(value) : null;
@@ -104,7 +105,7 @@ async function createDeviationActionAuthenticatedContent(
       return formError(previous, formData, "No se puede guardar el expediente.", ["El departamento seleccionado no existe."], { departmentId: ["El departamento seleccionado no existe."] });
     }
 
-    const referenceDate = toDate(v.issueDate) ?? new Date();
+    const referenceDate = toDate(v.issueDate) ?? administrativeTodayDate();
     const [formVersion, templateVersion] = await Promise.all([
       getApplicableFormVersion(QmsRecordType.DEVIATION, referenceDate),
       getApplicableTemplateVersion(

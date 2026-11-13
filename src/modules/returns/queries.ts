@@ -6,6 +6,7 @@ import { Prisma,QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { RETURN_DEPARTMENT_CODES } from "@/modules/returns/departments";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 export type ReturnListFilters={page?:string;followup?:string;complaint?:string;review?:string;q?:string;administrative?:string;year?:string[];department?:string[];type?:string[];status?:string[];decision?:string[]};
 
@@ -52,7 +53,8 @@ export async function returnListWhere(filters:ReturnListFilters):Promise<Prisma.
  if(filters.complaint==="YES")and.push({qmsRecord:{targetRelations:{some:{isActive:true,relationType:"GENERATES",sourceRecord:{recordType:"COMPLAINT"}}}}});
  if(filters.complaint==="NO")and.push({qmsRecord:{targetRelations:{none:{isActive:true,relationType:"GENERATES",sourceRecord:{recordType:"COMPLAINT"}}}}});
  if(filters.followup==="DUE"||filters.followup==="PLANNED"||filters.followup==="MISSING"){
-  const comparison=filters.followup==="DUE"?Prisma.sql`<= CURRENT_DATE`:filters.followup==="PLANNED"?Prisma.sql`> CURRENT_DATE`:Prisma.sql`IS NULL`;
+  const today=administrativeTodayDate(); // FEC1: día de Madrid, no CURRENT_DATE de la sesión
+  const comparison=filters.followup==="DUE"?Prisma.sql`<= ${today}`:filters.followup==="PLANNED"?Prisma.sql`> ${today}`:Prisma.sql`IS NULL`;
   const ids=await prisma.$queryRaw<Array<{id:string}>>(Prisma.sql`SELECT r.id FROM "ReturnRecord" r WHERE r.status='OPEN' AND (SELECT f."nextFollowupDate" FROM "ReturnFollowup" f WHERE f."returnRecordId"=r.id ORDER BY f."followupDate" DESC,f."createdAt" DESC,f.id DESC LIMIT 1) ${comparison}`);
   and.push({id:{in:ids.map(x=>x.id)}});
  }
