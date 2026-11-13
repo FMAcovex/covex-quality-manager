@@ -31,6 +31,18 @@ function lines(text: string, chars: number) {
   return text ? text.split("\n").reduce((n, line) => n + Math.max(1, Math.ceil(line.length / chars)), 0) : 1;
 }
 const LINE = 16;
+/**
+ * Caracteres por línea de cada columna según su ancho en la plantilla (Arial 14: ≈ 0,93 caracteres por unidad de ancho).
+ * Sin anchos en la plantilla se usan los de la versión 04 original.
+ */
+function columnChars(sheet: string) {
+  const width: Record<string, number> = {};
+  for (const m of sheet.matchAll(/<col\b[^>]*\bmin="(\d+)"[^>]*\bmax="(\d+)"[^>]*\bwidth="([\d.]+)"/g))
+    for (let i = Number(m[1]); i <= Math.min(Number(m[2]), 10); i++) width["ABCDEFGHIJ"[i - 1]] = Number(m[3]);
+  const fallback: Record<string, number> = { B: 22, C: 64, D: 27, E: 27, F: 27, G: 24, H: 22, I: 18, J: 26 };
+  const chars = (cols: string) => Math.max(8, Math.floor([...cols].reduce((n, c) => n + (width[c] ?? fallback[c]), 0) * 0.93));
+  return { description: chars("C"), deviations: chars("D"), rootCause: chars("E"), code: chars("F"), responsible: chars("G"), actions: chars("BCDEFG"), evidence: chars("HIJ") };
+}
 /** Las casillas de fecha de la plantilla tienen formato de fecha: dd/mm/aaaa se escribe como fecha de Excel. */
 function excelDate(value: string): string | number {
   const m = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -66,6 +78,7 @@ export function generateAnnexIVCapaPlan(template: Buffer, s: AuditReportSnapshot
   }
 
   const blocks: CapaPlanBlock[] = capaPlanBlocks(s.audit.findings as never, s.capaPlan);
+  const W = columnChars(sheet);
   // Sin hallazgos se conserva un bloque vacío, como en la plantilla.
   const list = blocks.length ? blocks : [{ reference: "", criticality: "", description: "", deviations: "", rootCause: "", rows: [{ code: "", responsible: "", plannedDate: "", status: "", closedAt: "" }], actions: "", evidence: "" }];
   const generated: string[] = [], merges: string[] = [], bRefs: string[] = [], iRefs: string[] = [];
@@ -73,10 +86,10 @@ export function generateAnnexIVCapaPlan(template: Buffer, s: AuditReportSnapshot
   for (const block of list) {
     const first = at, k = block.rows.length;
     // Altura: lo que ocupan las columnas combinadas se reparte entre las filas de CAPA.
-    const shared = Math.max(lines(block.description, 60), lines(block.rootCause, 25), lines(block.deviations, 25));
+    const shared = Math.max(lines(block.description, W.description), lines(block.rootCause, W.rootCause), lines(block.deviations, W.deviations));
     block.rows.forEach((r, i) => {
       let xml = renumber(data, 8, at);
-      const own = Math.max(lines(r.responsible, 22), lines(r.code, 25));
+      const own = Math.max(lines(r.responsible, W.responsible), lines(r.code, W.code));
       xml = withHeight(xml, Math.max(48, Math.ceil((shared * LINE) / k), own * LINE));
       // En las filas siguientes, A–E quedan bajo la combinación: se vacían.
       const cells: Record<string, string> = i === 0
@@ -91,7 +104,7 @@ export function generateAnnexIVCapaPlan(template: Buffer, s: AuditReportSnapshot
     generated.push(renumber(labels, 9, at));
     merges.push(`B${at}:G${at}`, `H${at}:J${at}`); at++;
     let valueRow = renumber(values, 10, at);
-    valueRow = withHeight(valueRow, Math.max(53.25, (Math.max(lines(block.actions, 170), lines(block.evidence, 65)) + 1) * LINE));
+    valueRow = withHeight(valueRow, Math.max(53.25, (Math.max(lines(block.actions, W.actions), lines(block.evidence, W.evidence)) + 1) * LINE));
     valueRow = put(put(valueRow, `B${at}`, block.actions), `H${at}`, block.evidence);
     generated.push(valueRow);
     merges.push(`B${at}:G${at}`, `H${at}:J${at}`, `A${first}:A${at}`); at++;

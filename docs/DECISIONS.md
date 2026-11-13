@@ -1611,7 +1611,7 @@ Tercera entrega de R6 (D-134, D-135), con la plantilla «Anexo IV del PNT GC-00/
   - versión del plan;
   - tipo, con la lista de la plantilla: Interna, Subcontratada, Externa (proveedor), de Cliente o Inspección;
   - entidad auditora (COVEX en las propias, salvo que se indique otra).
-- **Un bloque por hallazgo o recomendación activa:**
+- **Un bloque por hallazgo o recomendación activa** (o por varios agrupados, ver más abajo)**:**
   - Una fila de datos por CAPA, con código, responsable(s), fecha prevista (la última de sus acciones planificadas), estado y fecha de cierre. Las columnas del hallazgo (Nº, tipo/criticidad, descripción, código de desviación y causa raíz) quedan combinadas en vertical, como en el ejemplo de Calidad.
   - Las CAPA salen de las vinculadas al hallazgo y de las relacionadas con sus desviaciones; solo cuentan las relaciones activas, y un expediente anulado sale como «código (anulado)».
   - Las acciones propias de la auditoría siguen, como filas sin código CAPA.
@@ -1631,11 +1631,19 @@ Tercera entrega de R6 (D-134, D-135), con la plantilla «Anexo IV del PNT GC-00/
 - El plan muestra la causa raíz de la desviación tal como esté registrada, también mientras la desviación sigue abierta: puede ser todavía provisional. Lo valida quien revisa y aprueba el plan (confirmado por Calidad el 12/11/2026).
 - El plan, documento de la auditoría, incluye datos de las desviaciones y CAPA vinculadas (códigos, causa raíz, acciones y responsables), como ya hacía el CAPA plan anterior con sus códigos. Se descarga con el permiso de Auditorías.
 - Con el permiso de seguimiento del plan se pueden cambiar sus firmantes al registrar un seguimiento; solo cambian las funciones que el formulario envía.
+- **Hallazgos agrupados (13/11/2026, a petición de Calidad con su plan CAPA de ejemplo):** los hallazgos con la misma desviación salen en un solo bloque, en el lugar del primero.
+  - Se agrupan solo si comparten las mismas desviaciones activas y las mismas CAPA (por expediente), no tienen acciones propias y son del mismo tipo (hallazgo o recomendación). Así sus filas de CAPA son idénticas y no se pierde ni se mezcla ninguna.
+  - Nº con todas las referencias; descripciones, textos propios (justificación) y evidencias con su referencia delante y sin modificar; las CAPA y sus acciones, una vez.
+  - Criticidad del bloque: la más alta del grupo. Es el criterio aplicado; Calidad puede pedir otro.
+  - Si las descripciones juntas no caben en las filas del bloque (409 pt por fila, límite de Excel), el siguiente hallazgo empieza un bloque nuevo.
+  - Las versiones del plan ya emitidas conservan su archivo. El documento con los datos actuales y los seguimientos que se registren a partir de ahora salen agrupados.
+  - Las alturas de fila se calculan con los anchos de columna de la plantilla de cada versión.
 - Sin cambios de permisos. La migración `20261114000100_audit_finding_root_cause` añade el campo y su política de captura B2 (contrato `B2_AUDIT_FINDING_ROOT_CAUSE`). No es validación GMP.
 - **Plantilla corregida (12/11/2026):** en la plantilla del Anexo IV, la columna «Fecha prevista» de las filas de datos (H8, H11, H14) estaba en Calibri 11 sin centrar, a diferencia del resto de la fila. A petición del usuario de Calidad, el equipo de desarrollo corrigió solo ese formato (Arial 14, centrada, formato de fecha); el resto del archivo no cambia.
   - La aplicación copia el formato de la fila de la plantilla, así que la corrección se hace en la plantilla y no en el generador. Una prueba fija que el generador conserva el estilo de las casillas de fecha de la plantilla.
   - Huella nueva en el catálogo (`0de356b9…`; antes `3df05178…`). La huella anterior estuvo en main desde D-136, pero la versión 04 no ha entrado en vigor (15/11/2026). Como con el Anexo V interno, se cambia la huella sin sustituir copias instaladas (D-099): sustituirlas cambiaría el formato de planes CAPA ya emitidos y de sus seguimientos.
   - **Condición:** Calidad debe aprobar y distribuir exactamente este archivo, sin volver a guardarlo; guardarlo de nuevo en Excel cambia la huella y la aplicación no lo reconocería. Si Calidad emite otro archivo, se registra su huella.
+  - **13/11/2026, formatos del ejemplo de Calidad:** Nº en negrita sobre fondo beige; descripción y causa raíz justificadas (la causa raíz sin negrita); código CAPA en negrita; responsable sin negrita; acciones y evidencias justificadas arriba; borde superior de «Fecha prevista» como el resto de la fila; anchos de Nº (18), causa raíz (52), código CAPA (32) y responsable (21) y escala de impresión del 47 %. Huella `09aa3bcb…`. Se repiten la condición y el procedimiento de abajo.
   - **Bases con la copia anterior** (desarrollo o demo): el instalador la deja en conflicto y no la cambia; los planes ya emitidos con ella la conservan. Se empieza de cero: demo local con `docker compose -f compose.demo.yaml down -v` (DEMO_LOCAL.md); en Codespaces, borrando la base `covex_demo` antes de volver a ejecutar `pnpm demo:codespace`. Activar una copia anterior inactiva se bloquea por incompatible (D-100), que es lo que se busca, aunque el mensaje pida adaptar la aplicación.
 
 ## D-137 — Auditorías R6: externas diferenciadas, código libre de cliente e inspección y ejemplos de la demo (2026-11-12)
