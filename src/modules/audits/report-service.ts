@@ -17,8 +17,9 @@ const legacySignerKeys = ["preparedBy", "preparedPosition", "reviewedBy", "revie
 type Tx = Prisma.TransactionClient;
 export const auditReportInclude = {
   departments: { orderBy: { id: "asc" as const } }, participants: { orderBy: [{ sortOrder: "asc" as const }, { id: "asc" as const }] },
-  findings: { orderBy: [{ sortOrder: "asc" as const }, { id: "asc" as const }], include: {
-    actions: { orderBy: [{ sortOrder: "asc" as const }, { id: "asc" as const }] },
+  // Con el mismo orden visual, el orden de alta (OBS 01 antes que OBS 02).
+  findings: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }, { id: "asc" as const }], include: {
+    actions: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }, { id: "asc" as const }] },
     relations: { include: { qmsRelation: { include: { targetRecord: { include: { capa: { select: { status: true, effectivenessStatus: true } }, deviation: { select: { status: true } } } } } } } },
   } },
   followups: { orderBy: [{ followupDate: "desc" as const }, { createdAt: "desc" as const }, { id: "desc" as const }] },
