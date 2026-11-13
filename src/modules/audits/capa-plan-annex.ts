@@ -65,9 +65,10 @@ const terminal = (s: string) => s.startsWith("Cerrada") || s === "No procede";
  * cierre) y una por acción propia sin código CAPA; sin ninguna, una fila con el estado del tratamiento.
  * Causa raíz: la de la desviación; si aún no la tiene, «Pendiente de investigación (código)»; sin desviación,
  * la del hallazgo. Una fecha de cierre pendiente sale como «Pendiente», como en el ejemplo de Calidad.
+ * Los hallazgos con las mismas desviaciones salen en un solo bloque (ejemplo de Calidad del 13/11/2026).
  */
 export function capaPlanBlocks(findings: Finding[], links: CapaPlanLinks | undefined): CapaPlanBlock[] {
-  return findings.filter(f => f.isActive).map(f => {
+  const blocks = findings.filter(f => f.isActive).map(f => {
     const link = links?.[f.id] ?? { deviations: [], capas: [] };
     const actions = f.actions.filter(a => a.isActive);
     const rootCause = link.deviations.length
@@ -85,6 +86,37 @@ export function capaPlanBlocks(findings: Finding[], links: CapaPlanLinks | undef
       f.treatment?.trim() ?? "",
     ].filter(Boolean).join("\n");
     const evidence = [f.evidenceReference, f.evidence, ...actions.flatMap(a => [a.evidenceReference, a.evidence])].map(v => v?.trim()).filter(Boolean).join("\n");
-    return { reference: f.reference, criticality: capaPlanCriticality(f), description: f.description, deviations: link.deviations.map(d => d.code).join("\n"), rootCause, rows, actions: actionText, evidence };
+    const group = link.deviations.map(d => d.recordId ?? d.code).sort().join("|");
+    return { reference: f.reference, criticality: capaPlanCriticality(f), description: f.description, deviations: link.deviations.map(d => d.code).join("\n"), rootCause, rows, actions: actionText, evidence, group };
+  });
+  return groupByDeviation(blocks);
+}
+
+const SEVERITY = ["Crítica", "Mayor", "Menor", "Recomendación", ""];
+const unique = <T,>(items: T[], key: (item: T) => string = String) => items.filter((item, i) => items.findIndex(other => key(other) === key(item)) === i);
+const lines = (texts: string[]) => unique(texts.flatMap(t => t.split("\n")).filter(Boolean)).join("\n");
+/**
+ * Une en el bloque del primero los hallazgos que comparten las mismas desviaciones: Nº con todas las referencias,
+ * descripciones precedidas de su referencia, la criticidad más alta, y CAPA, acciones y evidencias sin repetir.
+ */
+function groupByDeviation(blocks: (CapaPlanBlock & { group: string })[]): CapaPlanBlock[] {
+  const byGroup = new Map<string, CapaPlanBlock[]>(), ordered: CapaPlanBlock[][] = [];
+  for (const { group, ...block } of blocks) {
+    const members = group ? byGroup.get(group) : undefined;
+    if (members) { members.push(block); continue; }
+    ordered.push([block]); if (group) byGroup.set(group, ordered[ordered.length - 1]);
+  }
+  return ordered.map(([first, ...rest]) => {
+    if (!rest.length) return first;
+    const members = [first, ...rest];
+    return {
+      ...first,
+      reference: members.map(m => m.reference).join("\n\n"),
+      criticality: SEVERITY.find(level => members.some(m => m.criticality === level)) ?? first.criticality,
+      description: members.map(m => `${m.reference}. ${m.description}`).join("\n\n"),
+      rows: unique(members.flatMap(m => m.rows), r => JSON.stringify(r)),
+      actions: lines(members.map(m => m.actions)),
+      evidence: lines(members.map(m => m.evidence)),
+    };
   });
 }

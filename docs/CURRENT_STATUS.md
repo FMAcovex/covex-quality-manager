@@ -193,6 +193,11 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Plan CAPA del Anexo IV: formato del ejemplo de Calidad y hallazgos agrupados por desviación (2026-11-13, D-136):**
+- **Formato:** plantilla con los formatos y anchos del plan CAPA que rellenó Calidad (Nº en negrita sobre beige, textos justificados, código CAPA en negrita, columnas más anchas). Huella nueva; Calidad debe aprobar y distribuir ese archivo sin volver a guardarlo.
+- **Agrupación:** los hallazgos que comparten las mismas desviaciones salen en un solo bloque, con todas sus referencias y descripciones, la criticidad más alta y las CAPA sin repetir.
+- **Comprobado:** prueba de la agrupación (fallaba antes del cambio), `annexes:verify` con las plantillas reales (activas y la 04 corregida) y una muestra generada con datos ficticios revisada en PDF.
+
 **Plan CAPA del Anexo IV: «Fecha prevista» en Arial 14 centrada (2026-11-12, D-136):**
 - **Qué falla:** en la plantilla, la columna «Fecha prevista» de las filas de datos estaba en Calibri 11 sin centrar; el resto de la fila, en Arial 14 centrada. El plan generado heredaba ese formato.
 - **Arreglo:** plantilla corregida (solo el formato de H8, H11 y H14) y huella nueva en el catálogo. Pendiente de que Calidad apruebe y distribuya exactamente ese archivo, sin volver a guardarlo. Una demo con la copia anterior se crea de cero (D-136).

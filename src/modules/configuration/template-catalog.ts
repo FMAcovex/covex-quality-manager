@@ -83,8 +83,10 @@ export const templateCatalog: CatalogTemplate[] = [
   { module: "AUDIT", documentType: "AUDIT_INTERNAL_REPORT", versionCode: "04", label: "Auditorías · Informe interno", fileName: "A3_04 INFORME AUDITORIA INTERNA.docx", effectiveFrom: "2026-11-15", sources: file("133111598a73eda149dc49fdebdfa2c4d9d9f68d311907adbad8abbd17c68949") },
   { module: "AUDIT", documentType: "AUDIT_EXTERNAL_REPORT", versionCode: "05", label: "Auditorías · Informe externo", fileName: "A3. INFORME AUDITORIA_V05.docx", effectiveFrom: "2026-11-15", sources: file("caced8199c6717124ce723e9bba567b5297902b0f2a0442f50c85dc6d9bf06c4") },
   // D-136 (R6): plan CAPA del Anexo IV del GC-00/033/04 (internas, a proveedor, de cliente e inspecciones).
-  // Corregida el 12/11/2026: «Fecha prevista» (H8, H11, H14) en Arial 14 centrada, como el resto de la fila; antes, Calibri 11 sin centrar (sha 3df05178…).
-  { module: "AUDIT", documentType: "AUDIT_CAPA_PLAN", versionCode: "04", label: "Auditorías · Plan CAPA (Anexo IV)", fileName: "Anexo IV CAPA Auditorias 04.xlsx", effectiveFrom: "2026-11-15", sources: file("0de356b9e16baec6c75e2bf45a1bc763b7956e7c4516042c0f49efdd33968db0") },
+  // Formato corregido con Calidad: 12/11/2026 «Fecha prevista» en Arial 14 centrada; 13/11/2026 formatos de su ejemplo
+  // (Nº en negrita sobre beige, descripción y causa raíz justificadas, código CAPA en negrita, responsable sin negrita,
+  // acciones y evidencias justificadas; anchos de Nº, causa raíz, código CAPA y responsable). Huellas anteriores: 3df05178…, 0de356b9….
+  { module: "AUDIT", documentType: "AUDIT_CAPA_PLAN", versionCode: "04", label: "Auditorías · Plan CAPA (Anexo IV)", fileName: "Anexo IV CAPA Auditorias 04.xlsx", effectiveFrom: "2026-11-15", sources: file("75f105340a48cadf0c0f5dc892c52564cb1f4c9c872ef65dc6e576dfa26fa27c") },
   { module: "AUDIT", documentType: "AUDIT_EXTERNAL_PLAN", versionCode: "05", label: "Auditorías · Plan de auditoría externa", fileName: "A4_PLAN AUDIT.docx", effectiveFrom: "2026-11-15", sources: file("b3db55f090e0b802e1e18590e9b6a29f24976a9c777a2c1deb6f91be13ffb96f") },
   // D-106: el programa interno se instala desde el .docx guardado en Word por Calidad, no desde el
   // .doc original (sha fa1296da…), que necesitaba LibreOffice. Sustituye una conversión anterior.

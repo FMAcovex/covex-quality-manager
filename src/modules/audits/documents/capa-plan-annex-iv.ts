@@ -72,11 +72,11 @@ export function generateAnnexIVCapaPlan(template: Buffer, s: AuditReportSnapshot
   let at = 8;
   for (const block of list) {
     const first = at, k = block.rows.length;
-    // Altura: lo que ocupan las columnas combinadas se reparte entre las filas de CAPA.
-    const shared = Math.max(lines(block.description, 60), lines(block.rootCause, 25), lines(block.deviations, 25));
+    // Altura: lo que ocupan las columnas combinadas se reparte entre las filas de CAPA (caracteres por línea según los anchos de la plantilla).
+    const shared = Math.max(lines(block.description, 60), lines(block.rootCause, 48), lines(block.deviations, 25));
     block.rows.forEach((r, i) => {
       let xml = renumber(data, 8, at);
-      const own = Math.max(lines(r.responsible, 22), lines(r.code, 25));
+      const own = Math.max(lines(r.responsible, 19), lines(r.code, 30));
       xml = withHeight(xml, Math.max(48, Math.ceil((shared * LINE) / k), own * LINE));
       // En las filas siguientes, A–E quedan bajo la combinación: se vacían.
       const cells: Record<string, string> = i === 0

@@ -59,6 +59,24 @@ describe("D-136 · bloques del plan CAPA", () => {
       .map(([status, effectivenessStatus]) => capaPlanCapaStatus({ status, effectivenessStatus })))
       .toEqual(["Abierta", "Abierta", "Pendiente", "Cerrada", "Cerrada", "Cerrada (no eficaz)", "Cerrada (cancelada)"]);
   });
+  it("los hallazgos con la misma desviación salen en un solo bloque, como en el ejemplo de Calidad (13/11/2026)", () => {
+    const dev = { recordId: "d1", code: "D/GC-00/001/2097", rootCause: "Causa común" };
+    const shared: CapaPlanLinks = {
+      f1: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" })] },
+      f2: { deviations: [{ recordId: "d2", code: "D/GC-00/002/2097", rootCause: null }], capas: [] },
+      f3: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" }), capa("AP/4", { recordId: "c4" })] },
+    };
+    const blocks = capaPlanBlocks(snapshot().audit.findings as never, shared);
+    // OBS 01 y OBS 03 comparten D/GC-00/001/2097: un bloque en la posición de la primera; OBS 02 y Rk 01 aparte.
+    expect(blocks.map(b => b.reference)).toEqual(["OBS 01\n\nOBS 03", "OBS 02", "Rk 01"]);
+    const [g] = blocks;
+    expect([g.criticality, g.deviations, g.rootCause]).toEqual(["Crítica", "D/GC-00/001/2097", "Causa común"]);
+    expect(g.description).toBe("OBS 01. Descripción OBS 01\n\nOBS 03. Descripción OBS 03");
+    // Las CAPA no se repiten; las acciones y evidencias se suman sin duplicar.
+    expect(g.rows.map(r => r.code)).toEqual(["AC/1", "AP/4"]);
+    expect(g.actions).toBe("AC/1: Acción de AC/1\nJustificación libre\nAP/4: Acción de AP/4");
+    expect(g.evidence).toBe("REG-1");
+  });
   it("sin vínculos (fotos anteriores a D-136), los bloques salen solo con los datos del hallazgo", () => {
     const [b1] = capaPlanBlocks(snapshot().audit.findings as never, undefined);
     expect([b1.deviations, b1.rows.length, b1.actions]).toEqual(["", 1, "Justificación libre"]);
