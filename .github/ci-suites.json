@@ -103,6 +103,8 @@
       "returns-r4b:ui:smoke",
       "oos:ui:smoke",
       "evidence:ui:smoke",
+      "tour:complaints",
+      "tour:returns",
       "complaints-returns-r4c:smoke"
     ]
   },
