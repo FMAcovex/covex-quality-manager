@@ -1,3 +1,4 @@
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
@@ -49,7 +50,8 @@ async function HomePageAuthenticatedContent({
   const selectedScope = queryOption(query.module, moduleKeys, "ALL");
   const state = queryOption(query.state, stateOptions, "ALL") as DashboardState;
   const taskView = queryOption(query.tasks, taskOptions, "all") as DashboardTaskView;
-  const now = new Date();
+  // FEC1: el día de hoy del panel (vencimientos, «Mis tareas», año en curso) es el de Madrid.
+  const now = administrativeTodayDate();
   const filters = {
     year,
     department: requestedDepartment && /^[a-f0-9-]{36}$/i.test(requestedDepartment) ? requestedDepartment : "",

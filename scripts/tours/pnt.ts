@@ -8,11 +8,11 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/lib/db";
-import { finishTour, ooxmlText, serverSafeDay, startTour, waitForSaved } from "./lib";
+import { finishTour, ooxmlText, startTour, waitForSaved } from "./lib";
 
 const madridDay = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86400000).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
-// El servidor rechaza una vigencia futura y calcula «hoy» en UTC: la vigencia usa la fecha que aceptan los dos.
-const effectiveDay = serverSafeDay();
+// La vigencia es hoy en Madrid, el mismo día que usa el servidor para rechazar una vigencia futura (FEC1).
+const effectiveDay = madridDay();
 // PDF mínimo ficticio para la revisión (el recorrido no usa documentos reales).
 const PDF = Buffer.from("%PDF-1.4\n% Documento ficticio del recorrido de PNT\n%%EOF");
 

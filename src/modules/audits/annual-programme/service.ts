@@ -1,4 +1,5 @@
 import "server-only";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -15,7 +16,7 @@ async function readPreview(tx: Prisma.TransactionClient, planId: string) {
   const plan = await tx.auditAnnualPlan.findUniqueOrThrow({ where: { id: planId }, include: {
     entries: { include: { department: true, audit: { include: { qmsRecord: true } } }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }] },
   } });
-  const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+  const today = administrativeTodayDate();
   const template = await tx.templateVersion.findFirst({ where: { module: "AUDIT", documentType: programmeDocumentTypes[plan.auditType], isActive: true, effectiveFrom: { lte: today }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: today } }] }, orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }, { id: "asc" }],
     select: { id: true, versionCode: true, checksum: true, fileSize: true },
   });

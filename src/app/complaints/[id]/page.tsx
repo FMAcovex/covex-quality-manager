@@ -50,6 +50,7 @@ import { getReviewThreadsForDisplay } from "@/lib/qms/review/ui-queries";
 import { activeReviewCount,reviewModeHref,reviewTabHref,reviewVersionLabel } from "@/lib/qms/review/ui-model";
 import { reviewTargetWithValue } from "@/lib/qms/review/targets/catalog";
 import { complaintCapaPlanReviewTarget,complaintReviewTargets } from "@/lib/qms/review/targets/complaints";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 export const dynamic="force-dynamic";
 const tabs=[
@@ -154,7 +155,7 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
    <RecordKeyFacts facts={[
     { label: "Situación", value: complaintOperationalSituationLabel(situation), badgeClass: complaintOperationalSituationTone(situation) },
     { label: "Apertura", value: formatDate(r.openedAt) },
-    { label: "Próximo seguimiento", value: formatDate(r.nextFollowupDate), tone: dueTone(r.nextFollowupDate, new Date(), r.status !== "OPEN") },
+    { label: "Próximo seguimiento", value: formatDate(r.nextFollowupDate), tone: dueTone(r.nextFollowupDate, administrativeTodayDate(), r.status !== "OPEN") },
     { label: "Respuesta", value: formatDate(r.responseDate) },
     { label: "Cierre", value: formatDate(r.closedAt) },
    ]} />

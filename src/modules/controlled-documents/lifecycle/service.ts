@@ -1,3 +1,4 @@
+import { administrativeToday } from "@/lib/qms/administrative-date";
 import { createHash, randomUUID } from "node:crypto";
 import { Prisma, PrismaClient, type ControlledDocumentRevision, type ControlledRevisionDecision } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -74,7 +75,7 @@ export async function lifecycleDecision(documentId: string, revisionId: string, 
     const oldState = r.status, before = { revision: r, projection };
     await objects(tx, revisionId, c.evidenceIds, c.referenceBasis);
     const decisions = await tx.controlledRevisionDecision.findMany({ where: { revisionId }, orderBy: { sequence: "asc" } });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = administrativeToday();
     const status = revisionStatusAfter(c.operation, r.status, c.result);
     if (c.operation === "VERIFY") {
       if (!["FAVORABLE", "DISCREPANCY"].includes(c.result || "")) throw new Error("Indique el resultado del contraste.");

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { currentIdentity } from "@/lib/auth/context";
 import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { complaintListWhere, type ComplaintListFilters } from "@/modules/complaints/list-filters";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 export type { ComplaintListFilters } from "@/modules/complaints/list-filters";
 
 export async function getComplaintList(filters:ComplaintListFilters){
@@ -18,7 +19,7 @@ export async function getComplaintList(filters:ComplaintListFilters){
  const page=Number.isSafeInteger(requestedPage)&&requestedPage>0?Math.min(requestedPage,pageCount):1;
  // D-117 (H-15): los contadores son totales del módulo; nunca cuentan anulados, sea cual sea el filtro.
  const counterWhere: Prisma.ComplaintWhereInput = { qmsRecord: { isActive: true } };
- const today=new Date();today.setHours(0,0,0,0);
+ const today=administrativeTodayDate(); // FEC1: día de Madrid
 
  const [baseRows,departments,years,total,drafts,open,pendingPartII,pendingEfficacy,followupDue]=await Promise.all([
   prisma.complaint.findMany({

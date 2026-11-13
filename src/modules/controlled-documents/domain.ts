@@ -1,3 +1,4 @@
+import { administrativeToday } from "@/lib/qms/administrative-date";
 import { z } from "zod";
 export const administrativeLabels = { DRAFT: "Borrador de registro", ACTIVE: "Activo en registro", ANNULLED: "Anulado" };
 export const revisionLabels = { IMPORTED_PENDING: "Importada / pendiente de verificación", DRAFT: "Borrador / en elaboración", IN_REVIEW: "En revisión", PENDING_APPROVAL: "Pendiente de aprobación", APPROVED_PENDING_EFFECTIVE: "Aprobado / pendiente de vigencia", IN_FORCE: "Vigente", OBSOLETE: "Obsoleto", ANNULLED: "Anulado" };
@@ -47,7 +48,7 @@ export function validateRevisionDates(v: Pick<RevisionInput, "effectiveFrom" | "
     if (v.effectiveFrom && v.obsoletedAt && v.obsoletedAt < v.effectiveFrom)
         throw new Error("La obsolescencia no puede preceder a la vigencia.");
 }
-export function validateExistingRevision(v: Pick<RevisionInput, "existingDocument" | "verified" | "sourceReference" | "existingStatus" | "effectiveFrom" | "obsoletedAt">, today = iso(new Date())) {
+export function validateExistingRevision(v: Pick<RevisionInput, "existingDocument" | "verified" | "sourceReference" | "existingStatus" | "effectiveFrom" | "obsoletedAt">, today = administrativeToday()) {
     if (!v.existingDocument || !v.verified || !v.sourceReference)
         throw new Error("El registro de una revisión existente exige referencia documental y confirmación de verificación.");
     if (v.existingStatus === "IN_FORCE" && (!v.effectiveFrom || v.effectiveFrom > today))

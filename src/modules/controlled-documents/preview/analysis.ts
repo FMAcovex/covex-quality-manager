@@ -1,3 +1,4 @@
+import { administrativeToday } from "@/lib/qms/administrative-date";
 import { createHash } from "node:crypto";
 import type { WorkbookSheet, SheetRow, PreviewRow, PreviewReport, IssueCode, IndexDepartment } from "./types";
 import { readWorkbook } from "./workbook";
@@ -117,7 +118,7 @@ function indexDepartments(sheets: WorkbookSheet[], rows: PreviewRow[]): IndexDep
     }
     return [...result.values()].sort((a, b) => a.code.localeCompare(b.code));
 }
-export function parseIndex(buffer: Buffer, fileName: string, asOf = new Date().toISOString().slice(0, 10)): PreviewReport {
+export function parseIndex(buffer: Buffer, fileName: string, asOf = administrativeToday()): PreviewReport {
     const workbook = readWorkbook(buffer);
     const sha256 = createHash("sha256").update(buffer).digest("hex");
     const rows: PreviewRow[] = [];

@@ -9,6 +9,7 @@ import { responsibleUserSelect } from "@/lib/qms/responsible-user";
 import { validValues, validYears } from "@/lib/qms/list-filters";
 import { qmsListPagination } from "@/lib/qms/list-pagination";
 import { listRecordWithRelations, listAdministrativeSql } from "@/lib/qms/list-projections";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 export type ChangeControlListFilters = {
   assigned?: string;
@@ -63,7 +64,7 @@ export async function getChangeControlList(filters: ChangeControlListFilters) {
   // D-117 (H-15): los contadores son totales del módulo; nunca cuentan anulados, sea cual sea el filtro.
   const counterWhere: Prisma.ChangeControlWhereInput = { qmsRecord: { isActive: true } };
   const pagination = qmsListPagination(await prisma.changeControl.count({ where }), filters.page);
-  const now = new Date();
+  const now = administrativeTodayDate(); // FEC1: día de Madrid
   const [rows, departments, years, total, drafts, open, executedPendingEfficacy, overdue] =
     await Promise.all([
       prisma.changeControl.findMany({

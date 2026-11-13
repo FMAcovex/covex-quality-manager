@@ -61,6 +61,7 @@ import {
   capaPlannedActionReviewTarget,
   capaReviewTargets,
 } from "@/lib/qms/review/targets/capa";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 
 export const dynamic = "force-dynamic";
 
@@ -293,7 +294,7 @@ async function CapaDetailPageAuthenticatedContent({
             { label: "Estado", value: capaStatusLabel(capa.status), badgeClass: capa.status === "OPEN" ? "open" : capa.status === "CLOSED" ? "closed" : "neutral" },
             { label: "Eficacia", value: effectivenessLabel(capa.effectivenessStatus) },
             { label: "Apertura", value: formatDate(capa.openedAt) },
-            { label: "Próximo seguimiento", value: formatDate(capa.nextFollowupDate), tone: dueTone(capa.nextFollowupDate, new Date(), capa.status === "CLOSED" || capa.status === "CANCELLED") },
+            { label: "Próximo seguimiento", value: formatDate(capa.nextFollowupDate), tone: dueTone(capa.nextFollowupDate, administrativeTodayDate(), capa.status === "CLOSED" || capa.status === "CANCELLED") },
             { label: "Cierre operativo", value: formatDate(capa.operationalClosedAt) },
             { label: "Cierre efectivo", value: formatDate(capa.effectiveClosedAt) },
           ]} />

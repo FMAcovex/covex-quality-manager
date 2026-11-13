@@ -1,4 +1,5 @@
 // Synthetic regression fixtures only. No application imports this module.
+import { administrativeToday } from "@/lib/qms/administrative-date";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { writeZip } from "@/lib/ooxml/zip";
@@ -13,7 +14,7 @@ import { createBatch, getBatch, decide, prepare, confirm } from "../import/servi
 import type { PreviewRow } from "../preview/types";
 export const qaActor = "P2C QA sintético";
 export const qaPrincipal: LifecyclePrincipal = { name: qaActor, source: "TEST_DEMO", canWrite: true, capabilities: [...lifecyclePermissions] };
-export const today = new Date().toISOString().slice(0, 10);
+export const today = administrativeToday();
 export function offset(days: number) { const d = new Date(`${today}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
 export const pdf = Buffer.from("%PDF-1.4\nSynthetic P2C controlled content\n%%EOF");
 export const word = writeZip([

@@ -1,6 +1,7 @@
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../../lib/db";
-import { administrativeLabels, revisionLabels, validRevisionCode, validDate, iso } from "./domain";
+import { administrativeLabels, revisionLabels, validRevisionCode, validDate } from "./domain";
 export type Filters = {
     q?: string;
     department?: string;
@@ -41,7 +42,7 @@ export function listRevisionWhere(f: Filters): Prisma.ControlledDocumentRevision
         r.revisionCode = f.revision;
     if (typeof f.revisionState === "string" && f.revisionState && Object.hasOwn(revisionLabels, f.revisionState))
         r.status = f.revisionState as keyof typeof revisionLabels;
-    const today = new Date(`${iso(new Date())}T00:00:00Z`);
+    const today = administrativeTodayDate();
     if (f.validity === "current" || f.validity === "due") {
         // A "Vigente" plazo filter must not silently override a selected state.
         conditions.push({ status: "IN_FORCE" });

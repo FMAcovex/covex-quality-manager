@@ -1,4 +1,5 @@
 import "server-only";
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 import { Prisma, QmsRecordType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
@@ -50,7 +51,7 @@ export type AlertPreviewItem={
 
 export type AlertPreviewScope = { year?: number | null; department?: string; module?: QmsRecordType | "PNT" | "ALL" };
 
-export async function getAlertPreview(referenceDate = new Date(), scope?: AlertPreviewScope) {
+export async function getAlertPreview(referenceDate = administrativeTodayDate(), scope?: AlertPreviewScope) {
   const rules = await prisma.alertRule.findMany({ where: { isActive: true }, orderBy: [{ severity: "desc" }, { module: "asc" }] });
   const today = day(referenceDate);
   const horizon = addDays(today, Math.max(...rules.map(r => r.leadDays), 0));

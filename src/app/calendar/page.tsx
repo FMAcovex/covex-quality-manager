@@ -1,3 +1,4 @@
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 import Link from "next/link";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import { currentIdentity } from "@/lib/auth/context";
@@ -32,7 +33,8 @@ function Entry({ item }: { item: CalendarItem }) {
 }
 
 async function CalendarPageAuthenticatedContent({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const now = new Date();
+  // FEC1: el día de hoy del calendario es el de Madrid.
+  const now = administrativeTodayDate();
   const query = parseCalendarQuery(await searchParams, now, modules.map((m) => m.key));
   const range = calendarRange(query.view, query.anchor);
   const [result, departments] = await Promise.all([

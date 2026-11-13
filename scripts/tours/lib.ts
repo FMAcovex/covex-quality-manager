@@ -70,16 +70,6 @@ const OVERLAY = `(() => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready); else ready();
 })();`;
 
-/**
- * Fecha «de hoy» que acepta tanto el usuario (Madrid) como el servidor cuando este calcula el día en UTC: la menor de
- * las dos. Entre las 22/23 h y las 24 h UTC, Madrid ya está en el día siguiente.
- */
-export function serverSafeDay(now = new Date()) {
-  const madrid = now.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
-  const utc = now.toISOString().slice(0, 10);
-  return madrid < utc ? madrid : utc;
-}
-
 /** Texto plano de las partes indicadas de un DOCX/XLSX (sin etiquetas). */
 export function ooxmlText(bytes: Buffer, parts: RegExp) {
   const entries = readZip(bytes);

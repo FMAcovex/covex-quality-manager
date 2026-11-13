@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { finishTour, serverSafeDay, tourEnvironment, waitForSaved } from "./lib";
+import { finishTour, tourEnvironment, waitForSaved } from "./lib";
 
 const test = { APP_ENV: "test", AUTH_SYNTHETIC_IDENTITY: "1", DATABASE_URL: "postgresql://u:p@localhost:5432/covex_phase4b1_test_x" };
 const demo = { APP_ENV: "demo", AUTH_PROVIDER: "demo", AUTH_ORIGIN: "http://localhost:3000", DATABASE_URL: "postgresql://u:p@localhost:5432/covex_demo" };
@@ -55,18 +55,5 @@ describe("waitForSaved", () => {
 
   it("sin error en pantalla, agota el tiempo y dice qué no se guardó", async () => {
     await expect(waitForSaved(async () => null, "el cierre", { intervalMs: 1, timeoutMs: 20 })).rejects.toThrow("No se ha guardado el cierre.");
-  });
-});
-
-describe("serverSafeDay", () => {
-  it("de noche, cuando Madrid ya está en el día siguiente, usa la fecha UTC del servidor", () => {
-    expect(serverSafeDay(new Date("2026-11-13T23:30:00Z"))).toBe("2026-11-13");
-    expect(serverSafeDay(new Date("2026-07-13T22:15:00Z"))).toBe("2026-07-13");
-  });
-  it("de día, Madrid y UTC coinciden", () => {
-    expect(serverSafeDay(new Date("2026-11-13T10:00:00Z"))).toBe("2026-11-13");
-  });
-  it("de madrugada en UTC (antes de la medianoche de Madrid no ocurre): devuelve la menor de las dos", () => {
-    expect(serverSafeDay(new Date("2026-12-31T23:59:00Z"))).toBe("2026-12-31");
   });
 });

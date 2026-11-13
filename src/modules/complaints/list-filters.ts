@@ -1,3 +1,4 @@
+import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 import { Prisma } from "@prisma/client";
 import { reviewListWhere } from "@/lib/qms/review/list-domain";
 import { assignedListWhere, assignedWhere } from "@/lib/qms/assigned";
@@ -56,7 +57,7 @@ export function complaintListWhere(filters:ComplaintListFilters,now=new Date(),l
  const statuses=validValues(filters.status,["DRAFT","OPEN","CLOSED"] as const);if(statuses.length)and.push({status:{in:statuses as ("DRAFT"|"OPEN"|"CLOSED")[]}});
  const classifications=validValues(filters.classification,["CRITICAL","MAJOR","MINOR","NO_GMP_IMPACT"] as const);if(classifications.length)and.push({classification:{in:classifications as ("CRITICAL"|"MAJOR"|"MINOR"|"NO_GMP_IMPACT")[]}});
  const effectiveness=validValues(filters.effectiveness,["PENDING","ACCEPTABLE","NOT_ACCEPTABLE","NOT_REQUIRED"] as const);if(effectiveness.length)and.push({effectivenessStatus:{in:effectiveness as ("PENDING"|"ACCEPTABLE"|"NOT_ACCEPTABLE"|"NOT_REQUIRED")[]}});
- const today=new Date(now);today.setUTCHours(0,0,0,0);
+ const today=administrativeTodayDate(now);
  const situationWhere:Record<ComplaintOperationalSituation,Prisma.ComplaintWhereInput>={
   DRAFT:{status:"DRAFT"},CLOSED:{status:"CLOSED"},
   PART_I:{status:"OPEN",partIIRequired:null,OR:[{conclusion:null},{conclusion:""}]},
