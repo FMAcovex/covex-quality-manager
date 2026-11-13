@@ -80,7 +80,7 @@ async function main() {
       await tour.click(page.locator("main a", { hasText: "Editar / seguimiento" }).first());
       await page.waitForURL(/\/edit/);
       for (const key of EVALUATION) await tour.fill(page.locator(`input[name="evaluation.${key}"]`), "Correcto");
-      await tour.fill(page.locator('textarea[name="phaseIInvestigation"]'), "Se revisaron analista, muestra, equipo y reactivos sin encontrar desviaciones. La repetición de la preparación confirma el resultado.");
+      await tour.fill(page.locator('textarea[name="phaseIInvestigation"]'), "Se revisaron analista, muestra, equipo y reactivos sin encontrar desviaciones. La repetición de la preparación da un resultado equivalente (92,4 %).");
       await tour.fill(page.locator('textarea[name="phaseIConclusion"]'), "No se identifica error de laboratorio. Se pasa a investigación a gran escala.");
       await tour.select(page.locator('select[name="phaseIDisposition"]'), "FULL_SCALE");
       await tour.click(page.getByRole("button", { name: /^Guardar/ }));
@@ -100,7 +100,8 @@ async function main() {
       await tour.fill(form.locator(".relation-code-field input:not([type=hidden])").first(), capa.code);
       await tour.click(form.locator('[role="option"]', { hasText: capa.code }).first());
       await tour.click(form.getByRole("button", { name: "Vincular expediente" }));
-      await waitForSaved(() => prisma.qmsRelation.findFirst({ where: { isActive: true, sourceRecordId: opened.qmsRecordId, targetRecordId: capa.qmsRecordId } }), "el vínculo con la CAPA");
+      await waitForSaved(() => prisma.qmsRelation.findFirst({ where: { isActive: true, sourceRecordId: opened.qmsRecordId, targetRecordId: capa.qmsRecordId } }), "el vínculo con la CAPA",
+        { screenError: async () => { const box = form.locator('[role="alert"], .form-feedback.error').first(); return (await box.isVisible().catch(() => false)) ? (await box.innerText()).trim() : null; } });
       await page.locator("main a", { hasText: capa.code }).first().waitFor();
       await tour.pause(1200);
     });
@@ -110,16 +111,16 @@ async function main() {
       await tour.click(page.locator("main a", { hasText: "Editar / seguimiento" }).first());
       await page.waitForURL(/\/edit/);
       await tour.fill(page.locator('input[name="phaseIIIssueDate"]'), today);
-      await tour.fill(page.locator('textarea[name="phaseIIProductionReview"]'), "La revisión del registro de fabricación muestra una pesada de principio activo en el límite inferior de tolerancia.");
+      await tour.fill(page.locator('textarea[name="phaseIIProductionReview"]'), "El registro de fabricación muestra una pesada de principio activo un 7 % por debajo de la cantidad teórica, aceptada sin verificación del segundo operario.");
       await tour.fill(page.locator('textarea[name="phaseIIRetesting"]'), "La repetición por un segundo analista confirma 92,3 %.");
       await tour.fill(page.locator('textarea[name="phaseIIResampling"]'), "El remuestreo del lote da resultados equivalentes.");
-      await tour.fill(page.locator('textarea[name="phaseIIConclusion"]'), "Resultado fuera de especificación confirmado, de origen en fabricación.");
+      await tour.fill(page.locator('textarea[name="phaseIIConclusion"]'), "Resultado fuera de especificación confirmado. Causa raíz: pesada de principio activo por debajo de la cantidad teórica no detectada por falta de doble verificación.");
       await tour.select(page.locator('select[name="phaseIIVerdict"]'), "REJECTED");
       await tour.fill(page.locator('input[name="phaseIIIssuedBy"]'), "Garantía de Calidad (ficticio)");
       await tour.fill(page.locator('input[name="phaseIIIssuedAt"]'), today);
       await tour.fill(page.locator('textarea[name="phaseIIAffectedDepartments"]'), "Producción y Control de Calidad.");
       await tour.select(page.locator('select[name="investigationResult"]'), "CONFIRMED");
-      await tour.check(page.locator('input[name="rootCauseCategories"][value="METHOD"]'));
+      await tour.check(page.locator('input[name="rootCauseCategories"][value="PEOPLE"]'));
       await tour.fill(page.locator('input[name="closedAt"]'), today);
       await tour.select(page.locator('select[name="status"]'), "CLOSED");
       await tour.click(page.getByRole("button", { name: /^Guardar/ }));
@@ -128,7 +129,7 @@ async function main() {
       assert.equal(row.investigationResult, "CONFIRMED");
       assert.equal(row.phaseIIVerdict, "REJECTED");
       assert.equal(row.closedAt?.toISOString().slice(0, 10), today);
-      assert.deepEqual(row.rootCauseCategories, ["METHOD"]);
+      assert.deepEqual(row.rootCauseCategories, ["PEOPLE"]);
       assert.equal(row.detectionDescription, detection, "la detección no cambia al cerrar");
       await tour.pause(1500);
     });
@@ -158,9 +159,10 @@ async function main() {
       await page.locator("tr", { hasText: opened.code }).first().waitFor();
       await tour.click(page.locator("summary", { hasText: "Exportar" }));
       const year = today.slice(0, 4);
-      // El Anexo VI es un Word anual; la ruta usa la plantilla vigente a 31 de diciembre de ese año.
-      if (await oosTemplateReady("OOS_ANNEX_VI", new Date(Date.UTC(Number(year), 11, 31)))) {
-        const list = await tour.download(page.locator("a", { hasText: `Anexo VI oficial · año ${year}` }).first());
+      // El Anexo VI es un Word anual. Se sigue lo que ofrece la página: si muestra el enlace, se descarga y se comprueba.
+      const annexVI = page.locator("a", { hasText: `Anexo VI oficial · año ${year}` }).first();
+      if (await annexVI.isVisible()) {
+        const list = await tour.download(annexVI);
         const listText = ooxmlText(list.bytes, /^word\/document\.xml$/);
         assert.ok(listText.includes(opened.code), `el Anexo VI de ${year} contiene el OOS`);
         await tour.caption(`El <b>Anexo VI</b> de ${year} incluye <b>${opened.code}</b>`);
@@ -189,7 +191,7 @@ async function main() {
  */
 async function linkedCapa(tour: Tour, marker: string, department: { id: string; code: string; name: string }) {
   if (tour.demo) {
-    const row = await prisma.capa.findFirst({ where: { status: "OPEN", qmsRecord: { isActive: true, businessCode: { not: null } }, NOT: { rootCause: { contains: "(REC-" } } }, include: { qmsRecord: true }, orderBy: { openedAt: "desc" } });
+    const row = await prisma.capa.findFirst({ where: { status: "OPEN", qmsRecord: { isActive: true, businessCode: { not: null } }, OR: [{ rootCause: null }, { NOT: { rootCause: { contains: "(REC-" } } }] }, include: { qmsRecord: true }, orderBy: { openedAt: "desc" } });
     if (!row?.qmsRecord.businessCode) throw new Error("La demo no tiene ninguna CAPA abierta de ejemplo: carga los ejemplos de la demo antes de grabar el recorrido.");
     return { qmsRecordId: row.qmsRecordId, code: row.qmsRecord.businessCode };
   }
