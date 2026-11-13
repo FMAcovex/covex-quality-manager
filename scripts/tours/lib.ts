@@ -31,6 +31,12 @@ export type Tour = {
   check(target: Locator): Promise<void>;
   /** Descarga lo que produce el clic en el enlace y devuelve el archivo. */
   download(trigger: Locator): Promise<{ name: string; bytes: Buffer }>;
+  /**
+   * Pulsa un enlace de documento oficial y devuelve el archivo o, si la aplicación muestra «Plantilla oficial no
+   * disponible», null. Sigue lo que hace la ruta en lugar de adivinar qué plantilla usará. En la demo, donde las
+   * plantillas están instaladas, un null es un fallo. Si la aplicación muestra otro error, falla con su texto.
+   */
+  downloadOrUnavailable(trigger: Locator): Promise<{ name: string; bytes: Buffer } | null>;
   /** Solo en vídeo: muestra la primera página del documento (necesita LibreOffice). */
   showDocument(name: string, bytes: Buffer, caption: string): Promise<void>;
   close(): Promise<void>;
@@ -63,6 +69,16 @@ const OVERLAY = `(() => {
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready); else ready();
 })();`;
+
+/**
+ * Fecha «de hoy» que acepta tanto el usuario (Madrid) como el servidor cuando este calcula el día en UTC: la menor de
+ * las dos. Entre las 22/23 h y las 24 h UTC, Madrid ya está en el día siguiente.
+ */
+export function serverSafeDay(now = new Date()) {
+  const madrid = now.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+  const utc = now.toISOString().slice(0, 10);
+  return madrid < utc ? madrid : utc;
+}
 
 /** Texto plano de las partes indicadas de un DOCX/XLSX (sin etiquetas). */
 export function ooxmlText(bytes: Buffer, parts: RegExp) {
@@ -177,6 +193,32 @@ export async function startTour(name: string): Promise<Tour> {
       if (!filePath) throw new Error(`La descarga «${file.suggestedFilename()}» no ha terminado: ${await file.failure()}`);
       await pause(600);
       return { name: file.suggestedFilename(), bytes: fs.readFileSync(filePath) };
+    },
+    async downloadOrUnavailable(trigger) {
+      let downloadError: unknown = null;
+      // Cada espera captura sus propios rechazos: la que no gane la carrera no puede tumbar el proceso después.
+      const downloaded = page.waitForEvent("download", { timeout: 30000 }).then(async (file) => {
+        const filePath = await file.path();
+        if (!filePath) throw new Error(`La descarga «${file.suggestedFilename()}» no ha terminado: ${await file.failure()}`);
+        return { name: file.suggestedFilename(), bytes: fs.readFileSync(filePath) };
+      }).catch((error) => { downloadError = error; return null; });
+      await moveTo(trigger); await trigger.click();
+      const shown = page.locator("h1").filter({ hasText: /^(Plantilla oficial no disponible|Documento no disponible)$/ }).first();
+      const page503 = shown.waitFor({ timeout: 30000 }).then(() => "page" as const, () => null);
+      const first = await Promise.race([downloaded, page503]);
+      if (first && first !== "page") { await pause(600); return first; }
+      if (first === "page") {
+        const heading = (await shown.innerText()).trim();
+        if (heading === "Plantilla oficial no disponible") {
+          if (demo) throw new Error("En la demo las plantillas están instaladas, pero la aplicación indica «Plantilla oficial no disponible».");
+          return null;
+        }
+        const detail = await page.locator(".note, main p").allInnerTexts().catch(() => []);
+        throw new Error(`La aplicación no generó el documento: ${heading}. ${detail.join(" ").trim()}`);
+      }
+      const late = await downloaded;
+      if (late) return late;
+      throw new Error(`Ni se descargó el documento ni la aplicación indicó por qué.${downloadError ? ` ${(downloadError as Error).message}` : ""}`);
     },
     async showDocument(fileName, bytes, text) {
       if (!videoDir) return;

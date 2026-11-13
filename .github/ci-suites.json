@@ -87,7 +87,8 @@
       "audits-r3b:ui:smoke",
       "audits-r3c:ui:smoke",
       "audits-r4b:ui:smoke",
-      "audits-annual:ui:smoke"
+      "audits-annual:ui:smoke",
+      "tour:audits"
     ]
   },
   "records-r4c": {
@@ -127,7 +128,8 @@
       "pnt-p2b:ui:smoke",
       "pnt-p2c:ui:smoke",
       "pnt-p3c1:ui:smoke",
-      "pnt-final:ui:smoke"
+      "pnt-final:ui:smoke",
+      "tour:pnt"
     ],
     "auth": [
       [

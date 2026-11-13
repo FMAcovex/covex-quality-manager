@@ -4,10 +4,12 @@ Un recorrido es un guion que usa la aplicación como lo haría una persona: entr
 
 | Modo | Para qué | Entorno | Qué deja |
 |---|---|---|---|
-| Prueba (por defecto) | Detectar que un cambio rompe el circuito del módulo | Base aislada de pruebas (`APP_ENV=test`), como en CI | Nada: borra lo que crea |
+| Prueba (por defecto) | Detectar que un cambio rompe el circuito del módulo | Base aislada de pruebas (`APP_ENV=test`), como en CI | Nada: borra lo que crea (salvo PNT, ver abajo) |
 | Vídeo (`TOUR_VIDEO_DIR`) | Formación y comunicar cambios | Demo local (`APP_ENV=demo`) | Los expedientes en la demo y el vídeo `.mp4` (o `.webm` sin ffmpeg) |
 
-Fuera de esos dos entornos el recorrido se niega a ejecutarse. Solo escribe a través de la interfaz, como un usuario. Hay dos excepciones, ambas solo en modo prueba: los expedientes mínimos de partida que un recorrido necesita y no le corresponde crear (por ejemplo, la desviación de origen del recorrido de CAPA), que llevan la marca del recorrido; y la limpieza, que borra por esa marca. En la demo no escribe fuera de la interfaz: usa los ejemplos de la demo y, si faltan, se detiene pidiendo cargarlos. Por eso `scripts/tours/` queda fuera del inventario de escritores del audit trail, como los smokes. Usa solo datos ficticios. No es evidencia de validación GMP.
+Fuera de esos dos entornos el recorrido se niega a ejecutarse. Solo escribe a través de la interfaz, como un usuario. Hay dos excepciones, ambas solo en modo prueba: los expedientes mínimos de partida que un recorrido necesita y no le corresponde crear (por ejemplo, la desviación de origen del recorrido de CAPA), que llevan la marca del recorrido; y la limpieza, que borra por esa marca. En la demo no escribe fuera de la interfaz: usa los ejemplos de la demo y, si faltan, se detiene pidiendo cargarlos. Por eso `scripts/tours/` queda fuera del inventario de escritores del audit trail, como los smokes.
+
+Excepción, PNT: las decisiones registradas sobre una revisión de PNT son inmutables por diseño y la base de datos rechaza borrarlas. Por eso `tour:pnt` no borra lo que crea: deja su PNT, con un código libre de la serie 900 del departamento y la marca en el título, igual que las pruebas de PNT existentes, que también dejan los suyos (P2A en GC-00/900–989, P2B en las series 700 y 800). En CI la base se descarta al acabar el trabajo. El recorrido va al final de las pruebas de navegador del grupo `pnt`; después solo se repiten P2A, P2B y P2C con acceso por proxy, que eligen sus propias fichas. Usa solo datos ficticios. No es evidencia de validación GMP.
 
 ## Recorridos disponibles
 
@@ -18,6 +20,8 @@ Fuera de esos dos entornos el recorrido se niega a ejecutarse. Solo escribe a tr
 | `tour:changes` | Controles de cambios | Solicitud (Anexo III) en borrador → dictamen (Anexo IV) con plan de ejecución, aprobado y abierto → seguimiento 01 con el cambio abierto → seguimiento 02 con eficacia aceptable y cierre → Anexos III, IV y V y listado |
 | `tour:oos` | OOS | Alta → Fase I (21 parámetros e investigación en el laboratorio) sin error de laboratorio → vínculo con una CAPA → Fase II, resultado confirmado y cierre → Anexos III y IV y Anexo VI anual |
 | `tour:complaints` | Reclamaciones | Registro en borrador → Parte I con devolución propuesta, abierta → devolución creada desde la reclamación → Parte II (respuesta, eficacia) y cierre como seguimiento 01 → Anexos III y IV y listado |
+| `tour:pnt` | PNT · Documentación controlada | Nuevo PNT con su revisión 00 en borrador → quién elabora, revisa y aprueba («Asignadas a mí» y «Mis tareas») → documento de la revisión → estado «Vigente» registrado según la aprobación externa → biblioteca filtrada y Excel |
+| `tour:audits` | Auditorías | Inspección de la autoridad con el código de su expediente, fuera del programa anual → dos observaciones → las dos vinculadas a la misma desviación → plan CAPA (Anexo IV) con las dos en un solo bloque |
 | `tour:returns` | Devoluciones | Recepción con producto y lote, abierta → comprobaciones, decisión (rechazo y destrucción), trazabilidad y cierre → Anexo III, Anexo IV del producto y listado |
 
 ## Ejecutarlo
@@ -54,7 +58,7 @@ Aunque fallen también el cierre del navegador o la limpieza, se informa el erro
 ## Añadir un recorrido
 
 1. Crear `scripts/tours/<módulo>.ts` con `startTour()` de `scripts/tours/lib.ts`.
-2. Dividirlo en pasos con `tour.step("rótulo", …)`. Cada paso:
+2. Dividirlo en pasos con `tour.step("rótulo", …)`. Para los documentos oficiales, `tour.downloadOrUnavailable(enlace)` devuelve el archivo o `null` si la aplicación muestra «Plantilla oficial no disponible», sin adivinar qué plantilla usará la ruta. Cada paso:
    - usa `tour.click`, `tour.fill`, `tour.select` y `tour.download`, que en modo vídeo mueven el cursor y escriben a ritmo de lectura;
    - termina comprobando en la base de datos o en el documento lo que el usuario acaba de hacer.
 3. Marcar los textos con una marca única. La limpieza del modo prueba borra por esa marca, también si el recorrido falla a medias.

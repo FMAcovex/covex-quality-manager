@@ -193,6 +193,34 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Recorridos por módulo: PNT y Auditorías (2026-11-13, D-138):**
+- **PNT** (`pnpm tour:pnt`), en 5 pasos:
+  1. Nuevo PNT con su revisión 00 en borrador.
+  2. Quién elabora (usuario de la sesión), revisa y aprueba; la elaboración aparece en «Asignadas a mí».
+  3. Documento PDF de la revisión.
+  4. Estado «Vigente» con fecha de vigencia y próxima revisión, registrado según la aprobación externa (sin firma electrónica).
+  5. Biblioteca filtrada por vigencia iniciada y Excel con el PNT.
+- **Auditorías** (`pnpm tour:audits`), en 4 pasos:
+  1. Inspección de la autoridad (externa recibida) con el código de su expediente, fuera del programa anual.
+  2. Dos observaciones (OBS 01 y OBS 02, en su orden de alta).
+  3. Las dos vinculadas a la misma desviación.
+  4. Plan CAPA (Anexo IV) con las dos en un solo bloque y la desviación en su columna.
+- **Comprobaciones:** cada paso en la base de datos y en el Excel; el plan CAPA se lee por celdas. Sin plantillas (CI) se comprueba que la aplicación explica qué falta.
+- **Librería:** `downloadOrUnavailable` pulsa el enlace y acepta lo que ocurra antes, la descarga o «Plantilla oficial no disponible», en lugar de adivinar qué plantilla usará la ruta. Lo destapó la base de pruebas local, donde la plantilla registrada no era la que usa la ruta.
+- **PNT sin limpieza:** las decisiones de una revisión de PNT son inmutables por diseño, así que el recorrido deja su PNT en la base de pruebas (serie 900, marca en el título), como las pruebas de PNT existentes.
+- **CI:** `tour:pnt` al final del grupo `pnt` (unos 12 s) y `tour:audits` en `browser-audits` (unos 13 s). Con estos, los ocho módulos tienen su recorrido.
+- **Revisión independiente:** sin hallazgos críticos.
+  - *Importantes, corregidos:*
+    - PNT fallaba cada noche entre las 22/23 h y las 24 h UTC: el servidor calcula «hoy» en UTC y rechaza la vigencia de Madrid como futura. La vigencia usa ahora `serverSafeDay` (la menor de las dos fechas, con pruebas que fallaban antes). La incoherencia de la aplicación se añade a FEC1.
+    - Auditorías podía pulsar el vínculo antes de que la página volviera a la lista tras guardar el hallazgo; ahora espera a que se cierre el editor.
+    - «Asignadas a mí» se comprobaba con la búsqueda por código, que lo encontraba de todos modos. Ahora también comprueba que, ya vigente, deja de aparecer, y comprueba «Mis tareas» en el panel de inicio.
+  - *Menores, corregidos:*
+    - sin recargas que compitan con la navegación de la propia página;
+    - `downloadOrUnavailable` falla en la demo si falta la plantilla, informa del error de la página («Documento no disponible») y no deja esperas sueltas;
+    - el plan CAPA se lee sin depender del orden de atributos, con el prefijo «Rk» de las recomendaciones;
+    - documentación de las series de las pruebas de PNT y del grupo `pnt`.
+  - *Sin cambio:* `downloadOrUnavailable` no tiene prueba unitaria propia, porque depende de una página real. La cubren los recorridos: en CI, el camino sin plantilla; en la demo, el de descarga.
+
 **Recorridos por módulo: Reclamaciones y Devoluciones (2026-11-13, D-138):**
 - **Reclamaciones** (`pnpm tour:complaints`), en 5 pasos:
   1. Registro de la reclamación de cliente en borrador.
