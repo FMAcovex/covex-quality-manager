@@ -193,6 +193,23 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Recorridos por módulo: Reclamaciones y Devoluciones (2026-11-13, D-138):**
+- **Reclamaciones** (`pnpm tour:complaints`), en 5 pasos:
+  1. Registro de la reclamación de cliente en borrador.
+  2. Parte I: impacto, contención, investigación, causa raíz, clasificación, evaluación regulatoria y devolución propuesta; abierta con su código.
+  3. Desde la reclamación se crea la devolución: llega rellenada (origen, tipo «Reclamación», cliente y producto con su lote) y queda relacionada.
+  4. Parte II: respuesta al cliente, eficacia aceptable y cierre, guardados como seguimiento 01.
+  5. Anexos III y IV y listado filtrado.
+- **Devoluciones** (`pnpm tour:returns`), en 3 pasos:
+  1. Recepción de una devolución comercial con su producto y lote; abierta con su código DEV/LG-….
+  2. Comprobaciones, decisión de rechazo con destrucción y certificado, trazabilidad y cierre.
+  3. Anexo III, Anexo IV del producto y listado filtrado.
+- **Comprobaciones:** cada paso en la base de datos y, con plantillas instaladas, en los documentos; el listado filtrado contiene el expediente y no otro. Sin plantillas (CI) se comprueba que la aplicación explica qué falta.
+- **Encontrado (pendiente de decisión, backlog RET1):** al crear la devolución desde la reclamación, la devolución propuesta en la reclamación no recibe su código y sigue ofreciendo «Crear devolución», incluso cerrada. El recorrido comprueba la relación entre los dos expedientes, que sí se crea.
+- **Fichas de partida:** solo en la base de pruebas, otra reclamación y otra devolución mínimas con la marca, para comprobar el filtro del listado. Se borran al terminar.
+- **CI:** obligatorios en el grupo `records-r4c` (unos 18 y 12 s en local). El mismo guion graba el vídeo en la demo.
+- **Revisión independiente:** sin hallazgos críticos ni importantes; confirma RET1 y lo amplía (tampoco lo resuelve vincular una devolución existente, y el botón sigue creando devoluciones con la reclamación cerrada). Menores corregidos: espera de la fila de la propuesta, botón exacto «Guardar cambios», la reclamación conserva una sola propuesta, se comprueban las comprobaciones visibles y el certificado de destrucción de la devolución, y D-138 y TOURS.md indican el grupo `records-r4c`. Nuevo en el backlog: FEC1 (fecha propuesta de comunicación en UTC).
+
 **Recorridos por módulo: OOS (2026-11-13, D-138):**
 - **Qué hace:** `pnpm tour:oos` usa la aplicación como un usuario, en 5 pasos:
   1. Alta del OOS (área MD, producto, lote y detección); al guardarlo abierto recibe su código OOS/MD/….
