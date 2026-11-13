@@ -38,22 +38,7 @@ export async function getCapaList(filters: CapaListFilters) {
     and.push({ qmsRecord: { isActive: true } });
   }
 
-  if (filters.q) {
-    and.push({
-      OR: [
-        { qmsRecord: { businessCode: { contains: filters.q, mode: "insensitive" } } },
-        { qmsRecord: { annulledBusinessCode: { contains: filters.q, mode: "insensitive" } } },
-        { originCode: { contains: filters.q, mode: "insensitive" } },
-        { originType: { contains: filters.q, mode: "insensitive" } },
-        { defectDescription: { contains: filters.q, mode: "insensitive" } },
-        { rootCause: { contains: filters.q, mode: "insensitive" } },
-        { internalObservations: { contains: filters.q, mode: "insensitive" } },
-        { plannedActions: { some: { description: { contains: filters.q, mode: "insensitive" } } } },
-        { actionFollowups: { some: { description: { contains: filters.q, mode: "insensitive" } } } },
-        { qmsRecord: { targetRelations: { some: { isActive: true, sourceRecord: { businessCode: { contains: filters.q, mode: "insensitive" } } } } } },
-      ],
-    });
-  }
+  if (filters.q) and.push(capaTextSearchWhere(filters.q));
   const yearsFilter = validYears(filters.year);
   if (yearsFilter.length) and.push({ qmsRecord: { year: { in: yearsFilter } } });
   if (filters.department?.length) and.push({ departmentId: { in: filters.department } });
@@ -266,4 +251,22 @@ export async function getCapaOriginRecords(ids: string[]) {
     select: { id: true, recordType: true, businessCode: true, year: true },
     orderBy: { businessCode: "asc" },
   });
+}
+
+/** Búsqueda de texto del listado de CAPA; la usan el listado y su exportación «filtros actuales». */
+export function capaTextSearchWhere(q: string): Prisma.CapaWhereInput {
+  return {
+    OR: [
+      { qmsRecord: { businessCode: { contains: q, mode: "insensitive" } } },
+      { qmsRecord: { annulledBusinessCode: { contains: q, mode: "insensitive" } } },
+      { originCode: { contains: q, mode: "insensitive" } },
+      { originType: { contains: q, mode: "insensitive" } },
+      { defectDescription: { contains: q, mode: "insensitive" } },
+      { rootCause: { contains: q, mode: "insensitive" } },
+      { internalObservations: { contains: q, mode: "insensitive" } },
+      { plannedActions: { some: { description: { contains: q, mode: "insensitive" } } } },
+      { actionFollowups: { some: { description: { contains: q, mode: "insensitive" } } } },
+      { qmsRecord: { targetRelations: { some: { isActive: true, sourceRecord: { businessCode: { contains: q, mode: "insensitive" } } } } } },
+    ],
+  };
 }

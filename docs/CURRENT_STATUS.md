@@ -198,9 +198,18 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   1. Alta desde su desviación de origen con defecto, causa raíz, categoría 6M y acción propuesta; al guardarla abierta recibe su código AC/….
   2. Seguimiento 01 con el avance de la acción, fecha y motivo.
   3. Eficacia conforme y cierre.
-  4. Anexo III y listado filtrado.
-- **Comprobaciones:** cada paso en la base de datos (estado, código, causa raíz, acción propuesta, relación con la desviación de origen, seguimientos 00 y 01, eficacia y fecha de cierre) y en los documentos descargados.
-- **Origen:** en la demo, una desviación abierta de los ejemplos. En la base de pruebas, una desviación mínima con la marca del recorrido, que se borra al terminar.
+  4. Anexo III y listado filtrado por la CAPA.
+- **Comprobaciones:**
+  - cada paso en la base de datos: estado, código, causa raíz, acción propuesta, relación con la desviación de origen, seguimientos 00 y 01 (cerrar no crea otro), seguimiento de la acción, eficacia y fecha de cierre;
+  - en los documentos descargados: el listado filtrado contiene la CAPA y no otra.
+- **Origen:**
+  - En la demo, una desviación abierta de los ejemplos. Si no hay ninguna, el recorrido se detiene pidiendo cargar los ejemplos; no escribe en la demo fuera de la interfaz.
+  - En la base de pruebas, una desviación y otra CAPA mínimas con la marca del recorrido, que se borran al terminar.
+- **Error encontrado y corregido:** en CAPA, «Exportar → Listado simple · filtros actuales» ignoraba la búsqueda de texto y descargaba todas las CAPA, en contra de D-054 (Desviaciones sí la respetaba). Ahora la exportación aplica la misma búsqueda que el listado (`capaTextSearchWhere`). El recorrido falló antes del arreglo y pasa después.
+- **Revisión independiente:**
+  - *Importantes, corregidos:* el error del listado, y la excepción de las fichas de partida, ahora documentada y prohibida en la demo.
+  - *Menores, corregidos:* ficha de origen creada de una vez; en la demo se excluyen esas fichas y se ordena con las fechas vacías al final; una sola fecha «de hoy»; se comprueban la fecha y el texto del seguimiento de la acción y que cerrar no crea otro seguimiento; se quita una espera frágil.
+  - El filtro «Seguimiento» sigue sin pasar a la exportación, como antes.
 - **CI:** obligatorio en el grupo `browser-qms` (unos 10 s). El mismo guion graba el vídeo del recorrido en la demo.
 
 **Recorridos por módulo: Desviaciones (2026-11-13, D-138):**
