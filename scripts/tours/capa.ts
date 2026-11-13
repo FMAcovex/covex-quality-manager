@@ -55,6 +55,7 @@ async function main() {
       await tour.fill(page.locator('textarea[name="effectivenessAssessment"]'), "Se verificará revisando las etiquetas de los tres lotes siguientes.");
       await tour.fill(page.locator('textarea[name="conclusion"]'), "Pendiente de ejecutar la acción y verificar la eficacia.");
       await tour.fill(page.locator('input[name="nextFollowupDate"]'), madridDay(20));
+      await tour.select(page.locator('select[name="dataQualityStatus"]'), "COMPLETE");
       await tour.select(page.locator('select[name="status"]'), "OPEN");
       await tour.click(page.getByRole("button", { name: "Guardar CAPA" }));
       await page.waitForURL(/\/capa\/[0-9a-f-]{36}(\?|$)/);
@@ -63,6 +64,7 @@ async function main() {
       assert.match(capa.qmsRecord.businessCode ?? "", /^AC\//, "la CAPA correctiva recibe su código AC/…");
       assert.equal(capa.rootCause, rootCause);
       assert.deepEqual(capa.rootCauseCategories, ["METHOD"]);
+      assert.equal(capa.dataQualityStatus, "COMPLETE", "el control del dato queda en «Completo»");
       assert.deepEqual(capa.plannedActions.map((a) => a.description), [action]);
       const relation = await prisma.qmsRelation.count({ where: { OR: [
         { sourceRecordId: origin.qmsRecordId, targetRecordId: capa.qmsRecordId },
