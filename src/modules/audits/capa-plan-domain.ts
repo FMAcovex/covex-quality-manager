@@ -38,6 +38,17 @@ export function capaPlanFingerprint(snapshot: AuditReportSnapshot) {
   const signers = readSignatories(snapshot.audit.signatories).filter(s => s.document === "CAPA_PLAN");
   return createHash("sha256").update(canonicalAuditJson({ capaPlanDate: snapshot.audit.capaPlanDate ?? null, findings, ...(capaPlan ? { capaPlan } : {}), ...(signers.length ? { signers } : {}) })).digest("hex");
 }
+/**
+ * ¿Refleja la huella guardada el contenido actual? Las versiones emitidas antes del 13/11/2026 ordenaban los hallazgos y
+ * acciones con el mismo orden visual por su id (aleatorio); ahora, por su alta. Se acepta también la huella con el orden
+ * anterior para no avisar de un plan desactualizado que no ha cambiado.
+ */
+export function capaPlanContentMatches(fingerprint: string, snapshot: AuditReportSnapshot) {
+  if (fingerprint === capaPlanFingerprint(snapshot)) return true;
+  const byLegacyOrder = <T extends { sortOrder?: number | null; id: string }>(items: T[]) => [...items].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const findings = byLegacyOrder(snapshot.audit.findings as unknown as SnapshotFinding[]).map(f => ({ ...f, actions: byLegacyOrder(f.actions as never[]) }));
+  return fingerprint === capaPlanFingerprint({ ...snapshot, audit: { ...snapshot.audit, findings } } as AuditReportSnapshot);
+}
 export const establishCapaPlanSchema = z.object({
   requestId: z.string().uuid("Solicitud no válida. Recarga la auditoría."),
   capaPlanDate: dateInput.refine(Boolean, "Indica la fecha del CAPA plan."),

@@ -193,6 +193,12 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Auditorías: orden de los hallazgos (2026-11-13):**
+- **Qué fallaba:** con el mismo «orden visual» (por defecto 0), los hallazgos y sus acciones se desempataban por el id interno, que es aleatorio. En la ficha, el informe y el plan CAPA podía salir OBS 02 antes que OBS 01 (visto al grabar el recorrido de la demo).
+- **Arreglo:** a igual orden visual, el orden de alta.
+- **Planes ya emitidos:** conservan su archivo y su foto con el orden anterior. El aviso de «plan desactualizado» acepta también la huella calculada con el orden anterior, así que no aparece si nada ha cambiado. El siguiente seguimiento puede ordenar las filas distinto que la versión 00.
+- **Comprobado:** smoke `audits-r3b` con seis hallazgos con el mismo orden visual, y pruebas unitarias del desempate y de la compatibilidad de la huella (fallaban antes del arreglo).
+
 **Plan CAPA del Anexo IV: formato del ejemplo de Calidad y hallazgos agrupados por desviación (2026-11-13, D-136):**
 - **Formato:** plantilla con los formatos y anchos del plan CAPA que rellenó Calidad (Nº en negrita sobre beige, textos justificados, código CAPA en negrita, columnas más anchas). Huella nueva; Calidad debe aprobar y distribuir ese archivo sin volver a guardarlo.
 - **Agrupación:** los hallazgos que comparten desviación y CAPA (sin acciones propias) salen en un solo bloque, con todas sus referencias y descripciones, la criticidad más alta, las CAPA una vez y los textos de cada hallazgo íntegros con su referencia.

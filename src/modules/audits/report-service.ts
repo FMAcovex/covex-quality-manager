@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { AuditValidationError } from "./service";
 import { reportInputSchema, reportDateFields, reportTextFields, issueReportSchema, closeAuditSchema } from "./report-validation";
 import { auditClosureChecklist, type ClosureContext } from "./closure-policy";
-import { capaPlanFingerprint } from "./capa-plan-domain";
+import { capaPlanContentMatches } from "./capa-plan-domain";
 import { receivedAuditScenario } from "./domain";
 import { auditAlreadyClosed } from "./lifecycle";
 import { withBytes } from "@/lib/db-binary-omit";
@@ -17,8 +17,9 @@ const legacySignerKeys = ["preparedBy", "preparedPosition", "reviewedBy", "revie
 type Tx = Prisma.TransactionClient;
 export const auditReportInclude = {
   departments: { orderBy: { id: "asc" as const } }, participants: { orderBy: [{ sortOrder: "asc" as const }, { id: "asc" as const }] },
-  findings: { orderBy: [{ sortOrder: "asc" as const }, { id: "asc" as const }], include: {
-    actions: { orderBy: [{ sortOrder: "asc" as const }, { id: "asc" as const }] },
+  // Con el mismo orden visual, el orden de alta (OBS 01 antes que OBS 02).
+  findings: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }, { id: "asc" as const }], include: {
+    actions: { orderBy: [{ sortOrder: "asc" as const }, { createdAt: "asc" as const }, { id: "asc" as const }] },
     relations: { include: { qmsRelation: { include: { targetRecord: { include: { capa: { select: { status: true, effectivenessStatus: true } }, deviation: { select: { status: true } } } } } } } },
   } },
   followups: { orderBy: [{ followupDate: "desc" as const }, { createdAt: "desc" as const }, { id: "desc" as const }] },
@@ -105,7 +106,7 @@ export async function auditClosureContext(tx: Tx, a: ReportAudit): Promise<Closu
   const capaPlan = await tx.auditCapaPlanVersion.findMany({ where: { auditId: a.id }, orderBy: { sequenceNumber: "desc" }, take: 1, select: { contentFingerprint: true } });
   const capaPlanVersions = await tx.auditCapaPlanVersion.count({ where: { auditId: a.id } });
   // D-110: aviso si la última versión del CAPA plan no refleja hallazgos, acciones y vínculos actuales.
-  const capaPlanOutdated = Boolean(capaPlan[0]) && capaPlan[0].contentFingerprint !== capaPlanFingerprint(snapshotAudit(a, [], await loadCapaPlanLinks(tx, a.findings.map(f => f.id))));
+  const capaPlanOutdated = Boolean(capaPlan[0]) && !capaPlanContentMatches(capaPlan[0].contentFingerprint, snapshotAudit(a, [], await loadCapaPlanLinks(tx, a.findings.map(f => f.id))));
   return { ...a, supplierResponseReceivedAt: a.supplierResponseReceivedAt ?? a.qmsRecord.generatedDocuments.find(d => d.documentType === "AUDIT_RESPONSE")?.generatedAt ?? null, isActive: a.qmsRecord.isActive, reportIssued: versions.length > 0, primaryDocument: a.qmsRecord.generatedDocuments.some(d => d.documentType === "AUDIT_RECEIVED"), signedPdf: Boolean(versions[0]?.documents.some(d => d.kind === "SIGNED_PDF")), capaPlanVersions, capaPlanOutdated };
 }
 export async function closeAudit(id: string, raw: unknown) {

@@ -10,6 +10,7 @@ import { createQmsRelation, syncOperationalOriginRelations } from "../src/lib/qm
 import { changeAdministrativeStatus } from "../src/lib/qms/administrative-status";
 import { serializeCapaVersion, ensureInitialVersion, startNextVersion, snapshotJson } from "../src/lib/qms/versioning";
 import { seedAuditDemo } from "../src/modules/audits/seed-demo";
+import { auditReportInclude } from "../src/modules/audits/report-service";
 import { loadCapaPlanLinks } from "../src/modules/audits/capa-plan-links";
 if (process.env.APP_ENV !== "test") throw new Error("Usar APP_ENV=test y una BD aislada.");
 const marker = `R3B-${randomUUID()}`, actor = "Smoke R3B", records:string[]=[];
@@ -119,6 +120,11 @@ async function main() {
   assert.equal(await prisma.qmsRecordVersion.count({where:{qmsRecordId:audit.qmsRecordId}}),0); assert.equal(await prisma.reviewThread.count({where:{qmsRecordId:audit.qmsRecordId}}),0);
   assert((await prisma.changeHistory.count({where:{qmsRecordId:audit.qmsRecordId}}))>12);
   const demo=await seedAuditDemo(prisma); await seedAuditDemo(prisma); assert.equal(await prisma.auditFinding.count({where:{auditId:demo.id}}),2);
+  // Orden de los hallazgos: con el mismo «orden visual», el de alta (antes desempataba el id aleatorio).
+  { const ordered:string[]=[]; for (let i=0;i<6;i++) ordered.push((await saveAuditFinding(audit.id,{actor,findingType:"FINDING",criticality:"MINOR",description:`Orden ${i} ${marker}`})).id);
+    const pick=(ids:string[])=>ids.filter(id=>ordered.includes(id));
+    assert.deepEqual(pick((await getAuditWork(audit.id))!.findings.map(f=>f.id)),ordered);
+    assert.deepEqual(pick((await prisma.audit.findUniqueOrThrow({where:{id:audit.id},include:auditReportInclude})).findings.map(f=>f.id)),ordered); }
   console.log("R3B PostgreSQL OK: UUID/OBS/Rk, concurrencia, acciones/cierre/evidencia, seguimientos, matriz, atribución compartida, navegación inversa, CAPA snapshots, historial, SQL filtros y seed.");
 }
 main().finally(async()=>{await cleanupAuditR3bFixtures(records);await prisma.$disconnect();}).catch(e=>{console.error(e);process.exitCode=1;});
