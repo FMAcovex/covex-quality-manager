@@ -1672,3 +1672,14 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
 - **CAPA plan A4.03 anterior:** conserva los rótulos de escenario con los que se generaba.
 - Sin migraciones ni cambios de permisos. No es validación GMP.
 
+## D-138 — Recorridos por módulo: prueba de punta a punta y vídeo con el mismo guion (2026-11-13)
+
+- **Qué es.** Un guion por módulo en `scripts/tours/` que usa la aplicación como un usuario: rellena formularios, guarda, abre, crea expedientes relacionados y descarga documentos. Empieza por Desviaciones (`pnpm tour:deviations`).
+- **Dos modos con el mismo guion:**
+  - *Prueba* (por defecto): sin pausas, contra la base aislada de pruebas (`APP_ENV=test`). Comprueba cada paso en la base de datos y en los documentos descargados, y al terminar borra lo que ha creado.
+  - *Vídeo* (`TOUR_VIDEO_DIR=<carpeta>`): con cursor, rótulos y ritmo de lectura, contra la demo local (`APP_ENV=demo`). Los expedientes se quedan en la demo.
+- **Fuera de esos dos entornos no se ejecuta.**
+- **CI.** Cada recorrido es obligatorio en el grupo `browser-qms`; el contrato de CI exige que todo script `tour:*` esté en algún grupo. Si un paso falla, el error dice el paso, la página y los mensajes que se ven en pantalla, y deja una captura en las evidencias de CI.
+- **Documentos.** Con la plantilla oficial instalada, el recorrido comprueba el contenido del documento generado. Sin ella (CI: el repositorio público no lleva plantillas reales) comprueba que la aplicación explica qué falta. El contenido de los anexos con plantillas reales sigue cubierto por `annexes:verify` (D-131).
+- **Límites.** Solo datos ficticios. Solo cubre los caminos escritos en el guion. No sustituye a las pruebas por módulo ni a la revisión humana, y no es evidencia de validación GMP.
+- Procedimiento en [TOURS.md](TOURS.md).

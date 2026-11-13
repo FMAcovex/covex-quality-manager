@@ -102,6 +102,7 @@ def main():
             for prefix in ["D1B", "D1C", "PHASE3B1", "PHASE3B2", "PNT_FINAL", "P3C1"]:
                 ui_env[prefix + "_SCREENSHOT_DIR"] = str(output / (group + "-" + prefix))
             ui_env["ANNUAL_UI_CAPTURE_DIR"] = str(output / (group + "-ANNUAL"))
+            ui_env["TOUR_FAILURE_DIR"] = str(output / (group + "-tours"))
             phase = "functional"
             for command in suites["ui"]:
                 run(command, ui_env)

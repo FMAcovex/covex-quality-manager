@@ -193,6 +193,24 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Recorridos por módulo: Desviaciones (2026-11-13, D-138):**
+- **Qué hace:** `pnpm tour:deviations` usa la aplicación como un usuario, en 7 pasos:
+  1. Alta en borrador con la acción inmediata.
+  2. Investigación con Ishikawa: solo la causa confirmada pasa a causa raíz.
+  3. Clasificación e impacto.
+  4. CAPA propuesta.
+  5. Apertura con código.
+  6. CAPA creada desde la propuesta y vinculada.
+  7. Anexo III y listado filtrado.
+- **Comprobaciones:** cada paso en la base de datos (estados, códigos, causa raíz y su categoría 6M, descripción del evento sin cambios, vínculo y relación desviación–CAPA) y en los documentos descargados.
+- **CI:** obligatorio en el grupo `browser-qms` (unos 10 s). El mismo guion graba el vídeo del recorrido en la demo.
+- **Encontrado al escribirlo (pendiente de decisión, sin cambiar en esta PR):** si la plantilla del Anexo III está registrada pero sin archivo (por ejemplo, una instalación recién creada antes de instalar las plantillas), la ficha muestra «Descargar plantilla oficial» y «Generar Anexo III cumplimentado» como disponibles. Al pulsarlos sale la página «Plantilla oficial no disponible», que explica cómo instalarla.
+- **Revisión independiente:**
+  - *Importante, corregido:* un error al cerrar o al limpiar ocultaba el error del paso que había fallado. Ahora se ejecutan siempre el cierre, la limpieza y la desconexión, y se informa el error del paso con los demás añadidos.
+  - *Menores, corregidos:* la limpieza también encuentra la CAPA vinculada o con la marca en el defecto; el Anexo III se decide con la plantilla asignada al expediente, como la ruta; se retira `TOUR_BASE_URL`; el aviso de borrador no aparece como error; la disposición coincide con su comentario; prueba de que solo se ejecuta en la base aislada o en la demo.
+  - El fallo de la plantilla queda en el backlog (TPL1).
+- Procedimiento en [TOURS.md](TOURS.md).
+
 **Auditorías: orden de los hallazgos (2026-11-13):**
 - **Qué fallaba:** con el mismo «orden visual» (por defecto 0), los hallazgos y sus acciones se desempataban por el id interno, que es aleatorio. En la ficha, el informe y el plan CAPA podía salir OBS 02 antes que OBS 01 (visto al grabar el recorrido de la demo).
 - **Arreglo:** a igual orden visual, el orden de alta.
