@@ -208,6 +208,7 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Encontrado (pendiente de decisión, backlog RET1):** al crear la devolución desde la reclamación, la devolución propuesta en la reclamación no recibe su código y sigue ofreciendo «Crear devolución», incluso cerrada. El recorrido comprueba la relación entre los dos expedientes, que sí se crea.
 - **Fichas de partida:** solo en la base de pruebas, otra reclamación y otra devolución mínimas con la marca, para comprobar el filtro del listado. Se borran al terminar.
 - **CI:** obligatorios en el grupo `records-r4c` (unos 18 y 12 s en local). El mismo guion graba el vídeo en la demo.
+- **Revisión independiente:** sin hallazgos críticos ni importantes; confirma RET1 y lo amplía (tampoco lo resuelve vincular una devolución existente, y el botón sigue creando devoluciones con la reclamación cerrada). Menores corregidos: espera de la fila de la propuesta, botón exacto «Guardar cambios», la reclamación conserva una sola propuesta, se comprueban las comprobaciones visibles y el certificado de destrucción de la devolución, y D-138 y TOURS.md indican el grupo `records-r4c`. Nuevo en el backlog: FEC1 (fecha propuesta de comunicación en UTC).
 
 **Recorridos por módulo: OOS (2026-11-13, D-138):**
 - **Qué hace:** `pnpm tour:oos` usa la aplicación como un usuario, en 5 pasos:

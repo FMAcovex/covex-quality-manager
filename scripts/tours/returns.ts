@@ -104,6 +104,9 @@ async function main() {
       assert.equal(row.closedAt?.toISOString().slice(0, 10), today);
       assert.equal(row.decisionDate?.toISOString().slice(0, 10), today);
       assert.equal(row.traceabilityUpdated, "YES");
+      assert.equal(row.roomTemperatureWithinTenDays, "YES", "se guarda la comprobación de temperatura de un medicamento no procedente de mayorista");
+      assert.equal(row.packagingIntegrityOk, "NO", "se guarda que los envases no están íntegros");
+      assert.ok(row.destructionCertificate?.includes(`CD-${marker}`), "se guarda el certificado de destrucción");
       assert.equal(row.dataQualityStatus, "COMPLETE");
       await tour.pause(1500);
     });

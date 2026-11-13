@@ -81,9 +81,9 @@ async function main() {
       await tour.fill(page.locator('textarea[name="resolutionLines"]'), "Devolución del lote para reacondicionarlo con el prospecto vigente.");
       await tour.select(page.locator('select[name="hasDerivedActions"]'), "true");
       await tour.check(page.locator('input[name="resolutionActions"][value="RETURN"]'));
-      // Al marcar «Devolución» el formulario ya ofrece una fila; solo se añade si no la hay.
+      // Al marcar «Devolución» el formulario ofrece ya una fila para la propuesta.
       const proposal = page.locator(".complaint-derived-row").first();
-      if (!(await proposal.count())) await tour.click(page.getByRole("button", { name: "+ Añadir devolución" }));
+      await proposal.waitFor();
       await tour.fill(proposal.getByLabel("Acción / detalle *"), "Devolución de los 120 estuches al almacén para reacondicionarlos.");
       await tour.fill(proposal.getByRole("textbox", { name: "Responsable *", exact: true }), "Responsable de Almacén (ficticio)");
       await tour.fill(proposal.getByLabel("Fecha prevista *"), madridDay(10));
@@ -96,7 +96,7 @@ async function main() {
       await tour.select(page.locator('select[name="status"]'), "OPEN");
       await tour.fill(page.locator('input[name="nextFollowupDate"]'), madridDay(10));
       await tour.select(page.locator('select[name="dataQualityStatus"]'), "COMPLETE");
-      await tour.click(page.getByRole("button", { name: /^Guardar reclamación|^Guardar cambios/ }));
+      await tour.click(page.getByRole("button", { name: "Guardar cambios", exact: true }));
       await page.waitForURL(/\/complaints\/[0-9a-f-]{36}(\?|$)/);
       const row = await waitForSaved(async () => { const r = await findComplaint(); return r?.status === "OPEN" ? r : null; }, "la reclamación abierta");
       assert.ok(row.qmsRecord.businessCode, "recibe su código");
@@ -137,7 +137,10 @@ async function main() {
       assert.equal(row.returnType, "COMPLAINT");
       assert.equal(row.relatedDocument, opened.code, "la devolución referencia la reclamación");
       // Pendiente de decisión (backlog RET1): la devolución propuesta en la reclamación no recibe el código de la
-      // devolución creada desde ella; aquí solo se comprueba la relación entre los dos expedientes.
+      // devolución creada desde ella. Se comprueba la relación y que la propuesta sigue siendo una sola; cuando se
+      // corrija RET1, comprobar aquí que su código es el de la devolución creada.
+      const proposals = await prisma.complaintDerivedAction.findMany({ where: { complaintId: opened.id, actionType: "RETURN" } });
+      assert.equal(proposals.length, 1, "la reclamación conserva su única devolución propuesta");
       await page.getByText(opened.code).first().waitFor();
       await tour.pause(1500);
       return { code: relation.targetRecord.businessCode ?? "" };

@@ -49,7 +49,7 @@ Mensajes en pantalla:
 - Falta completar 1 campo obligatorio antes de guardar.
 ```
 
-Aunque fallen también el cierre del navegador o la limpieza, se informa el error del paso, con los demás añadidos detrás. Con `TOUR_FAILURE_DIR=<carpeta>` guarda además una captura de la pantalla. En CI se guarda en las evidencias del grupo (`browser-qms-tours`).
+Aunque fallen también el cierre del navegador o la limpieza, se informa el error del paso, con los demás añadidos detrás. Con `TOUR_FAILURE_DIR=<carpeta>` guarda además una captura de la pantalla. En CI se guarda en las evidencias del grupo (`<grupo>-tours`, por ejemplo `browser-qms-tours` o `records-r4c-tours`).
 
 ## Añadir un recorrido
 
