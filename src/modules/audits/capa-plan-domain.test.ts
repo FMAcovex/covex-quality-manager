@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capaPlanDefaultDate, capaPlanToday, capaPlanFileName, capaPlanFingerprint, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
+import { capaPlanContentMatches, capaPlanDefaultDate, capaPlanToday, capaPlanFileName, capaPlanFingerprint, capaPlanRowProblem, capaPlanSequenceLabel, establishCapaPlanSchema, isCriticalRowChange, parseCapaPlanFollowupForm } from "./capa-plan-domain";
 import type { AuditReportSnapshot } from "./report-service";
 
 const snapshot = (actionStatus = "OPEN", updatedAt = "2026-10-19T10:00:00.000Z") => ({
@@ -96,3 +96,26 @@ describe("D-136 · huella del plan CAPA", () => {
   });
 });
 
+
+describe("orden de los hallazgos y huella del plan (revisión de la PR del orden de alta)", () => {
+  // Dos hallazgos y dos acciones con el mismo orden visual: el id aleatorio ordenaba al revés que el alta.
+  const finding = (id: string, reference: string, createdAt: string, actions: { id: string; description: string; createdAt: string }[]) => ({
+    id, reference, createdAt, sortOrder: 0, isActive: true, findingType: "FINDING", criticality: "MAJOR", description: `Descripción ${reference}`, treatment: null, treatmentStatus: "OPEN",
+    closedAt: null, evidence: null, evidenceReference: null, verificationComment: null, relations: [],
+    actions: actions.map(a => ({ ...a, sortOrder: 0, isActive: true, responsible: null, targetDate: null, status: "OPEN", closedAt: null, evidence: null, evidenceReference: null, verificationComment: null })),
+  });
+  const plan = (findings: ReturnType<typeof finding>[]) => ({ schemaVersion: 1, templates: [], audit: { id: "a", capaPlanDate: "2026-11-16T00:00:00.000Z", findings } }) as unknown as AuditReportSnapshot;
+  const first = finding("f-b", "OBS 01", "2026-11-16T09:00:00.000Z", [{ id: "x-b", description: "Primera", createdAt: "2026-11-16T09:01:00.000Z" }, { id: "x-a", description: "Segunda", createdAt: "2026-11-16T09:02:00.000Z" }]);
+  const second = finding("f-a", "OBS 02", "2026-11-16T09:05:00.000Z", []);
+  it("una versión emitida con el orden anterior (por id) no sale como desactualizada con el orden de alta", () => {
+    const legacy = plan([{ ...second }, { ...first, actions: [...first.actions].reverse() }]);
+    const current = plan([first, second]);
+    expect(capaPlanFingerprint(legacy)).not.toBe(capaPlanFingerprint(current));
+    expect(capaPlanContentMatches(capaPlanFingerprint(legacy), current)).toBe(true);
+    expect(capaPlanContentMatches(capaPlanFingerprint(current), current)).toBe(true);
+  });
+  it("un cambio real sigue saliendo como desactualizado", () => {
+    const before = capaPlanFingerprint(plan([first, second]));
+    expect(capaPlanContentMatches(before, plan([first, { ...second, description: "Otra" }]))).toBe(false);
+  });
+});
