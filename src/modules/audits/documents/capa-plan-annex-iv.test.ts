@@ -59,23 +59,59 @@ describe("D-136 · bloques del plan CAPA", () => {
       .map(([status, effectivenessStatus]) => capaPlanCapaStatus({ status, effectivenessStatus })))
       .toEqual(["Abierta", "Abierta", "Pendiente", "Cerrada", "Cerrada", "Cerrada (no eficaz)", "Cerrada (cancelada)"]);
   });
-  it("los hallazgos con la misma desviación salen en un solo bloque, como en el ejemplo de Calidad (13/11/2026)", () => {
+  it("los hallazgos con la misma desviación y las mismas CAPA salen en un solo bloque, como en el ejemplo de Calidad (13/11/2026)", () => {
     const dev = { recordId: "d1", code: "D/GC-00/001/2097", rootCause: "Causa común" };
     const shared: CapaPlanLinks = {
       f1: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" })] },
       f2: { deviations: [{ recordId: "d2", code: "D/GC-00/002/2097", rootCause: null }], capas: [] },
-      f3: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" }), capa("AP/4", { recordId: "c4" })] },
+      f3: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" })] },
     };
     const blocks = capaPlanBlocks(snapshot().audit.findings as never, shared);
-    // OBS 01 y OBS 03 comparten D/GC-00/001/2097: un bloque en la posición de la primera; OBS 02 y Rk 01 aparte.
+    // OBS 01 y OBS 03 comparten D/GC-00/001/2097 y AC/1: un bloque en la posición de la primera; OBS 02 y Rk 01 aparte.
     expect(blocks.map(b => b.reference)).toEqual(["OBS 01\n\nOBS 03", "OBS 02", "Rk 01"]);
     const [g] = blocks;
     expect([g.criticality, g.deviations, g.rootCause]).toEqual(["Crítica", "D/GC-00/001/2097", "Causa común"]);
     expect(g.description).toBe("OBS 01. Descripción OBS 01\n\nOBS 03. Descripción OBS 03");
-    // Las CAPA no se repiten; las acciones y evidencias se suman sin duplicar.
-    expect(g.rows.map(r => r.code)).toEqual(["AC/1", "AP/4"]);
-    expect(g.actions).toBe("AC/1: Acción de AC/1\nJustificación libre\nAP/4: Acción de AP/4");
-    expect(g.evidence).toBe("REG-1");
+    // La CAPA una vez; lo propio de cada hallazgo, íntegro y con su referencia.
+    expect(g.rows.map(r => r.code)).toEqual(["AC/1"]);
+    expect(g.actions).toBe("AC/1: Acción de AC/1\nOBS 01: Justificación libre");
+    expect(g.evidence).toBe("OBS 01: REG-1");
+  });
+  it("revisión I1/I3: no se agrupan hallazgos con acciones propias o con CAPA distintas (también dos CAPA sin código)", () => {
+    const dev = { recordId: "d1", code: "D/GC-00/001/2097", rootCause: "Causa común" };
+    const s = snapshot(); const fs = s.audit.findings as unknown as { actions: unknown[] }[];
+    fs[0].actions = [{ isActive: true, description: "Formar a A", responsible: "R", targetDate: "2097-06-01", status: "OPEN", closedAt: null }, { isActive: true, description: "Revisar PNT", responsible: "R", targetDate: "2097-06-01", status: "OPEN", closedAt: null }];
+    fs[2].actions = [{ isActive: true, description: "Formar a B", responsible: "R", targetDate: "2097-06-01", status: "OPEN", closedAt: null }];
+    const own = capaPlanBlocks(s.audit.findings as never, { f1: { deviations: [dev], capas: [] }, f3: { deviations: [dev], capas: [] } });
+    expect(own.map(b => [b.reference, b.rows.length])).toEqual([["OBS 01", 2], ["OBS 02", 1], ["OBS 03", 1], ["Rk 01", 1]]);
+    const direct = capaPlanBlocks(snapshot().audit.findings as never, { f1: { deviations: [dev], capas: [capa("AC/9", { recordId: "c9" })] }, f3: { deviations: [dev], capas: [] } });
+    expect(direct.map(b => b.reference)).toEqual(["OBS 01", "OBS 02", "OBS 03", "Rk 01"]);
+    const drafts = capaPlanBlocks(snapshot().audit.findings as never, { f1: { deviations: [dev], capas: [capa("Sin código", { recordId: "c1" })] }, f3: { deviations: [dev], capas: [capa("Sin código", { recordId: "c2" })] } });
+    expect(drafts.map(b => b.reference)).toEqual(["OBS 01", "OBS 02", "OBS 03", "Rk 01"]);
+  });
+  it("revisión I2: el texto de cada hallazgo se conserva tal cual, con líneas en blanco y repeticiones", () => {
+    const dev = { recordId: "d1", code: "D/1", rootCause: "C" };
+    const s = snapshot(); const fs = s.audit.findings as unknown as { treatment: string; evidence: string | null }[];
+    fs[0].treatment = "Paso 1\n\n- Responsable: Calidad\nPaso 2\n- Responsable: Calidad"; fs[2].evidence = "Ver anexo\n\nVer anexo";
+    const [g] = capaPlanBlocks(s.audit.findings as never, { f1: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" })] }, f3: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" })] } });
+    expect(g.actions).toBe("AC/1: Acción de AC/1\nOBS 01: Paso 1\n\n- Responsable: Calidad\nPaso 2\n- Responsable: Calidad");
+    expect(g.evidence).toBe("OBS 01: REG-1\nOBS 03: Ver anexo\n\nVer anexo");
+  });
+  it("revisión M1/M2/M3: ni desviaciones anuladas, ni vínculos sin id, ni recomendaciones con hallazgos", () => {
+    const refs = (l: CapaPlanLinks) => capaPlanBlocks(snapshot().audit.findings as never, l).map(b => b.reference);
+    const annulled = { recordId: "d9", code: "D/9 (anulado)", rootCause: null, active: false };
+    expect(refs({ f1: { deviations: [annulled], capas: [] }, f3: { deviations: [annulled], capas: [] } })).toHaveLength(4);
+    const noId = { code: "Sin código", rootCause: null };
+    expect(refs({ f1: { deviations: [noId], capas: [] }, f3: { deviations: [noId], capas: [] } })).toHaveLength(4);
+    const dev = { recordId: "d1", code: "D/1", rootCause: "C" };
+    expect(refs({ f1: { deviations: [dev], capas: [] }, f4: { deviations: [dev], capas: [] } })).toHaveLength(4);
+  });
+  it("revisión I4: no se agrupa si las descripciones juntas no caben en las filas del bloque (409 pt por fila)", () => {
+    const dev = { recordId: "d1", code: "D/1", rootCause: "C" };
+    const s = snapshot(); const fs = s.audit.findings as unknown as { description: string }[];
+    fs[0].description = "x".repeat(900); fs[2].description = "y".repeat(900);
+    const blocks = capaPlanBlocks(s.audit.findings as never, { f1: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" })] }, f3: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" })] } });
+    expect(blocks.map(b => b.reference)).toEqual(["OBS 01", "OBS 02", "OBS 03", "Rk 01"]);
   });
   it("sin vínculos (fotos anteriores a D-136), los bloques salen solo con los datos del hallazgo", () => {
     const [b1] = capaPlanBlocks(snapshot().audit.findings as never, undefined);
@@ -156,6 +192,25 @@ describe("D-136 · revisión independiente", () => {
     const sheet = sheetOf(generateAuditCapaPlan(syntheticCapaPlanAnnexIV(), withFinding({ description: "a\u000Bb\u0002c", treatment: "y".repeat(40000) }), 0));
     expect(cell(sheet, "C8")).toBe("abc");
     expect(cell(sheet, "B10").length).toBeLessThanOrEqual(32767);
+  });
+  it("revisión M4: la altura de las filas usa los anchos de columna de la plantilla", () => {
+    const withCols = (eWidth: number) => {
+      const entries = readZip(syntheticCapaPlanAnnexIV());
+      const cols = `<cols>${"ABCDEFGHIJ".split("").map((_, i) => `<col min="${i + 1}" max="${i + 1}" width="${i === 4 ? eWidth : 20}" customWidth="1"/>`).join("")}</cols>`;
+      updateZipEntry(entries, "xl/worksheets/sheet1.xml", getZipEntryText(entries, "xl/worksheets/sheet1.xml").replace("<sheetData>", () => cols + "<sheetData>"));
+      return writeZip(entries);
+    };
+    const s = snapshot({ f1: { deviations: [{ recordId: "d1", code: "D/1", rootCause: "causa ".repeat(60) }], capas: [capa("AC/1", { recordId: "c1" })] } });
+    const height = (bytes: Buffer) => Number(sheetOf(generateAuditCapaPlan(bytes, s, 0)).match(/<row ht="([\d.]+)"[^>]*\br="8"/)?.[1]);
+    expect(height(withCols(15))).toBeGreaterThan(height(withCols(60)));
+  });
+  it("revisión M7: bloque agrupado en el Excel: Nº con las dos referencias y combinaciones del bloque", () => {
+    const dev = { recordId: "d1", code: "D/GC-00/001/2097", rootCause: "Causa común" };
+    const sheet = sheetOf(generateAuditCapaPlan(syntheticCapaPlanAnnexIV(), snapshot({ f1: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" })] }, f3: { deviations: [dev], capas: [capa("AC/1", { recordId: "c1" })] } }), 1));
+    expect(cell(sheet, "A8")).toBe("OBS 01\n\nOBS 03");
+    // OBS 01+03: 1 fila de CAPA (8), rótulos 9, textos 10; OBS 02 desde 11.
+    expect(sheet).toContain('<mergeCell ref="A8:A10"/>');
+    expect(cell(sheet, "A11")).toBe("OBS 02");
   });
   it("M8: las filas siguientes de un bloque no conservan nada bajo las casillas combinadas", () => {
     const sheet = sheetOf(generateAuditCapaPlan(syntheticCapaPlanAnnexIV(), snapshot(links), 0));

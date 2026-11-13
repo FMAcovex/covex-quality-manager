@@ -85,8 +85,9 @@ export const templateCatalog: CatalogTemplate[] = [
   // D-136 (R6): plan CAPA del Anexo IV del GC-00/033/04 (internas, a proveedor, de cliente e inspecciones).
   // Formato corregido con Calidad: 12/11/2026 «Fecha prevista» en Arial 14 centrada; 13/11/2026 formatos de su ejemplo
   // (Nº en negrita sobre beige, descripción y causa raíz justificadas, código CAPA en negrita, responsable sin negrita,
-  // acciones y evidencias justificadas; anchos de Nº, causa raíz, código CAPA y responsable). Huellas anteriores: 3df05178…, 0de356b9….
-  { module: "AUDIT", documentType: "AUDIT_CAPA_PLAN", versionCode: "04", label: "Auditorías · Plan CAPA (Anexo IV)", fileName: "Anexo IV CAPA Auditorias 04.xlsx", effectiveFrom: "2026-11-15", sources: file("75f105340a48cadf0c0f5dc892c52564cb1f4c9c872ef65dc6e576dfa26fa27c") },
+  // acciones y evidencias justificadas; anchos de Nº, causa raíz, código CAPA y responsable; borde superior de «Fecha prevista»).
+  // Huellas anteriores: 3df05178…, 0de356b9…, 75f10534… (esta última solo en la PR, sin fusionar).
+  { module: "AUDIT", documentType: "AUDIT_CAPA_PLAN", versionCode: "04", label: "Auditorías · Plan CAPA (Anexo IV)", fileName: "Anexo IV CAPA Auditorias 04.xlsx", effectiveFrom: "2026-11-15", sources: file("09aa3bcb077f287cbbaa1b7f9ada030be084c9040d0ec16748263ab1d2b8f1d2") },
   { module: "AUDIT", documentType: "AUDIT_EXTERNAL_PLAN", versionCode: "05", label: "Auditorías · Plan de auditoría externa", fileName: "A4_PLAN AUDIT.docx", effectiveFrom: "2026-11-15", sources: file("b3db55f090e0b802e1e18590e9b6a29f24976a9c777a2c1deb6f91be13ffb96f") },
   // D-106: el programa interno se instala desde el .docx guardado en Word por Calidad, no desde el
   // .doc original (sha fa1296da…), que necesitaba LibreOffice. Sustituye una conversión anterior.

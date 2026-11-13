@@ -195,8 +195,9 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 
 **Plan CAPA del Anexo IV: formato del ejemplo de Calidad y hallazgos agrupados por desviación (2026-11-13, D-136):**
 - **Formato:** plantilla con los formatos y anchos del plan CAPA que rellenó Calidad (Nº en negrita sobre beige, textos justificados, código CAPA en negrita, columnas más anchas). Huella nueva; Calidad debe aprobar y distribuir ese archivo sin volver a guardarlo.
-- **Agrupación:** los hallazgos que comparten las mismas desviaciones salen en un solo bloque, con todas sus referencias y descripciones, la criticidad más alta y las CAPA sin repetir.
-- **Comprobado:** prueba de la agrupación (fallaba antes del cambio), `annexes:verify` con las plantillas reales (activas y la 04 corregida) y una muestra generada con datos ficticios revisada en PDF.
+- **Agrupación:** los hallazgos que comparten desviación y CAPA (sin acciones propias) salen en un solo bloque, con todas sus referencias y descripciones, la criticidad más alta, las CAPA una vez y los textos de cada hallazgo íntegros con su referencia.
+- **Revisión independiente:** corregidos los cuatro importantes (filas perdidas al quitar duplicados, textos alterados, CAPA de un hallazgo atribuidas a otro, descripciones que no cabían) y los menores aplicables (desviaciones anuladas, vínculos sin id, recomendaciones, alturas según la plantilla, borde de «Fecha prevista», documentación).
+- **Comprobado:** pruebas de la agrupación y de los casos de la revisión (fallaban antes del cambio), `annexes:verify` con las plantillas reales (activas y la 04 corregida) y una muestra generada con datos ficticios revisada en PDF.
 
 **Plan CAPA del Anexo IV: «Fecha prevista» en Arial 14 centrada (2026-11-12, D-136):**
 - **Qué falla:** en la plantilla, la columna «Fecha prevista» de las filas de datos estaba en Calibri 11 sin centrar; el resto de la fila, en Arial 14 centrada. El plan generado heredaba ese formato.
