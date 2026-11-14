@@ -127,21 +127,41 @@ async function main() {
       await tour.fill(product.getByLabel("Formato"), "Estuche de 30");
       await tour.fill(page.locator('textarea[name="reasonObservations"]'), "Prospecto de versión anterior detectado por el cliente.");
       await tour.fill(page.locator('textarea[name="attachedDocumentation"]'), "Albarán de devolución y fotografías del cliente (ficticios).");
-      await tour.select(page.locator('select[name="status"]'), "OPEN");
-      await tour.click(page.getByRole("button", { name: /^Guardar/ }).last());
+      // Primero en borrador (RET1): la propuesta queda reservada para este borrador.
+      await tour.click(page.getByRole("button", { name: "Guardar borrador" }));
       await page.waitForURL(/\/returns\/[0-9a-f-]{36}(\?|$)/);
+      const [proposal] = await prisma.complaintDerivedAction.findMany({ where: { complaintId: opened.id, actionType: "RETURN" } });
+      const draft = await waitForSaved(() => prisma.returnRecord.findFirst({ where: { status: "DRAFT", extraData: { path: ["pendingComplaintActionId"], equals: proposal.id } } }), "el borrador de la devolución propuesta");
+      // La reclamación ya no ofrece crear otra devolución para esa propuesta: ofrece abrir el borrador.
+      await tour.go(`/complaints/${opened.id}?tab=relations`);
+      const openDraft = page.locator("main a", { hasText: "Abrir borrador de devolución" }).first();
+      await openDraft.waitFor();
+      assert.equal(await page.locator("main a", { hasText: "Crear devolución" }).count(), 0, "con un borrador en curso no se ofrece crear otra devolución");
+      await tour.caption("Con el borrador en curso, la reclamación ofrece <b>abrirlo</b>, no crear otra devolución");
+      await tour.pause(1800);
+      await tour.click(openDraft);
+      await tour.click(page.locator("main a", { hasText: /^Editar/ }).first());
+      await page.waitForURL(new RegExp(`/returns/${draft.id}/edit`));
+      await tour.select(page.locator('select[name="status"]'), "OPEN");
+      await tour.fill(page.locator('textarea[name="changeReason"]'), "Apertura de la devolución recibida.");
+      await tour.click(page.getByRole("button", { name: /^Guardar/ }).last());
+      await page.waitForURL(new RegExp(`/returns/${draft.id}(\\?|$)`));
       const relation = await waitForSaved(() => prisma.qmsRelation.findFirst({ where: { isActive: true, sourceRecordId: opened.qmsRecordId, targetRecord: { recordType: "RETURN" } }, include: { targetRecord: true } }), "la devolución vinculada a la reclamación");
       const row = await prisma.returnRecord.findUniqueOrThrow({ where: { qmsRecordId: relation.targetRecordId } });
       assert.equal(row.status, "OPEN");
       assert.equal(row.returnType, "COMPLAINT");
       assert.equal(row.relatedDocument, opened.code, "la devolución referencia la reclamación");
-      // Pendiente de decisión (backlog RET1): la devolución propuesta en la reclamación no recibe el código de la
-      // devolución creada desde ella. Se comprueba la relación y que la propuesta sigue siendo una sola; cuando se
-      // corrija RET1, comprobar aquí que su código es el de la devolución creada.
+      // RET1: la devolución propuesta recibe el código de la devolución creada desde ella.
       const proposals = await prisma.complaintDerivedAction.findMany({ where: { complaintId: opened.id, actionType: "RETURN" } });
-      assert.equal(proposals.length, 1, "la reclamación conserva su única devolución propuesta");
+      assert.deepEqual(proposals.map((a) => a.businessCode), [relation.targetRecord.businessCode], "la propuesta lleva el código de la devolución creada");
       await page.getByText(opened.code).first().waitFor();
       await tour.pause(1500);
+      // Y la reclamación ya no ofrece crear otra: ofrece abrirla.
+      await tour.go(`/complaints/${opened.id}?tab=relations`);
+      await page.locator("main a", { hasText: "Abrir devolución" }).first().waitFor();
+      assert.equal(await page.locator("main a", { hasText: "Crear devolución" }).count(), 0, "una propuesta con devolución no ofrece crear otra");
+      await tour.caption(`La propuesta queda con <b>${relation.targetRecord.businessCode}</b>: ya no ofrece crear otra`);
+      await tour.pause(1800);
       return { code: relation.targetRecord.businessCode ?? "" };
     });
 

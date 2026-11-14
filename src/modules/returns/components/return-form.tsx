@@ -31,10 +31,10 @@ function Tri({label,name,defaultValue,required=false}:{label:string;name:string;
   return <label className="field"><span>{label}{required?" *":""}</span><select name={name} defaultValue={defaultValue??""} required={required}><option value="">No informado</option><option value="YES">Sí</option><option value="NO">No</option><option value="NA">N/A</option></select></label>;
 }
 
-export function ReturnForm({mode,action,departments,defaults={},returnId,fromComplaintId,cancelHref,returnTo,detailTab}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string;
+export function ReturnForm({mode,action,departments,defaults={},returnId,fromComplaintId,fromComplaintActionId,cancelHref,returnTo,detailTab}:{mode:"create"|"edit";action:(s:ReturnFormState,fd:FormData)=>Promise<ReturnFormState>;departments:DepartmentOption[];defaults?:ReturnFormDefaults;returnId?:string;
   cancelHref?: string;
   returnTo?: string;
-  detailTab?: string;fromComplaintId?:string}){
+  detailTab?: string;fromComplaintId?:string;fromComplaintActionId?:string}){
   const access = usePresentationAccess();
   const [state,formAction,pending]=useActionState(action,initial);
   const formDefaults=submittedDefaults(defaults,state.submittedValues);
@@ -62,6 +62,7 @@ export function ReturnForm({mode,action,departments,defaults={},returnId,fromCom
     <input type="hidden" name="detailTab" value={detailTab ?? ""}/>
     <input type="hidden" name="productsJson" value={JSON.stringify(products)}/>
     {fromComplaintId?<input type="hidden" name="fromComplaintId" value={fromComplaintId}/>:null}
+    {fromComplaintActionId?<input type="hidden" name="fromComplaintActionId" value={fromComplaintActionId}/>:null}
     {state.error?<div className="form-errors"><strong>{state.error}</strong>{generalErrors(state.fieldErrors,state.fieldIssues).length?<ul>{generalErrors(state.fieldErrors,state.fieldIssues).map(x=><li key={x}>{x}</li>)}</ul>:null}</div>:null}
 
     <section className="form-section">

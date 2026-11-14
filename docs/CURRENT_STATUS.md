@@ -193,6 +193,32 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Devolución propuesta en una reclamación: una sola devolución (2026-11-14, RET1, D-140):**
+- **Problema:** «Crear devolución» desde la devolución propuesta de una reclamación solo creaba la relación. La propuesta seguía sin código y con el botón, incluso con la reclamación cerrada, y cada clic creaba otra devolución.
+- **Arreglo:**
+  - El enlace indica qué propuesta cubre (`fromComplaintActionId`).
+  - **En borrador:** la devolución reserva la propuesta (`extraData.pendingComplaintActionId`) y la reclamación ofrece «Abrir borrador de devolución».
+  - **Al abrirse**, en la misma transacción que la relación, la propuesta recibe el código de la devolución y la reclamación ofrece «Abrir devolución».
+  - **Un segundo intento** falla con un mensaje claro, también si llegan dos a la vez: la fila se bloquea y la actualización exige que la propuesta siga sin código.
+  - **Guardar la reclamación** con un formulario abierto antes ya no borra ese código.
+- **Audit trail:**
+  - Devoluciones escribe en `ComplaintDerivedAction` desde `returns/complaint-origin.ts`, que entra en el grupo de escritores W05 (catálogo y `PHASE_4B3_A.md`).
+  - La captura SQL existente lo atribuye a la reclamación, como CAPA con `ComplaintCapaPlan`.
+  - No hay migraciones ni cambios de esquema.
+  - El inventario de escrituras añade la escritura y la consulta de bloqueo.
+- **Sin cambio:**
+  - «Vincular devolución existente» sigue creando solo la relación.
+  - Las propuestas anteriores no se completan solas.
+  - Si una reclamación cerrada puede originar devoluciones no se decide aquí: depende del PNT.
+- **Pruebas:**
+  - `returns/complaint-proposal.test.ts` (fallaban antes del arreglo): propuesta de otra reclamación o de otro tipo, propuesta con código, borrador en curso (salvo el propio al abrirlo), registro del código y segundo intento.
+  - `complaints/derived-actions.test.ts`: el código no se borra al guardar la reclamación.
+  - El recorrido de Reclamaciones, que dejaba RET1 anotado como pendiente, ahora lo comprueba en el navegador:
+    - crea la devolución en borrador;
+    - comprueba que la reclamación ofrece abrir el borrador y no crear otra;
+    - la abre;
+    - comprueba que la propuesta recibe el código y que ya no se ofrece «Crear devolución».
+
 **Anexos ofrecidos solo con su plantilla instalada (2026-11-13, TPL1):**
 - **Problema:** la ficha ofrecía generar un anexo aunque la plantilla que usaría la generación no tuviera archivo, y al pulsar salía «Plantilla oficial no disponible».
   - Desviaciones y CAPA comprobaban la plantilla por defecto, pero no la asignada al expediente.

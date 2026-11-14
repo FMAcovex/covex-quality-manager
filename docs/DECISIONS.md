@@ -1699,3 +1699,18 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
   - instantes con hora: audit trail, historial, `createdAt` y `updatedAt`, que siguen en UTC y se muestran en hora de Madrid (D-117);
   - series mensuales y antigüedad de Indicadores, que no aceptan ni rechazan fechas y quedan pendientes.
 - Motivo: backlog FEC1, encontrado por los recorridos (D-138). Entre las 00:00 y las 01:00/02:00 de Madrid, la aplicación proponía la fecha del día anterior y rechazaba como futura la del día.
+
+## D-140 — Devolución propuesta en una reclamación: una sola devolución (2026-11-14)
+
+- **Regla.** Una devolución propuesta en las acciones derivadas de una reclamación se cubre con una sola devolución, como las propuestas CAPA de la reclamación (D-033, `fromComplaintPlanId`):
+  - «Crear devolución» indica qué propuesta cubre (`fromComplaintActionId`).
+  - Si la devolución se guarda en borrador, la propuesta queda reservada para ese borrador (`extraData.pendingComplaintActionId`). La reclamación ofrece «Abrir borrador de devolución» y no crear otra.
+  - Al abrirse la devolución, la propuesta recibe su código y la reclamación ofrece «Abrir devolución».
+  - Un segundo intento sobre la misma propuesta falla con un mensaje: ya tiene devolución o ya hay un borrador.
+- **Escritura entre módulos.** El código lo escribe Devoluciones en `ComplaintDerivedAction` (`returns/complaint-origin.ts`, grupo de escritores W05), en la misma transacción que la relación reclamación → devolución. La captura del audit trail lo atribuye a la reclamación, como hace CAPA con `ComplaintCapaPlan`.
+- **Protección.** Guardar la reclamación no borra ese código aunque el formulario se abriera antes: el campo es de solo lectura.
+- **Sin cambio:**
+  - «Vincular devolución existente» (pestaña Relaciones) sigue creando solo la relación.
+  - Las propuestas anteriores a esta decisión no se completan solas.
+  - Que una reclamación cerrada pueda o no originar devoluciones no se decide aquí: depende del PNT vigente.
+

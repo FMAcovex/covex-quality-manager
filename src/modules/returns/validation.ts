@@ -186,6 +186,6 @@ export function parseReturnForm(fd:FormData,existingNextFollowup?:string){
     decisionDate:text(fd,"decisionDate"),destructionManagedBy:text(fd,"destructionManagedBy"),destructionCertificate:text(fd,"destructionCertificate"),
     traceabilityUpdated:tri("traceabilityUpdated"),closedAt:text(fd,"closedAt"),status,internalObservations:text(fd,"internalObservations"),textTables:textTables.value,
     signedDocumentAvailable:bool(fd,"signedDocumentAvailable"),dataQualityStatus:en(qualitySchema,text(fd,"dataQualityStatus"))??"REVIEW_REQUIRED",
-    context,nextFollowupDate:text(fd,"nextFollowupDate"),followupComment:text(fd,"followupComment"),products:ps,fromComplaintId:text(fd,"fromComplaintId"),changeReason:text(fd,"changeReason")
+    context,nextFollowupDate:text(fd,"nextFollowupDate"),followupComment:text(fd,"followupComment"),products:ps,fromComplaintId:text(fd,"fromComplaintId"),fromComplaintActionId:text(fd,"fromComplaintActionId"),changeReason:text(fd,"changeReason")
   }};
 }

@@ -35,6 +35,7 @@ import { formText } from "@/lib/forms/bullets";
 import { orderedTextTables } from "@/lib/forms/text-tables";
 import { COMPLAINT_TABLE_FIELDS } from "@/modules/complaints/text-tables";
 import { administrativeTodayDate } from "@/lib/qms/administrative-date";
+import { derivedActionBusinessCode } from "@/modules/complaints/derived-actions";
 
 const d=(v:string|null|undefined)=>v?new Date(v):null;
 const j=(v:unknown):Prisma.InputJsonValue=>({value:v??null}) as Prisma.InputJsonValue;
@@ -94,12 +95,13 @@ async function replaceCapaPlans(tx:Prisma.TransactionClient,complaintId:string,p
 }
 
 async function replaceDerivedActions(tx:Prisma.TransactionClient,complaintId:string,actions:ReturnType<typeof parseComplaintForm>["values"]["derivedActions"]){
- const existing=await tx.complaintDerivedAction.findMany({where:{complaintId},select:{id:true}});
+ const existing=await tx.complaintDerivedAction.findMany({where:{complaintId},select:{id:true,businessCode:true}});
  const owned=new Set(existing.map(row=>row.id));
+ const storedCodes=new Map(existing.map(row=>[row.id,row.businessCode]));
  if(actions.some(row=>row.id&&!owned.has(row.id)))throw new Error("Una acción derivada no pertenece a esta reclamación.");
  await tx.complaintDerivedAction.deleteMany({where:{complaintId,id:{notIn:actions.flatMap(row=>row.id?[row.id]:[])}}});
  for(let i=0;i<actions.length;i++){
-  const a=actions[i],data={actionType:a.actionType||"OTRA",businessCode:a.businessCode||null,description:a.description||null,responsible:a.responsible||null,responsibleUserId:a.responsibleUserId??null,plannedExecutionDate:d(a.plannedExecutionDate),sortOrder:a.sortOrder??i*10};
+  const a=actions[i],data={actionType:a.actionType||"OTRA",businessCode:derivedActionBusinessCode(a.id?storedCodes.get(a.id):null,a.businessCode),description:a.description||null,responsible:a.responsible||null,responsibleUserId:a.responsibleUserId??null,plannedExecutionDate:d(a.plannedExecutionDate),sortOrder:a.sortOrder??i*10};
   if(a.id)await tx.complaintDerivedAction.update({where:{id:a.id},data});
   else await tx.complaintDerivedAction.create({data:{complaintId,...data}});
  }
