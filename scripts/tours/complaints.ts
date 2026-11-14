@@ -158,6 +158,11 @@ async function main() {
       // RET1: la devolución propuesta recibe el código de la devolución creada desde ella.
       const proposals = await prisma.complaintDerivedAction.findMany({ where: { complaintId: opened.id, actionType: "RETURN" } });
       assert.deepEqual(proposals.map((a) => a.businessCode), [relation.targetRecord.businessCode], "la propuesta lleva el código de la devolución creada");
+      // La versión vigente de la reclamación (la que usa su Anexo III) también lo lleva: el código se escribe antes
+      // de la relación, que es la que actualiza esa copia.
+      const current = await prisma.qmsRecordVersion.findFirstOrThrow({ where: { qmsRecordId: opened.qmsRecordId }, orderBy: { sequenceNumber: "desc" } });
+      const snapshot = current.snapshot as { complaint?: { derivedActions?: Array<{ actionType: string; businessCode: string | null }> } };
+      assert.deepEqual(snapshot.complaint?.derivedActions?.filter((a) => a.actionType === "RETURN").map((a) => a.businessCode), [relation.targetRecord.businessCode], "la versión vigente de la reclamación lleva el código de la devolución");
       await page.getByText(opened.code).first().waitFor();
       await tour.pause(1500);
       // Y la reclamación ya no ofrece crear otra: ofrece abrirla.
@@ -166,6 +171,12 @@ async function main() {
       assert.equal(await proposalRow().locator("a", { hasText: "Crear devolución" }).count(), 0, "una propuesta con devolución no ofrece crear otra");
       await tour.caption(`La propuesta queda con <b>${relation.targetRecord.businessCode}</b>: ya no ofrece crear otra`);
       await tour.pause(1800);
+      // Un segundo intento con el enlace de la propuesta avisa antes de rellenar nada.
+      if (!tour.demo) {
+        await tour.go(`/returns/new?fromComplaintId=${opened.id}&fromComplaintActionId=${proposal.id}`);
+        await page.locator(".form-feedback.error", { hasText: `ya tiene una devolución (${relation.targetRecord.businessCode})` }).waitFor();
+        assert.equal(await page.locator("form").filter({ has: page.locator('input[name="customerEntity"]') }).count(), 0, "no se ofrece el formulario");
+      }
       return { code: relation.targetRecord.businessCode ?? "" };
     });
 

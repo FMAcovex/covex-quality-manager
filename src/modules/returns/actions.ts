@@ -23,9 +23,9 @@ import { parseReturnForm } from "@/modules/returns/validation";
 import {
   ComplaintReturnLinkError,
   checkComplaintReturnProposal,
+  complaintReturnProposalState,
   getComplaintReturnOrigin,
-  registerComplaintReturnOrigin,
-  registerComplaintReturnProposal,
+  linkReturnToComplaint,
 } from "@/modules/returns/complaint-origin";
 import type { ReturnFormState } from "@/modules/returns/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -110,6 +110,8 @@ async function createReturnActionAuthenticatedContent(previous:ReturnFormState,f
     ?await getComplaintReturnOrigin(tx,v.fromComplaintId)
     :null;
    if(v.fromComplaintActionId&&!v.fromComplaintId)throw new ComplaintReturnLinkError("La devolución propuesta debe indicar su reclamación de origen.");
+   // Relations consistently lock COMPLAINT before RETURN (y antes que la propuesta, RET1).
+   if(complaintOrigin)await tx.$queryRaw(Prisma.sql`SELECT id FROM "QmsRecord" WHERE id=${complaintOrigin.complaintQmsRecordId} FOR UPDATE`);
    if(v.fromComplaintActionId)await checkComplaintReturnProposal(tx,v.fromComplaintId!,v.fromComplaintActionId);
    const canonicalValues=complaintOrigin
     ?{...v,returnType:"COMPLAINT" as const,relatedDocument:complaintOrigin.complaintBusinessCode}
@@ -134,12 +136,12 @@ async function createReturnActionAuthenticatedContent(previous:ReturnFormState,f
    await replaceProducts(tx,rec.id,v.products);
    await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,customerEntity:v.customerEntity}),reason:v.status==="DRAFT"?"Borrador inicial de devolución":"Alta de devolución",source:"UI"}});
    if(complaintOrigin&&v.status!=="DRAFT"){
-    await registerComplaintReturnOrigin(tx,{
+    await linkReturnToComplaint(tx,{
      complaintQmsRecordId:complaintOrigin.complaintQmsRecordId,
      returnQmsRecordId:qr.id,
-     actor:parsed.actor
+     actor:parsed.actor,
+     proposal:v.fromComplaintActionId?{actionId:v.fromComplaintActionId,returnBusinessCode:businessCode}:undefined,
     });
-    if(v.fromComplaintActionId)await registerComplaintReturnProposal(tx,{actionId:v.fromComplaintActionId,returnBusinessCode:businessCode!});
    }
    await planFollowup(tx,rec.id,v,parsed.actor);
    const snap=await getSnapshot(tx,rec.id);await ensureInitialVersion(tx,qr.id,snapshotJson(serializeReturnVersion(snap)),parsed.actor);
@@ -194,11 +196,11 @@ async function updateReturnActionAuthenticatedContent(id:string,previous:ReturnF
   await planFollowup(tx,id,v,parsed.actor);
   if(becomingOperational&&pendingComplaintId){
    const complaintOrigin=await getComplaintReturnOrigin(tx,pendingComplaintId);
-   await registerComplaintReturnOrigin(tx,{complaintQmsRecordId:complaintOrigin.complaintQmsRecordId,returnQmsRecordId:existing.qmsRecordId,actor:parsed.actor});
-   if(pendingComplaintActionId){
-    await checkComplaintReturnProposal(tx,pendingComplaintId,pendingComplaintActionId,id);
-    await registerComplaintReturnProposal(tx,{actionId:pendingComplaintActionId,returnBusinessCode:businessCode!});
-   }
+   // RET1: si la propuesta reservada sigue disponible, recibe el código. Si ya no (quitada, o cubierta por otra
+   // devolución), la devolución se abre solo con la relación a la reclamación y deja la reserva.
+   const proposal=pendingComplaintActionId?await complaintReturnProposalState(tx,pendingComplaintId,pendingComplaintActionId,id):null;
+   await linkReturnToComplaint(tx,{complaintQmsRecordId:complaintOrigin.complaintQmsRecordId,returnQmsRecordId:existing.qmsRecordId,actor:parsed.actor,
+    proposal:proposal?.state==="AVAILABLE"?{actionId:pendingComplaintActionId!,returnBusinessCode:businessCode}:undefined});
   }
   await tx.changeHistory.create({data:{qmsRecordId:existing.qmsRecordId,changedByText:parsed.actor,fieldPath:"__edit__",oldValue:snapshotJson(serializeReturnVersion(before)),newValue:snapshotJson(serializeReturnVersion(await getSnapshot(tx,id))),reason:v.changeReason,source:"UI"}});
   await refreshReturnSnapshot(tx,existing.qmsRecordId);
