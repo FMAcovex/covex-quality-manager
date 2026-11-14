@@ -1699,3 +1699,23 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
   - instantes con hora: audit trail, historial, `createdAt` y `updatedAt`, que siguen en UTC y se muestran en hora de Madrid (D-117);
   - series mensuales y antigüedad de Indicadores, que no aceptan ni rechazan fechas y quedan pendientes.
 - Motivo: backlog FEC1, encontrado por los recorridos (D-138). Entre las 00:00 y las 01:00/02:00 de Madrid, la aplicación proponía la fecha del día anterior y rechazaba como futura la del día.
+
+## D-140 — Devolución propuesta en una reclamación: una sola devolución (2026-11-14)
+
+- **Regla.** Una devolución propuesta en las acciones derivadas de una reclamación se cubre con una sola devolución, como las propuestas CAPA de la reclamación (D-033, `fromComplaintPlanId`):
+  - «Crear devolución», en la fila de la propuesta (Parte I), indica qué propuesta cubre (`fromComplaintActionId`).
+  - Si la devolución se guarda en borrador, la propuesta queda reservada para ese borrador (`extraData.pendingComplaintActionId`). La reclamación ofrece «Abrir borrador de devolución» y no crear otra.
+  - Al abrirse la devolución, la propuesta recibe su código antes de crear la relación, para que la versión vigente de la reclamación (y su Anexo III) lo lleve. La reclamación ofrece entonces «Abrir devolución».
+  - Si la propuesta ya tiene devolución, ya hay un borrador o ya no existe, el enlace avisa al cargar el formulario y el guardado lo rechaza, con un mensaje por motivo.
+- **Bloqueos:** reclamación, devolución y propuesta, en ese orden, como el resto de relaciones.
+- **Reserva:**
+  - Mientras haya un borrador activo, la propuesta reservada no se puede quitar de la reclamación ni cambiar de tipo.
+  - Si aun así deja de estar disponible (por ejemplo, el borrador se anuló y se reactivó después de que otra devolución la cubriera), el borrador se abre solo con la relación a la reclamación y pierde la reserva.
+- **Escritura entre módulos.** El código lo escribe Devoluciones en `ComplaintDerivedAction` (`returns/complaint-origin.ts`, grupo de escritores W05). La captura del audit trail lo atribuye a la reclamación, su única raíz, y exige permiso de edición sobre ella, igual que la relación.
+- **Protección.** Guardar la reclamación no borra ni cambia el código de una devolución propuesta, aunque el formulario se abriera antes (el campo es de solo lectura). Las referencias de otros tipos de acción se pueden corregir o vaciar.
+- **Sin cambio:**
+  - El «Crear devolución» general de la pestaña Relaciones crea una devolución que no cubre ninguna propuesta.
+  - «Vincular devolución existente» sigue creando solo la relación.
+  - Las propuestas anteriores a esta decisión no se completan solas.
+  - Anular la devolución o quitar la relación no borra el código de la propuesta (igual que en CAPA); la ficha la muestra «Pendiente de vincular».
+  - Que una reclamación cerrada pueda o no originar devoluciones no se decide aquí: depende del PNT vigente.

@@ -22,8 +22,10 @@ import {
 import { parseReturnForm } from "@/modules/returns/validation";
 import {
   ComplaintReturnLinkError,
+  checkComplaintReturnProposal,
+  complaintReturnProposalState,
   getComplaintReturnOrigin,
-  registerComplaintReturnOrigin,
+  linkReturnToComplaint,
 } from "@/modules/returns/complaint-origin";
 import type { ReturnFormState } from "@/modules/returns/types";
 import type { RelationActionState } from "@/lib/qms/relation-form-types";
@@ -81,10 +83,15 @@ async function planFollowup(tx:Prisma.TransactionClient,id:string,v:ReturnType<t
  if(latest?.nextFollowupDate?.toISOString().slice(0,10)===v.nextFollowupDate)return;
  await tx.returnFollowup.create({data:{returnRecordId:id,followupDate:new Date(),completedByText:actor,comment:v.followupComment!,nextFollowupDate:new Date(v.nextFollowupDate)}});
 }
-function extraData(existing:Prisma.JsonValue|null|undefined,v:ReturnType<typeof parseReturnForm>["values"],pendingComplaintId?:string|null):Prisma.InputJsonObject{
+function extraData(existing:Prisma.JsonValue|null|undefined,v:ReturnType<typeof parseReturnForm>["values"],pendingComplaintId?:string|null,pendingComplaintActionId?:string|null):Prisma.InputJsonObject{
  const data=existing&&typeof existing==="object"&&!Array.isArray(existing)?{...existing}:{};
- delete data.pendingComplaintId;
- return {...data,pendingReturnType:v.returnType===null,r4b:v.context,...(pendingComplaintId?{pendingComplaintId}:{})} as Prisma.InputJsonObject;
+ delete data.pendingComplaintId;delete data.pendingComplaintActionId;
+ // RET1: un borrador creado desde una devolución propuesta conserva qué propuesta cubre hasta abrirse.
+ return {...data,pendingReturnType:v.returnType===null,r4b:v.context,...(pendingComplaintId?{pendingComplaintId}:{}),...(pendingComplaintId&&pendingComplaintActionId?{pendingComplaintActionId}:{})} as Prisma.InputJsonObject;
+}
+function pendingFromExtraData(status:string,extra:Prisma.JsonValue|null|undefined){
+ const data=status==="DRAFT"&&extra&&typeof extra==="object"&&!Array.isArray(extra)?extra as {pendingComplaintId?:unknown;pendingComplaintActionId?:unknown}:{};
+ return {complaintId:typeof data.pendingComplaintId==="string"?data.pendingComplaintId:null,complaintActionId:typeof data.pendingComplaintActionId==="string"?data.pendingComplaintActionId:null};
 }
 async function createReturnActionAuthenticatedContent(previous:ReturnFormState,fd:FormData):Promise<ReturnFormState>{
  const parsed=parseReturnForm(fd);if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors,fieldIssues:parsed.fieldIssues});
@@ -102,6 +109,10 @@ async function createReturnActionAuthenticatedContent(previous:ReturnFormState,f
    const complaintOrigin=v.fromComplaintId
     ?await getComplaintReturnOrigin(tx,v.fromComplaintId)
     :null;
+   if(v.fromComplaintActionId&&!v.fromComplaintId)throw new ComplaintReturnLinkError("La devolución propuesta debe indicar su reclamación de origen.");
+   // Relations consistently lock COMPLAINT before RETURN (y antes que la propuesta, RET1).
+   if(complaintOrigin)await tx.$queryRaw(Prisma.sql`SELECT id FROM "QmsRecord" WHERE id=${complaintOrigin.complaintQmsRecordId} FOR UPDATE`);
+   if(v.fromComplaintActionId)await checkComplaintReturnProposal(tx,v.fromComplaintId!,v.fromComplaintActionId);
    const canonicalValues=complaintOrigin
     ?{...v,returnType:"COMPLAINT" as const,relatedDocument:complaintOrigin.complaintBusinessCode}
     :v;
@@ -121,14 +132,15 @@ async function createReturnActionAuthenticatedContent(previous:ReturnFormState,f
    }
    v.businessCode=businessCode;
    const qr=await tx.qmsRecord.create({data:{recordType:"RETURN",businessCode,year:communicationYear}});
-   const rec=await tx.returnRecord.create({data:{qmsRecordId:qr.id,...recordData(canonicalValues,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vdecl?.id,annexVITemplateVersionId:vi?.id,extraData:extraData(null,v,v.status==="DRAFT"&&complaintOrigin?v.fromComplaintId:null)}});
+   const rec=await tx.returnRecord.create({data:{qmsRecordId:qr.id,...recordData(canonicalValues,department),formVersionId:form?.id,annexIIITemplateVersionId:iii?.id,annexIVTemplateVersionId:iv?.id,annexVTemplateVersionId:vdecl?.id,annexVITemplateVersionId:vi?.id,extraData:extraData(null,v,v.status==="DRAFT"&&complaintOrigin?v.fromComplaintId:null,v.status==="DRAFT"?v.fromComplaintActionId:null)}});
    await replaceProducts(tx,rec.id,v.products);
    await tx.changeHistory.create({data:{qmsRecordId:qr.id,changedByText:parsed.actor,fieldPath:"__created__",newValue:j({businessCode:v.businessCode,customerEntity:v.customerEntity}),reason:v.status==="DRAFT"?"Borrador inicial de devolución":"Alta de devolución",source:"UI"}});
    if(complaintOrigin&&v.status!=="DRAFT"){
-    await registerComplaintReturnOrigin(tx,{
+    await linkReturnToComplaint(tx,{
      complaintQmsRecordId:complaintOrigin.complaintQmsRecordId,
      returnQmsRecordId:qr.id,
-     actor:parsed.actor
+     actor:parsed.actor,
+     proposal:v.fromComplaintActionId?{actionId:v.fromComplaintActionId,returnBusinessCode:businessCode}:undefined,
     });
    }
    await planFollowup(tx,rec.id,v,parsed.actor);
@@ -152,9 +164,8 @@ async function updateReturnActionAuthenticatedContent(id:string,previous:ReturnF
  const parsed=parseReturnForm(fd,existing.followups[0]?.nextFollowupDate?.toISOString().slice(0,10));if(parsed.errors.length)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:parsed.errors,fieldIssues:parsed.fieldIssues});
  const v=parsed.values;
  const requestedBusinessCode=v.businessCode;
- const pendingComplaintId=existing.status==="DRAFT"&&existing.extraData&&typeof existing.extraData==="object"&&!Array.isArray(existing.extraData)
-  ?(existing.extraData as {pendingComplaintId?:string|null}).pendingComplaintId??null
-  :null;
+ const pending=pendingFromExtraData(existing.status,existing.extraData);
+ const pendingComplaintId=pending.complaintId,pendingComplaintActionId=pending.complaintActionId;
 
  v.businessCode=existing.qmsRecord.businessCode??requestedBusinessCode;
  if(!keepsOperationalStatus(existing.status,v.status))return preserveFormState(previous,fd,{error:"No se puede volver a borrador una devolución ya operativa.",fieldErrors:["Una devolución abierta o cerrada no puede volver al estado Borrador."]});
@@ -180,19 +191,23 @@ async function updateReturnActionAuthenticatedContent(id:string,previous:ReturnF
   }
   v.businessCode=businessCode;
   await tx.qmsRecord.update({where:{id:existing.qmsRecordId},data:{businessCode,year:before.status==="DRAFT"&&!before.qmsRecord.businessCode?communicationYear:before.qmsRecord.year}});
-  await tx.returnRecord.update({where:{id},data:{...recordData(v,department,before,fd),extraData:extraData(before.extraData,v,becomingOperational?null:pendingComplaintId)}});const removed=await replaceProducts(tx,id,v.products);
+  await tx.returnRecord.update({where:{id},data:{...recordData(v,department,before,fd),extraData:extraData(before.extraData,v,becomingOperational?null:pendingComplaintId,becomingOperational?null:pendingComplaintActionId)}});const removed=await replaceProducts(tx,id,v.products);
   if(removed.length)await tx.changeHistory.create({data:{qmsRecordId:existing.qmsRecordId,changedByText:parsed.actor,fieldPath:"products.removed",oldValue:j(removed),reason:"Retirada de productos; Review conserva UUID y valor histórico",source:"UI"}});
   await planFollowup(tx,id,v,parsed.actor);
   if(becomingOperational&&pendingComplaintId){
    const complaintOrigin=await getComplaintReturnOrigin(tx,pendingComplaintId);
-   await registerComplaintReturnOrigin(tx,{complaintQmsRecordId:complaintOrigin.complaintQmsRecordId,returnQmsRecordId:existing.qmsRecordId,actor:parsed.actor});
+   // RET1: si la propuesta reservada sigue disponible, recibe el código. Si ya no (quitada, o cubierta por otra
+   // devolución), la devolución se abre solo con la relación a la reclamación y deja la reserva.
+   const proposal=pendingComplaintActionId?await complaintReturnProposalState(tx,pendingComplaintId,pendingComplaintActionId,id):null;
+   await linkReturnToComplaint(tx,{complaintQmsRecordId:complaintOrigin.complaintQmsRecordId,returnQmsRecordId:existing.qmsRecordId,actor:parsed.actor,
+    proposal:proposal?.state==="AVAILABLE"?{actionId:pendingComplaintActionId!,returnBusinessCode:businessCode}:undefined});
   }
   await tx.changeHistory.create({data:{qmsRecordId:existing.qmsRecordId,changedByText:parsed.actor,fieldPath:"__edit__",oldValue:snapshotJson(serializeReturnVersion(before)),newValue:snapshotJson(serializeReturnVersion(await getSnapshot(tx,id))),reason:v.changeReason,source:"UI"}});
   await refreshReturnSnapshot(tx,existing.qmsRecordId);
  });
 
  }catch(e){
-  if(e instanceof OperationalBusinessCodeError)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:[e.message]});
+  if(e instanceof OperationalBusinessCodeError||e instanceof ComplaintReturnLinkError)return preserveFormState(previous,fd,{error:"No se puede guardar la devolución.",fieldErrors:[e.message]});
   return preserveFormState(previous,fd,persistenceFormError(e,"la devolución"));
 }
  return {error:null,savedRecordId:id};

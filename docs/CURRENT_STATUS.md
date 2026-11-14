@@ -193,6 +193,58 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Devolución propuesta en una reclamación: una sola devolución (2026-11-14, RET1, D-140):**
+- **Problema:** «Crear devolución» desde la devolución propuesta de una reclamación solo creaba la relación. La propuesta seguía sin código y con el botón, incluso con la reclamación cerrada, y cada clic creaba otra devolución.
+- **Arreglo:**
+  - El enlace de la fila de la propuesta (Parte I) indica qué propuesta cubre (`fromComplaintActionId`).
+  - **En borrador:** la devolución reserva la propuesta (`extraData.pendingComplaintActionId`) y la reclamación ofrece «Abrir borrador de devolución».
+  - **Al abrirse** la devolución, la propuesta recibe su código antes de crear la relación, así que la versión vigente de la reclamación (y su Anexo III) ya lo lleva. Después la reclamación ofrece «Abrir devolución».
+  - **Si la propuesta ya tiene devolución, ya hay un borrador o ya no existe**, «Nueva devolución» lo avisa al cargar y el guardado lo rechaza, con un mensaje por motivo.
+  - **Concurrencia:** se bloquean reclamación, devolución y propuesta, en ese orden, como el resto de relaciones. Dos altas a la vez no cubren la misma propuesta, y no hay interbloqueo con el guardado de la reclamación.
+  - **Reserva:** mientras haya un borrador activo, la propuesta no se puede quitar de la reclamación ni cambiar de tipo. Si aun así deja de estar disponible, el borrador se abre solo con la relación.
+  - **Guardar la reclamación** con un formulario abierto antes no borra ni cambia ese código. Las referencias de otros tipos de acción se siguen pudiendo corregir.
+- **Audit trail:**
+  - Devoluciones escribe en `ComplaintDerivedAction` desde `returns/complaint-origin.ts`, que entra en el grupo de escritores W05 (catálogo y `PHASE_4B3_A.md`).
+  - La captura SQL existente lo atribuye a la reclamación, su única raíz, y exige permiso de edición sobre ella, igual que la relación.
+  - No hay migraciones ni cambios de esquema.
+- **Sin cambio:**
+  - El «Crear devolución» general de la pestaña Relaciones (una devolución que no cubre ninguna propuesta) y «Vincular devolución existente» siguen como antes.
+  - Las propuestas anteriores no se completan solas.
+  - Anular la devolución no borra el código de la propuesta (igual que en CAPA).
+  - Si una reclamación cerrada puede originar devoluciones no se decide aquí: depende del PNT.
+- **Pruebas:**
+  - `returns/complaint-proposal.test.ts`:
+    - estado de la propuesta (disponible, ya no existe, cubierta, reservada; no cuentan borradores anulados ni abiertos);
+    - un mensaje por motivo;
+    - código vacío rechazado;
+    - el código se escribe antes que la relación.
+  - `complaints/derived-actions.test.ts`:
+    - el código de una devolución propuesta no se borra ni cambia; los demás tipos sí se pueden corregir;
+    - una propuesta reservada no se quita ni cambia de tipo.
+  - El recorrido de Reclamaciones, que dejaba RET1 anotado como pendiente, ahora lo comprueba en el navegador:
+    - crea la devolución en borrador desde la fila de la propuesta;
+    - comprueba que se ofrece abrir el borrador y no crear otra;
+    - la abre;
+    - comprueba el código en la propuesta y en la versión vigente de la reclamación;
+    - comprueba que un segundo intento con el mismo enlace avisa al cargar.
+  - El alta directa en abierto usa la misma función de vinculación; su orden lo cubre la prueba unitaria.
+- **Revisión independiente:** sin hallazgos críticos.
+  - *Importantes, corregidos:*
+    - la versión vigente de la reclamación se quedaba sin el código (orden código → relación);
+    - posible interbloqueo con el guardado de la reclamación (orden de bloqueos);
+    - un borrador cuya propuesta se borraba no se podía abrir nunca;
+    - pruebas que no cubrían el flujo.
+  - *Menores, corregidos:*
+    - conservación del código solo en devoluciones;
+    - código vacío rechazado;
+    - filtros del simulacro;
+    - aviso al cargar;
+    - documentación.
+  - *Sin cambio:*
+    - la consulta de borradores desde la página de la reclamación (solo muestra el enlace; el destino exige permiso);
+    - el catálogo atribuye la tabla a todo el grupo W05 (sobreinclusión mecánica, como W02).
+  - El recorrido encontró además, antes de subir, que «Abrir borrador de devolución» apuntaba al identificador equivocado. Corregido.
+
 **Anexos ofrecidos solo con su plantilla instalada (2026-11-13, TPL1):**
 - **Problema:** la ficha ofrecía generar un anexo aunque la plantilla que usaría la generación no tuviera archivo, y al pulsar salía «Plantilla oficial no disponible».
   - Desviaciones y CAPA comprobaban la plantilla por defecto, pero no la asignada al expediente.
