@@ -109,10 +109,13 @@ async function main() {
     });
 
     // 3 · La devolución se crea desde la reclamación y queda vinculada.
+    // La fila de la devolución propuesta en la tabla «Devoluciones propuestas / vinculadas» de la Parte I.
+    const proposalRow = () => page.locator("table", { has: page.locator("th", { hasText: "Fecha prevista" }) }).locator("tbody tr").first();
     const returned = await tour.step(`3 · Desde <b>${opened.code}</b> se crea la <b>devolución</b>`, async () => {
-      await tour.go(`/complaints/${opened.id}?tab=relations`);
-      await tour.click(page.locator("main a", { hasText: "Crear devolución" }).first());
-      await page.waitForURL(/\/returns\/new/);
+      // Desde la devolución propuesta en la Parte I (RET1: el enlace indica qué propuesta cubre).
+      await tour.go(`/complaints/${opened.id}?tab=part-i`);
+      await tour.click(proposalRow().locator("a", { hasText: "Crear devolución" }));
+      await page.waitForURL(/\/returns\/new\?.*fromComplaintActionId=/);
       // El formulario llega rellenado desde la reclamación: origen, tipo «Reclamación», cliente y producto con su lote.
       await page.getByText(`devolución iniciada desde la reclamación ${opened.code}`).first().waitFor();
       const product = page.locator(".return-product-card").first();
@@ -133,13 +136,14 @@ async function main() {
       const [proposal] = await prisma.complaintDerivedAction.findMany({ where: { complaintId: opened.id, actionType: "RETURN" } });
       const draft = await waitForSaved(() => prisma.returnRecord.findFirst({ where: { status: "DRAFT", extraData: { path: ["pendingComplaintActionId"], equals: proposal.id } } }), "el borrador de la devolución propuesta");
       // La reclamación ya no ofrece crear otra devolución para esa propuesta: ofrece abrir el borrador.
-      await tour.go(`/complaints/${opened.id}?tab=relations`);
-      const openDraft = page.locator("main a", { hasText: "Abrir borrador de devolución" }).first();
+      await tour.go(`/complaints/${opened.id}?tab=part-i`);
+      const openDraft = proposalRow().locator("a", { hasText: "Abrir borrador de devolución" });
       await openDraft.waitFor();
-      assert.equal(await page.locator("main a", { hasText: "Crear devolución" }).count(), 0, "con un borrador en curso no se ofrece crear otra devolución");
+      assert.equal(await proposalRow().locator("a", { hasText: "Crear devolución" }).count(), 0, "con un borrador en curso no se ofrece crear otra devolución");
       await tour.caption("Con el borrador en curso, la reclamación ofrece <b>abrirlo</b>, no crear otra devolución");
       await tour.pause(1800);
       await tour.click(openDraft);
+      await page.waitForURL(new RegExp(`/returns/${draft.id}(\\?|$)`));
       await tour.click(page.locator("main a", { hasText: /^Editar/ }).first());
       await page.waitForURL(new RegExp(`/returns/${draft.id}/edit`));
       await tour.select(page.locator('select[name="status"]'), "OPEN");
@@ -157,9 +161,9 @@ async function main() {
       await page.getByText(opened.code).first().waitFor();
       await tour.pause(1500);
       // Y la reclamación ya no ofrece crear otra: ofrece abrirla.
-      await tour.go(`/complaints/${opened.id}?tab=relations`);
-      await page.locator("main a", { hasText: "Abrir devolución" }).first().waitFor();
-      assert.equal(await page.locator("main a", { hasText: "Crear devolución" }).count(), 0, "una propuesta con devolución no ofrece crear otra");
+      await tour.go(`/complaints/${opened.id}?tab=part-i`);
+      await proposalRow().locator("a", { hasText: "Abrir devolución" }).waitFor();
+      assert.equal(await proposalRow().locator("a", { hasText: "Crear devolución" }).count(), 0, "una propuesta con devolución no ofrece crear otra");
       await tour.caption(`La propuesta queda con <b>${relation.targetRecord.businessCode}</b>: ya no ofrece crear otra`);
       await tour.pause(1800);
       return { code: relation.targetRecord.businessCode ?? "" };

@@ -218,6 +218,8 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
     - comprueba que la reclamación ofrece abrir el borrador y no crear otra;
     - la abre;
     - comprueba que la propuesta recibe el código y que ya no se ofrece «Crear devolución».
+  - El recorrido encontró un fallo de esta misma entrega antes de subirla: «Abrir borrador de devolución» apuntaba al identificador de la devolución en vez del de su expediente QMS. Corregido.
+  - El «Crear devolución» general de la pestaña Relaciones se mantiene, para una devolución que no cubre ninguna propuesta.
 
 **Anexos ofrecidos solo con su plantilla instalada (2026-11-13, TPL1):**
 - **Problema:** la ficha ofrecía generar un anexo aunque la plantilla que usaría la generación no tuviera archivo, y al pulsar salía «Plantilla oficial no disponible».

@@ -92,8 +92,8 @@ async function ComplaintDetailPageAuthenticatedContent({params,searchParams}:{pa
  const currentVersion=r.qmsRecord.versions.at(-1)??null;
  // RET1: borradores de devolución creados desde una devolución propuesta: la ficha ofrece abrirlos, no crear otra.
  const returnProposalIds=r.derivedActions.filter(x=>x.actionType==="RETURN"&&!x.businessCode).map(x=>x.id);
- const proposalDrafts=returnProposalIds.length?await prisma.returnRecord.findMany({where:{status:"DRAFT",qmsRecord:{isActive:true},OR:returnProposalIds.map(actionId=>({extraData:{path:["pendingComplaintActionId"],equals:actionId}}))},select:{id:true,extraData:true}}):[];
- const draftForProposal=new Map(proposalDrafts.flatMap(draft=>{const data=draft.extraData as {pendingComplaintActionId?:unknown}|null;return typeof data?.pendingComplaintActionId==="string"?[[data.pendingComplaintActionId,draft.id] as const]:[];}));
+ const proposalDrafts=returnProposalIds.length?await prisma.returnRecord.findMany({where:{status:"DRAFT",qmsRecord:{isActive:true},OR:returnProposalIds.map(actionId=>({extraData:{path:["pendingComplaintActionId"],equals:actionId}}))},select:{qmsRecordId:true,extraData:true}}):[];
+ const draftForProposal=new Map(proposalDrafts.flatMap(draft=>{const data=draft.extraData as {pendingComplaintActionId?:unknown}|null;return typeof data?.pendingComplaintActionId==="string"?[[data.pendingComplaintActionId,draft.qmsRecordId] as const]:[];}));
  // TPL1: plantilla que usará cada generación (como en las rutas); solo se ofrece si tiene su archivo instalado.
  const [annexIIITemplate,annexIVTemplate]=await Promise.all([
   recordAnnexTemplate(QmsRecordType.COMPLAINT,DocumentType.COMPLAINT_ANNEX_III,r.annexIIITemplateVersion,"03"),
