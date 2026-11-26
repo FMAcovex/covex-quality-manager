@@ -15,8 +15,9 @@ const grantsFor = (modules: readonly AccessModule[], wanted: readonly AccessPerm
 
 const roleGrants: Record<string, Grant[]> = {
   QUALITY_ASSURANCE: grantsFor(roleEditorModules.map(m => m.key), "ALL", "ALL"),
-  DEPARTMENT_MANAGER: grantsFor(recordModules, ["CREATE", "EDIT", "FOLLOWUP", "REVIEW", "DOWNLOAD", "ATTACH_DOCUMENT", "GENERATE_DOCUMENT"], "ASSIGNED"),
-  READER: grantsFor(recordModules, ["DOWNLOAD"], "ALL"),
+  // D-141: todos los lectores marcan sus propias lecturas de PNT, sea cual sea el departamento del PNT.
+  DEPARTMENT_MANAGER: [...grantsFor(recordModules, ["CREATE", "EDIT", "FOLLOWUP", "REVIEW", "DOWNLOAD", "ATTACH_DOCUMENT", "GENERATE_DOCUMENT"], "ASSIGNED"), ...grantsFor(["PNT"], ["PNT_READING_SELF"], "ALL")],
+  READER: [...grantsFor(recordModules, ["DOWNLOAD"], "ALL"), ...grantsFor(["PNT"], ["PNT_READING_SELF"], "ALL")],
   TECHNICAL_ADMIN: [{ module: "SYSTEM", permission: "READ", scope: "ALL" }, { module: "SYSTEM", permission: "MANAGE_USERS", scope: "ALL" }],
 };
 

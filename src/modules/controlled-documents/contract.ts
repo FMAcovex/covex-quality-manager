@@ -24,6 +24,9 @@ export const pntModule: QmsModuleContract = {
     "PNT_CORRECT",
     "PNT_LEGACY_REGISTER",
     "PNT_MANAGE_STATE",
+    // D-141: lecturas. Cualquier lector marca la suya; Garantía de Calidad confirma las de otros.
+    "PNT_READING_SELF",
+    "PNT_READING_CONFIRM",
   ],
   // PNT no usa expediente QmsRecord ni relaciones operativas por ahora (D-083 MC-3).
   relations: { outgoing: [] },
