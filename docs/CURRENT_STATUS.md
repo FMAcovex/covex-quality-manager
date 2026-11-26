@@ -193,6 +193,18 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Lecturas de PNT, entrega 2 (2026-11-26, LEC2, D-141):**
+- **Qué cambia:** página «Lecturas de PNT» (`/controlled-documents/readings`), con el enlace «Lecturas» en la biblioteca.
+  - **Pendientes:** lecturas pendientes de todos los PNT, agrupadas por persona o por PNT, con filtros (persona, PNT, departamento, solo vencidas) y contadores. «Marcar como leído» en las propias y «Confirmar lectura» para Garantía de Calidad.
+  - **Asignar lecturas:** varios PNT a la vez (búsqueda, departamento, «Elegir los N visibles»), revisión vigente o aprobada pendiente de vigencia, lectores (usuarios, departamentos, personas externas) y plazo. Los PNT sin esa revisión se omiten y se informan.
+- **Servidor:** `addReadersToDocuments` (una transacción, PNT bloqueados en orden) y la acción `bulkAddReadersAction` (PN01). El guard exige editar cada PNT elegido con su ámbito. La operación del audit trail tiene cada PNT como raíz. Sin migraciones.
+- **Pruebas:**
+  - unitarias del formulario masivo (`domain.test.ts`) y de filtros y agrupación (`overview.test.ts`);
+  - `pnt-readings:smoke`: revisión vigente o aprobada, omisiones, quien ya la tenía, todo o nada, PNT inexistente e historial de cada PNT;
+  - `phase4b1:smoke`: el responsable de departamento puede en su departamento y no si uno de los PNT es de otro; consulta e IT no pueden (en rojo sin la regla del guard);
+  - captura del audit trail: una operación PN01 con raíces en los dos PNT y denegación sin edición;
+  - recorrido PNT, paso 8: asignación masiva desde la página y lecturas marcadas desde el panel.
+
 **Lecturas de PNT, entrega 1 (2026-11-26, LEC1, D-141):**
 - **Qué cambia:**
   - Pestaña «Lectura» en la ficha del PNT, por revisión vigente o aprobada: quién la ha leído, quién la tiene pendiente (con plazo y «vencida»), cuántas lecturas lleva cada persona, «Añadir personas» (usuarios, departamentos completos y personas externas sin usuario), «Enviar a relectura», «Retirar» con motivo y «Pedir lectura a los lectores anteriores».

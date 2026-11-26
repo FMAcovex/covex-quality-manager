@@ -1748,4 +1748,10 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
   - El filtro «Asignadas a mí» de la biblioteca incluye los PNT con una lectura pendiente de la persona (regla compartida de D-102).
   - Las lecturas de un PNT anulado no cuentan como pendientes en ninguna de estas vistas.
 - **Datos y audit trail:** tabla `ControlledReadingAssignment` (migraciones `20261126000100_pnt_reading_permissions` y `20261126000200_pnt_readings`), capturada por B2 con raíz en el PNT (contrato `B2_PNT_READINGS`). Las seis acciones usan la operación PN01 (sin código nuevo) y cada cambio deja también una entrada en el historial del PNT. Un PNT anulado no admite cambios de lectura.
-- **Fuera de esta decisión:** asignación masiva de varios PNT a varias personas y panel de pendientes (entrega 2); ejemplos de la demo y vídeo del recorrido (entrega 3); avisos por correo y flujos de circulación.
+- **Entrega 2 (2026-11-26): página «Lecturas de PNT»** (`/controlled-documents/readings`, enlace «Lecturas» en la biblioteca):
+  - **Pendientes:** las lecturas pendientes de todos los PNT, agrupadas por persona o por PNT, con filtros de persona, PNT, departamento del PNT y solo vencidas. Desde ahí se marca la lectura propia y Garantía de Calidad confirma las de otros, con las mismas acciones y permisos que la pestaña. Se muestran como máximo las 1000 de plazo más próximo; con más, se pide acotar.
+  - **Asignar lecturas:** la misma lectura en varios PNT a la vez (hasta 200), de la revisión vigente o de la aprobada pendiente de vigencia, con los mismos lectores, límites y plazo que la pestaña. Cada lectura queda en la pestaña «Lectura» de su PNT y en su historial.
+  - Los PNT sin la revisión elegida, o anulados, se omiten y el resultado lo dice. Quien ya tiene pendiente la lectura de un PNT se omite en ese PNT. Si nada se añade, no se guarda nada.
+  - **Todo o nada:** una sola transacción y una sola operación del audit trail (PN01) con cada PNT como raíz. Los PNT se bloquean en orden de id.
+  - **Permiso:** editar cada PNT elegido, con su ámbito (departamento o asignación). Si falta en uno, no se guarda ninguno.
+- **Fuera de esta decisión:** ejemplos de la demo y vídeo del recorrido (entrega 3); avisos por correo y flujos de circulación; exportar el panel de pendientes.
