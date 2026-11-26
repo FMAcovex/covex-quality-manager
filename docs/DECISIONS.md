@@ -1719,3 +1719,29 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
   - Las propuestas anteriores a esta decisión no se completan solas.
   - Anular la devolución o quitar la relación no borra el código de la propuesta (igual que en CAPA); la ficha la muestra «Pendiente de vincular».
   - Que una reclamación cerrada pueda o no originar devoluciones no se decide aquí: depende del PNT vigente.
+
+## D-141 — Lecturas de PNT: quién debe leer cada revisión y quién la tiene pendiente (2026-11-26)
+
+- **Qué es.** Control operativo de lecturas del PNT en Gestión documental: quién debe leer una revisión, quién la tiene pendiente y cuántas lecturas ha confirmado cada persona. Sirve para saber por dónde va el PNT impreso, que pasa de mano en mano. **No es formación ni firma:** la firma de lectura sigue dentro del procedimiento. Sin cuestionario.
+- **Revisiones que se leen:** la vigente y la aprobada pendiente de vigencia. Una revisión de cada PNT puede tener lectores en cada uno de esos dos estados.
+- **Lectores:**
+  - cualquier usuario activo y autorizado de la aplicación;
+  - departamentos completos (se añaden sus usuarios activos en ese momento; no quedan suscritos a altas posteriores);
+  - personas externas sin usuario, por nombre (una por línea). No reciben tarea; Garantía de Calidad marca su lectura.
+  - Una persona no puede tener dos lecturas pendientes de la misma revisión (índices únicos parciales); si ya la tiene, se omite y se informa.
+- **Plazo:** por defecto 15 días naturales desde hoy (día de Madrid, D-139), editable y nunca anterior a hoy. Una lectura pendiente con el plazo pasado se muestra «vencida».
+- **Estados de una lectura:** `PENDING`, `READ` y `WITHDRAWN` (retirada, con motivo obligatorio).
+  - «Enviar a relectura» crea una lectura pendiente nueva para la misma persona; la confirmada se conserva.
+  - Una lectura pendiente de una revisión que deja de leerse (sustituida por otra vigente, obsoleta o anulada) deja de contar como pendiente: se **deduce** del estado de la revisión («Sin leer · revisión sustituida»), sin reescribir la fila.
+  - La revisión nueva ofrece «Pedir lectura a los lectores anteriores (N)»: usuarios activos y externos que tuvieron lectura no retirada de otra revisión del PNT.
+- **Permisos:**
+  - Definir lectores, relectura y retirada: `EDIT` del PNT (cualquiera menos quien solo consulta). Se usa el permiso existente en vez de uno nuevo.
+  - Marcar la lectura propia: nuevo permiso `PNT_READING_SELF` («Marcar sus propias lecturas»).
+  - Marcar la lectura de otra persona, también de las externas: nuevo permiso `PNT_READING_CONFIRM` («Confirmar lecturas de otros»), para Garantía de Calidad. La fila guarda si se confirmó en nombre de la persona.
+  - Los usuarios y roles ya dados de alta no reciben los permisos nuevos solos: los concede un administrador en Configuración → Usuarios. En la demo, Garantía de Calidad tiene los dos y los responsables de departamento y los usuarios de consulta, `PNT_READING_SELF` sobre todos los PNT.
+- **Dónde se ve:**
+  - pestaña «Lectura» del PNT;
+  - distintivo «En lectura · N pendientes» en la cabecera de la ficha y en la biblioteca, con el filtro «Lectura»;
+  - «Mis tareas» del inicio: «Leer la revisión NN», con «Marcar como leído». La vista de todos los usuarios del calendario no incluye lecturas.
+- **Datos y audit trail:** tabla `ControlledReadingAssignment` (migraciones `20261126000100_pnt_reading_permissions` y `20261126000200_pnt_readings`), capturada por B2 con raíz en el PNT (contrato `B2_PNT_READINGS`). Las seis acciones usan la operación PN01 (sin código nuevo) y cada cambio deja también una entrada en el historial del PNT. Un PNT anulado no admite cambios de lectura.
+- **Fuera de esta decisión:** asignación masiva de varios PNT a varias personas y panel de pendientes (entrega 2); ejemplos de la demo y vídeo del recorrido (entrega 3); avisos por correo y flujos de circulación.

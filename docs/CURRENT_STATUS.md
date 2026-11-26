@@ -193,6 +193,20 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Lecturas de PNT, entrega 1 (2026-11-26, LEC1, D-141):**
+- **Qué cambia:**
+  - Pestaña «Lectura» en la ficha del PNT, por revisión vigente o aprobada: quién la ha leído, quién la tiene pendiente (con plazo y «vencida»), cuántas lecturas lleva cada persona, «Añadir personas» (usuarios, departamentos completos y personas externas sin usuario), «Enviar a relectura», «Retirar» con motivo y «Pedir lectura a los lectores anteriores».
+  - «Marcar como leído» para la propia lectura (permiso nuevo `PNT_READING_SELF`) y «Confirmar lectura» de otra persona para Garantía de Calidad (permiso nuevo `PNT_READING_CONFIRM`). Definir lectores exige editar el PNT.
+  - Distintivo «En lectura · N pendientes» en la ficha y en la biblioteca, filtro «Lectura» en los filtros avanzados, y tarea «Leer la revisión NN» en «Mis tareas» con su botón «Marcar como leído».
+  - Las lecturas pendientes de una revisión sustituida dejan de contar sin reescribirse.
+- **Datos:** tabla `ControlledReadingAssignment` y dos valores de `AccessPermission` (migraciones `20261126000100_pnt_reading_permissions` y `20261126000200_pnt_readings`). Captura B2 con raíz en el PNT (contrato `B2_PNT_READINGS`, operación PN01, grupo de escritores W08) y entrada en el historial del PNT.
+- **Pruebas:**
+  - `readings/domain.test.ts` (plazos, estado deducido, contadores, formularios);
+  - `pnt-readings:smoke` (servicio contra PostgreSQL: alta, duplicados, departamentos, externos, confirmación propia y en nombre de otro, relectura, retirada, lectores anteriores, PNT anulado);
+  - captura del audit trail en `module-actions-capture.test.ts` (operación, actor, permiso y denegaciones);
+  - el recorrido PNT pide la lectura al usuario de la sesión y a una persona externa, comprueba el distintivo y el filtro, marca la lectura propia desde «Mis tareas» y confirma la externa.
+- **Pendiente:** entrega 2 (asignación masiva de varios PNT a varias personas y panel de pendientes) y entrega 3 (ejemplos en la demo y vídeo). Los roles corporativos existentes necesitan que un administrador les conceda `PNT_READING_SELF`.
+
 **Devolución propuesta en una reclamación: una sola devolución (2026-11-14, RET1, D-140):**
 - **Problema:** «Crear devolución» desde la devolución propuesta de una reclamación solo creaba la relación. La propuesta seguía sin código y con el botón, incluso con la reclamación cerrada, y cada clic creaba otra devolución.
 - **Arreglo:**

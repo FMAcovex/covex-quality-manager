@@ -559,3 +559,16 @@ La migración `20261030000100_deviation_text_tables` añade `Deviation.textTable
 
 Se valida en servidor (`src/lib/forms/text-tables.ts`), entra en la versión del expediente y la captura B2 lo registra como JSON no crítico (contrato `B2_DEVIATION_TEXT_TABLES`). Las tablas se numeran en el orden de los apartados (`src/modules/deviations/text-tables.ts`) y se escriben en el Anexo III como tablas de Word dentro de la casilla de su apartado. La migración `20261031000100_capa_change_text_tables` añade la misma columna a `Capa` y `ChangeControl` (contrato `B2_CAPA_CHANGE_TEXT_TABLES`); sus campos y casillas están en `src/modules/capa/text-tables.ts` y `src/modules/change-control/text-tables.ts`. La migración `20261031000200_oos_complaint_return_text_tables` la añade a `OosRecord`, `Complaint` y `ReturnRecord` (contrato `B2_QMS_TEXT_TABLES`), con sus campos y casillas en `src/modules/oos/text-tables.ts`, `src/modules/complaints/text-tables.ts` y `src/modules/returns/text-tables.ts`. Las versiones de Reclamaciones y Devoluciones la guardan en su foto. En `Capa.textTables`, las tablas de cada fila de «Seguimiento de la acción» (`CapaActionFollowup`) van con la clave `actionFollowups.N` (posición de la fila desde 0), porque esas filas se guardan por posición y se recrean en cada guardado.
 
+
+## Lecturas de PNT (D-141)
+
+La migración `20261126000200_pnt_readings` añade `ControlledReadingAssignment`, una fila por lectura pedida (la de `20261126000100_pnt_reading_permissions` añade `PNT_READING_SELF` y `PNT_READING_CONFIRM` a `AccessPermission`):
+- `documentId` (FK a `ControlledDocument`) y `revisionId` (FK compuesta a la revisión del mismo PNT);
+- `readerUserId` (FK opcional a `AuthUser`; vacío para personas externas) y `readerName` (nombre mostrado, no vacío);
+- `status` (`ControlledReadingStatus`: `PENDING`, `READ`, `WITHDRAWN`) y `dueDate` (DATE);
+- `assignedAt`, `assignedByText`;
+- `readOn` (DATE), `confirmedAt`, `confirmedByText`, `confirmedOnBehalf` (confirmada por otra persona);
+- `withdrawnAt`, `withdrawnByText`, `withdrawalReason`;
+- `createdAt`, `updatedAt`.
+
+CHECK: `READ` exige `readOn`, `confirmedAt` y `confirmedByText`; `WITHDRAWN` exige `withdrawnAt` y `withdrawnByText`. Índices únicos parciales: una lectura `PENDING` por revisión y usuario, y por revisión y nombre externo normalizado. La captura B2 la registra con raíz en el PNT (contrato `B2_PNT_READINGS`). El estado «revisión sustituida» no se guarda: se deduce de una lectura `PENDING` cuya revisión ya no está vigente ni aprobada.
