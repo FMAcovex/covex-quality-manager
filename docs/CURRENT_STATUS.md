@@ -193,6 +193,17 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
 - **Resultado** con las plantillas oficiales: los 24 anexos son correctos. Encontró un fallo, ya corregido: en el Anexo III de Devoluciones, la tabla de la justificación del plazo excepcional salía sin su texto.
 - **Procedimiento** en [ANNEX_VERIFICATION.md](ANNEX_VERIFICATION.md).
 
+**Lecturas de PNT, entrega 3 (2026-11-26, LEC3, D-141):**
+- **Demo:** `scripts/demo/seed-examples.ts` añade lecturas ficticias:
+  - PM-10/010 (rev. 03): una leída por la persona, una confirmada por Garantía de Calidad y dos pendientes, una vencida;
+  - GC-00/023: una pendiente de la rev. 05, ya sustituida, que no cuenta; la vigente ofrece pedírsela a los lectores anteriores;
+  - GC-00/030: pendiente vencida de Garantía de Calidad y pendiente del perfil de consulta (en sus «Mis tareas»);
+  - LG-30/005: una retirada con motivo y una pendiente del responsable de departamento.
+  - Cada PNT se completa solo si su revisión sigue en el estado del ejemplo, el PNT está activo, no tiene lecturas y existen los usuarios de la demo, cada uno en su transacción. Las fechas cuentan desde la vigencia u obsolescencia de la revisión. Comprobado cargando una demo local dos veces (11 lecturas, sin duplicar, dentro del tiempo de cada revisión) y en la interfaz.
+- **Arreglo encontrado con la demo:** «Pedir lectura a los lectores anteriores» contaba (y pedía de nuevo) a quien ya había leído la revisión vigente. Ahora no cuenta ni pide a quien ya la tiene pedida o leída, comprobado bajo el bloqueo del PNT (`pnt-readings:smoke`, en rojo antes del arreglo, con el mensaje exacto y el número del botón). Un PNT anulado se rechaza antes de calcular los lectores.
+- **Revisión independiente:** sin hallazgos críticos ni importantes. Menores corregidos: la exclusión de quien ya leyó se hace dentro de la transacción (antes, fuera de la captura B2, una confirmación simultánea podía colarse); mensaje correcto cuando los lectores anteriores están inactivos; ejemplos de la demo comprobados por PNT, en transacción, en el estado esperado y con fechas de cada revisión; pruebas del número del botón y del mensaje exacto.
+- **Sin vídeo del recorrido:** no se necesita.
+
 **Lecturas de PNT, entrega 2 (2026-11-26, LEC2, D-141):**
 - **Qué cambia:** página «Lecturas de PNT» (`/controlled-documents/readings`), con el enlace «Lecturas» en la biblioteca.
   - **Pendientes:** lecturas pendientes de todos los PNT, agrupadas por persona o por PNT, con filtros (persona, PNT, departamento, solo vencidas) y contadores. «Marcar como leído» en las propias y «Confirmar lectura» para Garantía de Calidad.

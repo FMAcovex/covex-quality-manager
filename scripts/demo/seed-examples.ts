@@ -356,6 +356,69 @@ async function pntAssignments() {
   }
 }
 
+// D-141: lecturas de PNT de ejemplo: pendientes (alguna vencida), leídas por la persona y confirmadas por
+// Garantía de Calidad, una retirada y una de una revisión ya sustituida. Cada PNT se completa solo si su
+// revisión sigue en el estado del ejemplo, el PNT está activo y aún no tiene lecturas, así que también completa
+// las demos cargadas antes de este paso sin tocar lo que se haya probado en ellas.
+const READER = demoProfiles[2].id;
+async function pntReadings() {
+  const names = Object.fromEntries((await prisma.authUser.findMany({ where: { id: { in: [QA, MANAGER, READER] } }, select: { id: true, displayName: true } })).map(u => [u.id, u.displayName]));
+  if (Object.keys(names).length < 3) return; // Sin los usuarios de la demo no hay ejemplos coherentes.
+  type Reading = { reader: string; external?: boolean; asked: number; due: number; read?: number; onBehalf?: boolean; withdrawn?: string };
+  // Las fechas cuentan desde hoy, desde la vigencia de la revisión («from») o desde su obsolescencia («obsolete»),
+  // para que una lectura nunca se pida fuera del tiempo en que la revisión se podía leer.
+  const readings = async (baseCode: string, revisionCode: string, status: "IN_FORCE" | "OBSOLETE", anchor: "today" | "from" | "obsolete", list: Reading[]) => {
+    const r = await prisma.controlledDocumentRevision.findFirst({ where: { revisionCode, status, document: { baseCode, observations: MARK, administrativeStatus: "ACTIVE" } }, select: { id: true, documentId: true, effectiveFrom: true, obsoletedAt: true } });
+    if (!r || await prisma.controlledReadingAssignment.count({ where: { documentId: r.documentId } })) return;
+    const base = anchor === "from" ? r.effectiveFrom : anchor === "obsolete" ? r.obsoletedAt : day(0);
+    if (!base) return;
+    const at = (n: number) => new Date(base.getTime() + n * 86400000);
+    await prisma.$transaction(async tx => {
+      for (const item of list) {
+        const readerName = item.external ? item.reader : names[item.reader];
+        await tx.controlledReadingAssignment.create({ data: {
+          documentId: r.documentId, revisionId: r.id, readerUserId: item.external ? null : item.reader, readerName, dueDate: at(item.due), assignedAt: at(item.asked), assignedByText: ACTOR,
+          status: item.withdrawn ? "WITHDRAWN" : item.read !== undefined ? "READ" : "PENDING",
+          ...(item.read !== undefined ? { readOn: at(item.read), confirmedAt: at(item.read), confirmedByText: item.onBehalf ? ACTOR : readerName, confirmedOnBehalf: Boolean(item.onBehalf) } : {}),
+          ...(item.withdrawn ? { withdrawnAt: at(item.asked + 2), withdrawnByText: ACTOR, withdrawalReason: item.withdrawn } : {}),
+        } });
+      }
+      await tx.controlledDocumentChange.create({ data: { documentId: r.documentId, revisionId: r.id, action: `Lecturas de la revisión ${revisionCode}`, changedByText: ACTOR, reason: "Ejemplo de la demo", source: "SYSTEM", newValue: { lectores: list.map(item => item.external ? item.reader : names[item.reader]) } } });
+    });
+  };
+  // Revisión vigente con el PNT impreso circulando: una lectura propia, una confirmada por GC y dos pendientes (una vencida).
+  await readings("PM-10/010", "03", "IN_FORCE", "today", [
+    { reader: QA, asked: -20, due: -5, read: -12 },
+    { reader: "Operario de turno de tarde (ficticio)", external: true, asked: -20, due: -5, read: -8, onBehalf: true },
+    { reader: MANAGER, asked: -6, due: 9 },
+    { reader: "Operario de turno de mañana (ficticio)", external: true, asked: -20, due: -3 },
+  ]);
+  // Revisión sustituida: lo que quedó sin leer ya no cuenta; la vigente ofrece pedírselo a los lectores anteriores.
+  await readings("GC-00/023", "05", "OBSOLETE", "obsolete", [
+    { reader: MANAGER, asked: -230, due: -215, read: -220 },
+    { reader: "Técnico de laboratorio (ficticio)", external: true, asked: -30, due: -15 },
+  ]);
+  // Cada revisión es un ejemplo aparte: la vigente se completa aunque la sustituida ya tenga lecturas.
+  const vigente = await prisma.controlledDocumentRevision.findFirst({ where: { revisionCode: "06", status: "IN_FORCE", document: { baseCode: "GC-00/023", observations: MARK, administrativeStatus: "ACTIVE" } }, select: { id: true, effectiveFrom: true, documentId: true } });
+  if (vigente?.effectiveFrom && !await prisma.controlledReadingAssignment.count({ where: { revisionId: vigente.id } })) {
+    const at = (n: number) => new Date(vigente.effectiveFrom!.getTime() + n * 86400000);
+    await prisma.$transaction(async tx => {
+      await tx.controlledReadingAssignment.create({ data: { documentId: vigente.documentId, revisionId: vigente.id, readerUserId: MANAGER, readerName: names[MANAGER], dueDate: at(25), assignedAt: at(10), assignedByText: ACTOR, status: "READ", readOn: at(20), confirmedAt: at(20), confirmedByText: names[MANAGER] } });
+      await tx.controlledDocumentChange.create({ data: { documentId: vigente.documentId, revisionId: vigente.id, action: "Lecturas de la revisión 06", changedByText: ACTOR, reason: "Ejemplo de la demo", source: "SYSTEM", newValue: { lectores: [names[MANAGER]] } } });
+    });
+  }
+  // Pendiente de Garantía de Calidad, vencida (aparece en sus «Mis tareas»), y de la persona de consulta.
+  await readings("GC-00/030", "05", "IN_FORCE", "today", [
+    { reader: QA, asked: -20, due: -2 },
+    { reader: READER, asked: -4, due: 11 },
+  ]);
+  // Una lectura retirada con su motivo y otra pendiente del responsable de departamento.
+  await readings("LG-30/005", "02", "IN_FORCE", "today", [
+    { reader: "Carretillero de turno de noche (ficticio)", external: true, asked: -30, due: -15, withdrawn: "Ya no trabaja en la cámara fría (ficticio)." },
+    { reader: MANAGER, asked: -10, due: 5 },
+  ]);
+}
+
 // D-122: dos modelos de Control de cambios de ejemplo. Solo se crean si aún no hay ninguno.
 async function changeModels() {
   if (await prisma.changeControlModel.count()) return;
@@ -489,6 +552,7 @@ async function main() {
     await changeFollowupVersions();
     await supplierAuditPlans();
     await pntAssignments();
+    await pntReadings();
     await changeModels();
     await repairAuditExamples();
     await r6Examples();
@@ -504,6 +568,7 @@ async function main() {
   const o = await oos();
   await pnts();
   await pntAssignments();
+  await pntReadings();
   await changeModels();
 
   // CAPA creadas desde su origen (registradas en el plan de la desviación o la reclamación).
