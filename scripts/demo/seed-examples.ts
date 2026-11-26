@@ -356,6 +356,56 @@ async function pntAssignments() {
   }
 }
 
+// D-141: lecturas de PNT de ejemplo: pendientes (alguna vencida), leídas por la persona y confirmadas por
+// Garantía de Calidad, una retirada y una de una revisión ya sustituida. Solo se crean si los PNT de ejemplo
+// aún no tienen ninguna, así que también completa las demos cargadas antes de este paso.
+const READER = demoProfiles[2].id;
+async function pntReadings() {
+  if (await prisma.controlledReadingAssignment.count({ where: { document: { observations: MARK } } })) return;
+  const names = Object.fromEntries((await prisma.authUser.findMany({ where: { id: { in: [QA, MANAGER, READER] } }, select: { id: true, displayName: true } })).map(u => [u.id, u.displayName]));
+  const revision = (baseCode: string, revisionCode: string) => prisma.controlledDocumentRevision.findFirst({ where: { revisionCode, document: { baseCode, observations: MARK } }, select: { id: true, documentId: true } });
+  type Reading = { reader: string; external?: boolean; asked: number; due: number; read?: number; onBehalf?: boolean; withdrawn?: string };
+  const readings = async (baseCode: string, revisionCode: string, list: Reading[]) => {
+    const r = await revision(baseCode, revisionCode);
+    if (!r) return;
+    for (const item of list) {
+      const readerUserId = item.external ? null : item.reader;
+      const readerName = item.external ? item.reader : names[item.reader];
+      if (!readerName) continue;
+      await prisma.controlledReadingAssignment.create({ data: {
+        documentId: r.documentId, revisionId: r.id, readerUserId, readerName, dueDate: day(item.due), assignedAt: day(item.asked), assignedByText: ACTOR,
+        status: item.withdrawn ? "WITHDRAWN" : item.read !== undefined ? "READ" : "PENDING",
+        ...(item.read !== undefined ? { readOn: day(item.read), confirmedAt: day(item.read), confirmedByText: item.onBehalf ? ACTOR : readerName, confirmedOnBehalf: Boolean(item.onBehalf) } : {}),
+        ...(item.withdrawn ? { withdrawnAt: day(item.asked + 2), withdrawnByText: ACTOR, withdrawalReason: item.withdrawn } : {}),
+      } });
+    }
+    await prisma.controlledDocumentChange.create({ data: { documentId: r.documentId, revisionId: r.id, action: `Lecturas de la revisión ${revisionCode}`, changedByText: ACTOR, reason: "Ejemplo de la demo", source: "SYSTEM", newValue: { lectores: list.map(item => item.external ? item.reader : names[item.reader]).filter(Boolean) } } });
+  };
+  // Revisión vigente con el PNT impreso circulando: una lectura propia, una confirmada por GC y dos pendientes (una vencida).
+  await readings("PM-10/010", "03", [
+    { reader: QA, asked: -20, due: -5, read: -12 },
+    { reader: "Operario de turno de tarde (ficticio)", external: true, asked: -20, due: -5, read: -8, onBehalf: true },
+    { reader: MANAGER, asked: -6, due: 9 },
+    { reader: "Operario de turno de mañana (ficticio)", external: true, asked: -20, due: -3 },
+  ]);
+  // Revisión anterior sustituida: lo que quedó sin leer ya no cuenta; la vigente ofrece pedírsela a los lectores anteriores.
+  await readings("GC-00/023", "05", [
+    { reader: MANAGER, asked: -400, due: -385, read: -390 },
+    { reader: "Técnico de laboratorio (ficticio)", external: true, asked: -200, due: -185 },
+  ]);
+  await readings("GC-00/023", "06", [{ reader: MANAGER, asked: -160, due: -145, read: -150 }]);
+  // Pendiente de Garantía de Calidad, vencida (aparece en sus «Mis tareas»), y de la persona de consulta.
+  await readings("GC-00/030", "05", [
+    { reader: QA, asked: -20, due: -2 },
+    { reader: READER, asked: -4, due: 11 },
+  ]);
+  // Una lectura retirada con su motivo y otra pendiente del responsable de departamento.
+  await readings("LG-30/005", "02", [
+    { reader: "Carretillero de turno de noche (ficticio)", external: true, asked: -30, due: -15, withdrawn: "Ya no trabaja en la cámara fría (ficticio)." },
+    { reader: MANAGER, asked: -10, due: 5 },
+  ]);
+}
+
 // D-122: dos modelos de Control de cambios de ejemplo. Solo se crean si aún no hay ninguno.
 async function changeModels() {
   if (await prisma.changeControlModel.count()) return;
@@ -489,6 +539,7 @@ async function main() {
     await changeFollowupVersions();
     await supplierAuditPlans();
     await pntAssignments();
+    await pntReadings();
     await changeModels();
     await repairAuditExamples();
     await r6Examples();
@@ -504,6 +555,7 @@ async function main() {
   const o = await oos();
   await pnts();
   await pntAssignments();
+  await pntReadings();
   await changeModels();
 
   // CAPA creadas desde su origen (registradas en el plan de la desviación o la reclamación).

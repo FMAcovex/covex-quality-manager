@@ -32,9 +32,9 @@ export async function getDocumentReadings(documentId: string) {
   }));
   const readable = revisions.filter(revision => (READABLE_REVISION_STATUSES as readonly string[]).includes(revision.status));
   // Lectores anteriores: de otras revisiones y no retirados (los que «Pedir a los lectores anteriores» añadiría).
-  // Sin contar a quien ya tiene pendiente esta revisión: el botón solo cuenta a quien añadiría.
+  // Sin contar a quien ya tiene esta revisión pedida o leída: el botón solo cuenta a quien añadiría.
   const previousReaders = (revisionId: string) => {
-    const pendingHere = new Set(readings.filter(row => row.revisionId === revisionId && row.status === "PENDING").map(row => readerKey(row)));
+    const pendingHere = new Set(readings.filter(row => row.revisionId === revisionId && row.status !== "WITHDRAWN").map(row => readerKey(row)));
     return new Set(readings.filter(row => row.revisionId !== revisionId && row.status !== "WITHDRAWN" && !row.inactive).map(row => readerKey(row)).filter(key => !pendingHere.has(key))).size;
   };
   return { readable: readable.map(revision => ({ ...revision, previousReaders: previousReaders(revision.id) })), readings };

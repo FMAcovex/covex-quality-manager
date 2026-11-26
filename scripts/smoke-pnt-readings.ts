@@ -98,10 +98,15 @@ async function main() {
   assert.deepEqual(await requestPreviousReaders(id, { revisionId: second, dueDate: due }, QA), { added: 3, skipped: 0 });
   const secondReaders = (await prisma.controlledReadingAssignment.findMany({ where: { revisionId: second } })).map(r => r.readerName.split(" (")[0]).sort();
   assert.deepEqual(secondReaders, ["Ana", "Carla", "Pedro Gómez"]);
+  // Quien ya ha leído la revisión nueva no se vuelve a pedir como lector anterior.
+  const anaSecond = await prisma.controlledReadingAssignment.findFirstOrThrow({ where: { revisionId: second, readerUserId: ana.id } });
+  await confirmReading(id, { readingId: anaSecond.id, readOn: today }, { actor: ana.displayName, userId: ana.id, onBehalf: false });
+  await assert.rejects(requestPreviousReaders(id, { revisionId: second, dueDate: due }, QA), /lectores anteriores/);
+  assert.equal(await prisma.controlledReadingAssignment.count({ where: { revisionId: second, readerUserId: ana.id, status: "PENDING" } }), 0);
 
   // Todo queda en el historial operativo del PNT.
   const changes = await prisma.controlledDocumentChange.count({ where: { documentId: id, reason: "Lecturas del PNT (D-141)" } });
-  assert.equal(changes, 8, "alta, alta de Carla, tres confirmaciones, relectura, retirada y lectores anteriores");
+  assert.equal(changes, 9, "alta, alta de Carla, cuatro confirmaciones, relectura, retirada y lectores anteriores");
 
   // Entrega 2: la misma lectura en varios PNT a la vez. De cada uno se lee la revisión elegida; los que no la
   // tienen se omiten y se informan; quien ya la tiene pendiente no se duplica.

@@ -1735,7 +1735,7 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
   - «Enviar a relectura» crea una lectura pendiente nueva para la misma persona; la confirmada se conserva. No se ofrece a quien ya no es usuario activo.
   - La fecha de lectura no puede ser futura. No se limita hacia atrás: es la fecha que consta en el procedimiento firmado.
   - Una lectura pendiente de una revisión que deja de leerse (sustituida por otra vigente, obsoleta o anulada) deja de contar como pendiente: se **deduce** del estado de la revisión («Sin leer · revisión sustituida»), sin reescribir la fila.
-  - La revisión nueva ofrece «Pedir lectura a los lectores anteriores (N)»: usuarios activos y externos que tuvieron lectura no retirada de otra revisión del PNT.
+  - La revisión nueva ofrece «Pedir lectura a los lectores anteriores (N)»: usuarios activos y externos que tuvieron lectura no retirada de otra revisión del PNT y no tienen esta revisión pedida o leída.
 - **Permisos:**
   - Definir lectores, relectura y retirada: `EDIT` del PNT (cualquiera menos quien solo consulta). Se usa el permiso existente en vez de uno nuevo.
   - Marcar la lectura propia: nuevo permiso `PNT_READING_SELF` («Marcar sus propias lecturas»).
@@ -1755,4 +1755,5 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
   - Los PNT sin la revisión elegida, o anulados, se omiten y el resultado lo dice. Quien ya tiene pendiente la lectura de un PNT se omite en ese PNT. Si nada se añade, no se guarda nada.
   - **Todo o nada:** una sola transacción y una sola operación del audit trail (PN01) con cada PNT como raíz. Los PNT se bloquean en orden de id.
   - **Permiso:** editar cada PNT elegido, con su ámbito (departamento o asignación). Si falta en uno, no se guarda ninguno. El guard comprueba la misma lista que el validador (sin vacíos ni repetidos) y nunca usa un departamento enviado en el formulario.
-- **Fuera de esta decisión:** ejemplos de la demo y vídeo del recorrido (entrega 3); avisos por correo y flujos de circulación; exportar el panel de pendientes.
+- **Entrega 3 (2026-11-26): ejemplos de la demo.** `pnpm demo:examples` añade lecturas ficticias a cuatro PNT de ejemplo: leídas por la persona y confirmadas por Garantía de Calidad, pendientes (alguna vencida, también en «Mis tareas» de los perfiles de demo), una retirada con su motivo y una de una revisión ya sustituida. Solo se crean si esos PNT no tienen lecturas, así que también completa una demo ya cargada. Sin vídeo del recorrido: no se necesita.
+- **Fuera de esta decisión:** avisos por correo y flujos de circulación; exportar el panel de pendientes.
