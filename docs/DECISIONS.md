@@ -1726,12 +1726,14 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
 - **Revisiones que se leen:** la vigente y la aprobada pendiente de vigencia. Una revisión de cada PNT puede tener lectores en cada uno de esos dos estados.
 - **Lectores:**
   - cualquier usuario activo y autorizado de la aplicación;
-  - departamentos completos (se añaden sus usuarios activos en ese momento; no quedan suscritos a altas posteriores);
+  - departamentos completos y activos (se añaden sus usuarios activos en ese momento; no quedan suscritos a altas posteriores);
   - personas externas sin usuario, por nombre (una por línea). No reciben tarea; Garantía de Calidad marca su lectura.
   - Una persona no puede tener dos lecturas pendientes de la misma revisión (índices únicos parciales); si ya la tiene, se omite y se informa.
+  - Por petición, como máximo 500 usuarios, 50 departamentos y 100 personas externas.
 - **Plazo:** por defecto 15 días naturales desde hoy (día de Madrid, D-139), editable y nunca anterior a hoy. Una lectura pendiente con el plazo pasado se muestra «vencida».
 - **Estados de una lectura:** `PENDING`, `READ` y `WITHDRAWN` (retirada, con motivo obligatorio).
-  - «Enviar a relectura» crea una lectura pendiente nueva para la misma persona; la confirmada se conserva.
+  - «Enviar a relectura» crea una lectura pendiente nueva para la misma persona; la confirmada se conserva. No se ofrece a quien ya no es usuario activo.
+  - La fecha de lectura no puede ser futura. No se limita hacia atrás: es la fecha que consta en el procedimiento firmado.
   - Una lectura pendiente de una revisión que deja de leerse (sustituida por otra vigente, obsoleta o anulada) deja de contar como pendiente: se **deduce** del estado de la revisión («Sin leer · revisión sustituida»), sin reescribir la fila.
   - La revisión nueva ofrece «Pedir lectura a los lectores anteriores (N)»: usuarios activos y externos que tuvieron lectura no retirada de otra revisión del PNT.
 - **Permisos:**
@@ -1743,5 +1745,7 @@ Cuarta y última entrega de R6 (D-134 a D-136), con las respuestas del responsab
   - pestaña «Lectura» del PNT;
   - distintivo «En lectura · N pendientes» en la cabecera de la ficha y en la biblioteca, con el filtro «Lectura»;
   - «Mis tareas» del inicio: «Leer la revisión NN», con «Marcar como leído». La vista de todos los usuarios del calendario no incluye lecturas.
+  - El filtro «Asignadas a mí» de la biblioteca incluye los PNT con una lectura pendiente de la persona (regla compartida de D-102).
+  - Las lecturas de un PNT anulado no cuentan como pendientes en ninguna de estas vistas.
 - **Datos y audit trail:** tabla `ControlledReadingAssignment` (migraciones `20261126000100_pnt_reading_permissions` y `20261126000200_pnt_readings`), capturada por B2 con raíz en el PNT (contrato `B2_PNT_READINGS`). Las seis acciones usan la operación PN01 (sin código nuevo) y cada cambio deja también una entrada en el historial del PNT. Un PNT anulado no admite cambios de lectura.
 - **Fuera de esta decisión:** asignación masiva de varios PNT a varias personas y panel de pendientes (entrega 2); ejemplos de la demo y vídeo del recorrido (entrega 3); avisos por correo y flujos de circulación.

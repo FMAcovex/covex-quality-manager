@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canAssignReadings, effectiveReadingState, externalReaderKey, parseAddReadersForm, parseConfirmReadingForm, parsePreviousReadersForm, parseRereadForm, parseWithdrawReadingForm,
-  readingDueDate, readingCounts, readingSummary,
+  readingDueDate, readingCounts, readingSummary, readingSaved,
 } from "./domain";
 
 // D-141: lecturas de PNT. Control operativo de por dónde va la lectura de cada revisión.
@@ -80,5 +80,22 @@ describe("formularios", () => {
     expect(parseRereadForm(form({ readingId: REV, dueDate: "2026-12-11" }), "2026-11-26")).toEqual({ readingId: REV, dueDate: "2026-12-11" });
     expect(parseWithdrawReadingForm(form({ readingId: REV, reason: " Ya no trabaja en el área " }))).toEqual({ readingId: REV, reason: "Ya no trabaja en el área" });
     expect(() => parseWithdrawReadingForm(form({ readingId: REV, reason: " " }))).toThrow(/motivo/);
+  });
+});
+
+describe("formulario tras guardar (revisión independiente, I-1)", () => {
+  it("cada guardado correcto da una revisión nueva del formulario, para que repetir los mismos datos sea una petición nueva", () => {
+    const first = readingSaved({ error: null }, "Lectura pedida a 1 persona.");
+    expect(first).toEqual({ error: null, message: "Lectura pedida a 1 persona.", formRevision: 1 });
+    const second = readingSaved({ ...first, error: "Error anterior" }, "Lectura pedida a 1 persona.");
+    expect(second.formRevision).toBe(2);
+    expect(second.error).toBeNull();
+  });
+});
+
+describe("límites de una petición (revisión independiente, M-2)", () => {
+  it("rechaza más de 100 personas externas de una vez", () => {
+    const names = Array.from({ length: 101 }, (_, n) => `Persona ${n}`).join("\n");
+    expect(() => parseAddReadersForm(form({ revisionId: "7f9c1c3e-8a59-4ef7-9a0e-3a5b8b1e2f10", externalNames: names, dueDate: "2026-12-11" }), "2026-11-26")).toThrow(/como máximo 100/);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { assignedListWhere, assignedWhere, isAssignedToMe, pendingPntPeriodicReview, pendingPntRevision } from "@/lib/qms/assigned";
+import { assignedListWhere, assignedWhere, isAssignedToMe, pendingPntPeriodicReview, pendingPntReading, pendingPntRevision } from "@/lib/qms/assigned";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
@@ -57,5 +57,22 @@ describe("Orden de las asignadas en el panel", () => {
       { ...base, key: "d", code: "A", dueDate: null },
     ]);
     expect(sorted.map((item) => item.key)).toEqual(["a", "b", "d", "c"]);
+  });
+});
+
+describe("Lectura pendiente de PNT (D-141)", () => {
+  it("es la lectura pendiente de la persona, de una revisión vigente o aprobada y de un PNT no anulado", () => {
+    expect(pendingPntReading("u1")).toEqual({
+      readerUserId: "u1", status: "PENDING",
+      revision: { status: { in: ["APPROVED_PENDING_EFFECTIVE", "IN_FORCE"] } },
+      document: { administrativeStatus: { not: "ANNULLED" } },
+    });
+  });
+  it("sin persona cuenta las de todos (distintivo y filtro de la biblioteca)", () => {
+    expect(pendingPntReading(undefined).readerUserId).toBeUndefined();
+  });
+  it("«Asignadas a mí» de PNT incluye los PNT con una lectura pendiente de la persona", () => {
+    const where = assignedWhere.pnt("u1", new Date("2026-11-26T00:00:00Z"));
+    expect(where.OR).toContainEqual({ readings: { some: pendingPntReading("u1") } });
   });
 });

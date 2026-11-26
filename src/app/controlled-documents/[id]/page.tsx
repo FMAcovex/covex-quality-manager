@@ -26,10 +26,14 @@ import { administrativeTodayDate } from "@/lib/qms/administrative-date";
 import { ReadingsPanel } from "@/modules/controlled-documents/readings/panel";
 import { pendingReadingCount } from "@/modules/controlled-documents/readings/queries";
 export const dynamic = "force-dynamic";
-const fields: Record<string, string> = { baseCode: "Código base", baseCodeSnapshot: "Código congelado", title: "Título", titleSnapshot: "Título congelado", departmentCodeSnapshot: "Código de departamento", departmentNameSnapshot: "Departamento", observations: "Observaciones", administrativeStatus: "Estado del maestro", revisionCode: "Revisión", revisionReason: "Motivo de revisión", status: "Estado documental", effectiveFrom: "Vigencia", reviewDueAt: "Revisión prevista", obsoletedAt: "Obsolescencia", sourceReference: "Referencia documental", verificationStatus: "Verificación", verifiedByText: "Responsable de verificación", registeredByText: "Responsable del registro", periodicReviewResponsible: "Responsable de la revisión periódica", periodicReviewResponsibleUserId: "Usuario de la revisión periódica", ...Object.fromEntries(revisionFunctions.flatMap(f => [[`${f.key}Responsible`, `${f.label} (responsable)`], [`${f.key}ResponsibleUserId`, `${f.label} (usuario)`], [`${f.key}TargetDate`, `${f.label} (fecha prevista)`]])) };
+const fields: Record<string, string> = { baseCode: "Código base", baseCodeSnapshot: "Código congelado", title: "Título", titleSnapshot: "Título congelado", departmentCodeSnapshot: "Código de departamento", departmentNameSnapshot: "Departamento", observations: "Observaciones", administrativeStatus: "Estado del maestro", revisionCode: "Revisión", revisionReason: "Motivo de revisión", status: "Estado documental", effectiveFrom: "Vigencia", reviewDueAt: "Revisión prevista", obsoletedAt: "Obsolescencia", sourceReference: "Referencia documental", verificationStatus: "Verificación", verifiedByText: "Responsable de verificación", registeredByText: "Responsable del registro", periodicReviewResponsible: "Responsable de la revisión periódica", periodicReviewResponsibleUserId: "Usuario de la revisión periódica", ...Object.fromEntries(revisionFunctions.flatMap(f => [[`${f.key}Responsible`, `${f.label} (responsable)`], [`${f.key}ResponsibleUserId`, `${f.label} (usuario)`], [`${f.key}TargetDate`, `${f.label} (fecha prevista)`]])),
+    // D-141: lecturas del PNT.
+    lectores: "Lectores", lector: "Lector", plazo: "Plazo de lectura", estado: "Estado de la lectura", fecha: "Fecha de lectura", confirmadaPor: "Confirmada por", motivo: "Motivo de la retirada" };
 function historyValue(value: unknown, users: Map<string, string>) {
     if (value == null)
         return "—";
+    if (Array.isArray(value))
+        return value.join(", ");
     const s = String(value);
     if (users.has(s))
         return users.get(s);

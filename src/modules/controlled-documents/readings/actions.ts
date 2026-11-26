@@ -1,60 +1,71 @@
 "use server";
+import { Prisma } from "@prisma/client";
 import { authorizedAction } from "@/lib/auth/action-guard";
+import { logServerError } from "@/lib/log/server-log";
 import { currentIdentity } from "@/lib/auth/context";
 import { administrativeToday } from "@/lib/qms/administrative-date";
-import { parseAddReadersForm, parseConfirmReadingForm, parsePreviousReadersForm, parseRereadForm, parseWithdrawReadingForm } from "./domain";
+import { parseAddReadersForm, parseConfirmReadingForm, parsePreviousReadersForm, parseRereadForm, parseWithdrawReadingForm, readingSaved, type ReadingActionState } from "./domain";
 import { addReaders, confirmReading, requestPreviousReaders, requestReread, withdrawReading } from "./service";
 
 /** D-141: acciones de la pestaña «Lectura» del PNT. Gestionar lectores exige editar el PNT. */
-export type ReadingActionState = { error: string | null; message?: string | null };
+export type { ReadingActionState };
 
 const actorOf = (fd: FormData) => { const actor = fd.get("actor"); return typeof actor === "string" && actor.trim() ? actor.trim() : "Usuario"; };
-const message = (error: unknown) => error instanceof Error ? error.message : "No se ha podido guardar la lectura.";
+// Los errores técnicos (base de datos, captura del audit trail) se registran y no se muestran en crudo.
+function message(error: unknown) {
+  if (error instanceof Prisma.PrismaClientKnownRequestError || error instanceof Prisma.PrismaClientUnknownRequestError || error instanceof Prisma.PrismaClientValidationError || error instanceof Prisma.PrismaClientInitializationError) {
+    logServerError("controlled-documents.readings", error, { module: "PNT" });
+    return "No se ha podido guardar la lectura. Recarga la ficha y vuelve a intentarlo.";
+  }
+  return error instanceof Error ? error.message : "No se ha podido guardar la lectura.";
+}
+// En error se conserva la revisión del formulario: lo escrito no se pierde.
+const failed = (state: ReadingActionState, error: unknown): ReadingActionState => ({ error: message(error), formRevision: state.formRevision });
 const people = (count: number) => count === 1 ? "1 persona" : `${count} personas`;
 
-async function addReadersActionAuthenticatedContent(documentId: string, _state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
+async function addReadersActionAuthenticatedContent(documentId: string, state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
   try {
     const result = await addReaders(documentId, parseAddReadersForm(fd, administrativeToday()), actorOf(fd));
-    return { error: null, message: `Lectura pedida a ${people(result.added)}.${result.skipped ? ` ${people(result.skipped)} ya la tenía${result.skipped === 1 ? "" : "n"} pendiente.` : ""}` };
-  } catch (error) { return { error: message(error) }; }
+    return readingSaved(state, `Lectura pedida a ${people(result.added)}.${result.skipped ? ` ${people(result.skipped)} ya la tenía${result.skipped === 1 ? "" : "n"} pendiente.` : ""}`);
+  } catch (error) { return failed(state, error); }
 }
 
-async function requestPreviousReadersActionAuthenticatedContent(documentId: string, _state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
+async function requestPreviousReadersActionAuthenticatedContent(documentId: string, state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
   try {
     const { revisionId: checked, dueDate } = parsePreviousReadersForm(fd, administrativeToday());
     const result = await requestPreviousReaders(documentId, { revisionId: checked, dueDate }, actorOf(fd));
-    return { error: null, message: `Lectura pedida a ${people(result.added)} de los lectores anteriores.` };
-  } catch (error) { return { error: message(error) }; }
+    return readingSaved(state, `Lectura pedida a ${people(result.added)} de los lectores anteriores.`);
+  } catch (error) { return failed(state, error); }
 }
 
-async function requestRereadActionAuthenticatedContent(documentId: string, _state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
+async function requestRereadActionAuthenticatedContent(documentId: string, state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
   try {
     await requestReread(documentId, parseRereadForm(fd, administrativeToday()), actorOf(fd));
-    return { error: null, message: "Enviado a relectura." };
-  } catch (error) { return { error: message(error) }; }
+    return readingSaved(state, "Enviado a relectura.");
+  } catch (error) { return failed(state, error); }
 }
 
-async function withdrawReadingActionAuthenticatedContent(documentId: string, _state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
+async function withdrawReadingActionAuthenticatedContent(documentId: string, state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
   try {
     await withdrawReading(documentId, parseWithdrawReadingForm(fd), actorOf(fd));
-    return { error: null, message: "Lectura retirada." };
-  } catch (error) { return { error: message(error) }; }
+    return readingSaved(state, "Lectura retirada.");
+  } catch (error) { return failed(state, error); }
 }
 
 /** Cada persona marca su propia lectura. */
-async function confirmOwnReadingActionAuthenticatedContent(documentId: string, _state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
+async function confirmOwnReadingActionAuthenticatedContent(documentId: string, state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
   try {
     await confirmReading(documentId, parseConfirmReadingForm(fd, administrativeToday()), { actor: actorOf(fd), userId: currentIdentity()?.principal.id, onBehalf: false });
-    return { error: null, message: "Lectura registrada." };
-  } catch (error) { return { error: message(error) }; }
+    return readingSaved(state, "Lectura registrada.");
+  } catch (error) { return failed(state, error); }
 }
 
 /** Garantía de Calidad marca la lectura de otra persona (también de las externas). */
-async function confirmReadingForOtherActionAuthenticatedContent(documentId: string, _state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
+async function confirmReadingForOtherActionAuthenticatedContent(documentId: string, state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
   try {
     await confirmReading(documentId, parseConfirmReadingForm(fd, administrativeToday()), { actor: actorOf(fd), userId: currentIdentity()?.principal.id, onBehalf: true });
-    return { error: null, message: "Lectura registrada." };
-  } catch (error) { return { error: message(error) }; }
+    return readingSaved(state, "Lectura registrada.");
+  } catch (error) { return failed(state, error); }
 }
 
 export async function addReadersAction(...args: Parameters<typeof addReadersActionAuthenticatedContent>) {

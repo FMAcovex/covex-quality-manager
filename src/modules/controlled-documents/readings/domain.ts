@@ -55,6 +55,17 @@ export function readingSummary(rows: SummaryRow[], today: string) {
   };
 }
 
+/** Resultado de una acción de lectura. `formRevision` cambia con cada guardado correcto. */
+export type ReadingActionState = { error: string | null; message?: string | null; formRevision?: number };
+/**
+ * Guardado correcto: revisión nueva del formulario. El formulario se vuelve a montar con ella y su
+ * identificador de petición también es nuevo, así que repetir los mismos datos (pedir otra vez la
+ * lectura a quien se acaba de retirar) es otra petición y no la repetición de la anterior.
+ */
+export function readingSaved(previous: ReadingActionState, message: string): ReadingActionState {
+  return { error: null, message, formRevision: (previous.formRevision ?? 0) + 1 };
+}
+
 const field = (fd: FormData, name: string) => { const value = fd.get(name); return typeof value === "string" ? value : ""; };
 const unique = <T,>(values: T[]) => [...new Set(values)];
 const fail = (result: z.SafeParseReturnType<unknown, unknown>): never => { throw new Error(result.error?.issues[0]?.message ?? "Revisa los datos de la lectura."); };
@@ -63,9 +74,9 @@ const futureDue = (today: string) => z.string().trim().refine(value => validDate
 
 const addSchema = (today: string) => z.object({
   revisionId: z.string().uuid("Elige la revisión que se debe leer."),
-  userIds: z.array(z.string().uuid("Usuario no válido.")),
-  departmentIds: z.array(z.string().min(1).max(100)),
-  externalNames: z.array(z.string().max(200, "El nombre admite como máximo 200 caracteres.")),
+  userIds: z.array(z.string().uuid("Usuario no válido.")).max(500, "Elige como máximo 500 usuarios de una vez."),
+  departmentIds: z.array(z.string().min(1).max(100)).max(50, "Elige como máximo 50 departamentos de una vez."),
+  externalNames: z.array(z.string().max(200, "El nombre admite como máximo 200 caracteres.")).max(100, "Escribe como máximo 100 personas externas de una vez."),
   dueDate: futureDue(today),
 }).refine(value => value.userIds.length + value.departmentIds.length + value.externalNames.length > 0, "Elige al menos una persona, un departamento o escribe el nombre de una persona externa.");
 export type AddReadersInput = z.infer<ReturnType<typeof addSchema>>;

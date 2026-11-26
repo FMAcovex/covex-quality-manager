@@ -143,12 +143,27 @@ async function main() {
       await tour.go(`/controlled-documents/${id}?tab=readings`);
       await tour.click(page.locator("summary", { hasText: "Añadir personas" }).first());
       const picker = page.locator(".reading-picker");
+      const external = "Operario externo de mantenimiento (ficticio)";
+      const externalPending = () => prisma.controlledReadingAssignment.count({ where: { documentId: id, readerUserId: null, status: "PENDING" } });
+      // Persona externa: se pide, se retira y se vuelve a pedir igual, con el mismo formulario y sin recargar.
+      // La segunda es una petición nueva (no la repetición de la primera) y crea su lectura.
+      await tour.fill(picker.locator('textarea[name="externalNames"]'), external);
+      await tour.click(page.getByRole("button", { name: "Pedir lectura" }));
+      await waitForSaved(async () => (await externalPending()) === 1 || null, "la lectura de la persona externa");
+      const externalRow = page.locator("tr", { hasText: "Operario externo de mantenimiento" }).filter({ hasText: "Pendiente" }).first();
+      await tour.click(externalRow.locator("summary", { hasText: "Retirar" }));
+      await tour.fill(externalRow.locator('input[name="reason"]'), "Se pidió por error (ficticio)");
+      await tour.click(externalRow.getByRole("button", { name: "Retirar lectura" }));
+      await waitForSaved(async () => (await externalPending()) === 0 || null, "la lectura retirada");
+      await tour.fill(picker.locator('textarea[name="externalNames"]'), external);
+      await tour.click(page.getByRole("button", { name: "Pedir lectura" }));
+      await waitForSaved(async () => (await externalPending()) === 1 || null, "la lectura pedida de nuevo a la persona externa");
+      // Usuario de la sesión.
       await tour.fill(picker.getByLabel("Buscar usuarios"), session.name!);
       await tour.check(picker.locator("label.check-option", { hasText: session.name! }).first().locator("input"));
-      await tour.fill(picker.locator('textarea[name="externalNames"]'), "Operario externo de mantenimiento (ficticio)");
       await tour.click(page.getByRole("button", { name: "Pedir lectura" }));
-      const rows = await waitForSaved(async () => { const r = await prisma.controlledReadingAssignment.findMany({ where: { documentId: id } }); return r.length === 2 ? r : null; }, "las lecturas pedidas");
-      assert.deepEqual(rows.map(r => [r.status, Boolean(r.readerUserId)]).sort(), [["PENDING", false], ["PENDING", true]]);
+      const rows = await waitForSaved(async () => { const r = await prisma.controlledReadingAssignment.findMany({ where: { documentId: id } }); return r.length === 3 ? r : null; }, "las lecturas pedidas");
+      assert.deepEqual(rows.map(r => [r.status, Boolean(r.readerUserId)]).sort(), [["PENDING", false], ["PENDING", true], ["WITHDRAWN", false]]);
       assert.equal(rows.find(r => r.readerUserId)?.readerName, session.name, "la lectura es del usuario de la sesión");
       await page.getByTestId("pnt-in-reading").filter({ hasText: "En lectura · 2 pendientes" }).waitFor();
       // La fila propia se marca como propia («Marcar como leído»), no como confirmación en nombre de otro.
@@ -174,7 +189,7 @@ async function main() {
       await tour.go(`/controlled-documents/${id}?tab=readings`);
       const external = page.locator("tr", { hasText: "Operario externo de mantenimiento" }).first();
       await tour.click(external.getByRole("button", { name: "Confirmar lectura" }));
-      const confirmed = await waitForSaved(async () => { const r = await prisma.controlledReadingAssignment.findFirst({ where: { documentId: id, readerUserId: null } }); return r?.status === "READ" ? r : null; }, "la lectura de la persona externa");
+      const confirmed = await waitForSaved(async () => { const r = await prisma.controlledReadingAssignment.findFirst({ where: { documentId: id, readerUserId: null, status: { not: "WITHDRAWN" } } }); return r?.status === "READ" ? r : null; }, "la lectura de la persona externa");
       assert.equal(confirmed.confirmedOnBehalf, true, "confirmada por Garantía de Calidad en su nombre");
       await page.getByTestId("reading-summary").filter({ hasText: "Sin lecturas pendientes" }).waitFor();
       assert.equal(await page.getByTestId("pnt-in-reading").count(), 0, "sin pendientes, el PNT deja de estar en lectura");

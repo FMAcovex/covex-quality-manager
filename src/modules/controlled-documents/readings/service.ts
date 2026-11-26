@@ -46,8 +46,8 @@ export async function addReaders(documentId: string, input: AddReadersInput, act
       await lockOpenDocument(tx, documentId);
       const revision = await readableRevision(tx, documentId, input.revisionId);
       if (input.departmentIds.length) {
-        const found = await tx.department.count({ where: { id: { in: input.departmentIds } } });
-        if (found !== input.departmentIds.length) throw new Error("Uno de los departamentos elegidos ya no existe.");
+        const found = await tx.department.count({ where: { id: { in: input.departmentIds }, isActive: true } });
+        if (found !== input.departmentIds.length) throw new Error("Uno de los departamentos elegidos no existe o no está activo.");
       }
       const chosen = input.userIds.length ? await tx.authUser.findMany({ where: { id: { in: input.userIds }, ...selectable }, select: { id: true, displayName: true } }) : [];
       if (chosen.length !== input.userIds.length) throw new Error("Uno de los usuarios elegidos no está activo en la aplicación.");
@@ -109,7 +109,7 @@ export async function confirmReading(documentId: string, input: { readingId: str
       status: "READ", readOn: day(input.readOn), confirmedAt: new Date(), confirmedByText: who.actor, confirmedOnBehalf: !own,
     } });
     await history(tx, documentId, reading.revisionId, `Lectura confirmada de la revisión ${reading.revision.revisionCode}`, who.actor,
-      { lector: reading.readerName, estado: "Pendiente" }, { lector: reading.readerName, estado: "Leído", fecha: input.readOn, ...(own ? {} : { confirmadaPor: who.actor }) });
+      { estado: "Pendiente" }, { lector: reading.readerName, estado: "Leído", fecha: input.readOn, ...(own ? {} : { confirmadaPor: who.actor }) });
   });
 }
 
@@ -122,6 +122,7 @@ export async function requestReread(documentId: string, input: { readingId: stri
       if (!reading) throw new Error("La lectura no pertenece a este PNT.");
       if (reading.status !== "READ") throw new Error("Solo se envía a relectura a quien ya ha leído la revisión.");
       if (!canAssignReadings(reading.revision.status)) throw new Error(`La revisión ${reading.revision.revisionCode} ya no está en lectura: pide la lectura de la revisión vigente.`);
+      if (reading.readerUserId && !await tx.authUser.count({ where: { id: reading.readerUserId, ...selectable } })) throw new Error("Esta persona ya no es un usuario activo de la aplicación: retírala o pide la lectura a quien la sustituya.");
       const samePerson = reading.readerUserId ? { readerUserId: reading.readerUserId } : { readerUserId: null, readerName: { equals: reading.readerName, mode: "insensitive" as const } };
       if (await tx.controlledReadingAssignment.count({ where: { revisionId: reading.revisionId, status: "PENDING", ...samePerson } })) throw new Error("Esta persona ya tiene la lectura pendiente.");
       await tx.controlledReadingAssignment.create({ data: { documentId, revisionId: reading.revisionId, readerUserId: reading.readerUserId, readerName: reading.readerName, dueDate: day(input.dueDate), assignedByText: actor } });
@@ -137,11 +138,9 @@ export async function requestReread(documentId: string, input: { readingId: stri
 export async function withdrawReading(documentId: string, input: { readingId: string; reason: string }, actor: string, db: Db = prisma) {
   return db.$transaction(async tx => {
     await lockOpenDocument(tx, documentId);
-    const reading = await tx.controlledReadingAssignment.findFirst({ where: { id: input.readingId, documentId }, include: { revision: { select: { revisionCode: true } } } });
-    if (!reading) throw new Error("La lectura no pertenece a este PNT.");
-    if (reading.status !== "PENDING") throw new Error("Solo se retira una lectura pendiente.");
+    const reading = await pendingReading(tx, documentId, input.readingId);
     await tx.controlledReadingAssignment.update({ where: { id: reading.id }, data: { status: "WITHDRAWN", withdrawnAt: new Date(), withdrawnByText: actor, withdrawalReason: input.reason } });
     await history(tx, documentId, reading.revisionId, `Lectura retirada de la revisión ${reading.revision.revisionCode}`, actor,
-      { lector: reading.readerName, estado: "Pendiente" }, { lector: reading.readerName, estado: "Retirada", motivo: input.reason });
+      { estado: "Pendiente" }, { lector: reading.readerName, estado: "Retirada", motivo: input.reason });
   });
 }

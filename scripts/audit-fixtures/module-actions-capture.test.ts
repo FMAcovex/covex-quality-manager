@@ -541,11 +541,28 @@ it("captures PNT readings (D-141): readers by user and name, own confirmation wi
   const confirmOperation = await inspector.auditOperation.findFirstOrThrow({ where: { requestId: confirmed.requestId }, include: { events: true } });
   expect([confirmOperation.operation, confirmOperation.actorUserId, confirmOperation.accessPermission]).toEqual(["PN01", reader.id, "PNT_READING_SELF"]);
   expect(confirmOperation.events.some(e => e.entityType === "ControlledReadingAssignment" && e.fieldPath === "status" && JSON.stringify(e.newValue).includes("READ"))).toBe(true);
+  // Nor through their own-reading action: it is not their reading.
+  const notMine = await run(reader, "confirmOwnReadingAction", { readingId: external.id, readOn: today });
+  expect(notMine.result.error).toMatch(/tus propias lecturas/);
+  expect((await inspector.controlledReadingAssignment.findUniqueOrThrow({ where: { id: external.id } })).status).toBe("PENDING");
   // Quality assurance confirms the external person's reading on their behalf.
   const onBehalf = await run(qa, "confirmReadingForOtherAction", { readingId: external.id, readOn: today });
   expect(onBehalf.result.error).toBeNull();
   expect((await inspector.auditOperation.findFirstOrThrow({ where: { requestId: onBehalf.requestId } })).accessPermission).toBe("PNT_READING_CONFIRM");
   const after = await inspector.controlledReadingAssignment.findUniqueOrThrow({ where: { id: external.id } });
   expect([after.status, after.confirmedOnBehalf, after.confirmedByText]).toEqual(["READ", true, qa.name]);
+  // Re-reading and withdrawal also require editing the PNT: denied to the reader, captured for QA.
+  const deniedReread = await run(reader, "requestRereadAction", { readingId: own.id, dueDate: due });
+  expect(deniedReread.result.error).toBeTruthy();
+  const reread = await run(qa, "requestRereadAction", { readingId: own.id, dueDate: due });
+  expect(reread.result.error).toBeNull();
+  expect(await inspector.auditOperation.findFirstOrThrow({ where: { requestId: reread.requestId }, select: { operation: true, accessPermission: true } })).toEqual({ operation: "PN01", accessPermission: "EDIT" });
+  const again = await inspector.controlledReadingAssignment.findFirstOrThrow({ where: { documentId: master.id, readerUserId: reader.id, status: "PENDING" } });
+  const deniedWithdraw = await run(reader, "withdrawReadingAction", { readingId: again.id, reason: "Synthetic withdrawal" });
+  expect(deniedWithdraw.result.error).toBeTruthy();
+  expect((await inspector.controlledReadingAssignment.findUniqueOrThrow({ where: { id: again.id } })).status).toBe("PENDING");
+  const withdrawn = await run(qa, "withdrawReadingAction", { readingId: again.id, reason: "Synthetic withdrawal" });
+  expect(withdrawn.result.error).toBeNull();
+  expect(await inspector.auditOperation.findFirstOrThrow({ where: { requestId: withdrawn.requestId }, select: { operation: true, accessPermission: true } })).toEqual({ operation: "PN01", accessPermission: "EDIT" });
 }, 30000);
 

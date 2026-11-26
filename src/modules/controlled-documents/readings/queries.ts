@@ -1,14 +1,11 @@
 import "server-only";
-import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { pendingPntReading } from "@/lib/qms/assigned";
 import { READABLE_REVISION_STATUSES, effectiveReadingState, readerKey, readingCounts } from "./domain";
 
-/** D-141: lecturas que cuentan como pendientes: las de una revisión que todavía se lee. */
-export const effectivePendingReadingWhere = { status: "PENDING", revision: { status: { in: [...READABLE_REVISION_STATUSES] } } } satisfies Prisma.ControlledReadingAssignmentWhereInput;
-
-/** Lecturas pendientes (efectivas) de un PNT, para el distintivo «En lectura». */
+/** Lecturas pendientes (efectivas) de un PNT, para el distintivo «En lectura»: la misma regla que «Mis tareas» y la biblioteca. */
 export async function pendingReadingCount(documentId: string) {
-  return prisma.controlledReadingAssignment.count({ where: { documentId, ...effectivePendingReadingWhere } });
+  return prisma.controlledReadingAssignment.count({ where: { documentId, ...pendingPntReading(undefined) } });
 }
 
 /** Pestaña «Lectura»: revisiones que se leen, todas las lecturas con su estado efectivo y el contador por persona. */
@@ -33,7 +30,11 @@ export async function getDocumentReadings(documentId: string) {
   }));
   const readable = revisions.filter(revision => (READABLE_REVISION_STATUSES as readonly string[]).includes(revision.status));
   // Lectores anteriores: de otras revisiones y no retirados (los que «Pedir a los lectores anteriores» añadiría).
-  const previousReaders = (revisionId: string) => new Set(readings.filter(row => row.revisionId !== revisionId && row.status !== "WITHDRAWN" && !row.inactive).map(row => readerKey(row))).size;
+  // Sin contar a quien ya tiene pendiente esta revisión: el botón solo cuenta a quien añadiría.
+  const previousReaders = (revisionId: string) => {
+    const pendingHere = new Set(readings.filter(row => row.revisionId === revisionId && row.status === "PENDING").map(row => readerKey(row)));
+    return new Set(readings.filter(row => row.revisionId !== revisionId && row.status !== "WITHDRAWN" && !row.inactive).map(row => readerKey(row)).filter(key => !pendingHere.has(key))).size;
+  };
   return { readable: readable.map(revision => ({ ...revision, previousReaders: previousReaders(revision.id) })), readings };
 }
 export type DocumentReading = Awaited<ReturnType<typeof getDocumentReadings>>["readings"][number];

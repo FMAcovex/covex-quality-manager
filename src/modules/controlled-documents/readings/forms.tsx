@@ -2,7 +2,7 @@
 import { useActionState, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CsrfField } from "@/components/csrf";
-import type { ReadingActionState } from "./actions";
+import type { ReadingActionState } from "./domain";
 
 type Action = (state: ReadingActionState, formData: FormData) => Promise<ReadingActionState>;
 
@@ -13,7 +13,8 @@ export function ReadingActionForm({ action, submitLabel, className = "inline-for
   const [state, formAction, pending] = useActionState(action, { error: null });
   const router = useRouter();
   useEffect(() => { if (state.message && !state.error) router.refresh(); }, [state, router]);
-  return <form action={formAction} className={className}>
+  // Cada guardado correcto monta el formulario de nuevo: campos vacíos e identificador de petición nuevo.
+  return <form key={state.formRevision ?? 0} action={formAction} className={className}>
     <CsrfField />
     {children}
     <button className={`button small${danger ? "" : " primary"}`} type="submit" disabled={pending}>{pending ? "Guardando…" : submitLabel}</button>

@@ -45,6 +45,10 @@ async function main() {
   assert.deepEqual(rows.map(r => [r.readerName.split(" (")[0], r.status, r.dueDate.toISOString().slice(0, 10), r.assignedByText]).sort(), [["Ana", "PENDING", due, QA], ["Bea", "PENDING", due, QA], ["Pedro Gómez", "PENDING", due, QA]]);
   await assert.rejects(addReaders(id, { revisionId: first.id, userIds: [ana.id], departmentIds: [], externalNames: [" pedro  GÓMEZ "], dueDate: due }, QA), /ya tienen esta lectura pendiente/);
   await assert.rejects(addReaders(id, { revisionId: first.id, userIds: [inactive.id], departmentIds: [], externalNames: [], dueDate: due }, QA), /no está activo/);
+  // Un departamento inactivo no se ofrece y el servidor tampoco lo acepta.
+  const closed = await prisma.department.create({ data: { code: `LT-${Math.floor(Math.random() * 90 + 10)}${randomUUID().slice(0, 2).toUpperCase()}`, name: "Lecturas cerrado (ficticio)", isActive: false } });
+  await prisma.authUserDepartment.create({ data: { userId: (await user("Dora")).id, departmentId: closed.id } });
+  await assert.rejects(addReaders(id, { revisionId: first.id, userIds: [], departmentIds: [closed.id], externalNames: [], dueDate: due }, QA), /no existe o no está activo/);
   // Dos peticiones a la vez para la misma persona: una sola lectura pendiente.
   const carla = await user("Carla");
   const both = await Promise.allSettled([1, 2].map(() => addReaders(id, { revisionId: first.id, userIds: [carla.id], departmentIds: [], externalNames: [], dueDate: due }, QA)));
@@ -67,6 +71,12 @@ async function main() {
   await assert.rejects(requestReread(id, { readingId: byName("Ana").id, dueDate: offset(7) }, QA), /ya tiene la lectura pendiente/);
   await assert.rejects(requestReread(id, { readingId: byName("Bea").id, dueDate: offset(7) }, QA), /ya ha leído/);
   await withdrawReading(id, { readingId: byName("Bea").id, reason: "Cambia de puesto (ficticio)" }, QA);
+  // Relectura de quien ya no es usuario activo: no se pide (nadie podría marcarla como propia).
+  const carlaReading = (await readings(id)).find(r => r.readerUserId === carla.id)!;
+  await confirmReading(id, { readingId: carlaReading.id, readOn: today }, { actor: QA, userId: null, onBehalf: true });
+  await prisma.authUser.update({ where: { id: carla.id }, data: { active: false } });
+  await assert.rejects(requestReread(id, { readingId: carlaReading.id, dueDate: offset(7) }, QA), /ya no es un usuario activo/);
+  await prisma.authUser.update({ where: { id: carla.id }, data: { active: true } });
   await assert.rejects(withdrawReading(id, { readingId: byName("Bea").id, reason: "Otra vez" }, QA), /pendiente/);
   rows = await readings(id);
   assert.equal(rows.length, 5, "nada se borra: Ana, Bea, Pedro, Carla y la relectura de Ana");
@@ -82,6 +92,7 @@ async function main() {
   assert.equal(effectiveReadingState({ status: anaPending.status, revisionStatus: anaPending.revision.status }), "SUPERSEDED");
   await assert.rejects(confirmReading(id, { readingId: anaPending.id, readOn: today }, { actor: ana.displayName, userId: ana.id, onBehalf: false }), /ya no está en lectura/);
   await assert.rejects(requestReread(id, { readingId: byName("Pedro").id, dueDate: offset(7) }, QA), /ya no está en lectura/);
+  await assert.rejects(withdrawReading(id, { readingId: anaPending.id, reason: "Sustituida (ficticio)" }, QA), /ya no está en lectura/);
 
   // Lectores anteriores (sin los retirados) para la revisión nueva.
   assert.deepEqual(await requestPreviousReaders(id, { revisionId: second, dueDate: due }, QA), { added: 3, skipped: 0 });
@@ -90,8 +101,23 @@ async function main() {
 
   // Todo queda en el historial operativo del PNT.
   const changes = await prisma.controlledDocumentChange.count({ where: { documentId: id, reason: "Lecturas del PNT (D-141)" } });
-  assert.equal(changes, 7, "alta, alta de Carla, dos confirmaciones, relectura, retirada y lectores anteriores");
-  console.log("Lecturas PNT OK: revisiones legibles, lectores por usuario/departamento/externo, una pendiente por persona, confirmación propia y por GC, relectura, retirada, sustitución y lectores anteriores.");
+  assert.equal(changes, 8, "alta, alta de Carla, tres confirmaciones, relectura, retirada y lectores anteriores");
+
+  // Una lectura solo se toca desde su propio PNT.
+  const { master: other } = await manualMaster();
+  await assert.rejects(confirmReading(other.id, { readingId: byName("Carla").id, readOn: today }, { actor: QA, userId: null, onBehalf: true }), /no pertenece a este PNT/);
+  await assert.rejects(requestReread(other.id, { readingId: byName("Ana").id, dueDate: due }, QA), /no pertenece a este PNT/);
+  await assert.rejects(withdrawReading(other.id, { readingId: anaPending.id, reason: "Otro PNT (ficticio)" }, QA), /no pertenece a este PNT/);
+
+  // Un PNT anulado no admite ningún cambio de lectura.
+  const secondPending = await prisma.controlledReadingAssignment.findFirstOrThrow({ where: { revisionId: second, status: "PENDING" } });
+  await prisma.controlledDocument.update({ where: { id }, data: { administrativeStatus: "ANNULLED" } });
+  await assert.rejects(addReaders(id, { revisionId: second, userIds: [bea.id], departmentIds: [], externalNames: [], dueDate: due }, QA), /anulado/);
+  await assert.rejects(requestPreviousReaders(id, { revisionId: second, dueDate: due }, QA), /anulado/);
+  await assert.rejects(confirmReading(id, { readingId: secondPending.id, readOn: today }, { actor: QA, userId: null, onBehalf: true }), /anulado/);
+  await assert.rejects(requestReread(id, { readingId: byName("Ana").id, dueDate: due }, QA), /anulado/);
+  await assert.rejects(withdrawReading(id, { readingId: secondPending.id, reason: "Anulado (ficticio)" }, QA), /anulado/);
+  console.log("Lecturas PNT OK: revisiones legibles, lectores por usuario/departamento/externo, una pendiente por persona, confirmación propia y por GC, relectura, retirada, sustitución, lectores anteriores, otro PNT y PNT anulado.");
 }
 
 main().then(() => prisma.$disconnect()).catch(async error => { console.error(error); await prisma.$disconnect(); process.exit(1); });

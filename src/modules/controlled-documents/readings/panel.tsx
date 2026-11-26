@@ -34,7 +34,7 @@ function ReadingRow({ row, documentId, me, today, due, annulled }: { row: Docume
       {row.state === "PENDING" && !own ? <PermissionGate permission="PNT_READING_CONFIRM"><ReadingActionForm action={confirmReadingForOtherAction.bind(null, documentId)} submitLabel="Confirmar lectura">
         <input type="hidden" name="readingId" value={row.id} /><label className="field compact"><span>Leído el</span><input type="date" name="readOn" defaultValue={today} max={today} required /></label>
       </ReadingActionForm></PermissionGate> : null}
-      {row.state === "READ" ? <PermissionGate permission="EDIT"><details className="reading-more"><summary>Enviar a relectura</summary><ReadingActionForm action={requestRereadAction.bind(null, documentId)} submitLabel="Enviar a relectura">
+      {row.state === "READ" && !row.inactive ? <PermissionGate permission="EDIT"><details className="reading-more"><summary>Enviar a relectura</summary><ReadingActionForm action={requestRereadAction.bind(null, documentId)} submitLabel="Enviar a relectura">
         <input type="hidden" name="readingId" value={row.id} /><label className="field compact"><span>Plazo</span><input type="date" name="dueDate" defaultValue={due} min={today} required /></label>
       </ReadingActionForm></details></PermissionGate> : null}
       {row.state === "PENDING" ? <PermissionGate permission="EDIT"><details className="reading-more"><summary>Retirar</summary><ReadingActionForm action={withdrawReadingAction.bind(null, documentId)} submitLabel="Retirar lectura" danger>
@@ -83,7 +83,7 @@ export async function ReadingsPanel({ documentId, annulled }: { documentId: stri
             </ReadingActionForm>
           </details>
           {revision.previousReaders ? <ReadingActionForm action={requestPreviousReadersAction.bind(null, documentId)} submitLabel={`Pedir lectura a los lectores anteriores (${revision.previousReaders})`}>
-            <input type="hidden" name="revisionId" value={revision.id} /><input type="hidden" name="dueDate" value={due} />
+            <input type="hidden" name="revisionId" value={revision.id} /><label className="field compact"><span>Plazo</span><input type="date" name="dueDate" defaultValue={due} min={today} required /></label>
           </ReadingActionForm> : null}
         </div>
       </PermissionGate>}
