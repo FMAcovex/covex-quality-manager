@@ -10,6 +10,8 @@ vi.mock("@/modules/controlled-documents/components/revision-documents", () => ({
 // This unit renders only the legacy history tab. The new server-only journal
 // panel is exercised separately with real PostgreSQL and seven-module Chromium.
 vi.mock("@/components/audit-trail-panel", () => ({ AuditTrailPanel: () => null }));
+vi.mock("@/modules/controlled-documents/readings/panel", () => ({ ReadingsPanel: () => null }));
+vi.mock("@/modules/controlled-documents/readings/queries", () => ({ pendingReadingCount: async () => 0 }));
 import DetailPage from "@/app/controlled-documents/[id]/page";
 import { documentHistoryActions } from "./history";
 

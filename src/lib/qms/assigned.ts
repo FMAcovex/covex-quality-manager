@@ -1,5 +1,6 @@
 import type { ControlledDocumentRevisionStatus, Prisma } from "@prisma/client";
 import { revisionFunctions } from "@/modules/controlled-documents/assignment-functions";
+import { READABLE_REVISION_STATUSES } from "@/modules/controlled-documents/readings/domain";
 
 /**
  * «Asignadas a mí» (D-102): expedientes con algo pendiente cuyo responsable vinculado (D-101) es
@@ -38,6 +39,11 @@ const DAY = 86_400_000;
 export const pendingPntRevision = (userId: string | undefined) => ({
   OR: revisionFunctions.map(f => ({ status: f.status, [`${f.key}ResponsibleUserId`]: userId })),
 }) satisfies Prisma.ControlledDocumentRevisionWhereInput;
+
+/** D-141: lectura pendiente de una revisión que todavía se lee (vigente o aprobada pendiente de vigencia). */
+export const pendingPntReading = (userId: string | undefined) => ({
+  readerUserId: userId, status: "PENDING", revision: { status: { in: [...READABLE_REVISION_STATUSES] } },
+}) satisfies Prisma.ControlledReadingAssignmentWhereInput;
 
 /** Revisión vigente cuya revisión prevista efectiva (la del ciclo de vida si existe) cae antes del límite. */
 const inForceDueBefore = (limit: Date): Prisma.ControlledDocumentRevisionWhereInput => ({
@@ -83,6 +89,7 @@ export const assignedWhere = {
     OR: [
       { revisions: { some: pendingPntRevision(userId) } },
       pendingPntPeriodicReview(userId, today),
+      { readings: { some: pendingPntReading(userId) } },
     ],
   }),
   audit: (userId: string): Prisma.AuditWhereInput => ({

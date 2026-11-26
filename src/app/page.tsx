@@ -1,4 +1,4 @@
-import { administrativeTodayDate } from "@/lib/qms/administrative-date";
+import { administrativeToday, administrativeTodayDate } from "@/lib/qms/administrative-date";
 import { PermissionGate } from "@/components/permissions";
 import { authorizedPage } from "@/lib/auth/page-guard";
 import Link from "next/link";
@@ -7,6 +7,8 @@ import { activeFilterChips, type FilterDefinition } from "@/lib/qms/list-filters
 import "./dashboard.css";
 import { getDashboardData } from "@/modules/dashboard/queries";
 import { getAssignedItems, type AssignedItem } from "@/modules/dashboard/assigned-query";
+import { ReadingActionForm } from "@/modules/controlled-documents/readings/forms";
+import { confirmOwnReadingAction } from "@/modules/controlled-documents/readings/actions";
 import { currentIdentity } from "@/lib/auth/context";
 import {
   DASHBOARD_ALL_MODULES, DASHBOARD_MODULES, moduleListHref, queryOption, queryPage, queryYear,
@@ -113,7 +115,10 @@ async function HomePageAuthenticatedContent({
                       <tr key={item.key} className={"dashboard-task-row " + (item.state === "OVERDUE" ? "is-overdue" : "is-upcoming")}>
                         <td className="dashboard-task-date" data-label="Fecha prevista">{item.dueDate ? <time dateTime={item.dueDate.toISOString().slice(0, 10)}>{date(item.dueDate)}</time> : "Sin fecha"}</td>
                         <td className="dashboard-task-record"><Link href={item.href} className="summary-link">{item.code}</Link><small>{moduleName(item.module)}</small></td>
-                        <td className="dashboard-task-reason" title={item.detail}>{item.label}{item.detail ? <small>{item.detail}</small> : null}</td>
+                        <td className="dashboard-task-reason" title={item.detail}>{item.label}{item.detail ? <small>{item.detail}</small> : null}
+                          {item.reading ? <PermissionGate permission="PNT_READING_SELF" module="PNT"><ReadingActionForm action={confirmOwnReadingAction.bind(null, item.reading.documentId)} submitLabel="Marcar como leído" className="dashboard-task-reading">
+                            <input type="hidden" name="readingId" value={item.reading.readingId} /><input type="hidden" name="readOn" value={administrativeToday()} />
+                          </ReadingActionForm></PermissionGate> : null}</td>
                         <td className="dashboard-task-state"><span className={"badge " + assignedStateBadge[item.state]}>{assignedStateLabel[item.state]}</span></td>
                       </tr>
                     ))}
