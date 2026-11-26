@@ -34,8 +34,8 @@ export async function getDocumentReadings(documentId: string) {
   // Lectores anteriores: de otras revisiones y no retirados (los que «Pedir a los lectores anteriores» añadiría).
   // Sin contar a quien ya tiene esta revisión pedida o leída: el botón solo cuenta a quien añadiría.
   const previousReaders = (revisionId: string) => {
-    const pendingHere = new Set(readings.filter(row => row.revisionId === revisionId && row.status !== "WITHDRAWN").map(row => readerKey(row)));
-    return new Set(readings.filter(row => row.revisionId !== revisionId && row.status !== "WITHDRAWN" && !row.inactive).map(row => readerKey(row)).filter(key => !pendingHere.has(key))).size;
+    const alreadyHere = new Set(readings.filter(row => row.revisionId === revisionId && row.status !== "WITHDRAWN").map(row => readerKey(row)));
+    return new Set(readings.filter(row => row.revisionId !== revisionId && row.status !== "WITHDRAWN" && !row.inactive).map(row => readerKey(row)).filter(key => !alreadyHere.has(key))).size;
   };
   return { readable: readable.map(revision => ({ ...revision, previousReaders: previousReaders(revision.id) })), readings };
 }

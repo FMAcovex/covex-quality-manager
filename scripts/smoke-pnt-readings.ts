@@ -9,6 +9,7 @@ import { manualMaster, nextRevision, qaPrincipal, qaOnly, today, offset } from "
 import { changeManualRevisionStatus } from "../src/modules/controlled-documents/manual-state/service";
 import { addReaders, addReadersToDocuments, confirmReading, requestPreviousReaders, requestReread, withdrawReading } from "../src/modules/controlled-documents/readings/service";
 import { effectiveReadingState, readingCounts, readerKey } from "../src/modules/controlled-documents/readings/domain";
+import { getDocumentReadings } from "../src/modules/controlled-documents/readings/queries";
 
 const QA = "Garantía de Calidad (ficticio)";
 async function change(id: string, revisionId: string, targetStatus: string, previousRevisionId: string | null = null) {
@@ -95,13 +96,16 @@ async function main() {
   await assert.rejects(withdrawReading(id, { readingId: anaPending.id, reason: "Sustituida (ficticio)" }, QA), /ya no está en lectura/);
 
   // Lectores anteriores (sin los retirados) para la revisión nueva.
+  assert.equal((await getDocumentReadings(id)).readable.find(revision => revision.id === second)?.previousReaders, 3, "Ana, Carla y Pedro; Bea está retirada");
   assert.deepEqual(await requestPreviousReaders(id, { revisionId: second, dueDate: due }, QA), { added: 3, skipped: 0 });
   const secondReaders = (await prisma.controlledReadingAssignment.findMany({ where: { revisionId: second } })).map(r => r.readerName.split(" (")[0]).sort();
   assert.deepEqual(secondReaders, ["Ana", "Carla", "Pedro Gómez"]);
   // Quien ya ha leído la revisión nueva no se vuelve a pedir como lector anterior.
   const anaSecond = await prisma.controlledReadingAssignment.findFirstOrThrow({ where: { revisionId: second, readerUserId: ana.id } });
   await confirmReading(id, { readingId: anaSecond.id, readOn: today }, { actor: ana.displayName, userId: ana.id, onBehalf: false });
-  await assert.rejects(requestPreviousReaders(id, { revisionId: second, dueDate: due }, QA), /lectores anteriores/);
+  await assert.rejects(requestPreviousReaders(id, { revisionId: second, dueDate: due }, QA), /^Error: Los lectores anteriores activos ya tienen esta revisión pedida o leída\.$/);
+  // El botón cuenta lo mismo: nadie a quien pedírsela.
+  assert.equal((await getDocumentReadings(id)).readable.find(revision => revision.id === second)?.previousReaders, 0);
   assert.equal(await prisma.controlledReadingAssignment.count({ where: { revisionId: second, readerUserId: ana.id, status: "PENDING" } }), 0);
 
   // Todo queda en el historial operativo del PNT.

@@ -1,6 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../../lib/db";
-import { assertBulkReadingSize, canAssignReadings, normalizeExternalName, readerKey, type AddReadersInput, type BulkAddReadersInput } from "./domain";
+import { assertBulkReadingSize, canAssignReadings, normalizeExternalName, type AddReadersInput, type BulkAddReadersInput } from "./domain";
 
 /**
  * D-141: guardado de las lecturas de PNT. Cada operación bloquea el PNT (como la asignación de
@@ -53,8 +53,9 @@ async function resolveUsers(tx: Tx, input: Readers) {
 }
 
 /** Crea las lecturas de una revisión ya bloqueada y comprobada; omite a quien ya la tiene pendiente. */
-async function createReadings(tx: Tx, documentId: string, revision: { id: string; revisionCode: string }, users: Map<string, string>, input: Readers, actor: string) {
-  const pending = await tx.controlledReadingAssignment.findMany({ where: { revisionId: revision.id, status: "PENDING" }, select: { readerUserId: true, readerName: true } });
+async function createReadings(tx: Tx, documentId: string, revision: { id: string; revisionCode: string }, users: Map<string, string>, input: Readers, actor: string, alsoRead = false) {
+  // Se omite a quien ya tiene la lectura pendiente (y, si se pide, a quien ya la ha leído), visto bajo el bloqueo del PNT.
+  const pending = await tx.controlledReadingAssignment.findMany({ where: { revisionId: revision.id, status: { in: alsoRead ? ["PENDING", "READ"] : ["PENDING"] } }, select: { readerUserId: true, readerName: true } });
   const pendingUsers = new Set(pending.flatMap(row => row.readerUserId ? [row.readerUserId] : []));
   const pendingExternal = new Set(pending.filter(row => !row.readerUserId).map(row => normalizeExternalName(row.readerName)));
   const rows = [
@@ -70,15 +71,15 @@ async function createReadings(tx: Tx, documentId: string, revision: { id: string
  * Añade lectores a una revisión: usuarios elegidos, los usuarios activos de los departamentos elegidos y
  * personas externas por su nombre. Quien ya la tiene pendiente no se duplica.
  */
-export async function addReaders(documentId: string, input: AddReadersInput, actor: string, db: Db = prisma) {
+export async function addReaders(documentId: string, input: AddReadersInput, actor: string, db: Db = prisma, options: { alsoRead?: boolean; emptyMessage?: string } = {}) {
   try {
     return await db.$transaction(async tx => {
       await lockOpenDocument(tx, documentId);
       const revision = await readableRevision(tx, documentId, input.revisionId);
       const users = await resolveUsers(tx, input);
       if (!users.size && !input.externalNames.length) throw new Error("Los departamentos elegidos no tienen usuarios activos.");
-      const result = await createReadings(tx, documentId, revision, users, input, actor);
-      if (!result.added) throw new Error("Todas las personas elegidas ya tienen esta lectura pendiente.");
+      const result = await createReadings(tx, documentId, revision, users, input, actor, options.alsoRead);
+      if (!result.added) throw new Error(options.emptyMessage ?? "Todas las personas elegidas ya tienen esta lectura pendiente.");
       return result;
     });
   } catch (error) {
@@ -134,14 +135,13 @@ export async function requestPreviousReaders(documentId: string, input: { revisi
     where: { documentId, revisionId: { not: input.revisionId }, status: { not: "WITHDRAWN" } },
     select: { readerUserId: true, readerName: true, readerUser: { select: { active: true, authorizedAt: true } } },
   });
-  // Quien ya tiene esta revisión pedida o leída no se vuelve a pedir.
-  const here = new Set((await db.controlledReadingAssignment.findMany({ where: { revisionId: input.revisionId, status: { not: "WITHDRAWN" } }, select: { readerUserId: true, readerName: true } })).map(row => readerKey(row)));
-  const candidates = previous.filter(row => !here.has(readerKey(row)));
-  const userIds = [...new Set(candidates.filter(row => row.readerUserId && row.readerUser?.active && row.readerUser.authorizedAt).map(row => row.readerUserId!))];
+  const userIds = [...new Set(previous.filter(row => row.readerUserId && row.readerUser?.active && row.readerUser.authorizedAt).map(row => row.readerUserId!))];
   const seen = new Set<string>();
-  const externalNames = candidates.filter(row => !row.readerUserId).map(row => row.readerName).filter(name => !seen.has(normalizeExternalName(name)) && Boolean(seen.add(normalizeExternalName(name))));
-  if (!userIds.length && !externalNames.length) throw new Error(previous.length ? "Los lectores anteriores activos ya tienen esta revisión pedida o leída." : "Este PNT no tiene lectores anteriores activos.");
-  return addReaders(documentId, { revisionId: input.revisionId, userIds, departmentIds: [], externalNames, dueDate: input.dueDate }, actor, db);
+  const externalNames = previous.filter(row => !row.readerUserId).map(row => row.readerName).filter(name => !seen.has(normalizeExternalName(name)) && Boolean(seen.add(normalizeExternalName(name))));
+  if (!userIds.length && !externalNames.length) throw new Error("Este PNT no tiene lectores anteriores activos.");
+  // Quien ya tiene esta revisión pedida o leída no se vuelve a pedir; se comprueba bajo el bloqueo del PNT.
+  return addReaders(documentId, { revisionId: input.revisionId, userIds, departmentIds: [], externalNames, dueDate: input.dueDate }, actor, db,
+    { alsoRead: true, emptyMessage: "Los lectores anteriores activos ya tienen esta revisión pedida o leída." });
 }
 
 async function pendingReading(tx: Tx, documentId: string, readingId: string) {
