@@ -497,3 +497,55 @@ it("retains exact immutable signed originals and an authenticated supersession t
   const other = await inspector.qmsRecord.findFirstOrThrow({ where: { id: { not: record.qmsRecordId }, recordType: "DEVIATION" } });
   expect((await asUser(qa, () => GET(request(), { params: Promise.resolve({ id: other.id, custodyId: firstSlot.custodyId! }) })) as Response).status).toBe(404);
 }, 30000);
+
+it("captures PNT readings (D-141): readers by user and name, own confirmation with its own permission, and on-behalf confirmation by QA only", async () => {
+  const { masterAction } = await import("../../src/modules/controlled-documents/actions");
+  const { POST: state } = await import("../../src/app/api/controlled-documents/[id]/revisions/[revisionId]/manual-status/route");
+  const readingsActions = await import("../../src/modules/controlled-documents/readings/actions");
+  const department = await inspector.department.findUniqueOrThrow({ where: { code: "GC-00" } });
+  const saved = await asUser(qa, () => masterAction(null, {}, form({ operation: "REGISTER", baseCode: "GC-00/998", title: "Synthetic audited PNT readings", departmentId: department.id, revisionCode: "00", changeReason: "Synthetic explicit master for readings" }))) as { error?: string };
+  expect(saved.error).toBeUndefined();
+  const master = await inspector.controlledDocument.findUniqueOrThrow({ where: { baseCode: "GC-00/998" }, include: { revisions: true } });
+  const revision = master.revisions[0];
+  const origin = process.env.AUTH_ORIGIN!;
+  const params = { params: Promise.resolve({ id: master.id, revisionId: revision.id }) };
+  for (const targetStatus of ["IN_REVIEW", "APPROVED_PENDING_EFFECTIVE"]) {
+    const current = await inspector.controlledDocumentRevision.findUniqueOrThrow({ where: { id: revision.id } });
+    const projection = await inspector.controlledRevisionLifecycle.findUnique({ where: { revisionId: revision.id } });
+    const body = JSON.stringify({ requestId: randomUUID(), expectedVersion: projection?.version ?? 0, expectedUpdatedAt: current.updatedAt.toISOString(), targetStatus, reason: "Synthetic explicit manual-state change for readings" });
+    expect((await asUser(qa, () => state(new Request(origin + "/api/controlled-documents/" + master.id + "/revisions/" + revision.id + "/manual-status", { method: "POST", headers: { origin, "content-type": "application/json" }, body }), params)) as Response).status).toBe(201);
+  }
+  const due = new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10), today = new Date().toISOString().slice(0, 10);
+  const run = async (user: Principal, action: keyof typeof readingsActions, values: Record<string, string>, requestId = randomUUID()) => {
+    const fd = form({ ...values, _covexAuditRequestId: requestId });
+    const result = await asUser(user, () => (readingsActions[action] as (id: string, s: unknown, f: FormData) => Promise<{ error: string | null }>)(master.id, { error: null }, fd)).catch(error => ({ error: String(error) }));
+    return { result: result as { error: string | null }, requestId };
+  };
+  // Asking for readings requires editing the PNT: the reader cannot.
+  const deniedAdd = await run(reader, "addReadersAction", { revisionId: revision.id, userIds: reader.id, externalNames: "Synthetic external reader", dueDate: due });
+  expect(deniedAdd.result.error).toBeTruthy();
+  expect(await inspector.controlledReadingAssignment.count({ where: { documentId: master.id } })).toBe(0);
+  const added = await run(qa, "addReadersAction", { revisionId: revision.id, userIds: reader.id, externalNames: "Synthetic external reader", dueDate: due });
+  expect(added.result.error).toBeNull();
+  const addOperation = await inspector.auditOperation.findFirstOrThrow({ where: { requestId: added.requestId }, include: { events: true, evidence: true } });
+  expect([addOperation.operation, addOperation.actorUserId, addOperation.accessPermission]).toEqual(["PN01", qa.id, "EDIT"]);
+  expect(addOperation.events.filter(e => e.entityType === "ControlledReadingAssignment" && e.rootKey === "PNT:" + master.id).length).toBeGreaterThanOrEqual(2);
+  expect(addOperation.evidence.length).toBeGreaterThan(0);
+  const own = await inspector.controlledReadingAssignment.findFirstOrThrow({ where: { documentId: master.id, readerUserId: reader.id } });
+  const external = await inspector.controlledReadingAssignment.findFirstOrThrow({ where: { documentId: master.id, readerUserId: null } });
+  // The reader confirms their own reading with PNT_READING_SELF, but not someone else's.
+  const deniedOther = await run(reader, "confirmReadingForOtherAction", { readingId: external.id, readOn: today });
+  expect(deniedOther.result.error).toBeTruthy();
+  const confirmed = await run(reader, "confirmOwnReadingAction", { readingId: own.id, readOn: today });
+  expect(confirmed.result.error).toBeNull();
+  const confirmOperation = await inspector.auditOperation.findFirstOrThrow({ where: { requestId: confirmed.requestId }, include: { events: true } });
+  expect([confirmOperation.operation, confirmOperation.actorUserId, confirmOperation.accessPermission]).toEqual(["PN01", reader.id, "PNT_READING_SELF"]);
+  expect(confirmOperation.events.some(e => e.entityType === "ControlledReadingAssignment" && e.fieldPath === "status" && JSON.stringify(e.newValue).includes("READ"))).toBe(true);
+  // Quality assurance confirms the external person's reading on their behalf.
+  const onBehalf = await run(qa, "confirmReadingForOtherAction", { readingId: external.id, readOn: today });
+  expect(onBehalf.result.error).toBeNull();
+  expect((await inspector.auditOperation.findFirstOrThrow({ where: { requestId: onBehalf.requestId } })).accessPermission).toBe("PNT_READING_CONFIRM");
+  const after = await inspector.controlledReadingAssignment.findUniqueOrThrow({ where: { id: external.id } });
+  expect([after.status, after.confirmedOnBehalf, after.confirmedByText]).toEqual(["READ", true, qa.name]);
+}, 30000);
+

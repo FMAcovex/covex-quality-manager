@@ -1282,6 +1282,90 @@
       "resourceArg": 0,
       "resourceKind": "RECORD",
       "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/readings/actions.ts",
+      "name": "addReadersAction",
+      "params": [
+        "documentId",
+        "_state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/readings/actions.ts",
+      "name": "requestPreviousReadersAction",
+      "params": [
+        "documentId",
+        "_state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/readings/actions.ts",
+      "name": "requestRereadAction",
+      "params": [
+        "documentId",
+        "_state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/readings/actions.ts",
+      "name": "withdrawReadingAction",
+      "params": [
+        "documentId",
+        "_state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "EDIT",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/readings/actions.ts",
+      "name": "confirmOwnReadingAction",
+      "params": [
+        "documentId",
+        "_state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "PNT_READING_SELF",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/readings/actions.ts",
+      "name": "confirmReadingForOtherAction",
+      "params": [
+        "documentId",
+        "_state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "PNT_READING_CONFIRM",
+      "resourceArg": 0,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
     }
   ],
   "routes": [

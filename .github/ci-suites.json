@@ -118,6 +118,7 @@
       "pnt-p2b:smoke",
       "pnt-p2c:smoke",
       "pnt-p3c2:smoke",
+      "pnt-readings:smoke",
       "pnt-final:smoke"
     ],
     "ui": [
