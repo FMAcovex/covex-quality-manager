@@ -1644,7 +1644,7 @@ model Audit {
   receivedBy                   String?
   receivedPosition             String?
   /// D-134: firmantes del informe y del CAPA plan ({ document, role, name, position }[]).
-  signatories                  Json                    @default("[]")
+  signatories                  Json                   @default("[]")
   capaPlanDate                 DateTime?              @db.Date
   capaPlanEstablishedAt        DateTime?              @db.Date
   reportSentAt                 DateTime?              @db.Date
@@ -1988,6 +1988,7 @@ model ControlledDocument {
   periodicReviewResponsibleUser   AuthUser?                              @relation("ControlledDocumentPeriodicReview", fields: [periodicReviewResponsibleUserId], references: [id], onDelete: Restrict)
   revisions                       ControlledDocumentRevision[]
   changes                         ControlledDocumentChange[]
+  readings                        ControlledReadingAssignment[]
 
   @@index([departmentId, administrativeStatus])
   @@index([administrativeStatus, createdAt])
@@ -2024,6 +2025,7 @@ model ControlledDocumentRevision {
   documents                    ControlledRevisionDocument[]
   lifecycle                    ControlledRevisionLifecycle?
   decisions                    ControlledRevisionDecision[]
+  readings                     ControlledReadingAssignment[]
   // D-118: responsables de las funciones de la revisión (GC-00/001/03), con fecha prevista.
   // No sustituyen al registro de funciones externas ni a la firma.
   preparationResponsible       String?
@@ -2046,6 +2048,43 @@ model ControlledDocumentRevision {
   @@index([preparationResponsibleUserId])
   @@index([reviewResponsibleUserId])
   @@index([approvalResponsibleUserId])
+}
+
+// D-141: lectura de una revisión de PNT por una persona (usuario o externa). Control operativo de
+// por dónde va la lectura; la firma de lectura sigue en el procedimiento. No es formación.
+enum ControlledReadingStatus {
+  PENDING
+  READ
+  WITHDRAWN
+}
+
+model ControlledReadingAssignment {
+  id                String                     @id @default(uuid())
+  documentId        String
+  document          ControlledDocument         @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  revisionId        String
+  revision          ControlledDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: NoAction)
+  // Usuario de la aplicación; las personas externas solo tienen nombre y no reciben tarea.
+  readerUserId      String?                    @db.Uuid
+  readerUser        AuthUser?                  @relation("ControlledReadingReader", fields: [readerUserId], references: [id], onDelete: Restrict)
+  readerName        String
+  status            ControlledReadingStatus    @default(PENDING)
+  dueDate           DateTime                   @db.Date
+  assignedAt        DateTime                   @default(now())
+  assignedByText    String
+  readOn            DateTime?                  @db.Date
+  confirmedAt       DateTime?
+  confirmedByText   String?
+  confirmedOnBehalf Boolean                    @default(false)
+  withdrawnAt       DateTime?
+  withdrawnByText   String?
+  withdrawalReason  String?                    @db.Text
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@index([documentId, status])
+  @@index([revisionId, status])
+  @@index([readerUserId, status])
 }
 
 model ControlledDocumentChange {
@@ -2320,6 +2359,8 @@ enum AccessPermission {
   AUDIT_TRAIL_REVIEW
   AUDIT_TRAIL_EXPORT
   AUDIT_TRAIL_SENSITIVE_READ
+  PNT_READING_SELF
+  PNT_READING_CONFIRM
 }
 
 enum AccessScope {
@@ -2347,6 +2388,7 @@ model AuthUser {
   controlledRevisionPreparation           ControlledDocumentRevision[]    @relation("ControlledRevisionPreparation")
   controlledRevisionReview                ControlledDocumentRevision[]    @relation("ControlledRevisionReview")
   controlledRevisionApproval              ControlledDocumentRevision[]    @relation("ControlledRevisionApproval")
+  controlledReadings                      ControlledReadingAssignment[]   @relation("ControlledReadingReader")
   id                                      String                          @id @default(uuid()) @db.Uuid
   tenantId                                String                          @db.Uuid
   objectId                                String                          @db.Uuid

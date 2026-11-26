@@ -3096,3 +3096,37 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
 .text-table th, .text-table td { border: 1px solid var(--border); padding: 5px 9px; text-align: left; vertical-align: top; white-space: pre-wrap; }
 .text-table th { background: #f5f8fc; font-weight: 700; }
 
+
+/* D-141: pestaña «Lectura» del PNT. Mismos controles que el resto de la ficha, compactados en la tabla. */
+.pnt-readings-panel .reading-summary { margin: 0 0 12px; }
+.pnt-readings-panel .reading-revision { margin-top: 18px; }
+.pnt-readings-panel .reading-table td { vertical-align: top; }
+.pnt-readings-panel .reading-table td small { display: block; }
+.pnt-readings-panel .reading-table .badge { margin-left: 6px; }
+.pnt-readings-panel .reading-table td:first-child .badge:first-of-type { margin-left: 8px; }
+.pnt-readings-panel .reading-actions { min-width: 190px; }
+.pnt-readings-panel .reading-actions form { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 0 0 6px; }
+.pnt-readings-panel .reading-actions input[type="date"], .pnt-readings-panel .reading-actions input[name="reason"] { width: 170px; }
+.pnt-readings-panel .reading-actions .form-feedback { flex-basis: 100%; margin: 0; }
+.pnt-readings-panel .field.compact { display: grid; gap: 4px; margin: 0; }
+.pnt-readings-panel .field.compact span { font-size: var(--font-xs); color: var(--muted); }
+.pnt-readings-panel .reading-more > summary { cursor: pointer; color: var(--blue-dark); font-size: var(--font-sm); margin: 2px 0 6px; }
+.pnt-readings-panel .reading-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-top: 12px; }
+.pnt-readings-panel .reading-add { flex: 1 1 100%; }
+.pnt-readings-panel .reading-add > summary { list-style: none; display: inline-flex; }
+.pnt-readings-panel .reading-add[open] > summary { margin-bottom: 12px; }
+.pnt-readings-panel .reading-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.pnt-readings-panel .reading-picker fieldset { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 0; }
+.pnt-readings-panel .reading-picker-list { max-height: 220px; overflow: auto; display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.pnt-readings-panel .check-option { display: flex; justify-content: flex-start; gap: 8px; align-items: center; font-size: var(--font-sm); font-weight: 400; text-align: left; }
+.pnt-readings-panel .check-option input[type="checkbox"] { width: auto; height: auto; min-height: 0; margin: 0; padding: 0; flex: 0 0 auto; }
+.pnt-readings-panel .reading-picker legend { font-size: var(--font-sm); font-weight: 600; padding: 0 4px; }
+.pnt-readings-panel .reading-picker input[type="search"] { width: 100%; }
+.pnt-readings-panel .reading-add form { display: grid; gap: 12px; }
+.pnt-readings-panel .reading-add form > .field.compact input { width: 200px; }
+.pnt-readings-panel .reading-add form > button { justify-self: start; width: auto; }
+.pnt-readings-panel .reading-older { margin-top: 18px; }
+.pnt-readings-panel .reading-older > summary { cursor: pointer; font-weight: 600; }
+.dashboard-task-reading { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.dashboard-task-reading .form-feedback { margin: 0; }
+.pnt-reading-badge { display: inline-block; margin-left: 8px; text-decoration: none; white-space: nowrap; }

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import type { Filters } from "./queries";
 import { dateFilterErrors } from "./queries";
 import { iso } from "./domain";
-import { assignedListWhere, assignedWhere } from "@/lib/qms/assigned";
+import { assignedListWhere, assignedWhere, pendingPntReading } from "@/lib/qms/assigned";
 import { currentIdentity } from "@/lib/auth/context";
 
 // Listing-only projection. No documentary binaries, approval evidence or history are loaded.
@@ -17,7 +17,7 @@ export type PntQuick = typeof PNT_QUICK[number];
 export const PNT_VIEWS = ["all", "latest"] as const;
 export type PntView = typeof PNT_VIEWS[number];
 
-export type PntListingFilters = Filters & { sort?: string; direction?: string; view?: string; quick?: string };
+export type PntListingFilters = Filters & { sort?: string; direction?: string; view?: string; quick?: string; reading?: string };
 export function normalizedListOptions(f: PntListingFilters) {
   return {
     sort: PNT_SORTS.includes(f.sort as PntSort) ? f.sort as PntSort : "code" as PntSort,
@@ -72,7 +72,10 @@ export async function queryPntListing(f: PntListingFilters, paginate = true) {
   return prisma.$transaction(async tx => {
     // D-118: «Asignadas a mí» se resuelve con la regla compartida del panel y restringe los maestros.
     const assignedIds = assigned ? (await tx.controlledDocument.findMany({ where: assigned, select: { id: true } })).map(row => row.id) : null;
-    const selection = pntCandidatesSql(f, today, assignedIds);
+    // D-141: «En lectura»: PNT con alguna lectura pendiente de una revisión que todavía se lee.
+    const readingIds = f.reading === "pending" ? (await tx.controlledReadingAssignment.findMany({ where: pendingPntReading(undefined), select: { documentId: true }, distinct: ["documentId"] })).map(row => row.documentId) : null;
+    const restrictedIds = assignedIds && readingIds ? assignedIds.filter(id => readingIds.includes(id)) : assignedIds ?? readingIds;
+    const selection = pntCandidatesSql(f, today, restrictedIds);
     const totals = errors.length ? { rowCount: 0, masterCount: 0, revisionCount: 0 } :
       (await tx.$queryRaw<Array<{ rowCount: number; masterCount: number; revisionCount: number }>>(Prisma.sql`
         SELECT COUNT(*)::int AS "rowCount", COUNT(DISTINCT "masterId")::int AS "masterCount", COUNT("revisionId")::int AS "revisionCount"
@@ -90,10 +93,12 @@ export async function queryPntListing(f: PntListingFilters, paginate = true) {
       revisionIds.length ? tx.controlledDocumentRevision.findMany({ where: { id: { in: revisionIds } }, select: revisionSelect }) : [],
     ]);
     const masterById = new Map(masters.map(master => [master.id, master]));
+    const pendingReadings = masterIds.length ? new Map((await tx.controlledReadingAssignment.groupBy({ by: ["documentId"], where: { documentId: { in: masterIds }, ...pendingPntReading(undefined) }, _count: { _all: true } })).map(row => [row.documentId, row._count._all])) : new Map<string, number>();
     const revisionById = new Map(revisions.map(revision => [revision.id, revision]));
     const rows = selected.map(row => ({
       master: masterById.get(row.masterId)!,
       revision: row.revisionId ? revisionById.get(row.revisionId)! : null,
+      pendingReadings: pendingReadings.get(row.masterId) ?? 0,
     }));
     return { rows, ...totals, page, pages, options, errors };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });

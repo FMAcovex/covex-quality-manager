@@ -1,6 +1,7 @@
 // Recorrido de PNT · Documentación controlada (D-138): nuevo PNT con su revisión 00 en borrador → quién la elabora,
 // revisa y aprueba (aparece en «Mis tareas») → documento de la revisión → estado «Vigente» registrado según la
-// aprobación externa (sin firma electrónica) → biblioteca filtrada por vigencia y descarga en Excel. Cada paso
+// aprobación externa (sin firma electrónica) → biblioteca filtrada por vigencia y descarga en Excel → lectura (D-141):
+// se pide, se marca desde «Mis tareas» y Garantía de Calidad confirma la de una persona externa. Cada paso
 // comprueba en la base de datos y en el Excel lo que el usuario ve. No borra lo que crea (ver el final de main).
 //
 //   Prueba (CI):  pnpm tour:pnt
@@ -137,7 +138,65 @@ async function main() {
       await tour.caption(`El Excel de la biblioteca incluye <b>${baseCode}</b> vigente`);
       await tour.pause(2500);
     });
-    await tour.caption(`Recorrido completado: <b>${baseCode}</b> dado de alta, asignado, documentado y vigente`);
+    // 6 · Lectura (D-141): se pide al usuario de la sesión y a una persona externa; el PNT queda «en lectura».
+    await tour.step("6 · Se pide la <b>lectura</b> del PNT: queda <b>en lectura</b>", async () => {
+      await tour.go(`/controlled-documents/${id}?tab=readings`);
+      await tour.click(page.locator("summary", { hasText: "Añadir personas" }).first());
+      const picker = page.locator(".reading-picker");
+      const external = "Operario externo de mantenimiento (ficticio)";
+      const externalPending = () => prisma.controlledReadingAssignment.count({ where: { documentId: id, readerUserId: null, status: "PENDING" } });
+      // Persona externa: se pide, se retira y se vuelve a pedir igual, con el mismo formulario y sin recargar.
+      // La segunda es una petición nueva (no la repetición de la primera) y crea su lectura.
+      await tour.fill(picker.locator('textarea[name="externalNames"]'), external);
+      await tour.click(page.getByRole("button", { name: "Pedir lectura" }));
+      await waitForSaved(async () => (await externalPending()) === 1 || null, "la lectura de la persona externa");
+      const externalRow = page.locator("tr", { hasText: "Operario externo de mantenimiento" }).filter({ hasText: "Pendiente" }).first();
+      await tour.click(externalRow.locator("summary", { hasText: "Retirar" }));
+      await tour.fill(externalRow.locator('input[name="reason"]'), "Se pidió por error (ficticio)");
+      await tour.click(externalRow.getByRole("button", { name: "Retirar lectura" }));
+      await waitForSaved(async () => (await externalPending()) === 0 || null, "la lectura retirada");
+      await tour.fill(picker.locator('textarea[name="externalNames"]'), external);
+      await tour.click(page.getByRole("button", { name: "Pedir lectura" }));
+      await waitForSaved(async () => (await externalPending()) === 1 || null, "la lectura pedida de nuevo a la persona externa");
+      // Usuario de la sesión.
+      await tour.fill(picker.getByLabel("Buscar usuarios"), session.name!);
+      await tour.check(picker.locator("label.check-option", { hasText: session.name! }).first().locator("input"));
+      await tour.click(page.getByRole("button", { name: "Pedir lectura" }));
+      const rows = await waitForSaved(async () => { const r = await prisma.controlledReadingAssignment.findMany({ where: { documentId: id } }); return r.length === 3 ? r : null; }, "las lecturas pedidas");
+      assert.deepEqual(rows.map(r => [r.status, Boolean(r.readerUserId)]).sort(), [["PENDING", false], ["PENDING", true], ["WITHDRAWN", false]]);
+      assert.equal(rows.find(r => r.readerUserId)?.readerName, session.name, "la lectura es del usuario de la sesión");
+      await page.getByTestId("pnt-in-reading").filter({ hasText: "En lectura · 2 pendientes" }).waitFor();
+      // La fila propia se marca como propia («Marcar como leído»), no como confirmación en nombre de otro.
+      const mine = page.locator("tr", { has: page.locator("td:first-child", { hasText: session.name! }) }).filter({ hasText: "Pendiente" }).first();
+      await mine.getByRole("button", { name: "Marcar como leído" }).waitFor();
+      assert.equal(await mine.getByRole("button", { name: "Confirmar lectura" }).count(), 0, "la lectura propia no se confirma en nombre de otro");
+      // En la biblioteca, el filtro «En lectura» lo muestra con su distintivo.
+      await tour.go(`/controlled-documents?reading=pending&q=${encodeURIComponent(baseCode)}`);
+      await page.locator("main a.pnt-reading-badge", { hasText: "En lectura · 2" }).first().waitFor();
+      await tour.caption(`<b>${baseCode}</b> aparece <b>en lectura</b>, con 2 personas pendientes`);
+      await tour.pause(2000);
+    });
+
+    // 7 · Cada uno marca su lectura desde «Mis tareas»; Garantía de Calidad confirma la de la persona externa.
+    await tour.step("7 · Se marca la lectura en <b>Mis tareas</b> y Garantía de Calidad confirma la externa", async () => {
+      await tour.go("/");
+      const myTasks = page.locator("section", { has: page.locator("#dashboard-my-tasks-title") }).first();
+      const task = myTasks.locator("tr", { hasText: baseCode }).filter({ hasText: "Leer la revisión 00" }).first();
+      await task.scrollIntoViewIfNeeded();
+      await tour.click(task.getByRole("button", { name: "Marcar como leído" }));
+      const own = await waitForSaved(async () => { const r = await prisma.controlledReadingAssignment.findFirst({ where: { documentId: id, readerUserId: { not: null } } }); return r?.status === "READ" ? r : null; }, "la lectura propia");
+      assert.equal(own.confirmedOnBehalf, false, "marcada por la propia persona");
+      await tour.go(`/controlled-documents/${id}?tab=readings`);
+      const external = page.locator("tr", { hasText: "Operario externo de mantenimiento" }).first();
+      await tour.click(external.getByRole("button", { name: "Confirmar lectura" }));
+      const confirmed = await waitForSaved(async () => { const r = await prisma.controlledReadingAssignment.findFirst({ where: { documentId: id, readerUserId: null, status: { not: "WITHDRAWN" } } }); return r?.status === "READ" ? r : null; }, "la lectura de la persona externa");
+      assert.equal(confirmed.confirmedOnBehalf, true, "confirmada por Garantía de Calidad en su nombre");
+      await page.getByTestId("reading-summary").filter({ hasText: "Sin lecturas pendientes" }).waitFor();
+      assert.equal(await page.getByTestId("pnt-in-reading").count(), 0, "sin pendientes, el PNT deja de estar en lectura");
+      await tour.caption("Lecturas confirmadas: el PNT deja de estar <b>en lectura</b>");
+      await tour.pause(2000);
+    });
+    await tour.caption(`Recorrido completado: <b>${baseCode}</b> dado de alta, asignado, documentado, vigente y leído`);
     await tour.pause(3000);
     console.log(`Recorrido de PNT correcto: ${baseCode}`);
   } catch (error) {

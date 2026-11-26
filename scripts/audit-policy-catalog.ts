@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { auditWriterInventory } from "./audit-writer-inventory";
 import { auditManifestJson } from "./audit-manifest-format";
 import { auditCapturePolicy } from "./audit-capture-policy";
+import { pntReadingsCaptureTable } from "./audit-pnt-readings-build";
 import { oosCaptureTable } from "./audit-oos-build";
 
 // Design catalogue and reconciliation, NOT an activated or approved GMP policy.
@@ -15,7 +16,7 @@ const groups: Record<string, string[]> = {
   W05: ["src/modules/returns/actions.ts", "src/modules/returns/product-service.ts", "src/modules/returns/snapshot-service.ts", "src/modules/returns/complaint-origin.ts"],
   W06: ["src/modules/audits/service.ts", "src/modules/audits/finding-service.ts", "src/modules/audits/report-service.ts", "src/modules/audits/capa-plan-service.ts"],
   W07: ["src/modules/audits/plans.ts", "src/modules/audits/annual-programme/service.ts"],
-  W08: ["src/modules/controlled-documents/service.ts"],
+  W08: ["src/modules/controlled-documents/service.ts", "src/modules/controlled-documents/readings/service.ts"],
   W09: ["src/modules/controlled-documents/lifecycle/service.ts", "src/modules/controlled-documents/manual-state/service.ts"],
   W10: ["src/modules/controlled-documents/documents/service.ts"],
   W11: ["src/modules/controlled-documents/import/service.ts", "src/modules/controlled-documents/import/database.ts"],
@@ -62,7 +63,7 @@ function coverage(id:string, category:string) {
   return { coverage:category === "BUSINESS_WRITE" ? "NOT_DEMONSTRATED" : "JUSTIFIED_SEPARATE_STREAM", evidence:[] };
 }
 export function auditPolicyCatalogue() {
-  const inventory = auditWriterInventory(), source = readFileSync("docs/PHASE_4B3_A.md", "utf8"), capture = [...auditCapturePolicy(), oosCaptureTable];
+  const inventory = auditWriterInventory(), source = readFileSync("docs/PHASE_4B3_A.md", "utf8"), capture = [...auditCapturePolicy(), oosCaptureTable, pntReadingsCaptureTable];
   const prohibitedModels = new Set(["AuthSession", "AuthLoginAttempt", "AuditOperation", "AuditEvent", "AuditOperationTarget", "AuditRuntimeContext", "AuditAggregateCursor", "AuditPilotRecord", "AuditPolicyRequirement", "AuditAdministrationRoot", "AuditEventAdditionalTarget", "AuditBusinessContext", "AuditMutationWitness", "AuditRootBinding", "AuditCaptureTablePolicy", "AuditCaptureFieldPolicy", "AuditOperationEvidence", "AuditCommandResult", "AuditTechnicalContext", "AuditTechnicalEvent", "AuditRootMaturity", "AuditOperationAssessment", "AuditTrailReview", "AuditTrailReviewOperation", "AuditTrailReviewEvent", "AuditTrailExport", "AuditTrailExportEvent"]);
   const secretFields = new Set(["tokenHash", "csrfHash", "nonce", "verifier", "password", "secret", "accessToken", "refreshToken"]);
   const fieldCandidates = Object.fromEntries(Prisma.dmmf.datamodel.models.filter(model => !prohibitedModels.has(model.name)).map(model => [model.name, model.fields.filter(field => field.kind !== "object" && field.type !== "Bytes" && !secretFields.has(field.name)).map(field => ({ name: field.name, type: field.type }))]));

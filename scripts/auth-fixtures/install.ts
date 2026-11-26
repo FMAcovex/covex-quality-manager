@@ -8,7 +8,8 @@ export async function installAuthFixtures() {
   const byRole: Record<string, Grant[]> = {
     QUALITY_ASSURANCE: accessModules.flatMap(module => permissions.map(permission => ({ module, permission, scope: "ALL" as const }))),
     TECHNICAL_ADMIN: [{ module: "SYSTEM", permission: "READ", scope: "ALL" }, { module: "SYSTEM", permission: "MANAGE_USERS", scope: "ALL" }],
-    READER: accessModules.filter(m => m !== "SYSTEM").map(module => ({ module, permission: "DOWNLOAD", scope: "ALL" })),
+    // D-141: cualquier lector marca sus propias lecturas de PNT.
+    READER: [...accessModules.filter(m => m !== "SYSTEM").map(module => ({ module, permission: "DOWNLOAD" as const, scope: "ALL" as const })), { module: "PNT", permission: "PNT_READING_SELF", scope: "ALL" }],
     DEPARTMENT_MANAGER: accessModules.filter(m => m !== "SYSTEM").flatMap(module => ["CREATE", "EDIT", "FOLLOWUP", "REVIEW", "DOWNLOAD"].map(permission => ({ module, permission: permission as Grant["permission"], scope: "ASSIGNED" as const }))),
     OPERATOR: [{ module: "PNT", permission: "DOWNLOAD", scope: "ALL" }, { module: "PNT", permission: "ATTACH_DOCUMENT", scope: "ALL" }],
   };

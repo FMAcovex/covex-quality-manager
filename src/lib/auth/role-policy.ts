@@ -27,6 +27,8 @@ export const permissionLabels: Record<AccessPermission, string> = {
   PNT_CORRECT: "Rectificar",
   PNT_LEGACY_REGISTER: "Registro histórico",
   PNT_MANAGE_STATE: "Cambio manual de estado",
+  PNT_READING_SELF: "Marcar sus propias lecturas",
+  PNT_READING_CONFIRM: "Confirmar lecturas de otros",
   AUDIT_TRAIL_REVIEW: "Revisar audit trail",
   AUDIT_TRAIL_EXPORT: "Exportar audit trail",
   AUDIT_TRAIL_SENSITIVE_READ: "Datos sensibles del audit trail",

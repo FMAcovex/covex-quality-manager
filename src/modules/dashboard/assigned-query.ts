@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { pendingAuditAction, pendingChangeTask, pendingComplaintCapaPlan, pendingDeviationCapaPlan, pendingPntPeriodicReview, pendingPntRevision } from "@/lib/qms/assigned";
+import { pendingAuditAction, pendingChangeTask, pendingComplaintCapaPlan, pendingDeviationCapaPlan, pendingPntPeriodicReview, pendingPntReading, pendingPntRevision } from "@/lib/qms/assigned";
 import { currentRevisionFunction } from "@/modules/controlled-documents/assignment-functions";
 import { operationalDates } from "@/modules/controlled-documents/listing";
 import { classifyDue, utcDay, type DashboardFilters, type DashboardModule } from "./domain";
@@ -14,6 +14,8 @@ export type AssignedItem = {
   dueDate: Date | null;
   state: "OVERDUE" | "UPCOMING" | "PENDING";
   href: string;
+  /** D-141: lectura de PNT propia; «Mis tareas» ofrece marcarla como leída. */
+  reading?: { documentId: string; readingId: string };
 };
 
 const code = (value: string | null | undefined) => value ?? "Sin código";
@@ -68,7 +70,7 @@ async function collectActionItems(userId: string | undefined, filters: ActionFil
   const all = !userId;
   const within = range ? { gte: range.from, lt: range.to } : undefined;
 
-  const [deviationPlans, capaActions, decisions, followups, tasks, complaintPlans, derived, auditActions, pntRevisions, pntPeriodic] = await Promise.all([
+  const [deviationPlans, capaActions, decisions, followups, tasks, complaintPlans, derived, auditActions, pntRevisions, pntPeriodic, pntReadings] = await Promise.all([
     wants("DEVIATION") ? prisma.deviationCapaPlan.findMany({
       where: { ...pendingDeviationCapaPlan(userId), plannedExecutionDate: within, deviation: { status: { not: "CLOSED" }, qmsRecord: qms, ...dep } },
       select: { id: true, description: true, plannedExecutionDate: true, deviation: recordRef },
@@ -126,6 +128,11 @@ async function collectActionItems(userId: string | undefined, filters: ActionFil
         },
       },
     }) : [],
+    // D-141: lecturas propias pendientes. No en la vista de todos: sería una fila por lector.
+    wants("PNT") && !all ? prisma.controlledReadingAssignment.findMany({
+      where: { ...pendingPntReading(userId), document: pntDoc, ...(within ? { dueDate: within } : {}) },
+      select: { id: true, dueDate: true, revision: { select: { revisionCode: true } }, document: { select: { id: true, baseCode: true, title: true } } },
+    }) : [],
   ]);
   const pntItems: AssignedItem[] = [];
   for (const row of pntRevisions) {
@@ -140,6 +147,10 @@ async function collectActionItems(userId: string | undefined, filters: ActionFil
     const dueDate = new Date(due + "T00:00:00.000Z");
     if (!classifyDue(dueDate, today)) continue;
     pntItems.push(item({ key: "PNT-P-" + doc.id, module: "PNT", code: code(doc.baseCode), label: "Revisión periódica (vigente " + revision.revisionCode + ")", detail: short(doc.title), dueDate, href: "/controlled-documents/" + doc.id }));
+  }
+
+  for (const row of pntReadings) {
+    pntItems.push(item({ key: "PNT-L-" + row.id, module: "PNT", code: code(row.document.baseCode), label: "Leer la revisión " + row.revision.revisionCode, detail: short(row.document.title), dueDate: row.dueDate, href: "/controlled-documents/" + row.document.id + "?tab=readings", reading: { documentId: row.document.id, readingId: row.id } }));
   }
 
   return sortAssigned([
