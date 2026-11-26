@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canAssignReadings, effectiveReadingState, externalReaderKey, parseAddReadersForm, parseConfirmReadingForm, parsePreviousReadersForm, parseRereadForm, parseWithdrawReadingForm,
-  parseBulkAddReadersForm, readingDueDate, readingCounts, readingSummary, readingSaved,
+  assertBulkReadingSize, parseBulkAddReadersForm, readingDueDate, readingCounts, readingSummary, readingSaved,
 } from "./domain";
 
 // D-141: lecturas de PNT. Control operativo de por dónde va la lectura de cada revisión.
@@ -114,5 +114,12 @@ describe("asignación masiva (D-141, entrega 2)", () => {
     expect(() => parseBulkAddReadersForm(form({ documentIds: ids[0], revisionStatus: "DRAFT", userIds: user, dueDate: "2026-12-11" }), "2026-11-26")).toThrow(/revisión/);
     expect(() => parseBulkAddReadersForm(form({ documentIds: ids[0], userIds: user, dueDate: "2026-11-25" }), "2026-11-26")).toThrow(/plazo/);
     expect(() => parseBulkAddReadersForm(form({ documentIds: Array.from({ length: 201 }, () => crypto.randomUUID()), userIds: user, dueDate: "2026-12-11" }), "2026-11-26")).toThrow(/200/);
+  });
+});
+
+describe("tamaño de una asignación masiva (revisión independiente, I-2)", () => {
+  it("admite hasta 2000 lecturas (PNT × personas) y rechaza más, con un mensaje que dice cuántas son", () => {
+    expect(() => assertBulkReadingSize(40, 50)).not.toThrow();
+    expect(() => assertBulkReadingSize(41, 50)).toThrow(/2050 lecturas.*2000/);
   });
 });

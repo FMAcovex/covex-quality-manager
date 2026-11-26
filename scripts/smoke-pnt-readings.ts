@@ -125,6 +125,10 @@ async function main() {
   await assert.rejects(addReadersToDocuments({ ...bulkInput, documentIds: [bulkDraft.id], revisionStatus: "IN_FORCE" }, QA), /Ninguno de los PNT/);
   await assert.rejects(addReadersToDocuments({ ...bulkInput, documentIds: [randomUUID()], revisionStatus: "IN_FORCE" }, QA), /ya no existe/);
   assert.equal(await prisma.controlledDocumentChange.count({ where: { documentId: bulkA.id, reason: "Lecturas del PNT (D-141)" } }), 2, "en el historial de cada PNT: su alta y la masiva");
+  // Un PNT anulado se omite con su motivo.
+  await prisma.controlledDocument.update({ where: { id: bulkB.id }, data: { administrativeStatus: "ANNULLED" } });
+  const withAnnulled = await addReadersToDocuments({ ...bulkInput, documentIds: [bulkA.id, bulkB.id], externalNames: ["Relevo de mañana"], userIds: [], departmentIds: [], revisionStatus: "IN_FORCE" }, QA);
+  assert.deepEqual([withAnnulled.documents.map(row => [row.documentId, row.added]), withAnnulled.omitted.map(row => [row.documentId, row.reason])], [[[bulkA.id, 1]], [[bulkB.id, "anulado"]]]);
 
   // Una lectura solo se toca desde su propio PNT.
   const { master: other } = await manualMaster();

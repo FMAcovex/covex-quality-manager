@@ -58,19 +58,23 @@ export async function pendingReadingsOverview(filters: Pick<OverviewFilters, "pe
       ...(filters.q ? { OR: [{ baseCode: { contains: filters.q, mode: "insensitive" } }, { title: { contains: filters.q, mode: "insensitive" } }] } : {}),
     },
   };
-  const [rows, total, overdue, readers] = await Promise.all([
+  const [rows, total, overdue, readers, documents, people] = await Promise.all([
     prisma.controlledReadingAssignment.findMany({
       where, take: OVERVIEW_ROW_LIMIT, orderBy: [{ dueDate: "asc" }, { id: "asc" }],
       select: { id: true, documentId: true, readerUserId: true, readerName: true, dueDate: true, assignedAt: true, assignedByText: true, document: { select: { baseCode: true, title: true } }, revision: { select: { revisionCode: true } } },
     }),
     prisma.controlledReadingAssignment.count({ where }),
     prisma.controlledReadingAssignment.count({ where: { ...where, dueDate: { lt: new Date(`${today}T00:00:00Z`) } } }),
-    prisma.controlledReadingAssignment.findMany({ where: base, select: { readerUserId: true, readerName: true }, distinct: ["readerUserId", "readerName"] }),
+    // Personas con alguna lectura pendiente (para el filtro), agrupadas en la base de datos.
+    prisma.controlledReadingAssignment.groupBy({ by: ["readerUserId", "readerName"], where: base }),
+    // Contadores de todo el resultado filtrado, no solo de las filas mostradas.
+    prisma.controlledReadingAssignment.groupBy({ by: ["documentId"], where }),
+    prisma.controlledReadingAssignment.groupBy({ by: ["readerUserId", "readerName"], where }),
   ]);
-  const people = [...new Map(readers.map(row => [readerKey(row), { key: readerKey(row), name: row.readerName, external: !row.readerUserId }])).values()]
+  const options = [...new Map(readers.map(row => [readerKey(row), { key: readerKey(row), name: row.readerName, external: !row.readerUserId }])).values()]
     .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
   return {
-    total, overdue, people,
+    total, overdue, people: options, documentCount: documents.length, personCount: new Set(people.map(row => readerKey(row))).size,
     rows: rows.map(row => ({
       id: row.id, documentId: row.documentId, baseCode: row.document.baseCode ?? "Sin código", title: row.document.title ?? "", revisionCode: row.revision.revisionCode,
       readerUserId: row.readerUserId, readerName: row.readerName, dueDate: row.dueDate.toISOString().slice(0, 10), assignedAt: row.assignedAt, assignedByText: row.assignedByText,

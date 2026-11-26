@@ -84,7 +84,7 @@ const addSchema = (today: string) => z.object({ revisionId: z.string().uuid("Eli
 export type AddReadersInput = z.infer<ReturnType<typeof addSchema>>;
 
 const bulkSchema = (today: string) => z.object({
-  documentIds: z.array(z.string().uuid("PNT no válido.")).min(1, "Elige al menos un PNT.").max(200, "Elige como máximo 200 PNT de una vez."),
+  documentIds: z.array(z.string().uuid("PNT no válido.")).min(1, "Elige al menos un PNT.").max(BULK_READING_MAX_DOCUMENTS, `Elige como máximo ${BULK_READING_MAX_DOCUMENTS} PNT de una vez.`),
   revisionStatus: z.enum(READABLE_REVISION_STATUSES, { errorMap: () => ({ message: "Elige qué revisión se debe leer: la vigente o la aprobada pendiente de vigencia." }) }),
   ...readerFields(today),
 }).refine(someReader, someReaderMessage);
@@ -108,9 +108,23 @@ export function parseAddReadersForm(fd: FormData, today: string): AddReadersInpu
   return result.success ? result.data : fail(result);
 }
 
+/** Máximo de PNT de una asignación masiva. */
+export const BULK_READING_MAX_DOCUMENTS = 200;
+/** Máximo de lecturas (PNT × personas) de una asignación masiva: se guardan en una sola transacción. */
+export const BULK_READING_MAX_ROWS = 2000;
+export function assertBulkReadingSize(documents: number, readers: number) {
+  const total = documents * readers;
+  if (total > BULK_READING_MAX_ROWS) throw new Error(`Son ${total} lecturas (${documents} PNT × ${readers} personas) y el máximo de una vez es ${BULK_READING_MAX_ROWS}: divide la asignación.`);
+}
+/**
+ * PNT elegidos en la asignación masiva, normalizados (cadenas sin espacios, sin vacías y sin repetir). Lo usan
+ * el validador y el guard de permisos, para que los dos vean exactamente la misma lista.
+ */
+export function bulkDocumentIds(fd: FormData) { return unique(strings(fd, "documentIds")); }
+
 /** Asignación masiva: varios PNT, la revisión que se lee de cada uno (vigente por defecto) y los lectores. */
 export function parseBulkAddReadersForm(fd: FormData, today: string): BulkAddReadersInput {
-  const result = bulkSchema(today).safeParse({ documentIds: unique(strings(fd, "documentIds")), revisionStatus: field(fd, "revisionStatus") || "IN_FORCE", ...readersOf(fd) });
+  const result = bulkSchema(today).safeParse({ documentIds: bulkDocumentIds(fd), revisionStatus: field(fd, "revisionStatus") || "IN_FORCE", ...readersOf(fd) });
   return result.success ? result.data : fail(result);
 }
 

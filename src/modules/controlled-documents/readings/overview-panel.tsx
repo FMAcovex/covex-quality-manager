@@ -6,7 +6,8 @@ import { administrativeToday } from "@/lib/qms/administrative-date";
 import { prisma } from "@/lib/db";
 import { displayDate } from "../domain";
 import { readingDueDate } from "./domain";
-import { groupPendingReadings, type OverviewFilters } from "./overview";
+import { assignableCandidates, canAssignSomeReading, groupPendingReadings, type OverviewFilters } from "./overview";
+import type { Principal } from "@/lib/auth/context";
 import { OVERVIEW_ROW_LIMIT, bulkReadingCandidates, pendingReadingsOverview, type OverviewReading } from "./queries";
 import { confirmOwnReadingAction, confirmReadingForOtherAction } from "./actions";
 import { ReadingActionForm } from "./forms";
@@ -37,32 +38,35 @@ function Actions({ row, me, today }: { row: OverviewReading; me: string; today: 
 
 export async function ReadingsOverview({ filters }: { filters: OverviewFilters }) {
   const today = administrativeToday();
-  const me = (await requireUser()).id;
+  const user = await requireUser(), me = user.id;
+  const canAssign = canAssignSomeReading(user);
   const departments = await prisma.department.findMany({ where: { isActive: true }, select: { id: true, code: true, name: true }, orderBy: { code: "asc" } });
   return <section className="workspace pnt-readings-overview">
     <header className="page-heading pnt-hero"><div><p className="eyebrow">GESTIÓN DOCUMENTAL · PNT</p><h1>Lecturas de PNT</h1><p className="muted-note">Quién tiene pendiente la lectura de cada PNT. Control operativo: la firma de lectura sigue en el procedimiento.</p></div>
       <div className="heading-actions"><Link className="button" href="/controlled-documents">Volver a la biblioteca</Link></div></header>
     <nav className="record-tabs pnt-record-tabs" aria-label="Lecturas">
       <Link className={filters.view === "pending" ? "active" : ""} aria-current={filters.view === "pending" ? "page" : undefined} href={href(filters, { view: "pending" })}>Pendientes</Link>
-      <PermissionGate permission="EDIT" module="PNT"><Link className={filters.view === "assign" ? "active" : ""} aria-current={filters.view === "assign" ? "page" : undefined} href={href(filters, { view: "assign" })}>Asignar lecturas</Link></PermissionGate>
+      <PermissionGate permission="EDIT" allowed={canAssign}><Link className={filters.view === "assign" ? "active" : ""} aria-current={filters.view === "assign" ? "page" : undefined} href={href(filters, { view: "assign" })}>Asignar lecturas</Link></PermissionGate>
     </nav>
-    {filters.view === "assign" ? <Assign today={today} departments={departments} /> : <Pending filters={filters} today={today} me={me} departments={departments} />}
+    {filters.view === "assign" ? <Assign user={user} today={today} departments={departments} /> : <Pending filters={filters} today={today} me={me} departments={departments} />}
   </section>;
 }
 
-async function Assign({ today, departments }: { today: string; departments: Array<{ id: string; code: string; name: string }> }) {
-  const [candidates, users] = await Promise.all([bulkReadingCandidates(), appUserOptions()]);
-  return <PermissionGate permission="EDIT" module="PNT" fallback={<p className="empty-panel">Pedir lecturas exige poder editar los PNT.</p>}>
-    <section className="card pnt-readings-panel">
-      <h2>Asignar lecturas</h2>
-      <p className="section-help">Elige los PNT, qué revisión se lee y a quién se pide. Cada lectura queda en la pestaña «Lectura» de su PNT. Solo se guardan las de los PNT que puedes editar; si no puedes editar alguno de los elegidos, no se guarda ninguna.</p>
-      <BulkReadingForm candidates={candidates} departments={departments} users={users.filter(user => user.active).map(user => ({ id: user.id, name: user.name }))} today={today} due={readingDueDate(today)} />
-    </section>
-  </PermissionGate>;
+async function Assign({ user, today, departments }: { user: Principal; today: string; departments: Array<{ id: string; code: string; name: string }> }) {
+  // Sin permiso no se consulta nada; con ámbito, solo los PNT que la persona puede editar (el servidor lo repite).
+  if (!canAssignSomeReading(user)) return <p className="empty-panel">Pedir lecturas exige poder editar los PNT.</p>;
+  const candidates = assignableCandidates(user, await bulkReadingCandidates());
+  if (!candidates.length) return <p className="empty-panel">No puedes editar ningún PNT con revisión vigente o aprobada pendiente de vigencia.</p>;
+  const users = await appUserOptions();
+  return <section className="card pnt-readings-panel">
+    <h2>Asignar lecturas</h2>
+    <p className="section-help">Elige los PNT, qué revisión se lee y a quién se pide. Cada lectura queda en la pestaña «Lectura» de su PNT. Solo aparecen los PNT que puedes editar. Se guardan todas las lecturas o ninguna.</p>
+    <BulkReadingForm candidates={candidates} departments={departments} users={users.filter(option => option.active).map(option => ({ id: option.id, name: option.name }))} today={today} due={readingDueDate(today)} />
+  </section>;
 }
 
 async function Pending({ filters, today, me, departments }: { filters: OverviewFilters; today: string; me: string; departments: Array<{ id: string; code: string; name: string }> }) {
-  const { rows, total, overdue, people } = await pendingReadingsOverview(filters, today);
+  const { rows, total, overdue, people, documentCount, personCount } = await pendingReadingsOverview(filters, today);
   const groups = groupPendingReadings(rows, filters.group, today);
   const byPerson = filters.group === "person";
   const filtered = Boolean(filters.person || filters.q || filters.department || filters.overdue);
@@ -70,8 +74,8 @@ async function Pending({ filters, today, me, departments }: { filters: OverviewF
     <p className="pnt-summary list-counters" data-testid="readings-overview-summary">
       <span><strong>{total}</strong> {total === 1 ? "lectura pendiente" : "lecturas pendientes"}</span>
       <span><strong>{overdue}</strong> {overdue === 1 ? "vencida" : "vencidas"}</span>
-      <span><strong>{new Set(rows.map(r => r.readerUserId ?? `x:${r.readerName.toLowerCase()}`)).size}</strong> personas</span>
-      <span><strong>{new Set(rows.map(r => r.documentId)).size}</strong> PNT</span>
+      <span><strong>{personCount}</strong> {personCount === 1 ? "persona" : "personas"}</span>
+      <span><strong>{documentCount}</strong> PNT</span>
     </p>
     <section className="pnt-filter-card">
       <form className="filter-panel pnt-filters" method="get">

@@ -204,6 +204,11 @@ Sin objetivos, gráfico de control ni tasa de reclamaciones por volumen distribu
   - `phase4b1:smoke`: el responsable de departamento puede en su departamento y no si uno de los PNT es de otro; consulta e IT no pueden (en rojo sin la regla del guard);
   - captura del audit trail: una operación PN01 con raíces en los dos PNT y denegación sin edición;
   - recorrido PNT, paso 8: asignación masiva desde la página y lecturas marcadas desde el panel.
+- **Revisión independiente:** sin hallazgos críticos. Importantes corregidos:
+  - el guard contaba los `documentIds` sin normalizar: con más de 200 valores (rellenando con espacios) volvía a la comprobación general con el departamento enviado en el formulario y un responsable podía pedir lecturas en PNT de otros departamentos. Ahora guard y validador usan la misma lista normalizada (`bulkDocumentIds`) y nunca el departamento del formulario (`phase4b1:smoke`, en rojo antes del arreglo);
+  - la transacción masiva tenía el límite de 5 s de Prisma y ningún tope de filas: ahora 60 s, como el resto del módulo, y como máximo 2000 lecturas (PNT × personas), con mensaje (`assertBulkReadingSize`, unitaria). Medido: 2000 lecturas en unos 3 s sin la captura B2;
+  - la pestaña «Asignar lecturas» solo la veía quien edita todos los PNT, aunque la regla admite el ámbito de departamento: ahora aparece a quien puede editar algún PNT y lista solo los que puede editar (`assignableCandidates`, unitaria).
+  - Menores corregidos: un filtro de persona con id no válido ya no rompe la página; contadores de personas y PNT y lista de personas calculados en la base de datos; sin consultas de la asignación para quien no puede asignar; omisión de un PNT anulado probada en el smoke. Anotado sin cambio: la fecha de lectura del panel es la del momento de cargar la página, como en la pestaña.
 
 **Lecturas de PNT, entrega 1 (2026-11-26, LEC1, D-141):**
 - **Qué cambia:**

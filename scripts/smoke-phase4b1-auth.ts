@@ -74,6 +74,13 @@ async function main() {
         await assert.rejects(asUser(principal, () => authorizedAction("bulkAddReadersAction", [{}, bulk([...ids])], async () => { executed = true; })), e => Boolean(e && typeof e === "object" && "status" in e && e.status === 403), "bulkAddReadersAction fuera de alcance");
         assert.equal(executed, false);
       }
+      // Revisión independiente (I-1): ni valores en blanco o repetidos con espacios para pasar de 200, ni un
+      // departamento puesto en el formulario, evitan comprobar cada PNT elegido.
+      const padded = bulk([entities[1].id, ...Array.from({ length: 199 }, () => randomUUID()), " ", "  ", entities[1].id + " "]);
+      padded.set("departmentId", departments[0].id);
+      let bypassed = false;
+      await assert.rejects(asUser(manager, () => authorizedAction("bulkAddReadersAction", [{}, padded], async () => { bypassed = true; })), e => Boolean(e && typeof e === "object" && "status" in e && e.status === 403), "bulkAddReadersAction con relleno y departamento del formulario");
+      assert.equal(bypassed, false);
       let bulkOwn = false;
       await asUser(manager, () => authorizedAction("bulkAddReadersAction", [{}, bulk([entities[0].id])], async () => { bulkOwn = true; }));
       assert(bulkOwn, "El responsable pide lecturas masivas de los PNT de su departamento");

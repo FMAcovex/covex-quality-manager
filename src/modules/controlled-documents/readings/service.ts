@@ -1,6 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../../lib/db";
-import { canAssignReadings, normalizeExternalName, type AddReadersInput, type BulkAddReadersInput } from "./domain";
+import { assertBulkReadingSize, canAssignReadings, normalizeExternalName, type AddReadersInput, type BulkAddReadersInput } from "./domain";
 
 /**
  * D-141: guardado de las lecturas de PNT. Cada operación bloquea el PNT (como la asignación de
@@ -107,6 +107,7 @@ export async function addReadersToDocuments(input: BulkAddReadersInput, actor: s
       if (masters.length !== ids.length) throw new Error("Uno de los PNT elegidos ya no existe.");
       const users = await resolveUsers(tx, input);
       if (!users.size && !input.externalNames.length) throw new Error("Los departamentos elegidos no tienen usuarios activos.");
+      assertBulkReadingSize(masters.filter(master => master.administrativeStatus !== "ANNULLED" && master.revisions.length).length, users.size + input.externalNames.length);
       const result: BulkReadingResult = { documents: [], omitted: [] };
       for (const master of [...masters].sort((a, b) => (a.baseCode ?? "").localeCompare(b.baseCode ?? "", "es"))) {
         const baseCode = master.baseCode ?? "Sin código";
@@ -117,7 +118,7 @@ export async function addReadersToDocuments(input: BulkAddReadersInput, actor: s
       }
       if (!result.documents.some(row => row.added)) throw new Error(result.documents.length ? "Todas las personas elegidas ya tienen pendiente la lectura de los PNT elegidos." : "Ninguno de los PNT elegidos tiene la revisión que se pide leer.");
       return result;
-    });
+    }, { timeout: 60_000, maxWait: 10_000 });
   } catch (error) {
     if (duplicatePending(error)) throw new Error("Alguna de las personas ya tiene una de estas lecturas pendiente. Recarga y vuelve a intentarlo.");
     throw error;
