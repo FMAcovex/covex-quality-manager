@@ -1285,6 +1285,19 @@
     },
     {
       "file": "src/modules/controlled-documents/readings/actions.ts",
+      "name": "bulkAddReadersAction",
+      "params": [
+        "state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "EDIT",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/readings/actions.ts",
       "name": "addReadersAction",
       "params": [
         "documentId",
@@ -1810,6 +1823,7 @@
     "src/app/controlled-documents/import-index/page.tsx",
     "src/app/controlled-documents/new/page.tsx",
     "src/app/controlled-documents/page.tsx",
+    "src/app/controlled-documents/readings/page.tsx",
     "src/app/deviations/[id]/edit/page.tsx",
     "src/app/deviations/[id]/page.tsx",
     "src/app/deviations/indicators/page.tsx",

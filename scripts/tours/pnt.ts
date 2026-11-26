@@ -1,7 +1,8 @@
 // Recorrido de PNT · Documentación controlada (D-138): nuevo PNT con su revisión 00 en borrador → quién la elabora,
 // revisa y aprueba (aparece en «Mis tareas») → documento de la revisión → estado «Vigente» registrado según la
 // aprobación externa (sin firma electrónica) → biblioteca filtrada por vigencia y descarga en Excel → lectura (D-141):
-// se pide, se marca desde «Mis tareas» y Garantía de Calidad confirma la de una persona externa. Cada paso
+// se pide, se marca desde «Mis tareas» y Garantía de Calidad confirma la de una persona externa → página «Lecturas de
+// PNT»: asignación masiva y panel de pendientes. Cada paso
 // comprueba en la base de datos y en el Excel lo que el usuario ve. No borra lo que crea (ver el final de main).
 //
 //   Prueba (CI):  pnpm tour:pnt
@@ -195,6 +196,39 @@ async function main() {
       assert.equal(await page.getByTestId("pnt-in-reading").count(), 0, "sin pendientes, el PNT deja de estar en lectura");
       await tour.caption("Lecturas confirmadas: el PNT deja de estar <b>en lectura</b>");
       await tour.pause(2000);
+    });
+    // 8 · Lecturas de PNT (entrega 2): se pide la lectura de varios PNT a la vez desde la página «Lecturas» y se
+    // marca desde el panel de pendientes.
+    await tour.step("8 · Desde <b>Lecturas de PNT</b> se pide la lectura de varios PNT y se marca en el panel", async () => {
+      await tour.go("/controlled-documents");
+      await tour.click(page.locator("main a.button", { hasText: "Lecturas" }).first());
+      await page.getByTestId("readings-overview-summary").waitFor();
+      await tour.click(page.locator("nav a", { hasText: "Asignar lecturas" }).first());
+      const pnts = page.locator(".bulk-reading-pnts");
+      await tour.fill(pnts.getByLabel("Buscar PNT"), baseCode);
+      await tour.check(pnts.locator("label.bulk-reading-item", { hasText: baseCode }).first().locator("input"));
+      await page.getByTestId("bulk-reading-selected").filter({ hasText: "1 PNT elegido" }).waitFor();
+      const picker = page.locator(".reading-picker");
+      await tour.fill(picker.getByLabel("Buscar usuarios"), session.name!);
+      await tour.check(picker.locator("label.check-option", { hasText: session.name! }).first().locator("input"));
+      await tour.fill(picker.locator('textarea[name="externalNames"]'), "Turno de noche (ficticio)");
+      await tour.click(page.getByRole("button", { name: "Pedir lectura" }));
+      await page.locator(".form-feedback.success", { hasText: "2 lecturas pedidas en 1 PNT" }).waitFor();
+      const pending = () => prisma.controlledReadingAssignment.count({ where: { documentId: id, status: "PENDING" } });
+      assert.equal(await waitForSaved(async () => (await pending()) === 2 || null, "las lecturas de la asignación masiva"), true);
+      // Panel de pendientes, agrupado por PNT: la propia se marca y la externa la confirma Garantía de Calidad.
+      await tour.go(`/controlled-documents/readings?group=pnt&q=${encodeURIComponent(baseCode)}`);
+      const group = page.locator(".reading-group", { hasText: baseCode }).first();
+      await group.filter({ hasText: "2 pendientes" }).waitFor();
+      await tour.caption(`<b>${baseCode}</b> en el panel de lecturas pendientes, con 2 personas`);
+      await tour.pause(1500);
+      await tour.click(group.locator("tr", { has: page.locator("td:first-child", { hasText: session.name! }) }).getByRole("button", { name: "Marcar como leído" }));
+      await waitForSaved(async () => (await pending()) === 1 || null, "la lectura propia desde el panel");
+      await tour.click(page.locator(".reading-group tr", { hasText: "Turno de noche" }).getByRole("button", { name: "Confirmar lectura" }));
+      await waitForSaved(async () => (await pending()) === 0 || null, "la lectura externa confirmada desde el panel");
+      await page.getByTestId("readings-overview-summary").filter({ hasText: "0 lecturas pendientes" }).waitFor();
+      await tour.caption("Lecturas confirmadas desde el panel: no queda ninguna pendiente");
+      await tour.pause(1500);
     });
     await tour.caption(`Recorrido completado: <b>${baseCode}</b> dado de alta, asignado, documentado, vigente y leído`);
     await tour.pause(3000);

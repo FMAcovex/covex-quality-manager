@@ -566,3 +566,43 @@ it("captures PNT readings (D-141): readers by user and name, own confirmation wi
   expect(await inspector.auditOperation.findFirstOrThrow({ where: { requestId: withdrawn.requestId }, select: { operation: true, accessPermission: true } })).toEqual({ operation: "PN01", accessPermission: "EDIT" });
 }, 30000);
 
+it("captures bulk PNT reading assignment (D-141, entrega 2) as one PN01 operation on every PNT, denied without editing them", async () => {
+  const { masterAction } = await import("../../src/modules/controlled-documents/actions");
+  const { POST: state } = await import("../../src/app/api/controlled-documents/[id]/revisions/[revisionId]/manual-status/route");
+  const { bulkAddReadersAction } = await import("../../src/modules/controlled-documents/readings/actions");
+  const department = await inspector.department.findUniqueOrThrow({ where: { code: "GC-00" } });
+  const origin = process.env.AUTH_ORIGIN!;
+  const approved = async (baseCode: string) => {
+    const saved = await asUser(qa, () => masterAction(null, {}, form({ operation: "REGISTER", baseCode, title: "Synthetic bulk PNT readings", departmentId: department.id, revisionCode: "00", changeReason: "Synthetic explicit master for bulk readings" }))) as { error?: string };
+    expect(saved.error).toBeUndefined();
+    const master = await inspector.controlledDocument.findUniqueOrThrow({ where: { baseCode }, include: { revisions: true } });
+    const revision = master.revisions[0];
+    for (const targetStatus of ["IN_REVIEW", "APPROVED_PENDING_EFFECTIVE"]) {
+      const current = await inspector.controlledDocumentRevision.findUniqueOrThrow({ where: { id: revision.id } });
+      const projection = await inspector.controlledRevisionLifecycle.findUnique({ where: { revisionId: revision.id } });
+      const body = JSON.stringify({ requestId: randomUUID(), expectedVersion: projection?.version ?? 0, expectedUpdatedAt: current.updatedAt.toISOString(), targetStatus, reason: "Synthetic explicit manual-state change for bulk readings" });
+      expect((await asUser(qa, () => state(new Request(origin + "/api/controlled-documents/" + master.id + "/revisions/" + revision.id + "/manual-status", { method: "POST", headers: { origin, "content-type": "application/json" }, body }), { params: Promise.resolve({ id: master.id, revisionId: revision.id }) })) as Response).status).toBe(201);
+    }
+    return master;
+  };
+  const [first, second] = [await approved("GC-00/996"), await approved("GC-00/995")];
+  const due = new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10);
+  const run = async (user: Principal) => {
+    const fd = new FormData();
+    for (const id of [first.id, second.id]) fd.append("documentIds", id);
+    for (const [key, value] of Object.entries({ revisionStatus: "APPROVED_PENDING_EFFECTIVE", userIds: reader.id, externalNames: "Synthetic bulk external reader", dueDate: due, _covexAuditRequestId: randomUUID() })) fd.set(key, value);
+    const result = await asUser(user, () => bulkAddReadersAction({ error: null }, fd)).catch(error => ({ error: String(error) }));
+    return { result: result as { error: string | null }, requestId: String(fd.get("_covexAuditRequestId")) };
+  };
+  const denied = await run(reader);
+  expect(denied.result.error).toBeTruthy();
+  expect(await inspector.controlledReadingAssignment.count({ where: { documentId: { in: [first.id, second.id] } } })).toBe(0);
+  const added = await run(qa);
+  expect(added.result.error).toBeNull();
+  const operation = await inspector.auditOperation.findFirstOrThrow({ where: { requestId: added.requestId }, include: { events: true } });
+  expect([operation.operation, operation.actorUserId, operation.accessPermission]).toEqual(["PN01", qa.id, "EDIT"]);
+  const roots = new Set(operation.events.filter(e => e.entityType === "ControlledReadingAssignment").map(e => e.rootKey));
+  expect([...roots].sort()).toEqual(["PNT:" + first.id, "PNT:" + second.id].sort());
+  expect(await inspector.controlledReadingAssignment.count({ where: { documentId: { in: [first.id, second.id] }, status: "PENDING" } })).toBe(4);
+}, 30000);
+

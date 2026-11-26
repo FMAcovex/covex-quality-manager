@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../src/lib/db";
 import { manualMaster, nextRevision, qaPrincipal, qaOnly, today, offset } from "../src/modules/controlled-documents/testing/p2c";
 import { changeManualRevisionStatus } from "../src/modules/controlled-documents/manual-state/service";
-import { addReaders, confirmReading, requestPreviousReaders, requestReread, withdrawReading } from "../src/modules/controlled-documents/readings/service";
+import { addReaders, addReadersToDocuments, confirmReading, requestPreviousReaders, requestReread, withdrawReading } from "../src/modules/controlled-documents/readings/service";
 import { effectiveReadingState, readingCounts, readerKey } from "../src/modules/controlled-documents/readings/domain";
 
 const QA = "Garantía de Calidad (ficticio)";
@@ -103,6 +103,33 @@ async function main() {
   const changes = await prisma.controlledDocumentChange.count({ where: { documentId: id, reason: "Lecturas del PNT (D-141)" } });
   assert.equal(changes, 8, "alta, alta de Carla, tres confirmaciones, relectura, retirada y lectores anteriores");
 
+  // Entrega 2: la misma lectura en varios PNT a la vez. De cada uno se lee la revisión elegida; los que no la
+  // tienen se omiten y se informan; quien ya la tiene pendiente no se duplica.
+  const { master: bulkA } = await manualMaster();
+  const { master: bulkB } = await manualMaster();
+  const { master: bulkDraft } = await manualMaster();
+  for (const master of [bulkA, bulkB]) { await change(master.id, master.revisions[0].id, "IN_REVIEW"); await change(master.id, master.revisions[0].id, "APPROVED_PENDING_EFFECTIVE"); }
+  await change(bulkA.id, bulkA.revisions[0].id, "IN_FORCE");
+  await addReaders(bulkA.id, { revisionId: bulkA.revisions[0].id, userIds: [ana.id], departmentIds: [], externalNames: [], dueDate: due }, QA);
+  const bulkInput = { documentIds: [bulkB.id, bulkDraft.id, bulkA.id], userIds: [ana.id], departmentIds: [department.id], externalNames: ["Turno de noche"], dueDate: due };
+  const inForce = await addReadersToDocuments({ ...bulkInput, revisionStatus: "IN_FORCE" }, QA);
+  assert.deepEqual(inForce.documents.map(row => [row.documentId, row.revisionCode, row.added, row.skipped]), [[bulkA.id, "00", 2, 1]], "en A, Ana ya la tenía; se añaden Bea (su departamento) y Turno de noche");
+  assert.deepEqual(inForce.omitted.map(row => [row.documentId, row.reason]).sort(), [[bulkB.id, "sin revisión vigente"], [bulkDraft.id, "sin revisión vigente"]].sort());
+  const approved = await addReadersToDocuments({ ...bulkInput, revisionStatus: "APPROVED_PENDING_EFFECTIVE" }, QA);
+  assert.deepEqual(approved.documents.map(row => [row.documentId, row.added]), [[bulkB.id, 3]]);
+  assert.equal(await prisma.controlledReadingAssignment.count({ where: { documentId: bulkB.id, revisionId: bulkB.revisions[0].id, status: "PENDING" } }), 3);
+  // Repetirla no añade nada: se rechaza entera, sin escribir.
+  await assert.rejects(addReadersToDocuments({ ...bulkInput, revisionStatus: "IN_FORCE" }, QA), /ya tienen pendiente/);
+  // O todas o ninguna: un usuario inactivo anula la asignación entera.
+  await assert.rejects(addReadersToDocuments({ ...bulkInput, userIds: [inactive.id], revisionStatus: "APPROVED_PENDING_EFFECTIVE" }, QA), /no está activo/);
+  await assert.rejects(addReadersToDocuments({ ...bulkInput, documentIds: [bulkDraft.id], revisionStatus: "IN_FORCE" }, QA), /Ninguno de los PNT/);
+  await assert.rejects(addReadersToDocuments({ ...bulkInput, documentIds: [randomUUID()], revisionStatus: "IN_FORCE" }, QA), /ya no existe/);
+  assert.equal(await prisma.controlledDocumentChange.count({ where: { documentId: bulkA.id, reason: "Lecturas del PNT (D-141)" } }), 2, "en el historial de cada PNT: su alta y la masiva");
+  // Un PNT anulado se omite con su motivo.
+  await prisma.controlledDocument.update({ where: { id: bulkB.id }, data: { administrativeStatus: "ANNULLED" } });
+  const withAnnulled = await addReadersToDocuments({ ...bulkInput, documentIds: [bulkA.id, bulkB.id], externalNames: ["Relevo de mañana"], userIds: [], departmentIds: [], revisionStatus: "IN_FORCE" }, QA);
+  assert.deepEqual([withAnnulled.documents.map(row => [row.documentId, row.added]), withAnnulled.omitted.map(row => [row.documentId, row.reason])], [[[bulkA.id, 1]], [[bulkB.id, "anulado"]]]);
+
   // Una lectura solo se toca desde su propio PNT.
   const { master: other } = await manualMaster();
   await assert.rejects(confirmReading(other.id, { readingId: byName("Carla").id, readOn: today }, { actor: QA, userId: null, onBehalf: true }), /no pertenece a este PNT/);
@@ -117,7 +144,7 @@ async function main() {
   await assert.rejects(confirmReading(id, { readingId: secondPending.id, readOn: today }, { actor: QA, userId: null, onBehalf: true }), /anulado/);
   await assert.rejects(requestReread(id, { readingId: byName("Ana").id, dueDate: due }, QA), /anulado/);
   await assert.rejects(withdrawReading(id, { readingId: secondPending.id, reason: "Anulado (ficticio)" }, QA), /anulado/);
-  console.log("Lecturas PNT OK: revisiones legibles, lectores por usuario/departamento/externo, una pendiente por persona, confirmación propia y por GC, relectura, retirada, sustitución, lectores anteriores, otro PNT y PNT anulado.");
+  console.log("Lecturas PNT OK: revisiones legibles, lectores por usuario/departamento/externo, una pendiente por persona, confirmación propia y por GC, relectura, retirada, sustitución, lectores anteriores, otro PNT, PNT anulado y asignación masiva.");
 }
 
 main().then(() => prisma.$disconnect()).catch(async error => { console.error(error); await prisma.$disconnect(); process.exit(1); });

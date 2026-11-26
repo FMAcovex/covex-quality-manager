@@ -7,6 +7,7 @@ import { qmsScope, resourceScope, reviewScope } from "./resources";
 import { formStatus, recordStatusPermissions, recordStatusSource, recordStatusTarget } from "./close-permission";
 import { requireCsrf, requireUser } from "./session";
 import { qmsRecordModuleKeys, qmsRecordTypes } from "@/modules/registry";
+import { BULK_READING_MAX_DOCUMENTS, bulkDocumentIds } from "@/modules/controlled-documents/readings/domain";
 
 const actorKeys = ["actor", "createdByText", "acceptedByText", "resolvedByText"];
 export function authenticatedArguments(args: unknown[], name: string, creation = false, action = "") {
@@ -65,7 +66,14 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
     if (id && !unit) scope = await resourceScope(accessModule, String(id), entry.resourceKind);
     else if (form) { const dept = form.get("departmentId") ?? form.get("codingDepartmentId"); scope.departmentIds = dept ? [String(dept)] : []; }
   }
-  assertPermission(user, accessModule, permission, scope);
+  // D-141, entrega 2: la asignación masiva de lecturas exige editar cada PNT elegido, con su propio ámbito
+  // (departamento o asignación). La lista es la misma que ve el validador; el departamento del formulario no
+  // cuenta. Sin PNT, o con más de los admitidos, solo pasa quien edita todos los PNT, y el validador la rechaza.
+  if (name === "bulkAddReadersAction") {
+    const ids = form ? bulkDocumentIds(form) : [];
+    if (ids.length && ids.length <= BULK_READING_MAX_DOCUMENTS && !unit) for (const id of ids) assertPermission(user, "PNT", "EDIT", await resourceScope("PNT", id));
+    else assertPermission(user, "PNT", "EDIT", {});
+  } else assertPermission(user, accessModule, permission, scope);
   if (entry.module === "SYSTEM" && form?.get("module") && form.get("module") !== accessModule) assertPermission(user, String(form.get("module")) as AccessModule, "MANAGE_CONFIGURATION");
   // Edición de un expediente: lo mismo que su página de edición (4B1). Cerrarlo exige CLOSE, y guardar uno ya
   // cerrado (lo reabra o no) también; uno cancelado exige ANNUL. Sin base de datos (modo unitario) se desconoce

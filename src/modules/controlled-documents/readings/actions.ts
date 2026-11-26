@@ -4,8 +4,8 @@ import { authorizedAction } from "@/lib/auth/action-guard";
 import { logServerError } from "@/lib/log/server-log";
 import { currentIdentity } from "@/lib/auth/context";
 import { administrativeToday } from "@/lib/qms/administrative-date";
-import { parseAddReadersForm, parseConfirmReadingForm, parsePreviousReadersForm, parseRereadForm, parseWithdrawReadingForm, readingSaved, type ReadingActionState } from "./domain";
-import { addReaders, confirmReading, requestPreviousReaders, requestReread, withdrawReading } from "./service";
+import { parseAddReadersForm, parseBulkAddReadersForm, parseConfirmReadingForm, parsePreviousReadersForm, parseRereadForm, parseWithdrawReadingForm, readingSaved, type ReadingActionState } from "./domain";
+import { addReaders, addReadersToDocuments, confirmReading, requestPreviousReaders, requestReread, withdrawReading } from "./service";
 
 /** D-141: acciones de la pestaña «Lectura» del PNT. Gestionar lectores exige editar el PNT. */
 export type { ReadingActionState };
@@ -52,6 +52,22 @@ async function withdrawReadingActionAuthenticatedContent(documentId: string, sta
   } catch (error) { return failed(state, error); }
 }
 
+/**
+ * Entrega 2: la misma lectura en varios PNT a la vez. El guard exige editar cada PNT elegido. Los PNT sin la
+ * revisión elegida (o anulados) se omiten y se informan.
+ */
+async function bulkAddReadersActionAuthenticatedContent(state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
+  try {
+    const result = await addReadersToDocuments(parseBulkAddReadersForm(fd, administrativeToday()), actorOf(fd));
+    const added = result.documents.reduce((sum, row) => sum + row.added, 0);
+    const withReadings = result.documents.filter(row => row.added).length;
+    const pnts = (count: number) => count === 1 ? "1 PNT" : `${count} PNT`;
+    const omitted = result.omitted.length ? ` Omitidos: ${result.omitted.map(row => `${row.baseCode} (${row.reason})`).join(", ")}.` : "";
+    const already = result.documents.length > withReadings ? ` ${pnts(result.documents.length - withReadings)} ya tenía${result.documents.length - withReadings === 1 ? "" : "n"} pendientes a todas las personas.` : "";
+    return readingSaved(state, `${added === 1 ? "1 lectura pedida" : `${added} lecturas pedidas`} en ${pnts(withReadings)}.${already}${omitted}`);
+  } catch (error) { return failed(state, error); }
+}
+
 /** Cada persona marca su propia lectura. */
 async function confirmOwnReadingActionAuthenticatedContent(documentId: string, state: ReadingActionState, fd: FormData): Promise<ReadingActionState> {
   try {
@@ -85,4 +101,7 @@ export async function confirmOwnReadingAction(...args: Parameters<typeof confirm
 }
 export async function confirmReadingForOtherAction(...args: Parameters<typeof confirmReadingForOtherActionAuthenticatedContent>) {
   return authorizedAction("confirmReadingForOtherAction", args, authenticated => confirmReadingForOtherActionAuthenticatedContent(...authenticated as Parameters<typeof confirmReadingForOtherActionAuthenticatedContent>));
+}
+export async function bulkAddReadersAction(...args: Parameters<typeof bulkAddReadersActionAuthenticatedContent>) {
+  return authorizedAction("bulkAddReadersAction", args, authenticated => bulkAddReadersActionAuthenticatedContent(...authenticated as Parameters<typeof bulkAddReadersActionAuthenticatedContent>));
 }

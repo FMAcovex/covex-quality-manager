@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canAssignReadings, effectiveReadingState, externalReaderKey, parseAddReadersForm, parseConfirmReadingForm, parsePreviousReadersForm, parseRereadForm, parseWithdrawReadingForm,
-  readingDueDate, readingCounts, readingSummary, readingSaved,
+  assertBulkReadingSize, parseBulkAddReadersForm, readingDueDate, readingCounts, readingSummary, readingSaved,
 } from "./domain";
 
 // D-141: lecturas de PNT. Control operativo de por dónde va la lectura de cada revisión.
@@ -97,5 +97,29 @@ describe("límites de una petición (revisión independiente, M-2)", () => {
   it("rechaza más de 100 personas externas de una vez", () => {
     const names = Array.from({ length: 101 }, (_, n) => `Persona ${n}`).join("\n");
     expect(() => parseAddReadersForm(form({ revisionId: "7f9c1c3e-8a59-4ef7-9a0e-3a5b8b1e2f10", externalNames: names, dueDate: "2026-12-11" }), "2026-11-26")).toThrow(/como máximo 100/);
+  });
+});
+
+describe("asignación masiva (D-141, entrega 2)", () => {
+  const ids = ["7f9c1c3e-8a59-4ef7-9a0e-3a5b8b1e2f10", "8a9c1c3e-8a59-4ef7-9a0e-3a5b8b1e2f11"];
+  const user = "9b9c1c3e-8a59-4ef7-9a0e-3a5b8b1e2f12";
+  it("lee varios PNT, la revisión elegida (vigente por defecto) y los mismos lectores que el formulario de un PNT", () => {
+    expect(parseBulkAddReadersForm(form({ documentIds: [...ids, ids[0]], userIds: user, externalNames: "Ana\nana", dueDate: "2026-12-11" }), "2026-11-26"))
+      .toEqual({ documentIds: ids, revisionStatus: "IN_FORCE", userIds: [user], departmentIds: [], externalNames: ["Ana"], dueDate: "2026-12-11" });
+    expect(parseBulkAddReadersForm(form({ documentIds: ids[0], revisionStatus: "APPROVED_PENDING_EFFECTIVE", externalNames: "Ana", dueDate: "2026-11-26" }), "2026-11-26").revisionStatus).toBe("APPROVED_PENDING_EFFECTIVE");
+  });
+  it("exige al menos un PNT y un lector, una revisión que se lee y un plazo no anterior a hoy", () => {
+    expect(() => parseBulkAddReadersForm(form({ userIds: user, dueDate: "2026-12-11" }), "2026-11-26")).toThrow(/al menos un PNT/);
+    expect(() => parseBulkAddReadersForm(form({ documentIds: ids[0], dueDate: "2026-12-11" }), "2026-11-26")).toThrow(/al menos una persona/);
+    expect(() => parseBulkAddReadersForm(form({ documentIds: ids[0], revisionStatus: "DRAFT", userIds: user, dueDate: "2026-12-11" }), "2026-11-26")).toThrow(/revisión/);
+    expect(() => parseBulkAddReadersForm(form({ documentIds: ids[0], userIds: user, dueDate: "2026-11-25" }), "2026-11-26")).toThrow(/plazo/);
+    expect(() => parseBulkAddReadersForm(form({ documentIds: Array.from({ length: 201 }, () => crypto.randomUUID()), userIds: user, dueDate: "2026-12-11" }), "2026-11-26")).toThrow(/200/);
+  });
+});
+
+describe("tamaño de una asignación masiva (revisión independiente, I-2)", () => {
+  it("admite hasta 2000 lecturas (PNT × personas) y rechaza más, con un mensaje que dice cuántas son", () => {
+    expect(() => assertBulkReadingSize(40, 50)).not.toThrow();
+    expect(() => assertBulkReadingSize(41, 50)).toThrow(/2050 lecturas.*2000/);
   });
 });

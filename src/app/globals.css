@@ -3130,3 +3130,32 @@ td[data-column-key="code"] > a strong, .sticky-code > a strong { font-weight: in
 .dashboard-task-reading { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .dashboard-task-reading .form-feedback { margin: 0; }
 .pnt-reading-badge { display: inline-block; margin-left: 8px; text-decoration: none; white-space: nowrap; }
+/* D-141, entrega 2: página «Lecturas de PNT». */
+.pnt-readings-overview .pnt-record-tabs { margin: 16px 0; }
+.pnt-readings-overview .reading-group { margin-top: 14px; }
+.pnt-readings-overview .reading-group h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: 1.05rem; margin: 0 0 8px; }
+.pnt-readings-overview .reading-group h2 small { font-weight: 400; }
+.pnt-readings-overview form.pnt-filters { display: block; }
+.pnt-readings-overview .reading-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end; }
+.pnt-readings-overview .reading-filters .field { margin: 0; }
+.pnt-readings-overview .reading-filters .check-option { display: flex; gap: 8px; align-items: center; min-height: 42px; font-size: var(--font-sm); }
+.pnt-readings-overview .reading-filters .check-option input { width: auto; height: auto; min-height: 0; margin: 0; }
+.pnt-readings-overview .reading-filters .filter-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
+.pnt-readings-overview .reading-filters .filter-actions .button { width: auto; }
+.pnt-readings-overview .reading-group h2 a { color: var(--blue-dark); text-decoration: none; }
+.pnt-readings-overview .reading-group h2 a:hover { text-decoration: underline; }
+.pnt-readings-panel .check-option input[type="radio"] { width: auto; height: auto; min-height: 0; margin: 0; padding: 0; flex: 0 0 auto; }
+.bulk-reading-form { display: grid; gap: 14px; }
+.bulk-reading-form > .field.compact input { width: 200px; }
+.bulk-reading-form > button { justify-self: start; width: auto; }
+.bulk-reading-pnts { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 0; display: grid; gap: 8px; }
+.bulk-reading-pnts legend { font-size: var(--font-sm); font-weight: 600; padding: 0 4px; }
+.bulk-reading-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bulk-reading-toolbar input[type="search"] { flex: 1 1 240px; }
+.bulk-reading-toolbar select { flex: 0 1 280px; }
+.bulk-reading-toolbar .button { width: auto; }
+.bulk-reading-revision { display: flex; flex-wrap: wrap; gap: 18px; }
+.bulk-reading-list { max-height: 320px; overflow: auto; display: flex; flex-direction: column; gap: 6px; }
+.bulk-reading-item { align-items: flex-start !important; }
+.bulk-reading-item small { display: block; }
+.bulk-reading-pnts p { margin: 0; }
