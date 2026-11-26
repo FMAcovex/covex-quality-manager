@@ -1,7 +1,9 @@
 import "server-only";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { pendingPntReading } from "@/lib/qms/assigned";
 import { READABLE_REVISION_STATUSES, effectiveReadingState, readerKey, readingCounts } from "./domain";
+import type { OverviewFilters } from "./overview";
 
 /** Lecturas pendientes (efectivas) de un PNT, para el distintivo «En lectura»: la misma regla que «Mis tareas» y la biblioteca. */
 export async function pendingReadingCount(documentId: string) {
@@ -38,3 +40,56 @@ export async function getDocumentReadings(documentId: string) {
   return { readable: readable.map(revision => ({ ...revision, previousReaders: previousReaders(revision.id) })), readings };
 }
 export type DocumentReading = Awaited<ReturnType<typeof getDocumentReadings>>["readings"][number];
+
+/** Tope de filas del panel de pendientes: con más, se pide acotar con los filtros. */
+export const OVERVIEW_ROW_LIMIT = 1000;
+
+/** Entrega 2: lecturas pendientes de todos los PNT, con los filtros del panel. */
+export async function pendingReadingsOverview(filters: Pick<OverviewFilters, "person" | "q" | "department" | "overdue">, today: string) {
+  const base = pendingPntReading(undefined);
+  const person = filters.person.startsWith("user:") ? { readerUserId: filters.person.slice(5) }
+    : filters.person.startsWith("external:") ? { readerUserId: null, readerName: { equals: filters.person.slice(9), mode: "insensitive" as const } } : {};
+  const where: Prisma.ControlledReadingAssignmentWhereInput = {
+    ...base, ...person,
+    ...(filters.overdue ? { dueDate: { lt: new Date(`${today}T00:00:00Z`) } } : {}),
+    document: {
+      ...base.document,
+      ...(filters.department ? { departmentId: filters.department } : {}),
+      ...(filters.q ? { OR: [{ baseCode: { contains: filters.q, mode: "insensitive" } }, { title: { contains: filters.q, mode: "insensitive" } }] } : {}),
+    },
+  };
+  const [rows, total, overdue, readers] = await Promise.all([
+    prisma.controlledReadingAssignment.findMany({
+      where, take: OVERVIEW_ROW_LIMIT, orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+      select: { id: true, documentId: true, readerUserId: true, readerName: true, dueDate: true, assignedAt: true, assignedByText: true, document: { select: { baseCode: true, title: true } }, revision: { select: { revisionCode: true } } },
+    }),
+    prisma.controlledReadingAssignment.count({ where }),
+    prisma.controlledReadingAssignment.count({ where: { ...where, dueDate: { lt: new Date(`${today}T00:00:00Z`) } } }),
+    prisma.controlledReadingAssignment.findMany({ where: base, select: { readerUserId: true, readerName: true }, distinct: ["readerUserId", "readerName"] }),
+  ]);
+  const people = [...new Map(readers.map(row => [readerKey(row), { key: readerKey(row), name: row.readerName, external: !row.readerUserId }])).values()]
+    .sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }));
+  return {
+    total, overdue, people,
+    rows: rows.map(row => ({
+      id: row.id, documentId: row.documentId, baseCode: row.document.baseCode ?? "Sin código", title: row.document.title ?? "", revisionCode: row.revision.revisionCode,
+      readerUserId: row.readerUserId, readerName: row.readerName, dueDate: row.dueDate.toISOString().slice(0, 10), assignedAt: row.assignedAt, assignedByText: row.assignedByText,
+    })),
+  };
+}
+export type OverviewReading = Awaited<ReturnType<typeof pendingReadingsOverview>>["rows"][number];
+
+/** Entrega 2: PNT que se pueden elegir en la asignación masiva (no anulados, con revisión vigente o aprobada). */
+export async function bulkReadingCandidates() {
+  const masters = await prisma.controlledDocument.findMany({
+    where: { administrativeStatus: { not: "ANNULLED" }, revisions: { some: { status: { in: [...READABLE_REVISION_STATUSES] } } } },
+    select: { id: true, baseCode: true, title: true, departmentId: true, departmentCodeSnapshot: true, revisions: { where: { status: { in: [...READABLE_REVISION_STATUSES] } }, select: { status: true, revisionCode: true } } },
+    orderBy: { baseCode: "asc" },
+  });
+  return masters.map(master => ({
+    id: master.id, baseCode: master.baseCode ?? "Sin código", title: master.title ?? "", departmentId: master.departmentId, department: master.departmentCodeSnapshot ?? "",
+    inForce: master.revisions.find(r => r.status === "IN_FORCE")?.revisionCode ?? null,
+    approved: master.revisions.find(r => r.status === "APPROVED_PENDING_EFFECTIVE")?.revisionCode ?? null,
+  }));
+}
+export type BulkCandidate = Awaited<ReturnType<typeof bulkReadingCandidates>>[number];
