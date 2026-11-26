@@ -72,25 +72,45 @@ const fail = (result: z.SafeParseReturnType<unknown, unknown>): never => { throw
 const id = z.string().uuid("La lectura no es válida.");
 const futureDue = (today: string) => z.string().trim().refine(value => validDate(value) && value >= today, "Indica un plazo válido, no anterior a hoy.");
 
-const addSchema = (today: string) => z.object({
-  revisionId: z.string().uuid("Elige la revisión que se debe leer."),
+const readerFields = (today: string) => ({
   userIds: z.array(z.string().uuid("Usuario no válido.")).max(500, "Elige como máximo 500 usuarios de una vez."),
   departmentIds: z.array(z.string().min(1).max(100)).max(50, "Elige como máximo 50 departamentos de una vez."),
   externalNames: z.array(z.string().max(200, "El nombre admite como máximo 200 caracteres.")).max(100, "Escribe como máximo 100 personas externas de una vez."),
   dueDate: futureDue(today),
-}).refine(value => value.userIds.length + value.departmentIds.length + value.externalNames.length > 0, "Elige al menos una persona, un departamento o escribe el nombre de una persona externa.");
+});
+const someReader = (value: { userIds: string[]; departmentIds: string[]; externalNames: string[] }) => value.userIds.length + value.departmentIds.length + value.externalNames.length > 0;
+const someReaderMessage = "Elige al menos una persona, un departamento o escribe el nombre de una persona externa.";
+const addSchema = (today: string) => z.object({ revisionId: z.string().uuid("Elige la revisión que se debe leer."), ...readerFields(today) }).refine(someReader, someReaderMessage);
 export type AddReadersInput = z.infer<ReturnType<typeof addSchema>>;
 
-/** Añadir lectores: usuarios, departamentos enteros y personas externas (una por línea). */
-export function parseAddReadersForm(fd: FormData, today: string): AddReadersInput {
-  const strings = (name: string) => fd.getAll(name).filter((value): value is string => typeof value === "string" && value.trim() !== "").map(value => value.trim());
+const bulkSchema = (today: string) => z.object({
+  documentIds: z.array(z.string().uuid("PNT no válido.")).min(1, "Elige al menos un PNT.").max(200, "Elige como máximo 200 PNT de una vez."),
+  revisionStatus: z.enum(READABLE_REVISION_STATUSES, { errorMap: () => ({ message: "Elige qué revisión se debe leer: la vigente o la aprobada pendiente de vigencia." }) }),
+  ...readerFields(today),
+}).refine(someReader, someReaderMessage);
+export type BulkAddReadersInput = z.infer<ReturnType<typeof bulkSchema>>;
+
+const strings = (fd: FormData, name: string) => fd.getAll(name).filter((value): value is string => typeof value === "string" && value.trim() !== "").map(value => value.trim());
+/** Nombres de personas externas: uno por línea, sin repetir (sin distinguir mayúsculas ni espacios). */
+function externalNamesOf(fd: FormData) {
   const seen = new Set<string>();
-  const externalNames = field(fd, "externalNames").split(/\r?\n/).map(name => name.trim().replace(/\s+/g, " ")).filter(name => {
+  return field(fd, "externalNames").split(/\r?\n/).map(name => name.trim().replace(/\s+/g, " ")).filter(name => {
     if (!name || seen.has(normalizeExternalName(name))) return false;
     seen.add(normalizeExternalName(name));
     return true;
   });
-  const result = addSchema(today).safeParse({ revisionId: field(fd, "revisionId"), userIds: unique(strings("userIds")), departmentIds: unique(strings("departmentIds")), externalNames, dueDate: field(fd, "dueDate") });
+}
+const readersOf = (fd: FormData) => ({ userIds: unique(strings(fd, "userIds")), departmentIds: unique(strings(fd, "departmentIds")), externalNames: externalNamesOf(fd), dueDate: field(fd, "dueDate") });
+
+/** Añadir lectores: usuarios, departamentos enteros y personas externas (una por línea). */
+export function parseAddReadersForm(fd: FormData, today: string): AddReadersInput {
+  const result = addSchema(today).safeParse({ revisionId: field(fd, "revisionId"), ...readersOf(fd) });
+  return result.success ? result.data : fail(result);
+}
+
+/** Asignación masiva: varios PNT, la revisión que se lee de cada uno (vigente por defecto) y los lectores. */
+export function parseBulkAddReadersForm(fd: FormData, today: string): BulkAddReadersInput {
+  const result = bulkSchema(today).safeParse({ documentIds: unique(strings(fd, "documentIds")), revisionStatus: field(fd, "revisionStatus") || "IN_FORCE", ...readersOf(fd) });
   return result.success ? result.data : fail(result);
 }
 

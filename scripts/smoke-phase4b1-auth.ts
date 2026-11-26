@@ -67,6 +67,19 @@ async function main() {
       let ownDepartment = false;
       await asUser(manager, () => authorizedAction("assignmentsAction", [entities[0].id, {}, form], async () => { ownDepartment = true; }));
       assert(ownDepartment, "El responsable asigna en los PNT de su departamento");
+      // D-141, entrega 2: la asignación masiva de lecturas exige editar cada PNT elegido, con su ámbito.
+      const bulk = (ids: string[]) => { const fd = new FormData(); for (const id of ids) fd.append("documentIds", id); return fd; };
+      for (const [principal, ids] of [[reader, [entities[0].id]], [admin, [entities[0].id]], [manager, [entities[0].id, entities[1].id]], [manager, [entities[1].id]]] as const) {
+        let executed = false;
+        await assert.rejects(asUser(principal, () => authorizedAction("bulkAddReadersAction", [{}, bulk([...ids])], async () => { executed = true; })), e => Boolean(e && typeof e === "object" && "status" in e && e.status === 403), "bulkAddReadersAction fuera de alcance");
+        assert.equal(executed, false);
+      }
+      let bulkOwn = false;
+      await asUser(manager, () => authorizedAction("bulkAddReadersAction", [{}, bulk([entities[0].id])], async () => { bulkOwn = true; }));
+      assert(bulkOwn, "El responsable pide lecturas masivas de los PNT de su departamento");
+      let bulkAll = false;
+      await asUser(user, () => authorizedAction("bulkAddReadersAction", [{}, bulk([entities[0].id, entities[1].id])], async () => { bulkAll = true; }));
+      assert(bulkAll, "Garantía de Calidad pide lecturas masivas de cualquier PNT");
     }
     let actor = "";
     await asUser(manager, () => authorizedAction(actions[i], args(entities[0].id), async values => { actor = String((values[2] as FormData).get("actor")); })); assert.equal(actor, manager.name);

@@ -1,6 +1,6 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma } from "../../../lib/db";
-import { canAssignReadings, normalizeExternalName, type AddReadersInput } from "./domain";
+import { canAssignReadings, normalizeExternalName, type AddReadersInput, type BulkAddReadersInput } from "./domain";
 
 /**
  * D-141: guardado de las lecturas de PNT. Cada operación bloquea el PNT (como la asignación de
@@ -36,6 +36,36 @@ async function history(tx: Tx, documentId: string, revisionId: string, action: s
 
 const duplicatePending = (error: unknown) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 
+type Readers = Pick<AddReadersInput, "userIds" | "departmentIds" | "externalNames" | "dueDate">;
+
+/** Usuarios elegidos y los usuarios activos de los departamentos elegidos (activos), por id. */
+async function resolveUsers(tx: Tx, input: Readers) {
+  if (input.departmentIds.length) {
+    const found = await tx.department.count({ where: { id: { in: input.departmentIds }, isActive: true } });
+    if (found !== input.departmentIds.length) throw new Error("Uno de los departamentos elegidos no existe o no está activo.");
+  }
+  const chosen = input.userIds.length ? await tx.authUser.findMany({ where: { id: { in: input.userIds }, ...selectable }, select: { id: true, displayName: true } }) : [];
+  if (chosen.length !== input.userIds.length) throw new Error("Uno de los usuarios elegidos no está activo en la aplicación.");
+  const members = input.departmentIds.length
+    ? (await tx.authUserDepartment.findMany({ where: { departmentId: { in: input.departmentIds }, user: selectable }, select: { user: { select: { id: true, displayName: true } } } })).map(row => row.user)
+    : [];
+  return new Map([...chosen, ...members].map(user => [user.id, user.displayName]));
+}
+
+/** Crea las lecturas de una revisión ya bloqueada y comprobada; omite a quien ya la tiene pendiente. */
+async function createReadings(tx: Tx, documentId: string, revision: { id: string; revisionCode: string }, users: Map<string, string>, input: Readers, actor: string) {
+  const pending = await tx.controlledReadingAssignment.findMany({ where: { revisionId: revision.id, status: "PENDING" }, select: { readerUserId: true, readerName: true } });
+  const pendingUsers = new Set(pending.flatMap(row => row.readerUserId ? [row.readerUserId] : []));
+  const pendingExternal = new Set(pending.filter(row => !row.readerUserId).map(row => normalizeExternalName(row.readerName)));
+  const rows = [
+    ...[...users].filter(([id]) => !pendingUsers.has(id)).map(([id, name]) => ({ readerUserId: id, readerName: name })),
+    ...input.externalNames.filter(name => !pendingExternal.has(normalizeExternalName(name))).map(name => ({ readerUserId: null, readerName: name })),
+  ];
+  for (const row of rows) await tx.controlledReadingAssignment.create({ data: { documentId, revisionId: revision.id, ...row, dueDate: day(input.dueDate), assignedByText: actor } });
+  if (rows.length) await history(tx, documentId, revision.id, `Lectura pedida de la revisión ${revision.revisionCode}`, actor, null, { lectores: rows.map(row => row.readerName), plazo: input.dueDate });
+  return { added: rows.length, skipped: users.size + input.externalNames.length - rows.length };
+}
+
 /**
  * Añade lectores a una revisión: usuarios elegidos, los usuarios activos de los departamentos elegidos y
  * personas externas por su nombre. Quien ya la tiene pendiente no se duplica.
@@ -45,31 +75,51 @@ export async function addReaders(documentId: string, input: AddReadersInput, act
     return await db.$transaction(async tx => {
       await lockOpenDocument(tx, documentId);
       const revision = await readableRevision(tx, documentId, input.revisionId);
-      if (input.departmentIds.length) {
-        const found = await tx.department.count({ where: { id: { in: input.departmentIds }, isActive: true } });
-        if (found !== input.departmentIds.length) throw new Error("Uno de los departamentos elegidos no existe o no está activo.");
-      }
-      const chosen = input.userIds.length ? await tx.authUser.findMany({ where: { id: { in: input.userIds }, ...selectable }, select: { id: true, displayName: true } }) : [];
-      if (chosen.length !== input.userIds.length) throw new Error("Uno de los usuarios elegidos no está activo en la aplicación.");
-      const members = input.departmentIds.length
-        ? (await tx.authUserDepartment.findMany({ where: { departmentId: { in: input.departmentIds }, user: selectable }, select: { user: { select: { id: true, displayName: true } } } })).map(row => row.user)
-        : [];
-      const users = new Map([...chosen, ...members].map(user => [user.id, user.displayName]));
-      const pending = await tx.controlledReadingAssignment.findMany({ where: { revisionId: revision.id, status: "PENDING" }, select: { readerUserId: true, readerName: true } });
-      const pendingUsers = new Set(pending.flatMap(row => row.readerUserId ? [row.readerUserId] : []));
-      const pendingExternal = new Set(pending.filter(row => !row.readerUserId).map(row => normalizeExternalName(row.readerName)));
-      const rows = [
-        ...[...users].filter(([id]) => !pendingUsers.has(id)).map(([id, name]) => ({ readerUserId: id, readerName: name })),
-        ...input.externalNames.filter(name => !pendingExternal.has(normalizeExternalName(name))).map(name => ({ readerUserId: null, readerName: name })),
-      ];
-      const skipped = users.size + input.externalNames.length - rows.length;
-      if (!rows.length) throw new Error(users.size || input.externalNames.length ? "Todas las personas elegidas ya tienen esta lectura pendiente." : "Los departamentos elegidos no tienen usuarios activos.");
-      for (const row of rows) await tx.controlledReadingAssignment.create({ data: { documentId, revisionId: revision.id, ...row, dueDate: day(input.dueDate), assignedByText: actor } });
-      await history(tx, documentId, revision.id, `Lectura pedida de la revisión ${revision.revisionCode}`, actor, null, { lectores: rows.map(row => row.readerName), plazo: input.dueDate });
-      return { added: rows.length, skipped };
+      const users = await resolveUsers(tx, input);
+      if (!users.size && !input.externalNames.length) throw new Error("Los departamentos elegidos no tienen usuarios activos.");
+      const result = await createReadings(tx, documentId, revision, users, input, actor);
+      if (!result.added) throw new Error("Todas las personas elegidas ya tienen esta lectura pendiente.");
+      return result;
     });
   } catch (error) {
     if (duplicatePending(error)) throw new Error("Alguna de las personas ya tiene esta lectura pendiente. Recarga y vuelve a intentarlo.");
+    throw error;
+  }
+}
+
+export type BulkReadingResult = {
+  documents: Array<{ documentId: string; baseCode: string; revisionCode: string; added: number; skipped: number }>;
+  omitted: Array<{ documentId: string; baseCode: string; reason: string }>;
+};
+
+/**
+ * D-141, entrega 2: pide la lectura de varios PNT a la vez. De cada PNT se lee la revisión del tipo
+ * elegido (vigente, o aprobada pendiente de vigencia); los PNT sin ella o anulados se omiten y se
+ * informan. Todo en una transacción: o se guardan todas las lecturas o ninguna. Los PNT se bloquean en
+ * orden de id para que dos asignaciones a la vez no se esperen en orden cruzado.
+ */
+export async function addReadersToDocuments(input: BulkAddReadersInput, actor: string, db: Db = prisma): Promise<BulkReadingResult> {
+  try {
+    return await db.$transaction(async tx => {
+      const ids = [...input.documentIds].sort();
+      for (const id of ids) await tx.$queryRaw`SELECT id FROM "ControlledDocument" WHERE id = ${id} FOR UPDATE`;
+      const masters = await tx.controlledDocument.findMany({ where: { id: { in: ids } }, select: { id: true, baseCode: true, administrativeStatus: true, revisions: { where: { status: input.revisionStatus }, select: { id: true, revisionCode: true } } } });
+      if (masters.length !== ids.length) throw new Error("Uno de los PNT elegidos ya no existe.");
+      const users = await resolveUsers(tx, input);
+      if (!users.size && !input.externalNames.length) throw new Error("Los departamentos elegidos no tienen usuarios activos.");
+      const result: BulkReadingResult = { documents: [], omitted: [] };
+      for (const master of [...masters].sort((a, b) => (a.baseCode ?? "").localeCompare(b.baseCode ?? "", "es"))) {
+        const baseCode = master.baseCode ?? "Sin código";
+        const revision = master.revisions[0];
+        if (master.administrativeStatus === "ANNULLED") { result.omitted.push({ documentId: master.id, baseCode, reason: "anulado" }); continue; }
+        if (!revision) { result.omitted.push({ documentId: master.id, baseCode, reason: input.revisionStatus === "IN_FORCE" ? "sin revisión vigente" : "sin revisión aprobada pendiente de vigencia" }); continue; }
+        result.documents.push({ documentId: master.id, baseCode, revisionCode: revision.revisionCode, ...await createReadings(tx, master.id, revision, users, input, actor) });
+      }
+      if (!result.documents.some(row => row.added)) throw new Error(result.documents.length ? "Todas las personas elegidas ya tienen pendiente la lectura de los PNT elegidos." : "Ninguno de los PNT elegidos tiene la revisión que se pide leer.");
+      return result;
+    });
+  } catch (error) {
+    if (duplicatePending(error)) throw new Error("Alguna de las personas ya tiene una de estas lecturas pendiente. Recarga y vuelve a intentarlo.");
     throw error;
   }
 }

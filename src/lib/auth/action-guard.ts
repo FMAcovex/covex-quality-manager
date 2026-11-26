@@ -65,7 +65,13 @@ async function authorizeAndRun<T>(name: string, args: unknown[], run: (authentic
     if (id && !unit) scope = await resourceScope(accessModule, String(id), entry.resourceKind);
     else if (form) { const dept = form.get("departmentId") ?? form.get("codingDepartmentId"); scope.departmentIds = dept ? [String(dept)] : []; }
   }
-  assertPermission(user, accessModule, permission, scope);
+  // D-141, entrega 2: la asignación masiva de lecturas exige editar cada PNT elegido, con su propio ámbito
+  // (departamento o asignación), no el módulo entero. Más PNT de los admitidos exigen el permiso global y el
+  // formulario los rechaza.
+  const bulkReadingDocuments = name === "bulkAddReadersAction" && form ? [...new Set(form.getAll("documentIds").map(String))] : null;
+  if (bulkReadingDocuments?.length && bulkReadingDocuments.length <= 200 && !unit) {
+    for (const id of bulkReadingDocuments) assertPermission(user, "PNT", "EDIT", await resourceScope("PNT", id));
+  } else assertPermission(user, accessModule, permission, scope);
   if (entry.module === "SYSTEM" && form?.get("module") && form.get("module") !== accessModule) assertPermission(user, String(form.get("module")) as AccessModule, "MANAGE_CONFIGURATION");
   // Edición de un expediente: lo mismo que su página de edición (4B1). Cerrarlo exige CLOSE, y guardar uno ya
   // cerrado (lo reabra o no) también; uno cancelado exige ANNUL. Sin base de datos (modo unitario) se desconoce

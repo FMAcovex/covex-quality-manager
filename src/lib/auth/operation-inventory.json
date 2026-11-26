@@ -1285,6 +1285,19 @@
     },
     {
       "file": "src/modules/controlled-documents/readings/actions.ts",
+      "name": "bulkAddReadersAction",
+      "params": [
+        "state",
+        "fd"
+      ],
+      "module": "PNT",
+      "permission": "EDIT",
+      "resourceArg": -1,
+      "resourceKind": "RECORD",
+      "dynamicCreate": false
+    },
+    {
+      "file": "src/modules/controlled-documents/readings/actions.ts",
       "name": "addReadersAction",
       "params": [
         "documentId",
